@@ -1,8 +1,8 @@
 #!/bin/sh
 # This script was generated using Makeself 2.1.5
 
-CRCsum="989516589"
-MD5="001440a0272902dbcf1a6e242c26124c"
+CRCsum="2175161269"
+MD5="d83ba26a84e1b930f051e622638bf42b"
 TMPROOT=${TMPDIR:=/tmp}
 
 label="OpenVAS LSC RPM creator"
@@ -156,17 +156,17 @@ do
     --info)
 	echo Identification: "$label"
 	echo Target directory: "$targetdir"
-	echo Uncompressed size: 220 KB
+	echo Uncompressed size: 212 KB
 	echo Compression: none
-	echo Date of packaging: Wed Jul 14 09:25:13 CEST 2010
+	echo Date of packaging: Mon Apr 16 15:04:06 CEST 2018
 	echo Built with Makeself version 2.1.5 on linux-gnu
 	echo Build command was: "./makeself-2.1.5/makeself.sh \\
     \"--nox11\" \\
     \"--notemp\" \\
     \"--nocomp\" \\
     \"/tmp/blubber\" \\
-    \"gvm-lsc-rpm-creator.sh\" \\
-    \"GVM LSC RPM creator\" \\
+    \"openvas-lsc-rpm-creator.sh\" \\
+    \"OpenVAS LSC RPM creator\" \\
     \"./create-rpm.sh\""
 	if test x$script != x; then
 	    echo Script run after extraction:
@@ -192,7 +192,7 @@ do
 	echo filesizes=\"$filesizes\"
 	echo CRCsum=\"$CRCsum\"
 	echo MD5sum=\"$MD5\"
-	echo OLDUSIZE=220
+	echo OLDUSIZE=212
 	echo OLDSKIP=405
 	exit 0
 	;;
@@ -343,7 +343,7 @@ fi
 offset=`head -n 404 "$0" | wc -c | tr -d " "`
 
 if test x"$verbose" = xy; then
-	MS_Printf "About to extract 220 KB in $tmpdir ... Proceed ? [Y/n] "
+	MS_Printf "About to extract 212 KB in $tmpdir ... Proceed ? [Y/n] "
 	read yn
 	if test x"$yn" = xn; then
 		eval $finish; exit 1
@@ -357,9 +357,9 @@ if test "$keep" = n; then
 fi
 
 leftspace=`MS_diskspace $tmpdir`
-if test $leftspace -lt 220; then
+if test $leftspace -lt 212; then
     echo
-    echo "Not enough space left in "`dirname $tmpdir`" ($leftspace KB) to decompress $0 (220 KB)" >&2
+    echo "Not enough space left in "`dirname $tmpdir`" ($leftspace KB) to decompress $0 (212 KB)" >&2
     if test "$keep" = n; then
         echo "Consider setting TMPDIR to a directory with more free space."
    fi
@@ -402,316 +402,91 @@ if test "$keep" = n; then
     /bin/rm -rf $tmpdir
 fi
 eval $finish; exit $res
-./                                                                                                  0000775 0023576 0023576 00000000000 11417263131 011026  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./Changelog                                                                                         0000664 0023576 0023576 00000005040 11416535515 012646  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                2010-09-08  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
-
-	* openvas-lsc-target.spec.in (%postun): Check /etc/passwd line of user
-	to delete to prevent accidental removal of existing users in
-	alien-converted package. The packages in question run the postun step
-	even if prep or prein steps fail, thus eventually removing users that
-	existed prior to installation-attempt of the package.
-
-2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
-
-	* Makefile (self): Rename generated script to openvas-lsc-rpm-creator.sh.
-
-	* README: Update name.
-
-2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
-
-	* Makefile, README: Flush trailing whitespace.
-
-2009-10-02  Matthew Mundell <matthew.mundell@intevation.de>
-
-	* MANIFEST: Add newline at end of file.
-
-2009-10-02  Felix Wolfsteller <felix.wolfsteller@intevation.de>
-
-	Fixed a bug. Output of ls differs in ordering depending on the locale.
-	In the Makefile, the diff command compares ls output with MANIFEST,
-	leading to wrong results if these files are sorted differently.
-	Found in cooperation with Matthew Mundell.
-
-	* MANIFEST: Sorted "traditionally".
-
-	* Makefile: Set locale to have the ls command sort "traditionally".
-
-2009-09-23  Felix Wolfsteller <felix.wolfsteller@intevation.de>
-
-	* create-rpm.sh: Fixed bashism.
-
-2009-05-06  Felix Wolfsteller <felix.wolfsteller@intevation.de>
-
-	* openvas-lsc-target.spec.in: Delete user when package is uninstalled.
-
-	* TODO: Todos added (what happens if user exists, expire- date?).
-
-2009-04-24  Felix Wolfsteller <felix.wolfsteller@intevation.de>
-
-	* README: Corrected words about suggested invocation.
-
-	* create-rpm.sh: Removed three parameter version. If the
-	makeself-generated script is called exactly as described in the README
-	it is not needed, argument count will be 1 and not 3.
-
-2009-04-24  Felix Wolfsteller <felix.wolfsteller@intevation.de>
-
-	* README: Added words about suggested invocation.
-
-	* TODO: Need to remove the user when package is uninstalled.
-
-2009-04-24  Felix Wolfsteller <felix.wolfsteller@intevation.de>
-
-	* create-rpm.sh: Check number of arguments. Condition cleanup and
-	location of created rpm on number of arguments.
-
-2009-02-18  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
-
-	* PUBKEYNAME, lsc-pubkey.pub: reset (removed test content).
-
-2009-02-17  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
-
-	* README: Fixed directives.
-
-	* MANIFEST: Added missing entry for TODO.
-
-2009-02-17  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
-
-	Started module. Most works so far are developed by
-	Jochen Plumeyer <jochen@plumeyer.org>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ./MANIFEST                                                                                          0000664 0023576 0023576 00000000235 11271247354 012166  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                Changelog
-MANIFEST
-Makefile
-NAME
-PUBKEYNAME
-README
-RPMBASENAME
-TODO
-VERSION
-configure
-create-rpm.sh
-lsc-pubkey.pub
-makeself-2.1.5
-openvas-lsc-target.spec.in
-                                                                                                                                                                                                                                                                                                                                                                   ./Makefile                                                                                          0000664 0023576 0023576 00000004227 11271247354 012502  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                VERSION=$(shell cat VERSION)
-NAME=$(shell cat NAME)
-RPMBASENAME=$(shell cat RPMBASENAME)
-PUBKEYNAME=$(shell cat PUBKEYNAME)
-RPMNAME=$(RPMBASENAME)-$(PUBKEYNAME)
-FILES=$(shell xargs < MANIFEST)
-#PACKDIR=$(shell mktemp -d /tmp/thisgoesawayXXXXX )
-PACKDIR=/tmp/blubber
-EXECUTE_DIR=$(shell basename $(PACKDIR))
-
-default:
-	# NOP, no operation
-
-# Creating the fundamental directories and contents for the RPM
-# building, not using the system defaults
-configure: rpmdist
-	mkdir SOURCES
-	mkdir RPMS
-	mkdir BUILD
-	mv $(RPMNAME)-$(VERSION).tar.gz SOURCES/
-
-install:
-	cp lsc-pubkey.pub $(RPM_BUILD_ROOT)/home/$(PUBKEYNAME)/.ssh/authorized_keys
-
-clean:
-	LC_ALL=C ls | egrep -v "\.spec" | diff  MANIFEST - | grep "^>" | sed 's/^..//' | xargs rm -rf
-
-# The default pubkey is used as an example, to test the building
-# system locally. An RPM should be generated.
-test:
-	cp ~/.ssh/id_rsa.pub id_rsa_sshovas.pub
-	sh create-rpm.sh id_rsa_sshovas.pub
-
-# "make rpmdist" Packing this same system with the changed name into RPM SOURCES
-# directory
-rpmdist: clean
-	echo $(FILES)
-	mkdir $(RPMNAME)-$(VERSION)
-	cp -ar $(FILES) $(RPMNAME)-$(VERSION)/
-	tar cfzv $(RPMNAME)-$(VERSION).tar.gz $(RPMNAME)-$(VERSION)
-	rm -rf $(RPMNAME)-$(VERSION)
-
-# "make dist": Everything, even the *.spec file is cleaned up
-dist: distclean
-	echo $(FILES)
-	mkdir $(NAME)-$(VERSION)
-	cp -ar $(FILES) $(NAME)-$(VERSION)/
-	tar cfzv $(NAME)-$(VERSION).tar.gz $(NAME)-$(VERSION)
-	rm -rf $(NAME)-$(VERSION)
-
-# "make self" generates the all-containing shellscript.
-# This is the script to be used on the RPM building machines:
-# <shellscript.sh> </absolute/path/to/pubkey.pub>
-self: distclean
-	rm -rf $(PACKDIR)
-	mkdir $(PACKDIR)
-	cp -ar $(FILES) $(PACKDIR)/
-	./makeself-2.1.5/makeself.sh --nox11 --notemp --nocomp $(PACKDIR) openvas-lsc-rpm-creator.sh "OpenVAS LSC RPM creator" ./create-rpm.sh
-	rm -rf $(PACKDIR)
-
-# If you plan to add files or directories to this system, please do
-# "make distclean", add the files and then
-# "make manifest". So everything should go straight.
-manifest:
-	ls > MANIFEST
-
-#
-distclean: clean
-	rm -f PUBKEYNAME *.spec lsc-pubkey.pub
-	touch PUBKEYNAME lsc-pubkey.pub
-
-.PHONY: clean default install test distclean manifest
-                                                                                                                                                                                                                                                                                                                                                                         ./NAME                                                                                              0000664 0023576 0023576 00000000037 11271247354 011500  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                openvas-lsc-target-preparation
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ./PUBKEYNAME                                                                                        0000664 0023576 0023576 00000000000 11417263131 012377  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./README                                                                                            0000664 0023576 0023576 00000002750 11271247354 011721  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                openvas-lsc-target-preparation
-------------------------------
-
-To prepare a shell script that can be used to create RPMs
-that make target systems ready for OpenVAS Local Security Checks (LSCs),
-follow these instructions. The resulting shell script
-could be used e.g. by OpenVAS-Client's key manager.
-
-	make self
-
-The resulting shell script can be used like this:
-
-	sh openvas-lsc-rpm-creator.sh --target /abs/path/to/temp/working/dir /absolute/path/to/id_rsa_pubkey.pub
-
-After successfull execution, a resulting rpm package will be placed in the
-directory provided with --target.
-Be sure to clean up the provided directory afterwards!
-Ommitting the --target argument might work. Then, contents are extracted into a
-'blubber' directory. It is generally suggested to provide the directory and
-remove it afterwards yourself.
-
-To test the functionality inside this directory, please execute ( with
-the name "John Doe" as an example)
-
-	sh create-rpm.sh id_rsa_johndoe.pub
-
-to create an RPM to install on target machines using this specific
-public key as secure access requirement via ssh.
-
-For further development:
-
-If you want to include more files or directories into this shellscript
-build system, do before
-
-	make distclean
-
-then add the files, and do a
-
-	make manifest
-
-The version number resides in the file "VERSION".
-
-BUGS:
-	The system is likely to fail, if its parent directory or included
-	files contain spaces in filenames, or other characters which need
-	to be quoted for being used well in a UNIX shell.
-                        ./RPMBASENAME                                                                                       0000664 0023576 0023576 00000000023 11271247354 012505  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                openvas-lsc-target
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             ./TODO                                                                                              0000664 0023576 0023576 00000001620 11271247354 011524  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                TODO:
-
-- The temporary directory name "blubber" should be replaced by a
-  random dynamic name, similar to the "mktemp" command.
-
-- rpmbuild insists to use "./configure". It would be good
-  to change this to eliminate then the dummy "configure" script.
-
-- To be able to include the resulting shellscript into a spec file, it
-  might be necessary to modify it, to not disturb the spec parser of
-  rpmbuild. There are two possibilities: sourcing it, or using a (not
-  very neat) "ASCII blob", which will not interfere with the syntax
-  necessities of spec files. Perl has uuencoding built in, without
-  any module dependencies (see "perldoc -f pack").
-  So the ASCII blob could be de/encoded by piping it through Perl.
-
- - Fail installation process if user exists already (useradd returns 9),
-   because when package is removed, the users home directory will be deleted.
-
- - Set expire-date for user (configurable).                                                                                                                ./VERSION                                                                                           0000664 0023576 0023576 00000000004 11271247354 012077  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                0.5
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ./configure                                                                                         0000775 0023576 0023576 00000000060 11271247354 012740  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                #!/bin/sh
-echo "This is just a dummy, see TODO"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ./create-rpm.sh                                                                                     0000775 0023576 0023576 00000004211 11271247354 013431  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                #!/bin/sh
-
-# OpenVAS module "openvas-lsc-target-preparation", create-rpm.sh
-# $Id$
-# Description: shellscript to create a rpm package
-#
-# Authors:
-# Jochen Plumeyer <jochen@plumeyer.de>
-# Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
-#
-# Copyright:
-# Copyright (C) 2009 Intevation GmbH
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2,
-# as published by the Free Software Foundation
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-#
-
-#set -x
-
-# We expect to be called like
-#   ./create-rpm.sh MyPathToKeyFile.pub
-
-PubkeyFile=
-
-if [ $# = 1 ];
-then
-  PubkeyFile=$1
-else
-  echo 'Please provide path to public key file as first argument.'
-  exit 1
-fi
-
-mkdir -p rpmtmp
-
-cp -f $PubkeyFile lsc-pubkey.pub
-RpmPrefix="openvas-lsc-target"
-BasenamePubkeyFile=`basename $PubkeyFile .pub`
-RpmPostfix=`echo $BasenamePubkeyFile | sed 's/id_rsa_//'`
-Version=`cat VERSION`
-TopDir=`pwd`
-echo $RpmPostfix > PUBKEYNAME
-RpmName=$RpmPrefix-$RpmPostfix
-sed    "s|@RpmName@|$RpmName|g" < openvas-lsc-target.spec.in > openvas-lsc-target.spec
-sed -i "s|@PubkeyBasename@|$RpmPostfix|g" openvas-lsc-target.spec
-sed -i "s|@VERSION@|$Version|g" openvas-lsc-target.spec
-sed -i "s|@TOPDIR@|$TopDir|g" openvas-lsc-target.spec
-
-  # ... install $PubkeyFile as a file which installs temporarily as
-  # target-user-visible $PubkeyRPMPayload on the target machine
-
-make configure
-
-RPM_SOURCE_DIR=. rpmbuild -bb --target noarch "$RpmPrefix".spec
-
-# Script code for client machine is in %post of openvas-lsc-target.spec.in
-
-# We do not clean up. If its required ('blubber'), use:
-#  cp RPMS/noarch/*.rpm ..
-#  pwd=`pwd`
-#  if [ `basename $pwd` = "blubber" ]
-#  then
-#  	rm -rf `pwd`
-
-cp RPMS/noarch/*.rpm  .
-
-
-#vim: set tw=70
-                                                                                                                                                                                                                                                                                                                                                                                       ./lsc-pubkey.pub                                                                                    0000664 0023576 0023576 00000000000 11417263131 013602  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/                                                                                   0000775 0023576 0023576 00000000000 11271247354 013265  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/.svn/                                                                              0000775 0023576 0023576 00000000000 11417253732 014150  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/.svn/text-base/                                                                    0000775 0023576 0023576 00000000000 11271247354 016045  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/.svn/text-base/makeself.sh.svn-base                                                0000444 0023576 0023576 00000027223 11271247354 021707  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                #!/bin/sh
+./                                                                                                  0000775 0001750 0001750 00000000000 13265117506 011123  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./openvas-lsc-target.spec.in                                                                        0000664 0001750 0001750 00000004212 13265117464 016124  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                %define name @RpmName@
+%define PubkeyBasename @PubkeyBasename@ 
+%define version @VERSION@
+%define release 1
+%define _topdir @TOPDIR@
+%define _tmppath @TOPDIR@/rpmtmp
+%define manifest %{_builddir}/%{name}-%{version}-%{release}.manifest
+
+# required items
+Name: %{name}
+Version: %{version}
+Release: %{release}
+License: GPL
+Group: Application/Misc
+
+Source: %{name}-%{version}.tar.gz
+#Prefix: /usr
+BuildRoot: /var/tmp/%{name}-%{version}
+
+Summary: OpenVAS local security check preparation
+
+%description
+This package prepares a system for OpenVAS local security checks.
+A user is created with a specific SSH authorized key.
+The corresponding private key is located at the respective
+OpenVAS installation.
+
+%prep
+%setup -q
+#%patch0 -p1
+
+%build
+make
+
+%install
+rm -rf $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT/home/%{PubkeyBasename}/.ssh/
+%makeinstall
+
+# __os_install_post is implicitly expanded after the
+# %%install section... do it now, and then disable it,
+# so all work is done before building manifest.
+
+%{?__os_install_post}
+%define __os_install_post %{nil}
+
+# build the file list automagically into %{manifest}
+
+cd $RPM_BUILD_ROOT
+rm -f %{manifest}
+find . -type d \
+        | sed '1,2d;s,^\.,\%attr(-\,root\,root) \%dir ,' >> %{manifest}
+find . -type f \
+        | sed 's,^\.,\%attr(-\,root\,root) ,' >> %{manifest}
+find . -type l \
+        | sed 's,^\.,\%attr(-\,root\,root) ,' >> %{manifest}
+
+%pre
+useradd -c "OpenVAS Local Security Checks" -d /home/%{PubkeyBasename} -m -s /bin/bash %{PubkeyBasename}
+
+%post
+chown -R %{PubkeyBasename} /home/%{PubkeyBasename}
+chmod 500 /home/%{PubkeyBasename}/.ssh
+chmod 400 /home/%{PubkeyBasename}/.ssh/authorized_keys
+
+#%preun
+%postun
+# Remove user only if it was created by this package.
+# The alien-converted debian package will run the postun script in case of
+# errors (e.g. user already existed). Delete the user only if /etc/passwd lists
+# content that suggests that the user was created by this package.
+grep "%{PubkeyBasename}.*OpenVAS\ Local\ Security\ Checks" /etc/passwd && userdel -f %{PubkeyBasename}
+
+%clean
+rm -f %{manifest}
+rm -rf $RPM_BUILD_ROOT
+
+%files -f %{manifest}
+%defattr(-,root,root)
+#%doc README
+#%docdir
+#%config
+
+%changelog
+                                                                                                                                                                                                                                                                                                                                                                                      ./makeself-2.1.5/                                                                                   0000775 0001750 0001750 00000000000 11271247354 013353  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./makeself-2.1.5/.svn/                                                                              0000775 0001750 0001750 00000000000 11417253732 014236  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./makeself-2.1.5/.svn/text-base/                                                                    0000775 0001750 0001750 00000000000 11271247354 016133  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./makeself-2.1.5/.svn/text-base/makeself.sh.svn-base                                                0000444 0001750 0001750 00000027223 11271247354 021775  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                #!/bin/sh
 #
 # Makeself version 2.1.x
 #  by Stephane Peter <megastep@megastep.org>
@@ -1118,7 +893,7 @@ else
     echo Self-extractible archive \"$archname\" successfully created.
 fi
 rm -f "$tmpfile"
-                                                                                                                                                                                                                                                                                                                                                                             ./makeself-2.1.5/.svn/text-base/makeself.lsm.svn-base                                               0000444 0023576 0023576 00000001477 11271247354 022073  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                Begin3
+                                                                                                                                                                                                                                                                                                                                                                             ./makeself-2.1.5/.svn/text-base/makeself.lsm.svn-base                                               0000444 0001750 0001750 00000001477 11271247354 022161  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                Begin3
 Title:          makeself.sh
 Version:        2.1
 Description:    makeself.sh is a shell script that generates a self-extractable        
@@ -1134,13 +909,13 @@ Original-site:  http://www.megastep.org/makeself/
 Platform:       Unix
 Copying-policy: GPL
 End
-                                                                                                                                                                                                 ./makeself-2.1.5/.svn/text-base/TODO.svn-base                                                       0000444 0023576 0023576 00000000321 11271247354 020242  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                What needs to be done next :
+                                                                                                                                                                                                 ./makeself-2.1.5/.svn/text-base/TODO.svn-base                                                       0000444 0001750 0001750 00000000321 11271247354 020330  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                What needs to be done next :
 
 - Generic compression code (thru a user-defined command)
 - Collect names of directories potentially containing md5 program. GUESS_MD5_PATH
 
 Stéphane Peter <megastep@megastep.org>
-                                                                                                                                                                                                                                                                                                               ./makeself-2.1.5/.svn/text-base/makeself-header.sh.svn-base                                         0000444 0023576 0023576 00000022643 11271247354 023136  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                cat << EOF  > "$archname"
+                                                                                                                                                                                                                                                                                                               ./makeself-2.1.5/.svn/text-base/makeself-header.sh.svn-base                                         0000444 0001750 0001750 00000022643 11271247354 023224  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                cat << EOF  > "$archname"
 #!/bin/sh
 # This script was generated using Makeself $MS_VERSION
 
@@ -1541,7 +1316,7 @@ if test "\$keep" = n; then
 fi
 eval \$finish; exit \$res
 EOF
-                                                                                             ./makeself-2.1.5/.svn/text-base/makeself.1.svn-base                                                 0000444 0023576 0023576 00000003427 11271247354 021435  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                .TH "makeself" "1" "2.1.4"
+                                                                                             ./makeself-2.1.5/.svn/text-base/makeself.1.svn-base                                                 0000444 0001750 0001750 00000003427 11271247354 021523  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                .TH "makeself" "1" "2.1.4"
 .SH "NAME"
 makeself \- An utility to generate self-extractable archives.
 .SH "SYNTAX"
@@ -1617,7 +1392,7 @@ Makeself has been written by Stéphane Peter <megastep@megastep.org>.
 .BR 
 This man page was originally written by Bartosz Fenski <fenio@o2.pl> for the 
 Debian GNU/Linux distribution (but it may be used by others).
-                                                                                                                                                                                                                                         ./makeself-2.1.5/.svn/text-base/COPYING.svn-base                                                    0000444 0023576 0023576 00000043130 11271247354 020612  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                
+                                                                                                                                                                                                                                         ./makeself-2.1.5/.svn/text-base/COPYING.svn-base                                                    0000444 0001750 0001750 00000043130 11271247354 020700  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                
 		    GNU GENERAL PUBLIC LICENSE
 		       Version 2, June 1991
 
@@ -1958,7 +1733,7 @@ proprietary programs.  If your program is a subroutine library, you may
 consider it more useful to permit linking proprietary applications with the
 library.  If this is what you want to do, use the GNU Library General
 Public License instead of this License.
-                                                                                                                                                                                                                                                                                                                                                                                                                                        ./makeself-2.1.5/.svn/text-base/README.svn-base                                                     0000444 0023576 0023576 00000040013 11271247354 020434  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                The following was generated from http://www.megastep.org/makeself/
+                                                                                                                                                                                                                                                                                                                                                                                                                                        ./makeself-2.1.5/.svn/text-base/README.svn-base                                                     0000444 0001750 0001750 00000040013 11271247354 020522  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                The following was generated from http://www.megastep.org/makeself/
 -----------------------
 
 
@@ -2265,17 +2040,17 @@ References
   18. mailto:megastep@@megastep.org
   19. https://bugzilla.icculus.org/
   20. mailto:megastep@@megastep.org
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ./makeself-2.1.5/.svn/prop-base/                                                                    0000775 0023576 0023576 00000000000 11271247354 016041  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/.svn/prop-base/makeself.sh.svn-base                                                0000444 0023576 0023576 00000000036 11271247354 021674  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                K 14
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ./makeself-2.1.5/.svn/prop-base/                                                                    0000775 0001750 0001750 00000000000 11271247354 016127  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./makeself-2.1.5/.svn/prop-base/makeself.sh.svn-base                                                0000444 0001750 0001750 00000000036 11271247354 021762  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                K 14
 svn:executable
 V 1
 *
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ./makeself-2.1.5/.svn/prop-base/makeself-header.sh.svn-base                                         0000444 0023576 0023576 00000000036 11271247354 023122  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                K 14
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ./makeself-2.1.5/.svn/prop-base/makeself-header.sh.svn-base                                         0000444 0001750 0001750 00000000036 11271247354 023210  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                K 14
 svn:executable
 V 1
 *
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ./makeself-2.1.5/.svn/props/                                                                        0000775 0023576 0023576 00000000000 11271247354 015314  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/.svn/tmp/                                                                          0000775 0023576 0023576 00000000000 11417253732 014750  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/.svn/tmp/text-base/                                                                0000775 0023576 0023576 00000000000 11271247354 016645  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/.svn/tmp/prop-base/                                                                0000775 0023576 0023576 00000000000 11271247354 016641  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/.svn/tmp/props/                                                                    0000775 0023576 0023576 00000000000 11271247354 016114  5                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                ./makeself-2.1.5/.svn/entries                                                                       0000444 0023576 0023576 00000002500 11417253732 015535  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                9
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ./makeself-2.1.5/.svn/props/                                                                        0000775 0001750 0001750 00000000000 11271247354 015402  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./makeself-2.1.5/.svn/tmp/                                                                          0000775 0001750 0001750 00000000000 11417253732 015036  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./makeself-2.1.5/.svn/tmp/text-base/                                                                0000775 0001750 0001750 00000000000 11271247354 016733  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./makeself-2.1.5/.svn/tmp/prop-base/                                                                0000775 0001750 0001750 00000000000 11271247354 016727  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./makeself-2.1.5/.svn/tmp/props/                                                                    0000775 0001750 0001750 00000000000 11271247354 016202  5                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./makeself-2.1.5/.svn/entries                                                                       0000444 0001750 0001750 00000002500 11417253732 015623  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                9
 
 dir
 8390
@@ -2541,8 +2316,8 @@ jan
 
 16395
 
-                                                                                                                                                                                                ./makeself-2.1.5/.svn/format                                                                        0000444 0023576 0023576 00000000002 11271247354 015350  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                9
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ./makeself-2.1.5/makeself.sh                                                                        0000775 0023576 0023576 00000027223 11271247354 015421  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                #!/bin/sh
+                                                                                                                                                                                                ./makeself-2.1.5/.svn/format                                                                        0000444 0001750 0001750 00000000002 11271247354 015436  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                9
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ./makeself-2.1.5/makeself.sh                                                                        0000775 0001750 0001750 00000027223 11271247354 015507  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                #!/bin/sh
 #
 # Makeself version 2.1.x
 #  by Stephane Peter <megastep@megastep.org>
@@ -2949,7 +2724,7 @@ else
     echo Self-extractible archive \"$archname\" successfully created.
 fi
 rm -f "$tmpfile"
-                                                                                                                                                                                                                                                                                                                                                                             ./makeself-2.1.5/makeself.lsm                                                                       0000664 0023576 0023576 00000001477 11271247354 015602  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                Begin3
+                                                                                                                                                                                                                                                                                                                                                                             ./makeself-2.1.5/makeself.lsm                                                                       0000664 0001750 0001750 00000001477 11271247354 015670  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                Begin3
 Title:          makeself.sh
 Version:        2.1
 Description:    makeself.sh is a shell script that generates a self-extractable        
@@ -2965,13 +2740,13 @@ Original-site:  http://www.megastep.org/makeself/
 Platform:       Unix
 Copying-policy: GPL
 End
-                                                                                                                                                                                                 ./makeself-2.1.5/TODO                                                                               0000664 0023576 0023576 00000000321 11271247354 013751  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                What needs to be done next :
+                                                                                                                                                                                                 ./makeself-2.1.5/TODO                                                                               0000664 0001750 0001750 00000000321 11271247354 014037  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                What needs to be done next :
 
 - Generic compression code (thru a user-defined command)
 - Collect names of directories potentially containing md5 program. GUESS_MD5_PATH
 
 Stéphane Peter <megastep@megastep.org>
-                                                                                                                                                                                                                                                                                                               ./makeself-2.1.5/makeself-header.sh                                                                 0000775 0023576 0023576 00000022643 11271247354 016650  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                cat << EOF  > "$archname"
+                                                                                                                                                                                                                                                                                                               ./makeself-2.1.5/makeself-header.sh                                                                 0000775 0001750 0001750 00000022643 11271247354 016736  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                cat << EOF  > "$archname"
 #!/bin/sh
 # This script was generated using Makeself $MS_VERSION
 
@@ -3372,7 +3147,7 @@ if test "\$keep" = n; then
 fi
 eval \$finish; exit \$res
 EOF
-                                                                                             ./makeself-2.1.5/makeself.1                                                                         0000664 0023576 0023576 00000003427 11271247354 015144  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                .TH "makeself" "1" "2.1.4"
+                                                                                             ./makeself-2.1.5/makeself.1                                                                         0000664 0001750 0001750 00000003427 11271247354 015232  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                .TH "makeself" "1" "2.1.4"
 .SH "NAME"
 makeself \- An utility to generate self-extractable archives.
 .SH "SYNTAX"
@@ -3448,7 +3223,7 @@ Makeself has been written by Stéphane Peter <megastep@megastep.org>.
 .BR 
 This man page was originally written by Bartosz Fenski <fenio@o2.pl> for the 
 Debian GNU/Linux distribution (but it may be used by others).
-                                                                                                                                                                                                                                         ./makeself-2.1.5/COPYING                                                                            0000664 0023576 0023576 00000043130 11271247354 014321  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                
+                                                                                                                                                                                                                                         ./makeself-2.1.5/COPYING                                                                            0000664 0001750 0001750 00000043130 11271247354 014407  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                
 		    GNU GENERAL PUBLIC LICENSE
 		       Version 2, June 1991
 
@@ -3789,7 +3564,7 @@ proprietary programs.  If your program is a subroutine library, you may
 consider it more useful to permit linking proprietary applications with the
 library.  If this is what you want to do, use the GNU Library General
 Public License instead of this License.
-                                                                                                                                                                                                                                                                                                                                                                                                                                        ./makeself-2.1.5/README                                                                             0000664 0023576 0023576 00000040013 11271247354 014143  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                The following was generated from http://www.megastep.org/makeself/
+                                                                                                                                                                                                                                                                                                                                                                                                                                        ./makeself-2.1.5/README                                                                             0000664 0001750 0001750 00000040013 11271247354 014231  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                The following was generated from http://www.megastep.org/makeself/
 -----------------------
 
 
@@ -4096,89 +3871,313 @@ References
   18. mailto:megastep@@megastep.org
   19. https://bugzilla.icculus.org/
   20. mailto:megastep@@megastep.org
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ./openvas-lsc-target.spec.in                                                                        0000664 0023576 0023576 00000004217 11416535515 016040  0                                                                                                    ustar   michael                         michael                                                                                                                                                                                                                %define name @RpmName@
-%define PubkeyBasename @PubkeyBasename@ 
-%define version @VERSION@
-%define release 1
-%define _topdir @TOPDIR@
-%define _tmppath @TOPDIR@/rpmtmp
-%define manifest %{_builddir}/%{name}-%{version}-%{release}.manifest
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ./lsc-pubkey.pub                                                                                    0000664 0001750 0001750 00000000000 13265117506 013677  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./create-rpm.sh                                                                                     0000775 0001750 0001750 00000004211 11271247354 013517  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                #!/bin/sh
 
-# required items
-Name: %{name}
-Version: %{version}
-Release: %{release}
-License: GPL
-Group: Application/Misc
+# OpenVAS module "openvas-lsc-target-preparation", create-rpm.sh
+# $Id$
+# Description: shellscript to create a rpm package
+#
+# Authors:
+# Jochen Plumeyer <jochen@plumeyer.de>
+# Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+#
+# Copyright:
+# Copyright (C) 2009 Intevation GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2,
+# as published by the Free Software Foundation
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+#
 
-Source: %{name}-%{version}.tar.gz
-#Prefix: /usr
-BuildRoot: /var/tmp/%{name}-%{version}
+#set -x
 
-Summary: OpenVAS local security check preparation
+# We expect to be called like
+#   ./create-rpm.sh MyPathToKeyFile.pub
 
-%description
-This package prepares a system for OpenVAS local security checks.
-A user is created with a specific SSH authorized key.
-The corresponding private key is located at the respective
-OpenVAS installation.
+PubkeyFile=
 
-%prep
-%setup -q
-#%patch0 -p1
+if [ $# = 1 ];
+then
+  PubkeyFile=$1
+else
+  echo 'Please provide path to public key file as first argument.'
+  exit 1
+fi
 
-%build
-make
+mkdir -p rpmtmp
 
-%install
-rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/home/%{PubkeyBasename}/.ssh/
-%makeinstall
+cp -f $PubkeyFile lsc-pubkey.pub
+RpmPrefix="openvas-lsc-target"
+BasenamePubkeyFile=`basename $PubkeyFile .pub`
+RpmPostfix=`echo $BasenamePubkeyFile | sed 's/id_rsa_//'`
+Version=`cat VERSION`
+TopDir=`pwd`
+echo $RpmPostfix > PUBKEYNAME
+RpmName=$RpmPrefix-$RpmPostfix
+sed    "s|@RpmName@|$RpmName|g" < openvas-lsc-target.spec.in > openvas-lsc-target.spec
+sed -i "s|@PubkeyBasename@|$RpmPostfix|g" openvas-lsc-target.spec
+sed -i "s|@VERSION@|$Version|g" openvas-lsc-target.spec
+sed -i "s|@TOPDIR@|$TopDir|g" openvas-lsc-target.spec
 
-# __os_install_post is implicitly expanded after the
-# %install section... do it now, and then disable it,
-# so all work is done before building manifest.
+  # ... install $PubkeyFile as a file which installs temporarily as
+  # target-user-visible $PubkeyRPMPayload on the target machine
 
-%{?__os_install_post}
-%define __os_install_post %{nil}
+make configure
 
-# build the file list automagically into %{manifest}
+RPM_SOURCE_DIR=. rpmbuild -bb --target noarch "$RpmPrefix".spec
 
-cd $RPM_BUILD_ROOT
-rm -f %{manifest}
-find . -type d \
-        | sed '1,2d;s,^\.,\%attr(-\,root\,root) \%dir ,' >> %{manifest}
-find . -type f \
-        | sed 's,^\.,\%attr(-\,root\,root) ,' >> %{manifest}
-find . -type l \
-        | sed 's,^\.,\%attr(-\,root\,root) ,' >> %{manifest}
+# Script code for client machine is in %post of openvas-lsc-target.spec.in
 
-%pre
-useradd -c "OpenVAS Local Security Checks" -d /home/%{PubkeyBasename} -m -s /bin/bash %{PubkeyBasename}
+# We do not clean up. If its required ('blubber'), use:
+#  cp RPMS/noarch/*.rpm ..
+#  pwd=`pwd`
+#  if [ `basename $pwd` = "blubber" ]
+#  then
+#  	rm -rf `pwd`
 
-%post
-chown -R %{PubkeyBasename} /home/%{PubkeyBasename}/.ssh
-chmod 500 /home/%{PubkeyBasename}/.ssh
-chmod 400 /home/%{PubkeyBasename}/.ssh/authorized_keys
+cp RPMS/noarch/*.rpm  .
 
 
-#%preun
-%postun
-# Remove user only if it was created by this package.
-# The alien-converted debian package will run the postun script in case of
-# errors (e.g. user already existed). Delete the user only if /etc/passwd lists
-# content that suggests that the user was created by this package.
-grep "%{PubkeyBasename}.*OpenVAS\ Local\ Security\ Checks" /etc/passwd && userdel -f %{PubkeyBasename}
+#vim: set tw=70
+                                                                                                                                                                                                                                                                                                                                                                                       ./configure                                                                                         0000775 0001750 0001750 00000000060 11271247354 013026  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                #!/bin/sh
+echo "This is just a dummy, see TODO"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ./VERSION                                                                                           0000664 0001750 0001750 00000000004 11271247354 012165  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                0.5
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ./TODO                                                                                              0000664 0001750 0001750 00000001620 11271247354 011612  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                TODO:
 
-%clean
-rm -f %{manifest}
-rm -rf $RPM_BUILD_ROOT
+- The temporary directory name "blubber" should be replaced by a
+  random dynamic name, similar to the "mktemp" command.
 
-%files -f %{manifest}
-%defattr(-,root,root)
-#%doc README
-#%docdir
-#%config
+- rpmbuild insists to use "./configure". It would be good
+  to change this to eliminate then the dummy "configure" script.
 
-%changelog
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+- To be able to include the resulting shellscript into a spec file, it
+  might be necessary to modify it, to not disturb the spec parser of
+  rpmbuild. There are two possibilities: sourcing it, or using a (not
+  very neat) "ASCII blob", which will not interfere with the syntax
+  necessities of spec files. Perl has uuencoding built in, without
+  any module dependencies (see "perldoc -f pack").
+  So the ASCII blob could be de/encoded by piping it through Perl.
+
+ - Fail installation process if user exists already (useradd returns 9),
+   because when package is removed, the users home directory will be deleted.
+
+ - Set expire-date for user (configurable).                                                                                                                ./RPMBASENAME                                                                                       0000664 0001750 0001750 00000000023 11271247354 012573  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                openvas-lsc-target
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             ./README                                                                                            0000664 0001750 0001750 00000002750 11271247354 012007  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                openvas-lsc-target-preparation
+------------------------------
+
+To prepare a shell script that can be used to create RPMs
+that make target systems ready for OpenVAS Local Security Checks (LSCs),
+follow these instructions. The resulting shell script
+could be used e.g. by OpenVAS-Client's key manager.
+
+	make self
+
+The resulting shell script can be used like this:
+
+	sh openvas-lsc-rpm-creator.sh --target /abs/path/to/temp/working/dir /absolute/path/to/id_rsa_pubkey.pub
+
+After successfull execution, a resulting rpm package will be placed in the
+directory provided with --target.
+Be sure to clean up the provided directory afterwards!
+Ommitting the --target argument might work. Then, contents are extracted into a
+'blubber' directory. It is generally suggested to provide the directory and
+remove it afterwards yourself.
+
+To test the functionality inside this directory, please execute ( with
+the name "John Doe" as an example)
+
+	sh create-rpm.sh id_rsa_johndoe.pub
+
+to create an RPM to install on target machines using this specific
+public key as secure access requirement via ssh.
+
+For further development:
+
+If you want to include more files or directories into this shellscript
+build system, do before
+
+	make distclean
+
+then add the files, and do a
+
+	make manifest
+
+The version number resides in the file "VERSION".
+
+BUGS:
+	The system is likely to fail, if its parent directory or included
+	files contain spaces in filenames, or other characters which need
+	to be quoted for being used well in a UNIX shell.
+                        ./PUBKEYNAME                                                                                        0000664 0001750 0001750 00000000000 13265117506 012474  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                ./NAME                                                                                              0000664 0001750 0001750 00000000037 11271247354 011566  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                openvas-lsc-target-preparation
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ./Makefile                                                                                          0000664 0001750 0001750 00000004227 11271247354 012570  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                VERSION=$(shell cat VERSION)
+NAME=$(shell cat NAME)
+RPMBASENAME=$(shell cat RPMBASENAME)
+PUBKEYNAME=$(shell cat PUBKEYNAME)
+RPMNAME=$(RPMBASENAME)-$(PUBKEYNAME)
+FILES=$(shell xargs < MANIFEST)
+#PACKDIR=$(shell mktemp -d /tmp/thisgoesawayXXXXX )
+PACKDIR=/tmp/blubber
+EXECUTE_DIR=$(shell basename $(PACKDIR))
+
+default:
+	# NOP, no operation
+
+# Creating the fundamental directories and contents for the RPM
+# building, not using the system defaults
+configure: rpmdist
+	mkdir SOURCES
+	mkdir RPMS
+	mkdir BUILD
+	mv $(RPMNAME)-$(VERSION).tar.gz SOURCES/
+
+install:
+	cp lsc-pubkey.pub $(RPM_BUILD_ROOT)/home/$(PUBKEYNAME)/.ssh/authorized_keys
+
+clean:
+	LC_ALL=C ls | egrep -v "\.spec" | diff  MANIFEST - | grep "^>" | sed 's/^..//' | xargs rm -rf
+
+# The default pubkey is used as an example, to test the building
+# system locally. An RPM should be generated.
+test:
+	cp ~/.ssh/id_rsa.pub id_rsa_sshovas.pub
+	sh create-rpm.sh id_rsa_sshovas.pub
+
+# "make rpmdist" Packing this same system with the changed name into RPM SOURCES
+# directory
+rpmdist: clean
+	echo $(FILES)
+	mkdir $(RPMNAME)-$(VERSION)
+	cp -ar $(FILES) $(RPMNAME)-$(VERSION)/
+	tar cfzv $(RPMNAME)-$(VERSION).tar.gz $(RPMNAME)-$(VERSION)
+	rm -rf $(RPMNAME)-$(VERSION)
+
+# "make dist": Everything, even the *.spec file is cleaned up
+dist: distclean
+	echo $(FILES)
+	mkdir $(NAME)-$(VERSION)
+	cp -ar $(FILES) $(NAME)-$(VERSION)/
+	tar cfzv $(NAME)-$(VERSION).tar.gz $(NAME)-$(VERSION)
+	rm -rf $(NAME)-$(VERSION)
+
+# "make self" generates the all-containing shellscript.
+# This is the script to be used on the RPM building machines:
+# <shellscript.sh> </absolute/path/to/pubkey.pub>
+self: distclean
+	rm -rf $(PACKDIR)
+	mkdir $(PACKDIR)
+	cp -ar $(FILES) $(PACKDIR)/
+	./makeself-2.1.5/makeself.sh --nox11 --notemp --nocomp $(PACKDIR) openvas-lsc-rpm-creator.sh "OpenVAS LSC RPM creator" ./create-rpm.sh
+	rm -rf $(PACKDIR)
+
+# If you plan to add files or directories to this system, please do
+# "make distclean", add the files and then
+# "make manifest". So everything should go straight.
+manifest:
+	ls > MANIFEST
+
+#
+distclean: clean
+	rm -f PUBKEYNAME *.spec lsc-pubkey.pub
+	touch PUBKEYNAME lsc-pubkey.pub
+
+.PHONY: clean default install test distclean manifest
+                                                                                                                                                                                                                                                                                                                                                                         ./MANIFEST                                                                                          0000664 0001750 0001750 00000000235 11271247354 012254  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                Changelog
+MANIFEST
+Makefile
+NAME
+PUBKEYNAME
+README
+RPMBASENAME
+TODO
+VERSION
+configure
+create-rpm.sh
+lsc-pubkey.pub
+makeself-2.1.5
+openvas-lsc-target.spec.in
+                                                                                                                                                                                                                                                                                                                                                                   ./Changelog                                                                                         0000664 0001750 0001750 00000005040 11416535515 012734  0                                                                                                    ustar   fbuettn                         fbuettn                                                                                                                                                                                                                2010-09-08  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* openvas-lsc-target.spec.in (%postun): Check /etc/passwd line of user
+	to delete to prevent accidental removal of existing users in
+	alien-converted package. The packages in question run the postun step
+	even if prep or prein steps fail, thus eventually removing users that
+	existed prior to installation-attempt of the package.
+
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* Makefile (self): Rename generated script to openvas-lsc-rpm-creator.sh.
+
+	* README: Update name.
+
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* Makefile, README: Flush trailing whitespace.
+
+2009-10-02  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* MANIFEST: Add newline at end of file.
+
+2009-10-02  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Fixed a bug. Output of ls differs in ordering depending on the locale.
+	In the Makefile, the diff command compares ls output with MANIFEST,
+	leading to wrong results if these files are sorted differently.
+	Found in cooperation with Matthew Mundell.
+
+	* MANIFEST: Sorted "traditionally".
+
+	* Makefile: Set locale to have the ls command sort "traditionally".
+
+2009-09-23  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* create-rpm.sh: Fixed bashism.
+
+2009-05-06  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* openvas-lsc-target.spec.in: Delete user when package is uninstalled.
+
+	* TODO: Todos added (what happens if user exists, expire- date?).
+
+2009-04-24  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* README: Corrected words about suggested invocation.
+
+	* create-rpm.sh: Removed three parameter version. If the
+	makeself-generated script is called exactly as described in the README
+	it is not needed, argument count will be 1 and not 3.
+
+2009-04-24  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* README: Added words about suggested invocation.
+
+	* TODO: Need to remove the user when package is uninstalled.
+
+2009-04-24  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* create-rpm.sh: Check number of arguments. Condition cleanup and
+	location of created rpm on number of arguments.
+
+2009-02-18  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+
+	* PUBKEYNAME, lsc-pubkey.pub: reset (removed test content).
+
+2009-02-17  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+
+	* README: Fixed directives.
+
+	* MANIFEST: Added missing entry for TODO.
+
+2009-02-17  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+
+	Started module. Most works so far are developed by
+	Jochen Plumeyer <jochen@plumeyer.org>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
