@@ -66693,7 +66693,8 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                  "  (SELECT * FROM tag_resources"
                  "   WHERE resource_type = '%s'"
                  "   AND resource = %llu"
-                 "   AND resource_location = %d)"
+                 "   AND resource_location = %d"
+                 "   AND tag = tags.id)"
                  "%s"
                  " AND %s"
                  " ORDER BY %s %s;",
