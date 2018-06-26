@@ -82,13 +82,13 @@ SPEC_DIR="${TEMP_DIR}"
 #
 # Test dependencies
 #
-if [ -z $(which fakeroot) ]
+if [ -z "$(which fakeroot)" ]
 then
   echo "fakeroot not found" >&2
   exit 1
 fi
 
-if [ -z $(which rpmbuild) ]
+if [ -z "$(which rpmbuild)" ]
 then
   echo "rpmbuild not found" >&2
   exit 1
@@ -99,8 +99,7 @@ fi
 #
 
 # Create .ssh directory
-mkdir -p "${SSH_DATA_DIR}"
-if [ 0 -ne "$?" ]
+if ! mkdir -p "${SSH_DATA_DIR}"
 then
   exit 1
 fi
@@ -116,55 +115,56 @@ cp "${PUBKEY_FILE}" "${AUTH_KEYS_FILE}"
 # Create directory
 mkdir -p "${SPEC_DIR}"
 
-# Create spec file basic info
+# Create spec file
 SPEC_FILE="${SPEC_DIR}/${PACKAGE_NAME_VERSION}.spec"
-echo "Name: ${PACKAGE_NAME}" > ${SPEC_FILE}
-echo "Version: ${PACKAGE_VERSION}" >> ${SPEC_FILE}
-echo "Release: ${PACKAGE_RELEASE}" >> ${SPEC_FILE}
-echo "Group: Application/Misc" >> ${SPEC_FILE}
-echo "Summary: OpenVAS local security check preparation" >> ${SPEC_FILE}
-echo "License: GPL2+" >> ${SPEC_FILE}
-echo "BuildArch: noarch" >> ${SPEC_FILE}
+{
+  # Basic info
+  echo "Name: ${PACKAGE_NAME}"
+  echo "Version: ${PACKAGE_VERSION}"
+  echo "Release: ${PACKAGE_RELEASE}"
+  echo "Group: Application/Misc"
+  echo "Summary: OpenVAS local security check preparation"
+  echo "License: GPL2+"
+  echo "BuildArch: noarch"
+  # Put output in current directory
+  echo "%define _rpmdir %(pwd)"
 
-# Put output in current directory
-echo "%define _rpmdir %(pwd)" >> ${SPEC_FILE}
+  # Create description section
+  echo "%description"
+  echo "This package prepares a system for GVM local security checks."
+  echo "A user is created with a specific SSH authorized key."
+  echo "The corresponding private key is located at the respective"
+  echo "GVM installation."
 
-# Create description section
-echo "%description" >> ${SPEC_FILE}
-echo "This package prepares a system for GVM local security checks." >> ${SPEC_FILE}
-echo "A user is created with a specific SSH authorized key." >> ${SPEC_FILE}
-echo "The corresponding private key is located at the respective" >> ${SPEC_FILE}
-echo "GVM installation." >> ${SPEC_FILE}
+  # Create files section
+  echo "%files"
+  echo "/${HOME_SUBDIR}"
 
-# Create files section
-echo "%files" >> ${SPEC_FILE}
+  # Create "pre" section run before installation
+  echo "%pre"
+  echo "#!/bin/sh"
+  echo "set -e  # abort on errors"
+  echo "useradd -c \"${USER_COMMENT}\" -d /home/${USERNAME} -m -s /bin/bash ${USERNAME}"
 
-echo "/${HOME_SUBDIR}" >> ${SPEC_FILE}
+  # Create "post" section run after installation
+  echo "%post"
+  echo "#!/bin/sh"
+  echo "set -e  # abort on errors"
+  echo "chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}"
+  echo "chmod 500 /home/${USERNAME}/.ssh"
+  echo "chmod 400 /home/${USERNAME}/.ssh/authorized_keys"
 
-# Create "pre" section run before installation
-echo "%pre" >> ${SPEC_FILE}
-echo "#!/bin/sh" >> ${SPEC_FILE}
-echo "set -e  # abort on errors" >> ${SPEC_FILE}
-echo "useradd -c \"${USER_COMMENT}\" -d /home/${USERNAME} -m -s /bin/bash ${USERNAME}" >> ${SPEC_FILE}
-
-# Create "post" section run after installation
-echo "%post" >> ${SPEC_FILE}
-echo "#!/bin/sh" >> ${SPEC_FILE}
-echo "set -e  # abort on errors" >> ${SPEC_FILE}
-echo "chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}" >> ${SPEC_FILE}
-echo "chmod 500 /home/${USERNAME}/.ssh" >> ${SPEC_FILE}
-echo "chmod 400 /home/${USERNAME}/.ssh/authorized_keys" >> ${SPEC_FILE}
-
-# Create "postun" section run after removal or on error
-echo "%postun" >> ${SPEC_FILE}
-echo "#!/bin/sh" >> ${SPEC_FILE}
-echo "# Remove user only if it was created by this package." >> ${SPEC_FILE}
-echo "# The debian package will run the postun script in case of errors" >> ${SPEC_FILE}
-echo "# (e.g. user already existed)." >> ${SPEC_FILE}
-echo "# Delete the user only if /etc/passwd lists content that suggests" >> ${SPEC_FILE}
-echo "# that the user was created by this package." >> ${SPEC_FILE}
-#echo "set -e  # abort on errors" >> ${SPEC_FILE}
-echo "grep \"${USERNAME}.*${USER_COMMENT_GREP}\" /etc/passwd && userdel -f ${USERNAME}" >> ${SPEC_FILE}
+  # Create "postun" section run after removal or on error
+  echo "%postun"
+  echo "#!/bin/sh"
+  echo "# Remove user only if it was created by this package."
+  echo "# The debian package will run the postun script in case of errors"
+  echo "# (e.g. user already existed)."
+  echo "# Delete the user only if /etc/passwd lists content that suggests"
+  echo "# that the user was created by this package."
+  #echo "set -e  # abort on errors"
+  echo "grep \"${USERNAME}.*${USER_COMMENT_GREP}\" /etc/passwd && userdel -f ${USERNAME}"
+} > "${SPEC_FILE}"
 
 #
 # Build package

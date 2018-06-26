@@ -85,19 +85,19 @@ CONTROL_DIR="${PACKAGE_BASE_DIR}/DEBIAN"
 #
 # Test dependencies
 #
-if [ -z $(which dpkg) ]
+if [ -z "$(which dpkg)" ]
 then
   echo "dpkg not found" >&2
   exit 1
 fi
 
-if [ -z $(which fakeroot) ]
+if [ -z "$(which fakeroot)" ]
 then
   echo "fakeroot not found" >&2
   exit 1
 fi
 
-if [ -z $(which md5sum) ]
+if [ -z "$(which md5sum)" ]
 then
   echo "md5sum not found" >&2
   exit 1
@@ -108,8 +108,7 @@ fi
 #
 
 # Create .ssh directory
-mkdir -p "${SSH_DATA_DIR}"
-if [ 0 -ne "$?" ]
+if ! mkdir -p "${SSH_DATA_DIR}"
 then
   exit 1
 fi
@@ -124,12 +123,14 @@ mkdir -p "${DOC_DATA_DIR}"
 # Create Changelog
 cd "${DOC_DATA_DIR}"
 CHANGELOG_FILE="${DOC_DATA_DIR}/changelog.Debian"
-echo "${PACKAGE_NAME} (${PACKAGE_VERSION}) experimental; urgency=low" > ${CHANGELOG_FILE}
-echo "" >> ${CHANGELOG_FILE}
-echo "  * Automatically generated local security check credential package" >> ${CHANGELOG_FILE}
-echo "  " >> ${CHANGELOG_FILE}
-echo "" >> ${CHANGELOG_FILE}
-echo " -- ${MAINTAINER}  ${PACKAGE_DATE}" >> ${CHANGELOG_FILE}
+{
+  echo "${PACKAGE_NAME} (${PACKAGE_VERSION}) experimental; urgency=low"
+  echo ""
+  echo "  * Automatically generated local security check credential package"
+  echo "  "
+  echo ""
+  echo " -- ${MAINTAINER}  ${PACKAGE_DATE}"
+} > "${CHANGELOG_FILE}"
 
 # Compress Changelog
 gzip -f --best "${CHANGELOG_FILE}"
@@ -137,11 +138,13 @@ CHANGELOG_FILE="${CHANGELOG_FILE}.gz"
 
 # Create Copyright info
 COPYRIGHT_FILE="${DOC_DATA_DIR}/copyright"
-echo "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/" > "${COPYRIGHT_FILE}"
-echo "" >> "${COPYRIGHT_FILE}"
-echo "Files: *" >> "${COPYRIGHT_FILE}"
-echo "Copyright: 2018 Greenbone Networks GmbH" >> "${COPYRIGHT_FILE}"
-echo "License: GPL-2+ (/usr/share/common-licenses/GPL-2)" >> "${COPYRIGHT_FILE}"
+{
+  echo "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/"
+  echo ""
+  echo "Files: *"
+  echo "Copyright: 2018 Greenbone Networks GmbH"
+  echo "License: GPL-2+ (/usr/share/common-licenses/GPL-2)"
+} > "${COPYRIGHT_FILE}"
 
 # Create data archive
 cd "${DATA_DIR}"
@@ -158,55 +161,64 @@ chmod "0755" "${CONTROL_DIR}"
 
 # Create "control" file
 CONTROL_FILE="${CONTROL_DIR}/control"
-echo "Package: ${PACKAGE_NAME}" > ${CONTROL_FILE}
-echo "Version: ${PACKAGE_VERSION}" >> ${CONTROL_FILE}
-echo "Maintainer: ${MAINTAINER}" >> ${CONTROL_FILE}
-echo "Priority: optional" >> ${CONTROL_FILE}
-echo "Architecture: all" >> ${CONTROL_FILE}
-echo "Description: GVM local security check preparation" >> ${CONTROL_FILE}
-echo " This package prepares a system for GVM local security checks." >> ${CONTROL_FILE}
-echo " A user is created with a specific SSH authorized key." >> ${CONTROL_FILE}
-echo " The corresponding private key is located at the respective" >> ${CONTROL_FILE}
-echo " GVM installation." >> ${CONTROL_FILE}
+{
+  echo "Package: ${PACKAGE_NAME}"
+  echo "Version: ${PACKAGE_VERSION}"
+  echo "Maintainer: ${MAINTAINER}"
+  echo "Priority: optional"
+  echo "Architecture: all"
+  echo "Description: GVM local security check preparation"
+  echo " This package prepares a system for GVM local security checks."
+  echo " A user is created with a specific SSH authorized key."
+  echo " The corresponding private key is located at the respective"
+  echo " GVM installation."
+} > "${CONTROL_FILE}"
 
 # Create "preinst" file run before installation
 PREINST_FILE="${CONTROL_DIR}/preinst"
 touch "${PREINST_FILE}"
 chmod "0755" "${PREINST_FILE}"
-echo "#!/bin/sh" > ${PREINST_FILE}
-echo "set -e  # abort on errors" >> ${PREINST_FILE}
-echo "useradd -c \"${USER_COMMENT}\" -d /home/${USERNAME} -m -s /bin/bash ${USERNAME}" >> ${PREINST_FILE}
+{
+  echo "#!/bin/sh"
+  echo "set -e  # abort on errors"
+  echo "useradd -c \"${USER_COMMENT}\" -d /home/${USERNAME} -m -s /bin/bash ${USERNAME}"
+} > "${PREINST_FILE}"
 
 # Create "postinst" file run after installation
 POSTINST_FILE="${CONTROL_DIR}/postinst"
 touch "${POSTINST_FILE}"
 chmod "0755" "${POSTINST_FILE}"
-echo "#!/bin/sh" > ${POSTINST_FILE}
-echo "set -e  # abort on errors" >> ${POSTINST_FILE}
-echo "chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}" >> ${POSTINST_FILE}
-echo "chmod 500 /home/${USERNAME}/.ssh" >> ${POSTINST_FILE}
-echo "chmod 400 /home/${USERNAME}/.ssh/authorized_keys" >> ${POSTINST_FILE}
+{
+  echo "#!/bin/sh"
+  echo "set -e  # abort on errors"
+  echo "chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}"
+  echo "chmod 500 /home/${USERNAME}/.ssh"
+  echo "chmod 400 /home/${USERNAME}/.ssh/authorized_keys"
+} > "${POSTINST_FILE}"
 
 # Create "postinst" file run after removal or on error
 POSTRM_FILE="${CONTROL_DIR}/postrm"
 touch "${POSTRM_FILE}"
 chmod "0755" "${POSTRM_FILE}"
-echo "#!/bin/sh" > ${POSTRM_FILE}
-echo "# Remove user only if it was created by this package." >> ${POSTRM_FILE}
-echo "# The debian package will run the postun script in case of errors" >> ${POSTRM_FILE}
-echo "# (e.g. user already existed)." >> ${POSTRM_FILE}
-echo "# Delete the user only if /etc/passwd lists content that suggests" >> ${POSTRM_FILE}
-echo "# that the user was created by this package." >> ${POSTRM_FILE}
-# echo "set -e  # abort on errors" >> ${POSTRM_FILE}
-echo "grep \"${USERNAME}.*${USER_COMMENT_GREP}\" /etc/passwd && userdel -fr ${USERNAME}" >> ${POSTRM_FILE}
-
+{
+  echo "#!/bin/sh"
+  echo "# Remove user only if it was created by this package."
+  echo "# The debian package will run the postun script in case of errors"
+  echo "# (e.g. user already existed)."
+  echo "# Delete the user only if /etc/passwd lists content that suggests"
+  echo "# that the user was created by this package."
+  # echo "set -e  # abort on errors"
+  echo "grep \"${USERNAME}.*${USER_COMMENT_GREP}\" /etc/passwd && userdel -fr ${USERNAME}"
+} > "${POSTRM_FILE}"
 
 # Calculate md5 checksums
 MD5SUMS_FILE="${CONTROL_DIR}/md5sums"
 cd "${DATA_DIR}"
-md5sum "${HOME_SUBDIR}/.ssh/authorized_keys" > ${MD5SUMS_FILE}
-md5sum "${DOC_SUBDIR}/changelog.Debian.gz" >> ${MD5SUMS_FILE}
-md5sum "${DOC_SUBDIR}/copyright" >> ${MD5SUMS_FILE}
+{
+  md5sum "${HOME_SUBDIR}/.ssh/authorized_keys"
+  md5sum "${DOC_SUBDIR}/changelog.Debian.gz"
+  md5sum "${DOC_SUBDIR}/copyright"
+} > "${MD5SUMS_FILE}"
 
 #
 # Build package
