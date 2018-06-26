@@ -335,6 +335,9 @@ lookup_report_format (const char*, report_format_t*);
 static int
 task_last_report_any_status (task_t, report_t *);
 
+int
+task_report_previous (task_t task, report_t, report_t *);
+
 
 /* Variables. */
 
@@ -10803,6 +10806,53 @@ email_secinfo (alert_t alert, task_t task, event_t event,
 }
 
 /**
+ * @brief Get the delta report to be used for an alert.
+ *
+ * @param[in]  alert         Alert.
+ * @param[in]  task          Task.
+ * @param[in]  report        Report.
+ *
+ * @return Report to compare with if required, else 0.
+ */
+static report_t
+get_delta_report (alert_t alert, task_t task, report_t report)
+{
+  char *delta_type;
+  report_t delta_report;
+
+  delta_type = alert_data (alert,
+                           "method",
+                           "delta_type");
+
+  if (delta_type == NULL)
+    return 0;
+
+  delta_report = 0;
+  if (strcmp (delta_type, "Previous") == 0)
+    {
+      if (task_report_previous (task, report, &delta_report))
+        g_warning ("%s: failed to get previous report", __FUNCTION__);
+    }
+  else if (strcmp (delta_type, "Report") == 0)
+    {
+      char *delta_report_id;
+
+      delta_report_id = alert_data (alert,
+                                    "method",
+                                    "delta_report_id");
+
+      if (delta_report_id
+          && find_report_with_permission (delta_report_id,
+                                          &delta_report,
+                                          "get_reports"))
+        g_warning ("%s: error while finding report", __FUNCTION__);
+    }
+  free (delta_type);
+
+  return delta_report;
+}
+
+/**
  * @brief Generate report content for alert
  *
  * @param[in]  alert  The alert the report is generated for.
@@ -10929,6 +10979,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
 
   // Generate report content
   report_content = manage_report (report,
+                                  get_delta_report (alert, task, report),
                                   alert_filter_get ? alert_filter_get : get,
                                   report_format,
                                   notes_details,
@@ -10983,6 +11034,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 {
   char *name_alert, *name_task;
   gchar *event_desc, *alert_desc;
+  report_t delta_report;
 
   if (script_message)
     *script_message = NULL;
@@ -11133,11 +11185,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     }
                   g_free (format_uuid);
 
+                  delta_report = get_delta_report (alert, task, report);
+
                   event_desc = event_description (event, event_data, NULL);
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
                   report_content = manage_report (report,
+                                                  delta_report,
                                                   alert_filter_get
                                                     ? alert_filter_get : get,
                                                   report_format,
@@ -11275,11 +11330,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                     }
                   g_free (format_uuid);
 
+                  delta_report = get_delta_report (alert, task, report);
+
                   event_desc = event_description (event, event_data, NULL);
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
                   report_content = manage_report (report,
+                                                  delta_report,
                                                   alert_filter_get
                                                     ? alert_filter_get
                                                     : get,
@@ -11658,7 +11716,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           else
             alert_filter_get = NULL;
 
+          delta_report = get_delta_report (alert, task, report);
+
           report_content = manage_report (report,
+                                          delta_report,
                                           alert_filter_get ? alert_filter_get
                                                            : get,
                                           report_format,
@@ -11824,7 +11885,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           else
             alert_filter_get = NULL;
 
+          delta_report = get_delta_report (alert, task, report);
+
           report_content = manage_report (report,
+                                          delta_report,
                                           alert_filter_get ? alert_filter_get
                                                            : get,
                                           report_format,
@@ -12092,7 +12156,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           else
             alert_filter_get = NULL;
 
+          delta_report = get_delta_report (alert, task, report);
+
           report_content = manage_report (report,
+                                          delta_report,
                                           alert_filter_get ? alert_filter_get
                                                            : get,
                                           report_format,
@@ -12325,7 +12392,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           else
             alert_filter_get = NULL;
 
+          delta_report = get_delta_report (alert, task, report);
+
           report_content = manage_report (report,
+                                          delta_report,
                                           alert_filter_get ? alert_filter_get
                                                            : get,
                                           report_format,
@@ -18196,6 +18266,44 @@ set_task_start_time_otp (task_t task, char* time)
        parse_otp_time (time),
        task);
   free (time);
+}
+
+/**
+ * @brief Get most recently completed report that precedes a report.
+ *
+ * @param[in]  task      The task.
+ * @param[out] report    Report.
+ * @param[out] previous  Report return, 0 if successfully failed to select report.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+task_report_previous (task_t task, report_t report, report_t *previous)
+{
+  switch (sql_int64 (previous,
+                     "SELECT id FROM reports"
+                     " WHERE task = %llu"
+                     " AND scan_run_status = %u"
+                     " AND date < (SELECT date FROM reports"
+                     "             WHERE id = %llu)"
+                     " ORDER BY date DESC LIMIT 1;",
+                     task,
+                     TASK_STATUS_DONE,
+                     report))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *previous = 0;
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return -1;
+        break;
+    }
+  return 0;
 }
 
 /**
@@ -30217,6 +30325,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
  * @brief Generate a report.
  *
  * @param[in]  report             Report.
+ * @param[in]  delta_report       Report to compare with.
  * @param[in]  get                GET data for report.
  * @param[in]  report_format      Report format.
  * @param[in]  notes_details      If notes, Whether to include details.
@@ -30234,7 +30343,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
  * @return Contents of report on success, NULL on error.
  */
 gchar *
-manage_report (report_t report, const get_data_t *get,
+manage_report (report_t report, report_t delta_report, const get_data_t *get,
                const report_format_t report_format,
                int notes_details, int overrides_details, const char *type,
                gsize *output_length, gchar **extension, gchar **content_type,
@@ -30271,7 +30380,7 @@ manage_report (report_t report, const get_data_t *get,
     }
 
   xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
-  ret = print_report_xml_start (report, 0, task, xml_start, get,
+  ret = print_report_xml_start (report, delta_report, task, xml_start, get,
                                 type, notes_details, overrides_details,
                                 NULL, 0, NULL, NULL, 0, 0, /* host params */
                                 0 /* ignore_pagination */,
