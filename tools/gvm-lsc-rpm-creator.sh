@@ -95,14 +95,20 @@ then
 fi
 
 #
+# Set up error handling
+#
+handle_error() {
+  echo "RPM package generation failed" >&2
+  exit 1
+}
+trap handle_error ERR
+
+#
 # Create data files
 #
 
 # Create .ssh directory
-if ! mkdir -p "${SSH_DATA_DIR}"
-then
-  exit 1
-fi
+mkdir -p "${SSH_DATA_DIR}"
 
 # Copy public key
 AUTH_KEYS_FILE="${SSH_DATA_DIR}/authorized_keys"
