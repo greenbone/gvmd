@@ -3790,7 +3790,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  result_nvt, type, description, report, nvt_version, severity REAL,"
-       "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER)");
+       "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER,"
+       "  hostname TEXT)");
   manage_create_result_indexes ();
   sql ("CREATE TABLE IF NOT EXISTS result_nvts"
        " (id SERIAL PRIMARY KEY, nvt text UNIQUE NOT NULL);");
