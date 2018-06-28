@@ -12748,7 +12748,7 @@ manage_test_alert (const char *alert_id, gchar **script_message)
     return -1;
   task_uuid (task, &task_id);
   report = make_report (task, report_id, TASK_STATUS_DONE);
-  result = make_result (task, "127.0.0.1", "telnet (23/tcp)",
+  result = make_result (task, "127.0.0.1", "localhost", "telnet (23/tcp)",
                         "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
                         "A telnet server seems to be running on this port.");
   if (result == 0)
@@ -16826,7 +16826,7 @@ cleanup_manage_process (gboolean cleanup)
                 {
                   result_t result;
                   result = make_result (current_scanner_task,
-                                        "", "", "", "Error Message",
+                                        "", "", "", "", "Error Message",
                                         "Interrupting scan because GVM is"
                                         " exiting.");
                   report_add_result (current_report, result);
@@ -19722,7 +19722,8 @@ nvt_severity (const char *nvt_id, const char *type)
  * @brief Make a result.
  *
  * @param[in]  task         The task associated with the result.
- * @param[in]  host         Host.
+ * @param[in]  host         Host IP address.
+ * @param[in]  hostname     Hostname.
  * @param[in]  port         The port the result refers to.
  * @param[in]  nvt          The OID of the NVT that produced the result.
  * @param[in]  type         Type of result.  "Security Hole", etc.
@@ -19731,12 +19732,13 @@ nvt_severity (const char *nvt_id, const char *type)
  * @return A result descriptor for the new result, 0 if error.
  */
 result_t
-make_result (task_t task, const char* host, const char* port, const char* nvt,
+make_result (task_t task, const char* host, const char *hostname,
+             const char* port, const char* nvt,
              const char* type, const char* description)
 {
   result_t result;
   gchar *nvt_revision, *severity;
-  gchar *quoted_descr, *quoted_qod_type;
+  gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
   int qod;
   nvt_t nvt_id = 0;
 
@@ -19790,18 +19792,23 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
       g_free (severity);
       severity = g_strdup ("0.0");
     }
+  quoted_hostname = sql_quote (hostname ? hostname : "");
   quoted_descr = sql_quote (description ?: "");
   result_nvt_notice (nvt);
   sql ("INSERT into results"
-       " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
+       " (owner, date, task, host, hostname, port,"
+       "  nvt, nvt_version, severity, type,"
        "  description, uuid, qod, qod_type, result_nvt)"
        " VALUES"
-       " (NULL, m_now (), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
+       " (NULL, m_now (), %llu, '%s', '%s', '%s',"
+       "  '%s', '%s', '%s', '%s',"
        "  '%s', make_uuid (), %i, '%s',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
-       task, host ?: "", port ?: "", nvt ?: "", nvt_revision, severity, type,
+       task, host ?: "", quoted_hostname, port ?: "",
+       nvt ?: "", nvt_revision, severity, type,
        quoted_descr, qod, quoted_qod_type, nvt ? nvt : "");
 
+  g_free (quoted_hostname);
   g_free (quoted_descr);
   g_free (quoted_qod_type);
   g_free (nvt_revision);
@@ -52668,12 +52675,14 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
     {
       if (strcmp (entity_name (entity), "result") == 0)
         {
-          entity_t host, port, nvt, threat, description;
+          entity_t host, hostname, port, nvt, threat, description;
           const char *oid;
 
           host = entity_child (entity, "host");
           if (host == NULL)
             goto rollback_fail;
+
+          hostname = entity_child (entity, "hostname");
 
           port = entity_child (entity, "port");
           if (port == NULL)
@@ -52699,6 +52708,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
             result = make_result (task,
                                   entity_text (host),
+                                  hostname ? entity_text (hostname) : "",
                                   entity_text (port),
                                   oid,
                                   threat_message_type (entity_text (threat)),

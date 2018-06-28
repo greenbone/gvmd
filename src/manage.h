@@ -1177,7 +1177,7 @@ char *
 nvt_severity (const char *, const char *);
 
 result_t
-make_result (task_t, const char*, const char*, const char*,
+make_result (task_t, const char*, const char*, const char*, const char*,
              const char*, const char*);
 
 result_t
