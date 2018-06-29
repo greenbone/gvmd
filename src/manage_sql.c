@@ -22325,20 +22325,22 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
     { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
-    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
+      " THEN (SELECT value FROM report_host_details"                          \
+      "       WHERE name = 'hostname'"                                        \
+      "         AND report_host = (SELECT id FROM report_hosts"               \
+      "                            WHERE report_hosts.host=results.host"      \
+      "                            AND report_hosts.report = results.report)" \
+      "       LIMIT 1)"                                                       \
+      " ELSE hostname"                                                        \
+      " END)",                                                                \
+      "hostname",                                                             \
+      KEYWORD_TYPE_STRING                                                     \
+    },                                                                        \
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
-    { "(SELECT value FROM report_host_details"                                \
-      " WHERE name = 'hostname'"                                              \
-      "   AND report_host = (SELECT id FROM report_hosts"                     \
-      "                       WHERE report_hosts.host=results.host"           \
-      "                         AND report_hosts.report = results.report)"    \
-      " LIMIT 1)",                                                            \
-      "hostname",                                                             \
-      KEYWORD_TYPE_STRING                                                     \
-    },                                                                        \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -22411,20 +22413,22 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
     { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
-    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
+      " THEN (SELECT value FROM report_host_details"                          \
+      "       WHERE name = 'hostname'"                                        \
+      "         AND report_host = (SELECT id FROM report_hosts"               \
+      "                            WHERE report_hosts.host=results.host"      \
+      "                            AND report_hosts.report = results.report)" \
+      "       LIMIT 1)"                                                       \
+      " ELSE hostname"                                                        \
+      " END)",                                                                \
+      "hostname",                                                             \
+      KEYWORD_TYPE_STRING                                                     \
+    },                                                                        \
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
-    { "(SELECT value FROM report_host_details"                                \
-      " WHERE name = 'hostname'"                                              \
-      "   AND report_host = (SELECT id FROM report_hosts"                     \
-      "                       WHERE report_hosts.host=results.host"           \
-      "                         AND report_hosts.report = results.report)"    \
-      " LIMIT 1)",                                                            \
-      "hostname",                                                             \
-      KEYWORD_TYPE_STRING                                                     \
-    },                                                                        \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23328,6 +23332,16 @@ DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 17);
  *         cleanup_iterator.
  */
 DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
+
+/**
+ * @brief Get the host from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The host of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
 
 /**
  * @brief Initialise a host iterator.

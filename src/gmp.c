@@ -11792,9 +11792,11 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                             "<host>"
                             "%s"
                             "<asset asset_id=\"%s\"/>"
+                            "<hostname>%s</hostname>"
                             "</host>",
                             result_iterator_host (results),
-                            asset_id ? asset_id : "");
+                            asset_id ? asset_id : "",
+                            result_iterator_hostname (results) ?: "");
   free (asset_id);
 
   buffer_xml_append_printf (buffer,

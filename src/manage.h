@@ -1471,6 +1471,9 @@ const char*
 result_iterator_qod_type (iterator_t*);
 
 const char*
+result_iterator_hostname (iterator_t*);
+
+const char*
 result_iterator_date (iterator_t*);
 
 void

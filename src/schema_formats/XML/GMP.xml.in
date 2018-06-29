@@ -1357,6 +1357,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The host the result applies to</summary>
       <pattern>
         <e>asset</e>
+        <e>hostname</e>
         text
       </pattern>
       <ele>
@@ -1369,6 +1370,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
         </pattern>
+      </ele>
+      <ele>
+        <name>hostname</name>
+        <summary>
+          If available, the hostname the result was created for, else the
+          one from host details
+        </summary>
+        <pattern>text</pattern>
       </ele>
     </ele>
     <ele>
