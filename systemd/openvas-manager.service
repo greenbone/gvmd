@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenVAS Manager
+After=network.target
+After=openvas-scanner.service
+Before=gsad.service
+
+[Service]
+Type=forking
+EnvironmentFile=-/etc/sysconfig/openvas-manager
+ExecStart=/usr/sbin/openvasmd --gnutls-priorities $GNUTLS_PRIORITIES $OPTIONS
+Restart=always
+RestartSec=1
+User=root
+Group=root
+TimeoutSec=1200
+
+[Install]
+WantedBy=multi-user.target
