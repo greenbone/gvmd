@@ -1373,6 +1373,7 @@ typedef struct
   char *ip;                       ///< Current host for host details.
   char *result_description;       ///< Description of NVT for current result.
   char *result_host;              ///< Host for current result.
+  char *result_hostname;          ///< Hostname for current result.
   char *result_nvt_oid;           ///< OID of NVT for current result.
   char *result_port;              ///< Port for current result.
   char *result_qod;               ///< QoD value of current result.
@@ -1416,6 +1417,7 @@ create_report_data_reset (create_report_data_t *data)
   free (data->ip);
   free (data->result_description);
   free (data->result_host);
+  free (data->result_hostname);
   free (data->result_nvt_oid);
   free (data->result_port);
   free (data->result_threat);
@@ -1430,6 +1432,7 @@ create_report_data_reset (create_report_data_t *data)
           if (result)
             {
               free (result->host);
+              free (result->hostname);
               free (result->description);
               free (result->nvt_oid);
               free (result->port);
@@ -5253,6 +5256,8 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_ERRORS_ERROR,
   CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_DESCRIPTION,
   CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST_ASSET,
+  CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST_HOSTNAME,
   CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT,
   CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT_CVSS_BASE,
   CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT_NAME,
@@ -5286,6 +5291,8 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST_ASSET,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST_HOSTNAME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_MODIFICATION_TIME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NAME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES,
@@ -9665,7 +9672,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
            (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_DESCRIPTION);
         else if (strcasecmp ("HOST", element_name) == 0)
           {
-            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST);
           }
         else if (strcasecmp ("NVT", element_name) == 0)
@@ -9681,6 +9687,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
            (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SCAN_NVT_VERSION);
         else if (strcasecmp ("SEVERITY", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SEVERITY);
+        ELSE_ERROR ("create_report");
+
+      case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST:
+        if (strcasecmp ("ASSET", element_name) == 0)
+          set_client_state
+            (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST_ASSET);
+        else if (strcasecmp ("HOSTNAME", element_name) == 0)
+          set_client_state
+            (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST_HOSTNAME);
         ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT:
@@ -9779,7 +9794,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("HOST", element_name) == 0)
           {
-            gmp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
           }
         else if (strcasecmp ("MODIFICATION_TIME", element_name) == 0)
@@ -9833,6 +9847,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT);
+        ELSE_ERROR ("create_report");
+
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST:
+        if (strcasecmp ("ASSET", element_name) == 0)
+          set_client_state
+            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST_ASSET);
+        else if (strcasecmp ("HOSTNAME", element_name) == 0)
+          set_client_state
+            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST_HOSTNAME);
         ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT:
@@ -24664,6 +24687,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           result = g_malloc (sizeof (create_report_result_t));
           result->description = create_report_data->result_description;
           result->host = create_report_data->result_host;
+          result->hostname = create_report_data->result_hostname;
           result->nvt_oid = create_report_data->result_nvt_oid;
           result->scan_nvt_version
             = create_report_data->result_scan_nvt_version;
@@ -24677,6 +24701,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           create_report_data->result_description = NULL;
           create_report_data->result_host = NULL;
+          create_report_data->result_hostname = NULL;
           create_report_data->result_nvt_oid = NULL;
           create_report_data->result_port = NULL;
           create_report_data->result_qod = NULL;
@@ -24689,7 +24714,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, DESCRIPTION);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, HOST);
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, HOST);
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST, ASSET);
+      CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST, HOSTNAME);
       CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, NVT);
       CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, PORT);
       CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR, SCAN_NVT_VERSION);
@@ -24851,6 +24878,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           result = g_malloc (sizeof (create_report_result_t));
           result->description = create_report_data->result_description;
           result->host = create_report_data->result_host;
+          result->hostname = create_report_data->result_hostname;
           result->nvt_oid = create_report_data->result_nvt_oid;
           result->scan_nvt_version
             = create_report_data->result_scan_nvt_version;
@@ -24864,6 +24892,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           create_report_data->result_description = NULL;
           create_report_data->result_host = NULL;
+          create_report_data->result_hostname = NULL;
           create_report_data->result_nvt_oid = NULL;
           create_report_data->result_port = NULL;
           create_report_data->result_qod = NULL;
@@ -24879,7 +24908,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, CREATION_TIME);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DESCRIPTION);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DETECTION);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST, ASSET);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST, HOSTNAME);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT,
                        MODIFICATION_TIME);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NAME);
@@ -30607,6 +30638,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST,
               &create_report_data->result_host);
 
+      APPEND (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST_HOSTNAME,
+              &create_report_data->result_hostname);
+
       APPEND (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SCAN_NVT_VERSION,
               &create_report_data->result_scan_nvt_version);
 
@@ -30638,6 +30672,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST,
               &create_report_data->result_host);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST_HOSTNAME,
+              &create_report_data->result_hostname);
 
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION,
               &create_report_data->result_scan_nvt_version);

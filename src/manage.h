@@ -1194,6 +1194,7 @@ typedef struct
 {
   char *description;       ///< Description of NVT.
   char *host;              ///< Host.
+  char *hostname;          ///< Hostname.
   char *nvt_oid;           ///< OID of NVT.
   char *scan_nvt_version;  ///< Version of NVT used at scan time.
   char *port;              ///< Port.

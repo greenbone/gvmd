@@ -21118,13 +21118,14 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
     {
-      gchar *quoted_host, *quoted_port, *quoted_nvt_oid;
+      gchar *quoted_host, *quoted_hostname, *quoted_port, *quoted_nvt_oid;
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
       gchar *quoted_qod, *quoted_qod_type;
 
       g_debug ("%s: add results: index: %i", __FUNCTION__, index);
 
       quoted_host = sql_quote (result->host ? result->host : "");
+      quoted_hostname = sql_quote (result->host ? result->hostname : "");
       quoted_port = sql_quote (result->port ? result->port : "");
       quoted_nvt_oid = sql_quote (result->nvt_oid ? result->nvt_oid : "");
       quoted_description = sql_quote (result->description
@@ -21141,15 +21142,18 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       quoted_qod_type = sql_quote (result->qod_type ? result->qod_type : "");
       result_nvt_notice (quoted_nvt_oid);
       sql ("INSERT INTO results"
-           " (uuid, owner, date, task, host, port, nvt, type, description,"
+           " (uuid, owner, date, task, host, hostname, port,"
+           "  nvt, type, description,"
            "  nvt_version, severity, qod, qod_type, result_nvt)"
            " VALUES"
-           " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s', '%s', '%s',"
+           " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s',"
+           "  '%s', '%s', '%s',"
            "  '%s', '%s', '%s', '%s',"
            "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
            owner,
            task,
            quoted_host,
+           quoted_hostname,
            quoted_port,
            quoted_nvt_oid,
            result->threat
@@ -21163,6 +21167,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
            quoted_nvt_oid);
 
       g_free (quoted_host);
+      g_free (quoted_hostname);
       g_free (quoted_port);
       g_free (quoted_nvt_oid);
       g_free (quoted_description);
@@ -52696,7 +52701,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
           if (host == NULL)
             goto rollback_fail;
 
-          hostname = entity_child (entity, "hostname");
+          hostname = entity_child (host, "hostname");
 
           port = entity_child (entity, "port");
           if (port == NULL)
