@@ -44,41 +44,6 @@
 #define G_LOG_DOMAIN "md manage"
 
 
-/* Helpers. */
-
-/** @todo Copied check_is_file from administrator. */
-
-/**
- * @brief Checks whether a file is a directory or not.
- *
- * This is a replacement for the g_file_test functionality which is reported
- * to be unreliable under certain circumstances, for example if this
- * application and glib are compiled with a different libc.
- *
- * @todo Handle symbolic links.
- * @todo Move to libs?
- *
- * @param[in]  name  File name.
- *
- * @return 1 if parameter is directory, 0 if it is not, -1 if it does not
- *         exist or could not be accessed.
- */
-static int
-check_is_file (const char *name)
-{
-  struct stat sb;
-
-  if (stat (name, &sb))
-    {
-      return -1;
-    }
-  else
-    {
-      return (S_ISREG (sb.st_mode));
-    }
-}
-
-
 /* Key creation. */
 
 /**
@@ -212,36 +177,6 @@ lsc_user_keys_create (const gchar *password,
 /* RPM package generation. */
 
 /**
- * @brief Return directory containing rpm generator script.
- *
- * The search will be performed just once.
- *
- * @return Newly allocated path to directory containing generator if found,
- *         else NULL.
- */
-static const gchar *
-get_rpm_generator_path ()
-{
-  static gchar *rpm_generator_path = NULL;
-
-  if (rpm_generator_path == NULL)
-    {
-      gchar *path_exec = g_build_filename (GVM_DATA_DIR,
-                                           "openvas-lsc-rpm-creator.sh",
-                                           NULL);
-      if (check_is_file (path_exec) == 0)
-        {
-          g_free (path_exec);
-          return NULL;
-        }
-      g_free (path_exec);
-      rpm_generator_path = g_strdup (GVM_DATA_DIR);
-    }
-
-  return rpm_generator_path;
-}
-
-/**
  * @brief Attempts creation of RPM packages to create a user and install a
  * @brief public key file for it.
  *
@@ -256,8 +191,6 @@ lsc_user_rpm_create (const gchar *username,
                      const gchar *public_key_path,
                      const gchar *to_filename)
 {
-  const gchar *generator_path;
-  gchar *rpm_path = NULL;
   gint exit_status;
   gchar *new_pubkey_filename = NULL;
   gchar *pubkey_basename = NULL;
@@ -266,9 +199,6 @@ lsc_user_rpm_create (const gchar *username,
   gboolean success = TRUE;
   gchar *standard_out = NULL;
   gchar *standard_err = NULL;
-  gchar *rpmfile;
-
-  generator_path = get_rpm_generator_path ();
 
   /* Create a temporary directory. */
 
@@ -296,15 +226,18 @@ lsc_user_rpm_create (const gchar *username,
    * target and the public key in the temporary directory as the key. */
 
   g_debug ("%s: Attempting RPM build\n", __FUNCTION__);
-  cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
-  cmd[0] = g_strdup ("./gvm-lsc-rpm-creator.sh");
-  cmd[1] = g_strdup ("--target");
-  cmd[2] = g_strdup (tmpdir);
-  cmd[3] = g_build_filename (tmpdir, pubkey_basename, NULL);
-  cmd[4] = NULL;
-  g_debug ("%s: Spawning in %s: %s %s %s %s\n",
-           __FUNCTION__, generator_path, cmd[0], cmd[1], cmd[2], cmd[3]);
-  if ((g_spawn_sync (generator_path,
+  cmd = (gchar **) g_malloc (6 * sizeof (gchar *));
+  cmd[0] = g_build_filename (GVM_DATA_DIR,
+                             "gvm-lsc-rpm-creator.sh",
+                             NULL);
+  cmd[1] = g_strdup (username);
+  cmd[2] = g_strdup (new_pubkey_filename);
+  cmd[3] = g_strdup (tmpdir);
+  cmd[4] = g_strdup (to_filename);
+  cmd[5] = NULL;
+  g_debug ("%s: Spawning in %s: %s %s %s %s %s\n",
+           __FUNCTION__, tmpdir, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]);
+  if ((g_spawn_sync (tmpdir,
                      cmd,
                      NULL,                  /* Environment. */
                      G_SPAWN_SEARCH_PATH,
@@ -339,26 +272,6 @@ lsc_user_rpm_create (const gchar *username,
   g_free (standard_out);
   g_free (standard_err);
 
-  /* Build the filename that the RPM in the temporary directory has,
-   * for example RPMS/noarch/openvas-lsc-target-example_user-0.5-1.noarch.rpm.
-   */
-
-  rpmfile = g_strconcat ("openvas-lsc-target-",
-                         username,
-                         "-0.5-1.noarch.rpm",
-                         NULL);
-  rpm_path = g_build_filename (tmpdir, rpmfile, NULL);
-  g_debug ("%s: new filename (rpm_path): %s\n", __FUNCTION__, rpm_path);
-
-  /* Move the RPM from the temporary directory to the given destination. */
-
-  if (gvm_file_move (rpm_path, to_filename) == FALSE && success == TRUE)
-    {
-      g_debug ("%s: failed to move RPM %s to %s",
-               __FUNCTION__, rpm_path, to_filename);
-      success = FALSE;
-    }
-
   /* Remove the copy of the public key and the temporary directory. */
 
   if (gvm_file_remove_recurse (tmpdir) != 0 && success == TRUE)
@@ -368,38 +281,7 @@ lsc_user_rpm_create (const gchar *username,
       success = FALSE;
     }
 
-  g_free (rpm_path);
-  g_free (rpmfile);
-
   return success;
-}
-
-/**
- * @brief Returns whether alien could be found in the path.
- *
- * The check itself will only be done once.
- *
- * @return TRUE if alien could be found in the path, FALSE otherwise.
- */
-static gboolean
-alien_found ()
-{
-  static gboolean searched = FALSE;
-  static gboolean found = FALSE;
-
-  if (searched == FALSE)
-    {
-      /* Check if alien is found in path. */
-      gchar *alien_path = g_find_program_in_path ("alien");
-      if (alien_path != NULL)
-        {
-          found = TRUE;
-          g_free (alien_path);
-        }
-      searched = TRUE;
-    }
-
-  return found;
 }
 
 /**
@@ -421,12 +303,6 @@ lsc_user_rpm_recreate (const gchar *name, const char *public_key,
   char key_dir[] = "/tmp/key_XXXXXX";
   gchar *rpm_path, *public_key_path;
   int ret = -1;
-
-  if (alien_found () == FALSE)
-    {
-      g_warning ("%s: Need \"alien\" to make RPMs\n", __FUNCTION__);
-      return -1;
-    }
 
   /* Make a directory for the key. */
 
@@ -486,56 +362,88 @@ lsc_user_rpm_recreate (const gchar *name, const char *public_key,
 /* Deb generation. */
 
 /**
- * @brief Execute alien to create a deb package from an rpm package.
+ * @brief Attempts creation of Debian packages to create a user and install a
+ * @brief public key file for it.
  *
- * @param[in]  rpmdir   Directory to run the command in.
- * @param[in]  rpmfile  .rpm file to transform with alien to a .deb.
+ * @param[in]  username         Name of user.
+ * @param[in]  public_key_path  Location of public key.
+ * @param[in]  to_filename      Destination filename for RPM.
  *
- * @return 0 success, -1 error.
+ * @return Path to rpm file if successful, NULL otherwise.
  */
-static int
-execute_alien (const gchar *rpmdir, const gchar *rpmfile)
+static gboolean
+lsc_user_deb_create (const gchar *username,
+                     const gchar *public_key_path,
+                     const gchar *to_filename)
 {
-  gchar **cmd;
   gint exit_status;
-  int ret = 0;
+  gchar *new_pubkey_filename = NULL;
+  gchar *pubkey_basename = NULL;
+  gchar **cmd;
+  char tmpdir[] = "/tmp/lsc_user_deb_create_XXXXXX";
+  gboolean success = TRUE;
   gchar *standard_out = NULL;
   gchar *standard_err = NULL;
 
-  cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
+  /* Create a temporary directory. */
 
-  cmd[0] = g_strdup ("fakeroot");
-  cmd[1] = g_strdup ("--");
-  cmd[2] = g_strdup ("alien");
-  cmd[3] = g_strdup ("--scripts");
-  cmd[4] = g_strdup ("--keep-version");
-  cmd[5] = g_strdup (rpmfile);
-  cmd[6] = NULL;
-  g_debug ("--- executing alien.\n");
-  g_debug ("%s: Spawning in %s: %s %s %s %s %s %s\n",
-           __FUNCTION__,
-           rpmdir, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5]);
-  if ((g_spawn_sync (rpmdir,
+  g_debug ("%s: create temporary directory", __FUNCTION__);
+  if (mkdtemp (tmpdir) == NULL)
+    return FALSE;
+  g_debug ("%s: temporary directory: %s\n", __FUNCTION__, tmpdir);
+
+  /* Copy the public key into the temporary directory. */
+
+  g_debug ("%s: copy key to temporary directory\n", __FUNCTION__);
+  pubkey_basename = g_strdup_printf ("%s.pub", username);
+  new_pubkey_filename = g_build_filename (tmpdir, pubkey_basename, NULL);
+  if (gvm_file_copy (public_key_path, new_pubkey_filename)
+      == FALSE)
+    {
+      g_debug ("%s: failed to copy key file %s to %s",
+               __FUNCTION__, public_key_path, new_pubkey_filename);
+      g_free (pubkey_basename);
+      g_free (new_pubkey_filename);
+      return FALSE;
+    }
+
+  /* Execute create-rpm script with the temporary directory as the
+   * target and the public key in the temporary directory as the key. */
+
+  g_debug ("%s: Attempting DEB build\n", __FUNCTION__);
+  cmd = (gchar **) g_malloc (6 * sizeof (gchar *));
+  cmd[0] = g_build_filename (GVM_DATA_DIR,
+                             "gvm-lsc-deb-creator.sh",
+                             NULL);
+  cmd[1] = g_strdup (username);
+  cmd[2] = g_strdup (new_pubkey_filename);
+  cmd[3] = g_strdup (tmpdir);
+  cmd[4] = g_strdup (to_filename);
+  cmd[5] = NULL;
+  g_debug ("%s: Spawning in %s: %s %s %s %s %s\n",
+           __FUNCTION__, tmpdir, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]);
+  if ((g_spawn_sync (tmpdir,
                      cmd,
-                     NULL,                 /* Environment. */
+                     NULL,                  /* Environment. */
                      G_SPAWN_SEARCH_PATH,
-                     NULL,                 /* Setup func. */
+                     NULL,                  /* Setup function. */
                      NULL,
                      &standard_out,
                      &standard_err,
                      &exit_status,
-                     NULL) == FALSE)
+                     NULL)
+       == FALSE)
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: failed to create the deb: %d (WIF %i, WEX %i)",
+      g_debug ("%s: failed to create the rpm: %d (WIF %i, WEX %i)",
                __FUNCTION__,
                exit_status,
                WIFEXITED (exit_status),
                WEXITSTATUS (exit_status));
       g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
       g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
-      ret = -1;
+      success = FALSE;
     }
 
   g_free (cmd[0]);
@@ -543,97 +451,69 @@ execute_alien (const gchar *rpmdir, const gchar *rpmfile)
   g_free (cmd[2]);
   g_free (cmd[3]);
   g_free (cmd[4]);
-  g_free (cmd[5]);
-  g_free (cmd[6]);
   g_free (cmd);
+  g_free (pubkey_basename);
+  g_free (new_pubkey_filename);
   g_free (standard_out);
   g_free (standard_err);
 
-  return ret;
-}
+  /* Remove the copy of the public key and the temporary directory. */
 
-/**
- * @brief Create a Debian package from an LSC user RPM package.
- *
- * @param[in]  user      Name of user.
- * @param[in]  rpm_file  Location of the RPM file.
- *
- * @return Debian package file name on success, else NULL.
- */
-gchar *
-lsc_user_deb_create (const gchar *user, const gchar *rpm_file)
-{
-  gchar *dirname = g_path_get_dirname (rpm_file);
-  gchar *dir = g_strconcat (dirname, "/", NULL);
-  gchar *basename = g_path_get_basename (rpm_file);
-  gchar *down_user = g_ascii_strdown (user ? user : "user", -1);
-  gchar *deb_name = g_strdup_printf ("%s/openvas-lsc-target-%s_0.5-1_all.deb",
-                                     dirname, down_user);
-
-  g_free (dirname);
-  g_free (down_user);
-
-  if (execute_alien (dir, basename))
+  if (gvm_file_remove_recurse (tmpdir) != 0 && success == TRUE)
     {
-      g_free (dir);
-      g_free (basename);
-      g_free (deb_name);
-      return NULL;
+      g_debug ("%s: failed to remove temporary directory %s",
+               __FUNCTION__, tmpdir);
+      success = FALSE;
     }
 
-  g_free (dir);
-  g_free (basename);
-
-  return deb_name;
+  return success;
 }
 
 /**
- * @brief Recreate Debian package.
+ * @brief Recreate DEB package.
  *
  * @param[in]   name         User name.
- * @param[in]   rpm          RPM package.
- * @param[in]   rpm_size     Size of RPM package, in bytes.
- * @param[out]  deb          Debian package.
- * @param[out]  deb_size     Size of Debian package, in bytes.
+ * @param[in]   public_key   Public key.
+ * @param[out]  deb          DEB package.
+ * @param[out]  deb_size     Size of DEB package, in bytes.
  *
  * @return 0 success, -1 error.
  */
 int
-lsc_user_deb_recreate (const gchar *name, const char *rpm, gsize rpm_size,
+lsc_user_deb_recreate (const gchar *name, const char *public_key,
                        void **deb, gsize *deb_size)
 {
   GError *error;
   char deb_dir[] = "/tmp/deb_XXXXXX";
-  char rpm_dir[] = "/tmp/rpm_XXXXXX";
-  gchar *deb_path, *rpm_path;
+  char key_dir[] = "/tmp/key_XXXXXX";
+  gchar *deb_path, *public_key_path;
   int ret = -1;
 
-  if (alien_found () == FALSE)
-    {
-      g_warning ("%s: Need \"alien\" to make DEBs\n", __FUNCTION__);
-      return -1;
-    }
+  /* Make a directory for the key. */
 
-  /* Make a directory for the RPM. */
-
-  if (mkdtemp (rpm_dir) == NULL)
+  if (mkdtemp (key_dir) == NULL)
     return -1;
 
-  /* Write RPM to disk. */
+  /* Write public key to file. */
 
   error = NULL;
-  rpm_path = g_build_filename (rpm_dir, "p.rpm", NULL);
-  g_file_set_contents (rpm_path, rpm, rpm_size, &error);
+  public_key_path = g_build_filename (key_dir, "key.pub", NULL);
+  g_file_set_contents (public_key_path, public_key, strlen (public_key),
+                       &error);
   if (error)
     goto free_exit;
 
-  /* Create Debian package. */
+  /* Create DEB package. */
 
   if (mkdtemp (deb_dir) == NULL)
     goto free_exit;
-  deb_path = lsc_user_deb_create (name, rpm_path);
-  if (deb_path == NULL)
-    goto rm_exit;
+  deb_path = g_build_filename (deb_dir, "p.deb", NULL);
+  g_debug ("%s: deb_path: %s", __FUNCTION__, deb_path);
+  if (lsc_user_deb_create (name, public_key_path, deb_path) == FALSE)
+    {
+      g_free (deb_path);
+      goto rm_exit;
+    }
 
   /* Read the package into memory. */
 
@@ -656,9 +536,9 @@ lsc_user_deb_recreate (const gchar *name, const char *rpm, gsize rpm_size,
 
  free_exit:
 
-  g_free (rpm_path);
+  g_free (public_key_path);
 
-  gvm_file_remove_recurse (rpm_dir);
+  gvm_file_remove_recurse (key_dir);
 
   return ret;
 }
@@ -887,12 +767,6 @@ lsc_user_exe_recreate (const gchar *name, const gchar *password,
   char exe_dir[] = "/tmp/exe_XXXXXX";
   gchar *exe_path;
   int ret = -1;
-
-  if (alien_found () == FALSE)
-    {
-      g_warning ("%s: Need \"alien\" to make EXEs\n", __FUNCTION__);
-      return -1;
-    }
 
   /* Create NSIS package. */
 

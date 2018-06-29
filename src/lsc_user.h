@@ -37,7 +37,7 @@ lsc_user_rpm_recreate (const gchar *, const gchar *,
                        void **, gsize *);
 
 int
-lsc_user_deb_recreate (const gchar *, const char *, gsize, void **, gsize *);
+lsc_user_deb_recreate (const gchar *, const char *, void **, gsize *);
 
 int
 lsc_user_exe_recreate (const gchar *, const gchar *, void **, gsize *);
