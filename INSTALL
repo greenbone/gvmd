@@ -499,10 +499,13 @@ Prerequisites for generating HTML reports:
 Prerequisites for generating verinice reports:
 * xsltproc, xmlstarlet, zip
 
-Prerequisites for generating credentials RPM / DEB packages:
+Prerequisites for generating credential RPM packages:
 * rpm
 * fakeroot
-* alien
+
+Prerequisites for generating credential DEB packages:
+* dpkg
+* fakeroot
 
 Prerequisites for generating credentials .exe packages:
 * makensis (usually distributed as part of nsis)
