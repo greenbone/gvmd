@@ -1092,7 +1092,6 @@ handle_sigabrt_simple (int signal)
  * @brief Updates the NVT Cache and exits or returns exit code.
  *
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
- * @param[in]  skip_create_tables      Whether to skip table creation.
  *
  * @return If this function did not exit itself, returns exit code.
  */

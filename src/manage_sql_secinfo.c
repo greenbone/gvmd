@@ -2612,11 +2612,9 @@ oval_oval_definitions_date (entity_t entity, int *file_timestamp)
 }
 
 /**
- * @brief Get last date from definition entity.
+ * @brief Verify a OVAL definitions file.
  *
- * @param[in]  definition              Definition.
- * @param[out] definition_date_newest  Newest date.
- * @param[out] definition_date_oldest  Oldest date.
+ * @param[in]  full_path  Full path to the OVAL definitions file to verify.
  *
  * @return 0 if valid, else -1.
  */
@@ -2746,7 +2744,7 @@ verify_oval_file (const gchar *full_path)
 /**
  * @brief Update OVALDEF info from a single XML feed file.
  *
- * @param[in]  xml_path          XML path.
+ * @param[in]  file_and_date     Array containing XML path and timestamp.
  * @param[in]  last_scap_update  Time of last SCAP update.
  * @param[in]  last_ovaldef_update   Time of last update to an ovaldef.
  * @param[in]  private           Whether this is from the user's private dir.
