@@ -3121,7 +3121,7 @@ create_tables ()
        "                     'resource_type, resource, resource_location');");
   sql ("SELECT create_index ('tag_resources_by_resource_uuid',"
        "                     'tag_resources',"
-       "                     'resource_type, resource, resource_location');");
+       "                     'resource_type, resource_uuid');");
   sql ("SELECT create_index ('tag_resources_by_tag',"
        "                     'tag_resources', 'tag');");
 

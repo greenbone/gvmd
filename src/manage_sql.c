@@ -65686,9 +65686,8 @@ tag_add_resource (tag_t tag, const char *type, const char *uuid,
     already_added = sql_int ("SELECT count(*) FROM tag_resources"
                              " WHERE resource_type = '%s'"
                              " AND resource_uuid = %s"
-                             " AND resource_location = %d"
                              " AND tag = %llu",
-                             type, quoted_resource_uuid, location, tag);
+                             type, quoted_resource_uuid, tag);
   else
     already_added = sql_int ("SELECT count(*) FROM tag_resources"
                              " WHERE resource_type = '%s'"
