@@ -7245,6 +7245,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                         : "",
                                        attribute_names,
                                        attribute_values);
+
+            // get_aggregates ignores pagination by default
+            if (find_attribute (attribute_names, attribute_values,
+                                "ignore_pagination", &attribute) == 0)
+              get_aggregates_data->get.ignore_pagination = 1;
+
             set_client_state (CLIENT_GET_AGGREGATES);
           }
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)

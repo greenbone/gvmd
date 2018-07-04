@@ -65829,7 +65829,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
 
   switch (type_build_select (type,
                              "id, uuid",
-                             &resources_get, 0, 0, NULL, NULL, NULL,
+                             &resources_get, 0, 1, NULL, NULL, NULL,
                              &iterator_select))
     {
       case 0:
@@ -65933,7 +65933,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
 
   switch (type_build_select (type,
                              "id",
-                             &resources_get, 0, 0, NULL, NULL, NULL,
+                             &resources_get, 0, 1, NULL, NULL, NULL,
                              &iterator_select))
     {
       case 0:
@@ -67474,7 +67474,13 @@ type_build_select (const char *type, const char *columns_str,
     extra_where = type_extra_where (type, get->trash,
                                     filter ? filter : get->filter);
 
-  pagination_clauses = NULL;
+  if (get->ignore_pagination)
+    pagination_clauses = NULL;
+  else
+    pagination_clauses = g_strdup_printf (" OFFSET %d LIMIT %s",
+                                          first,
+                                          sql_select_limit (max));
+
 
   *select = g_strdup_printf
              ("SELECT%s %s"  // DISTINCT, columns
@@ -67504,6 +67510,7 @@ type_build_select (const char *type, const char *columns_str,
   g_free (opts_table);
   g_free (owned_clause);
   g_free (extra_where);
+  g_free (pagination_clauses);
 
   return 0;
 }
