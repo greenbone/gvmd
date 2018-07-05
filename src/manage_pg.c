@@ -2627,7 +2627,8 @@ create_tables ()
        "  qod integer,"
        "  qod_type text,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  date integer);");
+       "  date integer,"
+       "  hostname text);");
 
   /* All the NVTs that have ever been encountered in results and overrides.
    *
