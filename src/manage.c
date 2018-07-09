@@ -2492,7 +2492,7 @@ set_task_interrupted (task_t task, const gchar *message)
   if (current_report)
     {
       result_t result;
-      result = make_result (task, "", "", "", "Error Message", message);
+      result = make_result (task, "", "", "", "", "Error Message", message);
       report_add_result (current_report, result);
     }
 }
@@ -3580,6 +3580,7 @@ handle_slave_task (task_t task, target_t target,
         port_string = g_strdup_printf ("%i", connection->port);
         result = make_result (task,
                               connection->host_string,
+                              "",
                               port_string,
                               /* NVT: Global variable settings. */
                               "1.3.6.1.4.1.25623.1.0.12288",

@@ -232,7 +232,8 @@ write_message (task_t task, message_t* message, char* type)
   assert (current_report);
 
   manage_transaction_start ();
-  result = make_result (task, message->host, message->port.string, message->oid,
+  result = make_result (task, message->host, message->hostname,
+                        message->port.string, message->oid,
                         type, message->description);
   if (current_report) report_add_result (current_report, result);
 }

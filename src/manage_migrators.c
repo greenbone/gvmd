@@ -14641,6 +14641,39 @@ migrate_193_to_194 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 194 to version 195.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_194_to_195 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 194. */
+
+  if (manage_db_version () != 194)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The hostname column was added for the results table. */
+
+  sql ("ALTER TABLE results ADD COLUMN hostname TEXT;");
+
+  /* Set the database version to 195. */
+
+  set_db_version (195);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14849,6 +14882,7 @@ static migrator_t database_migrators[]
     {192, migrate_191_to_192},
     {193, migrate_192_to_193},
     {194, migrate_193_to_194},
+    {195, migrate_194_to_195},
     /* End marker. */
     {-1, NULL}};
 

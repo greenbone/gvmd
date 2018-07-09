@@ -1177,7 +1177,7 @@ char *
 nvt_severity (const char *, const char *);
 
 result_t
-make_result (task_t, const char*, const char*, const char*,
+make_result (task_t, const char*, const char*, const char*, const char*,
              const char*, const char*);
 
 result_t
@@ -1194,6 +1194,7 @@ typedef struct
 {
   char *description;       ///< Description of NVT.
   char *host;              ///< Host.
+  char *hostname;          ///< Hostname.
   char *nvt_oid;           ///< OID of NVT.
   char *scan_nvt_version;  ///< Version of NVT used at scan time.
   char *port;              ///< Port.
@@ -1469,6 +1470,9 @@ result_iterator_qod (iterator_t*);
 
 const char*
 result_iterator_qod_type (iterator_t*);
+
+const char*
+result_iterator_hostname (iterator_t*);
 
 const char*
 result_iterator_date (iterator_t*);
