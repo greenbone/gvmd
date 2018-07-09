@@ -65697,12 +65697,13 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
  * @param[in]  uuid        The resource UUID.
  * @param[in]  resource    The resource row id.
  * @param[in]  location    Whether the resource is in the trashcan.
+ * @param[in]  duplicates_check  Whether to check if resource already has tag.
  * 
  * @return  0 success, -1 error
  */
 static int
 tag_add_resource (tag_t tag, const char *type, const char *uuid,
-                  resource_t resource, int location)
+                  resource_t resource, int location, int duplicates_check)
 {
   int already_added, ret;
   gchar *quoted_resource_uuid;
@@ -65711,7 +65712,9 @@ tag_add_resource (tag_t tag, const char *type, const char *uuid,
 
   quoted_resource_uuid = uuid ? sql_insert (uuid) : g_strdup ("''");
 
-  if (type_is_info_subtype (type))
+  if (duplicates_check == 0)
+    already_added = 0;
+  else if (type_is_info_subtype (type))
     already_added = sql_int ("SELECT count(*) FROM tag_resources"
                              " WHERE resource_type = '%s'"
                              " AND resource_uuid = %s"
@@ -65785,7 +65788,7 @@ tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
   if (resource == 0)
     return 1;
 
-  return tag_add_resource (tag, type, uuid, resource, resource_location);
+  return tag_add_resource (tag, type, uuid, resource, resource_location, 1);
 }
 
 /**
@@ -65847,7 +65850,7 @@ static int
 tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
 {
   iterator_t resources;
-  gchar *iterator_select;
+  gchar *filtered_select;
   get_data_t resources_get;
   int ret;
 
@@ -65859,7 +65862,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   switch (type_build_select (type,
                              "id, uuid",
                              &resources_get, 0, 1, NULL, NULL, NULL,
-                             &iterator_select))
+                             &filtered_select))
     {
       case 0:
         break;
@@ -65874,9 +65877,40 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   g_free (resources_get.filter);
   g_free (resources_get.type);
 
-  init_iterator (&resources, "%s", iterator_select);
-  ret = 2;
-  while (next (&resources))
+  if (sql_int ("SELECT count(*) FROM (%s) AS filter_selection",
+               filtered_select) == 0)
+    {
+      g_free (filtered_select);
+      return 2;
+    }
+
+  if (type_is_info_subtype (type))
+    init_iterator (&resources,
+                   "SELECT id, uuid FROM (%s) AS filter_selection"
+                   " WHERE NOT EXISTS"
+                   "  (SELECT * FROM tag_resources"
+                   "    WHERE resource_type = '%s'"
+                   "      AND resource_uuid = filter_selection.uuid"
+                   "      AND tag = %llu)",
+                   filtered_select,
+                   type,
+                   tag);
+  else
+    init_iterator (&resources,
+                   "SELECT id, uuid FROM (%s) AS filter_selection"
+                   " WHERE NOT EXISTS"
+                   "  (SELECT * FROM tag_resources"
+                   "    WHERE resource_type = '%s'"
+                   "      AND resource = filter_selection.id"
+                   "      AND resource_location = %d"
+                   "      AND tag = %llu)",
+                   filtered_select,
+                   type,
+                   LOCATION_TABLE,
+                   tag);
+
+  ret = 0;
+  while (next (&resources) && ret == 0)
     {
       resource_t resource;
       const char *current_uuid;
@@ -65884,12 +65918,12 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
       resource = iterator_int64 (&resources, 0);
       current_uuid = iterator_string (&resources, 1);
 
-      ret = tag_add_resource (tag, type, current_uuid, resource,
-                              LOCATION_TABLE);
+     ret = tag_add_resource (tag, type, current_uuid, resource,
+                             LOCATION_TABLE, 0);
     }
   cleanup_iterator (&resources);
 
-  g_free (iterator_select);
+  g_free (filtered_select);
 
   return ret;
 }
