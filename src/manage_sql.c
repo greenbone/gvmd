@@ -12750,7 +12750,7 @@ manage_test_alert (const char *alert_id, gchar **script_message)
     return -1;
   task_uuid (task, &task_id);
   report = make_report (task, report_id, TASK_STATUS_DONE);
-  result = make_result (task, "127.0.0.1", "telnet (23/tcp)",
+  result = make_result (task, "127.0.0.1", "localhost", "telnet (23/tcp)",
                         "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
                         "A telnet server seems to be running on this port.");
   if (result == 0)
@@ -16828,7 +16828,7 @@ cleanup_manage_process (gboolean cleanup)
                 {
                   result_t result;
                   result = make_result (current_scanner_task,
-                                        "", "", "", "Error Message",
+                                        "", "", "", "", "Error Message",
                                         "Interrupting scan because GVM is"
                                         " exiting.");
                   report_add_result (current_report, result);
@@ -19724,7 +19724,8 @@ nvt_severity (const char *nvt_id, const char *type)
  * @brief Make a result.
  *
  * @param[in]  task         The task associated with the result.
- * @param[in]  host         Host.
+ * @param[in]  host         Host IP address.
+ * @param[in]  hostname     Hostname.
  * @param[in]  port         The port the result refers to.
  * @param[in]  nvt          The OID of the NVT that produced the result.
  * @param[in]  type         Type of result.  "Security Hole", etc.
@@ -19733,12 +19734,13 @@ nvt_severity (const char *nvt_id, const char *type)
  * @return A result descriptor for the new result, 0 if error.
  */
 result_t
-make_result (task_t task, const char* host, const char* port, const char* nvt,
+make_result (task_t task, const char* host, const char *hostname,
+             const char* port, const char* nvt,
              const char* type, const char* description)
 {
   result_t result;
   gchar *nvt_revision, *severity;
-  gchar *quoted_descr, *quoted_qod_type;
+  gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
   int qod;
   nvt_t nvt_id = 0;
 
@@ -19792,18 +19794,23 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
       g_free (severity);
       severity = g_strdup ("0.0");
     }
+  quoted_hostname = sql_quote (hostname ? hostname : "");
   quoted_descr = sql_quote (description ?: "");
   result_nvt_notice (nvt);
   sql ("INSERT into results"
-       " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
+       " (owner, date, task, host, hostname, port,"
+       "  nvt, nvt_version, severity, type,"
        "  description, uuid, qod, qod_type, result_nvt)"
        " VALUES"
-       " (NULL, m_now (), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
+       " (NULL, m_now (), %llu, '%s', '%s', '%s',"
+       "  '%s', '%s', '%s', '%s',"
        "  '%s', make_uuid (), %i, '%s',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
-       task, host ?: "", port ?: "", nvt ?: "", nvt_revision, severity, type,
+       task, host ?: "", quoted_hostname, port ?: "",
+       nvt ?: "", nvt_revision, severity, type,
        quoted_descr, qod, quoted_qod_type, nvt ? nvt : "");
 
+  g_free (quoted_hostname);
   g_free (quoted_descr);
   g_free (quoted_qod_type);
   g_free (nvt_revision);
@@ -21113,13 +21120,14 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
     {
-      gchar *quoted_host, *quoted_port, *quoted_nvt_oid;
+      gchar *quoted_host, *quoted_hostname, *quoted_port, *quoted_nvt_oid;
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
       gchar *quoted_qod, *quoted_qod_type;
 
       g_debug ("%s: add results: index: %i", __FUNCTION__, index);
 
       quoted_host = sql_quote (result->host ? result->host : "");
+      quoted_hostname = sql_quote (result->host ? result->hostname : "");
       quoted_port = sql_quote (result->port ? result->port : "");
       quoted_nvt_oid = sql_quote (result->nvt_oid ? result->nvt_oid : "");
       quoted_description = sql_quote (result->description
@@ -21136,15 +21144,18 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       quoted_qod_type = sql_quote (result->qod_type ? result->qod_type : "");
       result_nvt_notice (quoted_nvt_oid);
       sql ("INSERT INTO results"
-           " (uuid, owner, date, task, host, port, nvt, type, description,"
+           " (uuid, owner, date, task, host, hostname, port,"
+           "  nvt, type, description,"
            "  nvt_version, severity, qod, qod_type, result_nvt)"
            " VALUES"
-           " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s', '%s', '%s',"
+           " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s',"
+           "  '%s', '%s', '%s',"
            "  '%s', '%s', '%s', '%s',"
            "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
            owner,
            task,
            quoted_host,
+           quoted_hostname,
            quoted_port,
            quoted_nvt_oid,
            result->threat
@@ -21158,6 +21169,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
            quoted_nvt_oid);
 
       g_free (quoted_host);
+      g_free (quoted_hostname);
       g_free (quoted_port);
       g_free (quoted_nvt_oid);
       g_free (quoted_description);
@@ -22320,20 +22332,22 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
     { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
-    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
+      " THEN (SELECT value FROM report_host_details"                          \
+      "       WHERE name = 'hostname'"                                        \
+      "         AND report_host = (SELECT id FROM report_hosts"               \
+      "                            WHERE report_hosts.host=results.host"      \
+      "                            AND report_hosts.report = results.report)" \
+      "       LIMIT 1)"                                                       \
+      " ELSE hostname"                                                        \
+      " END)",                                                                \
+      "hostname",                                                             \
+      KEYWORD_TYPE_STRING                                                     \
+    },                                                                        \
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
-    { "(SELECT value FROM report_host_details"                                \
-      " WHERE name = 'hostname'"                                              \
-      "   AND report_host = (SELECT id FROM report_hosts"                     \
-      "                       WHERE report_hosts.host=results.host"           \
-      "                         AND report_hosts.report = results.report)"    \
-      " LIMIT 1)",                                                            \
-      "hostname",                                                             \
-      KEYWORD_TYPE_STRING                                                     \
-    },                                                                        \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -22406,20 +22420,22 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
     { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
-    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
+      " THEN (SELECT value FROM report_host_details"                          \
+      "       WHERE name = 'hostname'"                                        \
+      "         AND report_host = (SELECT id FROM report_hosts"               \
+      "                            WHERE report_hosts.host=results.host"      \
+      "                            AND report_hosts.report = results.report)" \
+      "       LIMIT 1)"                                                       \
+      " ELSE hostname"                                                        \
+      " END)",                                                                \
+      "hostname",                                                             \
+      KEYWORD_TYPE_STRING                                                     \
+    },                                                                        \
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
-    { "(SELECT value FROM report_host_details"                                \
-      " WHERE name = 'hostname'"                                              \
-      "   AND report_host = (SELECT id FROM report_hosts"                     \
-      "                       WHERE report_hosts.host=results.host"           \
-      "                         AND report_hosts.report = results.report)"    \
-      " LIMIT 1)",                                                            \
-      "hostname",                                                             \
-      KEYWORD_TYPE_STRING                                                     \
-    },                                                                        \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23323,6 +23339,16 @@ DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 17);
  *         cleanup_iterator.
  */
 DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
+
+/**
+ * @brief Get the host from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The host of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
 
 /**
  * @brief Initialise a host iterator.
@@ -52663,12 +52689,14 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
     {
       if (strcmp (entity_name (entity), "result") == 0)
         {
-          entity_t host, port, nvt, threat, description;
+          entity_t host, hostname, port, nvt, threat, description;
           const char *oid;
 
           host = entity_child (entity, "host");
           if (host == NULL)
             goto rollback_fail;
+
+          hostname = entity_child (host, "hostname");
 
           port = entity_child (entity, "port");
           if (port == NULL)
@@ -52694,6 +52722,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
             result = make_result (task,
                                   entity_text (host),
+                                  hostname ? entity_text (hostname) : "",
                                   entity_text (port),
                                   oid,
                                   threat_message_type (entity_text (threat)),
