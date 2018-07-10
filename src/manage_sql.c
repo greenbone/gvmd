@@ -21127,7 +21127,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       g_debug ("%s: add results: index: %i", __FUNCTION__, index);
 
       quoted_host = sql_quote (result->host ? result->host : "");
-      quoted_hostname = sql_quote (result->host ? result->hostname : "");
+      quoted_hostname = sql_quote (result->hostname ? result->hostname : "");
       quoted_port = sql_quote (result->port ? result->port : "");
       quoted_nvt_oid = sql_quote (result->nvt_oid ? result->nvt_oid : "");
       quoted_description = sql_quote (result->description
