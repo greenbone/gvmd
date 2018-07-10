@@ -4622,6 +4622,7 @@ resource_uuid (const gchar *type, resource_t resource)
  * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
  * @param[in]  extra_order     Extra ORDER clauses.
  * @param[in]  pre_sql         SQL to add before the SELECT.  Useful for WITH.
+ * @param[in]  assume_permitted   Whether to skip permission checks.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
@@ -8743,9 +8744,9 @@ http_get (const char *url)
  * @param[in]     extra_content   Optional extra data, e.g. credentials
  * @param[in]     extra_size      Optional extra data length
  * @param[in,out] report_dir      Template for temporary report directory
- * @param[out]    report_path     Pointer to store path to report file at
- * @param[out]    error_file      Temporary file for error messages
- * @param[out]    extra_file      Temporary extra data file
+ * @param[out]    report_path Pointer to store path to report file at
+ * @param[out]    error_path  Pointer to temporary file path for error messages
+ * @param[out]    extra_path  Pointer to temporary extra data file path
  *
  * @return 0 success, -1 error.
  */
@@ -9238,7 +9239,7 @@ alert_script_cleanup (const char *report_dir,
  * @param[in]  report_size      Size of the report.
  * @param[in]  extra_content    Optional extra data like passwords
  * @param[in]  extra_size       Size of the report.
- * @param[out] script_message   Custom error message of the script.
+ * @param[out] message          Custom error message of the script.
  *
  * @return 0 success, -1 error, -5 alert script failed.
  */
@@ -10868,6 +10869,7 @@ get_delta_report (alert_t alert, task_t task, report_t report)
  * @param[out] extension            File extension of report format.
  * @param[out] content_type         Content type of report format.
  * @param[out] term                 Filter term.
+ * @param[out] report_zone          Actual timezone used in report.
  * @param[out] host_summary         Summary of results per host.
  * @param[out] used_report_format   Report format used.
  *
@@ -29074,7 +29076,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  ignore_pagination   Whether to ignore pagination data.
  * @param[out] filter_term_return  Filter term used in report.
- * @param[out] zone_return         Actual zone used in report.
+ * @param[out] zone_return         Actual timezone used in report.
  * @param[out] host_summary    Summary of results per host.
  *
  * @return 0 on success, -1 error, 2 failed to find filter (before any printing).
@@ -30363,7 +30365,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
  * @param[out] content_type       NULL or location for report format content
  *                                type.  Only defined on success.
  * @param[out] filter_term_return  Filter term used in report.
- * @param[out] zone_return         Actual zone used in report.
+ * @param[out] zone_return         Actual timezone used in report.
  * @param[out] host_summary    Summary of results per host.
  *
  * @return Contents of report on success, NULL on error.
@@ -48480,7 +48482,6 @@ schedule_duration (schedule_t schedule)
  * @param[out] period      Period.
  * @param[out] period_months  Period months.
  * @param[out] duration       Duration.
- * @param[out] byday          byday string.
  * @param[out] icalendar      iCalendar string.
  * @param[out] timezone       timezone string.
  *
@@ -65102,7 +65103,13 @@ user_role_iterator_readable (iterator_t* iterator)
 /**
  * @brief Check if a user still has resources that are in use.
  *
- * @param
+ * @param[in] user          The user to check.
+ * @param[in] table         The table to check for resources in use.
+ * @param[in] in_use        Function to check if a resource is in use.
+ * @param[in] trash_table   The trash table to check for resources in use.
+ * @param[in] trash_in_use  Function to check if a trash resource is in use.
+ *
+ * @return 0 no resources in use, 1 found resources used by user.
  */
 int
 user_resources_in_use (user_t user,
@@ -65797,7 +65804,6 @@ tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
  * @param[in]  tag         Tag to attach to the resource.
  * @param[in]  type        The resource type.
  * @param[in]  uuids       The array of resource UUIDs.
- * @param[in]  permission  The permission required to get the resource.
  * @param[out] error_extra Extra error output. Contains UUID if not found.
  *
  * @return 0 success, -1 error, 1 resource not found.
@@ -65840,9 +65846,7 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
  *
  * @param[in]  tag         Tag to attach to the resource.
  * @param[in]  type        The resource type.
- * @param[in]  uuids       The array of resource UUIDs.
- * @param[in]  permission  The permission required to get the resource.
- * @param[out] error_extra Extra error output. Contains UUID if not found.
+ * @param[in]  filter      The filter to select resources with.
  *
  * @return 0 success, -1 error, 1 resource not found, 2 no resources returned.
  */
@@ -65934,7 +65938,6 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
  * @param[in]  tag         Tag to attach to the resource.
  * @param[in]  type        The resource type.
  * @param[in]  uuids       The array of resource UUIDs.
- * @param[in]  permission  The permission required to get the resource.
  * @param[out] error_extra Extra error output. Contains UUID if not found.
  *
  * @return 0 success, -1 error, 1 resource not found.
@@ -65975,9 +65978,7 @@ tag_remove_resources_list (tag_t tag, const char *type, array_t *uuids,
  *
  * @param[in]  tag         Tag to attach to the resource.
  * @param[in]  type        The resource type.
- * @param[in]  uuids       The array of resource UUIDs.
- * @param[in]  permission  The permission required to get the resource.
- * @param[out] error_extra Extra error output. Contains UUID if not found.
+ * @param[in]  filter      The filter to select resources with.
  *
  * @return 0 success, -1 error, 1 resource not found, 2 no resources returned.
  */
@@ -66662,7 +66663,7 @@ tag_iterator_resources (iterator_t* iterator)
  * @brief Initialise a tag resources iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
+ * @param[in]  tag         The tag to init the resources iterator for.
  * @param[in]  trash       Whether to get resources of tags in the trashcan.
  *
  * @return 0 success, 1 failed to find tag, 2 failed to find filter,
