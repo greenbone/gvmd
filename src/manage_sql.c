@@ -2724,6 +2724,215 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
 }
 
 /**
+ * @brief Append parts for a "tag" keyword to a filter clause.
+ *
+ * @param[in,out] clause     Buffer for the filter clause to append to.
+ * @param[in]  keyword       The keyword to create the filter clause part for.
+ * @param[in]  type          The resource type.
+ * @param[in]  first         Whether keyword is first.
+ * @param[in]  last_was_and  Whether last keyword was "and".
+ * @param[in]  last_was_not  Whether last keyword was "not".
+ */
+static void
+filter_clause_append_tag (GString *clause, keyword_t *keyword,
+                          const char *type, int first_keyword,
+                          int last_was_and, int last_was_not)
+{
+  gchar *quoted_keyword;
+  gchar **tag_split, *tag_name, *tag_value;
+  int value_given, value_numeric;
+
+  quoted_keyword = sql_quote (keyword->string);
+  tag_split = g_strsplit (quoted_keyword, "=", 2);
+  tag_name = g_strdup (tag_split[0] ? tag_split[0] : "");
+
+  if (tag_split[0] && tag_split[1])
+    {
+      tag_value = g_strdup (tag_split[1]);
+      value_given = 1;
+    }
+  else
+    {
+      tag_value = g_strdup ("");
+      value_given = 0;
+    }
+
+  value_numeric = 0;
+  if (value_given)
+    {
+      double test_d;
+      value_numeric = (sscanf (tag_value, "%lf", &test_d) > 0);
+    }
+
+  if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
+      || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
+      || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
+    {
+      if (strcasecmp (type, "allinfo") == 0)
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.name = '%s'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = allinfo.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = allinfo.type"
+            "                  AND tag = tags.id)"
+            "   %s%s%s))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            tag_name,
+            (value_given
+              ? (value_numeric
+                  ? "AND CAST"
+                    " (tags.value AS REAL) = "
+                  : "AND CAST"
+                    " (tags.value AS TEXT) = '")
+              : ""),
+            value_given ? tag_value : "",
+            (value_given && value_numeric == 0
+              ? "'"
+              : ""));
+      else
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.name = '%s'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = %ss.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = '%s'"
+            "                  AND tag = tags.id)"
+            "   %s%s%s))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            tag_name,
+            type,
+            type,
+            (value_given
+              ? (value_numeric
+                  ? "AND CAST"
+                    " (tags.value AS REAL) = "
+                  : "AND CAST"
+                    " (tags.value AS TEXT) = '")
+              : ""),
+            value_given ? tag_value : "",
+            (value_given && value_numeric == 0
+              ? "'"
+              : ""));
+    }
+  else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
+    {
+      if (strcasecmp (type, "allinfo") == 0)
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.name %s '%%%%%s%%%%'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = allinfo.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = allinfo.type"
+            "                  AND tag = tags.id)"
+            "   AND tags.value %s '%%%%%s%%%%'))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            sql_ilike_op (),
+            tag_name,
+            sql_ilike_op (),
+            tag_value);
+      else
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.name %s '%%%%%s%%%%'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = %ss.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = '%s'"
+            "                  AND tag = tags.id)"
+            "   AND tags.value %s '%%%%%s%%%%'))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            sql_ilike_op (),
+            tag_name,
+            type,
+            type,
+            sql_ilike_op (),
+            tag_value);
+    }
+  else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
+    {
+      if (strcasecmp (type, "allinfo") == 0)
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.name %s '%s'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = allinfo.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = allinfo.type"
+            "                  AND tag = tags.id)"
+            "   AND tags.value"
+            "       %s '%s'))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            sql_regexp_op (),
+            tag_name,
+            sql_regexp_op (),
+            tag_value);
+      else
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.name %s '%s'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = %ss.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = '%s'"
+            "                  AND tag = tags.id)"
+            "   AND tags.value"
+            "       %s '%s'))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            sql_regexp_op (),
+            tag_name,
+            type,
+            type,
+            sql_regexp_op (),
+            tag_value);
+    }
+
+  g_free (quoted_keyword);
+  g_strfreev(tag_split);
+  g_free(tag_name);
+  g_free(tag_value);
+}
+
+/**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
  * @param[in]  type     Resource type.
@@ -3160,196 +3369,11 @@ filter_clause (const char* type, const char* filter,
       else if (keyword->column
                && (strcasecmp (keyword->column, "tag") == 0))
         {
-          gchar **tag_split, *tag_name, *tag_value;
-          int value_given, value_numeric;
+          quoted_keyword = NULL;
 
-          quoted_keyword = sql_quote (keyword->string);
-          tag_split = g_strsplit (quoted_keyword, "=", 2);
-          tag_name = g_strdup (tag_split[0] ? tag_split[0] : "");
+          filter_clause_append_tag (clause, keyword, type,
+                                    first_keyword, last_was_and, last_was_not);
 
-          if (tag_split[0] && tag_split[1])
-            {
-              tag_value = g_strdup (tag_split[1]);
-              value_given = 1;
-            }
-          else
-            {
-              tag_value = g_strdup ("");
-              value_given = 0;
-            }
-
-          value_numeric = 0;
-          if (value_given)
-            {
-              double test_d;
-              value_numeric = (sscanf (tag_value, "%lf", &test_d) > 0);
-            }
-
-          if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
-              || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
-              || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
-            {
-              if (strcasecmp (type, "allinfo") == 0)
-                g_string_append_printf 
-                   (clause,
-                    "%s"
-                    "(EXISTS"
-                    "  (SELECT * FROM tags"
-                    "   WHERE tags.name = '%s'"
-                    "   AND tags.active != 0"
-                    "   AND EXISTS (SELECT * FROM tag_resources"
-                    "                WHERE tag_resources.resource_uuid"
-                    "                        = allinfo.uuid"
-                    "                  AND tag_resources.resource_type"
-                    "                        = allinfo.type"
-                    "                  AND tag = tags.id)"
-                    "   %s%s%s))",
-                    get_join (first_keyword, last_was_and,
-                              last_was_not),
-                    tag_name,
-                    (value_given
-                      ? (value_numeric
-                          ? "AND CAST"
-                            " (tags.value AS REAL) = "
-                          : "AND CAST"
-                            " (tags.value AS TEXT) = '")
-                      : ""),
-                    value_given ? tag_value : "",
-                    (value_given && value_numeric == 0
-                      ? "'"
-                      : ""));
-              else
-                g_string_append_printf
-                   (clause,
-                    "%s"
-                    "(EXISTS"
-                    "  (SELECT * FROM tags"
-                    "   WHERE tags.name = '%s'"
-                    "   AND tags.active != 0"
-                    "   AND EXISTS (SELECT * FROM tag_resources"
-                    "                WHERE tag_resources.resource_uuid"
-                    "                        = %ss.uuid"
-                    "                  AND tag_resources.resource_type"
-                    "                        = '%s'"
-                    "                  AND tag = tags.id)"
-                    "   %s%s%s))",
-                    get_join (first_keyword, last_was_and,
-                              last_was_not),
-                    tag_name,
-                    type,
-                    type,
-                    (value_given
-                      ? (value_numeric
-                          ? "AND CAST"
-                            " (tags.value AS REAL) = "
-                          : "AND CAST"
-                            " (tags.value AS TEXT) = '")
-                      : ""),
-                    value_given ? tag_value : "",
-                    (value_given && value_numeric == 0
-                      ? "'"
-                      : ""));
-            }
-          else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
-            {
-              if (strcasecmp (type, "allinfo") == 0)
-                g_string_append_printf
-                   (clause,
-                    "%s"
-                    "(EXISTS"
-                    "  (SELECT * FROM tags"
-                    "   WHERE tags.name %s '%%%%%s%%%%'"
-                    "   AND tags.active != 0"
-                    "   AND EXISTS (SELECT * FROM tag_resources"
-                    "                WHERE tag_resources.resource_uuid"
-                    "                        = allinfo.uuid"
-                    "                  AND tag_resources.resource_type"
-                    "                        = allinfo.type"
-                    "                  AND tag = tags.id)"
-                    "   AND tags.value %s '%%%%%s%%%%'))",
-                    get_join (first_keyword, last_was_and,
-                              last_was_not),
-                    sql_ilike_op (),
-                    tag_name,
-                    sql_ilike_op (),
-                    tag_value);
-              else
-                g_string_append_printf
-                   (clause,
-                    "%s"
-                    "(EXISTS"
-                    "  (SELECT * FROM tags"
-                    "   WHERE tags.name %s '%%%%%s%%%%'"
-                    "   AND tags.active != 0"
-                    "   AND EXISTS (SELECT * FROM tag_resources"
-                    "                WHERE tag_resources.resource_uuid"
-                    "                        = %ss.uuid"
-                    "                  AND tag_resources.resource_type"
-                    "                        = '%s'"
-                    "                  AND tag = tags.id)"
-                    "   AND tags.value %s '%%%%%s%%%%'))",
-                    get_join (first_keyword, last_was_and,
-                              last_was_not),
-                    sql_ilike_op (),
-                    tag_name,
-                    type,
-                    type,
-                    sql_ilike_op (),
-                    tag_value);
-            }
-          else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
-            {
-              if (strcasecmp (type, "allinfo") == 0)
-                g_string_append_printf
-                   (clause,
-                    "%s"
-                    "(EXISTS"
-                    "  (SELECT * FROM tags"
-                    "   WHERE tags.name %s '%s'"
-                    "   AND tags.active != 0"
-                    "   AND EXISTS (SELECT * FROM tag_resources"
-                    "                WHERE tag_resources.resource_uuid"
-                    "                        = allinfo.uuid"
-                    "                  AND tag_resources.resource_type"
-                    "                        = allinfo.type"
-                    "                  AND tag = tags.id)"
-                    "   AND tags.value"
-                    "       %s '%s'))",
-                    get_join (first_keyword, last_was_and,
-                              last_was_not),
-                    sql_regexp_op (),
-                    tag_name,
-                    sql_regexp_op (),
-                    tag_value);
-              else
-                g_string_append_printf
-                   (clause,
-                    "%s"
-                    "(EXISTS"
-                    "  (SELECT * FROM tags"
-                    "   WHERE tags.name %s '%s'"
-                    "   AND tags.active != 0"
-                    "   AND EXISTS (SELECT * FROM tag_resources"
-                    "                WHERE tag_resources.resource_uuid"
-                    "                        = %ss.uuid"
-                    "                  AND tag_resources.resource_type"
-                    "                        = '%s'"
-                    "                  AND tag = tags.id)"
-                    "   AND tags.value"
-                    "       %s '%s'))",
-                    get_join (first_keyword, last_was_and,
-                              last_was_not),
-                    sql_regexp_op (),
-                    tag_name,
-                    type,
-                    type,
-                    sql_regexp_op (),
-                    tag_value);
-            }
-
-          g_strfreev(tag_split);
-          g_free(tag_name);
-          g_free(tag_value);
           first_keyword = 0;
           last_was_and = 0;
           last_was_not = 0;
