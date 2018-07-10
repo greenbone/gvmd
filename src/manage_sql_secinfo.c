@@ -1222,22 +1222,22 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
                                   sql_select_limit (max),
                                   first);
 
-  cve_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+  cve_clause = filter_clause ("cve", filter ? filter : get->filter,
                               filter_columns, cve_select_columns, NULL,
                               get->trash, &cve_order, NULL, NULL, NULL, NULL);
-  cpe_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+  cpe_clause = filter_clause ("cpe", filter ? filter : get->filter,
                               filter_columns, cpe_select_columns, NULL,
                               get->trash, &cpe_order, NULL, NULL, NULL, NULL);
-  nvt_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+  nvt_clause = filter_clause ("nvt", filter ? filter : get->filter,
                               filter_columns, nvt_select_columns, NULL,
                               get->trash, &nvt_order, NULL, NULL, NULL, NULL);
-  cert_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+  cert_clause = filter_clause ("cert_bund_adv", filter ? filter : get->filter,
                                filter_columns, cert_select_columns, NULL,
                                get->trash, &cert_order, NULL, NULL, NULL, NULL);
-  dfn_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+  dfn_clause = filter_clause ("dfn_cert_adv", filter ? filter : get->filter,
                               filter_columns, dfn_select_columns, NULL,
                               get->trash, &dfn_order, NULL, NULL, NULL, NULL);
-  ovaldef_clause = filter_clause ("allinfo", filter ? filter : get->filter,
+  ovaldef_clause = filter_clause ("ovaldef", filter ? filter : get->filter,
                                   filter_columns, ovaldef_select_columns, NULL,
                                   get->trash, &ovaldef_order, NULL, NULL, NULL,
                                   NULL);
