@@ -67507,9 +67507,9 @@ type_build_select (const char *type, const char *columns_str,
   if (get->ignore_pagination)
     pagination_clauses = NULL;
   else
-    pagination_clauses = g_strdup_printf (" OFFSET %d LIMIT %s",
-                                          first,
-                                          sql_select_limit (max));
+    pagination_clauses = g_strdup_printf (" LIMIT %s OFFSET %d",
+                                          sql_select_limit (max),
+                                          first);
 
 
   *select = g_strdup_printf
