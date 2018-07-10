@@ -2933,6 +2933,152 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
 }
 
 /**
+ * @brief Append parts for a "tag_id" keyword to a filter clause.
+ *
+ * @param[in,out] clause     Buffer for the filter clause to append to.
+ * @param[in]  keyword       The keyword to create the filter clause part for.
+ * @param[in]  type          The resource type.
+ * @param[in]  first         Whether keyword is first.
+ * @param[in]  last_was_and  Whether last keyword was "and".
+ * @param[in]  last_was_not  Whether last keyword was "not".
+ */
+static void
+filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
+                             const char *type, int first_keyword,
+                             int last_was_and, int last_was_not)
+{
+  gchar *quoted_keyword;
+
+  quoted_keyword = sql_quote (keyword->string);
+
+  if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
+      || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
+      || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
+    {
+      if (strcasecmp (type, "allinfo") == 0)
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.uuid = '%s'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = allinfo.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = allinfo.type"
+            "                  AND tag = tags.id)))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            quoted_keyword);
+      else
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.uuid = '%s'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = %ss.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = '%s'"
+            "                  AND tag = tags.id)))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            quoted_keyword,
+            type,
+            type);
+    }
+  else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
+    {
+      if (strcasecmp (type, "allinfo") == 0)
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.uuid %s '%%%%%s%%%%'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = allinfo.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = allinfo.type"
+            "                  AND tag = tags.id)))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            sql_ilike_op (),
+            quoted_keyword);
+      else
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.uuid %s '%%%%%s%%%%'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = %ss.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = '%s'"
+            "                  AND tag = tags.id)))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            sql_ilike_op (),
+            quoted_keyword,
+            type,
+            type);
+    }
+  else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
+    {
+      if (strcasecmp (type, "allinfo") == 0)
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.uuid %s '%s'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = allinfo.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = allinfo.type"
+            "                  AND tag = tags.id)))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            sql_regexp_op (),
+            quoted_keyword);
+      else
+        g_string_append_printf
+           (clause,
+            "%s"
+            "(EXISTS"
+            "  (SELECT * FROM tags"
+            "   WHERE tags.uuid %s '%s'"
+            "   AND tags.active != 0"
+            "   AND EXISTS (SELECT * FROM tag_resources"
+            "                WHERE tag_resources.resource_uuid"
+            "                        = %ss.uuid"
+            "                  AND tag_resources.resource_type"
+            "                        = '%s'"
+            "                  AND tag = tags.id)))",
+            get_join (first_keyword, last_was_and,
+                      last_was_not),
+            sql_regexp_op (),
+            quoted_keyword,
+            type,
+            type);
+    }
+
+  g_free (quoted_keyword);
+}
+
+/**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
  * @param[in]  type     Resource type.
@@ -3377,6 +3523,25 @@ filter_clause (const char* type, const char* filter,
           first_keyword = 0;
           last_was_and = 0;
           last_was_not = 0;
+
+          point++;
+          continue;
+        }
+      /* Add criteria for tag_id to clause */
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "tag_id") == 0))
+        {
+          quoted_keyword = NULL;
+
+          filter_clause_append_tag_id (clause, keyword, type, first_keyword,
+                                       last_was_and, last_was_not);
+
+          first_keyword = 0;
+          last_was_and = 0;
+          last_was_not = 0;
+
+          point++;
+          continue;
         }
 
       /* Add SQL to the clause for each column name. */
