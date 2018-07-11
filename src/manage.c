@@ -7942,7 +7942,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<category>%d</category>"
                               "<copyright>%s</copyright>"
                               "<family>%s</family>"
-                              "<version>%s</version>"
                               "<cvss_base>%s</cvss_base>"
                               "<qod>"
                               "<value>%s</value>"
@@ -7968,9 +7967,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               nvt_iterator_category (nvts),
                               copyright_text,
                               family_text,
-                              get_iterator_modification_time (nvts)
-                               ? get_iterator_modification_time (nvts)
-                               : "",
                               nvt_iterator_cvss_base (nvts)
                                ? nvt_iterator_cvss_base (nvts)
                                : "",
