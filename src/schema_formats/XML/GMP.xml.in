@@ -11930,11 +11930,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <filter_keywords>
           <condition>type is "nvt"</condition>
           <column>
-            <name>version</name>
-            <type>text</type>
-            <summary>Version of the NVT</summary>
-          </column>
-          <column>
             <name>summary</name>
             <type>text</type>
             <summary>Summary text of the NVT</summary>
@@ -13480,7 +13475,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>copyright</e>
               <e>summary</e>
               <e>family</e>
-              <e>version</e>
               <e>cvss_base</e>
               <e>qod</e>
               <e>cve_id</e>
@@ -13574,11 +13568,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>family</name>
           <summary>Name of the family the NVT belongs to</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>version</name>
-          <summary>Version of the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -13764,7 +13753,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <copyright>GNU GPL v2</copyright>
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
-            <version>2012-09-19T20:56:15+02:00</version>
             <cvss_base></cvss_base>
             <cve_id>NOCVE</cve_id>
             <bugtraq_id>NOBID</bugtraq_id>
@@ -25827,6 +25815,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The task status "Internal Error" is now called "Interrupted", to
 		better fit its function.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
+  <change>
+    <command>GET_INFO, GET_NVTS</command>
+    <summary>VERSION element removed from NVTs</summary>
+    <description>
+      <p>
+        The VERSION element has been removed from NVTs.
       </p>
     </description>
     <version>8.0</version>
