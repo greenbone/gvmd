@@ -225,6 +225,12 @@
 #define SETTING_UUID_DEFAULT_CA_CERT "9ac801ea-39f8-11e6-bbaa-28d24461215b"
 
 /**
+ * @brief UUID of 'Tag Resources Per Page' setting.
+ */
+#define SETTING_UUID_TAG_RESOURCES_PER_PAGE \
+        "4e35770c-9a41-4d56-ab9a-a62a356fe597"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0

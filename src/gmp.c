@@ -3014,8 +3014,10 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
  */
 typedef struct
 {
-  get_data_t get;    ///< Get args.
-  int names_only;    ///< Boolean. Whether to get only distinct names.
+  get_data_t get;       ///< Get args.
+  int names_only;       ///< Boolean. Whether to get only distinct names.
+  int resources_first;  ///< Index of first resource to list, starting at 1.
+  int resources_rows;    ///< Maximum number of resources to list.
 } get_tags_data_t;
 
 /**
@@ -7736,6 +7738,19 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_tags_data->names_only = strcmp (attribute, "0");
             else
               get_tags_data->names_only = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "resources_first", &attribute))
+              get_tags_data->resources_first = atoi (attribute);
+            else
+              get_tags_data->resources_first = 1;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "resources_rows", &attribute))
+              get_tags_data->resources_rows = atoi (attribute);
+            else
+              setting_value_int (SETTING_UUID_TAG_RESOURCES_PER_PAGE,
+                                 &(get_tags_data->resources_rows));
 
             set_client_state (CLIENT_GET_TAGS);
           }
@@ -19352,29 +19367,39 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
       else
         {
           gchar* value;
+          int resources_first = get_tags_data->resources_first;
+          int resources_rows = manage_max_rows (get_tags_data->resources_rows);
+          int page_resources_count = 0;
+
+          if (resources_first <= 0)
+            resources_first = 1;
 
           value = g_markup_escape_text (tag_iterator_value (&tags), -1);
 
           SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
 
-          SENDF_TO_CLIENT_OR_FAIL ("<resources>"
-                                   "<type>%s</type>"
-                                   "<count><total>%d</total></count>",
-                                   tag_iterator_resource_type (&tags),
-                                   tag_iterator_resources (&tags));
+          SENDF_TO_CLIENT_OR_FAIL ("<resources first=\"%d\" rows=\"%d\">"
+                                   "<type>%s</type>",
+                                   resources_first,
+                                   resources_rows,
+                                   tag_iterator_resource_type (&tags));
 
           if (get_tags_data->get.details)
             {
               iterator_t resources;
 
               init_tag_resources_iterator (&resources,
-                                          get_iterator_resource (&tags),
-                                          get_tags_data->get.trash);
+                                           get_iterator_resource (&tags),
+                                           get_tags_data->get.trash,
+                                           resources_first,
+                                           resources_rows);
 
               while (next (&resources))
                 {
+                  page_resources_count ++;
+
                   SENDF_TO_CLIENT_OR_FAIL
-                  ("<resource id=\"%s\">"
+                   ("<resource id=\"%s\">"
                     "<name>%s</name>"
                     "<trash>%d</trash>",
                     tag_resource_iterator_uuid (&resources),
@@ -19391,10 +19416,16 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
               cleanup_iterator (&resources);
             }
 
-          SENDF_TO_CLIENT_OR_FAIL ("</resources>"
+          SENDF_TO_CLIENT_OR_FAIL ("<count>"
+                                   "<total>%d</total>"
+                                   "<page>%d</page>"
+                                   "</count>"
+                                   "</resources>"
                                    "<value>%s</value>"
                                    "<active>%d</active>"
                                    "</tag>",
+                                   tag_iterator_resources (&tags),
+                                   page_resources_count,
                                    value,
                                    tag_iterator_active (&tags));
           g_free (value);

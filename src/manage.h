@@ -4178,7 +4178,7 @@ int
 tag_iterator_resources (iterator_t*);
 
 void
-init_tag_resources_iterator (iterator_t*, tag_t, int);
+init_tag_resources_iterator (iterator_t*, tag_t, int, int, int);
 
 resource_t
 tag_resource_iterator_id (iterator_t*);

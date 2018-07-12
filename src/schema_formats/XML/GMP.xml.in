@@ -19102,6 +19102,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to get only distinct tag names</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>resources_first</name>
+        <summary>Index of the first resource to list, starting at 1</summary>
+        <type>integer</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>resources_rows</name>
+        <summary>Maximum number of resources to list</summary>
+        <type>integer</type>
+        <required>0</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -19213,7 +19225,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>resources</name>
           <summary>Identifies the resources the tag is to be attached to</summary>
           <pattern>
+            <attrib>
+              <name>first</name>
+              <summary>Index of the first resource listed, starting at 1</summary>
+              <type>integer</type>
+              <required>1</required>
+            </attrib>
+            <attrib>
+              <name>rows</name>
+              <summary>Maximum number of resources listed</summary>
+              <type>integer</type>
+              <required>1</required>
+            </attrib>
             <any><e>resource</e></any>
+            <e>count</e>
             <e>type</e>
           </pattern>
           <ele>
@@ -19243,6 +19268,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>permissions</name>
               <summary>Permissions the user has on the resource</summary>
               <pattern></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>count</name>
+            <summary></summary>
+            <pattern>
+              <e>total</e>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>total</name>
+              <summary>The total number of resources the tag is attached to</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>page</name>
+              <summary>The number of resources currently shown for the tag</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
             </ele>
           </ele>
           <ele>
@@ -19400,11 +19447,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Fri Apr 12 08:49:43 2013</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <resource id="b493b7a8-7489-11df-a3ec-002264764cea">
-              <type>target</type>
-              <name>Server 1</name>
-              <trash>0</trash>
-            </resource>
+            <resources first="1" rows="100">
+              <resource id="b493b7a8-7489-11df-a3ec-002264764cea">
+                <type>target</type>
+                <name>Server 1</name>
+                <trash>0</trash>
+              </resource>
+              <count>
+                <total>1</total>
+                <page>1</page>
+              </count>
+            </resources>
             <value>52.2788</value>
             <active>1</active>
             <orphaned>0</orphaned>
