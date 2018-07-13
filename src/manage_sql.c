@@ -15340,6 +15340,17 @@ check_db_settings ()
          "  'Auto Cache Rebuild',"
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_TAG_RESOURCES_PER_PAGE "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_TAG_RESOURCES_PER_PAGE "', NULL,"
+         "  'Tag Resources Per Page',"
+         "  'The default number of resources shown in the Tag details.',"
+         "  100);");
 }
 
 /**
@@ -62462,6 +62473,7 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+               || strcmp (uuid, SETTING_UUID_TAG_RESOURCES_PER_PAGE) == 0
                || strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
@@ -62497,10 +62509,11 @@ modify_setting (const gchar *uuid, const gchar *name,
           value_size = 0;
         }
 
-      if (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0)
+      if (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+          || strcmp (uuid, SETTING_UUID_TAG_RESOURCES_PER_PAGE) == 0)
         {
           const gchar *val;
-          /* Rows Per Page. */
+          /* Rows Per Page, Tag Resources Per Page. */
           val = value;
           while (*val && isdigit (*val)) val++;
           if (*val && strcmp (value, "-1"))
@@ -66878,21 +66891,27 @@ tag_iterator_resources (iterator_t* iterator)
  * @param[in]  iterator    Iterator.
  * @param[in]  tag         The tag to init the resources iterator for.
  * @param[in]  trash       Whether to get resources of tags in the trashcan.
+ * @param[in]  first       Index of first resource to show, starting at 1.
+ * @param[in]  rows        Maximum number of resources to show, -1 for all.
  *
  * @return 0 success, 1 failed to find tag, 2 failed to find filter,
  *         -1 error.
  */
 void
-init_tag_resources_iterator (iterator_t* iterator, tag_t tag, int trash)
+init_tag_resources_iterator (iterator_t* iterator, tag_t tag, int trash,
+                             int first, int rows)
 {
   init_iterator (iterator,
                  "SELECT resource, resource_uuid, resource_location,"
                  " resource_name (resource_type, resource_uuid,"
                  "                resource_location),"
                  " resource_type"
-                 " FROM tag_resources%s WHERE tag = %llu",
+                 " FROM tag_resources%s WHERE tag = %llu"
+                 " LIMIT %s OFFSET %d",
                  trash ? "_trash" : "",
-                 tag);
+                 tag,
+                 sql_select_limit (rows),
+                 first - 1);
 }
 
 /**
