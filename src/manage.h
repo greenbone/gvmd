@@ -1483,7 +1483,7 @@ int
 report_progress (report_t, task_t, gchar **);
 
 gchar *
-manage_report (report_t, const get_data_t *, report_format_t,
+manage_report (report_t, report_t, const get_data_t *, report_format_t,
                int, int, const char *,
                gsize *, gchar **, gchar **, gchar **, gchar **, gchar **);
 
