@@ -523,6 +523,13 @@ manage_create_sql_functions ()
 
   sql ("SET role dba;");
 
+  sql ("CREATE OR REPLACE FUNCTION hosts_contains (text, text)"
+       " RETURNS boolean"
+       " AS '%s/libgvm-pg-server', 'sql_hosts_contains'"
+       " LANGUAGE C"
+       " IMMUTABLE;",
+       GVM_LIB_INSTALL_DIR);
+
   sql ("CREATE OR REPLACE FUNCTION max_hosts (text, text)"
        " RETURNS integer"
        " AS '%s/libgvm-pg-server', 'sql_max_hosts'"
@@ -1228,14 +1235,6 @@ manage_create_sql_functions ()
            "  SELECT null::text;"
            "$$ LANGUAGE SQL;");
     }
-
-  sql ("CREATE OR REPLACE FUNCTION hosts_contains (text, text)"
-       " RETURNS boolean AS $$"
-       /* Check if a host list contains a host. */
-       "  SELECT trim ($2)"
-       "         IN (SELECT trim (unnest (string_to_array ($1, ','))));"
-       "$$ LANGUAGE SQL"
-       " IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION make_uuid () RETURNS text AS $$"
        "  SELECT uuid_generate_v4 ()::text AS result;"

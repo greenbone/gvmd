@@ -38,6 +38,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <gvm/base/hosts.h>
 #include <gvm/util/uuidutils.h>
 
 #undef G_LOG_DOMAIN
@@ -452,7 +453,6 @@ sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
 void
 sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
-  gchar **split, **point, *stripped_host;
   const unsigned char *hosts, *host;
 
   assert (argc == 2);
@@ -471,24 +471,7 @@ sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
       return;
     }
 
-  stripped_host = g_strstrip (g_strdup ((gchar*) host));
-  split = g_strsplit ((gchar*) hosts, ",", 0);
-  point = split;
-  while (*point)
-    {
-      if (strcmp (g_strstrip (*point), stripped_host) == 0)
-        {
-          g_strfreev (split);
-          g_free (stripped_host);
-          sqlite3_result_int (context, 1);
-          return;
-        }
-      point++;
-    }
-  g_strfreev (split);
-  g_free (stripped_host);
-
-  sqlite3_result_int (context, 0);
+  sqlite3_result_int (context, gvm_hosts_str_contains (hosts, host));
 }
 
 /**

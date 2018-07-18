@@ -30,6 +30,8 @@
 #include "executor/spi.h"
 #include "glib.h"
 
+#include <gvm/base/hosts.h>
+
 #ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
 #endif
@@ -48,6 +50,42 @@ textndup (text *text_arg, int length)
   memcpy (ret, VARDATA (text_arg), length);
   ret[length] = 0;
   return ret;
+}
+
+
+PG_FUNCTION_INFO_V1 (sql_hosts_contains);
+
+/**
+ * @brief Return if argument 1 matches regular expression in argument 2.
+ *
+ * This is a callback for a SQL function of two arguments.
+ */
+Datum
+sql_hosts_contains (PG_FUNCTION_ARGS)
+{
+  if (PG_ARGISNULL (0) || PG_ARGISNULL (1))
+    PG_RETURN_BOOL (0);
+  else
+    {
+      text *hosts_arg, *find_host_arg;
+      char *hosts, *find_host;
+      int ret;
+
+      hosts_arg = PG_GETARG_TEXT_P(0);
+      hosts = textndup (hosts_arg, VARSIZE (hosts_arg) - VARHDRSZ);
+
+      find_host_arg = PG_GETARG_TEXT_P(1);
+      find_host = textndup (find_host_arg, VARSIZE (find_host_arg) - VARHDRSZ);
+
+      if (gvm_hosts_str_contains ((gchar *) hosts, (gchar *) find_host))
+        ret = 1;
+      else
+        ret = 0;
+
+      pfree (hosts);
+      pfree (find_host);
+      PG_RETURN_BOOL (ret);
+    }
 }
 
 PG_FUNCTION_INFO_V1 (sql_next_time);
