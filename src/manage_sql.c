@@ -45295,7 +45295,8 @@ modify_note (note_t note, const char *active, const char* text,
    { "notes.task", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "notes.result", "result", KEYWORD_TYPE_INTEGER },                     \
    { "notes.end_time", "end_time", KEYWORD_TYPE_INTEGER },                 \
-   { "(notes.end_time = 0) OR (notes.end_time >= m_now ())",               \
+   { "CAST (((notes.end_time = 0) OR (notes.end_time >= m_now ()))"        \
+     "      AS INTEGER)",                                                  \
      "active",                                                             \
      KEYWORD_TYPE_INTEGER },                                               \
    {                                                                       \
@@ -45352,7 +45353,8 @@ modify_note (note_t note, const char *active, const char* text,
    { "notes_trash.task", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "notes_trash.result", "result", KEYWORD_TYPE_INTEGER },                     \
    { "notes_trash.end_time", NULL, KEYWORD_TYPE_INTEGER },                       \
-   { "(notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ())",         \
+   { "CAST (((notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ()))"  \
+     "      AS INTEGER)",                                                        \
      "active",                                                                   \
      KEYWORD_TYPE_INTEGER },                                                     \
    {                                                                             \
@@ -46528,7 +46530,8 @@ modify_override (override_t override, const char *active, const char* text,
    { "overrides.result", "result", KEYWORD_TYPE_INTEGER },                  \
    { "overrides.end_time", NULL, KEYWORD_TYPE_INTEGER },                    \
    {                                                                        \
-     "(overrides.end_time = 0) OR (overrides.end_time >= m_now ())",        \
+     "CAST (((overrides.end_time = 0) OR (overrides.end_time >= m_now ()))" \
+     "      AS INTEGER)",                                                   \
      "active",                                                              \
      KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
@@ -46603,8 +46606,8 @@ modify_override (override_t override, const char *active, const char* text,
    { "overrides_trash.result", "result", KEYWORD_TYPE_INTEGER },            \
    { "overrides_trash.end_time", NULL, KEYWORD_TYPE_INTEGER },              \
    {                                                                        \
-     "(overrides_trash.end_time = 0)"                                       \
-     " OR (overrides_trash.end_time >= m_now ())",                          \
+     "CAST (((overrides_trash.end_time = 0)"                                \
+     "       OR (overrides_trash.end_time >= m_now ())) AS INTEGER)",       \
      "active",                                                              \
      KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
@@ -54982,7 +54985,8 @@ trash_permission_writable (permission_t permission)
      "_resource",                                                            \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "resource_location = " G_STRINGIFY (LOCATION_TRASH),                    \
+   { "CAST ((resource_location = " G_STRINGIFY (LOCATION_TRASH) ")"          \
+     "      AS INTEGER)",                                                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
    {                                                                         \
@@ -55031,7 +55035,8 @@ trash_permission_writable (permission_t permission)
      "_subject",                                                             \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "subject_location = " G_STRINGIFY (LOCATION_TRASH),                     \
+   { "CAST ((subject_location = " G_STRINGIFY (LOCATION_TRASH) ")"           \
+     "      AS INTEGER)",                                                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -55054,7 +55059,8 @@ trash_permission_writable (permission_t permission)
      "_resource",                                                            \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "resource_location = " G_STRINGIFY (LOCATION_TRASH),                    \
+   { "CAST ((resource_location = " G_STRINGIFY (LOCATION_TRASH) ")"          \
+     "      AS INTEGER)",                                                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
    { "resource = -1", NULL, KEYWORD_TYPE_INTEGER },                          \
@@ -55095,7 +55101,8 @@ trash_permission_writable (permission_t permission)
      "_subject",                                                             \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "subject_location = " G_STRINGIFY (LOCATION_TRASH),                     \
+   { "CAST ((subject_location = " G_STRINGIFY (LOCATION_TRASH) ")"           \
+     "      AS INTEGER)",                                                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -67683,7 +67690,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_location", NULL, KEYWORD_TYPE_INTEGER },                      \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(resource = 0)", "orphan", KEYWORD_TYPE_INTEGER },                     \
+   { "CAST ((resource = 0) AS INTEGER)", "orphan", KEYWORD_TYPE_INTEGER },   \
    {                                                                         \
      "resource_name (resource_type, resource_uuid, resource_location)",      \
      "resource_name",                                                        \
@@ -67704,7 +67711,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_location", NULL, KEYWORD_TYPE_INTEGER },                      \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(resource = 0)", "orphan", KEYWORD_TYPE_INTEGER },                     \
+   { "CAST ((resource = 0) AS INTEGER)", "orphan", KEYWORD_TYPE_INTEGER },   \
    {                                                                         \
      "resource_name (resource_type, resource_uuid, resource_location)",      \
      "resource_name",                                                        \
