@@ -45062,10 +45062,12 @@ create_override (const char* active, const char* nvt, const char* text,
   result_nvt_notice (nvt);
   sql ("INSERT INTO overrides"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-       "  port, severity, new_severity, task, result, end_time)"
+       "  port, severity, new_severity, task, result, end_time,"
+       "  result_nvt)"
        " VALUES"
        " (make_uuid (), (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', %i, %i, %s, %s, %s, %s, %1.1f, %llu, %llu, %i);",
+       "  '%s', %i, %i, %s, %s, %s, %s, %1.1f, %llu, %llu, %i,"
+       "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        current_credentials.uuid,
        nvt,
        time (NULL),
@@ -45081,7 +45083,8 @@ create_override (const char* active, const char* nvt, const char* text,
          ? 0
          : (strcmp (active, "0")
              ? (time (NULL) + (atoi (active) * 60 * 60 * 24))
-             : 1));
+             : 1),
+       nvt);
 
   g_free (quoted_text);
   g_free (quoted_hosts);
@@ -45492,6 +45495,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            " port = %s,"
            " severity = %s,"
            " %s%s%s"
+           " %s%s%s"
            " new_severity = %f,"
            " task = %llu,"
            " result = %llu"
@@ -45504,6 +45508,9 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            nvt ? "nvt = '" : "",
            nvt ? quoted_nvt : "",
            nvt ? "'," : "",
+           nvt ? "result_nvt = (SELECT id FROM result_nvts WHERE nvt='" : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "')," : "",
            new_severity_dbl,
            task,
            result,
@@ -45547,6 +45554,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            " port = %s,"
            " severity = %s,"
            " %s%s%s"
+           " %s%s%s"
            " new_severity = %f,"
            " task = %llu,"
            " result = %llu"
@@ -45560,6 +45568,9 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            nvt ? "nvt = '" : "",
            nvt ? quoted_nvt : "",
            nvt ? "'," : "",
+           nvt ? "result_nvt = (SELECT id FROM result_nvts WHERE nvt='" : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "')," : "",
            new_severity_dbl,
            task,
            result,
