@@ -161,6 +161,10 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
        " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+       "         '1.3.6.1.4.1.25623.1.0.105937', 'Product detection');",
+       selector_name);
+  sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
        "         '1.3.6.1.4.1.25623.1.0.103997', 'Service detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
@@ -218,6 +222,21 @@ check_config_system_discovery (const char *uuid)
            " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
            "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
            "         '1.3.6.1.4.1.25623.1.0.51662', 'General');",
+           uuid);
+      update = 1;
+    }
+
+  if (sql_int ("SELECT count (*) FROM nvt_selectors"
+               " WHERE name = (SELECT nvt_selector FROM configs"
+               "               WHERE uuid = '%s')"
+               "       AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.105937';",
+               uuid)
+      == 0)
+    {
+      sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+           " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
+           "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           "         '1.3.6.1.4.1.25623.1.0.105937', 'Product detection');",
            uuid);
       update = 1;
     }
