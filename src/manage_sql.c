@@ -66087,6 +66087,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
 
+  ignore_max_rows_per_page = 1;
   switch (type_build_select (type,
                              "id, uuid",
                              &resources_get, 0, 1, NULL, NULL, NULL,
@@ -66095,12 +66096,14 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
       case 0:
         break;
       default:
+        ignore_max_rows_per_page = 0;
         g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
         sql_rollback ();
         g_free (resources_get.filter);
         g_free (resources_get.type);
         return -1;
     }
+  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
@@ -66219,6 +66222,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
 
+  ignore_max_rows_per_page = 1;
   switch (type_build_select (type,
                              "id",
                              &resources_get, 0, 1, NULL, NULL, NULL,
@@ -66227,12 +66231,14 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
       case 0:
         break;
       default:
+        ignore_max_rows_per_page = 0;
         g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
         sql_rollback ();
         g_free (resources_get.filter);
         g_free (resources_get.type);
         return -1;
     }
+  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
