@@ -19359,44 +19359,16 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
 
           SENDF_TO_CLIENT_OR_FAIL ("<resources>"
                                    "<type>%s</type>"
-                                   "<count><total>%d</total></count>",
-                                   tag_iterator_resource_type (&tags),
-                                   tag_iterator_resources (&tags));
-
-          if (get_tags_data->get.details)
-            {
-              iterator_t resources;
-
-              init_tag_resources_iterator (&resources,
-                                          get_iterator_resource (&tags),
-                                          get_tags_data->get.trash);
-
-              while (next (&resources))
-                {
-                  SENDF_TO_CLIENT_OR_FAIL
-                  ("<resource id=\"%s\">"
-                    "<name>%s</name>"
-                    "<trash>%d</trash>",
-                    tag_resource_iterator_uuid (&resources),
-                    tag_resource_iterator_name (&resources)
-                      ? tag_resource_iterator_name (&resources) : "",
-                    tag_resource_iterator_location (&resources));
-
-                  if (tag_resource_iterator_readable (&resources) == 0)
-                    SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
-
-                  SEND_TO_CLIENT_OR_FAIL ("</resource>");
-                }
-
-              cleanup_iterator (&resources);
-            }
-
-          SENDF_TO_CLIENT_OR_FAIL ("</resources>"
+                                   "<count><total>%d</total></count>"
+                                   "</resources>"
                                    "<value>%s</value>"
                                    "<active>%d</active>"
                                    "</tag>",
+                                   tag_iterator_resource_type (&tags),
+                                   tag_iterator_resources (&tags),
                                    value,
                                    tag_iterator_active (&tags));
+
           g_free (value);
         }
       count++;

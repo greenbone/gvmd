@@ -25711,15 +25711,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         In the tag commands the single RESOURCE element is replaced with a
-        RESOURCES element which contains the TYPE and which may contain
-        one or more RESOURCE elements to specify the resources the tag
-        is attached to.
+        RESOURCES element which contains the TYPE and which for CREATE_TAG
+        and MODIFY_TAG may contain one or more RESOURCE elements to specify
+        the resources the tag is to be attached to.
       </p>
       <p>
-        Additionally the filter keywords orphan, resource, resource_location,
-        resource_name and resource_uuid have been removed from GET_TAGS.
-        Instead the keyword resources has been added which selects the total
-        number of resources a tag is attached to.
+        To get the resources a tag is attached to, use a GET_... command of the
+        type given in the RESOURCES / TYPE element with the tag_id keyword
+        in the filter.
+      </p>
+      <p>
+        Additionally the tag filter keywords orphan, resource,
+        resource_location, resource_name and resource_uuid have been removed
+        from GET_TAGS. Instead the keyword resources has been added which
+        selects the total number of resources a tag is attached to.
       </p>
     </description>
     <version>8.0</version>

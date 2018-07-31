@@ -66884,29 +66884,6 @@ tag_iterator_resources (iterator_t* iterator)
 }
 
 /**
- * @brief Initialise a tag resources iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  tag         The tag to init the resources iterator for.
- * @param[in]  trash       Whether to get resources of tags in the trashcan.
- *
- * @return 0 success, 1 failed to find tag, 2 failed to find filter,
- *         -1 error.
- */
-void
-init_tag_resources_iterator (iterator_t* iterator, tag_t tag, int trash)
-{
-  init_iterator (iterator,
-                 "SELECT resource, resource_uuid, resource_location,"
-                 " resource_name (resource_type, resource_uuid,"
-                 "                resource_location),"
-                 " resource_type"
-                 " FROM tag_resources%s WHERE tag = %llu",
-                 trash ? "_trash" : "",
-                 tag);
-}
-
-/**
  * @brief Get the resource_location from a Tag iterator.
  *
  * @param[in]  iterator  Iterator.
