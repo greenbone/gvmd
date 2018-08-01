@@ -621,6 +621,39 @@ sql_begin_exclusive_giveup ()
 }
 
 /**
+ * @brief Begin an exclusive transaction with a specific key.
+ *
+ * @param[in]  key       Transaction key may be a resource id.
+ */
+void
+sql_begin_exclusive_lock (int key)
+{
+    sql ("BEGIN;");
+    sql ("SELECT pg_advisory_xact_lock (%llu);", key);
+}
+
+/**
+ * @brief Begin an exclusive transaction, giving up on failure.
+ *
+ * @param[in]  key       A used transaction key.
+ *
+ * @return 0 got lock, 1 gave up, -1 error.
+ */
+int
+sql_begin_exclusive_giveup_lock (int key)
+{
+    int ret;
+
+    ret = sql_giveup ("BEGIN;");
+    if (ret)
+        return ret;
+    if (sql_int ("SELECT pg_try_advisory_xact_lock (%llu);", key))
+        return 0;
+    sql_rollback ();
+    return 1;
+}
+
+/**
  * @brief Begin an immediate transaction.
  */
 void
@@ -640,6 +673,30 @@ sql_begin_immediate_giveup ()
 {
   /* TODO This is just an exclusive lock. */
   return sql_begin_exclusive_giveup ();
+}
+
+/**
+ * @brief Begin an immediate transaction.
+ *
+ * @param[in]  key       Transaction key may be a resource id.
+ */
+void
+sql_begin_immediate_with_key (int key)
+{
+  sql_begin_exclusive_lock (key);
+}
+
+/**
+ * @brief Begin an immediate transaction.
+ *
+ * @param[in]  key       A used transaction key.
+ *
+ * @return 0 got lock, 1 gave up, -1 error.
+ */
+int
+sql_begin_immediate_giveup_with_key (int key)
+{
+  return sql_begin_exclusive_giveup_lock (key);
 }
 
 /**

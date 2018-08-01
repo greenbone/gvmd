@@ -124,10 +124,22 @@ int
 sql_begin_exclusive_giveup ();
 
 void
+sql_begin_exclusive_lock (int);
+
+int
+sql_begin_exclusive_giveup_lock (int);
+
+void
 sql_begin_immediate ();
 
 int
 sql_begin_immediate_giveup ();
+
+void
+sql_begin_immediate_with_key (int);
+
+int
+sql_begin_immediate_giveup_with_key (int);
 
 void
 sql_commit ();
