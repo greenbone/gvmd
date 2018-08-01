@@ -3201,8 +3201,24 @@ filter_clause (const char* type, const char* filter,
 
           if (first_order)
             {
-              if ((strcmp (type, "task") == 0)
-                  && (strcmp (keyword->string, "threat") == 0))
+              if ((strcmp (type, "report") == 0)
+                  && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
+                  "              WHERE tasks.id = task)"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (scan_run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " ASC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "threat") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -3344,8 +3360,25 @@ filter_clause (const char* type, const char* filter,
 
           if (first_order)
             {
-              if ((strcmp (type, "task") == 0)
-                  && (strcmp (keyword->string, "threat") == 0))
+              if (((strcmp (type, "task") == 0)
+                   || (strcmp (type, "report") == 0))
+                  && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
+                  "              WHERE tasks.id = task)"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (scan_run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " DESC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "threat") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -21860,18 +21893,6 @@ report_add_result (report_t report, result_t result)
      "report_severity (id, opts.override, opts.min_qod)",                    \
      "severity",                                                             \
      KEYWORD_TYPE_DOUBLE                                                     \
-   },                                                                        \
-   {                                                                         \
-     "(CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.id = task)"   \
-     "  THEN 'Container'"                                                    \
-     "  ELSE run_status_name (scan_run_status)"                              \
-     "       || (SELECT CAST (temp / 100 AS text)"                           \
-     "                  || CAST (temp / 10 AS text)"                         \
-     "                  || CAST (temp % 10 as text)"                         \
-     "           FROM (SELECT report_progress (id) AS temp) AS temp_sub)"    \
-     "  END)",                                                               \
-     "status",                                                               \
-     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
    {                                                                         \
      "report_severity_count (id, opts.override, opts.min_qod,"               \
