@@ -29732,39 +29732,40 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (report)
     {
-      uuid = report_uuid (report);
+      int tag_count = resource_tag_count ("report", report, 1);
 
-      PRINT (out,
-            "<user_tags>"
-            "<count>%i</count>",
-            resource_tag_count ("report", report, 1));
-
-      if (get->details || get->id)
+      if (tag_count)
         {
-          iterator_t tags;
+          PRINT (out,
+                 "<user_tags>"
+                 "<count>%i</count>",
+                 tag_count);
 
-          init_resource_tag_iterator (&tags, "report", report, 1, NULL, 1);
-
-          while (next (&tags))
+          if (get->details || get->id)
             {
-              PRINT (out,
-                     "<tag id=\"%s\">"
-                     "<name>%s</name>"
-                     "<value>%s</value>"
-                     "<comment>%s</comment>"
-                     "</tag>",
-                     resource_tag_iterator_uuid (&tags),
-                     resource_tag_iterator_name (&tags),
-                     resource_tag_iterator_value (&tags),
-                     resource_tag_iterator_comment (&tags));
+              iterator_t tags;
+
+              init_resource_tag_iterator (&tags, "report", report, 1, NULL, 1);
+
+              while (next (&tags))
+                {
+                  PRINT (out,
+                        "<tag id=\"%s\">"
+                        "<name>%s</name>"
+                        "<value>%s</value>"
+                        "<comment>%s</comment>"
+                        "</tag>",
+                        resource_tag_iterator_uuid (&tags),
+                        resource_tag_iterator_name (&tags),
+                        resource_tag_iterator_value (&tags),
+                        resource_tag_iterator_comment (&tags));
+                }
+
+              cleanup_iterator (&tags);
             }
 
-          cleanup_iterator (&tags);
+          PRINT (out, "</user_tags>");
         }
-
-      PRINT (out, "</user_tags>");
-
-      free (uuid);
     }
 
   if (report)
@@ -29808,6 +29809,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       target_t target;
       gchar *progress_xml;
       iterator_t tags;
+      int task_tag_count = resource_tag_count ("task", task, 1);
 
       tsk_name = task_name (task);
 
@@ -29850,29 +29852,34 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       free (tsk_name);
       free (tsk_uuid);
 
-      PRINT (out,
-             "<user_tags>"
-             "<count>%i</count>",
-             resource_tag_count ("task", task, 1));
-
-      init_resource_tag_iterator (&tags, "task", task, 1, NULL, 1);
-      while (next (&tags))
+      if (task_tag_count)
         {
           PRINT (out,
-                 "<tag id=\"%s\">"
-                 "<name>%s</name>"
-                 "<value>%s</value>"
-                 "<comment>%s</comment>"
-                 "</tag>",
-                 resource_tag_iterator_uuid (&tags),
-                 resource_tag_iterator_name (&tags),
-                 resource_tag_iterator_value (&tags),
-                 resource_tag_iterator_comment (&tags));
+                 "<user_tags>"
+                 "<count>%i</count>",
+                 task_tag_count);
+
+          init_resource_tag_iterator (&tags, "task", task, 1, NULL, 1);
+          while (next (&tags))
+            {
+              PRINT (out,
+                    "<tag id=\"%s\">"
+                    "<name>%s</name>"
+                    "<value>%s</value>"
+                    "<comment>%s</comment>"
+                    "</tag>",
+                    resource_tag_iterator_uuid (&tags),
+                    resource_tag_iterator_name (&tags),
+                    resource_tag_iterator_value (&tags),
+                    resource_tag_iterator_comment (&tags));
+            }
+          cleanup_iterator (&tags);
+
+          PRINT (out,
+                "</user_tags>");
         }
-      cleanup_iterator (&tags);
 
       PRINT (out,
-             "</user_tags>"
              "</task>");
 
       {

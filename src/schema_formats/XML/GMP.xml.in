@@ -544,7 +544,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>in_use</e>
       <e>active</e>
       <e>orphan</e>
-      <e>user_tags</e>
+      <o><e>user_tags</e></o>
       <o>
         <g>
           <e>hosts</e>
@@ -881,7 +881,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>new_severity</e>
       <e>orphan</e>
       <e>permissions</e>
-      <e>user_tags</e>
+      <o><e>user_tags</e></o>
       <o>
         <g>
           <e>hosts</e>
@@ -1806,7 +1806,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>timezone</e>
             <e>timezone_abbrev</e>
             <e>permissions</e>
-            <e>user_tags</e>
+            <o><e>user_tags</e></o>
             <e>scan_run_status</e>
             <e>result_count</e>
             <e>severity</e>
@@ -2395,7 +2395,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>comment</e>
           <e>target</e>
           <e>progress</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
         </pattern>
         <ele>
           <name>name</name>
@@ -7303,7 +7303,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>writable</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <or>
             <e>installer</e>
             <e>package</e>
@@ -7587,9 +7587,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-23T10:44:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <installer>
               <trust>
                 yes
@@ -7616,9 +7613,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-23T10:44:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <installer>
               <trust>
                 yes
@@ -7801,7 +7795,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>writable</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>tasks</e>
           <o><e>families</e></o>
           <o><e>preferences</e></o>
@@ -8309,9 +8303,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </nvt_count>
             <in_use>1</in_use>
             <writable>0</writable>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
           </config>
           <truncated>...</truncated>
         </get_configs_response>
@@ -8337,9 +8328,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <growing>1</growing>
             </nvt_count>
             <in_use>1</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <tasks>
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>Web Servers</name>
@@ -9087,7 +9075,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>writable</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>condition</e>
           <e>event</e>
           <e>method</e>
@@ -9487,9 +9475,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-08-28T12:14:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>1</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <condition>
               Threat level at least
               <data>
@@ -9678,7 +9663,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <o><e>identifiers</e></o>
           <or>
             <e>host</e>
@@ -10198,9 +10183,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <writable>0</writable>
             <in_use>7</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <hosts>localhost</hosts>
             <max_hosts>1</max_hosts>
             <ssh_credential id="">
@@ -10232,9 +10214,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <writable>0</writable>
             <in_use>4</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <hosts>dik.example.org</hosts>
             <max_hosts>1</max_hosts>
             <ssh_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
@@ -10392,7 +10371,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>type</e>
           <e>full_type</e>
           <e>formats</e>
@@ -10823,9 +10802,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-05-28T11:19:20+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <type>usk</type>
             <full_type>username + SSH key</full_type>
             <formats>
@@ -10869,9 +10845,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-11-18T13:17:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>1</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <login>bob</login>
             <type>up</type>
             <full_type>username + password</full_type>
@@ -10905,9 +10878,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-11-18T13:17:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>1</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <type>up</type>
             <full_type>username + password</full_type>
             <targets>
@@ -11154,7 +11124,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>writable</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <o><e>alerts</e></o>
         </pattern>
         <ele>
@@ -11440,9 +11410,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>target</type>
             <in_use>1</in_use>
             <writable>1</writable>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <creation_time>Sun Jun 27 08:49:46 2010</creation_time>
             <modification_time>Sun Jun 27 08:49:46 2010</modification_time>
           </filter>
@@ -11465,9 +11432,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type></type>
             <in_use>1</in_use>
             <writable>1</writable>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <alerts>
@@ -11575,7 +11539,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>users</e>
         </pattern>
         <ele>
@@ -11827,9 +11791,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <users>sarah, frank</users>
           </group>
           <truncated>...</truncated>
@@ -12194,7 +12155,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>creation_time</e>
           <e>modification_time</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>update_time</e>
           <or>
             <e>cert_bund_adv</e>
@@ -12860,9 +12821,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2007-09-14T17:36:49Z</modification_time>
             <writable>0</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <update_time>2012-10-26T13:18:00.000+0000</update_time>
             <cpe>
               <title>GNU Gzip 1.3.3</title>
@@ -12995,9 +12953,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <writable>0</writable>
             <in_use>0</in_use>
             <update_time>2012-10-26T13:18:00.000+0000</update_time>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <cve>
               <cvss>9.0</cvss>
               <vector>NETWORK</vector>
@@ -13301,9 +13256,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <in_use>0</in_use>
             <active>1</active>
             <orphan>1</orphan>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <text excerpt="0">This is the full text of the note.</text>
           </note>
           <truncated>...</truncated>
@@ -13336,9 +13288,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>test</name>
             </task>
             <orphan>0</orphan>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de">
               <host>127.0.0.1</host>
               <port>general/tcp</port>
@@ -13466,7 +13415,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <o>
             <g>
               <e>creation_time</e>
@@ -13746,9 +13695,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>Services</name>
             <creation_time>2011-01-14T10:12:23+01:00</creation_time>
             <modification_time>2012-09-19T20:56:15+02:00</modification_time>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <category>3</category>
             <copyright>GNU GPL v2</copyright>
             <summary>Find what is listening on which port</summary>
@@ -13799,9 +13745,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <get_nvts_response status="200" status_text="OK">
           <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
             <name>Services</name>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
           </nvt>
         </get_nvts_response>
       </response>
@@ -14175,9 +14118,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <new_threat>Log</new_threat>
             <new_severity>0.0</new_severity>
             <orphan>1</orphan>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
           </override>
           <truncated>...</truncated>
         </get_overrides_response>
@@ -14211,9 +14151,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>test</name>
             </task>
             <orphan>0</orphan>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de" />
           </override>
           <truncated>...</truncated>
@@ -14346,7 +14283,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>resource</e>
           <e>subject</e>
         </pattern>
@@ -14671,9 +14608,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <users>sarah, frank</users>
           </permission>
           <truncated>...</truncated>
@@ -14826,7 +14760,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>port_count</e>
           <o><e>port_ranges</e></o>
           <o><e>targets</e></o>
@@ -15165,9 +15099,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-12-31T16:38:45+01:00</modification_time>
             <writable>0</writable>
             <in_use>1</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <port_count>
               <all>65535</all>
               <tcp>65535</tcp>
@@ -16063,9 +15994,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   </keyword>
                 </keywords>
               </filters>
-              <user_tags>
-                <count>0</count>
-              </user_tags>
               <scan_run_status>Done</scan_run_status>
               <hosts>
                 <count>1</count>
@@ -16307,7 +16235,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>extension</e>
           <e>content_type</e>
           <e>summary</e>
@@ -16737,9 +16665,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-31T16:46:32+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <extension>html</extension>
             <content_type>text/html</content_type>
             <summary>Single page HTML report.</summary>
@@ -16774,9 +16699,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-18T18:24:10+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <extension>html</extension>
             <content_type>text/html</content_type>
             <summary>Single page HTML report.</summary>
@@ -17189,9 +17111,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <comment/>
             <creation_time>2014-05-23T09:22:12Z</creation_time>
             <modification_time>2014-05-23T09:22:12Z</modification_time>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <host>127.0.1.1</host>
             <port>general/tcp</port>
             <nvt oid="1.3.6.1.4.1.25623.1.0.74">
@@ -17250,9 +17169,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <comment/>
             <creation_time>2014-05-23T09:22:12Z</creation_time>
             <modification_time>2014-05-23T09:22:12Z</modification_time>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <host>127.0.0.1</host>
             <port>general/tcp</port>
             <nvt oid="1.3.6.1.4.1.25623.1.0.75">
@@ -17400,7 +17316,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>users</e>
         </pattern>
         <ele>
@@ -17652,9 +17568,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <users>sarah, frank</users>
           </role>
           <truncated>...</truncated>
@@ -17806,7 +17719,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>ca_pub_info</e>
           <e>certificate_info</e>
           <e>host</e>
@@ -18181,9 +18094,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2014-01-18T12:07:36+01:00</modification_time>
             <writable>0</writable>
             <in_use>1</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <host>localhost</host>
             <port>9391</port>
             <type>2</type>
@@ -18342,7 +18252,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>first_time</e>
           <e>next_time</e>
           <e>icalendar</e>
@@ -18694,9 +18604,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-18T12:07:36+01:00</modification_time>
             <writable>0</writable>
             <in_use>1</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <first_time>2010-07-29T00:00:00+02:00</first_time>
             <next_time>2010-07-29T00:00:00+02:00</next_time>
             <icalendar>[...]</icalendar>
@@ -19553,7 +19460,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>hosts</e>
           <e>exclude_hosts</e>
           <e>max_hosts</e>
@@ -20043,9 +19950,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <writable>0</writable>
             <in_use>7</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <hosts>localhost</hosts>
             <max_hosts>1</max_hosts>
             <ssh_credential id="">
@@ -20077,9 +19981,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <writable>0</writable>
             <in_use>4</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <hosts>dik.example.org</hosts>
             <max_hosts>1</max_hosts>
             <ssh_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
@@ -20368,7 +20269,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>writable</e>
               <e>in_use</e>
               <e>permissions</e>
-              <e>user_tags</e>
+              <o><e>user_tags</e></o>
               <e>status</e>
               <e>progress</e>
               <e>alterable</e>
@@ -21267,9 +21168,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-11T16:03:24+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <owner>
               <name>admin</name>
             </owner>
@@ -21376,9 +21274,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-11T16:03:24+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <owner>
               <name>admin</name>
             </owner>
@@ -21617,7 +21512,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>hosts</e>
           <e>ifaces</e>
           <e>permissions</e>
-          <e>user_tags</e>
+          <o><e>user_tags</e></o>
           <e>sources</e>
         </pattern>
         <ele>
@@ -21958,9 +21853,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>User</name>
             </role>
             <hosts allow="2"></hosts>
-            <user_tags>
-              <count>0</count>
-            </user_tags>
             <sources><source>file</source></sources>
           </user>
         </get_users_response>
@@ -25701,6 +25593,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The OpenVAS Management Protocol (OMP) is renamed to Greenbone Management Protocol (GMP).
         The protocol as such does not change except for the changes documented here
         between OMP 7.0 and GMP 8.0.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
+  <change>
+    <command>Most GET_... Commands</command>
+    <summary>USER_TAGS, NOTES, OVERRIDES hidden when empty</summary>
+    <description>
+      <p>
+        The USER_TAGS element in various GET_... commands and the NOTES and
+        OVERRIDES one in results is only included if there are tags etc.
+        for the result or other resource.
       </p>
     </description>
     <version>8.0</version>

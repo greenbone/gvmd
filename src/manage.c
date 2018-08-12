@@ -7855,6 +7855,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
   gchar* name_text = g_markup_escape_text (name, strlen (name));
   if (details)
     {
+      int tag_count;
       GString *cert_refs_str, *tags_str, *buffer;
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
@@ -7894,42 +7895,49 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
         }
 
       tags_str = g_string_new ("");
-      g_string_append_printf (tags_str,
-                              "<count>%i</count>",
-                              resource_tag_count ("nvt",
-                                                  get_iterator_resource
-                                                    (nvts),
-                                                  1));
+      tag_count = resource_tag_count ("nvt",
+                                      get_iterator_resource (nvts),
+                                      1);
 
-      init_resource_tag_iterator (&tags, "nvt",
-                                  get_iterator_resource (nvts),
-                                  1, NULL, 1);
-      while (next (&tags))
+      if (tag_count)
         {
-          tag_name_esc = g_markup_escape_text (resource_tag_iterator_name
-                                                (&tags),
-                                               -1);
-          tag_value_esc = g_markup_escape_text (resource_tag_iterator_value
-                                                  (&tags),
-                                                -1);
-          tag_comment_esc = g_markup_escape_text (resource_tag_iterator_comment
+          g_string_append_printf (tags_str,
+                                  "<user_tags>"
+                                  "<count>%i</count>",
+                                  tag_count);
+
+          init_resource_tag_iterator (&tags, "nvt",
+                                      get_iterator_resource (nvts),
+                                      1, NULL, 1);
+          while (next (&tags))
+            {
+              tag_name_esc = g_markup_escape_text (resource_tag_iterator_name
                                                     (&tags),
                                                   -1);
+              tag_value_esc = g_markup_escape_text (resource_tag_iterator_value
+                                                      (&tags),
+                                                    -1);
+              tag_comment_esc = g_markup_escape_text (resource_tag_iterator_comment
+                                                        (&tags),
+                                                      -1);
+              g_string_append_printf (tags_str,
+                                      "<tag id=\"%s\">"
+                                      "<name>%s</name>"
+                                      "<value>%s</value>"
+                                      "<comment>%s</comment>"
+                                      "</tag>",
+                                      resource_tag_iterator_uuid (&tags),
+                                      tag_name_esc,
+                                      tag_value_esc,
+                                      tag_comment_esc);
+              g_free (tag_name_esc);
+              g_free (tag_value_esc);
+              g_free (tag_comment_esc);
+            }
+          cleanup_iterator (&tags);
           g_string_append_printf (tags_str,
-                                  "<tag id=\"%s\">"
-                                  "<name>%s</name>"
-                                  "<value>%s</value>"
-                                  "<comment>%s</comment>"
-                                  "</tag>",
-                                  resource_tag_iterator_uuid (&tags),
-                                  tag_name_esc,
-                                  tag_value_esc,
-                                  tag_comment_esc);
-          g_free (tag_name_esc);
-          g_free (tag_value_esc);
-          g_free (tag_comment_esc);
+                                  "</user_tags>");
         }
-      cleanup_iterator (&tags);
 
       buffer = g_string_new ("");
 
@@ -7938,7 +7946,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<name>%s</name>"
                               "<creation_time>%s</creation_time>"
                               "<modification_time>%s</modification_time>"
-                              "<user_tags>%s</user_tags>"
+                              "%s" // user_tags
                               "<category>%d</category>"
                               "<copyright>%s</copyright>"
                               "<family>%s</family>"
@@ -8014,12 +8022,29 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       free (default_timeout);
     }
   else
-    msg = g_strdup_printf
-           ("<nvt oid=\"%s\"><name>%s</name>"
-            "<user_tags><count>%i</count></user_tags>%s",
-            oid, name_text,
-            resource_tag_count ("nvt", get_iterator_resource (nvts), 1),
-            close_tag ? "</nvt>" : "");
+    {
+      int tag_count;
+      tag_count = resource_tag_count ("nvt",
+                                      get_iterator_resource (nvts),
+                                      1);
+
+      if (tag_count)
+        {
+          msg = g_strdup_printf
+                 ("<nvt oid=\"%s\"><name>%s</name>"
+                  "<user_tags><count>%i</count></user_tags>%s",
+                  oid, name_text,
+                  tag_count,
+                  close_tag ? "</nvt>" : "");
+        }
+      else
+        {
+          msg = g_strdup_printf
+                 ("<nvt oid=\"%s\"><name>%s</name>%s",
+                  oid, name_text,
+                  close_tag ? "</nvt>" : "");
+        }
+    }
   g_free (name_text);
   return msg;
 }
