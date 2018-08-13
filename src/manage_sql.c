@@ -29805,7 +29805,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (task && tsk_uuid)
     {
-      char *tsk_name, *task_target_uuid, *comment;
+      char *tsk_name, *task_target_uuid, *task_target_name;
+      char *task_target_comment, *comment;
       target_t target;
       gchar *progress_xml;
       iterator_t tags;
@@ -29817,9 +29818,17 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       target = task_target (task);
       if (task_target_in_trash (task))
-        task_target_uuid = trash_target_uuid (target);
+        {
+          task_target_uuid = trash_target_uuid (target);
+          task_target_name = trash_target_name (target);
+          task_target_comment = trash_target_comment (target);
+        }
       else
-        task_target_uuid = target_uuid (target);
+        {
+          task_target_uuid = target_uuid (target);
+          task_target_name = target_name (target);
+          task_target_comment = target_comment (target);
+        }
 
       if ((target == 0)
           && (task_run_status (task) == TASK_STATUS_RUNNING))
@@ -29839,6 +29848,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "<comment>%s</comment>"
              "<target id=\"%s\">"
              "<trash>%i</trash>"
+             "<name>%s</name>"
+             "<comment>%s</comment>"
              "</target>"
              "<progress>%s</progress>",
              tsk_uuid,
@@ -29846,11 +29857,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
              task_target_in_trash (task),
+             task_target_name ? task_target_name : "",
+             task_target_comment ? task_target_comment : "",
              progress_xml);
       g_free (progress_xml);
       free (comment);
       free (tsk_name);
       free (tsk_uuid);
+      free (task_target_uuid);
+      free (task_target_name);
+      free (task_target_comment);
 
       if (task_tag_count)
         {
@@ -35108,6 +35124,34 @@ char*
 trash_target_name (target_t target)
 {
   return sql_string ("SELECT name FROM targets_trash WHERE id = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the comment of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+target_comment (target_t target)
+{
+  return sql_string ("SELECT comment FROM targets WHERE id = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the comment of a trashcan target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+trash_target_comment (target_t target)
+{
+  return sql_string ("SELECT comment FROM targets_trash WHERE id = %llu;",
                      target);
 }
 
