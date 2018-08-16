@@ -42392,7 +42392,8 @@ credential_iterator_deb (iterator_t *iterator)
       free (maintainer);
       return NULL;
     }
-  else if (lsc_user_deb_recreate (login, public_key, maintainer,
+  else if (lsc_user_deb_recreate (login, public_key,
+                                  maintainer ? maintainer : "",
                                   &deb, &deb_size))
     {
       g_warning ("%s: Failed to create DEB\n", __FUNCTION__);
@@ -62610,7 +62611,6 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
-               || strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0
                || strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
@@ -62657,19 +62657,6 @@ modify_setting (const gchar *uuid, const gchar *name,
               g_free (quoted_uuid);
               return 2;
             }
-        }
-
-      if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
-        {
-          g_strstrip (value);
-          if (g_regex_match_simple
-               ("^([[:alnum:]-_]*@[[:alnum:]-_][[:alnum:]-_.]*)?$",
-                value, 0, 0) == FALSE)
-            {
-              g_free (quoted_uuid);
-              return 2;
-            }
-          setting_name = "Debian LSC Package Maintainer";
         }
 
       if (strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0)
@@ -63133,6 +63120,8 @@ setting_name (const gchar *uuid)
     return "Default CA Cert";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "Max Rows Per Page";
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    return "Debian LSC Package Maintainer";
   return NULL;
 }
 
@@ -63163,6 +63152,8 @@ setting_description (const gchar *uuid)
     return "Default CA Certificate for Scanners";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "The default maximum number of rows displayed in any listing.";
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    return "Maintainer email address used in generated Debian LSC packages.";
   return NULL;
 }
 
@@ -63196,6 +63187,15 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
       else if (max_rows < 0)
         return 1;
     }
+
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    {
+      if (g_regex_match_simple
+            ("^([[:alnum:]-_]*@[[:alnum:]-_][[:alnum:]-_.]*)?$",
+            value, 0, 0) == FALSE)
+        return 1;
+    }
+
   return 0;
 }
 
@@ -63220,6 +63220,11 @@ setting_normalise (const gchar *uuid, const gchar *value)
       if (max_rows < 0)
         return NULL;
       return g_strdup_printf ("%i", max_rows);
+    }
+
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    {
+      return g_strstrip (g_strdup (value));
     }
 
   return g_strdup (value);
@@ -63248,7 +63253,8 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   g_info ("   Modifying setting.\n");
 
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
-      && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE))
+      && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
+      && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
