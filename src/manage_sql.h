@@ -225,6 +225,11 @@
 #define SETTING_UUID_DEFAULT_CA_CERT "9ac801ea-39f8-11e6-bbaa-28d24461215b"
 
 /**
+ * @brief UUID of 'Debian LSC Package Maintainer' setting.
+ */
+#define SETTING_UUID_LSC_DEB_MAINTAINER "2fcbeac8-4237-438f-b52a-540a23e7af97"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0

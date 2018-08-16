@@ -15373,6 +15373,17 @@ check_db_settings ()
          "  'Auto Cache Rebuild',"
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_LSC_DEB_MAINTAINER "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_LSC_DEB_MAINTAINER "', NULL,"
+         "  'Debian LSC Package Maintainer',"
+         "  'Maintainer email address used in generated Debian LSC packages.',"
+         "  '');");
 }
 
 /**
@@ -42359,13 +42370,15 @@ char*
 credential_iterator_deb (iterator_t *iterator)
 {
   const char *login, *private_key, *pass;
-  char *public_key;
+  char *public_key, *maintainer;
   void *deb;
   gsize deb_size;
   gchar *deb64;
 
   if (iterator->done) return NULL;
 
+  maintainer = NULL;
+  setting_value (SETTING_UUID_LSC_DEB_MAINTAINER, &maintainer);
   private_key = credential_iterator_private_key (iterator);
   pass = credential_iterator_password (iterator);
   public_key = gvm_ssh_public_from_private (private_key, pass);
@@ -42376,15 +42389,20 @@ credential_iterator_deb (iterator_t *iterator)
           (iterator, CREDENTIAL_FORMAT_DEB) == FALSE)
     {
       g_free (public_key);
+      free (maintainer);
       return NULL;
     }
-  else if (lsc_user_deb_recreate (login, public_key, &deb, &deb_size))
+  else if (lsc_user_deb_recreate (login, public_key,
+                                  maintainer ? maintainer : "",
+                                  &deb, &deb_size))
     {
       g_warning ("%s: Failed to create DEB\n", __FUNCTION__);
       g_free (public_key);
+      free (maintainer);
       return NULL;
     }
   g_free (public_key);
+  free (maintainer);
 
   deb64 = (deb && deb_size)
           ? g_base64_encode (deb, deb_size)
@@ -62430,6 +62448,52 @@ DEF_ACCESS (setting_iterator_comment, 3);
 DEF_ACCESS (setting_iterator_value, 4);
 
 /**
+ * @brief Get the value of a setting as a string.
+ *
+ * @param[in]   uuid   UUID of setting.
+ * @param[out]  value  Value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+setting_value (const char *uuid, char **value)
+{
+  gchar *quoted_uuid;
+
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  quoted_uuid = sql_quote (uuid);
+
+  if (sql_int ("SELECT count (*)"
+               " FROM settings"
+               " WHERE uuid = '%s'"
+               " AND " ACL_GLOBAL_OR_USER_OWNS () ";",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      *value = NULL;
+      g_free (quoted_uuid);
+      return -1;
+    }
+
+  *value = sql_string
+             ("SELECT value"
+              " FROM settings"
+              " WHERE uuid = '%s'"
+              " AND " ACL_GLOBAL_OR_USER_OWNS ()
+              /* Force the user's setting to come before the default. */
+              " ORDER BY coalesce (owner, 0) DESC;",
+              quoted_uuid,
+              current_credentials.uuid);
+
+  g_free (quoted_uuid);
+
+  return 0;
+}
+
+/**
  * @brief Get the value of a setting.
  *
  * @param[in]   uuid   UUID of setting.
@@ -63056,6 +63120,8 @@ setting_name (const gchar *uuid)
     return "Default CA Cert";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "Max Rows Per Page";
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    return "Debian LSC Package Maintainer";
   return NULL;
 }
 
@@ -63086,6 +63152,8 @@ setting_description (const gchar *uuid)
     return "Default CA Certificate for Scanners";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "The default maximum number of rows displayed in any listing.";
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    return "Maintainer email address used in generated Debian LSC packages.";
   return NULL;
 }
 
@@ -63119,6 +63187,15 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
       else if (max_rows < 0)
         return 1;
     }
+
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    {
+      if (g_regex_match_simple
+            ("^([[:alnum:]-_]*@[[:alnum:]-_][[:alnum:]-_.]*)?$",
+            value, 0, 0) == FALSE)
+        return 1;
+    }
+
   return 0;
 }
 
@@ -63143,6 +63220,11 @@ setting_normalise (const gchar *uuid, const gchar *value)
       if (max_rows < 0)
         return NULL;
       return g_strdup_printf ("%i", max_rows);
+    }
+
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    {
+      return g_strstrip (g_strdup (value));
     }
 
   return g_strdup (value);
@@ -63171,7 +63253,8 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   g_info ("   Modifying setting.\n");
 
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
-      && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE))
+      && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
+      && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
