@@ -1680,6 +1680,12 @@ target_name (target_t);
 char*
 trash_target_name (target_t);
 
+char*
+target_comment (target_t);
+
+char*
+trash_target_comment (target_t);
+
 int
 trash_target_readable (target_t);
 

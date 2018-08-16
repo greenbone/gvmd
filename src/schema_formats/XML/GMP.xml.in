@@ -2417,11 +2417,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>The UUID of the target</summary>
             </attrib>
             <e>trash</e>
+            <e>name</e>
+            <e>comment</e>
           </pattern>
           <ele>
             <name>trash</name>
             <summary>Whether the target is in the trashcan</summary>
             <type>boolean</type>
+          </ele>
+          <ele>
+            <name>name</name>
+            <summary>The name of the target</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>comment</name>
+            <summary>Comment for the target</summary>
+            <pattern>text</pattern>
           </ele>
         </ele>
         <ele>
