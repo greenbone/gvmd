@@ -3924,6 +3924,9 @@ const char*
 setting_iterator_value (iterator_t*);
 
 int
+setting_value (const char *, char **);
+
+int
 setting_value_int (const char *, int *);
 
 int

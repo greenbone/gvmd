@@ -15373,6 +15373,17 @@ check_db_settings ()
          "  'Auto Cache Rebuild',"
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_LSC_DEB_MAINTAINER "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_LSC_DEB_MAINTAINER "', NULL,"
+         "  'Debian LSC Package Maintainer',"
+         "  'Maintainer email address used in generated Debian LSC packages.',"
+         "  '');");
 }
 
 /**
@@ -42315,13 +42326,15 @@ char*
 credential_iterator_deb (iterator_t *iterator)
 {
   const char *login, *private_key, *pass;
-  char *public_key;
+  char *public_key, *maintainer;
   void *deb;
   gsize deb_size;
   gchar *deb64;
 
   if (iterator->done) return NULL;
 
+  maintainer = NULL;
+  setting_value (SETTING_UUID_LSC_DEB_MAINTAINER, &maintainer);
   private_key = credential_iterator_private_key (iterator);
   pass = credential_iterator_password (iterator);
   public_key = gvm_ssh_public_from_private (private_key, pass);
@@ -42332,15 +42345,19 @@ credential_iterator_deb (iterator_t *iterator)
           (iterator, CREDENTIAL_FORMAT_DEB) == FALSE)
     {
       g_free (public_key);
+      free (maintainer);
       return NULL;
     }
-  else if (lsc_user_deb_recreate (login, public_key, &deb, &deb_size))
+  else if (lsc_user_deb_recreate (login, public_key, maintainer,
+                                  &deb, &deb_size))
     {
       g_warning ("%s: Failed to create DEB\n", __FUNCTION__);
       g_free (public_key);
+      free (maintainer);
       return NULL;
     }
   g_free (public_key);
+  free (maintainer);
 
   deb64 = (deb && deb_size)
           ? g_base64_encode (deb, deb_size)
@@ -62386,6 +62403,52 @@ DEF_ACCESS (setting_iterator_comment, 3);
 DEF_ACCESS (setting_iterator_value, 4);
 
 /**
+ * @brief Get the value of a setting as a string.
+ *
+ * @param[in]   uuid   UUID of setting.
+ * @param[out]  value  Value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+setting_value (const char *uuid, char **value)
+{
+  gchar *quoted_uuid;
+
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  quoted_uuid = sql_quote (uuid);
+
+  if (sql_int ("SELECT count (*)"
+               " FROM settings"
+               " WHERE uuid = '%s'"
+               " AND " ACL_GLOBAL_OR_USER_OWNS () ";",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      *value = NULL;
+      g_free (quoted_uuid);
+      return -1;
+    }
+
+  *value = sql_string
+             ("SELECT value"
+              " FROM settings"
+              " WHERE uuid = '%s'"
+              " AND " ACL_GLOBAL_OR_USER_OWNS ()
+              /* Force the user's setting to come before the default. */
+              " ORDER BY coalesce (owner, 0) DESC;",
+              quoted_uuid,
+              current_credentials.uuid);
+
+  g_free (quoted_uuid);
+
+  return 0;
+}
+
+/**
  * @brief Get the value of a setting.
  *
  * @param[in]   uuid   UUID of setting.
@@ -62503,6 +62566,7 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+               || strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0
                || strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
@@ -62549,6 +62613,19 @@ modify_setting (const gchar *uuid, const gchar *name,
               g_free (quoted_uuid);
               return 2;
             }
+        }
+
+      if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+        {
+          g_strstrip (value);
+          if (g_regex_match_simple
+               ("^([[:alnum:]-_]*@[[:alnum:]-_][[:alnum:]-_.]*)?$",
+                value, 0, 0) == FALSE)
+            {
+              g_free (quoted_uuid);
+              return 2;
+            }
+          setting_name = "Debian LSC Package Maintainer";
         }
 
       if (strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0)

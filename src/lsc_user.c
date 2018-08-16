@@ -368,13 +368,15 @@ lsc_user_rpm_recreate (const gchar *name, const char *public_key,
  * @param[in]  username         Name of user.
  * @param[in]  public_key_path  Location of public key.
  * @param[in]  to_filename      Destination filename for RPM.
+ * @param[in]  maintainer       Maintainer email address.
  *
  * @return Path to rpm file if successful, NULL otherwise.
  */
 static gboolean
 lsc_user_deb_create (const gchar *username,
                      const gchar *public_key_path,
-                     const gchar *to_filename)
+                     const gchar *to_filename,
+                     const gchar *maintainer)
 {
   gint exit_status;
   gchar *new_pubkey_filename = NULL;
@@ -407,11 +409,11 @@ lsc_user_deb_create (const gchar *username,
       return FALSE;
     }
 
-  /* Execute create-rpm script with the temporary directory as the
+  /* Execute create-deb script with the temporary directory as the
    * target and the public key in the temporary directory as the key. */
 
   g_debug ("%s: Attempting DEB build\n", __FUNCTION__);
-  cmd = (gchar **) g_malloc (6 * sizeof (gchar *));
+  cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
   cmd[0] = g_build_filename (GVM_DATA_DIR,
                              "gvm-lsc-deb-creator.sh",
                              NULL);
@@ -419,9 +421,11 @@ lsc_user_deb_create (const gchar *username,
   cmd[2] = g_strdup (new_pubkey_filename);
   cmd[3] = g_strdup (tmpdir);
   cmd[4] = g_strdup (to_filename);
-  cmd[5] = NULL;
-  g_debug ("%s: Spawning in %s: %s %s %s %s %s\n",
-           __FUNCTION__, tmpdir, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]);
+  cmd[5] = g_strdup (maintainer);
+  cmd[6] = NULL;
+  g_debug ("%s: Spawning in %s: %s %s %s %s %s %s\n",
+           __FUNCTION__, tmpdir,
+           cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5]);
   if ((g_spawn_sync (tmpdir,
                      cmd,
                      NULL,                  /* Environment. */
@@ -436,7 +440,7 @@ lsc_user_deb_create (const gchar *username,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: failed to create the rpm: %d (WIF %i, WEX %i)",
+      g_debug ("%s: failed to create the deb: %d (WIF %i, WEX %i)",
                __FUNCTION__,
                exit_status,
                WIFEXITED (exit_status),
@@ -451,6 +455,7 @@ lsc_user_deb_create (const gchar *username,
   g_free (cmd[2]);
   g_free (cmd[3]);
   g_free (cmd[4]);
+  g_free (cmd[5]);
   g_free (cmd);
   g_free (pubkey_basename);
   g_free (new_pubkey_filename);
@@ -474,6 +479,7 @@ lsc_user_deb_create (const gchar *username,
  *
  * @param[in]   name         User name.
  * @param[in]   public_key   Public key.
+ * @param[in]   maintainer   The maintainer email address.
  * @param[out]  deb          DEB package.
  * @param[out]  deb_size     Size of DEB package, in bytes.
  *
@@ -481,6 +487,7 @@ lsc_user_deb_create (const gchar *username,
  */
 int
 lsc_user_deb_recreate (const gchar *name, const char *public_key,
+                       const char *maintainer,
                        void **deb, gsize *deb_size)
 {
   GError *error;
@@ -509,7 +516,8 @@ lsc_user_deb_recreate (const gchar *name, const char *public_key,
     goto free_exit;
   deb_path = g_build_filename (deb_dir, "p.deb", NULL);
   g_debug ("%s: deb_path: %s", __FUNCTION__, deb_path);
-  if (lsc_user_deb_create (name, public_key_path, deb_path) == FALSE)
+  if (lsc_user_deb_create (name, public_key_path, deb_path, maintainer)
+        == FALSE)
     {
       g_free (deb_path);
       goto rm_exit;
