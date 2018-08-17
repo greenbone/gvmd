@@ -51868,7 +51868,8 @@ report_format_in_use (report_format_t report_format)
                     "      OR name = 'notice_report_format'"
                     "      OR name = 'scp_report_format'"
                     "      OR name = 'send_report_format'"
-                    "      OR name = 'smb_report_format');",
+                    "      OR name = 'smb_report_format'"
+                    "      OR name = 'verinice_server_report_format');",
                     report_format);
 }
 
@@ -51890,7 +51891,8 @@ trash_report_format_in_use (report_format_t report_format)
                     "      OR name = 'notice_report_format'"
                     "      OR name = 'scp_report_format'"
                     "      OR name = 'send_report_format'"
-                    "      OR name = 'smb_report_format');",
+                    "      OR name = 'smb_report_format'"
+                    "      OR name = 'verinice_server_report_format');",
                     report_format);
 }
 
