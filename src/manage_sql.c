@@ -31122,7 +31122,7 @@ apply_report_format (gchar *report_format_id,
   GList *temp_dirs, *temp_files;
   gchar *rf_dependencies_string, *output_file, *out_file_part, *out_file_ext;
   gchar *files_xml;
-  int ret;
+  int output_fd;
 
   assert (report_format_id);
   assert (xml_start);
@@ -31284,8 +31284,8 @@ apply_report_format (gchar *report_format_id,
   out_file_part = g_strdup_printf ("%s-XXXXXX.%s",
                                    report_format_id, out_file_ext);
   output_file = g_build_filename (xml_dir, out_file_part, NULL);
-  ret = mkstemps (output_file, strlen (out_file_ext) + 1);
-  if (ret == -1)
+  output_fd = mkstemps (output_file, strlen (out_file_ext) + 1);
+  if (output_fd == -1)
     {
       g_warning ("%s: mkstemps failed: %s", __FUNCTION__, strerror (errno));
       g_free (output_file);
@@ -31308,7 +31308,7 @@ apply_report_format (gchar *report_format_id,
                             xml_file, xml_dir, files_xml, output_file);
 
   /* Clean up and return filename. */
-  cleanup:
+ cleanup:
   while (temp_dirs)
     {
       gvm_file_remove_recurse (temp_dirs->data);
@@ -31322,6 +31322,13 @@ apply_report_format (gchar *report_format_id,
     }
   g_free (files_xml);
   g_hash_table_destroy (subreports);
+  if (close (output_fd))
+    {
+      g_warning ("%s: close of output_fd failed: %s",
+                 __FUNCTION__, strerror (errno));
+      g_free (output_file);
+      return NULL;
+    }
 
   return output_file;
 }
