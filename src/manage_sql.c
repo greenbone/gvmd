@@ -21328,9 +21328,32 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   switch (pid)
     {
       case 0:
-        /* Child.  Reopen the database (required after fork) and carry on
-         * to import the reports, . */
-        reinit_manage_process ();
+        {
+          /* Child.
+           *
+           * Fork again so the parent can wait on the child, to prevent
+           * zombies. */
+          cleanup_manage_process (FALSE);
+          pid = fork ();
+          switch (pid)
+            {
+              case 0:
+                /* Grandchild.  Reopen the database (required after fork) and carry on
+                 * to import the reports, . */
+                reinit_manage_process ();
+                break;
+              case -1:
+                /* Grandchild's parent when error. */
+                g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
+                exit (EXIT_FAILURE);
+                break;
+              default:
+                /* Grandchild's parent.  Exit, to close parent's wait. */
+                g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+                exit (EXIT_SUCCESS);
+                break;
+            }
+        }
         break;
       case -1:
         /* Parent when error. */
@@ -21343,10 +21366,29 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         return -1;
         break;
       default:
-        /* Parent.  Return, in order to respond to client. */
-        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
-        return 0;
-        break;
+        {
+          int status;
+
+          /* Parent.  Wait to prevent zombie, then return to respond to client. */
+          g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+          while (waitpid (pid, &status, 0) < 0)
+            {
+              if (errno == ECHILD)
+                {
+                  g_warning ("%s: Failed to get child exit status",
+                             __FUNCTION__);
+                  return -1;
+                }
+              if (errno == EINTR)
+                continue;
+              g_warning ("%s: waitpid: %s",
+                         __FUNCTION__,
+                         strerror (errno));
+              return -1;
+            }
+          return 0;
+          break;
+        }
     }
 
   proctitle_set ("gvmd: Importing results");
