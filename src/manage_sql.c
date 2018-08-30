@@ -25000,6 +25000,9 @@ cache_report_counts (report_t report, int override, int min_qod,
     }
   else
     {
+      GString *insert;
+      int first;
+
       i = 0;
       if (override)
         end_time = sql_int ("SELECT coalesce(min(end_time), 0)"
@@ -25012,6 +25015,11 @@ cache_report_counts (report_t report, int override, int min_qod,
         end_time = 0;
 
       severity = severity_data_value (i);
+      insert = g_string_new ("INSERT INTO report_counts"
+                             " (report, \"user\", override, min_qod,"
+                             "  severity, count, end_time)"
+                             " VALUES");
+      first = 1;
       while (severity <= (data->max + (1.0
                                        / SEVERITY_SUBDIVISIONS
                                        / SEVERITY_SUBDIVISIONS))
@@ -25019,25 +25027,34 @@ cache_report_counts (report_t report, int override, int min_qod,
         {
           if (data->counts[i] > 0)
             {
-              ret = sql_giveup ("INSERT INTO report_counts"
-                                " (report, \"user\", override, min_qod,"
-                                "  severity, count, end_time)"
-                                " VALUES (%llu,"
-                                "         (SELECT id FROM users"
-                                "          WHERE users.uuid = '%s'),"
-                                "         %d, %d, %1.1f, %d, %d);",
-                                report, current_credentials.uuid, override,
-                                min_qod, severity, data->counts[i], end_time);
-              if (ret)
-                {
-                  if (make_transaction)
-                    sql_rollback ();
-                  return ret;
-                }
+              g_string_append_printf (insert,
+                                      "%s (%llu,"
+                                      "    (SELECT id FROM users"
+                                      "     WHERE users.uuid = '%s'),"
+                                      "    %d, %d, %1.1f, %d, %d)",
+                                      first == 1 ? "" : ",",
+                                      report, current_credentials.uuid,
+                                      override, min_qod, severity,
+                                      data->counts[i], end_time);
+              first = 0;
             }
           i++;
           severity = severity_data_value (i);
         }
+
+      if (i)
+        {
+          g_string_append_printf (insert, ";");
+          ret = sql_giveup (insert->str);
+          if (ret)
+            {
+              if (make_transaction)
+                sql_rollback ();
+              g_string_free (insert, TRUE);
+              return ret;
+            }
+        }
+      g_string_free (insert, TRUE);
     }
   if (make_transaction)
     {
