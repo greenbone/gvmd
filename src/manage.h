@@ -1680,6 +1680,12 @@ target_name (target_t);
 char*
 trash_target_name (target_t);
 
+char*
+target_comment (target_t);
+
+char*
+trash_target_comment (target_t);
+
 int
 trash_target_readable (target_t);
 
@@ -3924,6 +3930,9 @@ const char*
 setting_iterator_value (iterator_t*);
 
 int
+setting_value (const char *, char **);
+
+int
 setting_value_int (const char *, int *);
 
 int
@@ -4176,9 +4185,6 @@ tag_iterator_value (iterator_t*);
 
 int
 tag_iterator_resources (iterator_t*);
-
-void
-init_tag_resources_iterator (iterator_t*, tag_t, int);
 
 resource_t
 tag_resource_iterator_id (iterator_t*);

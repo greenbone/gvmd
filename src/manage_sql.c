@@ -3201,8 +3201,24 @@ filter_clause (const char* type, const char* filter,
 
           if (first_order)
             {
-              if ((strcmp (type, "task") == 0)
-                  && (strcmp (keyword->string, "threat") == 0))
+              if ((strcmp (type, "report") == 0)
+                  && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
+                  "              WHERE tasks.id = task)"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (scan_run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " ASC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "threat") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -3344,8 +3360,25 @@ filter_clause (const char* type, const char* filter,
 
           if (first_order)
             {
-              if ((strcmp (type, "task") == 0)
-                  && (strcmp (keyword->string, "threat") == 0))
+              if (((strcmp (type, "task") == 0)
+                   || (strcmp (type, "report") == 0))
+                  && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
+                  "              WHERE tasks.id = task)"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (scan_run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " DESC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "threat") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -15340,6 +15373,17 @@ check_db_settings ()
          "  'Auto Cache Rebuild',"
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_LSC_DEB_MAINTAINER "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_LSC_DEB_MAINTAINER "', NULL,"
+         "  'Debian LSC Package Maintainer',"
+         "  'Maintainer email address used in generated Debian LSC packages.',"
+         "  '');");
 }
 
 /**
@@ -21284,9 +21328,32 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   switch (pid)
     {
       case 0:
-        /* Child.  Reopen the database (required after fork) and carry on
-         * to import the reports, . */
-        reinit_manage_process ();
+        {
+          /* Child.
+           *
+           * Fork again so the parent can wait on the child, to prevent
+           * zombies. */
+          cleanup_manage_process (FALSE);
+          pid = fork ();
+          switch (pid)
+            {
+              case 0:
+                /* Grandchild.  Reopen the database (required after fork) and carry on
+                 * to import the reports, . */
+                reinit_manage_process ();
+                break;
+              case -1:
+                /* Grandchild's parent when error. */
+                g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
+                exit (EXIT_FAILURE);
+                break;
+              default:
+                /* Grandchild's parent.  Exit, to close parent's wait. */
+                g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+                exit (EXIT_SUCCESS);
+                break;
+            }
+        }
         break;
       case -1:
         /* Parent when error. */
@@ -21299,10 +21366,29 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         return -1;
         break;
       default:
-        /* Parent.  Return, in order to respond to client. */
-        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
-        return 0;
-        break;
+        {
+          int status;
+
+          /* Parent.  Wait to prevent zombie, then return to respond to client. */
+          g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+          while (waitpid (pid, &status, 0) < 0)
+            {
+              if (errno == ECHILD)
+                {
+                  g_warning ("%s: Failed to get child exit status",
+                             __FUNCTION__);
+                  return -1;
+                }
+              if (errno == EINTR)
+                continue;
+              g_warning ("%s: waitpid: %s",
+                         __FUNCTION__,
+                         strerror (errno));
+              return -1;
+            }
+          return 0;
+          break;
+        }
     }
 
   proctitle_set ("gvmd: Importing results");
@@ -21860,18 +21946,6 @@ report_add_result (report_t report, result_t result)
      "report_severity (id, opts.override, opts.min_qod)",                    \
      "severity",                                                             \
      KEYWORD_TYPE_DOUBLE                                                     \
-   },                                                                        \
-   {                                                                         \
-     "(CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.id = task)"   \
-     "  THEN 'Container'"                                                    \
-     "  ELSE run_status_name (scan_run_status)"                              \
-     "       || (SELECT CAST (temp / 100 AS text)"                           \
-     "                  || CAST (temp / 10 AS text)"                         \
-     "                  || CAST (temp % 10 as text)"                         \
-     "           FROM (SELECT report_progress (id) AS temp) AS temp_sub)"    \
-     "  END)",                                                               \
-     "status",                                                               \
-     KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
    {                                                                         \
      "report_severity_count (id, opts.override, opts.min_qod,"               \
@@ -24934,6 +25008,9 @@ cache_report_counts (report_t report, int override, int min_qod,
     }
   else
     {
+      GString *insert;
+      int first;
+
       i = 0;
       if (override)
         end_time = sql_int ("SELECT coalesce(min(end_time), 0)"
@@ -24946,6 +25023,11 @@ cache_report_counts (report_t report, int override, int min_qod,
         end_time = 0;
 
       severity = severity_data_value (i);
+      insert = g_string_new ("INSERT INTO report_counts"
+                             " (report, \"user\", override, min_qod,"
+                             "  severity, count, end_time)"
+                             " VALUES");
+      first = 1;
       while (severity <= (data->max + (1.0
                                        / SEVERITY_SUBDIVISIONS
                                        / SEVERITY_SUBDIVISIONS))
@@ -24953,23 +25035,32 @@ cache_report_counts (report_t report, int override, int min_qod,
         {
           if (data->counts[i] > 0)
             {
-              ret = sql_giveup ("INSERT INTO report_counts"
-                                " (report, \"user\", override, min_qod,"
-                                "  severity, count, end_time)"
-                                " VALUES (%llu,"
-                                "         (SELECT id FROM users"
-                                "          WHERE users.uuid = '%s'),"
-                                "         %d, %d, %1.1f, %d, %d);",
-                                report, current_credentials.uuid, override,
-                                min_qod, severity, data->counts[i], end_time);
-              if (ret)
-                {
-                  return ret;
-                }
+              g_string_append_printf (insert,
+                                      "%s (%llu,"
+                                      "    (SELECT id FROM users"
+                                      "     WHERE users.uuid = '%s'),"
+                                      "    %d, %d, %1.1f, %d, %d)",
+                                      first == 1 ? "" : ",",
+                                      report, current_credentials.uuid,
+                                      override, min_qod, severity,
+                                      data->counts[i], end_time);
+              first = 0;
             }
           i++;
           severity = severity_data_value (i);
         }
+
+      if (i)
+        {
+          g_string_append_printf (insert, ";");
+          ret = sql_giveup (insert->str);
+          if (ret)
+            {
+              g_string_free (insert, TRUE);
+              return ret;
+            }
+        }
+      g_string_free (insert, TRUE);
     }
   return 0;
 }
@@ -29711,39 +29802,40 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (report)
     {
-      uuid = report_uuid (report);
+      int tag_count = resource_tag_count ("report", report, 1);
 
-      PRINT (out,
-            "<user_tags>"
-            "<count>%i</count>",
-            resource_tag_count ("report", report, 1));
-
-      if (get->details || get->id)
+      if (tag_count)
         {
-          iterator_t tags;
+          PRINT (out,
+                 "<user_tags>"
+                 "<count>%i</count>",
+                 tag_count);
 
-          init_resource_tag_iterator (&tags, "report", report, 1, NULL, 1);
-
-          while (next (&tags))
+          if (get->details || get->id)
             {
-              PRINT (out,
-                     "<tag id=\"%s\">"
-                     "<name>%s</name>"
-                     "<value>%s</value>"
-                     "<comment>%s</comment>"
-                     "</tag>",
-                     resource_tag_iterator_uuid (&tags),
-                     resource_tag_iterator_name (&tags),
-                     resource_tag_iterator_value (&tags),
-                     resource_tag_iterator_comment (&tags));
+              iterator_t tags;
+
+              init_resource_tag_iterator (&tags, "report", report, 1, NULL, 1);
+
+              while (next (&tags))
+                {
+                  PRINT (out,
+                        "<tag id=\"%s\">"
+                        "<name>%s</name>"
+                        "<value>%s</value>"
+                        "<comment>%s</comment>"
+                        "</tag>",
+                        resource_tag_iterator_uuid (&tags),
+                        resource_tag_iterator_name (&tags),
+                        resource_tag_iterator_value (&tags),
+                        resource_tag_iterator_comment (&tags));
+                }
+
+              cleanup_iterator (&tags);
             }
 
-          cleanup_iterator (&tags);
+          PRINT (out, "</user_tags>");
         }
-
-      PRINT (out, "</user_tags>");
-
-      free (uuid);
     }
 
   if (report)
@@ -29783,10 +29875,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (task && tsk_uuid)
     {
-      char *tsk_name, *task_target_uuid, *comment;
+      char *tsk_name, *task_target_uuid, *task_target_name;
+      char *task_target_comment, *comment;
       target_t target;
       gchar *progress_xml;
       iterator_t tags;
+      int task_tag_count = resource_tag_count ("task", task, 1);
 
       tsk_name = task_name (task);
 
@@ -29794,9 +29888,17 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       target = task_target (task);
       if (task_target_in_trash (task))
-        task_target_uuid = trash_target_uuid (target);
+        {
+          task_target_uuid = trash_target_uuid (target);
+          task_target_name = trash_target_name (target);
+          task_target_comment = trash_target_comment (target);
+        }
       else
-        task_target_uuid = target_uuid (target);
+        {
+          task_target_uuid = target_uuid (target);
+          task_target_name = target_name (target);
+          task_target_comment = target_comment (target);
+        }
 
       if ((target == 0)
           && (task_run_status (task) == TASK_STATUS_RUNNING))
@@ -29816,6 +29918,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "<comment>%s</comment>"
              "<target id=\"%s\">"
              "<trash>%i</trash>"
+             "<name>%s</name>"
+             "<comment>%s</comment>"
              "</target>"
              "<progress>%s</progress>",
              tsk_uuid,
@@ -29823,35 +29927,45 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
              task_target_in_trash (task),
+             task_target_name ? task_target_name : "",
+             task_target_comment ? task_target_comment : "",
              progress_xml);
       g_free (progress_xml);
       free (comment);
       free (tsk_name);
       free (tsk_uuid);
+      free (task_target_uuid);
+      free (task_target_name);
+      free (task_target_comment);
 
-      PRINT (out,
-             "<user_tags>"
-             "<count>%i</count>",
-             resource_tag_count ("task", task, 1));
-
-      init_resource_tag_iterator (&tags, "task", task, 1, NULL, 1);
-      while (next (&tags))
+      if (task_tag_count)
         {
           PRINT (out,
-                 "<tag id=\"%s\">"
-                 "<name>%s</name>"
-                 "<value>%s</value>"
-                 "<comment>%s</comment>"
-                 "</tag>",
-                 resource_tag_iterator_uuid (&tags),
-                 resource_tag_iterator_name (&tags),
-                 resource_tag_iterator_value (&tags),
-                 resource_tag_iterator_comment (&tags));
+                 "<user_tags>"
+                 "<count>%i</count>",
+                 task_tag_count);
+
+          init_resource_tag_iterator (&tags, "task", task, 1, NULL, 1);
+          while (next (&tags))
+            {
+              PRINT (out,
+                    "<tag id=\"%s\">"
+                    "<name>%s</name>"
+                    "<value>%s</value>"
+                    "<comment>%s</comment>"
+                    "</tag>",
+                    resource_tag_iterator_uuid (&tags),
+                    resource_tag_iterator_name (&tags),
+                    resource_tag_iterator_value (&tags),
+                    resource_tag_iterator_comment (&tags));
+            }
+          cleanup_iterator (&tags);
+
+          PRINT (out,
+                "</user_tags>");
         }
-      cleanup_iterator (&tags);
 
       PRINT (out,
-             "</user_tags>"
              "</task>");
 
       {
@@ -31050,7 +31164,7 @@ apply_report_format (gchar *report_format_id,
   GList *temp_dirs, *temp_files;
   gchar *rf_dependencies_string, *output_file, *out_file_part, *out_file_ext;
   gchar *files_xml;
-  int ret;
+  int output_fd;
 
   assert (report_format_id);
   assert (xml_start);
@@ -31212,8 +31326,8 @@ apply_report_format (gchar *report_format_id,
   out_file_part = g_strdup_printf ("%s-XXXXXX.%s",
                                    report_format_id, out_file_ext);
   output_file = g_build_filename (xml_dir, out_file_part, NULL);
-  ret = mkstemps (output_file, strlen (out_file_ext) + 1);
-  if (ret == -1)
+  output_fd = mkstemps (output_file, strlen (out_file_ext) + 1);
+  if (output_fd == -1)
     {
       g_warning ("%s: mkstemps failed: %s", __FUNCTION__, strerror (errno));
       g_free (output_file);
@@ -31236,7 +31350,7 @@ apply_report_format (gchar *report_format_id,
                             xml_file, xml_dir, files_xml, output_file);
 
   /* Clean up and return filename. */
-  cleanup:
+ cleanup:
   while (temp_dirs)
     {
       gvm_file_remove_recurse (temp_dirs->data);
@@ -31250,6 +31364,13 @@ apply_report_format (gchar *report_format_id,
     }
   g_free (files_xml);
   g_hash_table_destroy (subreports);
+  if (close (output_fd))
+    {
+      g_warning ("%s: close of output_fd failed: %s",
+                 __FUNCTION__, strerror (errno));
+      g_free (output_file);
+      return NULL;
+    }
 
   return output_file;
 }
@@ -35080,6 +35201,34 @@ char*
 trash_target_name (target_t target)
 {
   return sql_string ("SELECT name FROM targets_trash WHERE id = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the comment of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+target_comment (target_t target)
+{
+  return sql_string ("SELECT comment FROM targets WHERE id = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the comment of a trashcan target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+trash_target_comment (target_t target)
+{
+  return sql_string ("SELECT comment FROM targets_trash WHERE id = %llu;",
                      target);
 }
 
@@ -42287,13 +42436,15 @@ char*
 credential_iterator_deb (iterator_t *iterator)
 {
   const char *login, *private_key, *pass;
-  char *public_key;
+  char *public_key, *maintainer;
   void *deb;
   gsize deb_size;
   gchar *deb64;
 
   if (iterator->done) return NULL;
 
+  maintainer = NULL;
+  setting_value (SETTING_UUID_LSC_DEB_MAINTAINER, &maintainer);
   private_key = credential_iterator_private_key (iterator);
   pass = credential_iterator_password (iterator);
   public_key = gvm_ssh_public_from_private (private_key, pass);
@@ -42304,15 +42455,20 @@ credential_iterator_deb (iterator_t *iterator)
           (iterator, CREDENTIAL_FORMAT_DEB) == FALSE)
     {
       g_free (public_key);
+      free (maintainer);
       return NULL;
     }
-  else if (lsc_user_deb_recreate (login, public_key, &deb, &deb_size))
+  else if (lsc_user_deb_recreate (login, public_key,
+                                  maintainer ? maintainer : "",
+                                  &deb, &deb_size))
     {
       g_warning ("%s: Failed to create DEB\n", __FUNCTION__);
       g_free (public_key);
+      free (maintainer);
       return NULL;
     }
   g_free (public_key);
+  free (maintainer);
 
   deb64 = (deb && deb_size)
           ? g_base64_encode (deb, deb_size)
@@ -44393,7 +44549,8 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
    { "notes.task", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "notes.result", "result", KEYWORD_TYPE_INTEGER },                     \
    { "notes.end_time", "end_time", KEYWORD_TYPE_INTEGER },                 \
-   { "(notes.end_time = 0) OR (notes.end_time >= m_now ())",               \
+   { "CAST (((notes.end_time = 0) OR (notes.end_time >= m_now ()))"        \
+     "      AS INTEGER)",                                                  \
      "active",                                                             \
      KEYWORD_TYPE_INTEGER },                                               \
    {                                                                       \
@@ -44450,7 +44607,8 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
    { "notes_trash.task", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "notes_trash.result", "result", KEYWORD_TYPE_INTEGER },                     \
    { "notes_trash.end_time", NULL, KEYWORD_TYPE_INTEGER },                       \
-   { "(notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ())",         \
+   { "CAST (((notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ()))"  \
+     "      AS INTEGER)",                                                        \
      "active",                                                                   \
      KEYWORD_TYPE_INTEGER },                                                     \
    {                                                                             \
@@ -45062,10 +45220,12 @@ create_override (const char* active, const char* nvt, const char* text,
   result_nvt_notice (nvt);
   sql ("INSERT INTO overrides"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-       "  port, severity, new_severity, task, result, end_time)"
+       "  port, severity, new_severity, task, result, end_time,"
+       "  result_nvt)"
        " VALUES"
        " (make_uuid (), (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', %i, %i, %s, %s, %s, %s, %1.1f, %llu, %llu, %i);",
+       "  '%s', %i, %i, %s, %s, %s, %s, %1.1f, %llu, %llu, %i,"
+       "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        current_credentials.uuid,
        nvt,
        time (NULL),
@@ -45081,7 +45241,8 @@ create_override (const char* active, const char* nvt, const char* text,
          ? 0
          : (strcmp (active, "0")
              ? (time (NULL) + (atoi (active) * 60 * 60 * 24))
-             : 1));
+             : 1),
+       nvt);
 
   g_free (quoted_text);
   g_free (quoted_hosts);
@@ -45492,6 +45653,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            " port = %s,"
            " severity = %s,"
            " %s%s%s"
+           " %s%s%s"
            " new_severity = %f,"
            " task = %llu,"
            " result = %llu"
@@ -45504,6 +45666,9 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            nvt ? "nvt = '" : "",
            nvt ? quoted_nvt : "",
            nvt ? "'," : "",
+           nvt ? "result_nvt = (SELECT id FROM result_nvts WHERE nvt='" : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "')," : "",
            new_severity_dbl,
            task,
            result,
@@ -45547,6 +45712,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            " port = %s,"
            " severity = %s,"
            " %s%s%s"
+           " %s%s%s"
            " new_severity = %f,"
            " task = %llu,"
            " result = %llu"
@@ -45560,6 +45726,9 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
            nvt ? "nvt = '" : "",
            nvt ? quoted_nvt : "",
            nvt ? "'," : "",
+           nvt ? "result_nvt = (SELECT id FROM result_nvts WHERE nvt='" : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "')," : "",
            new_severity_dbl,
            task,
            result,
@@ -45654,7 +45823,8 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
    { "overrides.result", "result", KEYWORD_TYPE_INTEGER },                  \
    { "overrides.end_time", NULL, KEYWORD_TYPE_INTEGER },                    \
    {                                                                        \
-     "(overrides.end_time = 0) OR (overrides.end_time >= m_now ())",        \
+     "CAST (((overrides.end_time = 0) OR (overrides.end_time >= m_now ()))" \
+     "      AS INTEGER)",                                                   \
      "active",                                                              \
      KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
@@ -45729,8 +45899,8 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
    { "overrides_trash.result", "result", KEYWORD_TYPE_INTEGER },            \
    { "overrides_trash.end_time", NULL, KEYWORD_TYPE_INTEGER },              \
    {                                                                        \
-     "(overrides_trash.end_time = 0)"                                       \
-     " OR (overrides_trash.end_time >= m_now ())",                          \
+     "CAST (((overrides_trash.end_time = 0)"                                \
+     "       OR (overrides_trash.end_time >= m_now ())) AS INTEGER)",       \
      "active",                                                              \
      KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
@@ -51338,7 +51508,8 @@ report_format_in_use (report_format_t report_format)
                     "      OR name = 'notice_report_format'"
                     "      OR name = 'scp_report_format'"
                     "      OR name = 'send_report_format'"
-                    "      OR name = 'smb_report_format');",
+                    "      OR name = 'smb_report_format'"
+                    "      OR name = 'verinice_server_report_format');",
                     report_format);
 }
 
@@ -51360,7 +51531,8 @@ trash_report_format_in_use (report_format_t report_format)
                     "      OR name = 'notice_report_format'"
                     "      OR name = 'scp_report_format'"
                     "      OR name = 'send_report_format'"
-                    "      OR name = 'smb_report_format');",
+                    "      OR name = 'smb_report_format'"
+                    "      OR name = 'verinice_server_report_format');",
                     report_format);
 }
 
@@ -54540,7 +54712,8 @@ trash_permission_writable (permission_t permission)
      "_resource",                                                            \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "resource_location = " G_STRINGIFY (LOCATION_TRASH),                    \
+   { "CAST ((resource_location = " G_STRINGIFY (LOCATION_TRASH) ")"          \
+     "      AS INTEGER)",                                                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
    {                                                                         \
@@ -54589,7 +54762,8 @@ trash_permission_writable (permission_t permission)
      "_subject",                                                             \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "subject_location = " G_STRINGIFY (LOCATION_TRASH),                     \
+   { "CAST ((subject_location = " G_STRINGIFY (LOCATION_TRASH) ")"           \
+     "      AS INTEGER)",                                                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -54612,7 +54786,8 @@ trash_permission_writable (permission_t permission)
      "_resource",                                                            \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "resource_location = " G_STRINGIFY (LOCATION_TRASH),                    \
+   { "CAST ((resource_location = " G_STRINGIFY (LOCATION_TRASH) ")"          \
+     "      AS INTEGER)",                                                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
    { "resource = -1", NULL, KEYWORD_TYPE_INTEGER },                          \
@@ -54653,7 +54828,8 @@ trash_permission_writable (permission_t permission)
      "_subject",                                                             \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "subject_location = " G_STRINGIFY (LOCATION_TRASH),                     \
+   { "CAST ((subject_location = " G_STRINGIFY (LOCATION_TRASH) ")"           \
+     "      AS INTEGER)",                                                    \
      NULL,                                                                   \
      KEYWORD_TYPE_INTEGER },                                                 \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -62345,6 +62521,52 @@ DEF_ACCESS (setting_iterator_comment, 3);
 DEF_ACCESS (setting_iterator_value, 4);
 
 /**
+ * @brief Get the value of a setting as a string.
+ *
+ * @param[in]   uuid   UUID of setting.
+ * @param[out]  value  Value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+setting_value (const char *uuid, char **value)
+{
+  gchar *quoted_uuid;
+
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  quoted_uuid = sql_quote (uuid);
+
+  if (sql_int ("SELECT count (*)"
+               " FROM settings"
+               " WHERE uuid = '%s'"
+               " AND " ACL_GLOBAL_OR_USER_OWNS () ";",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      *value = NULL;
+      g_free (quoted_uuid);
+      return -1;
+    }
+
+  *value = sql_string
+             ("SELECT value"
+              " FROM settings"
+              " WHERE uuid = '%s'"
+              " AND " ACL_GLOBAL_OR_USER_OWNS ()
+              /* Force the user's setting to come before the default. */
+              " ORDER BY coalesce (owner, 0) DESC;",
+              quoted_uuid,
+              current_credentials.uuid);
+
+  g_free (quoted_uuid);
+
+  return 0;
+}
+
+/**
  * @brief Get the value of a setting.
  *
  * @param[in]   uuid   UUID of setting.
@@ -62971,6 +63193,8 @@ setting_name (const gchar *uuid)
     return "Default CA Cert";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "Max Rows Per Page";
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    return "Debian LSC Package Maintainer";
   return NULL;
 }
 
@@ -63001,6 +63225,8 @@ setting_description (const gchar *uuid)
     return "Default CA Certificate for Scanners";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "The default maximum number of rows displayed in any listing.";
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    return "Maintainer email address used in generated Debian LSC packages.";
   return NULL;
 }
 
@@ -63034,6 +63260,15 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
       else if (max_rows < 0)
         return 1;
     }
+
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    {
+      if (g_regex_match_simple
+            ("^([[:alnum:]-_]*@[[:alnum:]-_][[:alnum:]-_.]*)?$",
+            value, 0, 0) == FALSE)
+        return 1;
+    }
+
   return 0;
 }
 
@@ -63058,6 +63293,11 @@ setting_normalise (const gchar *uuid, const gchar *value)
       if (max_rows < 0)
         return NULL;
       return g_strdup_printf ("%i", max_rows);
+    }
+
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    {
+      return g_strstrip (g_strdup (value));
     }
 
   return g_strdup (value);
@@ -63086,7 +63326,8 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   g_info ("   Modifying setting.\n");
 
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
-      && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE))
+      && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
+      && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
@@ -66076,6 +66317,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
 
+  ignore_max_rows_per_page = 1;
   switch (type_build_select (type,
                              "id, uuid",
                              &resources_get, 0, 1, NULL, NULL, NULL,
@@ -66084,12 +66326,14 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
       case 0:
         break;
       default:
+        ignore_max_rows_per_page = 0;
         g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
         sql_rollback ();
         g_free (resources_get.filter);
         g_free (resources_get.type);
         return -1;
     }
+  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
@@ -66208,6 +66452,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
 
+  ignore_max_rows_per_page = 1;
   switch (type_build_select (type,
                              "id",
                              &resources_get, 0, 1, NULL, NULL, NULL,
@@ -66216,12 +66461,14 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
       case 0:
         break;
       default:
+        ignore_max_rows_per_page = 0;
         g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
         sql_rollback ();
         g_free (resources_get.filter);
         g_free (resources_get.type);
         return -1;
     }
+  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
@@ -66870,29 +67117,6 @@ tag_iterator_resources (iterator_t* iterator)
   if (iterator->done) return -1;
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
   return ret;
-}
-
-/**
- * @brief Initialise a tag resources iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  tag         The tag to init the resources iterator for.
- * @param[in]  trash       Whether to get resources of tags in the trashcan.
- *
- * @return 0 success, 1 failed to find tag, 2 failed to find filter,
- *         -1 error.
- */
-void
-init_tag_resources_iterator (iterator_t* iterator, tag_t tag, int trash)
-{
-  init_iterator (iterator,
-                 "SELECT resource, resource_uuid, resource_location,"
-                 " resource_name (resource_type, resource_uuid,"
-                 "                resource_location),"
-                 " resource_type"
-                 " FROM tag_resources%s WHERE tag = %llu",
-                 trash ? "_trash" : "",
-                 tag);
 }
 
 /**

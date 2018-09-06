@@ -6027,6 +6027,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
   GString *buffer;
   const char *tag_type;
   iterator_t tags;
+  int tag_count;
 
   buffer = g_string_new ("");
 
@@ -6135,50 +6136,50 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
     }
 
   tag_type = get->subtype ? get->subtype : get->type;
-
-  if (get->details || get->id)
-    {
-      buffer_xml_append_printf (buffer,
-                                "<user_tags>"
-                                "<count>%i</count>",
-                                resource_tag_count (tag_type,
-                                                    get_iterator_resource
-                                                      (iterator),
-                                                    1));
-
-      init_resource_tag_iterator (&tags, tag_type,
+  tag_count = resource_tag_count (tag_type,
                                   get_iterator_resource (iterator),
-                                  1, NULL, 1);
+                                  1);
 
-      while (next (&tags))
+  if (tag_count)
+    {
+      if (get->details || get->id)
         {
           buffer_xml_append_printf (buffer,
-                                    "<tag id=\"%s\">"
-                                    "<name>%s</name>"
-                                    "<value>%s</value>"
-                                    "<comment>%s</comment>"
-                                    "</tag>",
-                                    resource_tag_iterator_uuid (&tags),
-                                    resource_tag_iterator_name (&tags),
-                                    resource_tag_iterator_value (&tags),
-                                    resource_tag_iterator_comment (&tags));
+                                    "<user_tags>"
+                                    "<count>%i</count>",
+                                    tag_count);
+
+          init_resource_tag_iterator (&tags, tag_type,
+                                      get_iterator_resource (iterator),
+                                      1, NULL, 1);
+
+          while (next (&tags))
+            {
+              buffer_xml_append_printf (buffer,
+                                        "<tag id=\"%s\">"
+                                        "<name>%s</name>"
+                                        "<value>%s</value>"
+                                        "<comment>%s</comment>"
+                                        "</tag>",
+                                        resource_tag_iterator_uuid (&tags),
+                                        resource_tag_iterator_name (&tags),
+                                        resource_tag_iterator_value (&tags),
+                                        resource_tag_iterator_comment (&tags));
+            }
+
+          cleanup_iterator (&tags);
+
+          buffer_xml_append_printf (buffer,
+                                    "</user_tags>");
         }
-
-      cleanup_iterator (&tags);
-
-      buffer_xml_append_printf (buffer,
-                                "</user_tags>");
-    }
-  else
-    {
-      buffer_xml_append_printf (buffer,
-                                "<user_tags>"
-                                "<count>%i</count>"
-                                "</user_tags>",
-                                resource_tag_count (tag_type,
-                                                    get_iterator_resource
-                                                      (iterator),
-                                                    1));
+      else
+        {
+          buffer_xml_append_printf (buffer,
+                                    "<user_tags>"
+                                    "<count>%i</count>"
+                                    "</user_tags>",
+                                    tag_count);
+        }
     }
 
   if (send_to_client (buffer->str, write_to_client, write_to_client_data))
@@ -10680,7 +10681,12 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 {
   while (next (notes))
     {
+      int tag_count;
       char *uuid_task, *uuid_result;
+
+      tag_count = resource_tag_count ("note",
+                                      get_iterator_resource (notes),
+                                      1);
 
       if (count)
         (*count)++;
@@ -10752,11 +10758,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     "<in_use>0</in_use>"
                                     "<active>%i</active>"
                                     "<text excerpt=\"%i\">%s</text>"
-                                    "<orphan>%i</orphan>"
-                                    "<user_tags>"
-                                    "<count>%i</count>"
-                                    "</user_tags>"
-                                    "</note>",
+                                    "<orphan>%i</orphan>",
                                     get_iterator_owner_name (notes)
                                      ? get_iterator_owner_name (notes)
                                      : "",
@@ -10771,11 +10773,19 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     ((note_iterator_task (notes)
                                       && (uuid_task == NULL))
                                      || (note_iterator_result (notes)
-                                         && (uuid_result == NULL))),
-                                    resource_tag_count ("note",
-                                                        get_iterator_resource
-                                                          (notes),
-                                                        1));
+                                         && (uuid_result == NULL))));
+
+          if (tag_count)
+            {
+              buffer_xml_append_printf (buffer,
+                                        "<user_tags>"
+                                        "<count>%i</count>"
+                                        "</user_tags>",
+                                        tag_count);
+            }
+
+          g_string_append (buffer, "</note>");
+
           g_free (excerpt);
         }
       else
@@ -10882,38 +10892,38 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             buffer_xml_append_printf (buffer,
                                       "<result id=\"%s\"/>",
                                       uuid_result ? uuid_result : "");
-
-          buffer_xml_append_printf (buffer,
-                                    "<user_tags>"
-                                    "<count>%i</count>",
-                                    resource_tag_count ("note",
-                                                        get_iterator_resource
-                                                          (notes),
-                                                        1));
-
-          init_resource_tag_iterator (&tags, "note",
-                                      get_iterator_resource (notes),
-                                      1, NULL, 1);
-
-          while (next (&tags))
+          if (tag_count)
             {
               buffer_xml_append_printf (buffer,
-                                        "<tag id=\"%s\">"
-                                        "<name>%s</name>"
-                                        "<value>%s</value>"
-                                        "<comment>%s</comment>"
-                                        "</tag>",
-                                        resource_tag_iterator_uuid (&tags),
-                                        resource_tag_iterator_name (&tags),
-                                        resource_tag_iterator_value (&tags),
-                                        resource_tag_iterator_comment (&tags));
+                                        "<user_tags>"
+                                        "<count>%i</count>",
+                                        tag_count);
+
+              init_resource_tag_iterator (&tags, "note",
+                                          get_iterator_resource (notes),
+                                          1, NULL, 1);
+
+              while (next (&tags))
+                {
+                  buffer_xml_append_printf 
+                     (buffer,
+                      "<tag id=\"%s\">"
+                      "<name>%s</name>"
+                      "<value>%s</value>"
+                      "<comment>%s</comment>"
+                      "</tag>",
+                      resource_tag_iterator_uuid (&tags),
+                      resource_tag_iterator_name (&tags),
+                      resource_tag_iterator_value (&tags),
+                      resource_tag_iterator_comment (&tags));
+                }
+
+              cleanup_iterator (&tags);
+
+              g_string_append (buffer, "</user_tags>");
             }
 
-          cleanup_iterator (&tags);
-
-          buffer_xml_append_printf (buffer,
-                                    "</user_tags>"
-                                    "</note>");
+          g_string_append (buffer, "</note>");
         }
       free (uuid_task);
       free (uuid_result);
@@ -10936,7 +10946,11 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 {
   while (next (overrides))
     {
+      int tag_count;
       char *uuid_task, *uuid_result;
+      tag_count = resource_tag_count ("override",
+                                      get_iterator_resource (overrides),
+                                      1);
 
       if (count)
         (*count)++;
@@ -11012,11 +11026,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<severity>%s</severity>"
                                     "<new_threat>%s</new_threat>"
                                     "<new_severity>%s</new_severity>"
-                                    "<orphan>%i</orphan>"
-                                    "<user_tags>"
-                                    "<count>%i</count>"
-                                    "</user_tags>"
-                                    "</override>",
+                                    "<orphan>%i</orphan>",
                                     get_iterator_owner_name (overrides)
                                      ? get_iterator_owner_name (overrides)
                                      : "",
@@ -11039,11 +11049,19 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     ((override_iterator_task (overrides)
                                       && (uuid_task == NULL))
                                      || (override_iterator_result (overrides)
-                                         && (uuid_result == NULL))),
-                                    resource_tag_count ("override",
-                                                        get_iterator_resource
-                                                          (overrides),
-                                                        1));
+                                         && (uuid_result == NULL))));
+
+          if (tag_count)
+            {
+              buffer_xml_append_printf (buffer,
+                                        "<user_tags>"
+                                        "<count>%i</count>"
+                                        "</user_tags>",
+                                        tag_count);
+            }
+
+          g_string_append (buffer, "</override>");
+
           g_free (excerpt);
         }
       else
@@ -11156,37 +11174,38 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                       "<result id=\"%s\"/>",
                                       uuid_result ? uuid_result : "");
 
-          buffer_xml_append_printf (buffer,
-                                    "<user_tags>"
-                                    "<count>%i</count>",
-                                    resource_tag_count ("override",
-                                                        get_iterator_resource
-                                                          (overrides),
-                                                        1));
-
-          init_resource_tag_iterator (&tags, "override",
-                                      get_iterator_resource (overrides),
-                                      1, NULL, 1);
-
-          while (next (&tags))
+          if (tag_count)
             {
               buffer_xml_append_printf (buffer,
-                                        "<tag id=\"%s\">"
-                                        "<name>%s</name>"
-                                        "<value>%s</value>"
-                                        "<comment>%s</comment>"
-                                        "</tag>",
-                                        resource_tag_iterator_uuid (&tags),
-                                        resource_tag_iterator_name (&tags),
-                                        resource_tag_iterator_value (&tags),
-                                        resource_tag_iterator_comment (&tags));
+                                        "<user_tags>"
+                                        "<count>%i</count>",
+                                        tag_count);
+
+              init_resource_tag_iterator (&tags, "note",
+                                          get_iterator_resource (overrides),
+                                          1, NULL, 1);
+
+              while (next (&tags))
+                {
+                  buffer_xml_append_printf 
+                     (buffer,
+                      "<tag id=\"%s\">"
+                      "<name>%s</name>"
+                      "<value>%s</value>"
+                      "<comment>%s</comment>"
+                      "</tag>",
+                      resource_tag_iterator_uuid (&tags),
+                      resource_tag_iterator_name (&tags),
+                      resource_tag_iterator_value (&tags),
+                      resource_tag_iterator_comment (&tags));
+                }
+
+              cleanup_iterator (&tags);
+
+              g_string_append (buffer, "</user_tags>");
             }
 
-          cleanup_iterator (&tags);
-
-          buffer_xml_append_printf (buffer,
-                                    "</user_tags>"
-                                    "</override>");
+          g_string_append (buffer, "</override>");
         }
       free (uuid_task);
       free (uuid_result);
@@ -11421,8 +11440,6 @@ static void
 buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
                          int include_notes_details)
 {
-  g_string_append (buffer, "<notes>");
-
   if (task)
     {
       get_data_t get;
@@ -11430,20 +11447,26 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
       memset (&get, '\0', sizeof (get));
       /* Most recent first. */
       get.filter = "sort-reverse=created owner=any permission=any";
+
+      if (note_count (&get, 0, result, task) == 0)
+        return;
+
       init_note_iterator (&notes,
                           &get,
                           0,
                           result,
                           task);
+
+      g_string_append (buffer, "<notes>");
       buffer_notes_xml (buffer,
                         &notes,
                         include_notes_details,
                         0,
                         NULL);
+      g_string_append (buffer, "</notes>");
+
       cleanup_iterator (&notes);
     }
-
-  g_string_append (buffer, "</notes>");
 }
 
 /**
@@ -11458,8 +11481,6 @@ static void
 buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
                              int include_overrides_details)
 {
-  g_string_append (buffer, "<overrides>");
-
   if (task)
     {
       get_data_t get;
@@ -11467,20 +11488,26 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
       memset (&get, '\0', sizeof (get));
       /* Most recent first. */
       get.filter = "sort-reverse=created owner=any permission=any";
+
+      if (override_count (&get, 0, result, task) == 0)
+        return;
+
       init_override_iterator (&overrides,
                               &get,
                               0,
                               result,
                               task);
+
+      g_string_append (buffer, "<overrides>");
       buffer_overrides_xml (buffer,
                             &overrides,
                             include_overrides_details,
                             0,
                             NULL);
+      g_string_append (buffer, "</overrides>");
+
       cleanup_iterator (&overrides);
     }
-
-  g_string_append (buffer, "</overrides>");
 }
 
 /**
@@ -11754,35 +11781,41 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   if (include_tags)
     {
-      buffer_xml_append_printf (buffer,
-                                "<user_tags>"
-                                "<count>%i</count>",
-                                resource_tag_count ("result", result, 1));
+      int tag_count = resource_tag_count ("result", result, 1);
 
-      if (include_tags_details)
+      if (tag_count)
         {
-          iterator_t tags;
+          buffer_xml_append_printf (buffer,
+                                    "<user_tags>"
+                                    "<count>%i</count>",
+                                    resource_tag_count ("result", result, 1));
 
-          init_resource_tag_iterator (&tags, "result", result, 1, NULL, 1);
-
-          while (next (&tags))
+          if (include_tags_details)
             {
-              buffer_xml_append_printf (buffer,
-                                        "<tag id=\"%s\">"
-                                        "<name>%s</name>"
-                                        "<value>%s</value>"
-                                        "<comment>%s</comment>"
-                                        "</tag>",
-                                        resource_tag_iterator_uuid (&tags),
-                                        resource_tag_iterator_name (&tags),
-                                        resource_tag_iterator_value (&tags),
-                                        resource_tag_iterator_comment (&tags));
+              iterator_t tags;
+
+              init_resource_tag_iterator (&tags, "result", result, 1, NULL, 1);
+
+              while (next (&tags))
+                {
+                  buffer_xml_append_printf 
+                     (buffer,
+                      "<tag id=\"%s\">"
+                      "<name>%s</name>"
+                      "<value>%s</value>"
+                      "<comment>%s</comment>"
+                      "</tag>",
+                      resource_tag_iterator_uuid (&tags),
+                      resource_tag_iterator_name (&tags),
+                      resource_tag_iterator_value (&tags),
+                      resource_tag_iterator_comment (&tags));
+                }
+
+              cleanup_iterator (&tags);
             }
 
-          cleanup_iterator (&tags);
+          buffer_xml_append_printf (buffer, "</user_tags>");
         }
-
-      buffer_xml_append_printf (buffer, "</user_tags>");
     }
 
   detect_ref = detect_cpe = detect_loc = detect_oid = detect_name = NULL;
@@ -19359,44 +19392,16 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
 
           SENDF_TO_CLIENT_OR_FAIL ("<resources>"
                                    "<type>%s</type>"
-                                   "<count><total>%d</total></count>",
-                                   tag_iterator_resource_type (&tags),
-                                   tag_iterator_resources (&tags));
-
-          if (get_tags_data->get.details)
-            {
-              iterator_t resources;
-
-              init_tag_resources_iterator (&resources,
-                                          get_iterator_resource (&tags),
-                                          get_tags_data->get.trash);
-
-              while (next (&resources))
-                {
-                  SENDF_TO_CLIENT_OR_FAIL
-                  ("<resource id=\"%s\">"
-                    "<name>%s</name>"
-                    "<trash>%d</trash>",
-                    tag_resource_iterator_uuid (&resources),
-                    tag_resource_iterator_name (&resources)
-                      ? tag_resource_iterator_name (&resources) : "",
-                    tag_resource_iterator_location (&resources));
-
-                  if (tag_resource_iterator_readable (&resources) == 0)
-                    SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
-
-                  SEND_TO_CLIENT_OR_FAIL ("</resource>");
-                }
-
-              cleanup_iterator (&resources);
-            }
-
-          SENDF_TO_CLIENT_OR_FAIL ("</resources>"
+                                   "<count><total>%d</total></count>"
+                                   "</resources>"
                                    "<value>%s</value>"
                                    "<active>%d</active>"
                                    "</tag>",
+                                   tag_iterator_resource_type (&tags),
+                                   tag_iterator_resources (&tags),
                                    value,
                                    tag_iterator_active (&tags));
+
           g_free (value);
         }
       count++;

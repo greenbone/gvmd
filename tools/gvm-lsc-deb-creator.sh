@@ -32,6 +32,7 @@ USERNAME="$1"
 PUBKEY_FILE="$2"
 TEMP_DIR="$3"
 OUTPUT_PATH=$4
+MAINTAINER_EMAIL="$5"
 
 if [ -z "${USERNAME}" ]
 then
@@ -57,12 +58,22 @@ then
   exit 1
 fi
 
+if [ -z "${MAINTAINER_EMAIL}" ]
+then
+  MAINTAINER_HOSTNAME="$(hostname)"
+  if [ -z "$HOSTNAME" ]
+  then
+    MAINTAINER_HOSTNAME="localhost"
+  fi
+  MAINTAINER_EMAIL="admin@${MAINTAINER_HOSTNAME}"
+fi
+
 # Constants
 # Package data
 PACKAGE_NAME="gvm-lsc-target-${USERNAME}"
 PACKAGE_VERSION="0.5-1"
 PACKAGE_NAME_VERSION="${PACKAGE_NAME}_${PACKAGE_VERSION}"
-MAINTAINER="Greenbone Vulnerability Manager  <info@openvas.org>"
+MAINTAINER="Greenbone Vulnerability Manager  <${MAINTAINER_EMAIL}>"
 PACKAGE_DATE=$(date "+%a, %d %b %Y %H:%M:%S %z")
 
 USER_COMMENT="GVM Local Security Checks"

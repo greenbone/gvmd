@@ -1261,7 +1261,7 @@ manage_create_sql_functions ()
            "         WHEN (SELECT scan_run_status FROM reports"
            "               WHERE reports.id = $1)"
            "               IN (SELECT unnest (ARRAY [%i, %i, %i, %i, %i, %i,"
-           "                                         %i]))"
+           "                                         %i, %i]))"
            "         THEN true"
            "         ELSE false"
            "         END;"
@@ -1272,7 +1272,8 @@ manage_create_sql_functions ()
            TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
            TASK_STATUS_STOP_REQUESTED,
            TASK_STATUS_STOP_REQUESTED_GIVEUP,
-           TASK_STATUS_STOPPED);
+           TASK_STATUS_STOPPED,
+           TASK_STATUS_INTERRUPTED);
 
       sql ("CREATE OR REPLACE FUNCTION report_progress (integer)"
            " RETURNS integer AS $$"
