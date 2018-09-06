@@ -397,6 +397,7 @@ void
 sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   const unsigned char *hosts, *host;
+  int max_hosts;
 
   assert (argc == 2);
 
@@ -414,7 +415,11 @@ sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
       return;
     }
 
-  sqlite3_result_int (context, gvm_hosts_str_contains (hosts, host));
+  max_hosts = sql_int ("SELECT coalesce ((SELECT value FROM meta"
+                       "                  WHERE name = 'max_hosts'),"
+                       "                 '4095');");
+
+  sqlite3_result_int (context, hosts_str_contains (hosts, host, max_hosts));
 }
 
 /**
