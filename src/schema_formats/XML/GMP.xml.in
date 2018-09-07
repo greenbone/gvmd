@@ -1236,7 +1236,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>description</e>
       <o><e>delta</e></o>
       <e>details</e>
-      <e>detection</e>
+      <o><e>detection</e></o>
       <o><e>notes</e></o>
       <o><e>overrides</e></o>
     </pattern>
