@@ -3360,8 +3360,7 @@ filter_clause (const char* type, const char* filter,
 
           if (first_order)
             {
-              if (((strcmp (type, "task") == 0)
-                   || (strcmp (type, "report") == 0))
+              if ((strcmp (type, "report") == 0)
                   && (strcmp (keyword->string, "status") == 0))
                 g_string_append_printf
                  (order,
