@@ -49644,13 +49644,13 @@ init_task_schedule_iterator (iterator_t* iterator)
   permissions = make_array ();
   array_add (permissions, g_strdup ("start_task"));
   task_clause = acl_where_owned_user ("", "users.id", "task", &get, 1,
-                                      "any", 0, permissions);
+                                      "any", 0, permissions, NULL);
   array_free (permissions);
 
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_schedules"));
   schedule_clause = acl_where_owned_user ("", "users.id", "schedule", &get, 1,
-                                          "any", 0, permissions);
+                                          "any", 0, permissions, NULL);
   array_free (permissions);
 
   init_iterator (iterator,
