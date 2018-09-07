@@ -67922,7 +67922,7 @@ type_build_select (const char *type, const char *columns_str,
                    const char *group_by,
                    gchar **select)
 {
-  gchar *filter;
+  gchar *filter, *with;
   gchar *from_table, *opts_table;
   gchar *clause, *extra_where, *filter_order;
   int first, max;
@@ -67968,8 +67968,9 @@ type_build_select (const char *type, const char *columns_str,
                           &filter_order, &first, &max, &permissions,
                           &owner_filter);
 
-  owned_clause = acl_where_owned (type, get, type_owned (type),
-                                  owner_filter, 0, permissions);
+  owned_clause = acl_where_owned_with (type, get, type_owned (type),
+                                       owner_filter, 0, permissions,
+                                       &with);
 
   if (given_extra_where)
     extra_where = g_strdup (given_extra_where);
@@ -67986,7 +67987,8 @@ type_build_select (const char *type, const char *columns_str,
 
 
   *select = g_strdup_printf
-             ("SELECT%s %s"  // DISTINCT, columns
+             ("%s"           // WITH
+              "SELECT%s %s"  // DISTINCT, columns
               " FROM %s%s%s" // from_table, opts_table, extra_tables
               " WHERE"
               " %s%s"        // owned_clause, extra_where
@@ -67994,6 +67996,7 @@ type_build_select (const char *type, const char *columns_str,
               " %s%s"        // group_by
               " %s"          // ORDER BY (filter_order)
               " %s",         // pagination_clauses
+              with ? with : "",
               distinct ? " DISTINCT" : "",
               columns_str,
               from_table,
@@ -68009,6 +68012,7 @@ type_build_select (const char *type, const char *columns_str,
               (ordered && filter_order) ? filter_order : "",
               pagination_clauses ? pagination_clauses : "");
 
+  g_free (with);
   g_free (from_table);
   g_free (opts_table);
   g_free (owned_clause);
