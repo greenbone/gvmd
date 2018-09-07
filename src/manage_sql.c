@@ -5420,7 +5420,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   const char **filter_columns;
   int first, max;
   gchar *from_table, *trash_extra, *clause, *filter_order, *filter;
-  gchar *owned_clause;
+  gchar *owned_clause, *with;
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
@@ -5565,8 +5565,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     /* Ownership test is done above by find function. */
     owned_clause = g_strdup (" 1");
   else
-    owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
-                                permissions);
+    owned_clause = acl_where_owned_with (type, get, owned, owner_filter,
+                                         resource, permissions, &with);
 
   if (strcasecmp (type, "TASK") == 0)
     {
@@ -5866,7 +5866,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  " %s AS outer_group_column,"
                  " %s AS outer_subgroup_column"
                  " %s"
-                 " FROM (SELECT%s %s"
+                 " FROM (%s"
+                 "       SELECT%s %s"
                  "       FROM %s%s%s"
                  "       WHERE"
                  "       %s%s"
@@ -5878,6 +5879,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  outer_group_by_column,
                  outer_subgroup_column,
                  outer_col_select->str,
+                 with ? with : "",
                  distinct ? " DISTINCT" : "",
                  aggregate_select->str,
                  from_table,
@@ -5894,6 +5896,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  sql_select_limit (max_groups),
                  first_group);
 
+  g_free (with);
   g_free (columns);
   g_free (trash_columns);
   g_free (opts_table);
