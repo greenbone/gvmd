@@ -79,7 +79,11 @@ int
 valid_db_resource_type (const char*);
 
 
-typedef struct 
+int
+hosts_str_contains (const char*, const char*, int);
+
+
+typedef struct
 {
   icalcomponent *ical;
   icaltimezone *ical_tz;
