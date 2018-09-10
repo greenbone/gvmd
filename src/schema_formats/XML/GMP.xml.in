@@ -3892,8 +3892,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>key</name>
       <pattern>
-        <e>phrase</e>
-        <e>private</e>
+        <o><e>phrase</e></o>
+        <or>
+          <e>private</e>
+          <e>public</e>
+        </or>
       </pattern>
       <ele>
         <name>phrase</name>
@@ -3905,6 +3908,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>private</name>
         <summary>Private key</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>public</name>
+        <summary>Public key</summary>
         <pattern>
           text
         </pattern>
@@ -3976,6 +3986,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <t>
           <alts>
             <alt>cc</alt>
+            <alt>pgp</alt>
+            <alt>smime</alt>
             <alt>snmp</alt>
             <alt>up</alt>
             <alt>usk</alt>
@@ -23306,8 +23318,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>key</name>
       <pattern>
-        <e>phrase</e>
-        <e>private</e>
+        <o><e>phrase</e></o>
+        <or>
+          <e>private</e>
+          <e>public</e>
+        </or>
       </pattern>
       <ele>
         <name>phrase</name>
@@ -23319,6 +23334,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>private</name>
         <summary>Private key</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>public</name>
+        <summary>Public key</summary>
         <pattern>
           text
         </pattern>

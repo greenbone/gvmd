@@ -40796,6 +40796,7 @@ validate_credential_username_for_format (const gchar *username,
  * @param[in]  given_password  Password for password-only credential, NULL to
  *                             generate credentials.
  * @param[in]  key_private     Private key, or NULL.
+ * @param[in]  key_public      Public key, or NULL.
  * @param[in]  certificate     Certificate, or NULL.
  * @param[in]  community          SNMP community string, or NULL.
  * @param[in]  auth_algorithm     SNMP authentication algorithm, or NULL.
@@ -40809,14 +40810,16 @@ validate_credential_username_for_format (const gchar *username,
  *         3 Failed to create public key from private key/password,
  *         4 Invalid credential type, 5 login username missing,
  *         6 password missing, 7 private key missing, 8 certificate missing,
- *         10 autogenerate not supported, 11 community missing,
- *         12 auth algorithm missing, 13 privacy password missing, 14 privacy
- *         algorithm missing, 15 invalid auth algorithm, 16 invalid privacy
- *         algorithm, 17 invalid certificate, 99 permission denied, -1 error.
+ *         9 public key missing, 10 autogenerate not supported,
+ *         11 community missing, 12 auth algorithm missing,
+ *         13 privacy password missing, 14 privacy algorithm missing,
+ *         15 invalid auth algorithm, 16 invalid privacy algorithm,
+ *         17 invalid certificate, 99 permission denied, -1 error.
  */
 int
 create_credential (const char* name, const char* comment, const char* login,
-                   const char* given_password, const char* key_private,
+                   const char* given_password,
+                   const char* key_private, const char* key_public,
                    const char* certificate, const char* community,
                    const char* auth_algorithm, const char* privacy_password,
                    const char* privacy_algorithm,
@@ -40860,7 +40863,9 @@ create_credential (const char* name, const char* comment, const char* login,
   if (given_type && strcmp (given_type, ""))
     {
       if (strcmp (given_type, "cc")
+          && strcmp (given_type, "pgp")
           && strcmp (given_type, "snmp")
+          && strcmp (given_type, "smime")
           && strcmp (given_type, "up")
           && strcmp (given_type, "usk"))
         {
@@ -40889,16 +40894,21 @@ create_credential (const char* name, const char* comment, const char* login,
 
   /* Validate credential data */
   auto_generate = ((given_password == NULL) && (key_private == NULL)
-                   && (certificate == NULL) && (community == NULL));
+                   && (key_public == NULL) && (certificate == NULL)
+                   && (community == NULL));
   ret = 0;
 
   if (auto_generate
       && (strcmp (quoted_type, "cc") == 0
+          || strcmp (quoted_type, "pgp") == 0
+          || strcmp (quoted_type, "smime") == 0
           || strcmp (quoted_type, "snmp") == 0))
     ret = 10; // Type does not support autogenerate
 
   if (login == NULL
       && strcmp (quoted_type, "cc")
+      && strcmp (quoted_type, "pgp")
+      && strcmp (quoted_type, "smime")
       && strcmp (quoted_type, "snmp"))
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
@@ -40910,8 +40920,12 @@ create_credential (const char* name, const char* comment, const char* login,
                || strcmp (quoted_type, "usk") == 0))
     ret = 7;
   else if (certificate == NULL && auto_generate == 0
-           && (strcmp (quoted_type, "cc") == 0))
+           && (strcmp (quoted_type, "cc") == 0
+               || strcmp (quoted_type, "smime") == 0))
     ret = 8;
+  else if (key_public == NULL && auto_generate == 0
+           && strcmp (quoted_type, "pgp") == 0)
+    ret = 9;
   else if (strcmp (quoted_type, "snmp") == 0)
     {
       int using_snmp_v3 = 0;
@@ -40973,6 +40987,9 @@ create_credential (const char* name, const char* comment, const char* login,
   if (login)
     set_credential_data (new_credential,
                          "username", login);
+  if (key_public)
+    set_credential_data (new_credential, "public_key", key_public);
+
   if (certificate)
     {
       gchar *certificate_truncated;
@@ -41268,6 +41285,7 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   login               Login of Credential.
  * @param[in]   password            Password or passphrase of Credential.
  * @param[in]   key_private         Private key of Credential.
+ * @param[in]   key_public          Public key of Credential.
  * @param[in]   certificate         Certificate of Credential.
  * @param[in]   community           SNMP Community of Credential.
  * @param[in]   auth_algorithm      Authentication algorithm of Credential.
@@ -41286,7 +41304,8 @@ int
 modify_credential (const char *credential_id,
                    const char *name, const char *comment,
                    const char *login, const char* password,
-                   const char* key_private, const char* certificate,
+                   const char* key_private, const char* key_public,
+                   const char* certificate,
                    const char* community, const char* auth_algorithm,
                    const char* privacy_password, const char* privacy_algorithm,
                    const char* allow_insecure)
@@ -41401,6 +41420,11 @@ modify_credential (const char *credential_id,
         set_credential_privacy_algorithm (credential, privacy_algorithm);
     }
 
+  if (key_public && ret == 0)
+    {
+      set_credential_public_key (credential, key_public);
+    }
+
   if (ret)
     {
       sql_rollback ();
@@ -41416,7 +41440,7 @@ modify_credential (const char *credential_id,
 
       if (key_private)
         {
-          char *key_public = NULL;
+          char *generated_key_public = NULL;
           /* Try truncate the private key, but if that fails try get the
            * public key anyway, in case it's a key type that
            * truncate_private_key does not understand. */
@@ -41426,27 +41450,29 @@ modify_credential (const char *credential_id,
 
           if (strcmp (type, "cc") == 0)
             {
-              key_public = gvm_ssh_public_from_private
+              generated_key_public
+                  = gvm_ssh_public_from_private
                               (key_private_to_use,
                                NULL);
             }
           else if (strcmp (type, "usk") == 0)
             {
-              key_public = gvm_ssh_public_from_private
+              generated_key_public
+                  = gvm_ssh_public_from_private
                               (key_private_to_use,
                                password
                                 ? password
                                 : credential_iterator_password (&iterator));
             }
 
-          if (key_public == NULL)
+          if (generated_key_public == NULL)
             {
               sql_rollback ();
               cleanup_iterator (&iterator);
-              g_free (key_public);
+              g_free (generated_key_public);
               return 8;
             }
-          g_free (key_public);
+          g_free (generated_key_public);
         }
       else
         key_private_to_use = NULL;
@@ -41683,6 +41709,10 @@ delete_credential (const char *credential_id, int ultimate)
      " WHERE credential = credentials.id AND type = 'privacy_algorithm')",    \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'public_key')",           \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'secret')",               \
@@ -41733,6 +41763,10 @@ delete_credential (const char *credential_id, int ultimate)
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id"                               \
      "   AND type = 'privacy_algorithm')",                                    \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'public_key')",           \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
@@ -42113,6 +42147,22 @@ set_credential_private_key (credential_t credential,
 }
 
 /**
+ * @brief Set the public key of a Credential.
+ *
+ * @param[in]  credential      The Credential.
+ * @param[in]  public_key      Public key.
+ */
+void
+set_credential_public_key (credential_t credential, const char *public_key)
+{
+  set_credential_data (credential, "public_key", public_key);
+  sql ("UPDATE credentials SET"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       credential);
+}
+
+/**
  * @brief Set the community, password and privacy password of a Credential.
  *
  * @param[in]  credential         The Credential.
@@ -42221,20 +42271,20 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 
   if (iterator->done)
     return NULL;
-  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
   if (type == NULL)
     {
       g_warning ("%s: NULL data type given", __FUNCTION__);
       return NULL;
     }
   else if (strcmp (type, "password") == 0)
-    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
   else if (strcmp (type, "private_key") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
-  else if (strcmp (type, "community") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
-  else if (strcmp (type, "privacy_password") == 0)
+  else if (strcmp (type, "community") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
+  else if (strcmp (type, "privacy_password") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
   else
     {
       g_warning ("%s: unknown data type \"%s\"", __FUNCTION__, type);
@@ -42319,6 +42369,17 @@ DEF_ACCESS (credential_iterator_auth_algorithm, GET_ITERATOR_COLUMN_COUNT + 4);
  */
 DEF_ACCESS (credential_iterator_privacy_algorithm,
             GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get the public key from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Public key, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_public_key,
+            GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get the password from a Credential iterator.

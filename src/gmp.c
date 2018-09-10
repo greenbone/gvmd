@@ -503,14 +503,14 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
 }
 
 /**
- * @brief Check that a string represents a valid Certificate.
+ * @brief Check that a string represents a valid x509 Certificate.
  *
  * @param[in]  cert_str     Certificate string.
  *
  * @return 0 if valid, 1 otherwise.
  */
 static int
-check_certificate (const char *cert_str)
+check_certificate_x509 (const char *cert_str)
 {
   gnutls_x509_crt_t crt;
   gnutls_datum_t data;
@@ -544,6 +544,38 @@ check_certificate (const char *cert_str)
 }
 
 /**
+ * @brief Check that a string represents a valid S/MIME Certificate.
+ *
+ * @param[in]  cert_str     Certificate string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+check_certificate_smime (const char *cert_str)
+{
+  int ret = 0;
+
+  // TODO: Test
+  ret = 1;
+
+  return ret;
+}
+
+/**
+ * @brief Check that a string represents a valid Certificate.
+ *
+ * @param[in]  cert_str     Certificate string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+check_certificate (const char *cert_str)
+{
+  return check_certificate_x509 (cert_str)
+         && check_certificate_smime (cert_str);
+}
+
+/**
  * @brief Check that a string represents a valid Private Key.
  *
  * @param[in]  key_str  Private Key string.
@@ -569,6 +601,20 @@ check_private_key (const char *key_str)
     }
   g_free (data.data);
   gnutls_x509_privkey_deinit (key);
+  return 0;
+}
+
+/**
+ * @brief Check that a string represents a valid Public Key.
+ *
+ * @param[in]  key_str  Public Key string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+check_public_key (const char *key_str)
+{
+  // TODO: Implement check
   return 0;
 }
 
@@ -1043,6 +1089,7 @@ typedef struct
   int key;                 ///< Whether the command included a key element.
   char *key_phrase;        ///< Passphrase for key.
   char *key_private;       ///< Private key from key.
+  char *key_public;        ///< Public key from key.
   char *login;             ///< Login name.
   char *name;              ///< Credential name.
   char *password;          ///< Password associated with login name.
@@ -1067,6 +1114,7 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->copy);
   free (data->key_phrase);
   free (data->key_private);
+  free (data->key_public);
   free (data->login);
   free (data->name);
   free (data->password);
@@ -3363,6 +3411,7 @@ typedef struct
   int key;                    ///< Whether the command included a key element.
   char *key_phrase;           ///< Passphrase for key.
   char *key_private;          ///< Private key from key.
+  char *key_public;           ///< Public key from key.
   char *login;                ///< Login name.
   char *name;                 ///< Name.
   char *password;             ///< Password associated with login name.
@@ -3386,6 +3435,7 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->credential_id);
   free (data->key_phrase);
   free (data->key_private);
+  free (data->key_public);
   free (data->login);
   free (data->name);
   free (data->password);
@@ -5111,6 +5161,7 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_KEY,
   CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
   CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
+  CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC,
   CLIENT_CREATE_CREDENTIAL_LOGIN,
   CLIENT_CREATE_CREDENTIAL_NAME,
   CLIENT_CREATE_CREDENTIAL_PASSWORD,
@@ -5526,6 +5577,7 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_KEY,
   CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
   CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
+  CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC,
   CLIENT_MODIFY_CREDENTIAL_LOGIN,
   CLIENT_MODIFY_CREDENTIAL_NAME,
   CLIENT_MODIFY_CREDENTIAL_PASSWORD,
@@ -8442,6 +8494,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE);
           }
+        else if (strcasecmp ("PUBLIC", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC);
+          }
         ELSE_ERROR ("modify_credential");
 
       case CLIENT_MODIFY_CREDENTIAL_PRIVACY:
@@ -9288,6 +9344,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVATE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE);
+        else if (strcasecmp ("PUBLIC", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC);
         ELSE_ERROR ("create_credential");
 
       case CLIENT_CREATE_CREDENTIAL_PRIVACY:
@@ -14738,7 +14796,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START("credential");
   while (1)
     {
-      const char *private_key, *login, *type, *cert;
+      const char *private_key, *public_key, *login, *type, *cert;
       gchar *formats_xml;
 
       ret = get_next (&credentials, &get_credentials_data->get,
@@ -14753,6 +14811,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 
       SEND_GET_COMMON (credential, &get_credentials_data->get, &credentials);
       private_key = credential_iterator_private_key (&credentials);
+      public_key = credential_iterator_public_key (&credentials);
       login = credential_iterator_login (&credentials);
       type = credential_iterator_type (&credentials);
       cert = credential_iterator_certificate (&credentials);
@@ -14822,14 +14881,22 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 
           case CREDENTIAL_FORMAT_KEY:
             {
-              char *pub;
-              const char *pass;
+              if (public_key && strcmp (public_key, ""))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL
+                    ("<public_key>%s</public_key>", public_key);
+                }
+              else
+                {
+                  char *pub;
+                  const char *pass;
 
-              pass = credential_iterator_password (&credentials);
-              pub = gvm_ssh_public_from_private (private_key, pass);
-              SENDF_TO_CLIENT_OR_FAIL
-                ("<public_key>%s</public_key>", pub ?: "");
-              g_free (pub);
+                  pass = credential_iterator_password (&credentials);
+                  pub = gvm_ssh_public_from_private (private_key, pass);
+                  SENDF_TO_CLIENT_OR_FAIL
+                    ("<public_key>%s</public_key>", pub ?: "");
+                  g_free (pub);
+                }
               break;
             }
           case CREDENTIAL_FORMAT_RPM:
@@ -23336,20 +23403,29 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   " least one character long"));
             }
           else if (create_credential_data->key
-                   && create_credential_data->key_private == NULL)
+                   && create_credential_data->key_private == NULL
+                   && create_credential_data->key_public == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_credential",
                                   "CREATE_CREDENTIAL KEY requires a PRIVATE"
-                                  " key"));
+                                  " or PUBLIC key"));
             }
           else if (create_credential_data->key
-                   && create_credential_data->key_private == NULL
+                   && create_credential_data->key_private
                    && check_private_key (create_credential_data->key_private))
             {
               SEND_TO_CLIENT_OR_FAIL
               (XML_ERROR_SYNTAX ("create_credential",
                                  "Erroneous Private Key."));
+            }
+          else if (create_credential_data->key
+                   && create_credential_data->key_public
+                   && check_public_key (create_credential_data->key_public))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("create_credential",
+                                 "Erroneous Public Key."));
             }
           else if (create_credential_data->certificate
                    && check_certificate (create_credential_data->certificate))
@@ -23366,6 +23442,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                           ? create_credential_data->key_phrase
                           : create_credential_data->password,
                          create_credential_data->key_private,
+                         create_credential_data->key_public,
                          create_credential_data->certificate,
                          create_credential_data->community,
                          create_credential_data->auth_algorithm,
@@ -23426,6 +23503,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires a certificate"));
+                break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a public key"));
                 break;
               case 10:
                 SEND_TO_CLIENT_OR_FAIL
@@ -23492,6 +23574,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PRIVATE);
+      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PUBLIC);
       CLOSE (CLIENT_CREATE_CREDENTIAL, LOGIN);
       CLOSE (CLIENT_CREATE_CREDENTIAL, NAME);
       CLOSE (CLIENT_CREATE_CREDENTIAL, PASSWORD);
@@ -27270,6 +27353,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       ? modify_credential_data->key_phrase
                       : modify_credential_data->password,
                     modify_credential_data->key_private,
+                    modify_credential_data->key_public,
                     modify_credential_data->certificate,
                     modify_credential_data->community,
                     modify_credential_data->auth_algorithm,
@@ -27355,6 +27439,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 modify_credential_data->credential_id,
                                 "modified");
                 break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid or empty public key"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
@@ -27387,6 +27479,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, KEY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PRIVATE);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PUBLIC);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, LOGIN);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, NAME);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, PASSWORD);
@@ -30210,6 +30303,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
               &modify_credential_data->key_private);
 
+      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC,
+              &modify_credential_data->key_public);
+
       APPEND (CLIENT_MODIFY_CREDENTIAL_LOGIN,
               &modify_credential_data->login);
 
@@ -30435,6 +30531,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
               &create_credential_data->key_private);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC,
+              &create_credential_data->key_public);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_LOGIN,
               &create_credential_data->login);
