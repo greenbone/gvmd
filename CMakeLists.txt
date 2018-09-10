@@ -181,7 +181,12 @@ set (GVM_LOG_DIR      "${LOCALSTATEDIR}/log/gvm")
 set (GVM_SCAP_RES_DIR "${GVM_DATA_DIR}/scap")
 set (GVM_CERT_RES_DIR "${GVM_DATA_DIR}/cert")
 set (GVM_CA_DIR       "${GVMD_STATE_DIR}/trusted_certs")
-set (GVM_LIB_INSTALL_DIR     "${LIBDIR}")
+
+if (NOT GVM_LIB_INSTALL_DIR)
+	set (GVM_LIB_INSTALL_DIR     "${LIBDIR}")
+else (NOT GVM_LIB_INSTALL_DIR)
+	set (GVM_LIB_INSTALL_DIR "${GVM_LIB_INSTALL_DIR}")
+endif (NOT GVM_LIB_INSTALL_DIR)
 
 set (GVM_SCANNER_CERTIFICATE "${GVM_STATE_DIR}/CA/servercert.pem")
 set (GVM_SCANNER_KEY         "${GVM_STATE_DIR}/private/CA/serverkey.pem")
