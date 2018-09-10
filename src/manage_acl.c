@@ -941,6 +941,7 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
  * @param[in]  owner_filter    Owner filter keyword.
  * @param[in]  resource        Resource.
  * @param[in]  permissions     Permissions.
+ * @param[out] with            Address for WITH clause if allowed, else NULL.
  *
  * @return Newly allocated owned clause.
  */
@@ -948,9 +949,12 @@ gchar *
 acl_where_owned_user (const char *user_id, const char *user_sql,
                       const char *type, const get_data_t *get, int owned,
                       const gchar *owner_filter, resource_t resource,
-                      array_t *permissions)
+                      array_t *permissions, gchar **with)
 {
   gchar *owned_clause;
+
+  if (with)
+    *with = NULL;
 
   if (owned)
     {
@@ -1104,8 +1108,6 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
             permission_clause = clause;
         }
 
-      g_string_free (permission_or, TRUE);
-
       table_trash = get->trash && strcasecmp (type, "task");
       if (resource || (user_id == NULL))
         owned_clause
@@ -1217,6 +1219,124 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                               user_sql,
                               permission_clause ? permission_clause : "");
         }
+      else if (with)
+        {
+          /* Caller supports WITH clause. */
+
+          *with = g_strdup_printf
+                   ("WITH permissions_subject"
+                    "     AS (SELECT * FROM permissions"
+                    "         WHERE subject_location"
+                    "               = " G_STRINGIFY (LOCATION_TABLE)
+                    "         AND ((subject_type = 'user'"
+                    "               AND subject"
+                    "                   = (%s))"
+                    "              OR (subject_type = 'group'"
+                    "                  AND subject"
+                    "                      IN (SELECT DISTINCT \"group\""
+                    "                          FROM group_users"
+                    "                          WHERE \"user\""
+                    "                                = (%s)))"
+                    "              OR (subject_type = 'role'"
+                    "                  AND subject"
+                    "                      IN (SELECT DISTINCT role"
+                    "                          FROM role_users"
+                    "                          WHERE \"user\""
+                    "                                = (%s))))),"
+                    "     super_on_users"
+                    "     AS (SELECT DISTINCT *"
+                    "         FROM (SELECT resource FROM permissions_subject"
+                    "               WHERE name = 'Super'"
+                    "               AND resource_type = 'user'"
+                    "               UNION"
+                    "               SELECT \"user\" FROM role_users"
+                    "               WHERE role"
+                    "                     IN (SELECT resource"
+                    "                         FROM permissions_subject"
+                    "                         WHERE name = 'Super'"
+                    "                         AND resource_type = 'role')"
+                    "               UNION"
+                    "               SELECT \"user\" FROM group_users"
+                    "               WHERE \"group\""
+                    "                     IN (SELECT resource"
+                    "                         FROM permissions_subject"
+                    "                         WHERE name = 'Super'"
+                    "                         AND resource_type = 'group'))"
+                    "              AS all_users)",
+                    user_sql,
+                    user_sql,
+                    user_sql);
+
+          /* Recreate the permission clause.  In the end everything should use
+           * WITH so this will be done above instead. */
+          g_free (permission_clause);
+          permission_clause = NULL;
+          if (user_id && index)
+            {
+              gchar *clause;
+              clause
+               = g_strdup_printf ("OR EXISTS"
+                                  " (SELECT id FROM permissions_subject"
+                                  "  WHERE resource = %ss%s.id"
+                                  "  AND resource_type = '%s'"
+                                  "  AND resource_location = %i"
+                                  "  AND (%s))",
+                                  type,
+                                  get->trash && strcmp (type, "task") ? "_trash" : "",
+                                  type,
+                                  get->trash ? LOCATION_TRASH : LOCATION_TABLE,
+                                  permission_or->str);
+
+              if (strcmp (type, "report") == 0)
+                permission_clause
+                 = g_strdup_printf ("%s"
+                                    " OR EXISTS"
+                                    " (SELECT id FROM permissions_subject"
+                                    "  WHERE resource = reports%s.task"
+                                    "  AND resource_type = 'task'"
+                                    "  AND (%s))",
+                                    clause,
+                                    get->trash ? "_trash" : "",
+                                    permission_or->str);
+              else if (strcmp (type, "result") == 0)
+                permission_clause
+                 = g_strdup_printf ("%s"
+                                    " OR EXISTS"
+                                    " (SELECT id FROM permissions_subject"
+                                    "  WHERE resource = results%s.task"
+                                    "  AND resource_type = 'task'"
+                                    "  AND (%s))",
+                                    clause,
+                                    get->trash ? "_trash" : "",
+                                    permission_or->str);
+
+              if ((strcmp (type, "report") == 0)
+                  || (strcmp (type, "result") == 0))
+                g_free (clause);
+              else
+                permission_clause = clause;
+            }
+
+          owned_clause
+           = g_strdup_printf (/* Either the user is the owner. */
+                              " ((%ss%s.owner"
+                              "   = (%s))"
+                              /* Or the user has super permission on all. */
+                              "  OR EXISTS (SELECT * FROM permissions_subject"
+                              "             WHERE name = 'Super'"
+                              "             AND (resource = 0))"
+                              /* Or the user has super permission on the owner,
+                               * (directly, via the role, or via the group). */
+                              "  OR %ss%s.owner IN (SELECT *"
+                              "                     FROM super_on_users)"
+                              "  %s)",
+                              type,
+                              table_trash ? "_trash" : "",
+                              user_sql,
+                              type,
+                              table_trash ? "_trash" : "",
+                              permission_clause ? permission_clause : "");
+        }
       else
         owned_clause
          = g_strdup_printf (/* Either a global resource (like Full and Fast).
@@ -1292,6 +1412,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                             user_sql,
                             permission_clause ? permission_clause : "");
 
+      g_string_free (permission_or, TRUE);
       g_free (permission_clause);
 
       if (get->trash && (strcasecmp (type, "task") == 0))
@@ -1339,6 +1460,40 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
 /**
  * @brief Generate the ownership part of an SQL WHERE clause.
  *
+ * This version includes an argument for a WITH clause return.  Using the
+ * WITH clause is much faster.
+ *
+ * @param[in]  type            Type of resource.
+ * @param[in]  get             GET data.
+ * @param[in]  owned           Only get items owned by the current user.
+ * @param[in]  owner_filter    Owner filter keyword.
+ * @param[in]  resource        Resource.
+ * @param[in]  permissions     Permissions.
+ * @param[out] with            Address for WITH clause if allowed, else NULL.
+ *
+ * @return Newly allocated owned clause.
+ */
+gchar *
+acl_where_owned_with (const char *type, const get_data_t *get, int owned,
+                      const gchar *owner_filter, resource_t resource,
+                      array_t *permissions, gchar **with)
+{
+  gchar *ret, *user_sql;
+  if (current_credentials.uuid)
+    user_sql = g_strdup_printf ("SELECT id FROM users WHERE users.uuid = '%s'",
+                                current_credentials.uuid);
+  else
+    user_sql = NULL;
+  ret = acl_where_owned_user (current_credentials.uuid, user_sql, type, get,
+                              owned, owner_filter, resource, permissions,
+                              with);
+  g_free (user_sql);
+  return ret;
+}
+
+/**
+ * @brief Generate the ownership part of an SQL WHERE clause.
+ *
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
  * @param[in]  owned           Only get items owned by the current user.
@@ -1353,16 +1508,8 @@ acl_where_owned (const char *type, const get_data_t *get, int owned,
                  const gchar *owner_filter, resource_t resource,
                  array_t *permissions)
 {
-  gchar *ret, *user_sql;
-  if (current_credentials.uuid)
-    user_sql = g_strdup_printf ("SELECT id FROM users WHERE users.uuid = '%s'",
-                                current_credentials.uuid);
-  else
-    user_sql = NULL;
-  ret = acl_where_owned_user (current_credentials.uuid, user_sql, type, get,
-                              owned, owner_filter, resource, permissions);
-  g_free (user_sql);
-  return ret;
+  return acl_where_owned_with (type, get, owned, owner_filter, resource,
+                               permissions, NULL);
 }
 
 /**
@@ -1403,7 +1550,8 @@ acl_where_owned_for_get (const char *type, const char *user_sql)
                                        1,              /* Do owner checks. */
                                        "any",
                                        0,              /* Resource. */
-                                       permissions);
+                                       permissions,
+                                       NULL);
   array_free (permissions);
   g_free (user_sql_new);
 
