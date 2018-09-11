@@ -453,19 +453,19 @@ sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
 void
 sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
-  const unsigned char *hosts, *host;
+  const char *hosts, *host;
   int max_hosts;
 
   assert (argc == 2);
 
-  hosts = sqlite3_value_text (argv[0]);
+  hosts = (const char*)sqlite3_value_text (argv[0]);
   if (hosts == NULL)
     {
       sqlite3_result_error (context, "Failed to get hosts argument", -1);
       return;
     }
 
-  host = sqlite3_value_text (argv[1]);
+  host = (const char*)sqlite3_value_text (argv[1]);
   if (host == NULL)
     {
       sqlite3_result_error (context, "Failed to get host argument", -1);
