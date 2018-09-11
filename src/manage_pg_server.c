@@ -30,7 +30,7 @@
 #include "executor/spi.h"
 #include "glib.h"
 
-#include <gvm/base/hosts.h>
+#include <openvas/base/openvas_hosts.h>
 
 #ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
