@@ -38,6 +38,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <gvm/base/hosts.h>
 #include <gvm/util/uuidutils.h>
 
 #undef G_LOG_DOMAIN
@@ -452,43 +453,30 @@ sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
 void
 sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
-  gchar **split, **point, *stripped_host;
-  const unsigned char *hosts, *host;
+  const char *hosts, *host;
+  int max_hosts;
 
   assert (argc == 2);
 
-  hosts = sqlite3_value_text (argv[0]);
+  hosts = (const char*)sqlite3_value_text (argv[0]);
   if (hosts == NULL)
     {
       sqlite3_result_error (context, "Failed to get hosts argument", -1);
       return;
     }
 
-  host = sqlite3_value_text (argv[1]);
+  host = (const char*)sqlite3_value_text (argv[1]);
   if (host == NULL)
     {
       sqlite3_result_error (context, "Failed to get host argument", -1);
       return;
     }
 
-  stripped_host = g_strstrip (g_strdup ((gchar*) host));
-  split = g_strsplit ((gchar*) hosts, ",", 0);
-  point = split;
-  while (*point)
-    {
-      if (strcmp (g_strstrip (*point), stripped_host) == 0)
-        {
-          g_strfreev (split);
-          g_free (stripped_host);
-          sqlite3_result_int (context, 1);
-          return;
-        }
-      point++;
-    }
-  g_strfreev (split);
-  g_free (stripped_host);
+  max_hosts = sql_int ("SELECT coalesce ((SELECT value FROM meta"
+                       "                  WHERE name = 'max_hosts'),"
+                       "                 '4095');");
 
-  sqlite3_result_int (context, 0);
+  sqlite3_result_int (context, hosts_str_contains (hosts, host, max_hosts));
 }
 
 /**

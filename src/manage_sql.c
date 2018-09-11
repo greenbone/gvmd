@@ -5828,7 +5828,7 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
         const char *extra_tables, const char *extra_where, int owned)
 {
   int ret;
-  gchar *clause, *owned_clause, *owner_filter, *columns, *filter;
+  gchar *clause, *owned_clause, *owner_filter, *columns, *filter, *with;
   array_t *permissions;
 
   assert (get);
@@ -5854,7 +5854,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
 
   g_free (filter);
 
-  owned_clause = acl_where_owned (type, get, owned, owner_filter, 0, permissions);
+  owned_clause = acl_where_owned_with (type, get, owned, owner_filter, 0,
+                                       permissions, &with);
 
   g_free (owner_filter);
   array_free (permissions);
@@ -5869,15 +5870,16 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
       && (clause == NULL)
       && (extra_where == NULL)
       && (strcmp (owned_clause, " t ()") == 0))
-    ret = sql_int ("SELECT count (*) FROM %ss%s;",
-                   type,
+    ret = sql_int ("%sSELECT count (*) FROM %ss%s;",
+                   with ? with : "", type,
                    get->trash && strcmp (type, "task") ? "_trash" : "");
   else
-    ret = sql_int ("SELECT count (%scount_id)"
+    ret = sql_int ("%sSELECT count (%scount_id)"
                    " FROM (SELECT %ss%s.id AS count_id"
                    "       FROM %ss%s%s"
                    "       WHERE %s"
                    "       %s%s%s%s) AS subquery;",
+                   with ? with : "",
                    distinct ? "DISTINCT " : "",
                    type,
                    get->trash && strcmp (type, "task") ? "_trash" : "",
@@ -5890,6 +5892,7 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
                    clause ? ") " : "",
                    extra_where ? extra_where : "");
 
+  g_free (with);
   g_free (columns);
   g_free (owned_clause);
   g_free (clause);
@@ -67980,7 +67983,7 @@ type_build_select (const char *type, const char *columns_str,
                    const char *group_by,
                    gchar **select)
 {
-  gchar *filter;
+  gchar *filter, *with;
   gchar *from_table, *opts_table;
   gchar *clause, *extra_where, *filter_order;
   int first, max;
@@ -68026,8 +68029,9 @@ type_build_select (const char *type, const char *columns_str,
                           &filter_order, &first, &max, &permissions,
                           &owner_filter);
 
-  owned_clause = acl_where_owned (type, get, type_owned (type),
-                                  owner_filter, 0, permissions);
+  owned_clause = acl_where_owned_with (type, get, type_owned (type),
+                                       owner_filter, 0, permissions,
+                                       &with);
 
   if (given_extra_where)
     extra_where = g_strdup (given_extra_where);
@@ -68044,7 +68048,8 @@ type_build_select (const char *type, const char *columns_str,
 
 
   *select = g_strdup_printf
-             ("SELECT%s %s"  // DISTINCT, columns
+             ("%s"           // WITH
+              "SELECT%s %s"  // DISTINCT, columns
               " FROM %s%s%s" // from_table, opts_table, extra_tables
               " WHERE"
               " %s%s"        // owned_clause, extra_where
@@ -68052,6 +68057,7 @@ type_build_select (const char *type, const char *columns_str,
               " %s%s"        // group_by
               " %s"          // ORDER BY (filter_order)
               " %s",         // pagination_clauses
+              with ? with : "",
               distinct ? " DISTINCT" : "",
               columns_str,
               from_table,
@@ -68067,6 +68073,7 @@ type_build_select (const char *type, const char *columns_str,
               (ordered && filter_order) ? filter_order : "",
               pagination_clauses ? pagination_clauses : "");
 
+  g_free (with);
   g_free (from_table);
   g_free (opts_table);
   g_free (owned_clause);
