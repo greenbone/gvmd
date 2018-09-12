@@ -6959,6 +6959,69 @@ validate_alert_event_data (gchar *name, gchar* data, event_t event)
 }
 
 /**
+ * @brief Validate method data for the email method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ * @param[in]  for_modify      Whether to return error codes for modify_alert.
+ *
+ * @return 0 valid, 2 or 6: validation of email address failed, 
+ *         7 or 9 subject too long, 8 or 10 message too long,
+ *         60 recipient credential not found, 61 invalid recipient credential
+ *         type, -1 error. When for_modify is 0, the first code is returned,
+ *         otherwise the second one.
+ */
+int
+validate_email_data (alert_method_t method, const gchar *name, gchar **data,
+                     int for_modify)
+{
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "to_address") == 0
+      && validate_email_list (*data))
+    return for_modify ? 6 : 2;
+
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "from_address") == 0
+      && validate_email (*data))
+    return for_modify ? 6 : 2;
+
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "subject") == 0
+      && strlen (*data) > 80)
+    return for_modify ? 9 : 7;
+
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "message") == 0
+      && strlen (*data) > max_email_message_length)
+    return for_modify ? 10 : 8;
+
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "recipient_credential") == 0
+      && *data && strcmp (*data, ""))
+    {
+      credential_t credential;
+      char *type;
+
+      if (find_credential_with_permission (*data, &credential, NULL))
+        return -1;
+      else if (credential == 0)
+        return 60;
+
+      type = credential_type (credential);
+      if (strcmp (type, "pgp")
+          && strcmp (type, "smime"))
+        {
+          free (type);
+          return 61;
+        }
+      free (type);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Validate method data for the SCP method.
  *
  * @param[in]  method          Method that data corresponds to.
@@ -7290,7 +7353,8 @@ check_alert_params (event_t event, alert_condition_t condition,
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
- *         workaround setting.
+ *         workaround setting, 60 recipient credential not found, 61 invalid
+ *         recipient credential type,
  *         99 permission denied, -1 error.
  */
 int
@@ -7461,44 +7525,13 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       name = sql_quote (item);
       data = sql_quote (item + strlen (item) + 1);
 
-      if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "to_address") == 0
-          && validate_email_list (data))
+      ret = validate_email_data (method, name, &data, 0);
+      if (ret)
         {
           g_free (name);
           g_free (data);
           sql_rollback ();
-          return 2;
-        }
-
-      if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "from_address") == 0
-          && validate_email (data))
-        {
-          g_free (name);
-          g_free (data);
-          sql_rollback ();
-          return 2;
-        }
-
-      if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "subject") == 0
-          && strlen (data) > 80)
-        {
-          g_free (name);
-          g_free (data);
-          sql_rollback ();
-          return 7;
-        }
-
-      if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "message") == 0
-          && strlen (data) > max_email_message_length)
-        {
-          g_free (name);
-          g_free (data);
-          sql_rollback ();
-          return 8;
+          return ret;
         }
 
       ret = validate_scp_data (method, name, &data);
@@ -7642,7 +7675,8 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
- *         workaround setting.
+ *         workaround setting, 60 recipient credential not found, 61 invalid
+ *         recipient credential type,
  *         99 permission denied, -1 internal error.
  */
 int
@@ -7851,44 +7885,13 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
           name = sql_quote (item);
           data = sql_quote (item + strlen (item) + 1);
 
-          if (method == ALERT_METHOD_EMAIL
-              && strcmp (name, "to_address") == 0
-              && validate_email_list (data))
+          ret = validate_email_data (method, name, &data, 1);
+          if (ret)
             {
               g_free (name);
               g_free (data);
               sql_rollback ();
-              return 6;
-            }
-
-          if (method == ALERT_METHOD_EMAIL
-              && strcmp (name, "from_address") == 0
-              && validate_email (data))
-            {
-              g_free (name);
-              g_free (data);
-              sql_rollback ();
-              return 6;
-            }
-
-          if (method == ALERT_METHOD_EMAIL
-              && strcmp (name, "subject") == 0
-              && strlen (data) > 80)
-            {
-              g_free (name);
-              g_free (data);
-              sql_rollback ();
-              return 9;
-            }
-
-          if (method == ALERT_METHOD_EMAIL
-              && strcmp (name, "message") == 0
-              && strlen (data) > max_email_message_length)
-            {
-              g_free (name);
-              g_free (data);
-              sql_rollback ();
-              return 10;
+              return ret;
             }
 
           ret = validate_scp_data (method, name, &data);
@@ -41834,7 +41837,8 @@ credential_in_use (credential_t credential)
                        " WHERE credential = %llu;",
                        credential)
            || sql_int ("SELECT count (*) FROM alert_method_data"
-                       " WHERE (name = 'scp_credential'"
+                       " WHERE (name = 'recipient_credential'"
+                       "        OR name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
                        "        OR name = 'tp_sms_credential'"
                        "        OR name = 'verinice_server_credential')"
@@ -41869,7 +41873,8 @@ trash_credential_in_use (credential_t credential)
                        "      = " G_STRINGIFY (LOCATION_TRASH) ";",
                        credential)
            || sql_int ("SELECT count (*) FROM alert_method_data_trash"
-                       " WHERE (name = 'scp_credential'"
+                       " WHERE (name = 'recipient_credential'"
+                       "        OR name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
                        "        OR name = 'tp_sms_credential'"
                        "        OR name = 'verinice_server_credential')"
