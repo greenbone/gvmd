@@ -15633,12 +15633,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>note_details</name>
+        <name>notes_details</name>
         <summary>If notes are included, whether to include note details</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>override_details</name>
+        <name>overrides_details</name>
         <summary>If overrides are included, whether to include override details</summary>
         <type>boolean</type>
       </attrib>
@@ -16906,12 +16906,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>note_details</name>
+        <name>notes_details</name>
         <summary>If notes are included, whether to include note details</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>override_details</name>
+        <name>overrides_details</name>
         <summary>If overrides are included, whether to include override details</summary>
         <type>boolean</type>
       </attrib>
