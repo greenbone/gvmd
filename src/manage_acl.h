@@ -134,7 +134,11 @@ acl_user_has_access_uuid (const char *, const char *, const char *, int);
 
 gchar *
 acl_where_owned_user (const char *, const char *, const char *, const get_data_t *,
-                      int, const gchar *, resource_t, array_t *);
+                      int, const gchar *, resource_t, array_t *, gchar **);
+
+gchar *
+acl_where_owned_with (const char *, const get_data_t *, int, const gchar *, resource_t,
+                      array_t *, gchar **);
 
 gchar *
 acl_where_owned (const char *, const get_data_t *, int, const gchar *, resource_t,

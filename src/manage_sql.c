@@ -5420,7 +5420,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   const char **filter_columns;
   int first, max;
   gchar *from_table, *trash_extra, *clause, *filter_order, *filter;
-  gchar *owned_clause;
+  gchar *owned_clause, *with;
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
@@ -5565,8 +5565,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     /* Ownership test is done above by find function. */
     owned_clause = g_strdup (" 1");
   else
-    owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
-                                permissions);
+    owned_clause = acl_where_owned_with (type, get, owned, owner_filter,
+                                         resource, permissions, &with);
 
   if (strcasecmp (type, "TASK") == 0)
     {
@@ -5866,7 +5866,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  " %s AS outer_group_column,"
                  " %s AS outer_subgroup_column"
                  " %s"
-                 " FROM (SELECT%s %s"
+                 " FROM (%s"
+                 "       SELECT%s %s"
                  "       FROM %s%s%s"
                  "       WHERE"
                  "       %s%s"
@@ -5878,6 +5879,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  outer_group_by_column,
                  outer_subgroup_column,
                  outer_col_select->str,
+                 with ? with : "",
                  distinct ? " DISTINCT" : "",
                  aggregate_select->str,
                  from_table,
@@ -5894,6 +5896,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                  sql_select_limit (max_groups),
                  first_group);
 
+  g_free (with);
   g_free (columns);
   g_free (trash_columns);
   g_free (opts_table);
@@ -6077,7 +6080,7 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
         const char *extra_tables, const char *extra_where, int owned)
 {
   int ret;
-  gchar *clause, *owned_clause, *owner_filter, *columns, *filter;
+  gchar *clause, *owned_clause, *owner_filter, *columns, *filter, *with;
   array_t *permissions;
 
   assert (get);
@@ -6103,7 +6106,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
 
   g_free (filter);
 
-  owned_clause = acl_where_owned (type, get, owned, owner_filter, 0, permissions);
+  owned_clause = acl_where_owned_with (type, get, owned, owner_filter, 0,
+                                       permissions, &with);
 
   g_free (owner_filter);
   array_free (permissions);
@@ -6118,15 +6122,16 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
       && (clause == NULL)
       && (extra_where == NULL)
       && (strcmp (owned_clause, " t ()") == 0))
-    ret = sql_int ("SELECT count (*) FROM %ss%s;",
-                   type,
+    ret = sql_int ("%sSELECT count (*) FROM %ss%s;",
+                   with ? with : "", type,
                    get->trash && strcmp (type, "task") ? "_trash" : "");
   else
-    ret = sql_int ("SELECT count (%scount_id)"
+    ret = sql_int ("%sSELECT count (%scount_id)"
                    " FROM (SELECT %ss%s.id AS count_id"
                    "       FROM %ss%s%s"
                    "       WHERE %s"
                    "       %s%s%s%s) AS subquery;",
+                   with ? with : "",
                    distinct ? "DISTINCT " : "",
                    type,
                    get->trash && strcmp (type, "task") ? "_trash" : "",
@@ -6139,6 +6144,7 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
                    clause ? ") " : "",
                    extra_where ? extra_where : "");
 
+  g_free (with);
   g_free (columns);
   g_free (owned_clause);
   g_free (clause);
@@ -49644,13 +49650,13 @@ init_task_schedule_iterator (iterator_t* iterator)
   permissions = make_array ();
   array_add (permissions, g_strdup ("start_task"));
   task_clause = acl_where_owned_user ("", "users.id", "task", &get, 1,
-                                      "any", 0, permissions);
+                                      "any", 0, permissions, NULL);
   array_free (permissions);
 
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_schedules"));
   schedule_clause = acl_where_owned_user ("", "users.id", "schedule", &get, 1,
-                                          "any", 0, permissions);
+                                          "any", 0, permissions, NULL);
   array_free (permissions);
 
   init_iterator (iterator,
