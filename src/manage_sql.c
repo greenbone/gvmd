@@ -60,12 +60,14 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <grp.h>
+#include <gpgme.h>
 
 #include <gvm/base/hosts.h>
 #include <gvm/base/pwpolicy.h>
 #include <gvm/base/logging.h>
 #include <gvm/base/proctitle.h>
 #include <gvm/util/fileutils.h>
+#include <gvm/util/gpgmeutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
 #include <gvm/util/radiusutils.h>
@@ -8715,8 +8717,9 @@ task_alert_iterator_active (iterator_t* iterator)
 }
 
 /**
- * @brief Send an email.
+ * @brief Write the content of a plain text email to a stream.
  *
+ * @param[in]  content_file  Stream to write the email content to.
  * @param[in]  to_address    Address to send to.
  * @param[in]  from_address  Address to send to.
  * @param[in]  subject       Subject of email.
@@ -8725,39 +8728,15 @@ task_alert_iterator_active (iterator_t* iterator)
  * @param[in]  attachment_type  Attachment MIME type, or NULL.
  * @param[in]  attachment_name  Base file name of the attachment, or NULL.
  * @param[in]  attachment_extension  Attachment file extension, or NULL.
- *
- * @return 0 success, -1 error.
  */
 static int
-email (const char *to_address, const char *from_address, const char *subject,
-       const char *body, const gchar *attachment, const char *attachment_type,
-       const char *attachment_name, const char *attachment_extension)
+email_write_content (FILE *content_file,
+                     const char *to_address, const char *from_address,
+                     const char *subject, const char *body,
+                     const gchar *attachment, const char *attachment_type,
+                     const char *attachment_name,
+                     const char *attachment_extension)
 {
-  int ret, content_fd, to_fd;
-  gchar *command;
-  GError *error = NULL;
-  char content_file_name[] = "/tmp/gvmd-content-XXXXXX";
-  char to_file_name[] = "/tmp/gvmd-to-XXXXXX";
-  FILE *content_file;
-
-  content_fd = mkstemp (content_file_name);
-  if (content_fd == -1)
-    {
-      g_warning ("%s: mkstemp: %s\n", __FUNCTION__, strerror (errno));
-      return -1;
-    }
-
-  g_debug ("   EMAIL to %s from %s subject: %s, body: %s",
-          to_address, from_address, subject, body);
-
-  content_file = fdopen (content_fd, "w");
-  if (content_file == NULL)
-    {
-      g_warning ("%s: %s", __FUNCTION__, strerror (errno));
-      close (content_fd);
-      return -1;
-    }
-
   if (fprintf (content_file,
                "To: %s\n"
                "From: %s\n"
@@ -8789,7 +8768,6 @@ email (const char *to_address, const char *from_address, const char *subject,
       < 0)
     {
       g_warning ("%s: output error", __FUNCTION__);
-      fclose (content_file);
       return -1;
     }
 
@@ -8810,7 +8788,6 @@ email (const char *to_address, const char *from_address, const char *subject,
           < 0)
         {
           g_warning ("%s: output error", __FUNCTION__);
-          fclose (content_file);
           return -1;
         }
 
@@ -8825,7 +8802,6 @@ email (const char *to_address, const char *from_address, const char *subject,
                 < 0)
               {
                 g_warning ("%s: output error", __FUNCTION__);
-                fclose (content_file);
                 return -1;
               }
             attachment += 72;
@@ -8839,7 +8815,6 @@ email (const char *to_address, const char *from_address, const char *subject,
                 < 0)
               {
                 g_warning ("%s: output error", __FUNCTION__);
-                fclose (content_file);
                 return -1;
               }
             break;
@@ -8850,7 +8825,6 @@ email (const char *to_address, const char *from_address, const char *subject,
           < 0)
         {
           g_warning ("%s: output error", __FUNCTION__);
-          fclose (content_file);
           return -1;
         }
     }
@@ -8861,9 +8835,230 @@ email (const char *to_address, const char *from_address, const char *subject,
     else
       {
         g_warning ("%s", strerror (errno));
-        fclose (content_file);
         return -1;
       }
+
+  return 0;
+}
+
+/**
+ * @brief  Create a PGP encrypted email from a plain text one.
+ *
+ * @param[in]  plain_file     Stream to read the plain text email from.
+ * @param[in]  encrypted_file Stream to write the encrypted email to.
+ * @param[in]  to_address     Address to send to.
+ * @param[in]  from_address   Address to send to.
+ * @param[in]  subject        Subject of email.
+ */
+static int
+email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
+                   const char *public_key,
+                   const char *to_address, const char *from_address,
+                   const char *subject)
+{
+  // Headers and metadata parts
+  if (fprintf (encrypted_file,
+               "To: %s\n"
+               "From: %s\n"
+               "Subject: %s\n"
+               "Content-Type: multipart/encrypted;\n"
+               "protocol=\"application/pgp-encrypted\";\n"
+               "boundary=\"=-=-=-=-=\"\n"
+               "\n"
+               "--=-=-=-=-=\n"
+               "Content-Type: application/pgp-encrypted\n"
+               "Content-Description: PGP/MIME version identification\n"
+               "\n"
+               "Version: 1\n"
+               "\n"
+               "--=-=-=-=-=\n"
+               "Content-Type: application/octet-stream\n"
+               "Content-Description: OpenPGP encrypted message\n"
+               "\n",
+               to_address,
+               from_address ? from_address
+                            : "automated@openvas.org",
+               subject) < 0)
+    {
+      g_warning ("%s: output error at headers", __FUNCTION__);
+      return -1;
+    }
+
+  // Encrypted message
+  if (gvm_pgp_pubkey_encrypt_stream (plain_file, encrypted_file,
+                                     public_key, -1))
+    {
+      return -1;
+    }
+
+  // End of message
+  if (fprintf (encrypted_file,
+               "\n"
+               "--=-=-=-=-=--\n") < 0)
+    {
+      g_warning ("%s: output error at end of message", __FUNCTION__);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Send an email.
+ *
+ * @param[in]  to_address    Address to send to.
+ * @param[in]  from_address  Address to send to.
+ * @param[in]  subject       Subject of email.
+ * @param[in]  body          Body of email.
+ * @param[in]  attachment    Attachment in line broken base64, or NULL.
+ * @param[in]  attachment_type  Attachment MIME type, or NULL.
+ * @param[in]  attachment_name  Base file name of the attachment, or NULL.
+ * @param[in]  attachment_extension  Attachment file extension, or NULL.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+email (const char *to_address, const char *from_address, const char *subject,
+       const char *body, const gchar *attachment, const char *attachment_type,
+       const char *attachment_name, const char *attachment_extension,
+       credential_t recipient_credential)
+{
+  int ret, content_fd, to_fd;
+  gchar *command;
+  GError *error = NULL;
+  char content_file_name[] = "/tmp/gvmd-content-XXXXXX";
+  char to_file_name[] = "/tmp/gvmd-to-XXXXXX";
+  FILE *content_file;
+
+  content_fd = mkstemp (content_file_name);
+  if (content_fd == -1)
+    {
+      g_warning ("%s: mkstemp: %s\n", __FUNCTION__, strerror (errno));
+      return -1;
+    }
+
+  g_debug ("   EMAIL to %s from %s subject: %s, body: %s",
+          to_address, from_address, subject, body);
+
+  content_file = fdopen (content_fd, "w");
+  if (content_file == NULL)
+    {
+      g_warning ("%s: Could not open content file: %s",
+                 __FUNCTION__, strerror (errno));
+      close (content_fd);
+      return -1;
+    }
+
+  if (recipient_credential)
+    {
+      iterator_t iterator;
+      init_credential_iterator_one (&iterator, recipient_credential);
+
+      if (next (&iterator))
+        {
+          const char *type = credential_iterator_type (&iterator);
+          const char *public_key = credential_iterator_public_key (&iterator);
+          char plain_file_name[] = "/tmp/gvmd-plain-XXXXXX";
+          int plain_fd;
+          FILE *plain_file;
+
+          // Create plain text message
+          plain_fd = mkstemp (plain_file_name);
+          if (plain_fd == -1)
+            {
+              g_warning ("%s: mkstemp for plain text file: %s\n",
+                         __FUNCTION__, strerror (errno));
+              fclose (content_file);
+              unlink (content_file_name);
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+
+          plain_file = fdopen (plain_fd, "w+");
+          if (plain_file == NULL)
+            {
+              g_warning ("%s: Could not open plain text file: %s",
+                         __FUNCTION__, strerror (errno));
+              fclose (content_file);
+              unlink (content_file_name);
+              close (plain_fd);
+              unlink (plain_file_name);
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+
+          if (email_write_content (plain_file,
+                                   to_address, from_address,
+                                   subject, body, attachment,
+                                   attachment_type, attachment_name,
+                                   attachment_extension))
+            {
+              fclose (content_file);
+              unlink (content_file_name);
+              fclose (plain_file);
+              unlink (plain_file_name);
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+
+          rewind (plain_file);
+
+          // Create encrypted email
+          if (strcmp (type, "pgp") == 0)
+            {
+              ret = email_encrypt_gpg (plain_file, content_file,
+                                       public_key,
+                                       to_address, from_address, subject);
+
+              fclose (plain_file);
+              unlink (plain_file_name);
+
+              if (ret)
+                {
+                  g_warning ("%s: PGP encryption failed", __FUNCTION__);
+                  fclose (content_file);
+                  unlink (content_file_name);
+                  cleanup_iterator (&iterator);
+                  return -1;
+                }
+            }
+          else if (strcmp (type, "smime") == 0)
+            {
+              g_warning ("%s: S/MIME encryption not supported yet",
+                        __FUNCTION__);
+              fclose (content_file);
+              unlink (content_file_name);
+              fclose (plain_file);
+              unlink (plain_file_name);
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+          else
+            {
+              g_warning ("%s: Invalid recipient credential type",
+                        __FUNCTION__);
+              fclose (content_file);
+              unlink (content_file_name);
+              fclose (plain_file);
+              unlink (plain_file_name);
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+        }
+
+      cleanup_iterator (&iterator);
+    }
+  else
+    {
+      if (email_write_content (content_file,
+                               to_address, from_address,
+                               subject, body, attachment, attachment_type,
+                               attachment_name, attachment_extension))
+        {
+          fclose (content_file);
+          return -1;
+        }
+    }
 
   to_fd = mkstemp (to_file_name);
   if (to_fd == -1)
@@ -10967,7 +11162,8 @@ email_secinfo (alert_t alert, task_t task, event_t event,
 {
   gchar *alert_subject, *message, *subject, *example, *list, *type, *base64;
   gchar *body;
-  char *notice;
+  char *notice, *recipient_credential_id;
+  credential_t recipient_credential;
   int ret, count;
 
   list = new_secinfo_list (event, event_data, alert, &count);
@@ -11044,16 +11240,28 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   g_free (message);
   g_free (list);
 
+  /* Get credential */
+  recipient_credential_id = alert_data (alert, "method",
+                                        "recipient_credential");
+  recipient_credential = 0;
+  if (recipient_credential_id)
+    {
+      find_credential_with_permission (recipient_credential_id,
+                                       &recipient_credential, NULL);
+    }
+
   /* Send email. */
 
   ret = email (to_address, from_address, subject,
                body, base64,
                base64 ? "text/plain" : NULL,
                base64 ? "secinfo-alert" : NULL,
-               base64 ? "txt" : NULL);
+               base64 ? "txt" : NULL,
+               recipient_credential);
   g_free (body);
   g_free (type);
   g_free (subject);
+  free (recipient_credential_id);
   return ret;
 }
 
@@ -11712,6 +11920,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
               gchar *fname_format, *file_name;
               gchar *report_id, *creation_time, *modification_time;
+              char *recipient_credential_id;
+              credential_t recipient_credential;
 
               fname_format
                 = sql_string ("SELECT value FROM settings"
@@ -11741,9 +11951,20 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                         "report", report_id,
                                         creation_time, modification_time,
                                         name, format_name);
+
+              /* Get credential */
+              recipient_credential_id = alert_data (alert, "method",
+                                                    "recipient_credential");
+              recipient_credential = 0;
+              if (recipient_credential_id)
+                {
+                  find_credential_with_permission (recipient_credential_id,
+                                                  &recipient_credential, NULL);
+                }
+
               ret = email (to_address, from_address, subject, body, base64,
                            type, file_name ? file_name : "openvas-report",
-                           extension);
+                           extension, recipient_credential);
 
               free (extension);
               free (type);
@@ -11759,6 +11980,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               g_free (report_id);
               g_free (creation_time);
               g_free (modification_time);
+              free (recipient_credential_id);
               return ret;
             }
           return -1;
