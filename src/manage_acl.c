@@ -1457,11 +1457,13 @@ acl_where_owned (const char *type, const get_data_t *get, int owned,
  * @param[in]  type      Type of resource.
  * @param[in]  user_sql  SQL for getting user.  If NULL SQL will be for current
  *                       user.
+ * @param[out] with      Return location for WITH preselection clause if
+ *                       desired, else NULL.
  *
  * @return Newly allocated owned clause.
  */
 gchar *
-acl_where_owned_for_get (const char *type, const char *user_sql)
+acl_where_owned_for_get (const char *type, const char *user_sql, gchar **with)
 {
   gchar *owned_clause;
   get_data_t get;
@@ -1490,7 +1492,7 @@ acl_where_owned_for_get (const char *type, const char *user_sql)
                                        "any",
                                        0,              /* Resource. */
                                        permissions,
-                                       NULL);
+                                       with);
   array_free (permissions);
   g_free (user_sql_new);
 

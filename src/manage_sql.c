@@ -21814,12 +21814,14 @@ report_add_result (report_t report, result_t result)
       if (override && user != previous_user)
         {
           char *ov_severity_str;
-          gchar *owned_clause;
+          gchar *owned_clause, *with_clause;
 
-          owned_clause = acl_where_owned_for_get ("override", NULL);
+          owned_clause = acl_where_owned_for_get ("override", NULL,
+                                                  &with_clause);
 
           ov_severity_str
-            = sql_string ("SELECT coalesce (overrides.new_severity, %1.1f)"
+            = sql_string ("%s"
+                          " SELECT coalesce (overrides.new_severity, %1.1f)"
                           " FROM overrides, results"
                           " WHERE results.id = %llu"
                           " AND overrides.nvt = results.nvt"
@@ -21846,12 +21848,14 @@ report_add_result (report_t report, result_t result)
                           "   overrides.severity ASC,"
                           "   overrides.creation_time DESC"
                           " LIMIT 1",
+                          with_clause ? with_clause : "",
                           severity,
                           result,
                           owned_clause,
                           report,
                           severity);
 
+          g_free (with_clause);
           g_free (owned_clause);
 
           if (ov_severity_str == NULL
@@ -22882,7 +22886,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   int ret;
   gchar *filter;
   int autofp, apply_overrides, dynamic_severity;
-  gchar *extra_tables, *extra_where, *owned_clause;
+  gchar *extra_tables, *extra_where, *owned_clause, *with_clause;
   gchar *pre_sql;
   char *user_id;
 
@@ -23039,9 +23043,10 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
                         current_credentials.uuid);
-  owned_clause = acl_where_owned_for_get ("override", user_id);
+  owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
   free (user_id);
-  pre_sql = g_strdup_printf ("WITH valid_overrides"
+  pre_sql = g_strdup_printf ("%s%s"
+                             " valid_overrides"
                              " AS (SELECT result_nvt, hosts, new_severity, port,"
                              "            severity, result"
                              "     FROM overrides"
@@ -23059,9 +23064,12 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                              "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
                              "           creation_time DESC)"
                              " ",
+                             with_clause ? with_clause : "WITH",
+                             with_clause ? "," : "",
                              owned_clause,
                              report,
                              report);
+  g_free (with_clause);
   g_free (owned_clause);
 
   table_order_if_sort_not_specified = 1;
@@ -24090,12 +24098,14 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
 
       if (apply_overrides)
         {
-          gchar *ov, *owned_clause;
+          gchar *ov, *owned_clause, *with_clause;
 
-          owned_clause = acl_where_owned_for_get ("override", NULL);
+          owned_clause = acl_where_owned_for_get ("override", NULL,
+                                                  &with_clause);
 
           ov = g_strdup_printf
-                ("SELECT overrides.new_severity"
+                ("%s"
+                 " SELECT overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
                  " AND %s"
@@ -24119,9 +24129,11 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
                  " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC"
                  " LIMIT 1",
+                 with_clause ? with_clause : "",
                  owned_clause,
                  severity_sql);
 
+          g_free (with_clause);
           g_free (owned_clause);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
@@ -24702,15 +24714,18 @@ sql_stmt_t *
 report_severity_data_prepare ()
 {
   sql_stmt_t *stmt;
-  gchar *owned_clause;
+  gchar *owned_clause, *with_clause;
 
-  owned_clause = acl_where_owned_for_get ("override", NULL);
-  stmt = sql_prepare ("SELECT 1 FROM overrides"
+  owned_clause = acl_where_owned_for_get ("override", NULL, &with_clause);
+  stmt = sql_prepare ("%s"
+                      " SELECT 1 FROM overrides"
                       " WHERE (overrides.nvt = $1)"
                       " AND %s"
                       " AND ((overrides.end_time = 0)"
                       "      OR (overrides.end_time >= m_now ()))",
+                      with_clause,
                       owned_clause);
+  g_free (with_clause);
   g_free (owned_clause);
   if (stmt == NULL)
     {
@@ -24729,12 +24744,13 @@ sql_stmt_t *
 report_severity_data_prepare_full (task_t task)
 {
   sql_stmt_t *full_stmt;
-  gchar *owned_clause;
+  gchar *owned_clause, *with_clause;
 
-  owned_clause = acl_where_owned_for_get ("override", NULL);
+  owned_clause = acl_where_owned_for_get ("override", NULL, &with_clause);
   full_stmt = sql_prepare
-               ("SELECT severity_to_type (overrides.new_severity),"
-                 "       overrides.new_severity"
+                ("%s"
+                 " SELECT severity_to_type (overrides.new_severity),"
+                 "        overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = $1" // 1
                  " AND %s"
@@ -24755,8 +24771,10 @@ report_severity_data_prepare_full (task_t task)
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.severity ASC,"
                  " overrides.modification_time DESC;",
+                 with_clause ? with_clause : "",
                  owned_clause,
                  task);
+  g_free (with_clause);
   g_free (owned_clause);
   if (full_stmt == NULL)
     {
@@ -26843,12 +26861,14 @@ filtered_host_count (const char *levels, const char *search_phrase,
 
       if (apply_overrides)
         {
-          gchar *ov, *owned_clause;
+          gchar *ov, *owned_clause, *with_clause;
 
-          owned_clause = acl_where_owned_for_get ("override", NULL);
+          owned_clause = acl_where_owned_for_get ("override", NULL,
+                                                  &with_clause);
 
           ov = g_strdup_printf
-                ("SELECT overrides.new_severity"
+                ("%s"
+                 " SELECT overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
                  " AND %s"
@@ -26871,9 +26891,11 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC"
                  " LIMIT 1",
+                 with_clause ? with_clause : "",
                  owned_clause,
                  severity_sql);
 
+          g_free (with_clause);
           g_free (owned_clause);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s),%s)",
@@ -60758,9 +60780,9 @@ host_routes_xml (host_t host)
   iterator_t routes;
   GString* buffer;
 
-  gchar *owned_clause;
+  gchar *owned_clause, *with_clause;
 
-  owned_clause = acl_where_owned_for_get ("host", NULL);
+  owned_clause = acl_where_owned_for_get ("host", NULL, &with_clause);
 
   buffer = g_string_new ("<routes>");
   init_iterator (&routes,
@@ -60812,7 +60834,8 @@ host_routes_xml (host_t host)
         int same_source;
 
         init_iterator (&best_host_iterator,
-                       "SELECT hosts.uuid,"
+                       "%s"
+                       " SELECT hosts.uuid,"
                        "       (source_id='%s')"
                        "         AS same_source"
                        "  FROM hosts, host_identifiers"
@@ -60824,6 +60847,7 @@ host_routes_xml (host_t host)
                        "          abs(host_identifiers.modification_time"
                        "              - %llu) ASC"
                        " LIMIT 1;",
+                       with_clause ? with_clause : "",
                        source_id,
                        *hop_ip,
                        owned_clause,
@@ -60860,6 +60884,9 @@ host_routes_xml (host_t host)
       g_string_append (buffer, "</route>");
       g_strfreev(hop_ips);
     }
+
+  g_free (with_clause);
+  g_free (owned_clause);
 
   cleanup_iterator (&routes);
 
