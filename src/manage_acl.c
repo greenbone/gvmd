@@ -1372,9 +1372,6 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
 /**
  * @brief Generate the ownership part of an SQL WHERE clause.
  *
- * This version includes an argument for a WITH clause return.  Using the
- * WITH clause is much faster.
- *
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
  * @param[in]  owned           Only get items owned by the current user.
@@ -1386,9 +1383,9 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
  * @return Newly allocated owned clause.
  */
 gchar *
-acl_where_owned_with (const char *type, const get_data_t *get, int owned,
-                      const gchar *owner_filter, resource_t resource,
-                      array_t *permissions, gchar **with)
+acl_where_owned (const char *type, const get_data_t *get, int owned,
+                 const gchar *owner_filter, resource_t resource,
+                 array_t *permissions, gchar **with)
 {
   gchar *ret, *user_sql;
   if (current_credentials.uuid)

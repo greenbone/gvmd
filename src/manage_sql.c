@@ -4981,8 +4981,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
   else if (assume_permitted)
     owned_clause = g_strdup (" t ()");
   else
-    owned_clause = acl_where_owned_with (type, get, owned, owner_filter, resource,
-                                         permissions, &with_clause);
+    owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
+                                    permissions, &with_clause);
 
   if (extra_with)
     {
@@ -5871,8 +5871,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
 
   g_free (filter);
 
-  owned_clause = acl_where_owned_with (type, get, owned, owner_filter, 0,
-                                       permissions, &with);
+  owned_clause = acl_where_owned (type, get, owned, owner_filter, 0,
+                                  permissions, &with);
 
   g_free (owner_filter);
   array_free (permissions);
@@ -8638,8 +8638,8 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  owned_clause = acl_where_owned_with ("alert", &get, 0, "any", 0, permissions,
-                                       &with_clause);
+  owned_clause = acl_where_owned ("alert", &get, 0, "any", 0, permissions,
+                                  &with_clause);
   array_free (permissions);
 
   if (task && event)
@@ -13494,8 +13494,8 @@ init_alert_task_iterator (iterator_t* iterator, alert_t alert,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned_with ("task", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -35565,8 +35565,8 @@ init_target_task_iterator (iterator_t* iterator, target_t target)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned_with ("task", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -37707,8 +37707,8 @@ init_config_task_iterator (iterator_t* iterator, config_t config,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned_with ("task", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -42707,8 +42707,8 @@ init_credential_target_iterator (iterator_t* iterator,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_targets"));
-  available = acl_where_owned_with ("target", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("target", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -42784,8 +42784,8 @@ init_credential_scanner_iterator (iterator_t* iterator,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_scanners"));
-  available = acl_where_owned_with ("scanner", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("scanner", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -47599,8 +47599,8 @@ init_scanner_config_iterator (iterator_t* iterator, scanner_t scanner)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_configs"));
-  available = acl_where_owned_with ("config", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("config", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -47666,8 +47666,8 @@ init_scanner_task_iterator (iterator_t* iterator, scanner_t scanner)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned_with ("task", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -49460,8 +49460,8 @@ init_schedule_task_iterator (iterator_t* iterator, schedule_t schedule)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned_with ("task", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
   init_iterator (iterator,
                  "%s"
@@ -52147,8 +52147,8 @@ init_report_format_alert_iterator (iterator_t* iterator,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  available = acl_where_owned_with ("alert", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -57003,8 +57003,8 @@ init_port_list_target_iterator (iterator_t* iterator, port_list_t port_list,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_targets"));
-  available = acl_where_owned_with ("target", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("target", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -58412,8 +58412,8 @@ init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  available = acl_where_owned_with ("alert", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -65472,8 +65472,8 @@ init_user_group_iterator (iterator_t *iterator, user_t user)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_groups"));
-  available = acl_where_owned_with ("group", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("group", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -65540,8 +65540,8 @@ init_user_role_iterator (iterator_t *iterator, user_t user)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_roles"));
-  available = acl_where_owned_with ("role", &get, 1, "any", 0, permissions,
-                                    &with_clause);
+  available = acl_where_owned ("role", &get, 1, "any", 0, permissions,
+                               &with_clause);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -67324,8 +67324,8 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
   assert (current_credentials.uuid);
 
   get.trash = 0;
-  owned_clause = acl_where_owned_with ("tag", &get, 1, "any", 0, NULL,
-                                       &with_clause);
+  owned_clause = acl_where_owned ("tag", &get, 1, "any", 0, NULL,
+                                  &with_clause);
 
   init_iterator (iterator,
                  "%s"
@@ -68007,9 +68007,9 @@ type_build_select (const char *type, const char *columns_str,
                           &filter_order, &first, &max, &permissions,
                           &owner_filter);
 
-  owned_clause = acl_where_owned_with (type, get, type_owned (type),
-                                       owner_filter, 0, permissions,
-                                       &with);
+  owned_clause = acl_where_owned (type, get, type_owned (type),
+                                  owner_filter, 0, permissions,
+                                  &with);
 
   if (given_extra_where)
     extra_where = g_strdup (given_extra_where);
