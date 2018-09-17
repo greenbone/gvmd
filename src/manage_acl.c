@@ -1404,27 +1404,6 @@ acl_where_owned_with (const char *type, const get_data_t *get, int owned,
 }
 
 /**
- * @brief Generate the ownership part of an SQL WHERE clause.
- *
- * @param[in]  type            Type of resource.
- * @param[in]  get             GET data.
- * @param[in]  owned           Only get items owned by the current user.
- * @param[in]  owner_filter    Owner filter keyword.
- * @param[in]  resource        Resource.
- * @param[in]  permissions     Permissions.
- *
- * @return Newly allocated owned clause.
- */
-gchar *
-acl_where_owned (const char *type, const get_data_t *get, int owned,
-                 const gchar *owner_filter, resource_t resource,
-                 array_t *permissions)
-{
-  return acl_where_owned_with (type, get, owned, owner_filter, resource,
-                               permissions, NULL);
-}
-
-/**
  * @brief Generate ownership part of WHERE, for getting a type of resource.
  *
  * @param[in]  type      Type of resource.
