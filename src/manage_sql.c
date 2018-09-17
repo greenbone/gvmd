@@ -4887,7 +4887,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                         int assume_permitted)
 {
   int first, max;
-  gchar *clause, *order, *filter, *owned_clause;
+  gchar *clause, *order, *filter, *owned_clause, *with_clause;
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
@@ -4973,14 +4973,20 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
 
   g_free (filter);
 
+  if (pre_sql)
+    with_clause = g_strdup (pre_sql);
+  else
+    with_clause = NULL;
+
   if (resource)
     /* Ownership test is done above by find function. */
     owned_clause = g_strdup (" t ()");
   else if (assume_permitted)
     owned_clause = g_strdup (" t ()");
   else
-    owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
-                                    permissions);
+    owned_clause = acl_where_owned_with (type, get, owned, owner_filter, resource,
+                                         permissions,
+                                         with_clause ? NULL : &with_clause);
 
   g_free (owner_filter);
   array_free (permissions);
@@ -5014,7 +5020,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    " WHERE id = %llu"
                    " AND %s"
                    "%s%s;",
-                   pre_sql ? pre_sql : "",
+                   with_clause ? with_clause : "",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
@@ -5031,7 +5037,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    "%s"
                    "%s"
                    "%s%s;",
-                   pre_sql ? pre_sql : "",
+                   with_clause ? with_clause : "",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
@@ -5047,7 +5053,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    " WHERE id = %llu"
                    " AND %s"
                    "%s%s;",
-                   pre_sql ? pre_sql : "",
+                   with_clause ? with_clause : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
@@ -5062,7 +5068,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    " WHERE %s"
                    " %s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i;",
-                   pre_sql ? pre_sql : "",
+                   with_clause ? with_clause : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
@@ -5084,7 +5090,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
                    " %s"
                    "%s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i%s;",
-                   pre_sql ? pre_sql : "",
+                   with_clause ? with_clause : "",
                    distinct ? "SELECT DISTINCT * FROM (" : "",
                    columns,
                    type,
@@ -5102,6 +5108,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
     }
 
   g_free (columns);
+  g_free (with_clause);
   g_free (owned_clause);
   g_free (order);
   g_free (clause);
