@@ -2728,12 +2728,12 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
 /**
  * @brief Append parts for a "tag" keyword to a filter clause.
  *
- * @param[in,out] clause     Buffer for the filter clause to append to.
- * @param[in]  keyword       The keyword to create the filter clause part for.
- * @param[in]  type          The resource type.
- * @param[in]  first         Whether keyword is first.
- * @param[in]  last_was_and  Whether last keyword was "and".
- * @param[in]  last_was_not  Whether last keyword was "not".
+ * @param[in,out] clause      Buffer for the filter clause to append to.
+ * @param[in]  keyword        The keyword to create the filter clause part for.
+ * @param[in]  type           The resource type.
+ * @param[in]  first_keyword  Whether keyword is first.
+ * @param[in]  last_was_and   Whether last keyword was "and".
+ * @param[in]  last_was_not   Whether last keyword was "not".
  */
 static void
 filter_clause_append_tag (GString *clause, keyword_t *keyword,
@@ -2937,12 +2937,12 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
 /**
  * @brief Append parts for a "tag_id" keyword to a filter clause.
  *
- * @param[in,out] clause     Buffer for the filter clause to append to.
- * @param[in]  keyword       The keyword to create the filter clause part for.
- * @param[in]  type          The resource type.
- * @param[in]  first         Whether keyword is first.
- * @param[in]  last_was_and  Whether last keyword was "and".
- * @param[in]  last_was_not  Whether last keyword was "not".
+ * @param[in,out] clause      Buffer for the filter clause to append to.
+ * @param[in]  keyword        The keyword to create the filter clause part for.
+ * @param[in]  type           The resource type.
+ * @param[in]  first_keyword  Whether keyword is first.
+ * @param[in]  last_was_and   Whether last keyword was "and".
+ * @param[in]  last_was_not   Whether last keyword was "not".
  */
 static void
 filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
