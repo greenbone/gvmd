@@ -21237,13 +21237,14 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                array_t *host_starts, array_t *host_ends, array_t *details,
                char **report_id)
 {
-  int index, in_assets_int, count;
+  int index, in_assets_int, count, insert_count, first;
   create_report_result_t *result, *end, *start;
   report_t report;
   user_t owner;
   task_t task;
   pid_t pid;
   host_detail_t *detail;
+  GString *insert;
 
   in_assets_int
     = (in_assets && strcmp (in_assets, "") && strcmp (in_assets, "0"));
@@ -21408,7 +21409,6 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   sql_begin_immediate ();
   g_debug ("%s: add hosts", __FUNCTION__);
   index = 0;
-  count = 0;
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
                                                                index++)))
     if (start->host && start->description)
@@ -21417,7 +21417,10 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                               0);
 
   g_debug ("%s: add results", __FUNCTION__);
+  insert = g_string_new ("");
   index = 0;
+  first = 1;
+  insert_count = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
     {
@@ -21444,30 +21447,60 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         quoted_qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
       quoted_qod_type = sql_quote (result->qod_type ? result->qod_type : "");
       result_nvt_notice (quoted_nvt_oid);
-      sql ("INSERT INTO results"
-           " (uuid, owner, date, task, host, hostname, port,"
-           "  nvt, type, description,"
-           "  nvt_version, severity, qod, qod_type, result_nvt)"
-           " VALUES"
-           " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s',"
-           "  '%s', '%s', '%s',"
-           "  '%s', '%s', '%s', '%s',"
-           "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
-           owner,
-           task,
-           quoted_host,
-           quoted_hostname,
-           quoted_port,
-           quoted_nvt_oid,
-           result->threat
-            ? threat_message_type (result->threat)
-            : "Log Message",
-           quoted_description,
-           quoted_scan_nvt_version,
-           quoted_severity,
-           quoted_qod,
-           quoted_qod_type,
-           quoted_nvt_oid);
+
+      if (first)
+        g_string_append (insert,
+                         "INSERT INTO results"
+                         " (uuid, owner, date, task, host, hostname, port,"
+                         "  nvt, type, description,"
+                         "  nvt_version, severity, qod, qod_type, result_nvt,"
+                         "  report)"
+                         " VALUES");
+      else
+        g_string_append (insert, ", ");
+      first = 0;
+      g_string_append_printf (insert,
+                              " (make_uuid (), %llu, m_now (), %llu, '%s',"
+                              "  '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+                              "  '%s', '%s',"
+                              "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
+                              "  %llu)",
+                              owner,
+                              task,
+                              quoted_host,
+                              quoted_hostname,
+                              quoted_port,
+                              quoted_nvt_oid,
+                              result->threat
+                               ? threat_message_type (result->threat)
+                               : "Log Message",
+                              quoted_description,
+                              quoted_scan_nvt_version,
+                              quoted_severity,
+                              quoted_qod,
+                              quoted_qod_type,
+                              quoted_nvt_oid,
+                              report);
+
+      /* Insert at most 300 results at a time. */
+      if (insert_count == 300)
+        {
+          sql (insert->str);
+          g_string_truncate (insert, 0);
+          count++;
+          insert_count = 0;
+          first = 1;
+
+          if (count == CREATE_REPORT_CHUNK_SIZE)
+            {
+              report_cache_counts (report, 0, 0, NULL);
+              sql_commit ();
+              gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+              sql_begin_immediate ();
+              count = 0;
+            }
+        }
+      insert_count++;
 
       g_free (quoted_host);
       g_free (quoted_hostname);
@@ -21478,18 +21511,22 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       g_free (quoted_severity);
       g_free (quoted_qod);
       g_free (quoted_qod_type);
-
-      report_add_result (report, sql_last_insert_id ());
-
-      count++;
-      if (count == CREATE_REPORT_CHUNK_SIZE)
-        {
-          sql_commit ();
-          gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
-          sql_begin_immediate ();
-          count = 0;
-        }
     }
+
+  if (first == 0)
+    {
+      sql (insert->str);
+      report_cache_counts (report, 0, 0, NULL);
+      sql_commit ();
+      gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+      sql_begin_immediate ();
+    }
+
+  sql ("INSERT INTO result_nvt_reports (result_nvt, report)"
+       " SELECT distinct result_nvt, %llu FROM results"
+       " WHERE results.report = %llu;",
+       report,
+       report);
 
   g_debug ("%s: add host ends", __FUNCTION__);
   index = 0;
@@ -21528,13 +21565,73 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
   g_debug ("%s: add host details", __FUNCTION__);
   index = 0;
+  first = 1;
+  count = 0;
+  insert_count = 0;
+  g_string_truncate (insert, 0);
   while ((detail = (host_detail_t*) g_ptr_array_index (details, index++)))
     if (detail->ip && detail->name)
-      insert_report_host_detail
-       (report, detail->ip, detail->source_type ?: "",
-        detail->source_name ?: "", detail->source_desc ?: "", detail->name,
-        detail->value ?: "");
+      {
+        char *quoted_host, *quoted_source_name, *quoted_source_type;
+        char *quoted_source_desc, *quoted_name, *quoted_value;
+
+        quoted_host = sql_quote (detail->ip);
+        quoted_source_type = sql_quote (detail->source_type ?: "");
+        quoted_source_name = sql_quote (detail->source_name ?: "");
+        quoted_source_desc = sql_quote (detail->source_desc ?: "");
+        quoted_name = sql_quote (detail->name);
+        quoted_value = sql_quote (detail->value ?: "");
+
+        if (first)
+          g_string_append (insert,
+                           "INSERT INTO report_host_details"
+                           " (report_host, source_type, source_name,"
+                           "  source_description, name, value)"
+                           " VALUES");
+        else
+          g_string_append (insert, ", ");
+        first = 0;
+
+        g_string_append_printf (insert,
+                                " ((SELECT id FROM report_hosts"
+                                "   WHERE report = %llu AND host = '%s'),"
+                                "  '%s', '%s', '%s', '%s', '%s')",
+                                report, quoted_host, quoted_source_type,
+                                quoted_source_name, quoted_source_desc,
+                                quoted_name, quoted_value);
+
+        g_free (quoted_host);
+        g_free (quoted_source_type);
+        g_free (quoted_source_name);
+        g_free (quoted_source_desc);
+        g_free (quoted_name);
+        g_free (quoted_value);
+
+        /* Insert at most 300 results at a time. */
+        if (insert_count == 300)
+          {
+            sql (insert->str);
+            g_string_truncate (insert, 0);
+            count++;
+            insert_count = 0;
+            first = 1;
+
+            if (count == CREATE_REPORT_CHUNK_SIZE)
+              {
+                sql_commit ();
+                gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+                sql_begin_immediate ();
+                count = 0;
+              }
+          }
+        insert_count++;
+      }
+
+  if (first == 0)
+    sql (insert->str);
+
   sql_commit ();
+  g_string_free (insert, TRUE);
 
   current_scanner_task = task;
   current_report = report;
