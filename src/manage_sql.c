@@ -19641,11 +19641,12 @@ find_result_with_permission (const char* uuid, result_t* result,
 void
 result_nvt_notice (const gchar *nvt)
 {
-  if (nvt == NULL
-      || sql_int ("SELECT EXISTS (SELECT * FROM result_nvts WHERE nvt = '%s');",
-                  nvt))
+  if (nvt == NULL)
     return;
-  sql ("INSERT into result_nvts (nvt) VALUES ('%s');", nvt);
+  sql ("INSERT into result_nvts (nvt)"
+       " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts WHERE nvt = '%s');",
+       nvt,
+       nvt);
 }
 
 /**
