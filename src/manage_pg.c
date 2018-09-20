@@ -132,7 +132,7 @@ manage_create_sql_functions ()
 
   sql ("CREATE OR REPLACE FUNCTION hosts_contains (text, text)"
        " RETURNS boolean"
-       " AS '%s/libgvm-pg-server', 'sql_hosts_contains'"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_hosts_contains'"
        " LANGUAGE C"
        " IMMUTABLE;",
        OPENVAS_LIB_INSTALL_DIR);
