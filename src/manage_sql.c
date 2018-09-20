@@ -21201,6 +21201,11 @@ insert_report_host_detail (report_t report, const char *host,
 }
 
 /**
+ * @brief Maximum number of values per insert, when uploading report.
+ */
+#define CREATE_REPORT_INSERT_SIZE 300
+
+/**
  * @brief Number of results per transaction, when uploading report.
  */
 #define CREATE_REPORT_CHUNK_SIZE 10
@@ -21483,8 +21488,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                               quoted_nvt_oid,
                               report);
 
-      /* Insert at most 300 results at a time. */
-      if (insert_count == 300)
+      /* Limit the number of results inserted at a time. */
+      if (insert_count == CREATE_REPORT_INSERT_SIZE)
         {
           sql (insert->str);
           g_string_truncate (insert, 0);
@@ -21608,8 +21613,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         g_free (quoted_name);
         g_free (quoted_value);
 
-        /* Insert at most 300 results at a time. */
-        if (insert_count == 300)
+        /* Limit the number of details inserted at a time. */
+        if (insert_count == CREATE_REPORT_INSERT_SIZE)
           {
             sql (insert->str);
             g_string_truncate (insert, 0);
