@@ -149,15 +149,11 @@ acl_where_owned_user (const char *, const char *, const char *, const get_data_t
                       int, const gchar *, resource_t, array_t *, gchar **);
 
 gchar *
-acl_where_owned_with (const char *, const get_data_t *, int, const gchar *, resource_t,
-                      array_t *, gchar **);
-
-gchar *
 acl_where_owned (const char *, const get_data_t *, int, const gchar *, resource_t,
-                 array_t *);
+                 array_t *, gchar **);
 
 gchar *
-acl_where_owned_for_get (const char *, const char *);
+acl_where_owned_for_get (const char *, const char *, gchar **);
 
 gchar *
 acl_users_with_access_sql (const char *, const char *, const char *);
