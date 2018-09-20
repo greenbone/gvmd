@@ -70,4 +70,7 @@ level_max_severity (const char*, const char*);
 int
 valid_db_resource_type (const char*);
 
+int
+hosts_str_contains (const char*, const char*, int);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_UTILS_H */
