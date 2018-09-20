@@ -1235,8 +1235,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>original_severity</e></o>
       <e>description</e>
       <o><e>delta</e></o>
-      <e>details</e>
-      <e>detection</e>
+      <o><e>detection</e></o>
       <o><e>notes</e></o>
       <o><e>overrides</e></o>
     </pattern>
@@ -1561,31 +1560,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>override</name>
           <type>override</type>
-        </ele>
-      </ele>
-    </ele>
-    <ele>
-      <name>details</name>
-      <summary>Any details associated with the result</summary>
-      <pattern>
-        <any><e>detail</e></any>
-      </pattern>
-      <ele>
-        <name>detail</name>
-        <summary>A detail associated with the result</summary>
-        <pattern>
-          <e>name</e>
-          <e>value</e>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <summary>The name of the detail</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>value</name>
-          <summary>The value of the detail</summary>
-          <pattern>text</pattern>
         </ele>
       </ele>
     </ele>
@@ -4216,7 +4190,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>text</e>
       <e>nvt</e>
       <o><e>active</e></o>
-      <o><e>comment</e></o>
       <o><e>copy</e></o>
       <o><e>hosts</e></o>
       <o><e>port</e></o>
@@ -4247,13 +4220,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>active</name>
       <summary>Seconds note will be active.  -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
-    </ele>
-    <ele>
-      <name>comment</name>
-      <summary>A comment on the note</summary>
-      <pattern>
-        text
-      </pattern>
     </ele>
     <ele>
       <name>copy</name>
@@ -4362,7 +4328,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>text</e>
       <e>nvt</e>
       <o><e>active</e></o>
-      <o><e>comment</e></o>
       <o><e>copy</e></o>
       <o><e>hosts</e></o>
       <o><e>new_severity</e></o>
@@ -4394,13 +4359,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>oid</type>
           <required>1</required>
         </attrib>
-      </pattern>
-    </ele>
-    <ele>
-      <name>comment</name>
-      <summary>A comment on the override</summary>
-      <pattern>
-        text
       </pattern>
     </ele>
     <ele>
@@ -4671,7 +4629,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>copy</name>
-      <summary>The UUID of an existing agent</summary>
+      <summary>The UUID of an existing port list</summary>
       <pattern>
         <t>uuid</t>
       </pattern>
@@ -15675,12 +15633,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>note_details</name>
+        <name>notes_details</name>
         <summary>If notes are included, whether to include note details</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>override_details</name>
+        <name>overrides_details</name>
         <summary>If overrides are included, whether to include override details</summary>
         <type>boolean</type>
       </attrib>
@@ -16948,12 +16906,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>note_details</name>
+        <name>notes_details</name>
         <summary>If notes are included, whether to include note details</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>override_details</name>
+        <name>overrides_details</name>
         <summary>If overrides are included, whether to include override details</summary>
         <type>boolean</type>
       </attrib>
@@ -17726,6 +17684,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>owner</e>
           <e>name</e>
           <e>comment</e>
+          <o><e>copy</e></o>
           <e>creation_time</e>
           <e>modification_time</e>
           <e>writable</e>
@@ -17766,6 +17725,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             text
           </pattern>
         </ele>
+		<ele>
+		  <name>copy</name>
+		  <summary>The UUID of an existing scanner</summary>
+		  <pattern>
+			<t>uuid</t>
+		  </pattern>
+		</ele>
         <ele>
           <name>creation_time</name>
           <pattern><t>iso_time</t></pattern>
