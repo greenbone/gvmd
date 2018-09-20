@@ -56,6 +56,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </func:result>
   </func:function>
 
+  <!--
+    Add a single quote to strings that could otherwise be interpreted as
+    formulas in common spreadsheet software.
+  -->
+  <func:function name="openvas:formula_quote">
+    <xsl:param name="string" select="''"/>
+    <xsl:choose>
+      <xsl:when test="string(number($string)) != 'NaN'">
+        <func:result select="$string"/>
+      </xsl:when>
+      <xsl:when test="starts-with ($string, '=') or starts-with ($string, '@') or starts-with ($string, '+') or starts-with ($string, '-')">
+        <xsl:variable name="apostrophe">&apos;</xsl:variable>
+        <func:result select="concat ($apostrophe, $string)"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <func:result select="$string"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </func:function>
+
   <xsl:template match="report">
     <xsl:text>IP,Hostname,OS,Scan Start,Scan End,CVSS,Severity,High,Medium,Low,Log,False Positive,Total
 </xsl:text>
@@ -66,11 +86,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
       <xsl:variable name="current_host" select="ip/text()"/>
 
-      <xsl:value-of select="$current_host"/>
+      <xsl:value-of select="openvas:formula_quote ($current_host)"/>
       <xsl:text>,</xsl:text>
-      <xsl:value-of select="detail[name/text() = 'hostname']/value/text()"/>
+      <xsl:value-of select="openvas:formula_quote (detail[name/text() = 'hostname']/value/text())"/>
       <xsl:text>,</xsl:text>
-      <xsl:value-of select="detail[name/text() = 'best_os_cpe']/value/text()"/>
+      <xsl:value-of select="openvas:formula_quote (detail[name/text() = 'best_os_cpe']/value/text())"/>
       <xsl:text>,</xsl:text>
       <xsl:value-of select="start/text()"/>
       <xsl:text>,</xsl:text>
