@@ -85,7 +85,7 @@ socket or a UNIX domain socket.
 
 The default is a UNIX domain socket, at
 
-    <install-prefix>/var/run/openvas/gvmd.sock
+    <install-prefix>/var/run/gvmd.sock
 
 This location can be overridden with the --unix-socket option, and the
 permissions of the socket can be specified with the --list-owner,
@@ -213,7 +213,7 @@ By default Manager writes logs to the file
 
 Logging is configured entirely by the file
 
-    <install-prefix>/etc/openvas/gvmd_log.conf
+    <install-prefix>/etc/gvm/gvmd_log.conf
 
 The configuration is divided into domains like this one
 
@@ -336,7 +336,7 @@ via backups.  To be able to do a proper restore of the data, it is
 important to also backup the encryption key.  The easiest way to do
 this is to create backup of the entire directory tree
 
-    <install-prefix>/var/lib/openvas/gvmd/gnupg
+    <install-prefix>/var/lib/gvm/gvmd/gnupg
 
 and store it at a safe place independent from the database backups.
 This needs to be done only once after the key has been created or
@@ -345,7 +345,7 @@ exist.
 
 To check whether the key has been generated you may use the command
 
-$ gpg --homedir <install-prefix>/var/lib/openvas/gvmd/gnupg --list-secret-keys
+$ gpg --homedir <install-prefix>/var/lib/gvm/gvmd/gnupg --list-secret-keys
 
 An example output would be
 
@@ -369,11 +369,11 @@ create a new key, this command will decrypt using the old but disabled key
 and then re-encrypt using the new key.  The command --decrypt-all-credentials
 may be used to revert to plaintext credentials:
 
-    $ gpg --homedir /var/lib/openvas/gvmd/gnupg -K
+    $ gpg --homedir /var/lib/gvm/gvmd/gnupg -K
 
 Look for the current key and remember its keyid. Then:
 
-    $ gpg --homedir /var/lib/openvas/gvmd/gnupg --edit-key KEYID
+    $ gpg --homedir /var/lib/gvm/gvmd/gnupg --edit-key KEYID
 
 At the prompt enter "disable" followed by "save" and "quit".
 Then create a new key and re-encrypt all passwords:
@@ -398,7 +398,7 @@ will need to enter all of them anew afterwards.
 
 Get the key fingerprint:
 
-    $ gpg --homedir <install-prefix>/var/lib/openvas/gvmd/gnupg --list-secret-keys
+    $ gpg --homedir <install-prefix>/var/lib/gvm/gvmd/gnupg --list-secret-keys
 
 Remove the secret key:
 
@@ -448,16 +448,16 @@ Where:
 <clientcert> refers to the certificate Manager uses to authenticate when
              connecting to the scanner. For a default OSP scanner setup
              with self-signed certificates this would be
-             /var/lib/openvas/CA/clientcert.pem
+             /var/lib/gvm/CA/clientcert.pem
 <clientkey>  refers to the private key Manager uses to authenticate when
              connecting to the scanner. For a default OSP scanner setup
              with self-signed certificates this would be
-             /var/lib/openvas/private/CA/clientkey.pem
+             /var/lib/gvm/private/CA/clientkey.pem
 
 To set just a new default CA certificate:
 
     $ gvmd --modify-setting 9ac801ea-39f8-11e6-bbaa-28d24461215b \
-           --value "`cat /var/lib/openvas/CA/cacert.pem`"
+           --value "`cat /var/lib/gvm/CA/cacert.pem`"
 
 Replace the path to the pem-file with the one of your setup. The
 UUID is the fixed one of the immutable global setting for the default
