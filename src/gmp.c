@@ -11181,7 +11181,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                         "<count>%i</count>",
                                         tag_count);
 
-              init_resource_tag_iterator (&tags, "note",
+              init_resource_tag_iterator (&tags, "override",
                                           get_iterator_resource (overrides),
                                           1, NULL, 1);
 
