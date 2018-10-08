@@ -28,7 +28,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 DB=$1
-if [ $# = 0 ]; then DB=/var/lib/openvas/mgr/tasks.db; fi
+if [ $# = 0 ]; then DB=/var/lib/gvm/gvmd/gvmd.db; fi
 
 export LC_ALL=C
 echo -n Faking latex.xsl for PDF
