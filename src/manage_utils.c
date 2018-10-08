@@ -595,8 +595,6 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
     {
       if (gvm_hosts_exclude_with_max (hosts,
                                       exclude_hosts,
-                                      /* Don't resolve excluded hostnames. */
-                                      0,
                                       max_hosts)
           < 0)
         return -1;
