@@ -38293,20 +38293,16 @@ family_count ()
  *
  * It's up to the caller to organise a transaction.
  *
- * @param[in]  configs  Config to update.
+ * @param[in]  name      Name of config.
+ * @param[in]  selector  NVT selector of config.
  */
 static void
-update_config_cache (iterator_t *configs)
+internal_update_config_cache (const gchar *name, const char *selector)
 {
-  const char *selector;
   gchar *quoted_selector, *quoted_name;
   int families_growing;
 
-  if (config_iterator_type (configs) > 0)
-    return;
-
-  quoted_name = sql_quote (get_iterator_name (configs));
-  selector = config_iterator_nvt_selector (configs);
+  quoted_name = sql_quote (name);
   families_growing = nvt_selector_families_growing (selector);
   quoted_selector = sql_quote (selector);
 
@@ -38322,6 +38318,23 @@ update_config_cache (iterator_t *configs)
 
   g_free (quoted_name);
   g_free (quoted_selector);
+}
+
+/**
+ * @brief Update the cached count and growing information in a config.
+ *
+ * It's up to the caller to organise a transaction.
+ *
+ * @param[in]  configs  Config to update.
+ */
+static void
+update_config_cache (iterator_t *configs)
+{
+  if (config_iterator_type (configs) > 0)
+    return;
+
+  internal_update_config_cache (get_iterator_name (configs),
+                                config_iterator_nvt_selector (configs));
 }
 
 /**
@@ -38345,6 +38358,21 @@ update_config_caches (config_t config)
 }
 
 /**
+ * @brief Buffer config.
+ */
+struct buffer_config
+{
+  config_t config;      ///< Config.
+  gchar *name;          ///< Name of config.
+  gchar *nvt_selector;  ///< NVT selector name of config.
+};
+
+/**
+ * @brief Buffer config type.
+ */
+typedef struct buffer_config buffer_config_t;
+
+/**
  * @brief Update count and growing info in every config across all users.
  *
  * It's up to the caller to organise a transaction.
@@ -38355,13 +38383,42 @@ update_all_config_caches ()
   static column_t select_columns[] = CONFIG_ITERATOR_COLUMNS;
   gchar *columns;
   iterator_t configs;
+  array_t *buffered_configs;
+  int index;
 
   columns = columns_build_select (select_columns);
-  init_iterator (&configs, "SELECT %s FROM configs;", columns);
+  init_iterator (&configs, "SELECT id, name, nvt_selector FROM configs;");
   g_free (columns);
+
+  /* Store the configs and cleanup (finalise) the iterator before doing
+   * the updates.  This avoids having a write statements running while
+   * the iterator statement is still active, which seems to lead us to
+   * problems with SQLite when things get busy. */
+  buffered_configs = make_array ();
   while (next (&configs))
-    update_config_cache (&configs);
+    {
+      buffer_config_t *buffer;
+
+      buffer = g_malloc0 (sizeof (buffer_config_t));
+      buffer->config = iterator_int64 (&configs, 0);
+      buffer->name = g_strdup (iterator_string (&configs, 1));
+      buffer->nvt_selector = g_strdup (iterator_string (&configs, 2));
+      array_add (buffered_configs, buffer);
+    }
+
   cleanup_iterator (&configs);
+
+  for (index = 0; index < buffered_configs->len; index++)
+    {
+      buffer_config_t *buffer;
+
+      buffer = g_ptr_array_index (buffered_configs, index);
+      internal_update_config_cache (buffer->name,
+                                    buffer->nvt_selector);
+      g_free (buffer->name);
+      g_free (buffer->nvt_selector);
+    }
+  array_free (buffered_configs);
 }
 
 /**
@@ -39358,6 +39415,8 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
                                   int mode)
 {
   iterator_t configs;
+  GArray *buffered_configs;
+  int index;
 
   if (mode == -2)
     {
@@ -39386,13 +39445,25 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list,
   if (progress)
     progress ();
   init_iterator (&configs, "SELECT id FROM configs;");
+  /* Store the configs and cleanup (finalise) the iterator before doing
+   * the updates.  This avoids having a write statements running while
+   * the iterator statement is still active, which seems to lead us to
+   * problems with SQLite when things get busy. */
+  buffered_configs = g_array_new (FALSE, FALSE, sizeof (config_t));
   while (next (&configs))
+    {
+      config_t id;
+      id = iterator_int64 (&configs, 0);
+      g_array_append_val (buffered_configs, id);
+    }
+  cleanup_iterator (&configs);
+  for (index = 0; index < buffered_configs->len; index++)
     sql ("DELETE FROM config_preferences"
          " WHERE config = %llu"
          " AND type = 'PLUGINS_PREFS'"
          " AND name NOT IN (SELECT nvt_preferences.name FROM nvt_preferences);",
-         get_iterator_resource (&configs));
-  cleanup_iterator (&configs);
+         g_array_index (buffered_configs, config_t, index));
+  g_array_free (buffered_configs, TRUE);
 
   if (progress)
     progress ();
