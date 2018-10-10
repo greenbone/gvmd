@@ -37,7 +37,7 @@ log_write () {
 if [ $# -ne 1 ]
 then
   echo "Please provide the filename of the SQLite database to check:"
-  echo "  $0 tasks.db"
+  echo "  $0 gvmd.db"
   exit 1
 fi
 

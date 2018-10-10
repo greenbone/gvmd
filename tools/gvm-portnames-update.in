@@ -61,14 +61,14 @@ if [ -z "$DB_DIR" ]; then
   else
     OV_DIR=`openvassd -s | awk -F" = " '/^plugins_folder/ { print $2 }' | sed -s 's/\(^.*\)\/plugins/\1/'`
   fi
-  DB_DIR="$OV_DIR/mgr"
+  DB_DIR="$OV_DIR/gvmd"
 fi
 
 if [ $POSTGRES -eq 1 ]
 then
-  SQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d tasks -t"
+  SQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d gvmd -t"
 else
-  TASKS_DB="$DB_DIR/tasks.db"
+  TASKS_DB="$DB_DIR/gvmd.db"
   if [ ! -f $TASKS_DB ]; then
 	echo "$TASKS_DB not found. Rebuild DB before updating port names.";
 	exit 1;
