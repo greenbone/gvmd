@@ -951,18 +951,16 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                       const gchar *owner_filter, resource_t resource,
                       array_t *permissions, gchar **with)
 {
-  gchar *owned_clause;
+  gchar *permission_clause, *owned_clause, *filter_owned_clause;
+  GString *permission_or;
+  int table_trash, permissions_include_get;
+  guint index;
 
   if (with)
     *with = NULL;
 
   if (owned == 0)
    return g_strdup (" t ()");
-
-  gchar *permission_clause, *filter_owned_clause;
-  GString *permission_or;
-  int table_trash, permissions_include_get;
-  guint index;
 
   permissions_include_get = 0;
   permission_or = g_string_new ("");
@@ -1450,9 +1448,8 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                            owned_clause);
 
   g_free (owned_clause);
-  owned_clause = filter_owned_clause;
 
-  return owned_clause;
+  return filter_owned_clause;
 }
 
 /**
