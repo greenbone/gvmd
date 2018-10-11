@@ -62336,6 +62336,8 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
         }
 
       sql ("DELETE FROM oss WHERE id = %llu;", asset);
+      permissions_set_orphans ("os", asset, LOCATION_TABLE);
+      tags_remove_resource ("os", asset, LOCATION_TABLE);
       sql_commit ();
 
       return 0;
@@ -62371,6 +62373,8 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
       sql ("DELETE FROM host_max_severities WHERE host = %llu;", asset);
       sql ("DELETE FROM host_details WHERE host = %llu;", asset);
       sql ("DELETE FROM hosts WHERE id = %llu;", asset);
+      permissions_set_orphans ("host", asset, LOCATION_TABLE);
+      tags_remove_resource ("host", asset, LOCATION_TABLE);
       sql_commit ();
 
       return 0;
