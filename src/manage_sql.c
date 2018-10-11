@@ -2740,7 +2740,7 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
 {
   gchar *quoted_keyword;
   gchar **tag_split, *tag_name, *tag_value;
-  int value_given, value_numeric;
+  int value_given;
 
   quoted_keyword = sql_quote (keyword->string);
   tag_split = g_strsplit (quoted_keyword, "=", 2);
@@ -2755,13 +2755,6 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
     {
       tag_value = g_strdup ("");
       value_given = 0;
-    }
-
-  value_numeric = 0;
-  if (value_given)
-    {
-      double test_d;
-      value_numeric = (sscanf (tag_value, "%lf", &test_d) > 0);
     }
 
   if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
@@ -2787,14 +2780,10 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
                       last_was_not),
             tag_name,
             (value_given
-              ? (value_numeric
-                  ? "AND CAST"
-                    " (tags.value AS REAL) = "
-                  : "AND CAST"
-                    " (tags.value AS TEXT) = '")
+              ? "AND tags.value = '"
               : ""),
             value_given ? tag_value : "",
-            (value_given && value_numeric == 0
+            (value_given
               ? "'"
               : ""));
       else
@@ -2818,14 +2807,10 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
             type,
             type,
             (value_given
-              ? (value_numeric
-                  ? "AND CAST"
-                    " (tags.value AS REAL) = "
-                  : "AND CAST"
-                    " (tags.value AS TEXT) = '")
+              ? "AND tags.value = '"
               : ""),
             value_given ? tag_value : "",
-            (value_given && value_numeric == 0
+            (value_given
               ? "'"
               : ""));
     }
