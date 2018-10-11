@@ -951,7 +951,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                       const gchar *owner_filter, resource_t resource,
                       array_t *permissions, gchar **with)
 {
-  gchar *permission_clause, *owned_clause, *filter_owned_clause;
+  gchar *owned_clause, *filter_owned_clause;
   GString *permission_or;
   int table_trash, permissions_include_get;
   guint index;
@@ -998,121 +998,14 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
   else
     permissions_include_get = 1;
 
-  /* Check on index is because default is owner and global, for backward
-   * compatibility. */
-  permission_clause = NULL;
-  if (user_id && index)
-    {
-      gchar *clause;
-      clause
-       = g_strdup_printf ("OR EXISTS"
-                          " (SELECT id FROM permissions"
-                          "  WHERE resource = %ss%s.id"
-                          "  AND resource_type = '%s'"
-                          "  AND resource_location = %i"
-                          "  AND subject_location"
-                          "      = " G_STRINGIFY (LOCATION_TABLE)
-                          "  AND ((subject_type = 'user'"
-                          "        AND subject"
-                          "            = (%s))"
-                          "       OR (subject_type = 'group'"
-                          "           AND subject"
-                          "               IN (SELECT DISTINCT \"group\""
-                          "                   FROM group_users"
-                          "                   WHERE \"user\""
-                          "                         = (%s)))"
-                          "       OR (subject_type = 'role'"
-                          "           AND subject"
-                          "               IN (SELECT DISTINCT role"
-                          "                   FROM role_users"
-                          "                   WHERE \"user\""
-                          "                         = (%s))))"
-                          "  AND (%s))",
-                          type,
-                          get->trash && strcmp (type, "task") ? "_trash" : "",
-                          type,
-                          get->trash ? LOCATION_TRASH : LOCATION_TABLE,
-                          user_sql,
-                          user_sql,
-                          user_sql,
-                          permission_or->str);
-
-      if (strcmp (type, "report") == 0)
-        permission_clause
-         = g_strdup_printf ("%s"
-                            " OR EXISTS"
-                            " (SELECT id FROM permissions"
-                            "  WHERE resource = reports%s.task"
-                            "  AND resource_type = 'task'"
-                            "  AND subject_location"
-                            "      = " G_STRINGIFY (LOCATION_TABLE)
-                            "  AND ((subject_type = 'user'"
-                            "        AND subject"
-                            "            = (%s))"
-                            "       OR (subject_type = 'group'"
-                            "           AND subject"
-                            "               IN (SELECT DISTINCT \"group\""
-                            "                   FROM group_users"
-                            "                   WHERE \"user\""
-                            "                         = (%s)))"
-                            "       OR (subject_type = 'role'"
-                            "           AND subject"
-                            "               IN (SELECT DISTINCT role"
-                            "                   FROM role_users"
-                            "                   WHERE \"user\""
-                            "                         = (%s))))"
-                            "  AND (%s))",
-                            clause,
-                            get->trash ? "_trash" : "",
-                            user_sql,
-                            user_sql,
-                            user_sql,
-                            permission_or->str);
-      else if (strcmp (type, "result") == 0)
-        permission_clause
-         = g_strdup_printf ("%s"
-                            " OR EXISTS"
-                            " (SELECT id FROM permissions"
-                            "  WHERE resource = results%s.task"
-                            "  AND resource_type = 'task'"
-                            "  AND subject_location"
-                            "      = " G_STRINGIFY (LOCATION_TABLE)
-                            "  AND ((subject_type = 'user'"
-                            "        AND subject"
-                            "            = (%s))"
-                            "       OR (subject_type = 'group'"
-                            "           AND subject"
-                            "               IN (SELECT DISTINCT \"group\""
-                            "                   FROM group_users"
-                            "                   WHERE \"user\""
-                            "                         = (%s)))"
-                            "       OR (subject_type = 'role'"
-                            "           AND subject"
-                            "               IN (SELECT DISTINCT role"
-                            "                   FROM role_users"
-                            "                   WHERE \"user\""
-                            "                         = (%s))))"
-                            "  AND (%s))",
-                            clause,
-                            get->trash ? "_trash" : "",
-                            user_sql,
-                            user_sql,
-                            user_sql,
-                            permission_or->str);
-
-      if ((strcmp (type, "report") == 0)
-          || (strcmp (type, "result") == 0))
-        g_free (clause);
-      else
-        permission_clause = clause;
-    }
-
   table_trash = get->trash && strcasecmp (type, "task");
   if (resource || (user_id == NULL))
     owned_clause
      = g_strdup (" (t ())");
   else if (with)
     {
+      gchar *permission_clause;
+
       /* Caller supports WITH clause. */
 
       *with = g_strdup_printf
@@ -1159,9 +1052,6 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                 user_sql,
                 user_sql);
 
-      /* Recreate the permission clause.  In the end everything should use
-       * WITH so this will be done above instead. */
-      g_free (permission_clause);
       permission_clause = NULL;
       if (user_id && index)
         {
@@ -1301,84 +1191,207 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                             type,
                             table_trash ? "_trash" : "",
                             permission_clause ? permission_clause : "");
+
+      g_free (permission_clause);
     }
   else
-    owned_clause
-     = g_strdup_printf (/* Either a global resource (like Full and Fast).
-                         *
-                         * The globals are only required when GET permission
-                         * is requested, because it is only possible to read
-                         * the globals (unless the user has super on
-                         * everything like Super Admin does, but that is
-                         * covered by the super case below). */
-                        " (%s%s%s%s%s"
-                        /* Or the user is the owner. */
-                        "  %s (%ss%s.owner"
-                        "      = (%s))"
-                        /* Or the user has super permission. */
-                        "  OR EXISTS (SELECT * FROM permissions"
-                        "             WHERE name = 'Super'"
-                        /*                 Super on everyone. */
-                        "             AND ((resource = 0)"
-                        /*                 Super on other_user. */
-                        "                  OR ((resource_type = 'user')"
-                        "                      AND (resource = %ss%s.owner))"
-                        /*                 Super on other_user's role. */
-                        "                  OR ((resource_type = 'role')"
-                        "                      AND (resource"
-                        "                           IN (SELECT DISTINCT role"
-                        "                               FROM role_users"
-                        "                               WHERE \"user\""
-                        "                                     = %ss%s.owner)))"
-                        /*                 Super on other_user's group. */
-                        "                  OR ((resource_type = 'group')"
-                        "                      AND (resource"
-                        "                           IN (SELECT DISTINCT \"group\""
-                        "                               FROM group_users"
-                        "                               WHERE \"user\""
-                        "                                     = %ss%s.owner))))"
-                        "             AND subject_location"
-                        "                 = " G_STRINGIFY (LOCATION_TABLE)
-                        "             AND ((subject_type = 'user'"
-                        "                   AND subject"
-                        "                       = (%s))"
-                        "                  OR (subject_type = 'group'"
-                        "                      AND subject"
-                        "                          IN (SELECT DISTINCT \"group\""
-                        "                              FROM group_users"
-                        "                              WHERE \"user\""
-                        "                                    = (%s)))"
-                        "                  OR (subject_type = 'role'"
-                        "                      AND subject"
-                        "                          IN (SELECT DISTINCT role"
-                        "                              FROM role_users"
-                        "                              WHERE \"user\""
-                        "                                    = (%s)))))"
-                        "  %s)",
-                        permissions_include_get ? "(" : "",
-                        permissions_include_get ? type : "",
-                        permissions_include_get ? "s" : "",
-                        permissions_include_get && table_trash
-                         ? "_trash"
-                         : "",
-                        permissions_include_get ? ".owner IS NULL)" : "",
-                        permissions_include_get ? "OR" : "",
-                        type,
-                        table_trash ? "_trash" : "",
-                        user_sql,
-                        type,
-                        table_trash ? "_trash" : "",
-                        type,
-                        table_trash ? "_trash" : "",
-                        type,
-                        table_trash ? "_trash" : "",
-                        user_sql,
-                        user_sql,
-                        user_sql,
-                        permission_clause ? permission_clause : "");
+    {
+      gchar *permission_clause;
+
+      /* Caller does not support WITH.
+       *
+       * The idea is that all callers support WITH and we remove this case.
+       * Only the result_overrides view and init_result_get_iterator_severity
+       * still do not support WITH. */
+
+      permission_clause = NULL;
+
+      /* Check on index is because default is owner and global, for backward
+       * compatibility. */
+      if (user_id && index)
+        {
+          gchar *clause;
+          clause
+           = g_strdup_printf ("OR EXISTS"
+                              " (SELECT id FROM permissions"
+                              "  WHERE resource = %ss%s.id"
+                              "  AND resource_type = '%s'"
+                              "  AND resource_location = %i"
+                              "  AND subject_location"
+                              "      = " G_STRINGIFY (LOCATION_TABLE)
+                              "  AND ((subject_type = 'user'"
+                              "        AND subject"
+                              "            = (%s))"
+                              "       OR (subject_type = 'group'"
+                              "           AND subject"
+                              "               IN (SELECT DISTINCT \"group\""
+                              "                   FROM group_users"
+                              "                   WHERE \"user\""
+                              "                         = (%s)))"
+                              "       OR (subject_type = 'role'"
+                              "           AND subject"
+                              "               IN (SELECT DISTINCT role"
+                              "                   FROM role_users"
+                              "                   WHERE \"user\""
+                              "                         = (%s))))"
+                              "  AND (%s))",
+                              type,
+                              get->trash && strcmp (type, "task") ? "_trash" : "",
+                              type,
+                              get->trash ? LOCATION_TRASH : LOCATION_TABLE,
+                              user_sql,
+                              user_sql,
+                              user_sql,
+                              permission_or->str);
+
+          if (strcmp (type, "report") == 0)
+            permission_clause
+             = g_strdup_printf ("%s"
+                                " OR EXISTS"
+                                " (SELECT id FROM permissions"
+                                "  WHERE resource = reports%s.task"
+                                "  AND resource_type = 'task'"
+                                "  AND subject_location"
+                                "      = " G_STRINGIFY (LOCATION_TABLE)
+                                "  AND ((subject_type = 'user'"
+                                "        AND subject"
+                                "            = (%s))"
+                                "       OR (subject_type = 'group'"
+                                "           AND subject"
+                                "               IN (SELECT DISTINCT \"group\""
+                                "                   FROM group_users"
+                                "                   WHERE \"user\""
+                                "                         = (%s)))"
+                                "       OR (subject_type = 'role'"
+                                "           AND subject"
+                                "               IN (SELECT DISTINCT role"
+                                "                   FROM role_users"
+                                "                   WHERE \"user\""
+                                "                         = (%s))))"
+                                "  AND (%s))",
+                                clause,
+                                get->trash ? "_trash" : "",
+                                user_sql,
+                                user_sql,
+                                user_sql,
+                                permission_or->str);
+          else if (strcmp (type, "result") == 0)
+            permission_clause
+             = g_strdup_printf ("%s"
+                                " OR EXISTS"
+                                " (SELECT id FROM permissions"
+                                "  WHERE resource = results%s.task"
+                                "  AND resource_type = 'task'"
+                                "  AND subject_location"
+                                "      = " G_STRINGIFY (LOCATION_TABLE)
+                                "  AND ((subject_type = 'user'"
+                                "        AND subject"
+                                "            = (%s))"
+                                "       OR (subject_type = 'group'"
+                                "           AND subject"
+                                "               IN (SELECT DISTINCT \"group\""
+                                "                   FROM group_users"
+                                "                   WHERE \"user\""
+                                "                         = (%s)))"
+                                "       OR (subject_type = 'role'"
+                                "           AND subject"
+                                "               IN (SELECT DISTINCT role"
+                                "                   FROM role_users"
+                                "                   WHERE \"user\""
+                                "                         = (%s))))"
+                                "  AND (%s))",
+                                clause,
+                                get->trash ? "_trash" : "",
+                                user_sql,
+                                user_sql,
+                                user_sql,
+                                permission_or->str);
+
+          if ((strcmp (type, "report") == 0)
+              || (strcmp (type, "result") == 0))
+            g_free (clause);
+          else
+            permission_clause = clause;
+        }
+
+      owned_clause
+       = g_strdup_printf (/* Either a global resource (like Full and Fast).
+                           *
+                           * The globals are only required when GET permission
+                           * is requested, because it is only possible to read
+                           * the globals (unless the user has super on
+                           * everything like Super Admin does, but that is
+                           * covered by the super case below). */
+                          " (%s%s%s%s%s"
+                          /* Or the user is the owner. */
+                          "  %s (%ss%s.owner"
+                          "      = (%s))"
+                          /* Or the user has super permission. */
+                          "  OR EXISTS (SELECT * FROM permissions"
+                          "             WHERE name = 'Super'"
+                          /*                 Super on everyone. */
+                          "             AND ((resource = 0)"
+                          /*                 Super on other_user. */
+                          "                  OR ((resource_type = 'user')"
+                          "                      AND (resource = %ss%s.owner))"
+                          /*                 Super on other_user's role. */
+                          "                  OR ((resource_type = 'role')"
+                          "                      AND (resource"
+                          "                           IN (SELECT DISTINCT role"
+                          "                               FROM role_users"
+                          "                               WHERE \"user\""
+                          "                                     = %ss%s.owner)))"
+                          /*                 Super on other_user's group. */
+                          "                  OR ((resource_type = 'group')"
+                          "                      AND (resource"
+                          "                           IN (SELECT DISTINCT \"group\""
+                          "                               FROM group_users"
+                          "                               WHERE \"user\""
+                          "                                     = %ss%s.owner))))"
+                          "             AND subject_location"
+                          "                 = " G_STRINGIFY (LOCATION_TABLE)
+                          "             AND ((subject_type = 'user'"
+                          "                   AND subject"
+                          "                       = (%s))"
+                          "                  OR (subject_type = 'group'"
+                          "                      AND subject"
+                          "                          IN (SELECT DISTINCT \"group\""
+                          "                              FROM group_users"
+                          "                              WHERE \"user\""
+                          "                                    = (%s)))"
+                          "                  OR (subject_type = 'role'"
+                          "                      AND subject"
+                          "                          IN (SELECT DISTINCT role"
+                          "                              FROM role_users"
+                          "                              WHERE \"user\""
+                          "                                    = (%s)))))"
+                          "  %s)",
+                          permissions_include_get ? "(" : "",
+                          permissions_include_get ? type : "",
+                          permissions_include_get ? "s" : "",
+                          permissions_include_get && table_trash
+                           ? "_trash"
+                           : "",
+                          permissions_include_get ? ".owner IS NULL)" : "",
+                          permissions_include_get ? "OR" : "",
+                          type,
+                          table_trash ? "_trash" : "",
+                          user_sql,
+                          type,
+                          table_trash ? "_trash" : "",
+                          type,
+                          table_trash ? "_trash" : "",
+                          type,
+                          table_trash ? "_trash" : "",
+                          user_sql,
+                          user_sql,
+                          user_sql,
+                          permission_clause ? permission_clause : "");
+
+      g_free (permission_clause);
+    }
 
   g_string_free (permission_or, TRUE);
-  g_free (permission_clause);
 
   if (get->trash && (strcasecmp (type, "task") == 0))
     {
