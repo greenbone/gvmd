@@ -1111,113 +1111,6 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
   if (resource || (user_id == NULL))
     owned_clause
      = g_strdup (" (t ())");
-  else if (strcmp (type, "permission") == 0)
-    {
-      int admin;
-      assert (strcmp (user_id, ""));
-      admin = acl_user_can_everything (user_id);
-      /* A user sees permissions that involve the user.  Admin users also
-       * see all higher level permissions. */
-      owned_clause
-       = g_strdup_printf (/* Either the user is the owner. */
-                          " ((permissions%s.owner = (%s))"
-                          /* Or, for admins, it's a global permission. */
-                          "  %s"
-                          /* Or the permission applies to the user. */
-                          "  OR (%i = 0" /* Skip for trash. */
-                          "      AND (permissions%s.subject_type = 'user'"
-                          "           AND permissions%s.subject_location"
-                          "               = " G_STRINGIFY (LOCATION_TABLE)
-                          "           AND permissions%s.subject"
-                          "               = (%s)))"
-                          /* Or the permission applies to the user's group. */
-                          "  OR (%i = 0" /* Skip for trash. */
-                          "      AND (permissions%s.subject_type = 'group'"
-                          "           AND permissions%s.subject_location"
-                          "               = " G_STRINGIFY (LOCATION_TABLE)
-                          "           AND permissions%s.subject"
-                          "               IN (SELECT DISTINCT \"group\""
-                          "                   FROM group_users"
-                          "                   WHERE \"user\" = (%s))))"
-                          /* Or the permission applies to the user's role. */
-                          "  OR (%i = 0" /* Skip for trash. */
-                          "      AND (permissions%s.subject_type = 'role'"
-                          "           AND permissions%s.subject_location"
-                          "               = " G_STRINGIFY (LOCATION_TABLE)
-                          "           AND permissions%s.subject"
-                          "               IN (SELECT DISTINCT role"
-                          "                   FROM role_users"
-                          "                   WHERE \"user\" = (%s))))"
-                          /* Or the user has super permission. */
-                          "  OR EXISTS (SELECT * FROM permissions AS inside"
-                          "             WHERE name = 'Super'"
-                          /*                 Super on everyone. */
-                          "             AND ((inside.resource = 0)"
-                          /*                 Super on outer permission user. */
-                          "                  OR ((inside.resource_type = 'user')"
-                          "                      AND (inside.resource = permissions%s.owner))"
-                          /*                 Super on outer permission user's role. */
-                          "                  OR ((inside.resource_type = 'role')"
-                          "                      AND (inside.resource"
-                          "                           IN (SELECT DISTINCT role"
-                          "                               FROM role_users"
-                          "                               WHERE \"user\""
-                          "                                     = permissions%s.owner)))"
-                          /*                 Super on outer permission user's group. */
-                          "                  OR ((inside.resource_type = 'group')"
-                          "                      AND (inside.resource"
-                          "                           IN (SELECT DISTINCT \"group\""
-                          "                               FROM group_users"
-                          "                               WHERE \"user\""
-                          "                                     = permissions%s.owner))))"
-                          "             AND subject_location"
-                          "                 = " G_STRINGIFY (LOCATION_TABLE)
-                          "             AND ((inside.subject_type = 'user'"
-                          "                   AND inside.subject"
-                          "                       = (%s))"
-                          "                  OR (inside.subject_type = 'group'"
-                          "                      AND inside.subject"
-                          "                          IN (SELECT DISTINCT \"group\""
-                          "                              FROM group_users"
-                          "                              WHERE \"user\""
-                          "                                    = (%s)))"
-                          "                  OR (inside.subject_type = 'role'"
-                          "                      AND inside.subject"
-                          "                          IN (SELECT DISTINCT role"
-                          "                              FROM role_users"
-                          "                              WHERE \"user\""
-                          "                                    = (%s)))))"
-                          "  %s)",
-                          get->trash ? "_trash" : "",
-                          user_sql,
-                          admin
-                           ? (get->trash
-                               ? "OR (permissions_trash.owner IS NULL)"
-                               : "OR (permissions.owner IS NULL)")
-                           : "",
-                          get->trash,
-                          table_trash ? "_trash" : "",
-                          table_trash ? "_trash" : "",
-                          table_trash ? "_trash" : "",
-                          user_sql,
-                          get->trash,
-                          table_trash ? "_trash" : "",
-                          table_trash ? "_trash" : "",
-                          table_trash ? "_trash" : "",
-                          user_sql,
-                          get->trash,
-                          table_trash ? "_trash" : "",
-                          table_trash ? "_trash" : "",
-                          table_trash ? "_trash" : "",
-                          user_sql,
-                          table_trash ? "_trash" : "",
-                          table_trash ? "_trash" : "",
-                          table_trash ? "_trash" : "",
-                          user_sql,
-                          user_sql,
-                          user_sql,
-                          permission_clause ? permission_clause : "");
-    }
   else if (with)
     {
       /* Caller supports WITH clause. */
@@ -1316,25 +1209,98 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
             permission_clause = clause;
         }
 
-      owned_clause
-       = g_strdup_printf (/* Either the user is the owner. */
-                          " ((%ss%s.owner"
-                          "   = (%s))"
-                          /* Or the user has super permission on all. */
-                          "  OR EXISTS (SELECT * FROM permissions_subject"
-                          "             WHERE name = 'Super'"
-                          "             AND (resource = 0))"
-                          /* Or the user has super permission on the owner,
-                           * (directly, via the role, or via the group). */
-                          "  OR %ss%s.owner IN (SELECT *"
-                          "                     FROM super_on_users)"
-                          "  %s)",
-                          type,
-                          table_trash ? "_trash" : "",
-                          user_sql,
-                          type,
-                          table_trash ? "_trash" : "",
-                          permission_clause ? permission_clause : "");
+      if (strcmp (type, "permission") == 0)
+        {
+          int admin;
+          assert (strcmp (user_id, ""));
+          admin = acl_user_can_everything (user_id);
+          /* A user sees permissions that involve the user.  Admin users also
+           * see all higher level permissions. */
+          owned_clause
+           = g_strdup_printf (/* Either the user is the owner. */
+                              " ((permissions%s.owner = (%s))"
+                              /* Or, for admins, it's a global permission. */
+                              "  %s"
+                              /* Or the permission applies to the user. */
+                              "  OR (%i = 0" /* Skip for trash. */
+                              "      AND (permissions%s.subject_type = 'user'"
+                              "           AND permissions%s.subject_location"
+                              "               = " G_STRINGIFY (LOCATION_TABLE)
+                              "           AND permissions%s.subject"
+                              "               = (%s)))"
+                              /* Or the permission applies to the user's group. */
+                              "  OR (%i = 0" /* Skip for trash. */
+                              "      AND (permissions%s.subject_type = 'group'"
+                              "           AND permissions%s.subject_location"
+                              "               = " G_STRINGIFY (LOCATION_TABLE)
+                              "           AND permissions%s.subject"
+                              "               IN (SELECT DISTINCT \"group\""
+                              "                   FROM group_users"
+                              "                   WHERE \"user\" = (%s))))"
+                              /* Or the permission applies to the user's role. */
+                              "  OR (%i = 0" /* Skip for trash. */
+                              "      AND (permissions%s.subject_type = 'role'"
+                              "           AND permissions%s.subject_location"
+                              "               = " G_STRINGIFY (LOCATION_TABLE)
+                              "           AND permissions%s.subject"
+                              "               IN (SELECT DISTINCT role"
+                              "                   FROM role_users"
+                              "                   WHERE \"user\" = (%s))))"
+                              /* Or the user has super permission on all. */
+                              "  OR EXISTS (SELECT * FROM permissions_subject"
+                              "             WHERE name = 'Super'"
+                              "             AND (resource = 0))"
+                              /* Or the user has super permission on the owner,
+                               * (directly, via the role, or via the group). */
+                              "  OR permissions%s.owner IN (SELECT *"
+                              "                            FROM super_on_users)"
+                              "  %s)",
+                              get->trash ? "_trash" : "",
+                              user_sql,
+                              admin
+                               ? (get->trash
+                                   ? "OR (permissions_trash.owner IS NULL)"
+                                   : "OR (permissions.owner IS NULL)")
+                               : "",
+                              get->trash,
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              user_sql,
+                              get->trash,
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              user_sql,
+                              get->trash,
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              user_sql,
+                              table_trash ? "_trash" : "",
+                              permission_clause ? permission_clause : "");
+        }
+      else
+        /* Any resource type other than Permissions. */
+        owned_clause
+         = g_strdup_printf (/* Either the user is the owner. */
+                            " ((%ss%s.owner"
+                            "   = (%s))"
+                            /* Or the user has super permission on all. */
+                            "  OR EXISTS (SELECT * FROM permissions_subject"
+                            "             WHERE name = 'Super'"
+                            "             AND (resource = 0))"
+                            /* Or the user has super permission on the owner,
+                             * (directly, via the role, or via the group). */
+                            "  OR %ss%s.owner IN (SELECT *"
+                            "                     FROM super_on_users)"
+                            "  %s)",
+                            type,
+                            table_trash ? "_trash" : "",
+                            user_sql,
+                            type,
+                            table_trash ? "_trash" : "",
+                            permission_clause ? permission_clause : "");
     }
   else
     owned_clause
