@@ -1200,9 +1200,8 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
 
       /* Caller does not support WITH.
        *
-       * The idea is that all callers support WITH and we remove this case.
-       * Only the result_overrides view and init_result_get_iterator_severity
-       * still do not support WITH. */
+       * The result_overrides view is the last caller that requires this case,
+       * because it cannot support this WITH mechanism. */
 
       permission_clause = NULL;
 

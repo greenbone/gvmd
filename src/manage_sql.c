@@ -4983,7 +4983,7 @@ resource_uuid (const gchar *type, resource_t resource)
 /**
  * @brief Initialise a GET iterator, including observed resources.
  *
- * This version includes the pre_sql arg.
+ * This version includes the extra_with arg.
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  type            Type of resource.
@@ -5004,24 +5004,24 @@ resource_uuid (const gchar *type, resource_t resource)
  * @param[in]  owned           Only get items owned by the current user.
  * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
  * @param[in]  extra_order     Extra ORDER clauses.
- * @param[in]  pre_sql         SQL to add before the SELECT.  Useful for WITH.
+ * @param[in]  extra_with      Extra WITH clauses.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
  */
 static int
-init_get_iterator2_pre (iterator_t* iterator, const char *type,
-                        const get_data_t *get, column_t *select_columns,
-                        column_t *trash_select_columns,
-                        column_t *where_columns,
-                        column_t *trash_where_columns,
-                        const char **filter_columns, int distinct,
-                        const char *extra_tables,
-                        const char *extra_where, int owned,
-                        int ignore_id,
-                        const char *extra_order,
-                        const char *pre_sql,
-                        int assume_permitted)
+init_get_iterator2_with (iterator_t* iterator, const char *type,
+                         const get_data_t *get, column_t *select_columns,
+                         column_t *trash_select_columns,
+                         column_t *where_columns,
+                         column_t *trash_where_columns,
+                         const char **filter_columns, int distinct,
+                         const char *extra_tables,
+                         const char *extra_where, int owned,
+                         int ignore_id,
+                         const char *extra_order,
+                         const char *extra_with,
+                         int assume_permitted)
 {
   int first, max;
   gchar *clause, *order, *filter, *owned_clause, *with_clause;
@@ -5111,10 +5111,7 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
 
   g_free (filter);
 
-  if (pre_sql)
-    with_clause = g_strdup (pre_sql);
-  else
-    with_clause = NULL;
+  with_clause = NULL;
 
   if (resource)
     /* Ownership test is done above by find function. */
@@ -5123,8 +5120,21 @@ init_get_iterator2_pre (iterator_t* iterator, const char *type,
     owned_clause = g_strdup (" t ()");
   else
     owned_clause = acl_where_owned_with (type, get, owned, owner_filter, resource,
-                                         permissions,
-                                         with_clause ? NULL : &with_clause);
+                                         permissions, &with_clause);
+
+  if (extra_with)
+    {
+      if (with_clause)
+        {
+          gchar *old_with;
+
+          old_with = with_clause;
+          with_clause = g_strdup_printf ("%s, %s", old_with, extra_with);
+          g_free (old_with);
+        }
+      else
+        with_clause = g_strdup_printf ("WITH %s", extra_with);
+    }
 
   g_free (owner_filter);
   array_free (permissions);
@@ -5291,7 +5301,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                     int ignore_id,
                     const char *extra_order)
 {
-  return init_get_iterator2_pre (iterator, type, get, select_columns,
+  return init_get_iterator2_with (iterator, type, get, select_columns,
                                  trash_select_columns, where_columns,
                                  trash_where_columns, filter_columns, distinct,
                                  extra_tables, extra_where, owned, ignore_id,
@@ -22881,7 +22891,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   gchar *filter, *value;
   int autofp, apply_overrides, dynamic_severity;
   gchar *extra_tables, *extra_where, *owned_clause, *with_clause;
-  gchar *pre_sql;
+  gchar *with_clauses;
   char *user_id;
 
   assert (report);
@@ -23040,29 +23050,34 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                         current_credentials.uuid);
   owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
   free (user_id);
-  pre_sql = g_strdup_printf ("%s%s"
-                             " valid_overrides"
-                             " AS (SELECT nvt, hosts, new_severity, port,"
-                             "            severity, result"
-                             "     FROM overrides"
-                             "     WHERE %s"
-                             "     AND (task = 0"
-                             "          OR task = (SELECT reports.task"
-                             "                     FROM reports"
-                             "                     WHERE reports.id = %llu))"
-                             "     AND ((end_time = 0) OR (end_time >= m_now ()))"
-                             "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
-                             "           creation_time DESC)"
-                             " ",
-                             with_clause ? with_clause : "WITH",
-                             with_clause ? "," : "",
-                             owned_clause,
-                             report);
+  with_clauses = g_strdup_printf ("%s%s"
+                                  " valid_overrides"
+                                  " AS (SELECT nvt, hosts, new_severity, port,"
+                                  "            severity, result"
+                                  "     FROM overrides"
+                                  "     WHERE %s"
+                                  "     AND (task = 0"
+                                  "          OR task = (SELECT reports.task"
+                                  "                     FROM reports"
+                                  "                     WHERE reports.id = %llu))"
+                                  "     AND ((end_time = 0) OR (end_time >= m_now ()))"
+                                  "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
+                                  "           creation_time DESC)"
+                                  " ",
+                                  with_clause
+                                   /* Skip the leading "WITH" because init_get..
+                                    * below will add it.  A bit of a hack, but
+                                    * it's the only place that needs this. */
+                                   ? with_clause + 4
+                                   : "",
+                                  with_clause ? "," : "",
+                                  owned_clause,
+                                  report);
   g_free (with_clause);
   g_free (owned_clause);
 
   table_order_if_sort_not_specified = 1;
-  ret = init_get_iterator2_pre (iterator,
+  ret = init_get_iterator2_with (iterator,
                                 "result",
                                 get,
                                 /* SELECT columns. */
@@ -23078,11 +23093,11 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                 TRUE,
                                 report ? TRUE : FALSE,
                                 extra_order,
-                                pre_sql,
+                                with_clauses,
                                 1);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
-  g_free (pre_sql);
+  g_free (with_clauses);
   g_free (extra_tables);
   g_free (extra_where);
   return ret;
