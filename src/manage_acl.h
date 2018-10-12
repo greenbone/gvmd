@@ -141,10 +141,6 @@ acl_where_owned_with (const char *, const get_data_t *, int, const gchar *, reso
                       array_t *, gchar **);
 
 gchar *
-acl_where_owned (const char *, const get_data_t *, int, const gchar *, resource_t,
-                 array_t *);
-
-gchar *
 acl_where_owned_for_get (const char *, const char *, gchar **);
 
 gchar *
