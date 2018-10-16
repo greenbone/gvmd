@@ -102,7 +102,7 @@ string_replace (const gchar *string, const gchar *to, ...)
 /**
  * @brief Increment transaction size, commit and reset at secinfo_commit_size.
  *
- * @param[in,out]  count  Pointer to current size to increment and compare.
+ * @param[in,out] current_size Pointer to current size to increment and compare.
  */
 inline static void
 increment_transaction_size (int* current_size) {
