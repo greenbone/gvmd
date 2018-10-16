@@ -2424,8 +2424,17 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                 {
                   entity_t product;
                   entities_t products;
+                  resource_t cve_rowid;
 
                   products = list->entities;
+
+                  if (first_entity (products))
+                    {
+                      sql_int64 (&cve_rowid,
+                                 "SELECT id FROM cves WHERE uuid='%s';",
+                                 quoted_id);
+                    }
+
                   while ((product = first_entity (products)))
                     {
                       if ((strcmp (entity_name (product), "vuln:product") == 0)
@@ -2446,9 +2455,9 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                                quoted_product, quoted_product, time_published,
                                time_modified);
                           sql ("SELECT merge_affected_product"
-                               "        ((SELECT id FROM cves WHERE uuid='%s'),"
+                               "        (%llu,"
                                "         (SELECT id FROM cpes WHERE name='%s'))",
-                               quoted_id, quoted_product);
+                               cve_rowid, quoted_product);
                           transaction_size ++;
                           increment_transaction_size (&transaction_size);
                           g_free (quoted_product);
