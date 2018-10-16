@@ -42335,8 +42335,9 @@ modify_credential (const char *credential_id,
 
   if (privacy_algorithm && ret == 0)
     {
-      if (strcmp (auth_algorithm, "aes")
-          && strcmp (auth_algorithm, "des"))
+      if (strcmp (privacy_algorithm, "aes")
+          && strcmp (privacy_algorithm, "des")
+          && strcmp (privacy_algorithm, ""))
         ret = 7;
       else
         set_credential_privacy_algorithm (credential, privacy_algorithm);
