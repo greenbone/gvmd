@@ -3475,7 +3475,7 @@ filter_clause (const char* type, const char* filter,
                && (strcasecmp (keyword->column, "tag") == 0))
         {
           gchar **tag_split, *tag_name, *tag_value;
-          int value_given, value_numeric;
+          int value_given;
 
           quoted_keyword = sql_quote (keyword->string);
           tag_split = g_strsplit (quoted_keyword, "=", 2);
@@ -3490,13 +3490,6 @@ filter_clause (const char* type, const char* filter,
             {
               tag_value = g_strdup ("");
               value_given = 0;
-            }
-
-          value_numeric = 0;
-          if (value_given)
-            {
-              double test_d;
-              value_numeric = (sscanf (tag_value, "%lf", &test_d) > 0);
             }
 
           if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
@@ -3519,14 +3512,10 @@ filter_clause (const char* type, const char* filter,
                                                   last_was_not),
                                         tag_name,
                                         (value_given
-                                          ? (value_numeric
-                                              ? "AND CAST"
-                                                " (tags.value AS REAL) = "
-                                              : "AND CAST"
-                                                " (tags.value AS TEXT) = '")
+                                          ? "AND tags.value = '"
                                           : ""),
                                         value_given ? tag_value : "",
-                                        (value_given && value_numeric == 0
+                                        (value_given
                                           ? "'"
                                           : ""));
               else
@@ -3545,14 +3534,10 @@ filter_clause (const char* type, const char* filter,
                                         type,
                                         type,
                                         (value_given
-                                          ? (value_numeric
-                                              ? "AND CAST"
-                                                " (tags.value AS REAL) = "
-                                              : "AND CAST"
-                                                " (tags.value AS TEXT) = '")
+                                          ? "AND tags.value = '"
                                           : ""),
                                         value_given ? tag_value : "",
-                                        (value_given && value_numeric == 0
+                                        (value_given
                                           ? "'"
                                           : ""));
             }
