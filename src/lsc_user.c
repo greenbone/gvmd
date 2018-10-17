@@ -888,12 +888,6 @@ lsc_user_exe_recreate (const gchar *name, const gchar *password,
   gchar *exe_path;
   int ret = -1;
 
-  if (alien_found () == FALSE)
-    {
-      g_warning ("%s: Need \"alien\" to make EXEs\n", __FUNCTION__);
-      return -1;
-    }
-
   /* Create NSIS package. */
 
   if (mkdtemp (exe_dir) == NULL)
