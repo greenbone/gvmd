@@ -105,7 +105,8 @@ string_replace (const gchar *string, const gchar *to, ...)
  * @param[in,out] current_size Pointer to current size to increment and compare.
  */
 inline static void
-increment_transaction_size (int* current_size) {
+increment_transaction_size (int* current_size)
+{
   if (secinfo_commit_size && (++(*current_size) > secinfo_commit_size))
     {
       *current_size = 0;
