@@ -36964,19 +36964,6 @@ config_iterator_scanner_trash (iterator_t* iterator)
 int
 config_in_use (config_t config)
 {
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE id = %i"
-               " AND (uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
-               "      OR uuid = '" CONFIG_UUID_EMPTY "'"
-               "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
-               "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
-               "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
-               config))
-    return 1;
-
   return sql_int ("SELECT count(*) FROM tasks"
                   " WHERE config = %llu"
                   " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
@@ -36989,11 +36976,24 @@ config_in_use (config_t config)
  *
  * @param[in]  config  Config.
  *
- * @return Always 1.
+ * @return 0 if predefined config, else 1.
  */
 int
 config_writable (config_t config)
 {
+  if (sql_int ("SELECT count(*) FROM configs"
+               " WHERE id = %i"
+               " AND (uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
+               "      OR uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
+               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
+               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
+               "      OR uuid = '" CONFIG_UUID_EMPTY "'"
+               "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
+               "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
+               "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
+               config))
+    return 0;
+
   return 1;
 }
 
