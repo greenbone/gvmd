@@ -32347,9 +32347,6 @@ request_delete_task (task_t* task_pointer)
   hidden = sql_int ("SELECT hidden from tasks WHERE id = %llu;",
                     *task_pointer);
 
-  if (hidden == 1)
-    return 2;
-
   /* Technically the task could be in the trashcan, if someone gets the UUID
    * with GET_TASKS before the CREATE_TASK finishes, and removes the task.
    * Pretend it was deleted.  There'll be half a task in the trashcan. */
@@ -34218,7 +34215,7 @@ delete_target (const char *target_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE target = %llu"
                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    target))
         {
           sql_rollback ();
@@ -35604,7 +35601,7 @@ target_in_use (target_t target)
   return !!sql_int ("SELECT count(*) FROM tasks"
                     " WHERE target = %llu"
                     " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                    " AND (hidden = 0 OR hidden = 1);",
+                    " AND hidden = 0;",
                     target);
 }
 
@@ -36522,7 +36519,7 @@ delete_config (const char *config_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu"
                    " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    config))
         {
           sql_rollback ();
@@ -36997,7 +36994,7 @@ config_in_use (config_t config)
   return sql_int ("SELECT count(*) FROM tasks"
                   " WHERE config = %llu"
                   " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
-                  " AND (hidden = 0 OR hidden = 1);",
+                  " AND hidden = 0;",
                   config);
 }
 
@@ -37261,7 +37258,7 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
         }
 
       if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+                   " WHERE config = %llu AND hidden = 0;",
                    config))
         {
           sql_rollback ();
@@ -37305,7 +37302,7 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+               " WHERE config = %llu AND hidden = 0;",
                config))
     {
       sql_rollback ();
@@ -37549,7 +37546,7 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+               " WHERE config = %llu AND hidden = 0;",
                config))
     {
       sql_rollback ();
@@ -39611,7 +39608,7 @@ manage_set_config_families (const gchar *config_id,
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+               " WHERE config = %llu AND hidden = 0;",
                config))
     {
       sql_rollback ();
@@ -47399,7 +47396,7 @@ delete_scanner (const char *scanner_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE scanner = %llu"
                    " AND scanner_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    scanner)
           || sql_int ("SELECT count(*) FROM configs"
                       " WHERE scanner = %llu;",
@@ -48778,7 +48775,7 @@ delete_schedule (const char *schedule_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE schedule = %llu"
                    " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    schedule))
         {
           sql_rollback ();
