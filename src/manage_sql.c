@@ -60040,6 +60040,21 @@ manage_restore (const char *id)
            "                  WHERE results.task = %llu);",
            resource);
 
+      sql ("INSERT INTO results"
+           " (uuid, task, host, port, nvt, result_nvt, type, description,"
+           "  report, nvt_version, severity, qod, qod_type, owner, date,"
+           "  hostname)"
+           " SELECT uuid, task, host, port, nvt, result_nvt, type,"
+           "        description, report, nvt_version, severity, qod,"
+           "         qod_type, owner, date, hostname"
+           " FROM results_trash"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           resource);
+
+      sql ("DELETE FROM results_trash"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           resource);
+
       sql ("UPDATE tasks SET hidden = 0 WHERE id = %llu;", resource);
 
       cache_permissions_for_resource ("task", resource, NULL);
