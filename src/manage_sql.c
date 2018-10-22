@@ -32600,6 +32600,21 @@ delete_task (task_t task, int ultimate)
            "                  WHERE results.task = %llu);",
            task);
 
+      sql ("INSERT INTO results_trash"
+           " (uuid, task, host, port, nvt, result_nvt, type, description,"
+           "  report, nvt_version, severity, qod, qod_type, owner, date,"
+           "  hostname)"
+           " SELECT uuid, task, host, port, nvt, result_nvt, type,"
+           "        description, report, nvt_version, severity, qod,"
+           "         qod_type, owner, date, hostname"
+           " FROM results"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           task);
+
+      sql ("DELETE FROM results"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           task);
+
       sql ("UPDATE tasks SET hidden = 2 WHERE id = %llu;", task);
     }
 
