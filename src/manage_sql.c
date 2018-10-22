@@ -25512,6 +25512,7 @@ delete_report_internal (report_t report)
        "         (SELECT id FROM results WHERE report = %llu);",
        report);
   sql ("DELETE FROM results WHERE report = %llu;", report);
+  sql ("DELETE FROM results_trash WHERE report = %llu;", report);
 
   sql ("DELETE FROM tag_resources"
        " WHERE resource_type = 'report'"
@@ -32563,6 +32564,7 @@ delete_task (task_t task, int ultimate)
                               ? LOCATION_TRASH
                               : LOCATION_TABLE);
 
+      sql ("DELETE FROM results_trash WHERE task = %llu;", task);
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
