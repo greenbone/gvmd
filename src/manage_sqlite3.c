@@ -3768,6 +3768,8 @@ create_tables ()
        "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
        "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
        "  flags INTEGER);");
+  sql ("CREATE INDEX IF NOT EXISTS reports_by_task"
+       " ON reports (task);");
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
        "  severity, count, override, end_time INTEGER, min_qod INTEGER);");
@@ -3888,7 +3890,7 @@ create_tables ()
 
   /* Result views */
 
-  owned_clause = acl_where_owned_for_get ("override", "users.id");
+  owned_clause = acl_where_owned_for_get ("override", "users.id", NULL);
 
   sql ("DROP VIEW IF EXISTS result_overrides;");
   sql ("CREATE VIEW result_overrides AS"

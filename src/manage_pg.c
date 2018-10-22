@@ -2904,7 +2904,7 @@ create_tables ()
    * result_new_severities. */
   manage_create_sql_functions ();
 
-  owned_clause = acl_where_owned_for_get ("override", "users.id");
+  owned_clause = acl_where_owned_for_get ("override", "users.id", NULL);
 
   sql ("CREATE OR REPLACE VIEW result_overrides AS"
        " SELECT users.id AS user,"
@@ -3116,6 +3116,9 @@ create_tables ()
 
   sql ("SELECT create_index ('report_counts_by_report_and_override',"
        "                     'report_counts', 'report, override');");
+
+  sql ("SELECT create_index ('reports_by_task',"
+       "                     'reports', 'task');");
 
   sql ("SELECT create_index ('tag_resources_by_resource',"
        "                     'tag_resources',"
