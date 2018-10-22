@@ -2630,6 +2630,25 @@ create_tables ()
        "  date integer,"
        "  hostname text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS results_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  host text,"
+       "  port text,"
+       "  nvt text,"
+       "  result_nvt integer," // REFERENCES result_nvts (id),"
+       "  type text,"
+       "  description text,"
+       "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  nvt_version text,"
+       "  severity real,"
+       "  qod integer,"
+       "  qod_type text,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  date integer,"
+       "  hostname text);");
+
   /* All the NVTs that have ever been encountered in results and overrides.
    *
    * This gives the textual NVT oids an integer ID, so that they can be
