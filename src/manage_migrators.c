@@ -14674,6 +14674,78 @@ migrate_194_to_195 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 195 to version 196.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_195_to_196 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 195. */
+
+  if (manage_db_version () != 195)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ensure new tables exist. */
+
+  if (sql_is_sqlite3 ())
+    sql ("CREATE TABLE IF NOT EXISTS results"
+         " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
+         "  result_nvt, type, description, report, nvt_version, severity REAL,"
+         "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER,"
+         "  hostname TEXT)");
+  else
+    sql ("CREATE TABLE IF NOT EXISTS results"
+         " (id SERIAL PRIMARY KEY,"
+         "  uuid text UNIQUE NOT NULL,"
+         "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+         "  host text,"
+         "  port text,"
+         "  nvt text,"
+         "  result_nvt integer," // REFERENCES result_nvts (id),"
+         "  type text,"
+         "  description text,"
+         "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+         "  nvt_version text,"
+         "  severity real,"
+         "  qod integer,"
+         "  qod_type text,"
+         "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+         "  date integer,"
+         "  hostname text);");
+
+  /* Results of trashcan tasks are now stored in results_trash. */
+
+  sql ("INSERT INTO results_trash"
+       " (uuid, task, host, port, nvt, result_nvt, type, description,"
+       "  report, nvt_version, severity, qod, qod_type, owner, date,"
+       "  hostname)"
+       " SELECT uuid, task, host, port, nvt, result_nvt, type,"
+       "        description, report, nvt_version, severity, qod,"
+       "         qod_type, owner, date, hostname"
+       " FROM results"
+       " WHERE task IN (SELECT id FROM tasks WHERE hidden = 2);");
+
+  sql ("DELETE FROM results"
+       " WHERE task IN (SELECT id FROM tasks WHERE hidden = 2);");
+
+  /* Set the database version to 196. */
+
+  set_db_version (196);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14883,6 +14955,7 @@ static migrator_t database_migrators[]
     {193, migrate_192_to_193},
     {194, migrate_193_to_194},
     {195, migrate_194_to_195},
+    {196, migrate_195_to_196},
     /* End marker. */
     {-1, NULL}};
 
