@@ -17713,10 +17713,7 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "result") == 0)
     {
-      extra_where = " AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
-                    " AND (SELECT hidden FROM tasks"
-                    "      WHERE tasks.id = task)"
-                    "     = 0";
+      extra_where = " AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")";
     }
   else if (strcmp (type, "vuln") == 0)
     {
@@ -22958,18 +22955,11 @@ results_extra_where (int trash, report_t report, const gchar* host,
   g_free (levels);
   g_free (new_severity_sql);
 
-  extra_where = g_strdup_printf("%s%s%s%s%s",
+  extra_where = g_strdup_printf("%s%s%s%s",
                                 report_clause ? report_clause : "",
                                 host_clause ? host_clause : "",
                                 levels_clause->str,
-                                min_qod_clause ? min_qod_clause : "",
-                                report_clause
-                                 ? ""
-                                 : trash
-                                    ? " AND ((SELECT (hidden = 2) FROM tasks"
-                                      "       WHERE tasks.id = task))"
-                                    : " AND ((SELECT (hidden = 0) FROM tasks"
-                                      "       WHERE tasks.id = task))");
+                                min_qod_clause ? min_qod_clause : "");
 
   g_free (auto_type_sql);
   g_free (min_qod_clause);
@@ -65774,8 +65764,6 @@ user_resources_in_use (user_t user,
      "    AND (opts.task IS NULL OR results.task = opts.task)"               \
      "    AND (opts.host IS NULL OR results.host = opts.host)"               \
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
-     "    AND (SELECT hidden = 0 FROM tasks"                                 \
-     "          WHERE tasks.id = results.task)"                              \
      "    AND (SELECT has_permission FROM permissions_get_tasks"             \
      "         WHERE \"user\" = (SELECT id FROM users"                       \
      "                           WHERE uuid ="                               \

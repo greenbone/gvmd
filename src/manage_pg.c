@@ -1962,8 +1962,6 @@ manage_create_sql_functions ()
            "   AND ($3 IS NULL OR results.report = $3)"
            "   AND ($4 IS NULL OR results.host = $4)"
            "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
-           "   AND (SELECT hidden = 0 FROM tasks"
-           "         WHERE tasks.id = results.task)"
            "   AND (SELECT has_permission FROM permissions_get_tasks"
            "         WHERE \"user\" = (SELECT id FROM users"
            "                           WHERE uuid ="
@@ -3057,9 +3055,7 @@ create_tables ()
 #define VULNS_RESULTS_WHERE                                           \
   " WHERE uuid IN"                                                    \
   "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")" \
-  "       AND (SELECT hidden = 0 FROM tasks"                          \
-  "            WHERE tasks.id = results.task))"
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
   sql ("DROP VIEW IF EXISTS vulns;");
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"

@@ -127,9 +127,7 @@ manage_session_init (const char *uuid)
 #define VULNS_RESULTS_WHERE                                           \
   " WHERE uuid IN"                                                    \
   "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")" \
-  "       AND (SELECT hidden = 0 FROM tasks"                          \
-  "            WHERE tasks.id = results.task))"
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
   sql ("DROP VIEW IF EXISTS vulns;");
   if (manage_scap_loaded ())
@@ -2750,8 +2748,6 @@ sql_vuln_results (sqlite3_context *context, int argc,
                "   AND (%d OR results.task = %llu)"
                "   AND (%d OR results.host = '%s')"
                "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
-               "   AND (SELECT hidden = 0 FROM tasks"
-               "         WHERE tasks.id = results.task)"
                "   AND (SELECT has_permission FROM permissions_get_tasks"
                "         WHERE \"user\" = (SELECT id FROM users"
                "                           WHERE uuid ="
