@@ -8873,9 +8873,10 @@ email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
                "To: %s\n"
                "From: %s\n"
                "Subject: %s\n"
+               "MIME-Version: 1.0\n"
                "Content-Type: multipart/encrypted;\n"
-               "protocol=\"application/pgp-encrypted\";\n"
-               "boundary=\"=-=-=-=-=\"\n"
+               " protocol=\"application/pgp-encrypted\";\n"
+               " boundary=\"=-=-=-=-=\"\n"
                "\n"
                "--=-=-=-=-=\n"
                "Content-Type: application/pgp-encrypted\n"
@@ -8886,6 +8887,7 @@ email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
                "--=-=-=-=-=\n"
                "Content-Type: application/octet-stream\n"
                "Content-Description: OpenPGP encrypted message\n"
+               "Content-Disposition: inline; filename=\"encrypted.asc\"\n"
                "\n",
                to_address,
                from_address ? from_address
@@ -8911,6 +8913,15 @@ email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
       g_warning ("%s: output error at end of message", __FUNCTION__);
       return -1;
     }
+
+  while (fflush (encrypted_file))
+    if (errno == EINTR)
+      continue;
+    else
+      {
+        g_warning ("%s", strerror (errno));
+        return -1;
+      }
 
   return 0;
 }
