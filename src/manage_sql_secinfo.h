@@ -302,6 +302,11 @@
   "               AS union_sub_6)"                                             \
   " AS allinfo"
 
+/**
+ * @brief Default for secinfo_commit_size.
+ */
+#define SECINFO_COMMIT_SIZE_DEFAULT 0
+
 void
 manage_sync_scap (sigset_t *);
 
@@ -313,5 +318,11 @@ check_scap_db_version ();
 
 int
 check_cert_db_version ();
+
+int
+get_secinfo_commit_size ();
+
+void
+set_secinfo_commit_size (int);
 
 #endif /* not _GVMD_MANAGE_SQL_SECINFO_H */
