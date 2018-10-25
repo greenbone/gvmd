@@ -13514,7 +13514,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>cve_id</name>
-          <summary>IDs of the CVEs the NVT adresses</summary>
+          <summary>IDs of the CVEs the NVT addresses</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -16132,7 +16132,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>trust</name>
             <type>boolean</type>
-            <summary>Whether the the report format is trusted</summary>
+            <summary>Whether the report format is trusted</summary>
           </column>
           <column>
             <name>trust_time</name>
@@ -16142,7 +16142,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>active</name>
             <type>boolean</type>
-            <summary>Whether the the report format is active</summary>
+            <summary>Whether the report format is active</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -17725,13 +17725,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             text
           </pattern>
         </ele>
-		<ele>
-		  <name>copy</name>
-		  <summary>The UUID of an existing scanner</summary>
-		  <pattern>
-			<t>uuid</t>
-		  </pattern>
-		</ele>
+        <ele>
+          <name>copy</name>
+          <summary>The UUID of an existing scanner</summary>
+          <pattern>
+            <t>uuid</t>
+          </pattern>
+        </ele>
         <ele>
           <name>creation_time</name>
           <pattern><t>iso_time</t></pattern>
@@ -25618,7 +25618,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The SYNC_FEED, SYNC_SCAP and SYNC_CERT commands have been removed, as
         they are no longer used by GSA, and they have been (or will be)
-        superceded by automatic feed updating.
+        superseded by automatic feed updating.
       </p>
     </description>
     <version>8.0</version>
@@ -25658,7 +25658,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The element CATEGORY was using a string represantation of a integer eumeration.
-        Now the original integer represenation is used.
+        Now the original integer representation is used.
       </p>
     </description>
     <version>8.0</version>
@@ -25686,11 +25686,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         Severity Class "OpenVAS Classic" (short name "classic", UUID
-		"dc1d556a-89e1-11e3-bc21-406186ea4fc5") has been removed.
+        "dc1d556a-89e1-11e3-bc21-406186ea4fc5") has been removed.
       </p>
       <p>
-	    When migrating to this version all users using the "OpenVAS Classic"
-		class will be switched to "NVD Vulnerability Severity Ratings".
+        When migrating to this version all users using the "OpenVAS Classic"
+        class will be switched to "NVD Vulnerability Severity Ratings".
       </p>
     </description>
     <version>8.0</version>
@@ -25701,7 +25701,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The task status "Internal Error" is now called "Interrupted", to
-		better fit its function.
+        better fit its function.
       </p>
     </description>
     <version>8.0</version>
