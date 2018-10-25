@@ -20088,7 +20088,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             current_report = g_strdup ("");
 
           first_report_id = task_iterator_first_report (&tasks);
-          if (first_report_id)
+          if (first_report_id && (get_tasks_data->get.trash == 0))
             {
               gchar *timestamp;
               char *scan_start, *scan_end;
@@ -20152,7 +20152,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             first_report = g_strdup ("");
 
           second_last_report_id = task_second_last_report_id (index);
-          if (second_last_report_id)
+          if (second_last_report_id && (get_tasks_data->get.trash == 0))
             {
               gchar *timestamp;
               char *scan_start, *scan_end;
@@ -20217,7 +20217,36 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             second_last_report = g_strdup ("");
 
           last_report_id = task_iterator_last_report (&tasks);
-          if (last_report_id)
+          if (get_tasks_data->get.trash && last_report_id)
+            {
+              gchar *timestamp;
+              char *scan_start, *scan_end;
+
+              if (report_timestamp (last_report_id, &timestamp))
+                g_error ("%s: GET_TASKS: error getting timestamp for"
+                         " last report, aborting",
+                         __FUNCTION__);
+
+              scan_start = scan_start_time_uuid (last_report_id);
+              scan_end = scan_end_time_uuid (last_report_id);
+
+              last_report = g_strdup_printf ("<last_report>"
+                                             "<report id=\"%s\">"
+                                             "<timestamp>%s</timestamp>"
+                                             "<scan_start>%s</scan_start>"
+                                             "<scan_end>%s</scan_end>"
+                                             "</report>"
+                                             "</last_report>",
+                                             last_report_id,
+                                             timestamp,
+                                             scan_start,
+                                             scan_end);
+
+              free (scan_start);
+              free (scan_end);
+              g_free (timestamp);
+            }
+          else if (last_report_id)
             {
               gchar *timestamp;
               char *scan_start, *scan_end;
@@ -20474,9 +20503,11 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        progress_xml,
                        task_iterator_total_reports (&tasks),
                        task_iterator_finished_reports (&tasks),
-                       task_iterator_trend_counts
-                        (&tasks, holes, warnings, infos, severity,
-                         holes_2, warnings_2, infos_2, severity_2),
+                       get_tasks_data->get.trash
+                        ? ""
+                        : task_iterator_trend_counts
+                           (&tasks, holes, warnings, infos, severity,
+                            holes_2, warnings_2, infos_2, severity_2),
                        task_schedule_uuid,
                        task_schedule_name_escaped,
                        (next_time == 0 ? "over" : iso_time (&next_time)),
