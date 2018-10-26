@@ -617,7 +617,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10990", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901108", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900510", "FTP");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900600", "FTP");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108477", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801057", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900506", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10920", "Malware");
@@ -788,10 +788,10 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80024", "Web Servers");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19689", "Web Servers");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10386", "Web Servers");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100075", "Useless services");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100080", "Useless services");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901206", "Useless services");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10942", "Useless services");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108479", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108102", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108478", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10942", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.12231", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80039", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10394", "Windows");
