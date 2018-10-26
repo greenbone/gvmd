@@ -54,6 +54,11 @@
 #define G_LOG_DOMAIN "md manage"
 
 
+/* Static variables. */
+
+static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
+
+
 /* Headers. */
 
 void
@@ -92,6 +97,22 @@ string_replace (const gchar *string, const gchar *to, ...)
     }
   va_end (ap);
   return ret;
+}
+
+/**
+ * @brief Increment transaction size, commit and reset at secinfo_commit_size.
+ *
+ * @param[in,out] current_size Pointer to current size to increment and compare.
+ */
+inline static void
+increment_transaction_size (int* current_size)
+{
+  if (secinfo_commit_size && (++(*current_size) > secinfo_commit_size))
+    {
+      *current_size = 0;
+      sql_commit ();
+      sql_begin_immediate ();
+    }
 }
 
 
@@ -1379,6 +1400,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
   gsize xml_len;
   GStatBuf state;
   int updated_dfn_cert;
+  int transaction_size = 0;
 
   updated_dfn_cert = 0;
   g_info ("%s: %s", __FUNCTION__, xml_path);
@@ -1505,6 +1527,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                    quoted_title,
                    quoted_summary,
                    cve_refs);
+              increment_transaction_size (&transaction_size);
               g_free (quoted_title);
               g_free (quoted_summary);
 
@@ -1543,6 +1566,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                                    "  '%s')",
                                    quoted_refnum,
                                    quoted_point);
+                              increment_transaction_size (&transaction_size);
                               g_free (quoted_point);
                             }
                           point++;
@@ -1653,6 +1677,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   gsize xml_len;
   GStatBuf state;
   int updated_cert_bund;
+  int transaction_size = 0;
 
   updated_cert_bund = 0;
   full_path = g_build_filename (GVM_CERT_DATA_DIR, xml_path, NULL);
@@ -1788,6 +1813,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                    quoted_title,
                    quoted_summary,
                    cve_refs);
+              increment_transaction_size (&transaction_size);
               g_free (quoted_title);
               g_free (quoted_summary);
 
@@ -1813,6 +1839,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                                "  '%s')",
                                quoted_refnum,
                                quoted_cve);
+                          increment_transaction_size (&transaction_size);
                           g_free (quoted_cve);
                         }
 
@@ -1916,6 +1943,7 @@ update_scap_cpes (int last_scap_update)
   gsize xml_len;
   GStatBuf state;
   int updated_scap_cpes, last_cve_update;
+  int transaction_size = 0;
 
   updated_scap_cpes = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
@@ -2079,6 +2107,7 @@ update_scap_cpes (int last_scap_update)
                    quoted_status,
                    deprecated ? deprecated : "NULL",
                    quoted_nvd_id);
+              increment_transaction_size (&transaction_size);
               g_free (quoted_title);
               g_free (quoted_name);
               g_free (quoted_status);
@@ -2123,6 +2152,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   gsize xml_len;
   GStatBuf state;
   int updated_scap_bund;
+  int transaction_size = 0;
 
   updated_scap_bund = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR, xml_path, NULL);
@@ -2382,6 +2412,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                    quoted_integrity_impact,
                    quoted_availability_impact,
                    quoted_software);
+              increment_transaction_size (&transaction_size);
               g_free (quoted_summary);
               g_free (quoted_access_vector);
               g_free (quoted_access_complexity);
@@ -2394,8 +2425,17 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                 {
                   entity_t product;
                   entities_t products;
+                  resource_t cve_rowid;
 
                   products = list->entities;
+
+                  if (first_entity (products))
+                    {
+                      sql_int64 (&cve_rowid,
+                                 "SELECT id FROM cves WHERE uuid='%s';",
+                                 quoted_id);
+                    }
+
                   while ((product = first_entity (products)))
                     {
                       if ((strcmp (entity_name (product), "vuln:product") == 0)
@@ -2416,9 +2456,11 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                                quoted_product, quoted_product, time_published,
                                time_modified);
                           sql ("SELECT merge_affected_product"
-                               "        ((SELECT id FROM cves WHERE uuid='%s'),"
+                               "        (%llu,"
                                "         (SELECT id FROM cpes WHERE name='%s'))",
-                               quoted_id, quoted_product);
+                               cve_rowid, quoted_product);
+                          transaction_size ++;
+                          increment_transaction_size (&transaction_size);
                           g_free (quoted_product);
                         }
 
@@ -2763,6 +2805,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   gsize xml_len;
   GStatBuf state;
   int last_oval_update, file_timestamp;
+  int transaction_size = 0;
 
   /* Setup variables. */
 
@@ -2866,6 +2909,9 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
        "                               WHERE xml_file = '%s');",
        quoted_xml_basename,
        quoted_xml_basename);
+
+  sql_commit();
+  sql_begin_immediate();
 
   oval_oval_definitions_date (entity, &file_timestamp);
 
@@ -3024,7 +3070,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                        quoted_xml_basename,
                        quoted_status,
                        cve_count);
-
+                  increment_transaction_size (&transaction_size);
                   g_free (quoted_id);
                   g_free (quoted_class);
                   g_free (quoted_title);
@@ -3055,6 +3101,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                                "                 AND ovaldef = ovaldefs.id);",
                                quoted_ref_id,
                                quoted_oval_id);
+                          increment_transaction_size (&transaction_size);
                         }
                       references = next_entities (references);
                     }
@@ -4371,4 +4418,29 @@ manage_sync_scap (sigset_t *sigmask_current)
                 sync_scap,
                 "gvmd: Syncing SCAP",
                 "gvm-sync-scap");
+}
+
+/**
+ * @brief Get the current SecInfo update commit size.
+ *
+ * @return The SecInfo update commit size.
+ */
+int
+get_secinfo_commit_size ()
+{
+  return secinfo_commit_size;
+}
+
+/**
+ * @brief Set the SecInfo update commit size.
+ *
+ * @param new_commit_size The new SecInfo update commit size.
+ */
+void
+set_secinfo_commit_size (int new_commit_size)
+{
+  if (new_commit_size < 0)
+    secinfo_commit_size = 0;
+  else
+    secinfo_commit_size = new_commit_size;
 }
