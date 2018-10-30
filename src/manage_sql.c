@@ -338,6 +338,12 @@ task_last_report_any_status (task_t, report_t *);
 int
 task_report_previous (task_t task, report_t, report_t *);
 
+static gboolean
+find_trash_task (const char*, task_t*);
+
+static gboolean
+find_trash_report_with_permission (const char *, report_t *, const char *);
+
 
 /* Variables. */
 
@@ -4334,13 +4340,22 @@ find_resource_with_permission (const char* type, const char* uuid,
       return FALSE;
     }
   switch (sql_int64 (resource,
-                     "SELECT id FROM %ss%s WHERE uuid = '%s'%s;",
+                     "SELECT id FROM %ss%s WHERE uuid = '%s'%s%s;",
                      type,
                      (strcmp (type, "task") && trash) ? "_trash" : "",
                      quoted_uuid,
                      strcmp (type, "task")
                       ? ""
-                      : (trash ? " AND hidden = 2" : " AND hidden < 2")))
+                      : (trash ? " AND hidden = 2" : " AND hidden < 2"),
+                     strcmp (type, "report")
+                      ? ""
+                      : (trash
+                          ? " AND (SELECT hidden FROM tasks"
+                            "      WHERE tasks.id = task)"
+                            "     = 2"
+                          : " AND (SELECT hidden FROM tasks"
+                          "        WHERE tasks.id = task)"
+                          "       = 0")))
     {
       case 0:
         break;
@@ -25657,8 +25672,16 @@ delete_report (const char *report_id, int dummy)
 
   if (report == 0)
     {
-      sql_rollback ();
-      return 2;
+      if (find_trash_report_with_permission (report_id, &report, "delete_report"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (report == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
     }
 
   ret = delete_report_internal (report);
@@ -32365,9 +32388,6 @@ request_delete_task (task_t* task_pointer)
   return 0;
 }
 
-static gboolean
-find_trash_task (const char*, task_t*);
-
 /**
  * @brief Request deletion of a task.
  *
@@ -32857,6 +32877,23 @@ find_report_with_permission (const char* uuid, report_t* report,
                              const char *permission)
 {
   return find_resource_with_permission ("report", uuid, report, permission, 0);
+}
+
+/**
+ * @brief Find a report in the trashcan for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of report.
+ * @param[out]  report      Report return, 0 if successfully failed to find
+ *                          report.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find report), TRUE on error.
+ */
+static gboolean
+find_trash_report_with_permission (const char *uuid, report_t *report,
+                                   const char *permission)
+{
+  return find_resource_with_permission ("report", uuid, report, permission, 1);
 }
 
 /**
