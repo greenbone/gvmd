@@ -20861,7 +20861,16 @@ reports_build_count_cache (int clear, int* changes_out)
   iterator_t reports;
   changes = 0;
 
-  init_iterator (&reports, "SELECT id FROM reports");
+  /* Clear cache of trashcan reports, we won't count them. */
+  sql ("DELETE FROM report_counts"
+       " WHERE (SELECT hidden = 2 FROM tasks"
+       "        WHERE tasks.id = (SELECT task FROM reports"
+       "                          WHERE reports.id = report_counts.report));");
+
+  init_iterator (&reports,
+                 "SELECT id FROM reports"
+                 " WHERE (SELECT hidden = 0 FROM tasks"
+                 "        WHERE tasks.id = task);");
 
   while (next (&reports))
     {
