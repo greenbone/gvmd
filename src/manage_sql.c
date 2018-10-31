@@ -32633,6 +32633,10 @@ delete_task (task_t task, int ultimate)
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            task);
 
+      sql ("DELETE FROM report_counts"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           task);
+
       sql ("UPDATE tasks SET hidden = 2 WHERE id = %llu;", task);
     }
 
@@ -60087,6 +60091,13 @@ manage_restore (const char *id)
            resource);
 
       sql ("DELETE FROM results_trash"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           resource);
+
+      /* For safety, in case anything recounted this report while it was in
+       * the trash (which would have resulted in the wrong counts, because
+       * the counting does not know about results_trash). */
+      sql ("DELETE FROM report_counts"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            resource);
 
