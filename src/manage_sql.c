@@ -21310,6 +21310,9 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     {
       int rc = 0;
 
+      /* It's important that the task is not in the trash, because we
+       * are inserting results below.  This find function will fail if
+       * the task is in the trash. */
       if (find_task_with_permission (task_id, &task, "modify_task"))
         rc = -1;
       else if (task == 0)
