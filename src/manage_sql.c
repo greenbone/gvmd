@@ -66057,6 +66057,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE permissions_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
+      sql ("UPDATE scanners SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE scanners_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
       sql ("UPDATE schedules SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE schedules_trash SET owner = %llu WHERE owner = %llu;",
