@@ -14697,13 +14697,13 @@ migrate_195_to_196 ()
   /* Ensure new tables exist. */
 
   if (sql_is_sqlite3 ())
-    sql ("CREATE TABLE IF NOT EXISTS results"
+    sql ("CREATE TABLE IF NOT EXISTS results_trash"
          " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
          "  result_nvt, type, description, report, nvt_version, severity REAL,"
          "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER,"
          "  hostname TEXT)");
   else
-    sql ("CREATE TABLE IF NOT EXISTS results"
+    sql ("CREATE TABLE IF NOT EXISTS results_trash"
          " (id SERIAL PRIMARY KEY,"
          "  uuid text UNIQUE NOT NULL,"
          "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
