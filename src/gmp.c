@@ -16851,6 +16851,17 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  if (get_reports_data->get.trash)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_reports",
+                          "GET_REPORTS does not support getting trashcan"
+                          " reports"));
+      get_reports_data_reset (get_reports_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
   /** @todo Some checks only required when type is "scan". */
 
   /** @todo Respond in all error cases.
@@ -17893,6 +17904,17 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
     {
       get_results_data_reset (get_results_data);
       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (get_results_data->get.trash)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_results",
+                          "GET_RESULTS does not support getting trashcan"
+                          " results"));
+      get_results_data_reset (get_results_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
