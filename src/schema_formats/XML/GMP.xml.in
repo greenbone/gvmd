@@ -17722,13 +17722,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             text
           </pattern>
         </ele>
-		<ele>
-		  <name>copy</name>
-		  <summary>The UUID of an existing scanner</summary>
-		  <pattern>
-			<t>uuid</t>
-		  </pattern>
-		</ele>
+        <ele>
+          <name>copy</name>
+          <summary>The UUID of an existing scanner</summary>
+          <pattern>
+            <t>uuid</t>
+          </pattern>
+        </ele>
         <ele>
           <name>creation_time</name>
           <pattern><t>iso_time</t></pattern>
@@ -25692,11 +25692,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         Severity Class "OpenVAS Classic" (short name "classic", UUID
-		"dc1d556a-89e1-11e3-bc21-406186ea4fc5") has been removed.
+        "dc1d556a-89e1-11e3-bc21-406186ea4fc5") has been removed.
       </p>
       <p>
-	    When migrating to this version all users using the "OpenVAS Classic"
-		class will be switched to "NVD Vulnerability Severity Ratings".
+        When migrating to this version all users using the "OpenVAS Classic"
+        class will be switched to "NVD Vulnerability Severity Ratings".
       </p>
     </description>
     <version>8.0</version>
@@ -25707,7 +25707,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The task status "Internal Error" is now called "Interrupted", to
-		better fit its function.
+        better fit its function.
       </p>
     </description>
     <version>8.0</version>
