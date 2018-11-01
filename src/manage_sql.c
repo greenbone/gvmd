@@ -67992,7 +67992,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
       sql_commit ();
 
-      success_text = g_strdup_printf ("Optimized: rebuild-report-cache."
+      success_text = g_strdup_printf ("Optimized: cleanup-schedule-times."
                                       " Due date updated for %d tasks.",
                                       changes);
     }
