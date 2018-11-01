@@ -1,3 +1,4 @@
+[![Code Documentation Coverage](https://codecov.io/gh/greenbone/gvm/branch/master/graphs/badge.svg?flag=documentation)](https://codecov.io/gh/greenbone/gvm)`(Documentation Coverage)`
 [![CircleCI](https://circleci.com/gh/greenbone/gvm/tree/master.svg?style=svg)](https://circleci.com/gh/greenbone/gvm/tree/master)
 
 # About Greenbone Vulnerability Manager
