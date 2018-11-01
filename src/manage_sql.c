@@ -21354,6 +21354,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   index = 0;
   first = 1;
   insert_count = 0;
+  count = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
     {
