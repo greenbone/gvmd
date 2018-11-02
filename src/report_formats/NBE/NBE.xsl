@@ -111,18 +111,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:value-of select="substring-after('.', 'cvss_base_vector=')"/>
 </xsl:template>
 
-<xsl:template name="prognostic-description">
-  <xsl:param name="string"/>
-
-  <xsl:for-each select="str:split($string, '&#10;&#10;')">
-    <xsl:for-each select="str:split(., '&#10;')">
-      <xsl:value-of select="."/>
-      <xsl:text>\n</xsl:text>
-    </xsl:for-each>
-    <xsl:text>\n</xsl:text>
-  </xsl:for-each>
-</xsl:template>
-
 <xsl:template name="ref_cve_list">
   <xsl:param name="cvelist"/>
 
@@ -235,40 +223,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:if>
 
   <!-- Result -->
-
   <xsl:choose>
-    <xsl:when test="$report/@type = 'prognostic'">
-      <xsl:choose>
-        <xsl:when test="delta/text() = 'changed'">
-          <xsl:text>Result 1:</xsl:text>
-          <xsl:text>\n</xsl:text>
-        </xsl:when>
-      </xsl:choose>
-      <xsl:call-template name="prognostic-description">
-        <xsl:with-param name="string" select="description"/>
-      </xsl:call-template>
+    <xsl:when test="delta/text() = 'changed'">
+      <xsl:text>Result 1:</xsl:text>
       <xsl:text>\n</xsl:text>
     </xsl:when>
+  </xsl:choose>
+  <xsl:text>Vulnerability Detection Result:</xsl:text>
+  <xsl:text>\n</xsl:text>
+  <xsl:choose>
+    <xsl:when test="string-length(description) &lt; 2">
+      <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
+    </xsl:when>
     <xsl:otherwise>
-      <xsl:choose>
-        <xsl:when test="delta/text() = 'changed'">
-          <xsl:text>Result 1:</xsl:text>
-          <xsl:text>\n</xsl:text>
-        </xsl:when>
-      </xsl:choose>
-      <xsl:text>Vulnerability Detection Result:</xsl:text>
-      <xsl:text>\n</xsl:text>
-      <xsl:choose>
-        <xsl:when test="string-length(description) &lt; 2">
-          <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="str:replace (description, '&#10;', '\n')"/>
-        </xsl:otherwise>
-      </xsl:choose>
-      <xsl:text>\n</xsl:text>
+      <xsl:value-of select="str:replace (description, '&#10;', '\n')"/>
     </xsl:otherwise>
   </xsl:choose>
+  <xsl:text>\n</xsl:text>
 
   <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
     <xsl:text>Impact:</xsl:text>
@@ -319,9 +290,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>Details:</xsl:text>
   <xsl:text>\n</xsl:text>
   <xsl:choose>
-    <xsl:when test="$report/@type = 'prognostic'">
-      <xsl:value-of select="normalize-space(cve/@id)"/>
-    </xsl:when>
     <xsl:when test="nvt/@oid = 0">
       <xsl:if test="delta/text()">
         <xsl:text>\n</xsl:text>
@@ -344,15 +312,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:otherwise>
   </xsl:choose>
   <xsl:text>\n</xsl:text>
-  <xsl:choose>
-    <xsl:when test="not ($report/@type = 'prognostic')">
-      <xsl:if test="scan_nvt_version != ''">
-        <xsl:text>Version used: </xsl:text>
-        <xsl:value-of select="scan_nvt_version"/>
-        <xsl:text>\n</xsl:text>
-      </xsl:if>
-    </xsl:when>
-  </xsl:choose>
+  <xsl:if test="scan_nvt_version != ''">
+    <xsl:text>Version used: </xsl:text>
+    <xsl:value-of select="scan_nvt_version"/>
+    <xsl:text>\n</xsl:text>
+  </xsl:if>
   <xsl:text>\n</xsl:text>
 
   <xsl:if test="count (detection)">
