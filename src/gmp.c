@@ -16929,26 +16929,12 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     * it would probably take too long and/or use to much memory. */
 
   if (strcmp (get_reports_data->type, "scan")
-      && strcmp (get_reports_data->type, "assets")
-      && strcmp (get_reports_data->type, "prognostic"))
+      && strcmp (get_reports_data->type, "assets"))
     {
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_reports",
-                          "GET_REPORTS type must be scan, assets or"
-                          " prognostic"));
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-
-  if (strcmp (get_reports_data->type, "prognostic") == 0
-      && manage_scap_loaded () == 0)
-    {
-      get_reports_data_reset (get_reports_data);
-      SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("get_reports",
-                          "GET_REPORTS with type prognostic requires the"
-                          " SCAP database"));
+                          "GET_REPORTS type must be scan or assets"));
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
@@ -17150,87 +17136,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 get_reports_data->host,
                                 pos,
                                 NULL, NULL, 0, 0, NULL);
-
-      if (ret)
-        {
-          internal_error_send_to_client (error);
-          get_reports_data_reset (get_reports_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          return;
-        }
-
-      SEND_TO_CLIENT_OR_FAIL ("</report>"
-                              "</get_reports_response>");
-
-      get_reports_data_reset (get_reports_data);
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-
-  if (strcmp (get_reports_data->type, "prognostic") == 0)
-    {
-      gchar *extension, *content_type;
-      int ret, pos;
-      get_data_t * get;
-
-      /* A prognostic report. */
-
-      get = &get_reports_data->get;
-      if (get->filt_id && strcmp (get->filt_id, FILT_ID_USER_SETTING) == 0)
-        {
-          g_free (get->filt_id);
-          get->filt_id = g_strdup ("0");
-        }
-
-      if (get_reports_data->alert_id == NULL)
-        SEND_TO_CLIENT_OR_FAIL
-          ("<get_reports_response"
-          " status=\"" STATUS_OK "\""
-          " status_text=\"" STATUS_OK_TEXT "\">");
-
-      content_type = report_format_content_type (report_format);
-      extension = report_format_extension (report_format);
-
-      SENDF_TO_CLIENT_OR_FAIL
-        ("<report"
-        " type=\"prognostic\""
-        " format_id=\"%s\""
-        " extension=\"%s\""
-        " content_type=\"%s\">",
-        get_reports_data->format_id,
-        extension,
-        content_type);
-
-      g_free (extension);
-      g_free (content_type);
-
-      pos = get_reports_data->pos ? atoi (get_reports_data->pos) : 1;
-      ret = manage_send_report (0,
-                                0,
-                                report_format,
-                                &get_reports_data->get,
-                                get_reports_data->notes_details,
-                                get_reports_data->overrides_details,
-                                get_reports_data->ignore_pagination,
-                                /* Special case the XML report, bah. */
-                                strcmp
-                                  (get_reports_data->format_id,
-                                  "a994b278-1f62-11e1-96ac-406186ea4fc5")
-                                && strcmp
-                                    (get_reports_data->format_id,
-                                      "5057e5cc-b825-11e4-9d0e-28d24461215b"),
-                                send_to_client,
-                                gmp_parser->client_writer,
-                                gmp_parser->client_writer_data,
-                                get_reports_data->alert_id,
-                                "prognostic",
-                                get_reports_data->host,
-                                pos,
-                                get_reports_data->host_search_phrase,
-                                get_reports_data->host_levels,
-                                get_reports_data->host_first_result,
-                                get_reports_data->host_max_results,
-                                NULL);
 
       if (ret)
         {
