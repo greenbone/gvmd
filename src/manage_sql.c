@@ -8899,7 +8899,7 @@ email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
     }
 
   // Encrypted message
-  if (gvm_pgp_pubkey_encrypt_stream (plain_file, encrypted_file,
+  if (gvm_pgp_pubkey_encrypt_stream (plain_file, encrypted_file, to_address,
                                      public_key, -1))
     {
       return -1;
@@ -8922,6 +8922,59 @@ email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
         g_warning ("%s", strerror (errno));
         return -1;
       }
+
+  return 0;
+}
+
+/**
+ * @brief  Create a S/MIME encrypted email from a plain text one.
+ *
+ * @param[in]  plain_file     Stream to read the plain text email from.
+ * @param[in]  encrypted_file Stream to write the encrypted email to.
+ * @param[in]  to_address     Address to send to.
+ * @param[in]  from_address   Address to send to.
+ * @param[in]  subject        Subject of email.
+ */
+static int
+email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
+                     const char *certificate,
+                     const char *to_address, const char *from_address,
+                     const char *subject)
+{
+  // Headers and metadata parts
+  if (fprintf (encrypted_file,
+               "To: %s\n"
+               "From: %s\n"
+               "Subject: %s\n"
+               "Content-Type: application/x-pkcs7-mime;"
+               " smime-type=enveloped-data; name=\"smime.p7m\"\n"
+               "Content-Disposition: attachment; filename=\"smime.p7m\"\n"
+               "Content-Transfer-Encoding: base64\n"
+               "\n",
+               to_address,
+               from_address ? from_address
+                            : "automated@openvas.org",
+               subject) < 0)
+    {
+      g_warning ("%s: output error at headers", __FUNCTION__);
+      return -1;
+    }
+
+  // Encrypted message
+  if (gvm_smime_encrypt_stream (plain_file, encrypted_file, to_address,
+                                certificate, -1))
+    {
+      g_warning ("%s: encryption failed", __FUNCTION__);
+      return -1;
+    }
+
+  // End of message
+  if (fprintf (encrypted_file, 
+               "\n") < 0)
+    {
+      g_warning ("%s: output error at end of message", __FUNCTION__);
+      return -1;
+    }
 
   return 0;
 }
@@ -8981,6 +9034,8 @@ email (const char *to_address, const char *from_address, const char *subject,
         {
           const char *type = credential_iterator_type (&iterator);
           const char *public_key = credential_iterator_public_key (&iterator);
+          const char *certificate
+            = credential_iterator_certificate (&iterator);
           char plain_file_name[] = "/tmp/gvmd-plain-XXXXXX";
           int plain_fd;
           FILE *plain_file;
@@ -9047,14 +9102,21 @@ email (const char *to_address, const char *from_address, const char *subject,
             }
           else if (strcmp (type, "smime") == 0)
             {
-              g_warning ("%s: S/MIME encryption not supported yet",
-                        __FUNCTION__);
-              fclose (content_file);
-              unlink (content_file_name);
+              ret = email_encrypt_smime (plain_file, content_file,
+                                         certificate,
+                                         to_address, from_address, subject);
+
               fclose (plain_file);
               unlink (plain_file_name);
-              cleanup_iterator (&iterator);
-              return -1;
+
+              if (ret)
+                {
+                  g_warning ("%s: S/MIME encryption failed", __FUNCTION__);
+                  fclose (content_file);
+                  unlink (content_file_name);
+                  cleanup_iterator (&iterator);
+                  return -1;
+                }
             }
           else
             {
