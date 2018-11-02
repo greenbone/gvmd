@@ -8976,6 +8976,15 @@ email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
       return -1;
     }
 
+  while (fflush (encrypted_file))
+    if (errno == EINTR)
+      continue;
+    else
+      {
+        g_warning ("%s", strerror (errno));
+        return -1;
+      }
+
   return 0;
 }
 
