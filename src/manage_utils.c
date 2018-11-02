@@ -688,12 +688,13 @@ level_max_severity (const char *level, const char *class)
 
 /**
  * @brief Returns whether a host has an equal host in a hosts string.
- * eg. 192.168.10.1 has an equal in a hosts string
+ *
+ * For example, 192.168.10.1 has an equal in a hosts string
  * "192.168.10.1-5, 192.168.10.10-20" string while 192.168.10.7 doesn't.
  *
- * @param[in] host        The host object to find.
- * @param[in] hosts_str   Hosts string to check.
- * @param[in] max_hosts   Maximum number of hosts allowed in hosts_str.
+ * @param[in] hosts_str      Hosts string to check.
+ * @param[in] find_host_str  The host to find.
+ * @param[in] max_hosts      Maximum number of hosts allowed in hosts_str.
  *
  * @return 1 if host has equal in hosts_str, 0 otherwise.
  */

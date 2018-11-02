@@ -20909,9 +20909,6 @@ report_counts_build_iterator_user (iterator_t *iterator)
 /**
  * @brief Cache report counts and clear existing caches if requested.
  *
- * If queue_rebuild is true, the cache will not be rebuilt immediately, but
- *  the rebuild will be added to a queue to be handled in a separate process.
- *
  * @param[in]  report             Report to cache counts of.
  * @param[in]  clear_original     Whether to clear existing cache for
  *                                 original severity.
@@ -67992,7 +67989,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
       sql_commit ();
 
-      success_text = g_strdup_printf ("Optimized: rebuild-report-cache."
+      success_text = g_strdup_printf ("Optimized: cleanup-schedule-times."
                                       " Due date updated for %d tasks.",
                                       changes);
     }
