@@ -1556,12 +1556,10 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
   if (icaltime_compare (recur_time, reference_time) < 0)
     {
       prev_time = recur_time;
-      next_time = icaltime_null_time ();
     }
   else
     {
       prev_time = icaltime_null_time ();
-      next_time = recur_time;
     }
 
   // Iterate over rule-based recurrences up to first time after reference time
