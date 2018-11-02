@@ -127,9 +127,6 @@ int
 acl_user_is_observer (const char *);
 
 int
-acl_user_owns_name (const char *, const char *);
-
-int
 acl_user_owns (const char *, resource_t, int);
 
 int
