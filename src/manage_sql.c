@@ -338,6 +338,12 @@ task_last_report_any_status (task_t, report_t *);
 int
 task_report_previous (task_t task, report_t, report_t *);
 
+static gboolean
+find_trash_task (const char*, task_t*);
+
+static gboolean
+find_trash_report_with_permission (const char *, report_t *, const char *);
+
 
 /* Variables. */
 
@@ -4334,13 +4340,22 @@ find_resource_with_permission (const char* type, const char* uuid,
       return FALSE;
     }
   switch (sql_int64 (resource,
-                     "SELECT id FROM %ss%s WHERE uuid = '%s'%s;",
+                     "SELECT id FROM %ss%s WHERE uuid = '%s'%s%s;",
                      type,
                      (strcmp (type, "task") && trash) ? "_trash" : "",
                      quoted_uuid,
                      strcmp (type, "task")
                       ? ""
-                      : (trash ? " AND hidden = 2" : " AND hidden < 2")))
+                      : (trash ? " AND hidden = 2" : " AND hidden < 2"),
+                     strcmp (type, "report")
+                      ? ""
+                      : (trash
+                          ? " AND (SELECT hidden FROM tasks"
+                            "      WHERE tasks.id = task)"
+                            "     = 2"
+                          : " AND (SELECT hidden FROM tasks"
+                          "        WHERE tasks.id = task)"
+                          "       = 0")))
     {
       case 0:
         break;
@@ -17713,10 +17728,7 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "result") == 0)
     {
-      extra_where = " AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
-                    " AND (SELECT hidden FROM tasks"
-                    "      WHERE tasks.id = task)"
-                    "     = 0";
+      extra_where = " AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")";
     }
   else if (strcmp (type, "vuln") == 0)
     {
@@ -20760,7 +20772,16 @@ reports_build_count_cache (int clear, int* changes_out)
   iterator_t reports;
   changes = 0;
 
-  init_iterator (&reports, "SELECT id FROM reports");
+  /* Clear cache of trashcan reports, we won't count them. */
+  sql ("DELETE FROM report_counts"
+       " WHERE (SELECT hidden = 2 FROM tasks"
+       "        WHERE tasks.id = (SELECT task FROM reports"
+       "                          WHERE reports.id = report_counts.report));");
+
+  init_iterator (&reports,
+                 "SELECT id FROM reports"
+                 " WHERE (SELECT hidden = 0 FROM tasks"
+                 "        WHERE tasks.id = task);");
 
   while (next (&reports))
     {
@@ -20908,9 +20929,6 @@ report_counts_build_iterator_user (iterator_t *iterator)
 
 /**
  * @brief Cache report counts and clear existing caches if requested.
- *
- * If queue_rebuild is true, the cache will not be rebuilt immediately, but
- *  the rebuild will be added to a queue to be handled in a separate process.
  *
  * @param[in]  report             Report to cache counts of.
  * @param[in]  clear_original     Whether to clear existing cache for
@@ -21200,6 +21218,9 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     {
       int rc = 0;
 
+      /* It's important that the task is not in the trash, because we
+       * are inserting results below.  This find function will fail if
+       * the task is in the trash. */
       if (find_task_with_permission (task_id, &task, "modify_task"))
         rc = -1;
       else if (task == 0)
@@ -22562,7 +22583,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
       g_string_free (levels_sql, TRUE);
       levels_sql = g_string_new ("");
       /* It's not possible to override from or to the error severity, so no
-       * need to use the overriden severity here (new_severity_sql).  This
+       * need to use the overridden severity here (new_severity_sql).  This
        * helps with the default result counting performance because the
        * overridden severity is complex. */
       g_string_append_printf (levels_sql,
@@ -22870,18 +22891,11 @@ results_extra_where (int trash, report_t report, const gchar* host,
   g_free (levels);
   g_free (new_severity_sql);
 
-  extra_where = g_strdup_printf("%s%s%s%s%s",
+  extra_where = g_strdup_printf("%s%s%s%s",
                                 report_clause ? report_clause : "",
                                 host_clause ? host_clause : "",
                                 levels_clause->str,
-                                min_qod_clause ? min_qod_clause : "",
-                                report_clause
-                                 ? ""
-                                 : trash
-                                    ? " AND ((SELECT (hidden = 2) FROM tasks"
-                                      "       WHERE tasks.id = task))"
-                                    : " AND ((SELECT (hidden = 0) FROM tasks"
-                                      "       WHERE tasks.id = task))");
+                                min_qod_clause ? min_qod_clause : "");
 
   g_free (auto_type_sql);
   g_free (min_qod_clause);
@@ -25424,6 +25438,7 @@ delete_report_internal (report_t report)
        "         (SELECT id FROM results WHERE report = %llu);",
        report);
   sql ("DELETE FROM results WHERE report = %llu;", report);
+  sql ("DELETE FROM results_trash WHERE report = %llu;", report);
 
   sql ("DELETE FROM tag_resources"
        " WHERE resource_type = 'report'"
@@ -25578,8 +25593,16 @@ delete_report (const char *report_id, int dummy)
 
   if (report == 0)
     {
-      sql_rollback ();
-      return 2;
+      if (find_trash_report_with_permission (report_id, &report, "delete_report"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (report == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
     }
 
   ret = delete_report_internal (report);
@@ -31740,9 +31763,6 @@ request_delete_task (task_t* task_pointer)
   hidden = sql_int ("SELECT hidden from tasks WHERE id = %llu;",
                     *task_pointer);
 
-  if (hidden == 1)
-    return 2;
-
   /* Technically the task could be in the trashcan, if someone gets the UUID
    * with GET_TASKS before the CREATE_TASK finishes, and removes the task.
    * Pretend it was deleted.  There'll be half a task in the trashcan. */
@@ -31770,9 +31790,6 @@ request_delete_task (task_t* task_pointer)
 
   return 0;
 }
-
-static gboolean
-find_trash_task (const char*, task_t*);
 
 /**
  * @brief Request deletion of a task.
@@ -31957,6 +31974,7 @@ delete_task (task_t task, int ultimate)
                               ? LOCATION_TRASH
                               : LOCATION_TABLE);
 
+      sql ("DELETE FROM results_trash WHERE task = %llu;", task);
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
@@ -31992,6 +32010,25 @@ delete_task (task_t task, int ultimate)
            " WHERE resource_type = 'result'"
            " AND resource IN (SELECT id FROM results"
            "                  WHERE results.task = %llu);",
+           task);
+
+      sql ("INSERT INTO results_trash"
+           " (uuid, task, host, port, nvt, result_nvt, type, description,"
+           "  report, nvt_version, severity, qod, qod_type, owner, date,"
+           "  hostname)"
+           " SELECT uuid, task, host, port, nvt, result_nvt, type,"
+           "        description, report, nvt_version, severity, qod,"
+           "         qod_type, owner, date, hostname"
+           " FROM results"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           task);
+
+      sql ("DELETE FROM results"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           task);
+
+      sql ("DELETE FROM report_counts"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            task);
 
       sql ("UPDATE tasks SET hidden = 2 WHERE id = %llu;", task);
@@ -32247,6 +32284,23 @@ find_report_with_permission (const char* uuid, report_t* report,
                              const char *permission)
 {
   return find_resource_with_permission ("report", uuid, report, permission, 0);
+}
+
+/**
+ * @brief Find a report in the trashcan for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of report.
+ * @param[out]  report      Report return, 0 if successfully failed to find
+ *                          report.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find report), TRUE on error.
+ */
+static gboolean
+find_trash_report_with_permission (const char *uuid, report_t *report,
+                                   const char *permission)
+{
+  return find_resource_with_permission ("report", uuid, report, permission, 1);
 }
 
 /**
@@ -33595,7 +33649,7 @@ delete_target (const char *target_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE target = %llu"
                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    target))
         {
           sql_rollback ();
@@ -34981,7 +35035,7 @@ target_in_use (target_t target)
   return !!sql_int ("SELECT count(*) FROM tasks"
                     " WHERE target = %llu"
                     " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                    " AND (hidden = 0 OR hidden = 1);",
+                    " AND hidden = 0;",
                     target);
 }
 
@@ -35899,7 +35953,7 @@ delete_config (const char *config_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu"
                    " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    config))
         {
           sql_rollback ();
@@ -36361,7 +36415,7 @@ config_in_use (config_t config)
   return sql_int ("SELECT count(*) FROM tasks"
                   " WHERE config = %llu"
                   " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
-                  " AND (hidden = 0 OR hidden = 1);",
+                  " AND hidden = 0;",
                   config);
 }
 
@@ -36638,7 +36692,7 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
         }
 
       if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+                   " WHERE config = %llu AND hidden = 0;",
                    config))
         {
           sql_rollback ();
@@ -36682,7 +36736,7 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+               " WHERE config = %llu AND hidden = 0;",
                config))
     {
       sql_rollback ();
@@ -36926,7 +36980,7 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+               " WHERE config = %llu AND hidden = 0;",
                config))
     {
       sql_rollback ();
@@ -38269,7 +38323,7 @@ check_for_updated_cert ()
  * combine in id order to make a selection.  Depending on the choice
  * of selectors the selection can be static or growing.  A growing
  * selection can grow when new NVT's enter the NVT cache, either because it
- * selects new families or because it selects new NVT's within exising
+ * selects new families or because it selects new NVT's within existing
  * families.
  *
  * There are three types of selectors that an NVT selector can contain.
@@ -38988,7 +39042,7 @@ manage_set_config_families (const gchar *config_id,
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+               " WHERE config = %llu AND hidden = 0;",
                config))
     {
       sql_rollback ();
@@ -44569,7 +44623,7 @@ find_override_with_permission (const char* uuid, override_t* override,
  * @brief Create an override.
  *
  * @param[in]  active      NULL or -1 on, 0 off, n on for n days.
- * @param[in]  nvt         OID of overrided NVT.
+ * @param[in]  nvt         OID of overridden NVT.
  * @param[in]  text        Override text.
  * @param[in]  hosts       Hosts to apply override to, NULL for any host.
  * @param[in]  port        Port to apply override to, NULL for any port.
@@ -46776,7 +46830,7 @@ delete_scanner (const char *scanner_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE scanner = %llu"
                    " AND scanner_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    scanner)
           || sql_int ("SELECT count(*) FROM configs"
                       " WHERE scanner = %llu;",
@@ -48155,7 +48209,7 @@ delete_schedule (const char *schedule_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE schedule = %llu"
                    " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    schedule))
         {
           sql_rollback ();
@@ -59419,6 +59473,28 @@ manage_restore (const char *id)
            "                  WHERE results.task = %llu);",
            resource);
 
+      sql ("INSERT INTO results"
+           " (uuid, task, host, port, nvt, result_nvt, type, description,"
+           "  report, nvt_version, severity, qod, qod_type, owner, date,"
+           "  hostname)"
+           " SELECT uuid, task, host, port, nvt, result_nvt, type,"
+           "        description, report, nvt_version, severity, qod,"
+           "         qod_type, owner, date, hostname"
+           " FROM results_trash"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           resource);
+
+      sql ("DELETE FROM results_trash"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           resource);
+
+      /* For safety, in case anything recounted this report while it was in
+       * the trash (which would have resulted in the wrong counts, because
+       * the counting does not know about results_trash). */
+      sql ("DELETE FROM report_counts"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           resource);
+
       sql ("UPDATE tasks SET hidden = 0 WHERE id = %llu;", resource);
 
       cache_permissions_for_resource ("task", resource, NULL);
@@ -59663,15 +59739,15 @@ manage_empty_trashcan ()
  *
  * This pseudo-code is equivalent to the first two rows of:
  *
- * Detection                    | Asset State                                                                 |     Asset Update
- * ---------------------------- | --------------------------------------------------------------------------- | -----------------------------
- * IP address X.                | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
- * IP address X.                | Host A with Name=X.                                                         | Add ip=X to host A.
- * IP address X.                | (Host A with Name=X and ip=X) and (Host B with Name=X and ip=X).            | Add ip=X to host (Newest(A,B)).
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X.                                                | Add ip=X and hostname=Y to host A.
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y.                                 | Add ip=X and hostname=Y to host A.
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
+ * Detection                     | Asset State                                                                 |     Asset Update
+ * ----------------------------- | --------------------------------------------------------------------------- | -----------------------------
+ * IP address X.                 | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
+ * IP address X.                 | Host A with Name=X.                                                         | Add ip=X to host A.
+ * IP address X.                 | (Host A with Name=X and ip=X) and (Host B with Name=X and ip=X).            | Add ip=X to host (Newest(A,B)).
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X.                                                | Add ip=X and hostname=Y to host A.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y.                                 | Add ip=X and hostname=Y to host A.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
  *
  * Follow up action: If a MAC, OS or ssh-key was detected, then the respective
  * identifiers are added to the asset host selected during asset update.
@@ -64051,7 +64127,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM tasks WHERE owner = %llu;", user);
 
-  /* Delete resouces directly used by tasks */
+  /* Delete resources directly used by tasks */
   // Alerts
   if (user_resources_in_use (user,
                              "alerts", alert_in_use,
@@ -65143,8 +65219,6 @@ user_resources_in_use (user_t user,
      "    AND (opts.task IS NULL OR results.task = opts.task)"               \
      "    AND (opts.host IS NULL OR results.host = opts.host)"               \
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
-     "    AND (SELECT hidden = 0 FROM tasks"                                 \
-     "          WHERE tasks.id = results.task)"                              \
      "    AND (SELECT has_permission FROM permissions_get_tasks"             \
      "         WHERE \"user\" = (SELECT id FROM users"                       \
      "                           WHERE uuid ="                               \
@@ -66514,7 +66588,9 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(SELECT count(*) FROM tag_resources WHERE tag = tags.id)",             \
+   { "(SELECT count(*) FROM tag_resources"                                   \
+     " WHERE tag = tags.id"                                                  \
+     " AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ")",           \
      "resources", KEYWORD_TYPE_INTEGER },                                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
@@ -67993,7 +68069,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
       sql_commit ();
 
-      success_text = g_strdup_printf ("Optimized: rebuild-report-cache."
+      success_text = g_strdup_printf ("Optimized: cleanup-schedule-times."
                                       " Due date updated for %d tasks.",
                                       changes);
     }

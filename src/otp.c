@@ -470,7 +470,7 @@ sync_buffer ()
     {
       if (openvas_scanner_full () && openvas_scanner_realloc ())
         {
-          g_warning ("From scanner buffer treshold.");
+          g_warning ("From scanner buffer threshold.");
           return -1;
         }
     }

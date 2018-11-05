@@ -649,7 +649,7 @@ create_nsis_script (const gchar *script_name, const gchar *package_name,
   fprintf (fd, "# Unistaller should remove itself (from desktop/installdir)\n\n");
 
   fprintf (fd, "# Display message that everything seems to be fine\n");
-  fprintf (fd, "messageBox MB_OK \"A user has been removed. You can now savely remmove the uninstaller from your Desktop.\"\n\n");
+  fprintf (fd, "messageBox MB_OK \"A user has been removed. You can now safely remove the uninstaller from your Desktop.\"\n\n");
 
   fprintf (fd, "# Uninstaller section end\n");
   fprintf (fd, "sectionEnd\n\n");
