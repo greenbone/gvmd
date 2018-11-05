@@ -85,6 +85,42 @@
  */
 #define OPENVASSD_ADDRESS GVM_RUN_DIR "/openvassd.sock"
 
+#ifdef DEBUG_FUNCTION_NAMES
+#include <dlfcn.h>
+
+void __cyg_profile_func_enter (void *, void *)
+   __attribute__((no_instrument_function));
+
+void
+__cyg_profile_func_enter (void *func, void *caller)
+{
+  Dl_info info;
+
+  if (dladdr (func, &info))
+      g_debug ("TTT: enter %p %s\n",
+               (int*) func,
+               info.dli_sname ? info.dli_sname : "?");
+  else
+      g_debug ("TTT: enter %p\n", (int*) func);
+}
+
+void __cyg_profile_func_exit (void *, void *)
+   __attribute__((no_instrument_function));
+
+void
+__cyg_profile_func_exit (void *func, void *caller)
+{
+  Dl_info info;
+
+  if (dladdr (func, &info))
+      g_debug ("TTT: exit  %p %s\n",
+               (int*) func,
+               info.dli_sname ? info.dli_sname : "?");
+  else
+      g_debug ("TTT: exit  %p\n", (int*) func);
+}
+#endif
+
 
 /* Headers from backend specific manage_xxx.c file. */
 
