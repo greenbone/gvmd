@@ -1431,7 +1431,7 @@ migrate_11_to_12 ()
   /* Tables agents, configs and escalators were relieved of the UNIQUE
    * constraint on the name column.
    *
-   * Recreate the tables, in order to remove the contraint. */
+   * Recreate the tables, in order to remove the constraint. */
 
   /** @todo ROLLBACK on failure. */
 
@@ -1851,7 +1851,7 @@ migrate_18_to_19 ()
   /* Many tables got a unique UUID column.  As a result the predefined
    * configs and target got fixed UUIDs.
    *
-   * Recreate the tables, in order to add the unique contraint. */
+   * Recreate the tables, in order to add the unique constraint. */
 
   /** @todo ROLLBACK on failure. */
 
