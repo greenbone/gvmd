@@ -66587,7 +66587,9 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(SELECT count(*) FROM tag_resources WHERE tag = tags.id)",             \
+   { "(SELECT count(*) FROM tag_resources"                                   \
+     " WHERE tag = tags.id"                                                  \
+     " AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ")",           \
      "resources", KEYWORD_TYPE_INTEGER },                                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
