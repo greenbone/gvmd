@@ -269,10 +269,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:text>Details:</xsl:text>
     <xsl:call-template name="newline"/>
     <xsl:choose>
-      <xsl:when test="openvas:report()/@type = 'prognostic'">
-        <xsl:value-of select="openvas:formula_quote (normalize-space(cve/@id))"/>
-        <xsl:call-template name="newline"/>
-      </xsl:when>
       <xsl:when test="nvt/@oid = 0">
         <xsl:if test="delta/text()">
           <xsl:call-template name="newline"/>
@@ -296,15 +292,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:choose>
-      <xsl:when test="not(openvas:report()/@type = 'prognostic')">
-        <xsl:if test="scan_nvt_version != ''">
-          <xsl:text>Version used: </xsl:text>
-          <xsl:value-of select="str:replace (scan_nvt_version, $quote, $two-quotes)"/>
-          <xsl:call-template name="newline"/>
-        </xsl:if>
-      </xsl:when>
-    </xsl:choose>
+    <xsl:if test="scan_nvt_version != ''">
+      <xsl:text>Version used: </xsl:text>
+      <xsl:value-of select="str:replace (scan_nvt_version, $quote, $two-quotes)"/>
+      <xsl:call-template name="newline"/>
+    </xsl:if>
   </xsl:if>
   <xsl:text>","</xsl:text>
   <xsl:if test="count (detection)">

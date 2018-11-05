@@ -374,6 +374,12 @@ task_last_report_any_status (task_t, report_t *);
 int
 task_report_previous (task_t task, report_t, report_t *);
 
+static gboolean
+find_trash_task (const char*, task_t*);
+
+static gboolean
+find_trash_report_with_permission (const char *, report_t *, const char *);
+
 
 /* Variables. */
 
@@ -4370,13 +4376,22 @@ find_resource_with_permission (const char* type, const char* uuid,
       return FALSE;
     }
   switch (sql_int64 (resource,
-                     "SELECT id FROM %ss%s WHERE uuid = '%s'%s;",
+                     "SELECT id FROM %ss%s WHERE uuid = '%s'%s%s;",
                      type,
                      (strcmp (type, "task") && trash) ? "_trash" : "",
                      quoted_uuid,
                      strcmp (type, "task")
                       ? ""
-                      : (trash ? " AND hidden = 2" : " AND hidden < 2")))
+                      : (trash ? " AND hidden = 2" : " AND hidden < 2"),
+                     strcmp (type, "report")
+                      ? ""
+                      : (trash
+                          ? " AND (SELECT hidden FROM tasks"
+                            "      WHERE tasks.id = task)"
+                            "     = 2"
+                          : " AND (SELECT hidden FROM tasks"
+                          "        WHERE tasks.id = task)"
+                          "       = 0")))
     {
       case 0:
         break;
@@ -17749,10 +17764,7 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "result") == 0)
     {
-      extra_where = " AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
-                    " AND (SELECT hidden FROM tasks"
-                    "      WHERE tasks.id = task)"
-                    "     = 0";
+      extra_where = " AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")";
     }
   else if (strcmp (type, "vuln") == 0)
     {
@@ -20618,95 +20630,6 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
   if (order_sql) g_string_free (order_sql, TRUE);
 }
 
-/**
- * @brief Count all filtered results for a prognostic report.
- *
- * @param[in]   report_host    Report host for which to count.
- * @param[in]   search_phrase  Phrase that results must include.  All results
- * @param[out]  all            Number of messages to increment.
- * @param[out]  holes          Number of hole messages to increment.
- * @param[out]  infos          Number of info messages to increment.
- * @param[out]  warnings       Number of warning messages to increment.
- */
-static void
-prognostic_report_result_count (report_host_t report_host,
-                                const char *search_phrase,
-                                int *all, int *holes, int *infos, int *warnings)
-{
-  GString *phrase_sql;
-  int host_holes, host_warnings, host_infos;
-
-  phrase_sql = prognosis_where_search_phrase (search_phrase);
-
-  host_holes = sql_int ("SELECT count (*)"
-                        " FROM scap.cves, scap.cpes, scap.affected_products,"
-                        "      report_host_details"
-                        " WHERE report_host_details.report_host = %llu"
-                        " AND cpes.name = report_host_details.value"
-                        " AND report_host_details.name = 'App'"
-                        " AND cpes.id=affected_products.cpe"
-                        " AND cves.id=affected_products.cve"
-                        "%s%s;",
-                        report_host,
-                        phrase_sql ? phrase_sql->str : "",
-                        prognosis_where_levels ("h"));
-
-  host_warnings = sql_int ("SELECT count (*)"
-                           " FROM scap.cves, scap.cpes, scap.affected_products,"
-                           "      report_host_details"
-                           " WHERE report_host_details.report_host = %llu"
-                           " AND cpes.name = report_host_details.value"
-                           " AND report_host_details.name = 'App'"
-                           " AND cpes.id=affected_products.cpe"
-                           " AND cves.id=affected_products.cve"
-                           "%s%s;",
-                           report_host,
-                           phrase_sql ? phrase_sql->str : "",
-                           prognosis_where_levels ("m"));
-
-  host_infos = sql_int ("SELECT count (*)"
-                        " FROM scap.cves, scap.cpes, scap.affected_products,"
-                        "      report_host_details"
-                        " WHERE report_host_details.report_host = %llu"
-                        " AND cpes.name = report_host_details.value"
-                        " AND report_host_details.name = 'App'"
-                        " AND cpes.id=affected_products.cpe"
-                        " AND cves.id=affected_products.cve"
-                        "%s%s;",
-                        report_host,
-                        phrase_sql ? phrase_sql->str : "",
-                        prognosis_where_levels ("l"));
-
-  *all += host_holes + host_warnings + host_infos;
-
-  *holes += host_holes;
-  *warnings += host_warnings;
-  *infos += host_infos;
-
-  if (phrase_sql) g_string_free (phrase_sql, TRUE);
-}
-
-/**
- * @brief Count total number of results for a prognostic report.
- *
- * @param[in]   report_host    Report host for which to count.
- * @param[out]  total          Total count of all results.
- */
-static void
-prognostic_report_result_total (report_host_t report_host, int *total)
-{
-  if (total)
-    *total = sql_int ("SELECT count (*)"
-                      " FROM scap.cves, scap.cpes, scap.affected_products,"
-                      "      report_host_details"
-                      " WHERE report_host_details.report_host = %llu"
-                      " AND cpes.name = report_host_details.value"
-                      " AND report_host_details.name = 'App'"
-                      " AND cpes.id=affected_products.cpe"
-                      " AND cves.id=affected_products.cve;",
-                      report_host);
-}
-
 
 /* Reports. */
 
@@ -20885,7 +20808,16 @@ reports_build_count_cache (int clear, int* changes_out)
   iterator_t reports;
   changes = 0;
 
-  init_iterator (&reports, "SELECT id FROM reports");
+  /* Clear cache of trashcan reports, we won't count them. */
+  sql ("DELETE FROM report_counts"
+       " WHERE (SELECT hidden = 2 FROM tasks"
+       "        WHERE tasks.id = (SELECT task FROM reports"
+       "                          WHERE reports.id = report_counts.report));");
+
+  init_iterator (&reports,
+                 "SELECT id FROM reports"
+                 " WHERE (SELECT hidden = 0 FROM tasks"
+                 "        WHERE tasks.id = task);");
 
   while (next (&reports))
     {
@@ -21033,9 +20965,6 @@ report_counts_build_iterator_user (iterator_t *iterator)
 
 /**
  * @brief Cache report counts and clear existing caches if requested.
- *
- * If queue_rebuild is true, the cache will not be rebuilt immediately, but
- *  the rebuild will be added to a queue to be handled in a separate process.
  *
  * @param[in]  report             Report to cache counts of.
  * @param[in]  clear_original     Whether to clear existing cache for
@@ -21325,6 +21254,9 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     {
       int rc = 0;
 
+      /* It's important that the task is not in the trash, because we
+       * are inserting results below.  This find function will fail if
+       * the task is in the trash. */
       if (find_task_with_permission (task_id, &task, "modify_task"))
         rc = -1;
       else if (task == 0)
@@ -21479,6 +21411,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   index = 0;
   first = 1;
   insert_count = 0;
+  count = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
     {
@@ -22686,7 +22619,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
       g_string_free (levels_sql, TRUE);
       levels_sql = g_string_new ("");
       /* It's not possible to override from or to the error severity, so no
-       * need to use the overriden severity here (new_severity_sql).  This
+       * need to use the overridden severity here (new_severity_sql).  This
        * helps with the default result counting performance because the
        * overridden severity is complex. */
       g_string_append_printf (levels_sql,
@@ -22994,18 +22927,11 @@ results_extra_where (int trash, report_t report, const gchar* host,
   g_free (levels);
   g_free (new_severity_sql);
 
-  extra_where = g_strdup_printf("%s%s%s%s%s",
+  extra_where = g_strdup_printf("%s%s%s%s",
                                 report_clause ? report_clause : "",
                                 host_clause ? host_clause : "",
                                 levels_clause->str,
-                                min_qod_clause ? min_qod_clause : "",
-                                report_clause
-                                 ? ""
-                                 : trash
-                                    ? " AND ((SELECT (hidden = 2) FROM tasks"
-                                      "       WHERE tasks.id = task))"
-                                    : " AND ((SELECT (hidden = 0) FROM tasks"
-                                      "       WHERE tasks.id = task))");
+                                min_qod_clause ? min_qod_clause : "");
 
   g_free (auto_type_sql);
   g_free (min_qod_clause);
@@ -25548,6 +25474,7 @@ delete_report_internal (report_t report)
        "         (SELECT id FROM results WHERE report = %llu);",
        report);
   sql ("DELETE FROM results WHERE report = %llu;", report);
+  sql ("DELETE FROM results_trash WHERE report = %llu;", report);
 
   sql ("DELETE FROM tag_resources"
        " WHERE resource_type = 'report'"
@@ -25702,8 +25629,16 @@ delete_report (const char *report_id, int dummy)
 
   if (report == 0)
     {
-      sql_rollback ();
-      return 2;
+      if (find_trash_report_with_permission (report_id, &report, "delete_report"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (report == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
     }
 
   ret = delete_report_internal (report);
@@ -27133,44 +27068,6 @@ filtered_host_count (const char *levels, const char *search_phrase,
 }
 
 /**
- * @brief Buffer host.
- */
-struct buffer_host
-{
-  gchar *ip;                  ///< IP of host.
-  report_host_t report_host;  ///< Report host of host.
-};
-
-/**
- * @brief Buffer host type.
- */
-typedef struct buffer_host buffer_host_t;
-
-/**
- * @brief Free print_report_xml prognostic host buffer.
- *
- * @param[in]  buffer  The buffer.
- */
-static void
-free_buffer (array_t *buffer)
-{
-  guint index;
-  /* Free the buffer. */
-  index = buffer->len;
-  while (index--)
-    {
-      buffer_host_t *buffer_host;
-      buffer_host = (buffer_host_t*) g_ptr_array_index (buffer, index);
-      if (buffer_host)
-        {
-          g_free (buffer_host->ip);
-          g_free (buffer_host);
-        }
-    }
-  g_ptr_array_free (buffer, TRUE);
-}
-
-/**
  * @brief Count a report's total number of hosts.
  *
  * @return Host count.
@@ -27216,23 +27113,6 @@ report_port_count (report_t report)
                   " WHERE report = %llu AND port != ''"
                   "  AND port NOT %s 'general/%';",
                   report,
-                  sql_ilike_op ());
-}
-
-/**
- * @brief Count a prognostic report host's total number of tcp/ip ports.
- * @brief Ignores ports entries in "general/..." form.
- *
- * @return Ports count for prognostic report host.
- */
-static int
-prognostic_host_port_count (report_t report, const char *host)
-{
-  return sql_int ("SELECT count (DISTINCT port) FROM results"
-                  " WHERE report = %llu AND host = '%s'"
-                  "  AND port NOT %s 'general/%';",
-                  report,
-                  host,
                   sql_ilike_op ());
 }
 
@@ -27897,420 +27777,6 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
   }
   PRINT (out, "</ports>");
   cleanup_iterator (&results);
-
-  return 0;
-}
-
-/**
- * @brief Print the XML for a report of type assets.
- *
- * @param[in]  out              File stream to write to.
- * @param[in]  host             Host or NULL.
- * @param[in]  first_result     The result to start from. The results are 0
- *                              indexed.
- * @param[in]  max_results      The maximum number of results returned.
- * @param[in]  levels           String describing threat levels (message types)
- * @param[in]  search_phrase    Phrase that results must include.
- * @param[in]  pos              Position of report from end.
- * @param[in]  get              GET command data.
- * @param[in]  apply_overrides  Whether to apply overrides.
- * @param[in]  autofp           Whether to apply the auto FP filter.
- * @param[in]  host_search_phrase  Phrase that results must include.  All results
- *                                 if NULL or "".  For hosts.
- * @param[in]  host_levels         String describing threat levels (message types)
- *                                 to include in count (for example, "hmlgd" for
- *                                 High, Medium, Low, loG and Debug).  All levels if
- *                                 NULL.
- * @param[in]  host_first_result   The host result to start from.  The results
- *                                 are 0 indexed.
- * @param[in]  host_max_results    The host maximum number of results returned.
- * @param[in]  result_hosts_only   Whether to show only hosts with results.
- * @param[in]  sort_order          Whether to sort in ascending order.
- * @param[in]  sort_field          Name of the field to sort by.
- *
- * @return 0 on success, -1 error.
- */
-static int
-print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
-                             max_results, gchar *levels, gchar *search_phrase,
-                             int pos, const get_data_t *get,
-                             int apply_overrides, int autofp,
-                             const char *host_search_phrase,
-                             const char *host_levels, int host_first_result,
-                             int host_max_results, int result_hosts_only,
-                             int sort_order, const char *sort_field)
-{
-  array_t *buffer, *apps;
-  buffer_host_t *buffer_host;
-  int index, skip, result_total, total_host_count;
-  int holes, infos, logs, warnings;
-  int f_holes, f_infos, f_logs, f_warnings;
-  iterator_t hosts;
-  time_t now;
-  gchar *scan_start, *scan_end;
-
-  time (&now);
-
-  if (host == NULL)
-    {
-      host_levels = host_levels ? host_levels : "hmlgd";
-
-      init_classic_asset_iterator (&hosts, host_first_result, host_max_results,
-                                   host_levels, host_search_phrase,
-                                   apply_overrides);
-    }
-
-  buffer = make_array ();
-  apps = make_array ();
-  holes = warnings = infos = logs = 0;
-  f_holes = f_warnings = f_infos = f_logs = 0;
-  skip = 0;
-  total_host_count = 0;
-  result_total = 0;
-
-  /* Output the results, buffering the associated hosts. */
-
-  PRINT (out,
-         "<results start=\"%i\" max=\"%i\">",
-         /* Add 1 for 1 indexing. */
-         first_result + 1,
-         max_results);
-
-  while (host || next (&hosts))
-    {
-      iterator_t report_hosts;
-      report_host_t report_host;
-      const char *ip;
-
-      ip = host ? host : classic_asset_iterator_ip (&hosts);
-
-      if (host_nthlast_report_host (ip, &report_host, pos))
-        {
-          if (host == NULL)
-            cleanup_iterator (&hosts);
-          free_buffer (buffer);
-          array_free (apps);
-          return -1;
-        }
-
-      if (report_host)
-        {
-          int filtered, host_result_total;
-          filtered = 0;
-          host_result_total = 0;
-
-          total_host_count++;
-
-          prognostic_report_result_total (report_host, &host_result_total);
-          result_total += host_result_total;
-
-          prognostic_report_result_count (report_host, search_phrase,
-                                          &filtered, &f_holes,
-                                          &f_infos, &f_warnings);
-          filtered = (strchr (levels, 'h') ? f_holes : 0)
-                      + (strchr (levels, 'l') ? f_infos : 0)
-                      + (strchr (levels, 'g') ? f_logs : 0)
-                      + (strchr (levels, 'm') ? f_warnings : 0);
-          if (result_hosts_only && !filtered)
-            /* Skip this host. */
-            report_host = 0;
-        }
-
-      if (report_host)
-        {
-          init_report_host_iterator (&report_hosts, 0, NULL, report_host);
-          if (next (&report_hosts))
-            {
-              iterator_t prognosis;
-              int buffered;
-
-              buffered = 0;
-
-              init_host_prognosis_iterator (&prognosis, report_host,
-                                            0, -1,
-                                            levels, search_phrase,
-                                            sort_order, sort_field);
-              while (next (&prognosis))
-                {
-                  const char *threat;
-
-                  threat = severity_to_level (prognosis_iterator_cvss_double
-                                                (&prognosis), 0);
-
-                  array_add_new_string (apps,
-                                        prognosis_iterator_cpe (&prognosis));
-
-                  if (skip < first_result)
-                    {
-                      /* Skip result. */
-                      skip++;
-                      continue;
-                    }
-
-                   if (max_results == 0)
-                     continue;
-
-                   buffered = 1;
-
-                   PRINT (out,
-                          "<result>"
-                          "<host>%s</host>"
-                          "<port>0</port>"
-                          "<nvt oid=\"%s\">"
-                          "<type>cve</type>"
-                          "<name>%s</name>"
-                          "<cvss_base>%s</cvss_base>"
-                          "<cpe id='%s'/>"
-                          "</nvt>"
-                          "<threat>%s</threat>"
-                          "<description>"
-                          "The host carries the product: %s\n"
-                          "It is vulnerable according to: %s.\n"
-                          "\n"
-                          "%s"
-                          "</description>"
-                          "</result>",
-                          ip,
-                          prognosis_iterator_cve (&prognosis),
-                          prognosis_iterator_cve (&prognosis),
-                          prognosis_iterator_cvss (&prognosis),
-                          prognosis_iterator_cpe (&prognosis),
-                          threat,
-                          prognosis_iterator_cpe (&prognosis),
-                          prognosis_iterator_cve (&prognosis),
-                          prognosis_iterator_description
-                           (&prognosis));
-
-                   max_results--;
-                 }
-               if (buffered || (result_hosts_only == 0))
-                 {
-                   /* Buffer IP and report_host. */
-                   buffer_host_t *buffer_host;
-                   buffer_host = (buffer_host_t*) g_malloc (sizeof (buffer_host_t));
-                   buffer_host->report_host = report_host;
-                   buffer_host->ip = g_strdup (ip);
-                   array_add (buffer, buffer_host);
-                 }
-              cleanup_iterator (&prognosis);
-            }
-          cleanup_iterator (&report_hosts);
-        }
-
-      if (host)
-        break;
-    }
-  if (host == NULL)
-    cleanup_iterator (&hosts);
-
-  PRINT (out,
-         "</results>");
-
-  /* Output buffered hosts. */
-
-  if (host)
-    {
-      PRINT (out,
-             "<host_count>"
-             "<full>1</full>"
-             "<filtered>1</filtered>"
-             "</host_count>"
-             "<hosts start=\"1\" max=\"1\"/>");
-    }
-  else
-    {
-      PRINT (out,
-             "<host_count>"
-             "<full>%i</full>"
-             "<filtered>%i</filtered>"
-             "</host_count>",
-             host_count (),
-             buffer->len);
-      PRINT (out,
-             "<hosts start=\"%i\" max=\"%i\"/>",
-             /* Add 1 for 1 indexing. */
-             host_first_result + 1,
-             host_max_results);
-    }
-
-  scan_start = g_strdup (iso_time (&now));
-  time (&now);
-  scan_end = g_strdup (iso_time (&now));
-
-  PRINT (out,
-         "<scan_start>%s</scan_start>"
-         "<scan_end>%s</scan_end>",
-         scan_start,
-         scan_end);
-
-  array_terminate (buffer);
-  index = 0;
-  while ((buffer_host = g_ptr_array_index (buffer, index++)))
-    {
-      iterator_t report_hosts;
-      init_report_host_iterator (&report_hosts, 0, NULL, buffer_host->report_host);
-      if (next (&report_hosts))
-        {
-          report_t report;
-          int h_holes, h_infos, h_logs, h_warnings, h_false_positives;
-          double h_severity;
-
-          PRINT (out,
-                 "<host>"
-                 "<ip>%s</ip>"
-                 "<start>%s</start>"
-                 "<end>%s</end>",
-                 buffer_host->ip,
-                 host_iterator_start_time (&report_hosts),
-                 host_iterator_end_time (&report_hosts));
-
-          PRINT (out,
-                 "<detail>"
-                 "<name>report/@id</name>"
-                 "<value>%s</value>"
-                 "<source>"
-                 "<type></type>"
-                 "<name>openvasmd</name>"
-                 "<description>UUID of current report</description>"
-                 "</source>"
-                 "</detail>",
-                 host_iterator_report_uuid (&report_hosts));
-
-          PRINT (out,
-                 "<detail>"
-                 "<name>port_count</name>"
-                 "<value>%i</value>"
-                 "<source>"
-                 "<type></type>"
-                 "<name>openvasmd</name>"
-                 "<description>Ports number of current host</description>"
-                 "</source>"
-                 "</detail>",
-                 prognostic_host_port_count
-                  (host_iterator_report (&report_hosts), buffer_host->ip));
-
-          PRINT (out,
-                 "<detail>"
-                 "<name>report_count</name>"
-                 "<value>%i</value>"
-                 "<source>"
-                 "<type></type>"
-                 "<name>openvasmd</name>"
-                 "<description>Number of reports</description>"
-                 "</source>"
-                 "</detail>",
-                 host_report_count (buffer_host->ip));
-
-          report = host_iterator_report (&report_hosts);
-
-          report_counts_id (report, NULL, &h_holes, &h_infos, &h_logs,
-                            &h_warnings, &h_false_positives, &h_severity,
-                            get, buffer_host->ip);
-
-          PRINT (out,
-                 "<detail>"
-                 "<name>report/result_count/high</name>"
-                 "<value>%i</value>"
-                 "<source>"
-                 "<type></type>"
-                 "<name>openvasmd</name>"
-                 "<description>Number of highs</description>"
-                 "</source>"
-                 "</detail>",
-                 h_holes);
-
-          PRINT (out,
-                 "<detail>"
-                 "<name>report/result_count/medium</name>"
-                 "<value>%i</value>"
-                 "<source>"
-                 "<type></type>"
-                 "<name>openvasmd</name>"
-                 "<description>Number of mediums</description>"
-                 "</source>"
-                 "</detail>",
-                 h_warnings);
-
-          PRINT (out,
-                 "<detail>"
-                 "<name>report/result_count/low</name>"
-                 "<value>%i</value>"
-                 "<source>"
-                 "<type></type>"
-                 "<name>openvasmd</name>"
-                 "<description>Number of lows</description>"
-                 "</source>"
-                 "</detail>",
-                 h_infos);
-
-          if (print_report_host_details_xml
-               (buffer_host->report_host, out))
-            {
-              array_free (apps);
-              return -1;
-            }
-
-          PRINT (out,
-                 "<detail>"
-                 "<name>report/pos</name>"
-                 "<value>%i</value>"
-                 "<source>"
-                 "<type></type>"
-                 "<name>openvasmd</name>"
-                 "<description>Position of report from end</description>"
-                 "</source>"
-                 "</detail>",
-                 pos);
-
-          PRINT (out,
-                 "</host>");
-        }
-      cleanup_iterator (&report_hosts);
-    }
-
-  g_free (scan_start);
-  g_free (scan_end);
-  free_buffer (buffer);
-
-  PRINT (out,
-         "<result_count>"
-         "%i"
-         "<full>%i</full>"
-         "<filtered>%i</filtered>"
-         "<debug><full>0</full><filtered>0</filtered></debug>"
-         "<hole><full>%i</full><filtered>%i</filtered></hole>"
-         "<info><full>%i</full><filtered>%i</filtered></info>"
-         "<log><full>%i</full><filtered>%i</filtered></log>"
-         "<warning><full>%i</full><filtered>%i</filtered></warning>"
-         "<false_positive>"
-         "<full>0</full>"
-         "<filtered>0</filtered>"
-         "</false_positive>"
-         "</result_count>",
-         result_total,
-         result_total,
-         (strchr (levels, 'h') ? f_holes : 0)
-          + (strchr (levels, 'l') ? f_infos : 0)
-          + (strchr (levels, 'g') ? f_logs : 0)
-          + (strchr (levels, 'm') ? f_warnings : 0),
-         holes,
-         (strchr (levels, 'h') ? f_holes : 0),
-         infos,
-         (strchr (levels, 'l') ? f_infos : 0),
-         logs,
-         (strchr (levels, 'g') ? f_logs : 0),
-         warnings,
-         (strchr (levels, 'm') ? f_warnings : 0));
-
-  PRINT (out,
-         "<hosts><count>%i</count></hosts>",
-         total_host_count);
-
-  PRINT (out,
-         "<apps><count>%i</count></apps>",
-         apps->len);
-
-  array_free (apps);
 
   return 0;
 }
@@ -29555,8 +29021,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (type
       && strcmp (type, "scan")
-      && strcmp (type, "assets")
-      && strcmp (type, "prognostic"))
+      && strcmp (type, "assets"))
     return -1;
 
   if ((type == NULL) || (strcmp (type, "scan") == 0))
@@ -29876,14 +29341,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       g_free (escaped_host);
       g_free (escaped_delta_states);
     }
-  else if (type && (strcmp (type, "prognostic") == 0))
-    {
-      gchar *escaped_host = host ? g_markup_escape_text (host, -1) : NULL;
-      g_string_append_printf (filters_extra_buffer,
-                              "<host><ip>%s</ip></host>",
-                              escaped_host ? escaped_host : "");
-      g_free (escaped_host);
-    }
 
   filters_buffer = g_string_new ("");
   buffer_get_filter_xml (filters_buffer, "result", get, clean,
@@ -30140,44 +29597,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      ignore_pagination ? -1 : max_results,
                                      levels, search_phrase, pos,
                                      get, apply_overrides, autofp);
-      g_free (sort_field);
-      g_free (levels);
-      g_free (search_phrase);
-      g_free (min_qod);
-      g_free (delta_states);
-
-      tz_revert (zone, tz, old_tz_override);
-
-      if (ret)
-        return ret;
-
-      if (fclose (out))
-        {
-          g_warning ("%s: fclose failed: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          return -1;
-        }
-
-      return 0;
-    }
-
-  if (type && (strcmp (type, "prognostic") == 0))
-    {
-      int ret;
-
-      g_free (term);
-
-      ret = print_report_prognostic_xml (out, host,
-                                         ignore_pagination ? 1 : first_result,
-                                         ignore_pagination ? -1 : max_results,
-                                         levels, search_phrase, pos, get,
-                                         apply_overrides, autofp,
-                                         host_search_phrase, host_levels,
-                                         host_first_result, host_max_results,
-                                         result_hosts_only,
-                                         sort_order, sort_field);
-
       g_free (sort_field);
       g_free (levels);
       g_free (search_phrase);
@@ -31554,8 +30973,6 @@ manage_send_report (report_t report, report_t delta_report,
 
   if (type && (strcmp (type, "assets") == 0))
     task = 0;
-  else if (type && (strcmp (type, "prognostic") == 0))
-    task = 0;
   else if (type && (strcmp (type, "scan")))
     return -1;
   else if (report_task (report, &task))
@@ -32382,9 +31799,6 @@ request_delete_task (task_t* task_pointer)
   hidden = sql_int ("SELECT hidden from tasks WHERE id = %llu;",
                     *task_pointer);
 
-  if (hidden == 1)
-    return 2;
-
   /* Technically the task could be in the trashcan, if someone gets the UUID
    * with GET_TASKS before the CREATE_TASK finishes, and removes the task.
    * Pretend it was deleted.  There'll be half a task in the trashcan. */
@@ -32412,9 +31826,6 @@ request_delete_task (task_t* task_pointer)
 
   return 0;
 }
-
-static gboolean
-find_trash_task (const char*, task_t*);
 
 /**
  * @brief Request deletion of a task.
@@ -32599,6 +32010,7 @@ delete_task (task_t task, int ultimate)
                               ? LOCATION_TRASH
                               : LOCATION_TABLE);
 
+      sql ("DELETE FROM results_trash WHERE task = %llu;", task);
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
@@ -32634,6 +32046,25 @@ delete_task (task_t task, int ultimate)
            " WHERE resource_type = 'result'"
            " AND resource IN (SELECT id FROM results"
            "                  WHERE results.task = %llu);",
+           task);
+
+      sql ("INSERT INTO results_trash"
+           " (uuid, task, host, port, nvt, result_nvt, type, description,"
+           "  report, nvt_version, severity, qod, qod_type, owner, date,"
+           "  hostname)"
+           " SELECT uuid, task, host, port, nvt, result_nvt, type,"
+           "        description, report, nvt_version, severity, qod,"
+           "         qod_type, owner, date, hostname"
+           " FROM results"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           task);
+
+      sql ("DELETE FROM results"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           task);
+
+      sql ("DELETE FROM report_counts"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            task);
 
       sql ("UPDATE tasks SET hidden = 2 WHERE id = %llu;", task);
@@ -32889,6 +32320,23 @@ find_report_with_permission (const char* uuid, report_t* report,
                              const char *permission)
 {
   return find_resource_with_permission ("report", uuid, report, permission, 0);
+}
+
+/**
+ * @brief Find a report in the trashcan for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of report.
+ * @param[out]  report      Report return, 0 if successfully failed to find
+ *                          report.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find report), TRUE on error.
+ */
+static gboolean
+find_trash_report_with_permission (const char *uuid, report_t *report,
+                                   const char *permission)
+{
+  return find_resource_with_permission ("report", uuid, report, permission, 1);
 }
 
 /**
@@ -34237,7 +33685,7 @@ delete_target (const char *target_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE target = %llu"
                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    target))
         {
           sql_rollback ();
@@ -35623,7 +35071,7 @@ target_in_use (target_t target)
   return !!sql_int ("SELECT count(*) FROM tasks"
                     " WHERE target = %llu"
                     " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                    " AND (hidden = 0 OR hidden = 1);",
+                    " AND hidden = 0;",
                     target);
 }
 
@@ -36541,7 +35989,7 @@ delete_config (const char *config_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu"
                    " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    config))
         {
           sql_rollback ();
@@ -37003,7 +36451,7 @@ config_in_use (config_t config)
   return sql_int ("SELECT count(*) FROM tasks"
                   " WHERE config = %llu"
                   " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
-                  " AND (hidden = 0 OR hidden = 1);",
+                  " AND hidden = 0;",
                   config);
 }
 
@@ -37280,7 +36728,7 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
         }
 
       if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+                   " WHERE config = %llu AND hidden = 0;",
                    config))
         {
           sql_rollback ();
@@ -37324,7 +36772,7 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+               " WHERE config = %llu AND hidden = 0;",
                config))
     {
       sql_rollback ();
@@ -37568,7 +37016,7 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+               " WHERE config = %llu AND hidden = 0;",
                config))
     {
       sql_rollback ();
@@ -38911,7 +38359,7 @@ check_for_updated_cert ()
  * combine in id order to make a selection.  Depending on the choice
  * of selectors the selection can be static or growing.  A growing
  * selection can grow when new NVT's enter the NVT cache, either because it
- * selects new families or because it selects new NVT's within exising
+ * selects new families or because it selects new NVT's within existing
  * families.
  *
  * There are three types of selectors that an NVT selector can contain.
@@ -39630,7 +39078,7 @@ manage_set_config_families (const gchar *config_id,
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
+               " WHERE config = %llu AND hidden = 0;",
                config))
     {
       sql_rollback ();
@@ -45211,7 +44659,7 @@ find_override_with_permission (const char* uuid, override_t* override,
  * @brief Create an override.
  *
  * @param[in]  active      NULL or -1 on, 0 off, n on for n days.
- * @param[in]  nvt         OID of overrided NVT.
+ * @param[in]  nvt         OID of overridden NVT.
  * @param[in]  text        Override text.
  * @param[in]  hosts       Hosts to apply override to, NULL for any host.
  * @param[in]  port        Port to apply override to, NULL for any port.
@@ -47418,7 +46866,7 @@ delete_scanner (const char *scanner_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE scanner = %llu"
                    " AND scanner_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    scanner)
           || sql_int ("SELECT count(*) FROM configs"
                       " WHERE scanner = %llu;",
@@ -48797,7 +48245,7 @@ delete_schedule (const char *schedule_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE schedule = %llu"
                    " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (hidden = 0 OR hidden = 1);",
+                   " AND hidden = 0;",
                    schedule))
         {
           sql_rollback ();
@@ -60061,6 +59509,28 @@ manage_restore (const char *id)
            "                  WHERE results.task = %llu);",
            resource);
 
+      sql ("INSERT INTO results"
+           " (uuid, task, host, port, nvt, result_nvt, type, description,"
+           "  report, nvt_version, severity, qod, qod_type, owner, date,"
+           "  hostname)"
+           " SELECT uuid, task, host, port, nvt, result_nvt, type,"
+           "        description, report, nvt_version, severity, qod,"
+           "         qod_type, owner, date, hostname"
+           " FROM results_trash"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           resource);
+
+      sql ("DELETE FROM results_trash"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           resource);
+
+      /* For safety, in case anything recounted this report while it was in
+       * the trash (which would have resulted in the wrong counts, because
+       * the counting does not know about results_trash). */
+      sql ("DELETE FROM report_counts"
+           " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
+           resource);
+
       sql ("UPDATE tasks SET hidden = 0 WHERE id = %llu;", resource);
 
       cache_permissions_for_resource ("task", resource, NULL);
@@ -60305,15 +59775,15 @@ manage_empty_trashcan ()
  *
  * This pseudo-code is equivalent to the first two rows of:
  *
- * Detection                    | Asset State                                                                 |     Asset Update
- * ---------------------------- | --------------------------------------------------------------------------- | -----------------------------
- * IP address X.                | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
- * IP address X.                | Host A with Name=X.                                                         | Add ip=X to host A.
- * IP address X.                | (Host A with Name=X and ip=X) and (Host B with Name=X and ip=X).            | Add ip=X to host (Newest(A,B)).
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X.                                                | Add ip=X and hostname=Y to host A.
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y.                                 | Add ip=X and hostname=Y to host A.
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
+ * Detection                     | Asset State                                                                 |     Asset Update
+ * ----------------------------- | --------------------------------------------------------------------------- | -----------------------------
+ * IP address X.                 | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
+ * IP address X.                 | Host A with Name=X.                                                         | Add ip=X to host A.
+ * IP address X.                 | (Host A with Name=X and ip=X) and (Host B with Name=X and ip=X).            | Add ip=X to host (Newest(A,B)).
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X.                                                | Add ip=X and hostname=Y to host A.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y.                                 | Add ip=X and hostname=Y to host A.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
  *
  * Follow up action: If a MAC, OS or ssh-key was detected, then the respective
  * identifiers are added to the asset host selected during asset update.
@@ -64560,6 +64030,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE permissions_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
+      sql ("UPDATE scanners SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE scanners_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
       sql ("UPDATE schedules SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE schedules_trash SET owner = %llu WHERE owner = %llu;",
@@ -64689,7 +64163,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM tasks WHERE owner = %llu;", user);
 
-  /* Delete resouces directly used by tasks */
+  /* Delete resources directly used by tasks */
   // Alerts
   if (user_resources_in_use (user,
                              "alerts", alert_in_use,
@@ -65781,8 +65255,6 @@ user_resources_in_use (user_t user,
      "    AND (opts.task IS NULL OR results.task = opts.task)"               \
      "    AND (opts.host IS NULL OR results.host = opts.host)"               \
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
-     "    AND (SELECT hidden = 0 FROM tasks"                                 \
-     "          WHERE tasks.id = results.task)"                              \
      "    AND (SELECT has_permission FROM permissions_get_tasks"             \
      "         WHERE \"user\" = (SELECT id FROM users"                       \
      "                           WHERE uuid ="                               \
@@ -67152,7 +66624,9 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(SELECT count(*) FROM tag_resources WHERE tag = tags.id)",             \
+   { "(SELECT count(*) FROM tag_resources"                                   \
+     " WHERE tag = tags.id"                                                  \
+     " AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ")",           \
      "resources", KEYWORD_TYPE_INTEGER },                                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
@@ -68631,7 +68105,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
       sql_commit ();
 
-      success_text = g_strdup_printf ("Optimized: rebuild-report-cache."
+      success_text = g_strdup_printf ("Optimized: cleanup-schedule-times."
                                       " Due date updated for %d tasks.",
                                       changes);
     }
