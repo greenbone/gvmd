@@ -1121,7 +1121,7 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
  *
  * @param[in]  get  GET params.
  *
- * @return Total number of SecInfo entires in filtered set.
+ * @return Total number of SecInfo entries in filtered set.
  */
 int
 all_info_count (const get_data_t *get)
@@ -1135,7 +1135,7 @@ all_info_count (const get_data_t *get)
  * @param[in]   get  GET params.
  * @param[in]   filtered Whether to count entries in filtered set only.
  *
- * @return Total number of SecInfo entires.
+ * @return Total number of SecInfo entries.
  */
 int
 total_info_count (const get_data_t *get, int filtered)
