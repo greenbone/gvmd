@@ -87,6 +87,42 @@
  */
 #define OPENVASSD_ADDRESS GVM_RUN_DIR "/openvassd.sock"
 
+#ifdef DEBUG_FUNCTION_NAMES
+#include <dlfcn.h>
+
+void __cyg_profile_func_enter (void *, void *)
+   __attribute__((no_instrument_function));
+
+void
+__cyg_profile_func_enter (void *func, void *caller)
+{
+  Dl_info info;
+
+  if (dladdr (func, &info))
+      g_debug ("TTT: enter %p %s\n",
+               (int*) func,
+               info.dli_sname ? info.dli_sname : "?");
+  else
+      g_debug ("TTT: enter %p\n", (int*) func);
+}
+
+void __cyg_profile_func_exit (void *, void *)
+   __attribute__((no_instrument_function));
+
+void
+__cyg_profile_func_exit (void *func, void *caller)
+{
+  Dl_info info;
+
+  if (dladdr (func, &info))
+      g_debug ("TTT: exit  %p %s\n",
+               (int*) func,
+               info.dli_sname ? info.dli_sname : "?");
+  else
+      g_debug ("TTT: exit  %p\n", (int*) func);
+}
+#endif
+
 
 /* Headers from backend specific manage_xxx.c file. */
 
@@ -21682,6 +21718,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   index = 0;
   first = 1;
   insert_count = 0;
+  count = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
     {
@@ -66957,7 +66994,9 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(SELECT count(*) FROM tag_resources WHERE tag = tags.id)",             \
+   { "(SELECT count(*) FROM tag_resources"                                   \
+     " WHERE tag = tags.id"                                                  \
+     " AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ")",           \
      "resources", KEYWORD_TYPE_INTEGER },                                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }

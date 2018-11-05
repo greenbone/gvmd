@@ -16141,7 +16141,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>trust</name>
             <type>boolean</type>
-            <summary>Whether the the report format is trusted</summary>
+            <summary>Whether the report format is trusted</summary>
           </column>
           <column>
             <name>trust_time</name>
@@ -16151,7 +16151,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>active</name>
             <type>boolean</type>
-            <summary>Whether the the report format is active</summary>
+            <summary>Whether the report format is active</summary>
           </column>
         </filter_keywords>
       </attrib>

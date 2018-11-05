@@ -48,6 +48,7 @@ if (NOT BACKEND STREQUAL POSTGRESQL)
 endif (NOT BACKEND STREQUAL POSTGRESQL)
 
 OPTION (ENABLE_COVERAGE "Enable support for coverage analysis" OFF)
+OPTION (DEBUG_FUNCTION_NAMES "Print function names on entry and exit" OFF)
 
 ## Retrieve git revision (at configure time)
 include (GetGit)
@@ -258,12 +259,19 @@ if (ENABLE_COVERAGE)
   set (COVERAGE_FLAGS "--coverage")
 endif (ENABLE_COVERAGE)
 
+if (DEBUG_FUNCTION_NAMES)
+  # The excluded funtions are for update_nvti_cache, which fills the log
+  # quickly.  Hopefully this internal NVTi cache is removed soon.
+  set (DEBUG_FUNCTION_NAMES_FLAGS "-finstrument-functions -finstrument-functions-exclude-function-list=iterator_string,sql_column_text,next,sql_exec_internal")
+  set (LINKER_DEBUG_FLAGS "${CMAKE_DL_LIBS}")
+endif (DEBUG_FUNCTION_NAMES)
+
 set (HARDENING_FLAGS            "-Wformat -Wformat-security -D_FORTIFY_SOURCE=2 -fstack-protector")
 set (LINKER_HARDENING_FLAGS     "-Wl,-z,relro -Wl,-z,now")
 
 set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64")
 
-set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Werror ${COVERAGE_FLAGS}")
+set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Werror ${COVERAGE_FLAGS} ${DEBUG_FUNCTION_NAMES_FLAGS}")
 set (CMAKE_C_FLAGS_RELEASE      "${CMAKE_C_FLAGS_RELEASE} ${HARDENING_FLAGS}")
 
 if (NOT SKIP_SRC)
