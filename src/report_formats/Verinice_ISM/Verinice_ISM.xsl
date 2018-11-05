@@ -522,7 +522,7 @@ CIS</value>
           </value>
       </syncAttribute>
       <syncAttribute>
-          <!-- Everything we can scan is pyhsical -->
+          <!-- Everything we can scan is physical -->
           <name>gsm_ism_asset_type</name>
           <value>asset_type_phys</value>
       </syncAttribute>
@@ -719,7 +719,7 @@ CIS</value>
 
   <xsl:template name="control_details">
     <xsl:param name="task_id"/>
-    <!-- Filter out lines starting with + and create a comma seperated list of them-->
+    <!-- Filter out lines starting with + and create a comma separated list of them-->
     <xsl:variable name="description">
       <xsl:for-each select="str:split(text, '&#10;')">
         <xsl:if test="substring(.,0,2) != '+'">
