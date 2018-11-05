@@ -13512,7 +13512,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>cve_id</name>
-          <summary>IDs of the CVEs the NVT adresses</summary>
+          <summary>IDs of the CVEs the NVT addresses</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -25624,7 +25624,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The SYNC_FEED, SYNC_SCAP and SYNC_CERT commands have been removed, as
         they are no longer used by GSA, and they have been (or will be)
-        superceded by automatic feed updating.
+        superseded by automatic feed updating.
       </p>
     </description>
     <version>8.0</version>
@@ -25664,7 +25664,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The element CATEGORY was using a string represantation of a integer eumeration.
-        Now the original integer represenation is used.
+        Now the original integer representation is used.
       </p>
     </description>
     <version>8.0</version>

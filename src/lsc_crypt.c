@@ -575,7 +575,7 @@ lsc_crypt_flush (lsc_crypt_ctx_t ctx)
  * @param[in] ctx        The context
  * @param[in] first_name The name of the first name/value pair.  This
  *                       must be followed by a string value and
- *                       optionaly followed by more name and value
+ *                       optionally followed by more name and value
  *                       pairs.  This list is terminated by a single
  *                       NULL instead of a name.
  *

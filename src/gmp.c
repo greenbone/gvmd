@@ -985,7 +985,7 @@ create_config_data_reset (create_config_data_t *data)
  * @brief Command data for the create_alert command.
  *
  * The pointers in the *_data arrays point to memory that contains two
- * strings concatentated, with a single \\0 between them.  The first string
+ * strings concatenated, with a single \\0 between them.  The first string
  * is the name of the extra data (for example "To Address"), the second is
  * the value the the data (for example "alice@example.org").
  */

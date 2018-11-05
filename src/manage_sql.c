@@ -22582,7 +22582,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
       g_string_free (levels_sql, TRUE);
       levels_sql = g_string_new ("");
       /* It's not possible to override from or to the error severity, so no
-       * need to use the overriden severity here (new_severity_sql).  This
+       * need to use the overridden severity here (new_severity_sql).  This
        * helps with the default result counting performance because the
        * overridden severity is complex. */
       g_string_append_printf (levels_sql,
@@ -38322,7 +38322,7 @@ check_for_updated_cert ()
  * combine in id order to make a selection.  Depending on the choice
  * of selectors the selection can be static or growing.  A growing
  * selection can grow when new NVT's enter the NVT cache, either because it
- * selects new families or because it selects new NVT's within exising
+ * selects new families or because it selects new NVT's within existing
  * families.
  *
  * There are three types of selectors that an NVT selector can contain.
@@ -44622,7 +44622,7 @@ find_override_with_permission (const char* uuid, override_t* override,
  * @brief Create an override.
  *
  * @param[in]  active      NULL or -1 on, 0 off, n on for n days.
- * @param[in]  nvt         OID of overrided NVT.
+ * @param[in]  nvt         OID of overridden NVT.
  * @param[in]  text        Override text.
  * @param[in]  hosts       Hosts to apply override to, NULL for any host.
  * @param[in]  port        Port to apply override to, NULL for any port.
@@ -59738,15 +59738,15 @@ manage_empty_trashcan ()
  *
  * This pseudo-code is equivalent to the first two rows of:
  *
- * Detection                    | Asset State                                                                 |     Asset Update
- * ---------------------------- | --------------------------------------------------------------------------- | -----------------------------
- * IP address X.                | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
- * IP address X.                | Host A with Name=X.                                                         | Add ip=X to host A.
- * IP address X.                | (Host A with Name=X and ip=X) and (Host B with Name=X and ip=X).            | Add ip=X to host (Newest(A,B)).
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X.                                                | Add ip=X and hostname=Y to host A.
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y.                                 | Add ip=X and hostname=Y to host A.
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
- * IP addess X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
+ * Detection                     | Asset State                                                                 |     Asset Update
+ * ----------------------------- | --------------------------------------------------------------------------- | -----------------------------
+ * IP address X.                 | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
+ * IP address X.                 | Host A with Name=X.                                                         | Add ip=X to host A.
+ * IP address X.                 | (Host A with Name=X and ip=X) and (Host B with Name=X and ip=X).            | Add ip=X to host (Newest(A,B)).
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X.                                                | Add ip=X and hostname=Y to host A.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y.                                 | Add ip=X and hostname=Y to host A.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
  *
  * Follow up action: If a MAC, OS or ssh-key was detected, then the respective
  * identifiers are added to the asset host selected during asset update.
@@ -64126,7 +64126,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM tasks WHERE owner = %llu;", user);
 
-  /* Delete resouces directly used by tasks */
+  /* Delete resources directly used by tasks */
   // Alerts
   if (user_resources_in_use (user,
                              "alerts", alert_in_use,
