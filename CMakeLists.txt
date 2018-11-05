@@ -260,7 +260,7 @@ if (ENABLE_COVERAGE)
 endif (ENABLE_COVERAGE)
 
 if (DEBUG_FUNCTION_NAMES)
-  # The excluded funtions are for update_nvti_cache, which fills the log
+  # The excluded functions are for update_nvti_cache, which fills the log
   # quickly.  Hopefully this internal NVTi cache is removed soon.
   set (DEBUG_FUNCTION_NAMES_FLAGS "-finstrument-functions -finstrument-functions-exclude-function-list=iterator_string,sql_column_text,next,sql_exec_internal")
   set (LINKER_DEBUG_FLAGS "${CMAKE_DL_LIBS}")
