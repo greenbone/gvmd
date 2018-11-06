@@ -3579,7 +3579,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
 /**
  * @brief Write start time to sync lock file.
  */
-void
+static void
 write_sync_start (int lockfile)
 {
   time_t now;
@@ -3730,7 +3730,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
  *
  * @return Timestamp from feed.  0 if missing.  -1 on error.
  */
-int
+static int
 manage_feed_timestamp (const gchar *name)
 {
   GError *error;

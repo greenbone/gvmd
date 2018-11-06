@@ -428,7 +428,7 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
  *
  * @return SELECT columns
  */
-gchar *
+static gchar *
 nvt_iterator_columns ()
 {
   static column_t select_columns[] = NVT_ITERATOR_COLUMNS;
@@ -443,7 +443,7 @@ nvt_iterator_columns ()
  *
  * @return SELECT columns
  */
-gchar *
+static gchar *
 nvt_iterator_columns_nvts ()
 {
   static column_t select_columns[] = NVT_ITERATOR_COLUMNS_NVTS;
@@ -479,7 +479,7 @@ nvt_info_count (const get_data_t *get)
  *
  * @return Freshly allocated SELECT statement on success, or NULL on error.
  */
-gchar *
+static gchar *
 select_config_nvts (const config_t config, const char* family, int ascending,
                     const char* sort_field)
 {
