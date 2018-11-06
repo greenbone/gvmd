@@ -4411,17 +4411,6 @@ manage_sync_scap (sigset_t *sigmask_current)
 }
 
 /**
- * @brief Get the current SecInfo update commit size.
- *
- * @return The SecInfo update commit size.
- */
-int
-get_secinfo_commit_size ()
-{
-  return secinfo_commit_size;
-}
-
-/**
  * @brief Set the SecInfo update commit size.
  *
  * @param new_commit_size The new SecInfo update commit size.

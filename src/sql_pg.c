@@ -699,21 +699,6 @@ iterator_null (iterator_t* iterator, int col)
   return PQgetisnull (iterator->stmt->result, 0, col);
 }
 
-/**
- * @brief Get number of columns from an iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Number of columns.
- */
-int
-iterator_column_count (iterator_t* iterator)
-{
-  if (iterator->done) abort ();
-  assert (iterator->stmt->result);
-  return PQnfields (iterator->stmt->result);
-}
-
 
 /* Prepared statements. */
 
