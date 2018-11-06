@@ -675,7 +675,7 @@ message_type_threat (const char *type)
  *
  * @return 1 if in level, else 0.
  */
-static int
+int
 severity_in_level (double severity, const char *level)
 {
   const char *class;

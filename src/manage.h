@@ -819,9 +819,15 @@ set_task_schedule_periods_id (task_t, int);
 unsigned int
 task_report_count (task_t);
 
+int
+task_last_report (task_t, report_t*);
+
 const char *
 task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
                             double);
+
+const char *
+task_trend (task_t, int, int);
 
 int
 task_schedule_periods (task_t);
@@ -843,6 +849,9 @@ task_schedule_next_time_uuid (const gchar *);
 
 int
 task_schedule_next_time (task_t);
+
+char *
+task_severity (task_t, int, int, int);
 
 int
 task_debugs_size (task_t);
@@ -961,6 +970,9 @@ config_task_iterator_readable (iterator_t*);
 
 
 /* General severity related facilities. */
+
+int
+severity_in_level (double, const char *);
 
 int
 severity_matches_ov (double, double);
@@ -1101,6 +1113,12 @@ void
 init_report_counts_build_iterator (iterator_t *, report_t, int, int,
                                    const char*);
 
+double
+report_severity (report_t, int, int);
+
+int
+report_host_count (report_t);
+
 int
 report_result_host_count (report_t, int);
 
@@ -1233,6 +1251,10 @@ report_scan_result_count (report_t, const char*, const char*, int, const char*,
 int
 report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
                int, int, int);
+
+int
+report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
+                  const get_data_t*, const char*);
 
 int
 report_counts_id_no_filt (report_t, int*, int*, int*, int*, int*, int*,
@@ -1633,6 +1655,18 @@ target_task_iterator_readable (iterator_t*);
 
 credential_t
 target_credential (target_t, const char*);
+
+credential_t
+trash_target_credential (target_t, const char*);
+
+int
+trash_target_credential_location (target_t, const char*);
+
+int
+target_login_port (target_t, const char*);
+
+int
+trash_target_login_port (target_t, const char*);
 
 
 /* Configs. */

@@ -257,7 +257,7 @@ validate_param_value (report_format_t, report_format_param_t param, const char *
 int
 delete_task_lock (task_t, int);
 
-static gchar*
+gchar*
 clean_hosts (const char *, int*);
 
 int
@@ -417,13 +417,6 @@ static void
 report_cache_counts (report_t, int, int, const char*);
 
 static int
-report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
-                  const get_data_t*, const char*);
-
-static double
-report_severity (report_t, int, int);
-
-static int
 report_host_dead (report_host_t);
 
 static int
@@ -489,9 +482,6 @@ set_report_format_active (report_format_t, int);
 
 static int
 set_report_format_param (report_format_t, const char *, const char *);
-
-static int
-task_last_report (task_t, report_t*);
 
 static double
 task_severity_double (task_t, int, int, int);
@@ -4888,7 +4878,7 @@ resource_exists (const char *type, resource_t resource, int location)
  *
  * @return 0 success, 1 error in type.
  */
-static int
+int
 resource_name (const char *type, const char *uuid, int location, char **name)
 {
   if (valid_db_resource_type (type) == 0)
@@ -18644,7 +18634,7 @@ task_report_previous (task_t task, report_t report, report_t *previous)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 task_last_report (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
@@ -25305,7 +25295,7 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
  *
  * @return 0 on success, -1 on error.
  */
-static int
+int
 report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                   int* logs, int* warnings, int* false_positives,
                   double* severity, const get_data_t *get, const char *host)
@@ -25326,7 +25316,7 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
  *
  * @return Severity score of the report.
  */
-static double
+double
 report_severity (report_t report, int overrides, int min_qod)
 {
   double severity;
@@ -27055,7 +27045,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
  *
  * @return Host count.
  */
-static int
+int
 report_host_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
@@ -32817,7 +32807,7 @@ trim_hosts (gchar *string)
  *
  * @return Freshly allocated new hosts string, or NULL on error.
  */
-static gchar*
+gchar*
 clean_hosts (const char *given_hosts, int *max)
 {
   array_t *clean_array;
@@ -33211,7 +33201,7 @@ trash_target_credential_location (target_t target, const char* type)
  * @return  0 on success, -1 on error, 1 credential not found, 99 permission
  *          denied.
  */
-static int
+int
 target_login_port (target_t target, const char* type)
 {
   gchar *quoted_type;

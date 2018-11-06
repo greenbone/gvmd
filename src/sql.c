@@ -154,7 +154,7 @@ sql_insert (const char *string)
  *
  * @return 0 success, 1 gave up (even when retry given), -1 error.
  */
-static int
+int
 sqlv (int retry, char* sql, va_list args)
 {
   while (1)
