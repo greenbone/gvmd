@@ -789,16 +789,6 @@ init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
 DEF_ACCESS (nvt_iterator_oid, GET_ITERATOR_COLUMN_COUNT);
 
 /**
- * @brief Get the version from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Version, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_version, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
  * @brief Get the name from an NVT iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -913,16 +903,6 @@ DEF_ACCESS (nvt_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 13);
  *         cleanup_iterator.
  */
 DEF_ACCESS (nvt_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 14);
-
-/**
- * @brief Get the solution_type from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Solution type, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 15);
 
 /**
  * @brief Get the default timeout of an NVT.

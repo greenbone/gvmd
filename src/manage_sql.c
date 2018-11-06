@@ -1222,28 +1222,6 @@ manage_option_cleanup ()
 }
 
 /**
- * @brief Print an array of columns.
- *
- * @param[in]  columns  Columns.
- */
-void
-column_array_print (column_t *columns)
-{
-  g_debug ("%s: %p", __FUNCTION__, columns);
-  g_debug ("%s: {", __FUNCTION__);
-  while (columns->select)
-    {
-      g_debug ("%s:   { \"%s\", \"%s\", %i }",
-               __FUNCTION__,
-               columns->select,
-               columns->filter ? columns->filter : "NULL",
-               columns->type);
-      columns++;
-    }
-  g_debug ("%s: }", __FUNCTION__);
-}
-
-/**
  * @brief Copy an array of columns.
  *
  * @param[in]  columns  Columns.
@@ -6429,79 +6407,6 @@ manage_decrypt_all_credentials (GSList *log_config, const gchar *database)
 
 
 /* Collation. */
-
-/**
- * @brief Collate two message type strings.
- *
- * A lower threat is considered less than a higher threat, so Medium is
- * less than High.
- *
- * @param[in]  data     Dummy for callback.
- * @param[in]  one_len  Length of first string.
- * @param[in]  arg_one  First string.
- * @param[in]  two_len  Length of second string.
- * @param[in]  arg_two  Second string.
- *
- * @return -1, 0 or 1 if first is less than, equal to or greater than second.
- */
-int
-collate_message_type (void* data,
-                      int one_len, const void* arg_one,
-                      int two_len, const void* arg_two)
-{
-  const char* one = (const char*) arg_one;
-  const char* two = (const char*) arg_two;
-
-  if (strncmp (one, "Security Hole", one_len) == 0)
-    {
-      if (strncmp (two, "Security Hole", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Security Hole", two_len) == 0) return -1;
-
-  if (strncmp (one, "Security Warning", one_len) == 0)
-    {
-      if (strncmp (two, "Security Warning", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Security Warning", two_len) == 0) return -1;
-
-  if (strncmp (one, "Security Note", one_len) == 0)
-    {
-      if (strncmp (two, "Security Note", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Security Note", two_len) == 0) return -1;
-
-  if (strncmp (one, "Log Message", one_len) == 0)
-    {
-      if (strncmp (two, "Log Message", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Log Message", two_len) == 0) return -1;
-
-  if (strncmp (one, "Debug Message", one_len) == 0)
-    {
-      if (strncmp (two, "Debug Message", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Debug Message", two_len) == 0) return -1;
-
-  if (strncmp (one, "Error Message", one_len) == 0)
-    {
-      if (strncmp (two, "Error Message", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Error Message", two_len) == 0) return -1;
-
-  return strncmp (one, two, MIN (one_len, two_len));
-}
 
 /**
  * @brief Compare two number strings for collate_ip.
@@ -17788,53 +17693,6 @@ resource_count (const char *type, const get_data_t *get)
 }
 
 /**
- * @brief Test whether a resource of the given type and unique ID exists.
- *
- * @param[in]  type  Type.
- * @param[in]  id    Unique ID.
- *
- * @return 1 if the resource exists, 0 otherwise.
- */
-int
-resource_id_exists (const char *type, const char * id)
-{
-  return !!sql_int ("SELECT count(*)"
-                    " FROM %ss"
-                    " WHERE uuid='%s'"
-                    " %s;",
-                    type,
-                    id,
-                    (strcmp (type, "task") == 0) ? "AND hidden=0" : "");
-}
-
-/**
- * @brief Test Whether a resource of the given type and ID exists in the trash.
- *
- * @param[in]  type  Type.
- * @param[in]  id    Unique ID.
- *
- * @return 1 if the resource exists, 0 otherwise.
- */
-int
-trash_id_exists (const char *type, const char * id)
-{
-  if (type_has_trash (type) == 0)
-    return 0;
-  else if (strcmp (type, "task"))
-    return !!sql_int ("SELECT count(*)"
-                      " FROM %ss_trash"
-                      " WHERE uuid='%s';",
-                      type,
-                      id);
-  else
-    return !!sql_int ("SELECT count(*)"
-                      " FROM tasks"
-                      " WHERE uuid='%s'"
-                      " AND hidden=2;",
-                      id);
-}
-
-/**
  * @brief Return the number of tasks associated with the current user.
  *
  * @param[in]  get  GET params.
@@ -20637,18 +20495,6 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
  * @brief Whether to ignore the Max Rows Per Page settings.
  */
 int ignore_max_rows_per_page = 0;
-
-/**
- * @brief Clear all cached report result counts.
- *
- * @param[in]  override  Flag for override or regular case.
- */
-void
-reports_clear_count_cache (int override)
-{
-  sql ("DELETE FROM report_counts WHERE override = %d;",
-       override);
-}
 
 /**
  * @brief Create a new GHashTable for containing resource rowids.
@@ -25275,35 +25121,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   cleanup_severity_data (&filtered_severity_data);
 
   return 0;
-}
-
-/**
- * @brief Get the full, unfiltered message counts for a report.
- *
- * @param[in]   report    Report.
- * @param[out]  debugs    Number of debug messages.
- * @param[out]  holes     Number of hole messages.
- * @param[out]  infos     Number of info messages.
- * @param[out]  logs      Number of log messages.
- * @param[out]  warnings  Number of warning messages.
- * @param[out]  false_positives  Number of false positive messages.
- * @param[out]  severity  Maximum severity score.
- * @param[in]   get       Get data.
- * @param[in]   host      Host to which to limit the count.  NULL to allow all.
- *
- * @return 0 on success, -1 on error.
- */
-int
-report_counts_id_no_filt (report_t report, int* debugs, int* holes, int* infos,
-                          int* logs, int* warnings, int* false_positives,
-                          double* severity, const get_data_t *get,
-                          const char *host)
-{
-  int ret;
-  ret = report_counts_id_full (report, debugs, holes, infos, logs, warnings,
-                               false_positives, severity, get, host,
-                               NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-  return ret;
 }
 
 /**
@@ -34365,34 +34182,6 @@ target_count (const get_data_t *get)
 }
 
 /**
- * @brief Initialise a target iterator, limited to the current user's targets.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  target      Target to limit iteration to.
- */
-void
-init_user_target_iterator (iterator_t* iterator, target_t target)
-{
-  static column_t select_columns[] = TARGET_ITERATOR_COLUMNS;
-  gchar *columns;
-
-  assert (target);
-
-  columns = columns_build_select (select_columns);
-
-  init_iterator (iterator,
-                 "SELECT %s"
-                 " FROM targets"
-                 " WHERE id = %llu"
-                 " AND " ACL_USER_OWNS () ";",
-                 columns,
-                 target,
-                 current_credentials.uuid);
-
-  g_free (columns);
-}
-
-/**
  * @brief Initialise a target iterator, given a single target.
  *
  * @param[in]  iterator   Iterator.
@@ -36885,26 +36674,6 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
 
   g_free (quoted_name);
   g_free (quoted_value);
-  return 0;
-}
-
-/**
- * @brief Set the comment of a config.
- *
- * @param[in]  config   Config.
- * @param[in]  comment  New comment.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_set_config_comment (config_t config, const char* comment)
-{
-  gchar *quoted_comment;
-  quoted_comment = sql_quote (comment);
-  sql ("UPDATE configs SET comment = '%s', modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_comment, config);
-  g_free (quoted_comment);
   return 0;
 }
 
@@ -48623,22 +48392,6 @@ schedule_iterator_period_months (iterator_t* iterator)
 }
 
 /**
- * @brief Get the byday flags from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Byday mask.
- */
-int
-schedule_iterator_byday (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-  return ret;
-}
-
-/**
  * @brief Get the byday string from a schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -48692,23 +48445,6 @@ schedule_iterator_duration (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 5);
-
-/**
- * @brief Get the initial offset from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Initial offset, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-time_t
-schedule_iterator_initial_offset (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
-  return ret;
-}
 
 /**
  * @brief Get the iCalendar string from a schedule iterator.
@@ -48807,20 +48543,6 @@ task_schedule_iterator_task (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (task_schedule_iterator_task_uuid, 1);
-
-/**
- * @brief Get the schedule from a task schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The schedule.
- */
-schedule_t
-task_schedule_iterator_schedule (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (schedule_t) iterator_int64 (iterator, 2);
-}
 
 /**
  * @brief Get the next time from a task schedule iterator.
@@ -54838,22 +54560,6 @@ delete_permission (const char *permission_id, int ultimate)
 
   sql_commit ();
   return 0;
-}
-
-/**
- * @brief Downcase a string in place.
- *
- * @param[in]   string  String.
- *
- * @return String, downcased.
- */
-gchar *
-strdown (gchar *string)
-{
-  gchar *point;
-  if (string && *string)
-    for (point = string; *point; point++) *point = g_ascii_tolower (*point);
-  return string;
 }
 
 /**
@@ -61198,19 +60904,6 @@ asset_os_count (const get_data_t *get)
 }
 
 /**
- * @brief Count number of all assets.
- *
- * @param[in]   get       GET params.
- *
- * @return Total number of assets.
- */
-int
-total_asset_count (const get_data_t *get)
-{
-  return sql_int ("SELECT (SELECT count (*) FROM hosts);");
-}
-
-/**
  * @brief Initialise an OS host iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -66759,114 +66452,6 @@ tag_iterator_resources (iterator_t* iterator)
 }
 
 /**
- * @brief Get the resource_location from a Tag iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Location of the resource of a tag (0 = normal table, 1 = trashcan).
- */
-resource_t
-tag_resource_iterator_id (iterator_t* iterator)
-{
-  resource_t ret;
-  if (iterator->done) return -1;
-  ret = iterator_int64 (iterator, 0);
-  return ret;
-}
-
-/**
- * @brief Get the resource_uuid from a Tag resource iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The UUID of the resource attached to a tag.
- */
-DEF_ACCESS (tag_resource_iterator_uuid, 1);
-
-/**
- * @brief Get the resource_location from a Tag iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Location of the resource of a tag (0 = normal table, 1 = trashcan).
- */
-int
-tag_resource_iterator_location (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, 2);
-  return ret;
-}
-
-/**
- * @brief Get the resource name from a Tag resource iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The UUID of the resource attached to a tag.
- */
-DEF_ACCESS (tag_resource_iterator_name, 3);
-
-/**
- * @brief Get the resource type from a Tag resource iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The UUID of the resource attached to a tag.
- */
-DEF_ACCESS (tag_resource_iterator_type, 4);
-
-/**
- * @brief Get the readable status of a resource from a tag resource iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if readable, otherwise 0.
- */
-int
-tag_resource_iterator_readable (iterator_t* iterator)
-{
-  resource_t found;
-  const char *type, *uuid;
-  gchar *permission;
-
-  if (iterator->done) return 0;
-
-  type = tag_resource_iterator_type (iterator);
-  uuid = tag_resource_iterator_uuid (iterator);
-
-  if (type == NULL || uuid == NULL)
-    return 0;
-
-  if (type_is_info_subtype (type))
-    permission = g_strdup ("get_info");
-  else if (type_is_asset_subtype (type))
-    permission = g_strdup ("get_assets");
-  else
-    permission = g_strdup_printf ("get_%ss", type);
-
-  found = 0;
-  find_resource_with_permission (type,
-                                 uuid,
-                                 &found,
-                                 permission,
-                                 tag_resource_iterator_location (iterator)
-                                 == LOCATION_TRASH);
-  g_free (permission);
-  return found > 0;
-}
-
-/**
- * @brief Get the resource_name from a Tag iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the resource attached to a tag.
- */
-DEF_ACCESS (tag_iterator_resource_name, GET_ITERATOR_COLUMN_COUNT + 7);
-
-/**
  * @brief Initialise a iterator of tag names.
  *
  * @param[in]  iterator    Iterator.
@@ -67097,99 +66682,6 @@ column_is_timestamp (const char* column)
               || strcmp (column, "updated") == 0));
 }
 
-/**
- * @brief Return the SQL column definition for a resource iterator.
- *
- * @param[in]  type             Resource type to get columns of.
- *
- * @return The SQL column definitions.
- */
-char*
-type_columns (const char *type)
-{
-  if (type == NULL)
-    return NULL;
-  else if (strcasecmp (type, "TASK") == 0)
-    {
-      static column_t columns[] = TASK_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "REPORT") == 0)
-    {
-      static column_t columns[] = REPORT_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "RESULT") == 0)
-    {
-      static column_t columns[] = RESULT_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "VULN") == 0)
-    {
-      static column_t columns[] = VULN_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "HOST") == 0)
-    {
-      static column_t columns[] = HOST_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "OS") == 0)
-    {
-      static column_t columns[] = OS_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "ALLINFO") == 0)
-    {
-      static column_t columns[] = ALL_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "CPE") == 0)
-    {
-      static column_t columns[] = CPE_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "CVE") == 0)
-    {
-      static column_t columns[] = CVE_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "CERT_BUND_ADV") == 0)
-    {
-      static column_t columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
-    {
-      static column_t columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "NVT") == 0)
-    return g_strdup (nvt_iterator_columns ());
-  else if (strcasecmp (type, "OVALDEF") == 0)
-    {
-      static column_t columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "ALERT") == 0)
-    {
-      static column_t columns[] = ALERT_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "NOTE") == 0)
-    {
-      static column_t columns[] = NOTE_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "OVERRIDE") == 0)
-    {
-      static column_t columns[] = OVERRIDE_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else
-    return NULL;
-}
-
 // FIX
 /**
  * @brief Return the columns for a resource iterator.
@@ -67378,32 +66870,6 @@ type_filter_columns (const char *type)
   else
     return NULL;
 
-}
-
-/**
- * @brief Return the SQL column definition for a trash resource iterator.
- *
- * @param[in]  type             Resource type to get columns of.
- *
- * @return The SQL column definitions.
- */
-char*
-type_trash_columns (const char *type)
-{
-  if (type == NULL)
-    return NULL;
-  else if (strcasecmp (type, "TASK") == 0)
-    {
-      static column_t columns[] = TASK_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "ALERT") == 0)
-    {
-      static column_t columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else
-    return NULL;
 }
 
 /**

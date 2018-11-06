@@ -204,16 +204,6 @@ DEF_ACCESS (cpe_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
 DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
- * @brief Get the id of the deprecating CPE from a CPE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The deprecated_by CVD ID, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_deprecated_by, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
  * @brief Get the Highest CVSS Score of all CVE's referencing this cpe.
  *
  * @param[in]  iterator  Iterator.
