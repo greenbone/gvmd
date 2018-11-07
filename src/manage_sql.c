@@ -55525,7 +55525,6 @@ create_port_list (const char* id, const char* name, const char* comment,
                   const char* port_ranges, array_t *ranges,
                   port_list_t* port_list_return)
 {
-  gchar *quoted_name;
   port_list_t port_list;
   int ret;
 
@@ -55534,7 +55533,7 @@ create_port_list (const char* id, const char* name, const char* comment,
   if (ranges)
     {
       int suffix;
-      gchar *quoted_id;
+      gchar *quoted_name, *quoted_id;
 
       if (id == NULL)
         return -1;
@@ -55618,7 +55617,6 @@ create_port_list (const char* id, const char* name, const char* comment,
       return 1;
     }
 
-  quoted_name = sql_quote (name);
   if (port_ranges == NULL || (strcmp (port_ranges, "default") == 0))
     {
       gchar *quoted_comment, *quoted_name;
@@ -55641,9 +55639,15 @@ create_port_list (const char* id, const char* name, const char* comment,
     }
   else
     {
+      gchar *quoted_name;
+
+      quoted_name = sql_quote (name);
+
       ranges = port_range_ranges (port_ranges);
       ret = create_port_list_lock (NULL, quoted_name, comment ? comment : "",
                                    ranges, &port_list);
+
+      g_free (quoted_name);
       array_free (ranges);
       if (ret)
         {
