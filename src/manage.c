@@ -2346,12 +2346,12 @@ get_tasks_last_report (entity_t get_tasks)
   task = entity_child (get_tasks, "task");
   if (task)
     {
-      entity_t current_report;
-      current_report = entity_child (task, "current_report");
+      entity_t get_tasks_current_report;
+      get_tasks_current_report = entity_child (task, "current_report");
       if (current_report)
         {
           entity_t report;
-          report = entity_child (current_report, "report");
+          report = entity_child (get_tasks_current_report, "report");
           if (report && entity_attribute (report, "id"))
             return g_strdup (entity_attribute (report, "id"));
         }
@@ -2522,7 +2522,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
              report_t last_stopped_report)
 {
   const int ret_giveup = 3;
-  int ret, ret_fail, next_result;
+  int ret_fail, next_result;
   iterator_t credentials, targets;
   gmp_delete_opts_t del_opts;
 
@@ -2664,6 +2664,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                                             target_ssh_credential);
           if (next (&credentials))
             {
+              int ret;
               const char *user, *password, *private_key;
               gchar *user_copy, *password_copy, *private_key_copy;
               gmp_create_lsc_credential_opts_t opts;
@@ -2727,6 +2728,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                                         target_smb_credential);
           if (next (&credentials))
             {
+              int ret;
               const char *user, *password;
               gchar *user_copy, *password_copy, *smb_name;
               gmp_create_lsc_credential_opts_t opts;
@@ -2781,6 +2783,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                                         target_esxi_credential);
           if (next (&credentials))
             {
+              int ret;
               const char *user, *password;
               gchar *user_copy, *password_copy, *esxi_name;
               gmp_create_lsc_credential_opts_t opts;
@@ -2835,6 +2838,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                                         target_snmp_credential);
           if (next (&credentials))
             {
+              int ret;
               const char *community, *user, *password, *auth_algorithm;
               const char *privacy_password, *privacy_algorithm;
               gchar *community_copy, *user_copy, *password_copy;
@@ -2924,6 +2928,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
       init_target_iterator_one (&targets, target);
       if (next (&targets))
         {
+          int ret;
           const char *hosts, *port, *exclude_hosts, *alive_tests;
           const char *reverse_lookup_only, *reverse_lookup_unify;
           const char *port_list_uuid;
@@ -3147,6 +3152,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
       /* Create the task on the slave. */
 
       {
+        int ret;
         gchar *max_checks, *max_hosts, *source_iface;
         gchar *hosts_ordering, *comment;
         gmp_create_task_opts_t opts;
@@ -3224,7 +3230,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
       entity_t get_tasks, report, get_report;
       const char *status;
       task_status_t run_status;
-      int status_done;
+      int ret, status_done;
 
       /* Check if some other process changed the task status. */
 
@@ -3638,12 +3644,12 @@ handle_slave_task (task_t task, target_t target,
       }
     else
       {
-        int termination_signal = get_termination_signal ();
+        int current_signal = get_termination_signal ();
         if ((task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
             || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED)
-            || termination_signal)
+            || current_signal)
           {
-            if (termination_signal)
+            if (current_signal)
               {
                 g_debug ("%s: Received %s signal.",
                          __FUNCTION__,
@@ -3663,8 +3669,7 @@ handle_slave_task (task_t task, target_t target,
 
   while (1)
     {
-      int termination_signal = get_termination_signal ();
-      if (termination_signal)
+      if (get_termination_signal ())
         {
           g_debug ("%s: Received %s signal.",
                    __FUNCTION__,
@@ -5206,11 +5211,11 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
 
           if (credential_iterator_private_key (&credentials))
             {
-              char *uuid = gvm_uuid_make ();
-              if (uuid == NULL)
+              char *file_uuid = gvm_uuid_make ();
+              if (file_uuid == NULL)
                 goto fail;
 
-              g_ptr_array_add (preference_files, (gpointer) uuid);
+              g_ptr_array_add (preference_files, (gpointer) file_uuid);
               g_ptr_array_add
                (preference_files,
                 (gpointer) g_strdup (credential_iterator_private_key
@@ -5219,7 +5224,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
               if (sendf_to_server ("SSH Authorization[file]:"
                                    "SSH private key:"
                                    " <|> %s\n",
-                                   uuid))
+                                   file_uuid))
                 goto fail;
             }
         }
@@ -8682,7 +8687,7 @@ gvm_migrate_secinfo (int feed_type)
  *         99 permission denied.
  */
 int
-manage_run_wizard (const gchar *name,
+manage_run_wizard (const gchar *wizard_name,
                    int (*run_command) (void*, gchar*, gchar**),
                    void *run_command_data,
                    array_t *params,
@@ -8716,14 +8721,14 @@ manage_run_wizard (const gchar *name,
   if (ret_response)
     *ret_response = NULL;
 
-  point = name;
+  point = wizard_name;
   while (*point && (isalnum (*point) || *point == '_')) point++;
   if (*point)
     return 1;
 
   /* Read wizard from file. */
 
-  file_name = g_strdup_printf ("%s.xml", name);
+  file_name = g_strdup_printf ("%s.xml", wizard_name);
   file = g_build_filename (GVMD_DATA_DIR,
                            "wizards",
                            file_name,
