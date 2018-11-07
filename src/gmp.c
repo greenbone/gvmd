@@ -118,6 +118,7 @@
 #include <gvm/base/strings.h>
 #include <gvm/base/logging.h>
 #include <gvm/base/pwpolicy.h>
+#include <gvm/util/gpgmeutils.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/sshutils.h>
 #include <gvm/util/authutils.h>
@@ -554,11 +555,26 @@ static int
 check_certificate_smime (const char *cert_str)
 {
   int ret = 0;
+  gpgme_ctx_t ctx;
+  char gpg_temp_dir[] = "/tmp/gvmd-gpg-XXXXXX";
 
-  // TODO: Test
-  ret = 1;
+  if (mkdtemp (gpg_temp_dir) == NULL)
+    {
+      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+      return -1;
+    }
 
-  return ret;
+  gpgme_new (&ctx);
+  gpgme_ctx_set_engine_info (ctx, GPGME_PROTOCOL_CMS, NULL, gpg_temp_dir);
+  gpgme_set_protocol (ctx, GPGME_PROTOCOL_CMS);
+
+  ret = gvm_gpg_import_from_string (ctx, cert_str, -1,
+                                    GPGME_DATA_TYPE_CMS_OTHER);
+
+  gpgme_release (ctx);
+  gvm_file_remove_recurse (gpg_temp_dir);
+
+  return (ret != 0);
 }
 
 /**
@@ -569,10 +585,12 @@ check_certificate_smime (const char *cert_str)
  * @return 0 if valid, 1 otherwise.
  */
 static int
-check_certificate (const char *cert_str)
+check_certificate (const char *cert_str, const char *credential_type)
 {
-  return check_certificate_x509 (cert_str)
-         && check_certificate_smime (cert_str);
+  if (credential_type && strcmp (credential_type, "smime") == 0)
+    return check_certificate_smime (cert_str);
+  else
+    return check_certificate_x509 (cert_str);
 }
 
 /**
@@ -21102,7 +21120,7 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
       goto create_scanner_leave;
     }
   if (create_scanner_data->ca_pub
-      && check_certificate (create_scanner_data->ca_pub))
+      && check_certificate_x509 (create_scanner_data->ca_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_scanner", "Erroneous CA Certificate."));
@@ -21188,7 +21206,7 @@ static void
 handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
 {
   if (modify_scanner_data->ca_pub && *modify_scanner_data->ca_pub
-      && check_certificate (modify_scanner_data->ca_pub))
+      && check_certificate_x509 (modify_scanner_data->ca_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous CA Certificate."));
@@ -23402,7 +23420,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                  "Erroneous Public Key."));
             }
           else if (create_credential_data->certificate
-                   && check_certificate (create_credential_data->certificate))
+                   && check_certificate
+                          (create_credential_data->certificate,
+                           create_credential_data->type))
             {
               SEND_TO_CLIENT_OR_FAIL
               (XML_ERROR_SYNTAX ("create_credential",
