@@ -9181,7 +9181,6 @@ alert_script_exec (const char *alert_id, const char *command_args,
                    gchar **message)
 {
   gchar *script, *script_dir;
-  GError *error;
 
   /* Setup script file name. */
   script_dir = g_build_filename (GVMD_DATA_DIR,
@@ -9326,6 +9325,8 @@ alert_script_exec (const char *alert_id, const char *command_args,
                   }
                 else if (ret != 0)
                   {
+                    GError *error;
+
                     if (g_file_get_contents (error_path, message,
                                              NULL, &error) == FALSE)
                       {
@@ -11361,29 +11362,32 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             const get_data_t *get, int notes_details, int overrides_details,
             gchar **script_message)
 {
-  char *name_alert, *name_task;
-  gchar *event_desc, *alert_desc;
   report_t delta_report;
 
   if (script_message)
     *script_message = NULL;
 
-  name_alert = alert_name (alert);
-  name_task = task_name (task);
-  event_desc = event_description (event, event_data, NULL);
-  alert_desc = alert_condition_description (condition, alert);
-  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-         "The alert %s%s%s was triggered "
-         "(Event: %s, Condition: %s)",
-         name_alert,
-         name_task ? " for task " : "",
-         name_task ? name_task : "",
-         event_desc,
-         alert_desc);
-  free (name_task);
-  free (name_alert);
-  free (event_desc);
-  free (alert_desc);
+  {
+    char *name_alert, *name_task;
+    gchar *event_desc, *alert_desc;
+
+    name_alert = alert_name (alert);
+    name_task = task_name (task);
+    event_desc = event_description (event, event_data, NULL);
+    alert_desc = alert_condition_description (condition, alert);
+    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+           "The alert %s%s%s was triggered "
+           "(Event: %s, Condition: %s)",
+           name_alert,
+           name_task ? " for task " : "",
+           name_task ? name_task : "",
+           event_desc,
+           alert_desc);
+    free (name_task);
+    free (name_alert);
+    free (event_desc);
+    free (alert_desc);
+  }
 
   switch (method)
     {
@@ -29837,13 +29841,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
           if (f_host_result_counts)
             {
-              const char *host = result_iterator_host (&results);
+              const char *result_host = result_iterator_host (&results);
               int result_count
                     = GPOINTER_TO_INT
-                        (g_hash_table_lookup (f_host_result_counts, host));
+                        (g_hash_table_lookup (f_host_result_counts, result_host));
 
               g_hash_table_replace (f_host_result_counts,
-                                    g_strdup (host),
+                                    g_strdup (result_host),
                                     GINT_TO_POINTER (result_count + 1));
             }
 
@@ -29932,19 +29936,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (get->details && result_hosts_only)
     {
-      gchar *host;
+      gchar *result_host;
       int index = 0;
       array_terminate (result_hosts);
-      while ((host = g_ptr_array_index (result_hosts, index++)))
+      while ((result_host = g_ptr_array_index (result_hosts, index++)))
         {
           gboolean present;
           iterator_t hosts;
-          init_report_host_iterator (&hosts, report, host, 0);
+          init_report_host_iterator (&hosts, report, result_host, 0);
           present = next (&hosts);
           if (delta && (present == FALSE))
             {
               cleanup_iterator (&hosts);
-              init_report_host_iterator (&hosts, delta, host, 0);
+              init_report_host_iterator (&hosts, delta, result_host, 0);
               present = next (&hosts);
             }
           if (present)
@@ -29976,7 +29980,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                     (g_hash_table_lookup ( f_host_false_positives, current_host));
 
               host_summary_append (host_summary_buffer,
-                                   host,
+                                   result_host,
                                    host_iterator_start_time (&hosts),
                                    host_iterator_end_time (&hosts));
               PRINT (out,
@@ -29994,7 +29998,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      "<log><page>%d</page></log>"
                      "<false_positive><page>%d</page></false_positive>"
                      "</result_count>",
-                     host,
+                     result_host,
                      host_iterator_asset_uuid (&hosts)
                        ? host_iterator_asset_uuid (&hosts)
                        : "",
@@ -38847,12 +38851,12 @@ nvt_selector_nvt_count (const char *selector,
      init_family_iterator (&families, 0, NULL, 1);
      while (next (&families))
        {
-         const char *family = family_iterator_name (&families);
-         if (family)
+         const char *name = family_iterator_name (&families);
+         if (name)
            count += nvt_selector_nvt_count (selector,
-                                            family,
+                                            name,
                                             nvt_selector_family_growing
-                                             (selector, family, growing));
+                                             (selector, name, growing));
        }
      cleanup_iterator (&families);
 
