@@ -2021,52 +2021,52 @@ void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
 /**
  * @brief Slave credential UUID.
  */
-gchar *slave_ssh_credential_uuid = NULL;
+static gchar *global_slave_ssh_credential_uuid = NULL;
 
 /**
  * @brief Slave credential UUID.
  */
-gchar *slave_smb_credential_uuid = NULL;
+static gchar *global_slave_smb_credential_uuid = NULL;
 
 /**
  * @brief Slave credential UUID.
  */
-gchar *slave_esxi_credential_uuid = NULL;
+static gchar *global_slave_esxi_credential_uuid = NULL;
 
 /**
  * @brief Slave credential UUID.
  */
-gchar *slave_snmp_credential_uuid = NULL;
+static gchar *global_slave_snmp_credential_uuid = NULL;
 
 /**
  * @brief Slave target UUID.
  */
-gchar *slave_target_uuid = NULL;
+static gchar *global_slave_target_uuid = NULL;
 
 /**
  * @brief Slave target UUID.
  */
-gchar *slave_port_list_uuid = NULL;
+static gchar *global_slave_port_list_uuid = NULL;
 
 /**
  * @brief Slave config UUID.
  */
-gchar *slave_config_uuid = NULL;
+static gchar *global_slave_config_uuid = NULL;
 
 /**
  * @brief Slave task UUID.
  */
-gchar *slave_task_uuid = NULL;
+static gchar *global_slave_task_uuid = NULL;
 
 /**
  * @brief Slave report UUID.
  */
-gchar *slave_report_uuid = NULL;
+static gchar *global_slave_report_uuid = NULL;
 
 /**
  * @brief Slave session.
  */
-gvm_connection_t *slave_connection = NULL;
+static gvm_connection_t *global_slave_connection = NULL;
 
 /**
  * @brief Update the locally cached task progress from the slave.
@@ -2323,11 +2323,12 @@ update_end_times (entity_t report)
 static void
 cleanup_slave ()
 {
-  if (slave_connection)
+  if (global_slave_connection)
     {
-      if (slave_task_uuid)
-        gmp_stop_task (&slave_connection->session, slave_task_uuid);
-      gvm_connection_close (slave_connection);
+      if (global_slave_task_uuid)
+        gmp_stop_task (&global_slave_connection->session,
+                       global_slave_task_uuid);
+      gvm_connection_close (global_slave_connection);
     }
 }
 
@@ -2527,7 +2528,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
   ret_fail = 1;
   del_opts = gmp_delete_opts_ultimate_defaults;
-  slave_connection = connection;
+  global_slave_connection = connection;
 
   /* Register a cleanup callback to stop the slave task if the process is
    * killed, for example by a reboot.  On restart Manager will set the task
@@ -2543,8 +2544,8 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
     {
       /* Resume the task on the slave. */
 
-      slave_task_uuid = report_slave_task_uuid (last_stopped_report);
-      if (slave_task_uuid == NULL)
+      global_slave_task_uuid = report_slave_task_uuid (last_stopped_report);
+      if (global_slave_task_uuid == NULL)
         {
           /* This may happen if someone sets a slave on a local task.  Clear
            * all the report results and start the task from the beginning.  */
@@ -2559,7 +2560,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
           /* Check if the task is running or complete on the slave. */
 
-          while ((ret = gmp_get_tasks (&connection->session, slave_task_uuid,
+          while ((ret = gmp_get_tasks (&connection->session, global_slave_task_uuid,
                                        0, 0, &get_tasks)))
             {
               if (ret == 404)
@@ -2596,40 +2597,41 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                   /* Task on slave is Running or Done, continue using it as
                    * is. */
 
-                  slave_report_uuid = get_tasks_last_report (get_tasks);
-                  if (slave_report_uuid == NULL)
+                  global_slave_report_uuid = get_tasks_last_report (get_tasks);
+                  if (global_slave_report_uuid == NULL)
                     {
                       g_warning ("%s: slave report %s missing UUID\n", __FUNCTION__,
-                                 slave_task_uuid);
+                                 global_slave_task_uuid);
                       goto fail;
                     }
 
                   setup_ids (connection, task,
-                             get_tasks, &slave_config_uuid, &slave_target_uuid,
-                             &slave_port_list_uuid,
-                             &slave_ssh_credential_uuid,
-                             &slave_smb_credential_uuid,
-                             &slave_esxi_credential_uuid,
-                             &slave_snmp_credential_uuid);
+                             get_tasks, &global_slave_config_uuid,
+                             &global_slave_target_uuid,
+                             &global_slave_port_list_uuid,
+                             &global_slave_ssh_credential_uuid,
+                             &global_slave_smb_credential_uuid,
+                             &global_slave_esxi_credential_uuid,
+                             &global_slave_snmp_credential_uuid);
                 }
               else
                 {
                   /* Task is there, try resume it. */
                   switch (gmp_resume_task_report (&connection->session,
-                                                  slave_task_uuid,
-                                                  &slave_report_uuid))
+                                                  global_slave_task_uuid,
+                                                  &global_slave_report_uuid))
                     {
                       case 0:
-                        if (slave_report_uuid == NULL)
+                        if (global_slave_report_uuid == NULL)
                           goto fail;
                         setup_ids (connection, task,
-                                   get_tasks, &slave_config_uuid,
-                                   &slave_target_uuid,
-                                   &slave_port_list_uuid,
-                                   &slave_ssh_credential_uuid,
-                                   &slave_smb_credential_uuid,
-                                   &slave_esxi_credential_uuid,
-                                   &slave_snmp_credential_uuid);
+                                   get_tasks, &global_slave_config_uuid,
+                                   &global_slave_target_uuid,
+                                   &global_slave_port_list_uuid,
+                                   &global_slave_ssh_credential_uuid,
+                                   &global_slave_smb_credential_uuid,
+                                   &global_slave_esxi_credential_uuid,
+                                   &global_slave_snmp_credential_uuid);
                         set_task_run_status (task, TASK_STATUS_REQUESTED);
                         break;
                       case 1:
@@ -2644,7 +2646,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                         last_stopped_report = 0;
                         break;
                       default:
-                        free (slave_task_uuid);
+                        free (global_slave_task_uuid);
                         goto fail;
                     }
                 }
@@ -2695,8 +2697,10 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
               cleanup_iterator (&credentials);
 
-              ret = gmp_create_lsc_credential_ext (&connection->session, opts,
-                                                   &slave_ssh_credential_uuid);
+              ret = gmp_create_lsc_credential_ext
+                     (&connection->session,
+                      opts,
+                      &global_slave_ssh_credential_uuid);
               g_free (user_copy);
               g_free (password_copy);
               g_free (private_key_copy);
@@ -2711,7 +2715,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                                  " (status %d)."
                                  " Continuing without credential.",
                                  ret);
-                      slave_ssh_credential_uuid = NULL;
+                      global_slave_ssh_credential_uuid = NULL;
                     }
                 }
             }
@@ -2748,8 +2752,10 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
               cleanup_iterator (&credentials);
 
-              ret = gmp_create_lsc_credential_ext (&connection->session, opts,
-                                                   &slave_smb_credential_uuid);
+              ret = gmp_create_lsc_credential_ext
+                     (&connection->session,
+                      opts,
+                      &global_slave_smb_credential_uuid);
               g_free (smb_name);
               g_free (user_copy);
               g_free (password_copy);
@@ -2763,7 +2769,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                                  " (status %d)."
                                  " Continuing without credential.",
                                  ret);
-                      slave_smb_credential_uuid = NULL;
+                      global_slave_smb_credential_uuid = NULL;
                     }
                 }
             }
@@ -2800,8 +2806,10 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
               cleanup_iterator (&credentials);
 
-              ret = gmp_create_lsc_credential_ext (&connection->session, opts,
-                                                   &slave_esxi_credential_uuid);
+              ret = gmp_create_lsc_credential_ext
+                     (&connection->session,
+                      opts,
+                      &global_slave_esxi_credential_uuid);
               g_free (esxi_name);
               g_free (user_copy);
               g_free (password_copy);
@@ -2815,7 +2823,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                                  " (status %d)."
                                  " Continuing without credential.",
                                  ret);
-                      slave_esxi_credential_uuid = NULL;
+                      global_slave_esxi_credential_uuid = NULL;
                     }
                 }
             }
@@ -2872,8 +2880,10 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
               cleanup_iterator (&credentials);
 
-              ret = gmp_create_lsc_credential_ext (&connection->session, opts,
-                                                   &slave_snmp_credential_uuid);
+              ret = gmp_create_lsc_credential_ext
+                     (&connection->session,
+                      opts,
+                      &global_slave_snmp_credential_uuid);
               g_free (snmp_name);
               g_free (community_copy);
               g_free (user_copy);
@@ -2891,23 +2901,23 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                                  " (status %d)."
                                  " Continuing without credential",
                                  ret);
-                      slave_snmp_credential_uuid = NULL;
+                      global_slave_snmp_credential_uuid = NULL;
                     }
                 }
             }
         }
 
       g_debug ("   %s: slave SSH credential uuid: %s\n", __FUNCTION__,
-               slave_ssh_credential_uuid);
+               global_slave_ssh_credential_uuid);
 
       g_debug ("   %s: slave SMB credential uuid: %s\n", __FUNCTION__,
-               slave_smb_credential_uuid);
+               global_slave_smb_credential_uuid);
 
       g_debug ("   %s: slave ESXi credential uuid: %s\n", __FUNCTION__,
-               slave_esxi_credential_uuid);
+               global_slave_esxi_credential_uuid);
 
       g_debug ("   %s: slave SNMP credential uuid: %s\n", __FUNCTION__,
-               slave_snmp_credential_uuid);
+               global_slave_snmp_credential_uuid);
 
       /* Create the target on the slave. */
 
@@ -2952,11 +2962,11 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           opts.hosts = hosts_copy;
           opts.exclude_hosts = exclude_hosts_copy;
           opts.alive_tests = alive_tests_copy;
-          opts.ssh_credential_id = slave_ssh_credential_uuid;
+          opts.ssh_credential_id = global_slave_ssh_credential_uuid;
           opts.ssh_credential_port = ssh_port;
-          opts.smb_credential_id = slave_smb_credential_uuid;
-          opts.esxi_credential_id = slave_esxi_credential_uuid;
-          opts.snmp_credential_id = slave_snmp_credential_uuid;
+          opts.smb_credential_id = global_slave_smb_credential_uuid;
+          opts.esxi_credential_id = global_slave_esxi_credential_uuid;
+          opts.snmp_credential_id = global_slave_snmp_credential_uuid;
           opts.port_range = port_range;
           opts.name = name;
           opts.comment = "Slave target created by Master";
@@ -2966,7 +2976,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
             = reverse_lookup_unify ? atoi (reverse_lookup_unify) : 0;
 
           ret = gmp_create_target_ext (&connection->session, opts,
-                                       &slave_target_uuid);
+                                       &global_slave_target_uuid);
           g_free (hosts_copy);
           g_free (exclude_hosts_copy);
           g_free (alive_tests_copy);
@@ -2982,8 +2992,8 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               goto fail_snmp_credential;
             }
 
-          if (gmp_get_targets (&connection->session, slave_target_uuid, 0, 0,
-                               &get_targets))
+          if (gmp_get_targets (&connection->session, global_slave_target_uuid,
+                               0, 0, &get_targets))
             goto fail_target;
           child = entity_child (get_targets, "target");
           if (child == NULL)
@@ -3003,7 +3013,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               free_entity (get_targets);
               goto fail_target;
             }
-          slave_port_list_uuid = g_strdup (port_list_uuid);
+          global_slave_port_list_uuid = g_strdup (port_list_uuid);
           free_entity (get_targets);
         }
       else
@@ -3012,7 +3022,9 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           goto fail_esxi_credential;
         }
 
-      g_debug ("   %s: slave target uuid: %s\n", __FUNCTION__, slave_target_uuid);
+      g_debug ("   %s: slave target uuid: %s\n",
+               __FUNCTION__,
+               global_slave_target_uuid);
 
       /* Create the config on the slave. */
 
@@ -3123,12 +3135,14 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                               "</get_configs_response>"
                               "</create_config>")
             || (gmp_read_create_response (&connection->session,
-                                          &slave_config_uuid)
+                                          &global_slave_config_uuid)
                 != 201))
           goto fail_target;
       }
 
-      g_debug ("   %s: slave config uuid: %s\n", __FUNCTION__, slave_config_uuid);
+      g_debug ("   %s: slave config uuid: %s\n",
+               __FUNCTION__,
+               global_slave_config_uuid);
 
       /* Create the task on the slave. */
 
@@ -3139,8 +3153,8 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         char *name_task, *uuid_report, *uuid_task;
 
         opts = gmp_create_task_opts_defaults;
-        opts.config_id = slave_config_uuid;
-        opts.target_id = slave_target_uuid;
+        opts.config_id = global_slave_config_uuid;
+        opts.target_id = global_slave_target_uuid;
         opts.name = name;
         task_uuid (task, &uuid_task);
         name_task = task_name (task);
@@ -3174,7 +3188,9 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         opts.schedule_id = NULL;
         opts.slave_id = NULL;
 
-        ret = gmp_create_task_ext (&connection->session, opts, &slave_task_uuid);
+        ret = gmp_create_task_ext (&connection->session,
+                                   opts,
+                                   &global_slave_task_uuid);
         g_free (comment);
         g_free (max_checks);
         g_free (max_hosts);
@@ -3186,13 +3202,14 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
       /* Start the task on the slave. */
 
-      if (gmp_start_task_report (&connection->session, slave_task_uuid,
-                                 &slave_report_uuid))
+      if (gmp_start_task_report (&connection->session,
+                                 global_slave_task_uuid,
+                                 &global_slave_report_uuid))
         goto fail_task;
-      if (slave_report_uuid == NULL)
+      if (global_slave_report_uuid == NULL)
         goto fail_stop_task;
 
-      set_report_slave_task_uuid (current_report, slave_task_uuid);
+      set_report_slave_task_uuid (current_report, global_slave_task_uuid);
     }
 
   /* Setup the current task for functions like set_task_run_status. */
@@ -3217,7 +3234,8 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           case TASK_STATUS_DELETE_REQUESTED:
           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
           case TASK_STATUS_STOP_REQUESTED:
-            switch (gmp_stop_task (&connection->session, slave_task_uuid))
+            switch (gmp_stop_task (&connection->session,
+                                   global_slave_task_uuid))
               {
                 case 0:
                   break;
@@ -3264,7 +3282,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
             break;
         }
 
-      ret = gmp_get_tasks (&connection->session, slave_task_uuid, 0, 0,
+      ret = gmp_get_tasks (&connection->session, global_slave_task_uuid, 0, 0,
                            &get_tasks);
       if (ret == 404)
         {
@@ -3309,7 +3327,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
             }
 
           opts = gmp_get_report_opts_defaults;
-          opts.report_id = slave_report_uuid;
+          opts.report_id = global_slave_report_uuid;
           opts.format_id = "a994b278-1f62-11e1-96ac-406186ea4fc5";
           opts.filter = g_strdup_printf
                          ("first=%i rows=-1 levels=hmlgd apply_overrides=0"
@@ -3415,92 +3433,117 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
   current_scanner_task = (task_t) 0;
 
-  gmp_delete_task_ext (&connection->session, slave_task_uuid, del_opts);
+  gmp_delete_task_ext (&connection->session,
+                       global_slave_task_uuid,
+                       del_opts);
   set_report_slave_task_uuid (current_report, "");
-  gmp_delete_config_ext (&connection->session, slave_config_uuid, del_opts);
-  gmp_delete_target_ext (&connection->session, slave_target_uuid, del_opts);
-  gmp_delete_port_list_ext (&connection->session, slave_port_list_uuid, del_opts);
-  if (slave_ssh_credential_uuid)
-    gmp_delete_lsc_credential_ext (&connection->session, slave_ssh_credential_uuid,
+  gmp_delete_config_ext (&connection->session,
+                         global_slave_config_uuid,
+                         del_opts);
+  gmp_delete_target_ext (&connection->session,
+                         global_slave_target_uuid,
+                         del_opts);
+  gmp_delete_port_list_ext (&connection->session,
+                            global_slave_port_list_uuid,
+                            del_opts);
+  if (global_slave_ssh_credential_uuid)
+    gmp_delete_lsc_credential_ext (&connection->session,
+                                   global_slave_ssh_credential_uuid,
                                    del_opts);
-  if (slave_smb_credential_uuid)
-    gmp_delete_lsc_credential_ext (&connection->session, slave_smb_credential_uuid,
+  if (global_slave_smb_credential_uuid)
+    gmp_delete_lsc_credential_ext (&connection->session,
+                                   global_slave_smb_credential_uuid,
                                    del_opts);
-  if (slave_esxi_credential_uuid)
-    gmp_delete_lsc_credential_ext (&connection->session, slave_esxi_credential_uuid,
+  if (global_slave_esxi_credential_uuid)
+    gmp_delete_lsc_credential_ext (&connection->session,
+                                   global_slave_esxi_credential_uuid,
                                    del_opts);
-  if (slave_snmp_credential_uuid)
-    gmp_delete_lsc_credential_ext (&connection->session, slave_snmp_credential_uuid,
+  if (global_slave_snmp_credential_uuid)
+    gmp_delete_lsc_credential_ext (&connection->session,
+                                   global_slave_snmp_credential_uuid,
                                    del_opts);
  succeed_stopped:
-  free (slave_task_uuid);
-  slave_task_uuid = NULL;
-  free (slave_report_uuid);
-  slave_report_uuid = NULL;
-  free (slave_config_uuid);
-  slave_config_uuid = NULL;
-  free (slave_target_uuid);
-  slave_target_uuid = NULL;
-  free (slave_port_list_uuid);
-  slave_port_list_uuid = NULL;
-  free (slave_snmp_credential_uuid);
-  slave_snmp_credential_uuid = NULL;
-  free (slave_esxi_credential_uuid);
-  slave_esxi_credential_uuid = NULL;
-  free (slave_smb_credential_uuid);
-  slave_smb_credential_uuid = NULL;
-  free (slave_ssh_credential_uuid);
-  slave_ssh_credential_uuid = NULL;
+  free (global_slave_task_uuid);
+  global_slave_task_uuid = NULL;
+  free (global_slave_report_uuid);
+  global_slave_report_uuid = NULL;
+  free (global_slave_config_uuid);
+  global_slave_config_uuid = NULL;
+  free (global_slave_target_uuid);
+  global_slave_target_uuid = NULL;
+  free (global_slave_port_list_uuid);
+  global_slave_port_list_uuid = NULL;
+  free (global_slave_snmp_credential_uuid);
+  global_slave_snmp_credential_uuid = NULL;
+  free (global_slave_esxi_credential_uuid);
+  global_slave_esxi_credential_uuid = NULL;
+  free (global_slave_smb_credential_uuid);
+  global_slave_smb_credential_uuid = NULL;
+  free (global_slave_ssh_credential_uuid);
+  global_slave_ssh_credential_uuid = NULL;
   gvm_connection_close (connection);
-  slave_connection = NULL;
+  global_slave_connection = NULL;
   g_debug ("   %s: succeed\n", __FUNCTION__);
   return 0;
 
  fail_stop_task:
-  gmp_stop_task (&connection->session, slave_task_uuid);
-  free (slave_report_uuid);
+  gmp_stop_task (&connection->session,
+                 global_slave_task_uuid);
+  free (global_slave_report_uuid);
  fail_task:
-  gmp_delete_task_ext (&connection->session, slave_task_uuid, del_opts);
+  gmp_delete_task_ext (&connection->session,
+                       global_slave_task_uuid,
+                       del_opts);
   set_report_slave_task_uuid (current_report, "");
-  free (slave_task_uuid);
+  free (global_slave_task_uuid);
  fail_config:
-  gmp_delete_config_ext (&connection->session, slave_config_uuid, del_opts);
-  free (slave_config_uuid);
+  gmp_delete_config_ext (&connection->session,
+                         global_slave_config_uuid,
+                         del_opts);
+  free (global_slave_config_uuid);
  fail_target:
-  gmp_delete_target_ext (&connection->session, slave_target_uuid, del_opts);
-  free (slave_target_uuid);
-  gmp_delete_port_list_ext (&connection->session, slave_port_list_uuid, del_opts);
-  free (slave_port_list_uuid);
+  gmp_delete_target_ext (&connection->session,
+                         global_slave_target_uuid,
+                         del_opts);
+  free (global_slave_target_uuid);
+  gmp_delete_port_list_ext (&connection->session,
+                            global_slave_port_list_uuid,
+                            del_opts);
+  free (global_slave_port_list_uuid);
  fail_snmp_credential:
-  if (slave_snmp_credential_uuid)
-    gmp_delete_lsc_credential_ext (&connection->session, slave_snmp_credential_uuid,
+  if (global_slave_snmp_credential_uuid)
+    gmp_delete_lsc_credential_ext (&connection->session,
+                                   global_slave_snmp_credential_uuid,
                                    del_opts);
-  free (slave_snmp_credential_uuid);
+  free (global_slave_snmp_credential_uuid);
  fail_esxi_credential:
-  if (slave_esxi_credential_uuid)
-    gmp_delete_lsc_credential_ext (&connection->session, slave_esxi_credential_uuid,
+  if (global_slave_esxi_credential_uuid)
+    gmp_delete_lsc_credential_ext (&connection->session,
+                                   global_slave_esxi_credential_uuid,
                                    del_opts);
-  free (slave_esxi_credential_uuid);
+  free (global_slave_esxi_credential_uuid);
  fail_smb_credential:
-  if (slave_smb_credential_uuid)
-    gmp_delete_lsc_credential_ext (&connection->session, slave_smb_credential_uuid,
+  if (global_slave_smb_credential_uuid)
+    gmp_delete_lsc_credential_ext (&connection->session,
+                                   global_slave_smb_credential_uuid,
                                    del_opts);
-  free (slave_smb_credential_uuid);
+  free (global_slave_smb_credential_uuid);
  fail_ssh_credential:
-  if (slave_ssh_credential_uuid)
-    gmp_delete_lsc_credential_ext (&connection->session, slave_ssh_credential_uuid,
+  if (global_slave_ssh_credential_uuid)
+    gmp_delete_lsc_credential_ext (&connection->session,
+                                   global_slave_ssh_credential_uuid,
                                    del_opts);
-  free (slave_ssh_credential_uuid);
+  free (global_slave_ssh_credential_uuid);
  fail:
   g_debug ("   %s: fail (%i)\n", __FUNCTION__, ret_fail);
   gvm_connection_close (connection);
-  slave_connection = NULL;
+  global_slave_connection = NULL;
   return ret_fail;
 
  giveup:
   g_debug ("   %s: giveup (%i)\n", __FUNCTION__, ret_giveup);
   gvm_connection_close (connection);
-  slave_connection = NULL;
+  global_slave_connection = NULL;
   return ret_giveup;
 }
 
