@@ -50844,11 +50844,9 @@ verify_report_format_internal (report_format_t report_format)
           GString *format;
           file_iterator_t files;
           iterator_t params;
-          report_format_t report_format;
 
           format = g_string_new ("");
 
-          report_format = get_iterator_resource (&formats);
           g_string_append_printf
            (format, "%s%s%s%i", uuid ? uuid : get_iterator_uuid (&formats),
             report_format_iterator_extension (&formats),
