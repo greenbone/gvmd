@@ -545,14 +545,17 @@ check_certificate_x509 (const char *cert_str)
 }
 
 /**
- * @brief Check that a string represents a valid S/MIME Certificate.
+ * @brief Check that a string represents a valid public key or certificate.
  *
- * @param[in]  cert_str     Certificate string.
+ * @param[in]  key_str     Key string.
+ * @param[in]  key_type    The data type to check for.
+ * @param[in]  protocol    The GPG protocol to check.
  *
  * @return 0 if valid, 1 otherwise.
  */
 static int
-check_certificate_smime (const char *cert_str)
+try_gpgme_import (const char *key_str, gpgme_data_type_t key_type,
+                  gpgme_protocol_t protocol)
 {
   int ret = 0;
   gpgme_ctx_t ctx;
@@ -565,16 +568,29 @@ check_certificate_smime (const char *cert_str)
     }
 
   gpgme_new (&ctx);
-  gpgme_ctx_set_engine_info (ctx, GPGME_PROTOCOL_CMS, NULL, gpg_temp_dir);
-  gpgme_set_protocol (ctx, GPGME_PROTOCOL_CMS);
+  gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
+  gpgme_set_protocol (ctx, protocol);
 
-  ret = gvm_gpg_import_from_string (ctx, cert_str, -1,
-                                    GPGME_DATA_TYPE_CMS_OTHER);
+  ret = gvm_gpg_import_from_string (ctx, key_str, -1, key_type);
 
   gpgme_release (ctx);
   gvm_file_remove_recurse (gpg_temp_dir);
 
   return (ret != 0);
+}
+
+/**
+ * @brief Check that a string represents a valid S/MIME Certificate.
+ *
+ * @param[in]  cert_str     Certificate string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+check_certificate_smime (const char *cert_str)
+{
+  return try_gpgme_import (cert_str, GPGME_DATA_TYPE_CMS_OTHER,
+                           GPGME_PROTOCOL_CMS);
 }
 
 /**
@@ -632,8 +648,8 @@ check_private_key (const char *key_str)
 static int
 check_public_key (const char *key_str)
 {
-  // TODO: Implement check
-  return 0;
+  return try_gpgme_import (key_str, GPGME_DATA_TYPE_PGP_KEY,
+                           GPGME_PROTOCOL_OPENPGP);
 }
 
 
