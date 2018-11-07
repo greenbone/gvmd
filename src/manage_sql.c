@@ -6566,7 +6566,7 @@ collate_ip (void* data,
                   two_a, two_b, two_c, &two_dot, two_d)
           == 4))
     {
-      int ret = collate_ip_compare (one_a, two_a);
+      ret = collate_ip_compare (one_a, two_a);
       if (ret) return ret < 0 ? -1 : 1;
 
       ret = collate_ip_compare (one_b, two_b);
@@ -7451,14 +7451,16 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
     {
       int validation_result;
-      gchar *name = sql_quote (item);
+      gchar *data_name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
 
-      validation_result = validate_alert_condition_data (name, data, condition);
+      validation_result = validate_alert_condition_data (data_name,
+                                                         data,
+                                                         condition);
 
       if (validation_result)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
 
@@ -7478,9 +7480,9 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       sql ("INSERT INTO alert_condition_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
-           name,
+           data_name,
            data);
-      g_free (name);
+      g_free (data_name);
       g_free (data);
     }
 
@@ -7488,14 +7490,14 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   while ((item = (gchar*) g_ptr_array_index (event_data, index++)))
     {
       int validation_result;
-      gchar *name = sql_quote (item);
+      gchar *data_name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
 
-      validation_result = validate_alert_event_data (name, data, event);
+      validation_result = validate_alert_event_data (data_name, data, event);
 
       if (validation_result)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
 
@@ -7513,9 +7515,9 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       sql ("INSERT INTO alert_event_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
-           name,
+           data_name,
            data);
-      g_free (name);
+      g_free (data_name);
       g_free (data);
     }
 
@@ -7523,82 +7525,82 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
     {
       int ret;
-      gchar *name, *data;
+      gchar *data_name, *data;
 
-      name = sql_quote (item);
+      data_name = sql_quote (item);
       data = sql_quote (item + strlen (item) + 1);
 
       if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "to_address") == 0
+          && strcmp (data_name, "to_address") == 0
           && validate_email_list (data))
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return 2;
         }
 
       if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "from_address") == 0
+          && strcmp (data_name, "from_address") == 0
           && validate_email (data))
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return 2;
         }
 
       if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "subject") == 0
+          && strcmp (data_name, "subject") == 0
           && strlen (data) > 80)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return 7;
         }
 
       if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "message") == 0
+          && strcmp (data_name, "message") == 0
           && strlen (data) > max_email_message_length)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return 8;
         }
 
-      ret = validate_scp_data (method, name, &data);
+      ret = validate_scp_data (method, data_name, &data);
       if (ret)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return ret;
         }
 
-      ret = validate_send_data (method, name, &data);
+      ret = validate_send_data (method, data_name, &data);
       if (ret)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return ret;
         }
 
-      ret = validate_smb_data (method, name, &data);
+      ret = validate_smb_data (method, data_name, &data);
       if (ret)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return ret;
         }
 
-      ret = validate_tippingpoint_data (method, name, &data);
+      ret = validate_tippingpoint_data (method, data_name, &data);
       if (ret)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return ret;
@@ -7607,9 +7609,9 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
-           name,
+           data_name,
            data);
-      g_free (name);
+      g_free (data_name);
       g_free (data);
     }
 
