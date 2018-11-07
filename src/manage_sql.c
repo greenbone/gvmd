@@ -31909,14 +31909,6 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       return 0;
     }
 
-  if (sql_int ("SELECT hidden from tasks WHERE id = %llu;",
-               task)
-      == 1)
-    {
-      sql_rollback ();
-      return 2;
-    }
-
   if (current_credentials.uuid == NULL)
     {
       sql_rollback ();
