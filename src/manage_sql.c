@@ -7524,7 +7524,6 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   index = 0;
   while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
     {
-      int ret;
       gchar *data_name, *data;
 
       data_name = sql_quote (item);
@@ -7914,7 +7913,6 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       index = 0;
       while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
         {
-          int ret;
           gchar *name, *data;
 
           name = sql_quote (item);
@@ -13047,7 +13045,6 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   if (alert_event (alert) == EVENT_NEW_SECINFO
       || alert_event (alert) == EVENT_UPDATED_SECINFO)
     {
-      int ret;
       char *alert_event_data;
       gchar *type;
 
@@ -31099,7 +31096,7 @@ manage_send_report (report_t report, report_t delta_report,
       dest = chunk;
       while (1)
         {
-          int ret = fread (dest, 1, left, stream);
+          ret = fread (dest, 1, left, stream);
           if (ferror (stream))
             {
               fclose (stream);
