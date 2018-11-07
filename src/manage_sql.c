@@ -31985,7 +31985,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
  * @param[in]  task      The task.
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
- * @return 0 on success, 1 if task is hidden, -1 on error.
+ * @return 0 on success, -1 on error.
  */
 int
 delete_task (task_t task, int ultimate)
