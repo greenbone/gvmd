@@ -1769,13 +1769,79 @@ filter_free (array_t *split)
 }
 
 /**
- * @brief Flag to control the default sorting produced by split filter.
+ * @brief Flag to control the default sorting produced by split_filter.
  *
  * If this is true, and the filter does not specify a sort field, then
  * split_filter will not insert a default sort term, so that the random
  * (and fast) table order in the database will be used.
  */
 int table_order_if_sort_not_specified = 0;
+
+/**
+ * @brief Ensure filter parts contains the special keywords.
+ *
+ * @param[in]  parts         Array of keyword strings.
+ * @param[in]  given_filter  Filter term.
+ */
+void
+split_filter_add_specials (array_t *parts, const gchar* given_filter)
+{
+  int index, first, max, sort;
+  keyword_t *keyword;
+
+  index = parts->len;
+  first = max = sort = 0;
+  while (index--)
+    {
+      keyword_t *item;
+      item = (keyword_t*) g_ptr_array_index (parts, index);
+      if (item->column && (strcmp (item->column, "first") == 0))
+        first = 1;
+      else if (item->column && (strcmp (item->column, "rows") == 0))
+        max = 1;
+      else if (item->column
+               && ((strcmp (item->column, "sort") == 0)
+                   || (strcmp (item->column, "sort-reverse") == 0)))
+        sort = 1;
+    }
+
+  if (first == 0)
+    {
+      keyword = g_malloc0 (sizeof (keyword_t));
+      keyword->column = g_strdup ("first");
+      keyword->string = g_strdup ("1");
+      keyword->type = KEYWORD_TYPE_STRING;
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+      array_add (parts, keyword);
+    }
+
+  if (max == 0)
+    {
+      keyword = g_malloc0 (sizeof (keyword_t));
+      keyword->column = g_strdup ("rows");
+      /* If there was a filter, make max_return default to Rows Per
+       * Page.  This keeps the pre-filters GMP behaviour when the filter
+       * is empty, but is more convenenient for clients that set the
+       * filter. */
+      if (strlen (given_filter))
+        keyword->string = g_strdup ("-2");
+      else
+        keyword->string = g_strdup ("-1");
+      keyword->type = KEYWORD_TYPE_STRING;
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+      array_add (parts, keyword);
+    }
+
+  if (table_order_if_sort_not_specified == 0 && sort == 0)
+    {
+      keyword = g_malloc0 (sizeof (keyword_t));
+      keyword->column = g_strdup ("sort");
+      keyword->string = g_strdup ("name");
+      keyword->type = KEYWORD_TYPE_STRING;
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+      array_add (parts, keyword);
+    }
+}
 
 /**
  * @brief Split the filter term into parts.
@@ -1793,6 +1859,8 @@ split_filter (const gchar* given_filter)
   keyword_t *keyword;
 
   assert (given_filter);
+
+  /* Collect the filter terms in an array. */
 
   filter = given_filter;
   parts = make_array ();
@@ -1939,63 +2007,9 @@ split_filter (const gchar* given_filter)
     }
   assert (keyword == NULL);
 
-  {
-    int index, first, max, sort;
-    keyword_t *keyword;
+  /* Make sure the special keywords appear in the array. */
 
-    index = parts->len;
-    first = max = sort = 0;
-    while (index--)
-      {
-        keyword_t *item;
-        item = (keyword_t*) g_ptr_array_index (parts, index);
-        if (item->column && (strcmp (item->column, "first") == 0))
-          first = 1;
-        else if (item->column && (strcmp (item->column, "rows") == 0))
-          max = 1;
-        else if (item->column
-                 && ((strcmp (item->column, "sort") == 0)
-                     || (strcmp (item->column, "sort-reverse") == 0)))
-          sort = 1;
-      }
-
-    if (first == 0)
-      {
-        keyword = g_malloc0 (sizeof (keyword_t));
-        keyword->column = g_strdup ("first");
-        keyword->string = g_strdup ("1");
-        keyword->type = KEYWORD_TYPE_STRING;
-        keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-        array_add (parts, keyword);
-      }
-
-    if (max == 0)
-      {
-        keyword = g_malloc0 (sizeof (keyword_t));
-        keyword->column = g_strdup ("rows");
-        /* If there was a filter, make max_return default to Rows Per
-         * Page.  This keeps the pre-filters GMP behaviour when the filter
-         * is empty, but is more convenenient for clients that set the
-         * filter. */
-        if (strlen (given_filter))
-          keyword->string = g_strdup ("-2");
-        else
-          keyword->string = g_strdup ("-1");
-        keyword->type = KEYWORD_TYPE_STRING;
-        keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-        array_add (parts, keyword);
-      }
-
-    if (table_order_if_sort_not_specified == 0 && sort == 0)
-      {
-        keyword = g_malloc0 (sizeof (keyword_t));
-        keyword->column = g_strdup ("sort");
-        keyword->string = g_strdup ("name");
-        keyword->type = KEYWORD_TYPE_STRING;
-        keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-        array_add (parts, keyword);
-      }
-  }
+  split_filter_add_specials (parts, given_filter);
 
   array_add (parts, NULL);
 
