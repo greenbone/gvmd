@@ -260,7 +260,7 @@ delete_task_lock (task_t, int);
 gchar*
 clean_hosts (const char *, int*);
 
-int
+static int
 create_port_list_unique (const char *, const char *, const char *,
                          port_list_t *);
 
@@ -273,7 +273,7 @@ find_user_by_name (const char *, user_t *user);
 gboolean
 find_role (const char *, group_t *);
 
-gboolean
+static gboolean
 find_role_with_permission (const char *, role_t *, const char *);
 
 static gboolean
@@ -359,7 +359,7 @@ report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
 static int
 check_report_format (const gchar *);
 
-gboolean
+static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
 
 static gchar*
@@ -739,7 +739,7 @@ valid_gmp_command (const char* name)
  *
  * @return Freshly allocated type name if any, else NULL.
  */
-gchar *
+static gchar *
 gmp_command_type (const char* name)
 {
   const char *under;
@@ -2241,7 +2241,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
  *
  * @return 0 success, 1 fail.
  */
-int
+static int
 filter_control_int (keyword_t **point, const char *column, int *val)
 {
   if (val)
@@ -2270,7 +2270,7 @@ filter_control_int (keyword_t **point, const char *column, int *val)
  *
  * @return 0 success, 1 fail.
  */
-int
+static int
 filter_control_str (keyword_t **point, const char *column, gchar **string)
 {
   if (string)
@@ -4583,7 +4583,7 @@ find_resource_by_name (const char* type, const char* name, resource_t *resource)
  * @return FALSE on success (including if failed to find resource), TRUE on
  *         error.
  */
-gboolean
+static gboolean
 find_resource_by_name_with_permission (const char *type, const char *name,
                                        resource_t *resource,
                                        const char *permission)
@@ -4820,7 +4820,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
  * @return 0 success, 1 resource exists already, 2 failed to find existing
  *         resource, 99 permission denied, -1 error.
  */
-int
+static int
 copy_resource (const char *type, const char *name, const char *comment,
                const char *resource_id, const char *columns,
                int make_name_unique, resource_t* new_resource,
@@ -6625,7 +6625,7 @@ collate_ip (void* data,
  * @param[in]  iterator  Iterator.
  * @param[in]  task      Task.
  */
-void
+static void
 init_task_user_iterator (iterator_t *iterator, task_t task)
 {
   init_iterator (iterator,
@@ -11061,7 +11061,7 @@ scp_alert_path_print (const gchar *message, task_t task)
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
  *         find filter.
  */
-int
+static int
 email_secinfo (alert_t alert, task_t task, event_t event,
                const void* event_data, alert_method_t method,
                alert_condition_t condition, const gchar *to_address,
@@ -19848,7 +19848,7 @@ qod_from_type (const char *qod_type)
  *
  * @return Host if exists, else 0.
  */
-host_t
+static host_t
 host_identify (const char *host_name, const char *identifier_name,
                const char *identifier_value, const char *source_type,
                const char *source)
@@ -20308,7 +20308,7 @@ detect_cleanup:
  *
  * @param[in]  cpe  CPE.
  */
-double
+static double
 cpe_highest_cvss (const char *cpe)
 {
   int highest;
@@ -20350,7 +20350,7 @@ cleanup_prognosis_iterator ()
  * @param[in]  iterator  Iterator.
  * @param[in]  cpe       CPE.
  */
-void
+static void
 init_prognosis_iterator (iterator_t *iterator, const char *cpe)
 {
   if (prognosis_stmt == NULL)
@@ -22940,7 +22940,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
  * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
  *         -1 error.
  */
-int
+static int
 init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
@@ -23909,6 +23909,7 @@ host_iterator_report (iterator_t* iterator)
  * @return The UUID of the report of the host.  Caller must use only before
  *         calling cleanup_iterator.
  */
+static
 DEF_ACCESS (host_iterator_report_uuid, 7);
 
 /**
@@ -23919,6 +23920,7 @@ DEF_ACCESS (host_iterator_report_uuid, 7);
  * @return The UUID of the assset associate with the host.  Caller must use
  *         only before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (host_iterator_asset_uuid, 8);
 
 /**
@@ -32732,7 +32734,7 @@ manage_max_hosts ()
  *
  * @param[in]   new_max   New max_hosts value.
  */
-void
+static void
 manage_set_max_hosts (int new_max)
 {
   max_hosts = new_max;
@@ -42353,7 +42355,7 @@ credential_scanner_iterator_readable (iterator_t* iterator)
  *
  * @return FALSE on success (including if failed to find agent), TRUE on error.
  */
-gboolean
+static gboolean
 find_agent_with_permission (const char* uuid, agent_t* agent,
                             const char *permission)
 {
@@ -52616,7 +52618,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
  *
  * @return FALSE on success (including if failed to find group), TRUE on error.
  */
-gboolean
+static gboolean
 find_group_with_permission (const char* uuid, group_t* group,
                             const char *permission)
 {
@@ -53439,7 +53441,7 @@ permissions_set_subjects (const char *type, resource_t old, resource_t new,
  * @return FALSE on success (including if failed to find permission), TRUE on
  *         error.
  */
-gboolean
+static gboolean
 find_permission (const char* uuid, permission_t* permission)
 {
   return find_resource ("permission", uuid, permission);
@@ -54003,7 +54005,7 @@ permission_name (permission_t permission)
  *
  * @return Newly allocated subject type if available, else NULL.
  */
-char *
+static char *
 permission_subject_type (permission_t permission)
 {
   return sql_string ("SELECT subject_type FROM permissions WHERE id = %llu;",
@@ -54017,7 +54019,7 @@ permission_subject_type (permission_t permission)
  *
  * @return Subject if there is one, else 0.
  */
-resource_t
+static resource_t
 permission_subject (permission_t permission)
 {
   resource_t subject;
@@ -54545,7 +54547,7 @@ permission_iterator_subject_readable (iterator_t* iterator)
  * @return FALSE on success (including if failed to find permission), TRUE on
  *         error.
  */
-gboolean
+static gboolean
 find_permission_with_permission (const char *uuid, permission_t *resource,
                                  const char *permission)
 {
@@ -55118,7 +55120,7 @@ port_range_port_list_uuid (const char *port_range)
  * @return FALSE on success (including if failed to find port range), TRUE on
  *         error.
  */
-gboolean
+static gboolean
 find_port_range_with_permission (const char *uuid, port_range_t *port_range,
                                  const char *permission)
 {
@@ -55254,7 +55256,7 @@ ranges_sort_merge (array_t *ranges)
  *
  * @return 0 success.
  */
-int
+static int
 create_port_list_lock (const char *quoted_id, const char *quoted_name,
                        const char *comment, array_t *ranges,
                        port_list_t* port_list)
@@ -55317,7 +55319,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
  *
  * @return 0 success, 4 error in port range.
  */
-int
+static int
 create_port_list_unique (const char *name, const char *comment,
                          const char* port_range, port_list_t* port_list)
 {
@@ -56840,7 +56842,7 @@ delete_role (const char *role_id, int ultimate)
  *
  * @return FALSE on success (including if failed to find role), TRUE on error.
  */
-gboolean
+static gboolean
 find_role_with_permission (const char* uuid, role_t* role,
                            const char *permission)
 {
@@ -59823,7 +59825,7 @@ typedef struct
 /**
  * @brief Free an identifier.
  */
-void
+static void
 identifier_free (identifier_t *identifier)
 {
   if (identifier)
@@ -61177,7 +61179,7 @@ DEF_ACCESS (host_detail_iterator_source_id, 4);
  *
  * @return FALSE on success (including if failed to find host), TRUE on error.
  */
-gboolean
+static gboolean
 find_host_with_permission (const char* uuid, host_t* host,
                            const char *permission)
 {
@@ -61459,7 +61461,7 @@ modify_asset (const char *asset_id, const char *comment)
  * @return 0 success, 2 failed to find report, 4 UUID
  *         required, 99 permission denied, -1 error.
  */
-int
+static int
 delete_report_assets (const char *report_id)
 {
   resource_t report;
@@ -63264,7 +63266,7 @@ manage_set_password (GSList *log_config, const gchar *database,
  *
  * @return FALSE on success (including if failed to find user), TRUE on error.
  */
-gboolean
+static gboolean
 find_user_with_permission (const char* uuid, user_t* user,
                            const char *permission)
 {
@@ -66001,7 +66003,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
  *
  * @return FALSE on success (including if failed to find tag), TRUE on error.
  */
-gboolean
+static gboolean
 find_tag_with_permission (const char* uuid, tag_t* tag,
                           const char *permission)
 {
