@@ -153,7 +153,7 @@ manage_scap_loaded ();
  *
  * 1 if set via scheduler, 2 if set via event, else 0.
  */
-int authenticate_allow_all;
+static int authenticate_allow_all;
 
 const char *threat_message_type (const char *);
 
@@ -260,11 +260,11 @@ delete_task_lock (task_t, int);
 gchar*
 clean_hosts (const char *, int*);
 
-int
+static int
 create_port_list_unique (const char *, const char *, const char *,
                          port_list_t *);
 
-int
+static int
 valid_type (const char*);
 
 static gboolean
@@ -273,52 +273,52 @@ find_user_by_name (const char *, user_t *user);
 gboolean
 find_role (const char *, group_t *);
 
-gboolean
+static gboolean
 find_role_with_permission (const char *, role_t *, const char *);
 
 static gboolean
 find_user_by_name (const char *, user_t *);
 
-int
+static int
 user_ensure_in_db (const gchar *, const gchar *);
 
 static int
 verify_report_format_internal (report_format_t);
 
-void
+static void
 cleanup_prognosis_iterator ();
 
-int
+static int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
 
-void
+static void
 permissions_set_locations (const char *, resource_t, resource_t, int);
 
-void
+static void
 permissions_set_orphans (const char *, resource_t, int);
 
-void
+static void
 permissions_set_subjects (const char *, resource_t, resource_t, int);
 
 static resource_t
 permission_resource (permission_t);
 
-resource_t
+static resource_t
 permission_subject (permission_t);
 
-char *
+static char *
 permission_subject_type (permission_t);
 
-void
+static void
 tags_remove_resource (const char *, resource_t, int);
 
-void
+static void
 tags_set_locations (const char *, resource_t, resource_t, int);
 
-int
+static int
 role_is_predefined (role_t);
 
-int
+static int
 role_is_predefined_id (const char *);
 
 static int
@@ -359,7 +359,7 @@ report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
 static int
 check_report_format (const gchar *);
 
-gboolean
+static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
 
 static gchar*
@@ -371,7 +371,7 @@ lookup_report_format (const char*, report_format_t*);
 static int
 task_last_report_any_status (task_t, report_t *);
 
-int
+static int
 task_report_previous (task_t task, report_t, report_t *);
 
 static gboolean
@@ -379,6 +379,149 @@ find_trash_task (const char*, task_t*);
 
 static gboolean
 find_trash_report_with_permission (const char *, report_t *, const char *);
+
+static const char*
+agent_iterator_installer (iterator_t*);
+
+static gsize
+agent_iterator_installer_size (iterator_t*);
+
+static const char*
+agent_iterator_installer_signature_64 (iterator_t*);
+
+static int
+cleanup_schedule_times ();
+
+static int
+nvt_selector_families_growing (const char *);
+
+static int
+nvt_selector_nvts_growing_2 (const char*, int);
+
+static char *
+permission_name (permission_t);
+
+static int
+port_list_is_predefined (port_list_t);
+
+static void
+cache_permissions_for_resource (const char *, resource_t, GArray*);
+
+static port_protocol_t
+port_range_iterator_type_int (iterator_t* iterator);
+
+static void
+cache_all_permissions_for_users (GArray*);
+
+static void
+report_cache_counts (report_t, int, int, const char*);
+
+static int
+report_host_dead (report_host_t);
+
+static int
+report_host_result_count (report_host_t);
+
+static const char*
+report_format_param_iterator_type_regex (iterator_t *);
+
+static int
+set_credential_data (credential_t, const char*, const char*);
+
+static void
+set_credential_name (credential_t, const char *);
+
+static void
+set_credential_comment (credential_t, const char *);
+
+static void
+set_credential_login (credential_t, const char *);
+
+static void
+set_credential_certificate (credential_t, const char *);
+
+static void
+set_credential_auth_algorithm (credential_t, const char *);
+
+static void
+set_credential_private_key (credential_t, const char *, const char *);
+
+static void
+set_credential_password (credential_t, const char *);
+
+static void
+set_credential_snmp_secret (credential_t, const char *, const char *,
+                            const char *);
+
+static int
+setting_value_int (const char *, int *);
+
+static int
+setting_auto_cache_rebuild_int ();
+
+static double
+setting_default_severity_dbl ();
+
+static int
+setting_dynamic_severity_int ();
+
+static char *
+setting_timezone ();
+
+static int
+setting_value (const char *, char **);
+
+static void
+set_report_format_name (report_format_t, const char *);
+
+static void
+set_report_format_summary (report_format_t, const char *);
+
+static void
+set_report_format_active (report_format_t, int);
+
+static int
+set_report_format_param (report_format_t, const char *, const char *);
+
+static double
+task_severity_double (task_t, int, int, int);
+
+static char*
+target_comment (target_t);
+
+static column_t *
+type_select_columns (const char *type);
+
+static column_t *
+type_where_columns (const char *type);
+
+static char*
+trash_filter_uuid (filter_t);
+
+static char*
+trash_filter_name (filter_t);
+
+static char*
+trash_target_hosts (target_t);
+
+static char*
+trash_target_exclude_hosts (target_t);
+
+static char*
+trash_target_comment (target_t);
+
+static int
+user_resources_in_use (user_t,
+                       const char *, int(*)(resource_t),
+                       const char *, int(*)(resource_t));
+
+static const char**
+type_filter_columns (const char *);
+
+static int
+type_build_select (const char *, const char *, const get_data_t *,
+                   gboolean, gboolean, const char *, const char *,
+                   const char *, gchar **);
 
 
 /* Variables. */
@@ -596,7 +739,7 @@ valid_gmp_command (const char* name)
  *
  * @return Freshly allocated type name if any, else NULL.
  */
-gchar *
+static gchar *
 gmp_command_type (const char* name)
 {
   const char *under;
@@ -741,7 +884,7 @@ member (GPtrArray *array, const char *string)
  * @param[in]  array   Array.
  * @param[in]  string  String.  Copied into array.
  */
-void
+static void
 array_add_new_string (array_t *array, const gchar *string)
 {
   guint index;
@@ -1222,33 +1365,11 @@ manage_option_cleanup ()
 }
 
 /**
- * @brief Print an array of columns.
- *
- * @param[in]  columns  Columns.
- */
-void
-column_array_print (column_t *columns)
-{
-  g_debug ("%s: %p", __FUNCTION__, columns);
-  g_debug ("%s: {", __FUNCTION__);
-  while (columns->select)
-    {
-      g_debug ("%s:   { \"%s\", \"%s\", %i }",
-               __FUNCTION__,
-               columns->select,
-               columns->filter ? columns->filter : "NULL",
-               columns->type);
-      columns++;
-    }
-  g_debug ("%s: }", __FUNCTION__);
-}
-
-/**
  * @brief Copy an array of columns.
  *
  * @param[in]  columns  Columns.
  */
-column_t *
+static column_t *
 column_array_copy (column_t *columns)
 {
   column_t *point, *start;
@@ -1282,7 +1403,7 @@ column_array_copy (column_t *columns)
  *
  * @param[in]  columns  Columns.
  */
-void
+static void
 column_array_free (column_t *columns)
 {
   while (columns->filter)
@@ -1303,7 +1424,7 @@ column_array_free (column_t *columns)
  * @param[in]  filter   Filter term name.
  * @param[in]  select   Select clause.
  */
-void
+static void
 column_array_set (column_t *columns, const gchar *filter, gchar *select)
 {
   while (columns->select)
@@ -2120,7 +2241,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
  *
  * @return 0 success, 1 fail.
  */
-int
+static int
 filter_control_int (keyword_t **point, const char *column, int *val)
 {
   if (val)
@@ -2149,7 +2270,7 @@ filter_control_int (keyword_t **point, const char *column, int *val)
  *
  * @return 0 success, 1 fail.
  */
-int
+static int
 filter_control_str (keyword_t **point, const char *column, gchar **string)
 {
   if (string)
@@ -4101,7 +4222,7 @@ filter_clause (const char* type, const char* filter,
  *
  * @return 1 yes, 0 no.
  */
-int
+static int
 valid_type (const char* type)
 {
   return (strcasecmp (type, "agent") == 0)
@@ -4138,7 +4259,7 @@ valid_type (const char* type)
  *
  * @return Database name of type if possible, else NULL.
  */
-const char *
+static const char *
 type_db_name (const char* type)
 {
   if (type == NULL)
@@ -4229,7 +4350,7 @@ type_is_info_subtype (const char *type)
  *
  * @return 1 yes, 0 no.
  */
-int
+static int
 type_named (const char *type)
 {
   return strcasecmp (type, "note")
@@ -4243,7 +4364,7 @@ type_named (const char *type)
  *
  * @return 1 yes, 0 no.
  */
-int
+static int
 type_has_comment (const char *type)
 {
   return strcasecmp (type, "report_format");
@@ -4275,7 +4396,7 @@ type_has_trash (const char *type)
  *
  * @return 1 yes, 0 no.
  */
-int
+static int
 type_owned (const char* type)
 {
   return (strcasecmp (type, "info")
@@ -4462,7 +4583,7 @@ find_resource_by_name (const char* type, const char* name, resource_t *resource)
  * @return FALSE on success (including if failed to find resource), TRUE on
  *         error.
  */
-gboolean
+static gboolean
 find_resource_by_name_with_permission (const char *type, const char *name,
                                        resource_t *resource,
                                        const char *permission)
@@ -4699,7 +4820,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
  * @return 0 success, 1 resource exists already, 2 failed to find existing
  *         resource, 99 permission denied, -1 error.
  */
-int
+static int
 copy_resource (const char *type, const char *name, const char *comment,
                const char *resource_id, const char *columns,
                int make_name_unique, resource_t* new_resource,
@@ -5238,13 +5359,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                              distinct, extra_tables, extra_where, owned, FALSE,
                              NULL);
 }
-
-// FIX
-column_t *
-type_select_columns (const char *type);
-
-column_t *
-type_where_columns (const char *type);
 
 /**
  * @brief Append expression for a column to an array.
@@ -6431,79 +6545,6 @@ manage_decrypt_all_credentials (GSList *log_config, const gchar *database)
 /* Collation. */
 
 /**
- * @brief Collate two message type strings.
- *
- * A lower threat is considered less than a higher threat, so Medium is
- * less than High.
- *
- * @param[in]  data     Dummy for callback.
- * @param[in]  one_len  Length of first string.
- * @param[in]  arg_one  First string.
- * @param[in]  two_len  Length of second string.
- * @param[in]  arg_two  Second string.
- *
- * @return -1, 0 or 1 if first is less than, equal to or greater than second.
- */
-int
-collate_message_type (void* data,
-                      int one_len, const void* arg_one,
-                      int two_len, const void* arg_two)
-{
-  const char* one = (const char*) arg_one;
-  const char* two = (const char*) arg_two;
-
-  if (strncmp (one, "Security Hole", one_len) == 0)
-    {
-      if (strncmp (two, "Security Hole", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Security Hole", two_len) == 0) return -1;
-
-  if (strncmp (one, "Security Warning", one_len) == 0)
-    {
-      if (strncmp (two, "Security Warning", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Security Warning", two_len) == 0) return -1;
-
-  if (strncmp (one, "Security Note", one_len) == 0)
-    {
-      if (strncmp (two, "Security Note", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Security Note", two_len) == 0) return -1;
-
-  if (strncmp (one, "Log Message", one_len) == 0)
-    {
-      if (strncmp (two, "Log Message", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Log Message", two_len) == 0) return -1;
-
-  if (strncmp (one, "Debug Message", one_len) == 0)
-    {
-      if (strncmp (two, "Debug Message", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Debug Message", two_len) == 0) return -1;
-
-  if (strncmp (one, "Error Message", one_len) == 0)
-    {
-      if (strncmp (two, "Error Message", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Error Message", two_len) == 0) return -1;
-
-  return strncmp (one, two, MIN (one_len, two_len));
-}
-
-/**
  * @brief Compare two number strings for collate_ip.
  *
  * @param[in]  one_arg  First string.
@@ -6534,7 +6575,7 @@ collate_ip_compare (const char *one_arg, const char *two_arg)
  *
  * @return -1, 0 or 1 if first is less than, equal to or greater than second.
  */
-int
+static int
 collate_ip (void* data,
             int one_len, const void* arg_one,
             int two_len, const void* arg_two)
@@ -6584,7 +6625,7 @@ collate_ip (void* data,
  * @param[in]  iterator  Iterator.
  * @param[in]  task      Task.
  */
-void
+static void
 init_task_user_iterator (iterator_t *iterator, task_t task)
 {
   init_iterator (iterator,
@@ -6601,6 +6642,7 @@ init_task_user_iterator (iterator_t *iterator, task_t task)
                  task);
 }
 
+static
 DEF_ACCESS (task_user_iterator_name, 3);
 
 /**
@@ -7022,7 +7064,7 @@ validate_alert_event_data (gchar *name, gchar* data, event_t event)
  *         SCP method, 18 error in SCP credential, 19 error in SCP path,
  *         -1 error.
  */
-int
+static int
 validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
 {
   if (method == ALERT_METHOD_SCP
@@ -7104,7 +7146,7 @@ validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
  * @return 0 valid, 12 error in Send host, 13 error in Send port, 14 failed
  *         to find report format for Send method, -1 error.
  */
-int
+static int
 validate_send_data (alert_method_t method, const gchar *name, gchar **data)
 {
   if (method == ALERT_METHOD_SEND
@@ -7168,7 +7210,7 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
  * @return 0 valid, 40 invalid credential, 41 invalid SMB share path,
  *         42 invalid SMB file path, -1 error.
  */
-int
+static int
 validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
 {
   if (method == ALERT_METHOD_SMB)
@@ -7235,7 +7277,7 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
  * @return 0 valid, 50 invalid credential, 51 invalid hostname,
  *  52 invalid certificate, 53 invalid TLS workaround setting.
  */
-int
+static int
 validate_tippingpoint_data (alert_method_t method, const gchar *name,
                              gchar **data)
 {
@@ -8171,7 +8213,7 @@ alert_uuid (alert_t alert)
  *
  * @return Name of alert.
  */
-char *
+static char *
 alert_name (alert_t alert)
 {
   return sql_string ("SELECT name FROM alerts WHERE id = %llu;", alert);
@@ -8184,7 +8226,7 @@ alert_name (alert_t alert)
  *
  * @return UUID of owner.
  */
-char *
+static char *
 alert_owner_uuid (alert_t alert)
 {
   return sql_string ("SELECT uuid FROM users"
@@ -8199,7 +8241,7 @@ alert_owner_uuid (alert_t alert)
  *
  * @return UUID if there's a filter, else NULL.
  */
-char *
+static char *
 alert_filter_id (alert_t alert)
 {
   return sql_string ("SELECT"
@@ -8449,7 +8491,7 @@ alert_iterator_method (iterator_t* iterator)
  *
  * @return Filter of the alert or NULL if iteration is complete.
  */
-filter_t
+static filter_t
 alert_iterator_filter (iterator_t* iterator)
 {
   if (iterator->done) return -1;
@@ -8731,7 +8773,7 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
  *
  * @return alert.
  */
-alert_t
+static alert_t
 task_alert_iterator_alert (iterator_t* iterator)
 {
   if (iterator->done) return 0;
@@ -8765,7 +8807,7 @@ DEF_ACCESS (task_alert_iterator_name, 2);
  *
  * @return Active state.
  */
-int
+static int
 task_alert_iterator_active (iterator_t* iterator)
 {
   int ret;
@@ -11019,7 +11061,7 @@ scp_alert_path_print (const gchar *message, task_t task)
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
  *         find filter.
  */
-int
+static int
 email_secinfo (alert_t alert, task_t task, event_t event,
                const void* event_data, alert_method_t method,
                alert_condition_t condition, const gchar *to_address,
@@ -15533,7 +15575,7 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
  *
  * @return 0 success, -1 error, -2 database is wrong version.
  */
-int
+static int
 check_db_versions (int nvt_cache_mode)
 {
   char *database_version;
@@ -16783,7 +16825,7 @@ check_generate_scripts ()
 /**
  * @brief Stop any active tasks.
  */
-void
+static void
 stop_active_tasks ()
 {
   iterator_t tasks;
@@ -16857,7 +16899,7 @@ stop_active_tasks ()
  *
  * Remove superfluous entries from tables.
  */
-void
+static void
 cleanup_tables ()
 {
   /* Remove group and role assignments of deleted users.
@@ -17234,7 +17276,7 @@ manage_user_hash (const gchar *username)
  *
  * @return UUID.
  */
-gchar *
+static gchar *
 user_uuid_method (const gchar *username, auth_method_t method)
 {
   gchar *uuid, *quoted_username, *quoted_method;
@@ -17313,7 +17355,7 @@ user_exists_method (const gchar *name, auth_method_t method)
  *
  * @return UUID.
  */
-gchar *
+static gchar *
 user_uuid_any_method (const gchar *name)
 {
   if (ldap_auth_enabled ()
@@ -17335,7 +17377,7 @@ user_uuid_any_method (const gchar *name)
  *
  * @return 0 success.
  */
-int
+static int
 user_ensure_in_db (const gchar *name, const gchar *method)
 {
   gchar *quoted_name, *quoted_method;
@@ -17384,7 +17426,7 @@ user_ensure_in_db (const gchar *name, const gchar *method)
  *
  * @return 1 yes, 0 no.
  */
-int
+static int
 user_exists (const gchar *name)
 {
   if (ldap_auth_enabled ()
@@ -17596,7 +17638,7 @@ auth_cache_insert (const char *username, const char *password, int method)
  * @return 0 authentication success, 1 authentication failure, 99 permission
  *         denied, -1 error.
  */
-int
+static int
 authenticate_any_method (const gchar *username, const gchar *password,
                          auth_method_t *auth_method)
 {
@@ -17788,53 +17830,6 @@ resource_count (const char *type, const get_data_t *get)
 }
 
 /**
- * @brief Test whether a resource of the given type and unique ID exists.
- *
- * @param[in]  type  Type.
- * @param[in]  id    Unique ID.
- *
- * @return 1 if the resource exists, 0 otherwise.
- */
-int
-resource_id_exists (const char *type, const char * id)
-{
-  return !!sql_int ("SELECT count(*)"
-                    " FROM %ss"
-                    " WHERE uuid='%s'"
-                    " %s;",
-                    type,
-                    id,
-                    (strcmp (type, "task") == 0) ? "AND hidden=0" : "");
-}
-
-/**
- * @brief Test Whether a resource of the given type and ID exists in the trash.
- *
- * @param[in]  type  Type.
- * @param[in]  id    Unique ID.
- *
- * @return 1 if the resource exists, 0 otherwise.
- */
-int
-trash_id_exists (const char *type, const char * id)
-{
-  if (type_has_trash (type) == 0)
-    return 0;
-  else if (strcmp (type, "task"))
-    return !!sql_int ("SELECT count(*)"
-                      " FROM %ss_trash"
-                      " WHERE uuid='%s';",
-                      type,
-                      id);
-  else
-    return !!sql_int ("SELECT count(*)"
-                      " FROM tasks"
-                      " WHERE uuid='%s'"
-                      " AND hidden=2;",
-                      id);
-}
-
-/**
  * @brief Return the number of tasks associated with the current user.
  *
  * @param[in]  get  GET params.
@@ -17891,7 +17886,7 @@ task_count (const get_data_t *get)
  *
  * @return ID of task.
  */
-unsigned int
+static unsigned int
 task_id (task_t task)
 {
   /** @todo The cast is a hack for compatibility with the old, alternate,
@@ -18552,7 +18547,7 @@ task_upload_progress (task_t task)
  * @param[in]  task  Task.
  * @param[in]  time  New time.  ISO format.  Freed before return.
  */
-void
+static void
 set_task_start_time (task_t task, char* time)
 {
   sql ("UPDATE tasks SET start_time = %i, modification_time = m_now ()"
@@ -18602,7 +18597,7 @@ set_task_start_time_otp (task_t task, char* time)
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 task_report_previous (task_t task, report_t report, report_t *previous)
 {
   switch (sql_int64 (previous,
@@ -18804,7 +18799,7 @@ add_task_alert (task_t task, alert_t alert)
  *
  * @return 0 success, -1 error, 1 failed to find alert.
  */
-int
+static int
 set_task_alerts (task_t task, array_t *alerts, gchar **alert_id_return)
 {
   alert_t alert = 0;
@@ -19217,6 +19212,8 @@ set_task_schedule_next_time_uuid (const gchar *task_id, time_t time)
 /**
  * @brief Return the severity score of a task, taking overrides into account.
  *
+ * Only used by SQLite backend.
+ *
  * @param[in]  task       Task.
  * @param[in]  overrides  Whether to apply overrides.
  * @param[in]  min_qod    Minimum QoD of results to count.
@@ -19251,7 +19248,7 @@ task_severity (task_t task, int overrides, int min_qod, int offset)
  * @return Severity score of last report on task as a double if there is one,
  *         else SEVERITY_MISSING.
  */
-double
+static double
 task_severity_double (task_t task, int overrides, int min_qod, int offset)
 {
   report_t report;
@@ -19615,7 +19612,7 @@ auto_delete_reports ()
  *
  * @return Definitions file.
  */
-char *
+static char *
 task_definitions_file (task_t task)
 {
   assert (task);
@@ -19702,7 +19699,7 @@ find_result_with_permission (const char* uuid, result_t* result,
  *
  * @param[in]  nvt  NVT OID.
  */
-void
+static void
 result_nvt_notice (const gchar *nvt)
 {
   if (nvt == NULL)
@@ -19851,7 +19848,7 @@ qod_from_type (const char *qod_type)
  *
  * @return Host if exists, else 0.
  */
-host_t
+static host_t
 host_identify (const char *host_name, const char *identifier_name,
                const char *identifier_value, const char *source_type,
                const char *source)
@@ -20023,7 +20020,7 @@ host_notice (const char *host_name, const char *identifier_type,
  *
  * @return A severity string, NULL if unknown type or no nvt id for Alarm type.
  */
-char *
+static char *
 nvt_severity (const char *nvt_id, const char *type)
 {
   char *severity = NULL;
@@ -20311,7 +20308,7 @@ detect_cleanup:
  *
  * @param[in]  cpe  CPE.
  */
-double
+static double
 cpe_highest_cvss (const char *cpe)
 {
   int highest;
@@ -20337,7 +20334,7 @@ static sql_stmt_t *prognosis_stmt = NULL;
 /**
  * @brief Cleanup the prognosis iterator prepared statement.
  */
-void
+static void
 cleanup_prognosis_iterator ()
 {
   if (prognosis_stmt)
@@ -20353,7 +20350,7 @@ cleanup_prognosis_iterator ()
  * @param[in]  iterator  Iterator.
  * @param[in]  cpe       CPE.
  */
-void
+static void
 init_prognosis_iterator (iterator_t *iterator, const char *cpe)
 {
   if (prognosis_stmt == NULL)
@@ -20389,6 +20386,7 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
 }
 
 DEF_ACCESS (prognosis_iterator_cve, 0);
+static
 DEF_ACCESS (prognosis_iterator_cvss, 1);
 DEF_ACCESS (prognosis_iterator_description, 2);
 DEF_ACCESS (prognosis_iterator_cpe, 3);
@@ -20639,23 +20637,11 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
 int ignore_max_rows_per_page = 0;
 
 /**
- * @brief Clear all cached report result counts.
- *
- * @param[in]  override  Flag for override or regular case.
- */
-void
-reports_clear_count_cache (int override)
-{
-  sql ("DELETE FROM report_counts WHERE override = %d;",
-       override);
-}
-
-/**
  * @brief Create a new GHashTable for containing resource rowids.
  *
  * @return The newly allocated GHashTable
  */
-GHashTable *
+static GHashTable *
 new_resources_hashtable ()
 {
   return g_hash_table_new_full (g_int64_hash, g_int64_equal, g_free, NULL);
@@ -20668,7 +20654,7 @@ new_resources_hashtable ()
  * @param[in]  reports_table The GHashtable to contain the report rowids.
  * @param[in]  override The override that selected reports must be affected by.
  */
-void
+static void
 reports_add_for_override (GHashTable *reports_table,
                           override_t override)
 {
@@ -20740,7 +20726,7 @@ reports_add_for_override (GHashTable *reports_table,
  *
  * @return A GHashtable containing the affected report rowids.
  */
-GHashTable *
+static GHashTable *
 reports_for_override (override_t override)
 {
   GHashTable *reports_table;
@@ -20756,7 +20742,7 @@ reports_for_override (override_t override)
  *
  * @param[in]  reports_table The GHashtable to contain the report rowids.
  */
-void
+static void
 reports_add_all (GHashTable *reports_table)
 {
   iterator_t reports;
@@ -20784,7 +20770,7 @@ reports_add_all (GHashTable *reports_table)
  *
  * @return A GHashtable containing the report rowids.
  */
-GHashTable *
+static GHashTable *
 reports_hashtable ()
 {
   GHashTable *reports_table;
@@ -20801,7 +20787,7 @@ reports_hashtable ()
  * @param[in]  clear        Whether to clear the cache before rebuilding.
  * @param[out] changes_out  The number of processed user/report combinations.
  */
-void
+static void
 reports_build_count_cache (int clear, int* changes_out)
 {
   int changes;
@@ -20931,7 +20917,7 @@ init_report_counts_build_iterator (iterator_t *iterator, report_t report,
  *
  * @return The min_qod.
  */
-int
+static int
 report_counts_build_iterator_min_qod (iterator_t *iterator)
 {
   return iterator_int (iterator, 0);
@@ -20944,7 +20930,7 @@ report_counts_build_iterator_min_qod (iterator_t *iterator)
  *
  * @return Whether the report counts are using overrides.
  */
-int
+static int
 report_counts_build_iterator_override (iterator_t *iterator)
 {
   return iterator_int (iterator, 1);
@@ -20957,7 +20943,7 @@ report_counts_build_iterator_override (iterator_t *iterator)
  *
  * @return The min_qod.
  */
-user_t
+static user_t
 report_counts_build_iterator_user (iterator_t *iterator)
 {
   return iterator_int64 (iterator, 2);
@@ -20973,7 +20959,7 @@ report_counts_build_iterator_user (iterator_t *iterator)
  *                                 overridden severity.
  * @param[in]  users_where        Optional SQL clause to limit users.
  */
-void
+static void
 report_cache_counts (report_t report, int clear_original, int clear_overridden,
                      const char* users_where)
 {
@@ -21032,7 +21018,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
  *                                 overridden severity.
  * @param[in]  users_where        Optional SQL clause to limit users.
  */
-void
+static void
 report_clear_count_cache (report_t report,
                           int clear_original, int clear_overridden,
                           const char* users_where)
@@ -21689,7 +21675,7 @@ report_task (report_t report, task_t *task)
  *
  * @return Slave UUID.
  */
-char*
+static char*
 report_slave_uuid (report_t report)
 {
   return sql_string ("SELECT slave_uuid FROM reports WHERE id = %llu;",
@@ -21703,7 +21689,7 @@ report_slave_uuid (report_t report)
  *
  * @return Slave name.
  */
-char*
+static char*
 report_slave_name (report_t report)
 {
   return sql_string ("SELECT slave_name FROM reports WHERE id = %llu;",
@@ -21717,7 +21703,7 @@ report_slave_name (report_t report)
  *
  * @return Slave UUID.
  */
-char*
+static char*
 report_slave_host (report_t report)
 {
   return sql_string ("SELECT slave_host FROM reports WHERE id = %llu;",
@@ -21731,7 +21717,7 @@ report_slave_host (report_t report)
  *
  * @return Slave port.
  */
-char*
+static char*
 report_slave_port (report_t report)
 {
   return sql_string ("SELECT slave_port FROM reports WHERE id = %llu;",
@@ -21745,7 +21731,7 @@ report_slave_port (report_t report)
  *
  * @return Slave port.
  */
-int
+static int
 report_slave_port_int (report_t report)
 {
   return sql_int ("SELECT slave_port FROM reports WHERE id = %llu;",
@@ -21759,7 +21745,7 @@ report_slave_port_int (report_t report)
  *
  * @return Source interface.
  */
-char*
+static char*
 report_source_iface (report_t report)
 {
   return sql_string ("SELECT source_iface FROM reports WHERE id = %llu;",
@@ -22954,7 +22940,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
  * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
  *         -1 error.
  */
-int
+static int
 init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
@@ -23487,6 +23473,7 @@ result_iterator_nvt_tag (iterator_t *iterator)
  * @return The original type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
+static
 DEF_ACCESS (result_iterator_original_type, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
@@ -23499,7 +23486,7 @@ DEF_ACCESS (result_iterator_original_type, GET_ITERATOR_COLUMN_COUNT + 3);
  * @return The type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-const char*
+static const char*
 result_iterator_type (iterator_t *iterator)
 {
   if (iterator->done) return NULL;
@@ -23602,7 +23589,7 @@ result_iterator_original_severity (iterator_t *iterator)
  * @return The severity of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-const char*
+static const char*
 result_iterator_severity (iterator_t *iterator)
 {
   const char* ret;
@@ -23922,6 +23909,7 @@ host_iterator_report (iterator_t* iterator)
  * @return The UUID of the report of the host.  Caller must use only before
  *         calling cleanup_iterator.
  */
+static
 DEF_ACCESS (host_iterator_report_uuid, 7);
 
 /**
@@ -23932,6 +23920,7 @@ DEF_ACCESS (host_iterator_report_uuid, 7);
  * @return The UUID of the assset associate with the host.  Caller must use
  *         only before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (host_iterator_asset_uuid, 8);
 
 /**
@@ -23967,6 +23956,7 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
  * @return The host of the report error message.  Caller must use only before
  *         calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_errors_iterator_host, 0);
 
 /**
@@ -23977,6 +23967,7 @@ DEF_ACCESS (report_errors_iterator_host, 0);
  * @return The port of the report error message.  Caller must use only before
  *         calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_errors_iterator_port, 1);
 
 /**
@@ -23987,6 +23978,7 @@ DEF_ACCESS (report_errors_iterator_port, 1);
  * @return The nvt of the report error message.  Caller must use only before
  *         calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_errors_iterator_nvt_oid, 2);
 
 /**
@@ -23997,6 +23989,7 @@ DEF_ACCESS (report_errors_iterator_nvt_oid, 2);
  * @return The description of the report error message.  Caller must use only
  * before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_errors_iterator_desc, 3);
 
 /**
@@ -24007,6 +24000,7 @@ DEF_ACCESS (report_errors_iterator_desc, 3);
  * @return The nvt of the report error message.  Caller must use only before
  *         calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_errors_iterator_nvt_name, 4);
 
 /**
@@ -24017,6 +24011,7 @@ DEF_ACCESS (report_errors_iterator_nvt_name, 4);
  * @return The nvt cvss base of the report error message.  Caller must use only
  *         before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_errors_iterator_nvt_cvss, 5);
 
 /**
@@ -24027,6 +24022,7 @@ DEF_ACCESS (report_errors_iterator_nvt_cvss, 5);
  * @return The nvt version at scan time of the report error message.
  *         Caller must use only before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_errors_iterator_scan_nvt_version, 6);
 
 /**
@@ -24037,6 +24033,7 @@ DEF_ACCESS (report_errors_iterator_scan_nvt_version, 6);
  * @return The severity at scan time of the report error message.
  *         Caller must use only before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_errors_iterator_severity, 7);
 
 /**
@@ -24046,7 +24043,7 @@ DEF_ACCESS (report_errors_iterator_severity, 7);
  *
  * @return Result.
  */
-result_t
+static result_t
 report_errors_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
@@ -24092,6 +24089,7 @@ init_report_host_details_iterator (iterator_t* iterator,
  * @return The name of the report host detail.  Caller must use only before
  *         calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_host_details_iterator_name, 1);
 
 /**
@@ -24102,6 +24100,7 @@ DEF_ACCESS (report_host_details_iterator_name, 1);
  * @return The value of the report host detail.  Caller must use only before
  *         calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_host_details_iterator_value, 2);
 
 /**
@@ -24112,6 +24111,7 @@ DEF_ACCESS (report_host_details_iterator_value, 2);
  * @return The source type of the report host detail.  Caller must use only
  *         before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_host_details_iterator_source_type, 3);
 
 /**
@@ -24122,6 +24122,7 @@ DEF_ACCESS (report_host_details_iterator_source_type, 3);
  * @return The source name of the report host detail.  Caller must use only
  *         before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_host_details_iterator_source_name, 4);
 
 /**
@@ -24132,6 +24133,7 @@ DEF_ACCESS (report_host_details_iterator_source_name, 4);
  * @return The source description of the report host detail.  Caller must use
  *         only before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_host_details_iterator_source_desc, 5);
 
 /**
@@ -24142,6 +24144,7 @@ DEF_ACCESS (report_host_details_iterator_source_desc, 5);
  * @return Extra info of the report host detail.  Caller must use
  *         only before calling cleanup_iterator.
  */
+static
 DEF_ACCESS (report_host_details_iterator_extra, 6);
 
 /**
@@ -24406,6 +24409,7 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
  *
  * @return Host IP.
  */
+static
 DEF_ACCESS (classic_asset_iterator_ip, 0);
 
 /**
@@ -24451,7 +24455,7 @@ set_task_end_time_epoch (task_t task, time_t time)
  *
  * @return Start time of scan, in a newly allocated string.
  */
-char*
+static char*
 scan_start_time (report_t report)
 {
   char *time = sql_string ("SELECT iso_time (start_time)"
@@ -24498,7 +24502,7 @@ scan_start_time_uuid (const char *uuid)
  * @param[in]  report     The report associated with the scan.
  * @param[in]  timestamp  Start time.  In ISO format.
  */
-void
+static void
 set_scan_start_time (report_t report, const char* timestamp)
 {
   sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
@@ -24540,7 +24544,7 @@ set_scan_start_time_otp (report_t report, const char* timestamp)
  *
  * @return End time of scan, in a newly allocated string.
  */
-char*
+static char*
 scan_end_time (report_t report)
 {
   char *time = sql_string ("SELECT iso_time (end_time)"
@@ -24691,7 +24695,7 @@ set_scan_host_end_time_otp (report_t report, const char* host,
  * @param[in]  host       Host.
  * @param[in]  timestamp  Start time.  ISO format.
  */
-void
+static void
 set_scan_host_start_time (report_t report, const char* host,
                           const char* timestamp)
 {
@@ -24764,7 +24768,7 @@ report_timestamp (const char* report_id, gchar** timestamp)
  *
  * @return 0 on success, -1 on error.
  */
-int
+static int
 report_scan_run_status (report_t report, int* status)
 {
   *status = sql_int ("SELECT scan_run_status FROM reports"
@@ -25278,35 +25282,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
 }
 
 /**
- * @brief Get the full, unfiltered message counts for a report.
- *
- * @param[in]   report    Report.
- * @param[out]  debugs    Number of debug messages.
- * @param[out]  holes     Number of hole messages.
- * @param[out]  infos     Number of info messages.
- * @param[out]  logs      Number of log messages.
- * @param[out]  warnings  Number of warning messages.
- * @param[out]  false_positives  Number of false positive messages.
- * @param[out]  severity  Maximum severity score.
- * @param[in]   get       Get data.
- * @param[in]   host      Host to which to limit the count.  NULL to allow all.
- *
- * @return 0 on success, -1 on error.
- */
-int
-report_counts_id_no_filt (report_t report, int* debugs, int* holes, int* infos,
-                          int* logs, int* warnings, int* false_positives,
-                          double* severity, const get_data_t *get,
-                          const char *host)
-{
-  int ret;
-  ret = report_counts_id_full (report, debugs, holes, infos, logs, warnings,
-                               false_positives, severity, get, host,
-                               NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-  return ret;
-}
-
-/**
  * @brief Get only the filtered message counts for a report.
  *
  * @param[in]   report    Report.
@@ -25657,7 +25632,7 @@ delete_report (const char *report_id, int dummy)
  *
  * @return Number of reports.
  */
-int
+static int
 report_slave_progress (report_t report)
 {
   return sql_int ("SELECT slave_progress FROM reports WHERE id = %llu;",
@@ -27215,7 +27190,7 @@ report_error_count (report_t report)
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 print_report_host_detail (FILE *stream, iterator_t *details)
 {
   PRINT (stream,
@@ -27939,7 +27914,7 @@ report_progress (report_t report, task_t task, gchar **hosts_xml)
  *
  * @return Freshly allocated XML on success, else NULL.
  */
-gchar *
+static gchar *
 severity_class_xml (const gchar *severity)
 {
   if (severity)
@@ -31337,7 +31312,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
  *
  * @return Number of reports.
  */
-unsigned int
+static unsigned int
 task_finished_report_count (task_t task)
 {
   return (unsigned int) sql_int ("SELECT count(*) FROM reports"
@@ -31470,6 +31445,8 @@ task_iterator_trend_counts (iterator_t *iterator, int holes_a, int warns_a,
 
 /**
  * @brief Return the trend of a task.
+ *
+ * Only used by SQLite backend.
  *
  * @param[in]  task      Task.
  * @param[in]  override  Whether to override the threat.
@@ -32162,7 +32139,7 @@ delete_trash_tasks ()
  *
  * @return changes  The number of tasks updated.
  */
-int
+static int
 cleanup_schedule_times ()
 {
   sql ("UPDATE tasks"
@@ -32746,7 +32723,7 @@ manage_max_hosts ()
  *
  * @param[in]   new_max   New max_hosts value.
  */
-void
+static void
 manage_set_max_hosts (int new_max)
 {
   max_hosts = new_max;
@@ -33128,6 +33105,8 @@ target_credential (target_t target, const char* type)
 /**
  * @brief Get a credential from a target in the trashcan.
  *
+ * Only used by SQLite backend.
+ *
  * @param[in]  target         The target.
  * @param[in]  type           The credential type (e.g. "ssh" or "smb").
  *
@@ -33166,6 +33145,8 @@ trash_target_credential (target_t target, const char* type)
 
 /**
  * @brief Get whether a credential of a trash target is in trashcan.
+ *
+ * Only used by SQLite backend.
  *
  * @param[in]  target         The target.
  * @param[in]  type           The credential type (e.g. "ssh" or "smb").
@@ -33242,6 +33223,8 @@ target_login_port (target_t target, const char* type)
 
 /**
  * @brief Get a port from a target in the trashcan.
+ *
+ * Only used by SQLite backend.
  *
  * @param[in]  target         The target.
  * @param[in]  type           The credential type (e.g. "ssh" or "smb").
@@ -34354,34 +34337,6 @@ target_count (const get_data_t *get)
 }
 
 /**
- * @brief Initialise a target iterator, limited to the current user's targets.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  target      Target to limit iteration to.
- */
-void
-init_user_target_iterator (iterator_t* iterator, target_t target)
-{
-  static column_t select_columns[] = TARGET_ITERATOR_COLUMNS;
-  gchar *columns;
-
-  assert (target);
-
-  columns = columns_build_select (select_columns);
-
-  init_iterator (iterator,
-                 "SELECT %s"
-                 " FROM targets"
-                 " WHERE id = %llu"
-                 " AND " ACL_USER_OWNS () ";",
-                 columns,
-                 target,
-                 current_credentials.uuid);
-
-  g_free (columns);
-}
-
-/**
  * @brief Initialise a target iterator, given a single target.
  *
  * @param[in]  iterator   Iterator.
@@ -34754,7 +34709,7 @@ trash_target_name (target_t target)
  *
  * @return Newly allocated name if available, else NULL.
  */
-char*
+static char*
 target_comment (target_t target)
 {
   return sql_string ("SELECT comment FROM targets WHERE id = %llu;",
@@ -34768,7 +34723,7 @@ target_comment (target_t target)
  *
  * @return Newly allocated name if available, else NULL.
  */
-char*
+static char*
 trash_target_comment (target_t target)
 {
   return sql_string ("SELECT comment FROM targets_trash WHERE id = %llu;",
@@ -34866,7 +34821,7 @@ target_reverse_lookup_unify (target_t target)
  * @return Newly allocated comma separated list of hosts if available,
  *         else NULL.
  */
-char*
+static char*
 trash_target_hosts (target_t target)
 {
   return sql_string ("SELECT hosts FROM targets_trash WHERE id = %llu;",
@@ -34881,7 +34836,7 @@ trash_target_hosts (target_t target)
  * @return Newly allocated comma separated list of excluded hosts if available,
  *         else NULL.
  */
-char*
+static char*
 trash_target_exclude_hosts (target_t target)
 {
   return sql_string ("SELECT exclude_hosts FROM targets_trash"
@@ -35649,7 +35604,7 @@ config_type (config_t config)
  *
  * @return Scanner ID if found, 0 otherwise.
  */
-scanner_t
+static scanner_t
 config_scanner (config_t config)
 {
   scanner_t scanner;
@@ -36874,26 +36829,6 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
 
   g_free (quoted_name);
   g_free (quoted_value);
-  return 0;
-}
-
-/**
- * @brief Set the comment of a config.
- *
- * @param[in]  config   Config.
- * @param[in]  comment  New comment.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_set_config_comment (config_t config, const char* comment)
-{
-  gchar *quoted_comment;
-  quoted_comment = sql_quote (comment);
-  sql ("UPDATE configs SET comment = '%s', modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_comment, config);
-  g_free (quoted_comment);
   return 0;
 }
 
@@ -38449,7 +38384,7 @@ nvt_selector_family_count (const char* quoted_selector, int families_growing)
  *
  * @return 1 growing, 0 static.
  */
-int
+static int
 nvt_selector_families_growing (const char* selector)
 {
   /** @todo Quote selector. */
@@ -38484,7 +38419,7 @@ nvt_selector_families_growing (const char* selector)
  *
  * @return 1 growing, 0 static.
  */
-int
+static int
 nvt_selector_nvts_growing_2 (const char* quoted_selector, int families_growing)
 {
   if (families_growing)
@@ -40234,7 +40169,7 @@ find_credential_with_permission (const char* uuid,
  * @return  0 on success, -1 on error, 1 credential not found, 99 permission
  *          denied.
  */
-int
+static int
 set_credential_data (credential_t credential,
                      const char* type,
                      const char* value)
@@ -40295,7 +40230,7 @@ set_credential_data (credential_t credential,
  *
  * @return Whether the username is valid.
  */
-gboolean
+static gboolean
 validate_credential_username_for_format (const gchar *username,
                                          credential_format_t format)
 {
@@ -41484,7 +41419,7 @@ credential_encrypted_value (credential_t credential, const char* value_name)
  * @param[in]  credential      The Credential.
  * @param[in]  name            Name.
  */
-void
+static void
 set_credential_name (credential_t credential, const char *name)
 {
   gchar *quoted_name = sql_quote (name);
@@ -41501,7 +41436,7 @@ set_credential_name (credential_t credential, const char *name)
  * @param[in]  credential      The Credential.
  * @param[in]  comment         Comment.
  */
-void
+static void
 set_credential_comment (credential_t credential,
                         const char *comment)
 {
@@ -41519,7 +41454,7 @@ set_credential_comment (credential_t credential,
  * @param[in]  credential      The Credential.
  * @param[in]  login           Login.
  */
-void
+static void
 set_credential_login (credential_t credential, const char *login)
 {
   set_credential_data (credential, "username", login);
@@ -41535,7 +41470,7 @@ set_credential_login (credential_t credential, const char *login)
  * @param[in]  credential      The Credential.
  * @param[in]  certificate     Certificate.
  */
-void
+static void
 set_credential_certificate (credential_t credential, const char *certificate)
 {
   set_credential_data (credential, "certificate", certificate);
@@ -41551,7 +41486,7 @@ set_credential_certificate (credential_t credential, const char *certificate)
  * @param[in]  credential      The Credential.
  * @param[in]  algorithm       Authentication algorithm.
  */
-void
+static void
 set_credential_auth_algorithm (credential_t credential, const char *algorithm)
 {
   set_credential_data (credential, "auth_algorithm", algorithm);
@@ -41584,7 +41519,7 @@ set_credential_privacy_algorithm (credential_t credential,
  * @param[in]  credential      The Credential.
  * @param[in]  password        Password.
  */
-void
+static void
 set_credential_password (credential_t credential, const char *password)
 {
   lsc_crypt_ctx_t crypt_ctx;
@@ -41627,7 +41562,7 @@ set_credential_password (credential_t credential, const char *password)
  * @param[in]  private_key     Private key.
  * @param[in]  passphrase      Passphrase.
  */
-void
+static void
 set_credential_private_key (credential_t credential,
                             const char *private_key, const char *passphrase)
 {
@@ -41674,7 +41609,7 @@ set_credential_private_key (credential_t credential,
  * @param[in]  password           Authentication password.
  * @param[in]  privacy_password   Privacy password.
  */
-void
+static void
 set_credential_snmp_secret (credential_t credential, const char* community,
                             const char *password, const char *privacy_password)
 {
@@ -42409,7 +42344,7 @@ credential_scanner_iterator_readable (iterator_t* iterator)
  *
  * @return FALSE on success (including if failed to find agent), TRUE on error.
  */
-gboolean
+static gboolean
 find_agent_with_permission (const char* uuid, agent_t* agent,
                             const char *permission)
 {
@@ -43472,6 +43407,7 @@ init_agent_iterator (iterator_t* iterator, const get_data_t *get)
  * @return Installer, or NULL if iteration is complete.  Freed
  *         by cleanup_iterator.
  */
+static
 DEF_ACCESS (agent_iterator_installer, GET_ITERATOR_COLUMN_COUNT);
 
 /**
@@ -43492,7 +43428,7 @@ DEF_ACCESS (agent_iterator_installer_64, GET_ITERATOR_COLUMN_COUNT + 1);
  * @return Installer size, or NULL if iteration is complete.  Freed
  *         by cleanup_iterator.
  */
-gsize
+static gsize
 agent_iterator_installer_size (iterator_t* iterator)
 {
   const char *installer_64;
@@ -43528,6 +43464,7 @@ DEF_ACCESS (agent_iterator_installer_filename, GET_ITERATOR_COLUMN_COUNT + 2);
  * @return Installer signature in base64, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
+static
 DEF_ACCESS (agent_iterator_installer_signature_64,
             GET_ITERATOR_COLUMN_COUNT + 3);
 
@@ -43624,7 +43561,7 @@ find_note_with_permission (const char* uuid, note_t* note,
   return find_resource_with_permission ("note", uuid, note, permission, 0);
 }
 
-gboolean
+static gboolean
 nvt_exists(const char* nvt)
 {
   gchar *quoted_nvt;
@@ -47112,7 +47049,7 @@ DEF_ACCESS (scanner_iterator_key_pub, GET_ITERATOR_COLUMN_COUNT + 7);
  * @return Scanner private key, or NULL if iteration is complete. Freed by
  *         cleanup_iterator.
  */
-const char*
+static const char*
 scanner_iterator_key_priv (iterator_t* iterator)
 {
   const char *private_key;
@@ -47960,7 +47897,7 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
  *
  * @return Byday mask, or -1 on syntax error.
  */
-int
+static int
 byday_from_string (const char* byday)
 {
   gchar **split, **point;
@@ -48612,22 +48549,6 @@ schedule_iterator_period_months (iterator_t* iterator)
 }
 
 /**
- * @brief Get the byday flags from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Byday mask.
- */
-int
-schedule_iterator_byday (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-  return ret;
-}
-
-/**
  * @brief Get the byday string from a schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -48681,23 +48602,6 @@ schedule_iterator_duration (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 5);
-
-/**
- * @brief Get the initial offset from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Initial offset, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-time_t
-schedule_iterator_initial_offset (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
-  return ret;
-}
 
 /**
  * @brief Get the iCalendar string from a schedule iterator.
@@ -48798,27 +48702,13 @@ task_schedule_iterator_task (iterator_t* iterator)
 DEF_ACCESS (task_schedule_iterator_task_uuid, 1);
 
 /**
- * @brief Get the schedule from a task schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The schedule.
- */
-schedule_t
-task_schedule_iterator_schedule (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (schedule_t) iterator_int64 (iterator, 2);
-}
-
-/**
  * @brief Get the next time from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Next time.
  */
-time_t
+static time_t
 task_schedule_iterator_next_time (iterator_t* iterator)
 {
   if (iterator->done) return 0;
@@ -48851,7 +48741,7 @@ DEF_ACCESS (task_schedule_iterator_timezone, 5);
  *
  * @return Next time.
  */
-time_t
+static time_t
 task_schedule_iterator_duration (iterator_t* iterator)
 {
   if (iterator->done) return 0;
@@ -51018,7 +50908,7 @@ report_format_owner_uuid (report_format_t report_format)
  * @param[in]  report_format  The report format.
  * @param[in]  active         Active flag.
  */
-void
+static void
 set_report_format_active (report_format_t report_format, int active)
 {
   if (active)
@@ -51156,7 +51046,7 @@ report_format_extension (report_format_t report_format)
  * @param[in]  report_format  The report format.
  * @param[in]  name           Name.
  */
-void
+static void
 set_report_format_name (report_format_t report_format, const char *name)
 {
   gchar *quoted_name = sql_quote (name);
@@ -51217,7 +51107,7 @@ report_format_active (report_format_t report_format)
  * @param[in]  report_format  The report format.
  * @param[in]  summary        Summary.
  */
-void
+static void
 set_report_format_summary (report_format_t report_format, const char *summary)
 {
   gchar *quoted_summary = sql_quote (summary);
@@ -51385,7 +51275,7 @@ validate_param_value (report_format_t report_format,
  * @return 0 success, 1 failed to find param, 2 validation of value failed,
  *         -1 error.
  */
-int
+static int
 set_report_format_param (report_format_t report_format, const char *name,
                          const char *value_64)
 {
@@ -51897,6 +51787,7 @@ report_format_param_iterator_type_max (iterator_t* iterator)
  * @return Type regex, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
+static
 DEF_ACCESS (report_format_param_iterator_type_regex, 6);
 
 /**
@@ -52716,7 +52607,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
  *
  * @return FALSE on success (including if failed to find group), TRUE on error.
  */
-gboolean
+static gboolean
 find_group_with_permission (const char* uuid, group_t* group,
                             const char *permission)
 {
@@ -53446,7 +53337,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
  * @param[in]   new   Resource ID in new table.
  * @param[in]   to    Destination, trash or table.
  */
-void
+static void
 permissions_set_locations (const char *type, resource_t old, resource_t new,
                            int to)
 {
@@ -53475,7 +53366,7 @@ permissions_set_locations (const char *type, resource_t old, resource_t new,
  * @param[in]  resource  Resource ID.
  * @param[in]  location  Location: table or trash.
  */
-void
+static void
 permissions_set_orphans (const char *type, resource_t resource, int location)
 {
   sql ("UPDATE permissions SET resource = -1"
@@ -53500,7 +53391,7 @@ permissions_set_orphans (const char *type, resource_t resource, int location)
  * @param[in]   new   Resource ID in new table.
  * @param[in]   to    Destination, trash or table.
  */
-void
+static void
 permissions_set_subjects (const char *type, resource_t old, resource_t new,
                           int to)
 {
@@ -53539,7 +53430,7 @@ permissions_set_subjects (const char *type, resource_t old, resource_t new,
  * @return FALSE on success (including if failed to find permission), TRUE on
  *         error.
  */
-gboolean
+static gboolean
 find_permission (const char* uuid, permission_t* permission)
 {
   return find_resource ("permission", uuid, permission);
@@ -54089,7 +53980,7 @@ permission_resource (permission_t permission)
  *
  * @return Newly allocated name if available, else NULL.
  */
-char *
+static char *
 permission_name (permission_t permission)
 {
   return sql_string ("SELECT name FROM permissions WHERE id = %llu;",
@@ -54103,7 +53994,7 @@ permission_name (permission_t permission)
  *
  * @return Newly allocated subject type if available, else NULL.
  */
-char *
+static char *
 permission_subject_type (permission_t permission)
 {
   return sql_string ("SELECT subject_type FROM permissions WHERE id = %llu;",
@@ -54117,7 +54008,7 @@ permission_subject_type (permission_t permission)
  *
  * @return Subject if there is one, else 0.
  */
-resource_t
+static resource_t
 permission_subject (permission_t permission)
 {
   resource_t subject;
@@ -54134,7 +54025,7 @@ permission_subject (permission_t permission)
  *
  * @return Newly allocated subject ID if available, else NULL.
  */
-char *
+static char *
 permission_subject_id (permission_t permission)
 {
   return sql_string ("SELECT subject_id FROM permissions WHERE id = %llu;",
@@ -54148,7 +54039,7 @@ permission_subject_id (permission_t permission)
  *
  * @return Newly allocated resource type if available, else NULL.
  */
-char *
+static char *
 permission_resource_type (permission_t permission)
 {
   return sql_string ("SELECT resource_type FROM permissions WHERE id = %llu;",
@@ -54162,7 +54053,7 @@ permission_resource_type (permission_t permission)
  *
  * @return Newly allocated resource ID if available, else NULL.
  */
-char *
+static char *
 permission_resource_id (permission_t permission)
 {
   return sql_string ("SELECT resource_id FROM permissions WHERE id = %llu;",
@@ -54176,7 +54067,7 @@ permission_resource_id (permission_t permission)
  *
  * @return 1 if predefined, else 0.
  */
-int
+static int
 permission_is_predefined (permission_t permission)
 {
   return !!sql_int ("SELECT COUNT (*) FROM permissions"
@@ -54645,7 +54536,7 @@ permission_iterator_subject_readable (iterator_t* iterator)
  * @return FALSE on success (including if failed to find permission), TRUE on
  *         error.
  */
-gboolean
+static gboolean
 find_permission_with_permission (const char *uuid, permission_t *resource,
                                  const char *permission)
 {
@@ -54827,22 +54718,6 @@ delete_permission (const char *permission_id, int ultimate)
 
   sql_commit ();
   return 0;
-}
-
-/**
- * @brief Downcase a string in place.
- *
- * @param[in]   string  String.
- *
- * @return String, downcased.
- */
-gchar *
-strdown (gchar *string)
-{
-  gchar *point;
-  if (string && *string)
-    for (point = string; *point; point++) *point = g_ascii_tolower (*point);
-  return string;
 }
 
 /**
@@ -55204,7 +55079,7 @@ find_port_list_with_permission (const char* uuid, port_list_t* port_list,
  *
  * @return Newly allocated UUID if available, else NULL.
  */
-char*
+static char*
 port_range_port_list_uuid (const char *port_range)
 {
   gchar *quoted_port_range;
@@ -55234,7 +55109,7 @@ port_range_port_list_uuid (const char *port_range)
  * @return FALSE on success (including if failed to find port range), TRUE on
  *         error.
  */
-gboolean
+static gboolean
 find_port_range_with_permission (const char *uuid, port_range_t *port_range,
                                  const char *permission)
 {
@@ -55370,7 +55245,7 @@ ranges_sort_merge (array_t *ranges)
  *
  * @return 0 success.
  */
-int
+static int
 create_port_list_lock (const char *quoted_id, const char *quoted_name,
                        const char *comment, array_t *ranges,
                        port_list_t* port_list)
@@ -55433,7 +55308,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
  *
  * @return 0 success, 4 error in port range.
  */
-int
+static int
 create_port_list_unique (const char *name, const char *comment,
                          const char* port_range, port_list_t* port_list)
 {
@@ -56293,7 +56168,7 @@ port_range_uuid (port_range_t port_range)
                      port_range);
 }
 
-int
+static int
 port_list_is_predefined (port_list_t port_list)
 {
   return !!sql_int
@@ -56537,7 +56412,7 @@ port_range_iterator_type (iterator_t* iterator)
  * @return The type of the range, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-port_protocol_t
+static port_protocol_t
 port_range_iterator_type_int (iterator_t* iterator)
 {
   if (iterator->done) return PORT_PROTOCOL_OTHER;
@@ -56745,7 +56620,7 @@ create_role (const char *role_name, const char *comment, const char *users,
  *
  * @return 1 if predefined, else 0.
  */
-int
+static int
 role_is_predefined (role_t role)
 {
   return sql_int ("SELECT COUNT (*) FROM roles"
@@ -56768,7 +56643,7 @@ role_is_predefined (role_t role)
  *
  * @return 1 if predefined, else 0.
  */
-int
+static int
 role_is_predefined_id (const char *uuid)
 {
   return uuid && ((strcmp (uuid, ROLE_UUID_ADMIN) == 0)
@@ -56956,7 +56831,7 @@ delete_role (const char *role_id, int ultimate)
  *
  * @return FALSE on success (including if failed to find role), TRUE on error.
  */
-gboolean
+static gboolean
 find_role_with_permission (const char* uuid, role_t* role,
                            const char *permission)
 {
@@ -57309,7 +57184,7 @@ filter_uuid (filter_t filter)
  *
  * @return Newly allocated UUID if available, else NULL.
  */
-char*
+static char*
 trash_filter_uuid (filter_t filter)
 {
   return sql_string ("SELECT uuid FROM filters_trash WHERE id = %llu;",
@@ -57337,7 +57212,7 @@ filter_name (filter_t filter)
  *
  * @return name of filter.
  */
-char*
+static char*
 trash_filter_name (filter_t filter)
 {
   return sql_string ("SELECT name FROM filters_trash WHERE id = %llu;",
@@ -59873,7 +59748,7 @@ manage_report_host_add (report_t report, const char *host, time_t start,
  *
  * @return 1 if the host is marked as dead, 0 otherwise.
  */
-int
+static int
 report_host_dead (report_host_t report_host)
 {
   return sql_int ("SELECT count(*) != 0 FROM report_host_details"
@@ -59890,7 +59765,7 @@ report_host_dead (report_host_t report_host)
  *
  * @return 1 if the host is marked as dead, 0 otherwise.
  */
-int
+static int
 report_host_result_count (report_host_t report_host)
 {
   return sql_int ("SELECT count(*) FROM report_hosts, results"
@@ -59939,7 +59814,7 @@ typedef struct
 /**
  * @brief Free an identifier.
  */
-void
+static void
 identifier_free (identifier_t *identifier)
 {
   if (identifier)
@@ -61187,19 +61062,6 @@ asset_os_count (const get_data_t *get)
 }
 
 /**
- * @brief Count number of all assets.
- *
- * @param[in]   get       GET params.
- *
- * @return Total number of assets.
- */
-int
-total_asset_count (const get_data_t *get)
-{
-  return sql_int ("SELECT (SELECT count (*) FROM hosts);");
-}
-
-/**
  * @brief Initialise an OS host iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -61306,7 +61168,7 @@ DEF_ACCESS (host_detail_iterator_source_id, 4);
  *
  * @return FALSE on success (including if failed to find host), TRUE on error.
  */
-gboolean
+static gboolean
 find_host_with_permission (const char* uuid, host_t* host,
                            const char *permission)
 {
@@ -61588,7 +61450,7 @@ modify_asset (const char *asset_id, const char *comment)
  * @return 0 success, 2 failed to find report, 4 UUID
  *         required, 99 permission denied, -1 error.
  */
-int
+static int
 delete_report_assets (const char *report_id)
 {
   resource_t report;
@@ -61976,7 +61838,7 @@ setting_severity ()
  *
  * @return The user's Default Severity.
  */
-double
+static double
 setting_default_severity_dbl ()
 {
   return current_credentials.default_severity;
@@ -61988,7 +61850,7 @@ setting_default_severity_dbl ()
  * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
  *         or does not exist.
  */
-int
+static int
 setting_dynamic_severity_int ()
 {
   return current_credentials.dynamic_severity;
@@ -61999,7 +61861,7 @@ setting_dynamic_severity_int ()
  *
  * @return User Severity Class in settings if it exists, else NULL.
  */
-char *
+static char *
 setting_timezone ()
 {
   return sql_string ("SELECT timezone FROM users WHERE uuid = '%s'",
@@ -62011,7 +61873,7 @@ setting_timezone ()
  *
  * @return 1 if cache is rebuilt automatically, 0 if not.
  */
-int
+static int
 setting_auto_cache_rebuild_int ()
 {
   return sql_int ("SELECT coalesce"
@@ -62144,7 +62006,7 @@ DEF_ACCESS (setting_iterator_value, 4);
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 setting_value (const char *uuid, char **value)
 {
   gchar *quoted_uuid;
@@ -62190,7 +62052,7 @@ setting_value (const char *uuid, char **value)
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 setting_value_int (const char *uuid, int *value)
 {
   gchar *quoted_uuid;
@@ -63281,7 +63143,7 @@ manage_get_users (GSList *log_config, const gchar *database,
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 set_password (const gchar *name, const gchar *uuid, const gchar *password,
               gchar **r_errdesc)
 {
@@ -63393,7 +63255,7 @@ manage_set_password (GSList *log_config, const gchar *database,
  *
  * @return FALSE on success (including if failed to find user), TRUE on error.
  */
-gboolean
+static gboolean
 find_user_with_permission (const char* uuid, user_t* user,
                            const char *permission)
 {
@@ -65193,7 +65055,7 @@ user_role_iterator_readable (iterator_t* iterator)
  *
  * @return 0 no resources in use, 1 found resources used by user.
  */
-int
+static int
 user_resources_in_use (user_t user,
                        const char *table, int(*in_use)(resource_t),
                        const char *trash_table, int(*trash_in_use)(resource_t))
@@ -66130,7 +65992,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
  *
  * @return FALSE on success (including if failed to find tag), TRUE on error.
  */
-gboolean
+static gboolean
 find_tag_with_permission (const char* uuid, tag_t* tag,
                           const char *permission)
 {
@@ -66748,114 +66610,6 @@ tag_iterator_resources (iterator_t* iterator)
 }
 
 /**
- * @brief Get the resource_location from a Tag iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Location of the resource of a tag (0 = normal table, 1 = trashcan).
- */
-resource_t
-tag_resource_iterator_id (iterator_t* iterator)
-{
-  resource_t ret;
-  if (iterator->done) return -1;
-  ret = iterator_int64 (iterator, 0);
-  return ret;
-}
-
-/**
- * @brief Get the resource_uuid from a Tag resource iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The UUID of the resource attached to a tag.
- */
-DEF_ACCESS (tag_resource_iterator_uuid, 1);
-
-/**
- * @brief Get the resource_location from a Tag iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Location of the resource of a tag (0 = normal table, 1 = trashcan).
- */
-int
-tag_resource_iterator_location (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, 2);
-  return ret;
-}
-
-/**
- * @brief Get the resource name from a Tag resource iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The UUID of the resource attached to a tag.
- */
-DEF_ACCESS (tag_resource_iterator_name, 3);
-
-/**
- * @brief Get the resource type from a Tag resource iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The UUID of the resource attached to a tag.
- */
-DEF_ACCESS (tag_resource_iterator_type, 4);
-
-/**
- * @brief Get the readable status of a resource from a tag resource iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if readable, otherwise 0.
- */
-int
-tag_resource_iterator_readable (iterator_t* iterator)
-{
-  resource_t found;
-  const char *type, *uuid;
-  gchar *permission;
-
-  if (iterator->done) return 0;
-
-  type = tag_resource_iterator_type (iterator);
-  uuid = tag_resource_iterator_uuid (iterator);
-
-  if (type == NULL || uuid == NULL)
-    return 0;
-
-  if (type_is_info_subtype (type))
-    permission = g_strdup ("get_info");
-  else if (type_is_asset_subtype (type))
-    permission = g_strdup ("get_assets");
-  else
-    permission = g_strdup_printf ("get_%ss", type);
-
-  found = 0;
-  find_resource_with_permission (type,
-                                 uuid,
-                                 &found,
-                                 permission,
-                                 tag_resource_iterator_location (iterator)
-                                 == LOCATION_TRASH);
-  g_free (permission);
-  return found > 0;
-}
-
-/**
- * @brief Get the resource_name from a Tag iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the resource attached to a tag.
- */
-DEF_ACCESS (tag_iterator_resource_name, GET_ITERATOR_COLUMN_COUNT + 7);
-
-/**
  * @brief Initialise a iterator of tag names.
  *
  * @param[in]  iterator    Iterator.
@@ -67086,99 +66840,6 @@ column_is_timestamp (const char* column)
               || strcmp (column, "updated") == 0));
 }
 
-/**
- * @brief Return the SQL column definition for a resource iterator.
- *
- * @param[in]  type             Resource type to get columns of.
- *
- * @return The SQL column definitions.
- */
-char*
-type_columns (const char *type)
-{
-  if (type == NULL)
-    return NULL;
-  else if (strcasecmp (type, "TASK") == 0)
-    {
-      static column_t columns[] = TASK_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "REPORT") == 0)
-    {
-      static column_t columns[] = REPORT_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "RESULT") == 0)
-    {
-      static column_t columns[] = RESULT_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "VULN") == 0)
-    {
-      static column_t columns[] = VULN_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "HOST") == 0)
-    {
-      static column_t columns[] = HOST_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "OS") == 0)
-    {
-      static column_t columns[] = OS_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "ALLINFO") == 0)
-    {
-      static column_t columns[] = ALL_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "CPE") == 0)
-    {
-      static column_t columns[] = CPE_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "CVE") == 0)
-    {
-      static column_t columns[] = CVE_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "CERT_BUND_ADV") == 0)
-    {
-      static column_t columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
-    {
-      static column_t columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "NVT") == 0)
-    return g_strdup (nvt_iterator_columns ());
-  else if (strcasecmp (type, "OVALDEF") == 0)
-    {
-      static column_t columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "ALERT") == 0)
-    {
-      static column_t columns[] = ALERT_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "NOTE") == 0)
-    {
-      static column_t columns[] = NOTE_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "OVERRIDE") == 0)
-    {
-      static column_t columns[] = OVERRIDE_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else
-    return NULL;
-}
-
 // FIX
 /**
  * @brief Return the columns for a resource iterator.
@@ -67187,7 +66848,7 @@ type_columns (const char *type)
  *
  * @return The columns.
  */
-column_t *
+static column_t *
 type_select_columns (const char *type)
 {
   static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
@@ -67251,7 +66912,7 @@ type_select_columns (const char *type)
  *
  * @return The columns.
  */
-column_t *
+static column_t *
 type_where_columns (const char *type)
 {
   static column_t task_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
@@ -67279,7 +66940,7 @@ type_where_columns (const char *type)
  *
  * @return The filter columns.
  */
-const char**
+static const char**
 type_filter_columns (const char *type)
 {
   if (type == NULL)
@@ -67370,32 +67031,6 @@ type_filter_columns (const char *type)
 }
 
 /**
- * @brief Return the SQL column definition for a trash resource iterator.
- *
- * @param[in]  type             Resource type to get columns of.
- *
- * @return The SQL column definitions.
- */
-char*
-type_trash_columns (const char *type)
-{
-  if (type == NULL)
-    return NULL;
-  else if (strcasecmp (type, "TASK") == 0)
-    {
-      static column_t columns[] = TASK_ITERATOR_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else if (strcasecmp (type, "ALERT") == 0)
-    {
-      static column_t columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
-      return columns_build_select (columns);
-    }
-  else
-    return NULL;
-}
-
-/**
  * @brief Return the opts subquery definition for a resource type.
  *
  * @param[in]  type    Resource type to get columns of.
@@ -67403,7 +67038,7 @@ type_trash_columns (const char *type)
  *
  * @return The SQL subquery definition.
  */
-gchar*
+static gchar*
 type_opts_table (const char *type, const char *filter)
 {
   if (type == NULL)
@@ -67454,7 +67089,7 @@ type_opts_table (const char *type, const char *filter)
  *
  * @return The SQL column definitions.
  */
-char*
+static char*
 type_table (const char *type, int trash)
 {
   if (type == NULL)
@@ -67484,7 +67119,7 @@ type_table (const char *type, int trash)
  *
  * @return The newly allocated WHERE clause additions.
  */
-gchar*
+static gchar*
 type_extra_where (const char *type, int trash, const char *filter)
 {
   gchar *extra_where;
@@ -67544,7 +67179,7 @@ type_extra_where (const char *type, int trash, const char *filter)
  *
  * @return 0: success, 1: filter not found, -1 error.
  */
-int
+static int
 type_build_select (const char *type, const char *columns_str,
                    const get_data_t *get,
                    gboolean distinct, gboolean ordered,
@@ -67659,7 +67294,7 @@ type_build_select (const char *type, const char *columns_str,
  * @param[in]  resource  Resource.
  * @param[in]  location  Location: table or trash.
  */
-void
+static void
 tags_remove_resource (const char *type, resource_t resource, int location)
 {
   sql ("DELETE FROM tag_resources"
@@ -67678,7 +67313,7 @@ tags_remove_resource (const char *type, resource_t resource, int location)
  * @param[in]   new   Resource ID in new table.
  * @param[in]   to    Destination, trash or table.
  */
-void
+static void
 tags_set_locations (const char *type, resource_t old, resource_t new,
                     int to)
 {
@@ -67733,7 +67368,7 @@ all_users_array ()
  * @param[in]  resource     The resource to update the cache for.
  * @param[in]  cache_users  GArray of users to create cache for or NULL for all.
  */
-void
+static void
 cache_permissions_for_resource (const char *type, resource_t resource,
                                 GArray *cache_users)
 {
@@ -67836,7 +67471,7 @@ cache_permissions_for_resource (const char *type, resource_t resource,
  * @param[in]  type         Type.
  * @param[in]  cache_users  GArray of users to create cache for.
  */
-void
+static void
 cache_permissions_for_users (const char *type, GArray *cache_users)
 {
   int free_users;
@@ -67872,7 +67507,7 @@ cache_permissions_for_users (const char *type, GArray *cache_users)
     g_array_free (cache_users, TRUE);
 }
 
-void
+static void
 cache_all_permissions_for_users (GArray *cache_users)
 {
   int free_users;
