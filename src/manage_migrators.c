@@ -15106,7 +15106,7 @@ manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
  *
  * @return 1 yes, 0 no, -1 error.
  */
-int
+static int
 migrate_is_available (int old_version, int new_version)
 {
   migrator_t *migrators;

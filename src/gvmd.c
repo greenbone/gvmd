@@ -208,17 +208,17 @@
 /**
  * @brief Interval in seconds to check whether client connection was closed.
  */
-int client_watch_interval = DEFAULT_CLIENT_WATCH_INTERVAL;
+static int client_watch_interval = DEFAULT_CLIENT_WATCH_INTERVAL;
 
 /**
  * @brief The socket accepting GMP connections from clients.
  */
-int manager_socket = -1;
+static int manager_socket = -1;
 
 /**
  * @brief The optional, second socket accepting GMP connections from clients.
  */
-int manager_socket_2 = -1;
+static int manager_socket_2 = -1;
 
 #if LOG
 /**
@@ -235,12 +235,12 @@ int use_tls = 0;
 /**
  * @brief The client session.
  */
-gnutls_session_t client_session;
+static gnutls_session_t client_session;
 
 /**
  * @brief The client credentials.
  */
-gnutls_certificate_credentials_t client_credentials;
+static gnutls_certificate_credentials_t client_credentials;
 
 /**
  * @brief Location of the manage database.
@@ -250,7 +250,7 @@ static gchar *database = NULL;
 /**
  * @brief Is this process parent or child?
  */
-int is_parent = 1;
+static int is_parent = 1;
 
 /**
  * @brief Flag for signal handlers.
@@ -274,7 +274,7 @@ gboolean disable_encrypted_credentials;
 /**
  * @brief Flag indicating that task scheduling is enabled.
  */
-gboolean scheduling_enabled;
+static gboolean scheduling_enabled;
 
 /**
  * @brief The GMP client's address.
@@ -289,7 +289,7 @@ sigset_t *sigmask_normal = NULL;
 /**
  * @brief GnuTLS priorities.
  */
-gchar *priorities_option = "NORMAL";
+static gchar *priorities_option = "NORMAL";
 
 /**
  * @brief GnuTLS DH params file.
@@ -455,7 +455,7 @@ watch_client_connection (void* data)
  *
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
-int
+static int
 serve_client (int server_socket, gvm_connection_t *client_connection)
 {
   pthread_t watch_thread;
@@ -933,7 +933,7 @@ cleanup ()
  * @param[in]  handler  Handler.
  * @param[in]  block    Whether to block all other signals during handler.
  */
-void
+static void
 setup_signal_handler (int signal, void (*handler) (int), int block)
 {
   struct sigaction action;
@@ -961,7 +961,7 @@ setup_signal_handler (int signal, void (*handler) (int), int block)
  * @param[in]  handler  Handler.
  * @param[in]  block    Whether to block all other signals during handler.
  */
-void
+static void
 setup_signal_handler_info (int signal,
                            void (*handler) (int, siginfo_t *, void *),
                            int block)
@@ -993,7 +993,7 @@ setup_signal_handler_info (int signal,
  *
  * @param[in]  given_signal  The signal that caused this function to run.
  */
-void
+static void
 handle_sigabrt (int given_signal)
 {
   static int in_sigabrt = 0;
@@ -1031,7 +1031,7 @@ handle_sigabrt (int given_signal)
  *
  * @param[in]  signal  The signal that caused this function to run.
  */
-void
+static void
 handle_termination_signal (int signal)
 {
   termination_signal = signal;
@@ -1044,7 +1044,7 @@ handle_termination_signal (int signal)
  *
  * @param[in]  given_signal  The signal that caused this function to run.
  */
-void
+static void
 handle_sigsegv (/* unused */ int given_signal)
 {
   manage_cleanup_process_error (given_signal);
@@ -1066,7 +1066,7 @@ handle_sigsegv (/* unused */ int given_signal)
  * @param[in]  info          Signal info.
  * @param[in]  ucontext      User context.
  */
-void
+static void
 handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
 {
   int status, pid;
@@ -1083,7 +1083,7 @@ handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
  *
  * @param[in]  signal  The signal that caused this function to run.
  */
-void
+static void
 handle_sigabrt_simple (int signal)
 {
   exit (EXIT_FAILURE);

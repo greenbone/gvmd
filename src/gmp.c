@@ -327,7 +327,7 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
  *
  * @return 1 if found, else 0.
  */
-int
+static int
 find_attribute (const gchar **attribute_names,
                 const gchar **attribute_values,
                 const char *attribute_name,
@@ -356,7 +356,7 @@ find_attribute (const gchar **attribute_names,
  *
  * @return 1 if found and appended, else 0.
  */
-int
+static int
 append_attribute (const gchar **attribute_names,
                   const gchar **attribute_values,
                   const char *attribute_name,
@@ -391,7 +391,7 @@ typedef struct
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 init_get (gchar *command, get_data_t * get, const gchar *setting_name,
           int *first)
 {
@@ -724,7 +724,7 @@ process_gmp (gmp_parser_t *, const gchar *, gchar **);
  *
  * @return A GMP parser.
  */
-gmp_parser_t *
+static gmp_parser_t *
 gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_client_data,
                 gchar **disable)
 {
@@ -743,7 +743,7 @@ gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_clie
  *
  * @return A GMP parser.
  */
-void
+static void
 gmp_parser_free (gmp_parser_t *gmp_parser)
 {
   g_strfreev (gmp_parser->disabled_commands);
@@ -3275,7 +3275,7 @@ typedef struct
  *
  * @param[in]  data  Command data.
  */
-void
+static void
 modify_auth_data_reset (modify_auth_data_t * data)
 {
   GSList *item, *subitem;
@@ -4370,657 +4370,657 @@ command_data_init (command_data_t *data)
 /**
  * @brief Parser callback data.
  */
-command_data_t command_data;
+static command_data_t command_data;
 
 /**
  * @brief Parser callback data for CREATE_AGENT.
  */
-create_agent_data_t *create_agent_data
+static create_agent_data_t *create_agent_data
  = (create_agent_data_t*) &(command_data.create_agent);
 
 /**
  * @brief Parser callback data for CREATE_ASSET.
  */
-create_asset_data_t *create_asset_data
+static create_asset_data_t *create_asset_data
  = (create_asset_data_t*) &(command_data.create_asset);
 
 /**
  * @brief Parser callback data for CREATE_CONFIG.
  */
-create_config_data_t *create_config_data
+static create_config_data_t *create_config_data
  = (create_config_data_t*) &(command_data.create_config);
 
 /**
  * @brief Parser callback data for CREATE_ALERT.
  */
-create_alert_data_t *create_alert_data
+static create_alert_data_t *create_alert_data
  = (create_alert_data_t*) &(command_data.create_alert);
 
 /**
  * @brief Parser callback data for CREATE_CREDENTIAL.
  */
-create_credential_data_t *create_credential_data
+static create_credential_data_t *create_credential_data
  = (create_credential_data_t*) &(command_data.create_credential);
 
 /**
  * @brief Parser callback data for CREATE_FILTER.
  */
-create_filter_data_t *create_filter_data
+static create_filter_data_t *create_filter_data
  = (create_filter_data_t*) &(command_data.create_filter);
 
 /**
  * @brief Parser callback data for CREATE_GROUP.
  */
-create_group_data_t *create_group_data
+static create_group_data_t *create_group_data
  = (create_group_data_t*) &(command_data.create_group);
 
 /**
  * @brief Parser callback data for CREATE_NOTE.
  */
-create_note_data_t *create_note_data
+static create_note_data_t *create_note_data
  = (create_note_data_t*) &(command_data.create_note);
 
 /**
  * @brief Parser callback data for CREATE_OVERRIDE.
  */
-create_override_data_t *create_override_data
+static create_override_data_t *create_override_data
  = (create_override_data_t*) &(command_data.create_override);
 
 /**
  * @brief Parser callback data for CREATE_PERMISSION.
  */
-create_permission_data_t *create_permission_data
+static create_permission_data_t *create_permission_data
  = (create_permission_data_t*) &(command_data.create_permission);
 
 /**
  * @brief Parser callback data for CREATE_PORT_LIST.
  */
-create_port_list_data_t *create_port_list_data
+static create_port_list_data_t *create_port_list_data
  = (create_port_list_data_t*) &(command_data.create_port_list);
 
 /**
  * @brief Parser callback data for CREATE_PORT_RANGE.
  */
-create_port_range_data_t *create_port_range_data
+static create_port_range_data_t *create_port_range_data
  = (create_port_range_data_t*) &(command_data.create_port_range);
 
 /**
  * @brief Parser callback data for CREATE_ROLE.
  */
-create_role_data_t *create_role_data
+static create_role_data_t *create_role_data
  = (create_role_data_t*) &(command_data.create_role);
 
 /**
  * @brief Parser callback data for CREATE_REPORT.
  */
-create_report_data_t *create_report_data
+static create_report_data_t *create_report_data
  = (create_report_data_t*) &(command_data.create_report);
 
 /**
  * @brief Parser callback data for CREATE_REPORT_FORMAT.
  */
-create_report_format_data_t *create_report_format_data
+static create_report_format_data_t *create_report_format_data
  = (create_report_format_data_t*) &(command_data.create_report_format);
 
 /**
  * @brief Parser callback data for CREATE_SCANNER.
  */
-create_scanner_data_t *create_scanner_data
+static create_scanner_data_t *create_scanner_data
  = (create_scanner_data_t*) &(command_data.create_scanner);
 
 /**
  * @brief Parser callback data for CREATE_SCHEDULE.
  */
-create_schedule_data_t *create_schedule_data
+static create_schedule_data_t *create_schedule_data
  = (create_schedule_data_t*) &(command_data.create_schedule);
 
 /**
  * @brief Parser callback data for CREATE_TAG.
  */
-create_tag_data_t *create_tag_data
+static create_tag_data_t *create_tag_data
  = (create_tag_data_t*) &(command_data.create_tag);
 
 /**
  * @brief Parser callback data for CREATE_TARGET.
  */
-create_target_data_t *create_target_data
+static create_target_data_t *create_target_data
  = (create_target_data_t*) &(command_data.create_target);
 
 /**
  * @brief Parser callback data for CREATE_TASK.
  */
-create_task_data_t *create_task_data
+static create_task_data_t *create_task_data
  = (create_task_data_t*) &(command_data.create_task);
 
 /**
  * @brief Parser callback data for CREATE_USER.
  */
-create_user_data_t *create_user_data
+static create_user_data_t *create_user_data
  = &(command_data.create_user);
 
 /**
  * @brief Parser callback data for DELETE_AGENT.
  */
-delete_agent_data_t *delete_agent_data
+static delete_agent_data_t *delete_agent_data
  = (delete_agent_data_t*) &(command_data.delete_agent);
 
 /**
  * @brief Parser callback data for DELETE_ASSET.
  */
-delete_asset_data_t *delete_asset_data
+static delete_asset_data_t *delete_asset_data
  = (delete_asset_data_t*) &(command_data.delete_asset);
 
 /**
  * @brief Parser callback data for DELETE_CONFIG.
  */
-delete_config_data_t *delete_config_data
+static delete_config_data_t *delete_config_data
  = (delete_config_data_t*) &(command_data.delete_config);
 
 /**
  * @brief Parser callback data for DELETE_ALERT.
  */
-delete_alert_data_t *delete_alert_data
+static delete_alert_data_t *delete_alert_data
  = (delete_alert_data_t*) &(command_data.delete_alert);
 
 /**
  * @brief Parser callback data for DELETE_CREDENTIAL.
  */
-delete_credential_data_t *delete_credential_data
+static delete_credential_data_t *delete_credential_data
  = (delete_credential_data_t*) &(command_data.delete_credential);
 
 /**
  * @brief Parser callback data for DELETE_FILTER.
  */
-delete_filter_data_t *delete_filter_data
+static delete_filter_data_t *delete_filter_data
  = (delete_filter_data_t*) &(command_data.delete_filter);
 
 /**
  * @brief Parser callback data for DELETE_GROUP.
  */
-delete_group_data_t *delete_group_data
+static delete_group_data_t *delete_group_data
  = (delete_group_data_t*) &(command_data.delete_group);
 
 /**
  * @brief Parser callback data for DELETE_NOTE.
  */
-delete_note_data_t *delete_note_data
+static delete_note_data_t *delete_note_data
  = (delete_note_data_t*) &(command_data.delete_note);
 
 /**
  * @brief Parser callback data for DELETE_OVERRIDE.
  */
-delete_override_data_t *delete_override_data
+static delete_override_data_t *delete_override_data
  = (delete_override_data_t*) &(command_data.delete_override);
 
 /**
  * @brief Parser callback data for DELETE_PERMISSION.
  */
-delete_permission_data_t *delete_permission_data
+static delete_permission_data_t *delete_permission_data
  = (delete_permission_data_t*) &(command_data.delete_permission);
 
 /**
  * @brief Parser callback data for DELETE_PORT_LIST.
  */
-delete_port_list_data_t *delete_port_list_data
+static delete_port_list_data_t *delete_port_list_data
  = (delete_port_list_data_t*) &(command_data.delete_port_list);
 
 /**
  * @brief Parser callback data for DELETE_PORT_RANGE.
  */
-delete_port_range_data_t *delete_port_range_data
+static delete_port_range_data_t *delete_port_range_data
  = (delete_port_range_data_t*) &(command_data.delete_port_range);
 
 /**
  * @brief Parser callback data for DELETE_REPORT.
  */
-delete_report_data_t *delete_report_data
+static delete_report_data_t *delete_report_data
  = (delete_report_data_t*) &(command_data.delete_report);
 
 /**
  * @brief Parser callback data for DELETE_REPORT_FORMAT.
  */
-delete_report_format_data_t *delete_report_format_data
+static delete_report_format_data_t *delete_report_format_data
  = (delete_report_format_data_t*) &(command_data.delete_report_format);
 
 /**
  * @brief Parser callback data for DELETE_ROLE.
  */
-delete_role_data_t *delete_role_data
+static delete_role_data_t *delete_role_data
  = (delete_role_data_t*) &(command_data.delete_role);
 
 /**
  * @brief Parser callback data for DELETE_SCANNER.
  */
-delete_scanner_data_t *delete_scanner_data
+static delete_scanner_data_t *delete_scanner_data
  = (delete_scanner_data_t*) &(command_data.delete_scanner);
 
 /**
  * @brief Parser callback data for DELETE_SCHEDULE.
  */
-delete_schedule_data_t *delete_schedule_data
+static delete_schedule_data_t *delete_schedule_data
  = (delete_schedule_data_t*) &(command_data.delete_schedule);
 
 /**
  * @brief Parser callback data for DELETE_TAG.
  */
-delete_tag_data_t *delete_tag_data
+static delete_tag_data_t *delete_tag_data
  = (delete_tag_data_t*) &(command_data.delete_tag);
 
 /**
  * @brief Parser callback data for DELETE_TARGET.
  */
-delete_target_data_t *delete_target_data
+static delete_target_data_t *delete_target_data
  = (delete_target_data_t*) &(command_data.delete_target);
 
 /**
  * @brief Parser callback data for DELETE_TASK.
  */
-delete_task_data_t *delete_task_data
+static delete_task_data_t *delete_task_data
  = (delete_task_data_t*) &(command_data.delete_task);
 
 /**
  * @brief Parser callback data for DELETE_USER.
  */
-delete_user_data_t *delete_user_data
+static delete_user_data_t *delete_user_data
  = (delete_user_data_t*) &(command_data.delete_user);
 
 /**
  * @brief Parser callback data for GET_AGENTS.
  */
-get_agents_data_t *get_agents_data
+static get_agents_data_t *get_agents_data
  = &(command_data.get_agents);
 
 /**
  * @brief Parser callback data for GET_AGGREGATES.
  */
-get_aggregates_data_t *get_aggregates_data
+static get_aggregates_data_t *get_aggregates_data
  = &(command_data.get_aggregates);
 
 /**
  * @brief Parser callback data for GET_CONFIGS.
  */
-get_configs_data_t *get_configs_data
+static get_configs_data_t *get_configs_data
  = &(command_data.get_configs);
 
 /**
  * @brief Parser callback data for GET_ALERTS.
  */
-get_alerts_data_t *get_alerts_data
+static get_alerts_data_t *get_alerts_data
  = &(command_data.get_alerts);
 
 /**
  * @brief Parser callback data for GET_ASSETS.
  */
-get_assets_data_t *get_assets_data
+static get_assets_data_t *get_assets_data
  = &(command_data.get_assets);
 
 /**
  * @brief Parser callback data for GET_CREDENTIALS.
  */
-get_credentials_data_t *get_credentials_data
+static get_credentials_data_t *get_credentials_data
  = &(command_data.get_credentials);
 
 /**
  * @brief Parser callback data for GET_FEEDS.
  */
-get_feeds_data_t *get_feeds_data
+static get_feeds_data_t *get_feeds_data
  = &(command_data.get_feeds);
 
 /**
  * @brief Parser callback data for GET_FILTERS.
  */
-get_filters_data_t *get_filters_data
+static get_filters_data_t *get_filters_data
  = &(command_data.get_filters);
 
 /**
  * @brief Parser callback data for GET_GROUPS.
  */
-get_groups_data_t *get_groups_data
+static get_groups_data_t *get_groups_data
  = &(command_data.get_groups);
 
 /**
  * @brief Parser callback data for GET_INFO.
  */
-get_info_data_t *get_info_data
+static get_info_data_t *get_info_data
  = &(command_data.get_info);
 
 /**
  * @brief Parser callback data for GET_NOTES.
  */
-get_notes_data_t *get_notes_data
+static get_notes_data_t *get_notes_data
  = &(command_data.get_notes);
 
 /**
  * @brief Parser callback data for GET_NVTS.
  */
-get_nvts_data_t *get_nvts_data
+static get_nvts_data_t *get_nvts_data
  = &(command_data.get_nvts);
 
 /**
  * @brief Parser callback data for GET_NVT_FAMILIES.
  */
-get_nvt_families_data_t *get_nvt_families_data
+static get_nvt_families_data_t *get_nvt_families_data
  = &(command_data.get_nvt_families);
 
 /**
  * @brief Parser callback data for GET_OVERRIDES.
  */
-get_overrides_data_t *get_overrides_data
+static get_overrides_data_t *get_overrides_data
  = &(command_data.get_overrides);
 
 /**
  * @brief Parser callback data for GET_PERMISSIONS.
  */
-get_permissions_data_t *get_permissions_data
+static get_permissions_data_t *get_permissions_data
  = &(command_data.get_permissions);
 
 /**
  * @brief Parser callback data for GET_PORT_LISTS.
  */
-get_port_lists_data_t *get_port_lists_data
+static get_port_lists_data_t *get_port_lists_data
  = &(command_data.get_port_lists);
 
 /**
  * @brief Parser callback data for GET_PREFERENCES.
  */
-get_preferences_data_t *get_preferences_data
+static get_preferences_data_t *get_preferences_data
  = &(command_data.get_preferences);
 
 /**
  * @brief Parser callback data for GET_REPORTS.
  */
-get_reports_data_t *get_reports_data
+static get_reports_data_t *get_reports_data
  = &(command_data.get_reports);
 
 /**
  * @brief Parser callback data for GET_REPORT_FORMATS.
  */
-get_report_formats_data_t *get_report_formats_data
+static get_report_formats_data_t *get_report_formats_data
  = &(command_data.get_report_formats);
 
 /**
  * @brief Parser callback data for GET_RESULTS.
  */
-get_results_data_t *get_results_data
+static get_results_data_t *get_results_data
  = &(command_data.get_results);
 
 /**
  * @brief Parser callback data for GET_ROLES.
  */
-get_roles_data_t *get_roles_data
+static get_roles_data_t *get_roles_data
  = &(command_data.get_roles);
 
 /**
  * @brief Parser callback data for GET_scannerS.
  */
-get_scanners_data_t *get_scanners_data
+static get_scanners_data_t *get_scanners_data
  = &(command_data.get_scanners);
 
 /**
  * @brief Parser callback data for GET_SCHEDULES.
  */
-get_schedules_data_t *get_schedules_data
+static get_schedules_data_t *get_schedules_data
  = &(command_data.get_schedules);
 
 /**
  * @brief Parser callback data for GET_SETTINGS.
  */
-get_settings_data_t *get_settings_data
+static get_settings_data_t *get_settings_data
  = &(command_data.get_settings);
 
 /**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
  */
-get_system_reports_data_t *get_system_reports_data
+static get_system_reports_data_t *get_system_reports_data
  = &(command_data.get_system_reports);
 
 /**
  * @brief Parser callback data for GET_TAGS.
  */
-get_tags_data_t *get_tags_data
+static get_tags_data_t *get_tags_data
  = &(command_data.get_tags);
 
 /**
  * @brief Parser callback data for GET_TARGETS.
  */
-get_targets_data_t *get_targets_data
+static get_targets_data_t *get_targets_data
  = &(command_data.get_targets);
 
 /**
  * @brief Parser callback data for GET_TASKS.
  */
-get_tasks_data_t *get_tasks_data
+static get_tasks_data_t *get_tasks_data
  = &(command_data.get_tasks);
 
 /**
  * @brief Parser callback data for GET_USERS.
  */
-get_users_data_t *get_users_data
+static get_users_data_t *get_users_data
  = &(command_data.get_users);
 
 /**
  * @brief Parser callback data for GET_VULNS.
  */
-get_vulns_data_t *get_vulns_data
+static get_vulns_data_t *get_vulns_data
  = &(command_data.get_vulns);
 
 /**
  * @brief Parser callback data for HELP.
  */
-help_data_t *help_data
+static help_data_t *help_data
  = &(command_data.help);
 
 /**
  * @brief Parser callback data for CREATE_CONFIG (import).
  */
-import_config_data_t *import_config_data
+static import_config_data_t *import_config_data
  = (import_config_data_t*) &(command_data.create_config.import);
 
 /**
  * @brief Parser callback data for MODIFY_CONFIG.
  */
-modify_config_data_t *modify_config_data
+static modify_config_data_t *modify_config_data
  = &(command_data.modify_config);
 
 /**
  * @brief Parser callback data for MODIFY_AGENT.
  */
-modify_agent_data_t *modify_agent_data
+static modify_agent_data_t *modify_agent_data
  = &(command_data.modify_agent);
 
 /**
  * @brief Parser callback data for MODIFY_ALERT.
  */
-modify_alert_data_t *modify_alert_data
+static modify_alert_data_t *modify_alert_data
  = &(command_data.modify_alert);
 
 /**
  * @brief Parser callback data for MODIFY_ASSET.
  */
-modify_asset_data_t *modify_asset_data
+static modify_asset_data_t *modify_asset_data
  = &(command_data.modify_asset);
 
 /**
  * @brief Parser callback data for MODIFY_AUTH.
  */
-modify_auth_data_t *modify_auth_data
+static modify_auth_data_t *modify_auth_data
  = &(command_data.modify_auth);
 
 /**
  * @brief Parser callback data for MODIFY_CREDENTIAL.
  */
-modify_credential_data_t *modify_credential_data
+static modify_credential_data_t *modify_credential_data
  = &(command_data.modify_credential);
 
 /**
  * @brief Parser callback data for MODIFY_FILTER.
  */
-modify_filter_data_t *modify_filter_data
+static modify_filter_data_t *modify_filter_data
  = &(command_data.modify_filter);
 
 /**
  * @brief Parser callback data for MODIFY_GROUP.
  */
-modify_group_data_t *modify_group_data
+static modify_group_data_t *modify_group_data
  = &(command_data.modify_group);
 
 /**
  * @brief Parser callback data for MODIFY_NOTE.
  */
-modify_note_data_t *modify_note_data
+static modify_note_data_t *modify_note_data
  = (modify_note_data_t*) &(command_data.create_note);
 
 /**
  * @brief Parser callback data for MODIFY_OVERRIDE.
  */
-modify_override_data_t *modify_override_data
+static modify_override_data_t *modify_override_data
  = (modify_override_data_t*) &(command_data.create_override);
 
 /**
  * @brief Parser callback data for MODIFY_PERMISSION.
  */
-modify_permission_data_t *modify_permission_data
+static modify_permission_data_t *modify_permission_data
  = &(command_data.modify_permission);
 
 /**
  * @brief Parser callback data for MODIFY_PORT_LIST.
  */
-modify_port_list_data_t *modify_port_list_data
+static modify_port_list_data_t *modify_port_list_data
  = &(command_data.modify_port_list);
 
 /**
  * @brief Parser callback data for MODIFY_REPORT.
  */
-modify_report_data_t *modify_report_data
+static modify_report_data_t *modify_report_data
  = &(command_data.modify_report);
 
 /**
  * @brief Parser callback data for MODIFY_REPORT_FORMAT.
  */
-modify_report_format_data_t *modify_report_format_data
+static modify_report_format_data_t *modify_report_format_data
  = &(command_data.modify_report_format);
 
 /**
  * @brief Parser callback data for MODIFY_ROLE.
  */
-modify_role_data_t *modify_role_data
+static modify_role_data_t *modify_role_data
  = &(command_data.modify_role);
 
 /**
  * @brief Parser callback data for MODIFY_SCANNER.
  */
-modify_scanner_data_t *modify_scanner_data
+static modify_scanner_data_t *modify_scanner_data
  = &(command_data.modify_scanner);
 
 /**
  * @brief Parser callback data for MODIFY_SCHEDULE.
  */
-modify_schedule_data_t *modify_schedule_data
+static modify_schedule_data_t *modify_schedule_data
  = &(command_data.modify_schedule);
 
 /**
  * @brief Parser callback data for MODIFY_SETTING.
  */
-modify_setting_data_t *modify_setting_data
+static modify_setting_data_t *modify_setting_data
  = &(command_data.modify_setting);
 
 /**
  * @brief Parser callback data for MODIFY_TAG.
  */
-modify_tag_data_t *modify_tag_data
+static modify_tag_data_t *modify_tag_data
  = (modify_tag_data_t*) &(command_data.modify_tag);
 
 /**
  * @brief Parser callback data for MODIFY_TARGET.
  */
-modify_target_data_t *modify_target_data
+static modify_target_data_t *modify_target_data
  = &(command_data.modify_target);
 
 /**
  * @brief Parser callback data for MODIFY_TASK.
  */
-modify_task_data_t *modify_task_data
+static modify_task_data_t *modify_task_data
  = &(command_data.modify_task);
 
 /**
  * @brief Parser callback data for MODIFY_USER.
  */
-modify_user_data_t *modify_user_data = &(command_data.modify_user);
+static modify_user_data_t *modify_user_data = &(command_data.modify_user);
 
 /**
  * @brief Parser callback data for MOVE_TASK.
  */
-move_task_data_t *move_task_data = &(command_data.move_task);
+static move_task_data_t *move_task_data = &(command_data.move_task);
 
 /**
  * @brief Parser callback data for RESTORE.
  */
-restore_data_t *restore_data
+static restore_data_t *restore_data
  = (restore_data_t*) &(command_data.restore);
 
 /**
  * @brief Parser callback data for RESUME_TASK.
  */
-resume_task_data_t *resume_task_data
+static resume_task_data_t *resume_task_data
  = (resume_task_data_t*) &(command_data.resume_task);
 
 /**
  * @brief Parser callback data for START_TASK.
  */
-start_task_data_t *start_task_data
+static start_task_data_t *start_task_data
  = (start_task_data_t*) &(command_data.start_task);
 
 /**
  * @brief Parser callback data for STOP_TASK.
  */
-stop_task_data_t *stop_task_data
+static stop_task_data_t *stop_task_data
  = (stop_task_data_t*) &(command_data.stop_task);
 
 /**
  * @brief Parser callback data for SYNC_CONFIG.
  */
-sync_config_data_t *sync_config_data
+static sync_config_data_t *sync_config_data
  = (sync_config_data_t*) &(command_data.delete_target);
 
 /**
  * @brief Parser callback data for TEST_ALERT.
  */
-test_alert_data_t *test_alert_data
+static test_alert_data_t *test_alert_data
  = (test_alert_data_t*) &(command_data.test_alert);
 
 /**
  * @brief Parser callback data for VERIFY_AGENT.
  */
-verify_agent_data_t *verify_agent_data
+static verify_agent_data_t *verify_agent_data
  = (verify_agent_data_t*) &(command_data.verify_agent);
 
 /**
  * @brief Parser callback data for VERIFY_REPORT_FORMAT.
  */
-verify_report_format_data_t *verify_report_format_data
+static verify_report_format_data_t *verify_report_format_data
  = (verify_report_format_data_t*) &(command_data.verify_report_format);
 
 /**
  * @brief Parser callback data for VERIFY_SCANNER.
  */
-verify_scanner_data_t *verify_scanner_data
+static verify_scanner_data_t *verify_scanner_data
  = (verify_scanner_data_t*) &(command_data.verify_scanner);
 
 /**
  * @brief Parser callback data for WIZARD.
  */
-run_wizard_data_t *run_wizard_data
+static run_wizard_data_t *run_wizard_data
  = (run_wizard_data_t*) &(command_data.wizard);
 
 /**
  * @brief Hack for returning forked process status from the callbacks.
  */
-int current_error;
+static int current_error;
 
 /**
  * @brief Hack for returning fork status to caller.
  */
-int forked;
+static int forked;
 
 /**
  * @brief Buffer of output to the client.
@@ -5979,7 +5979,7 @@ make_xml_error_syntax (const char *tag, const char *text)
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
-int
+static int
 send_get_start (const char *type, int (*write_to_client) (const char*, void*),
                 void* write_to_client_data)
 {
@@ -6019,7 +6019,7 @@ send_get_start (const char *type, int (*write_to_client) (const char*, void*),
  *
  * @return 0 success, 1 send error.
  */
-int
+static int
 send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                  int (*write_to_client) (const char *, void*),
                  void* write_to_client_data, int writable, int in_use)
@@ -6272,7 +6272,7 @@ buffer_get_filter_xml (GString *msg, const char* type,
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
-int
+static int
 send_get_end_internal (const char *type, get_data_t *get, int get_counts,
                        int count, int filtered, int full,
                        int (*write_to_client) (const char *, void*),
@@ -6412,7 +6412,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
-int
+static int
 send_get_end (const char *type, get_data_t *get, int count, int filtered,
               int full, int (*write_to_client) (const char *, void*),
               void* write_to_client_data)
@@ -6432,7 +6432,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
-int
+static int
 send_get_end_no_counts (const char *type, get_data_t *get,
                         int (*write_to_client) (const char *, void*),
                         void* write_to_client_data)
@@ -11309,7 +11309,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
  *
  * @return Output of "diff", or NULL on error.
  */
-gchar *
+static gchar *
 strdiff (const gchar *one, const gchar *two)
 {
   gchar **cmd, *ret, *one_file, *two_file, *old_lc_all, *old_language;
@@ -11987,7 +11987,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
  * @param[out] sort_data         sort_data_list copied to a GArray.
  * @param[out] c_sums            Array for calculating cumulative sums.
  */
-void
+static void
 init_aggregate_lists (const gchar* group_column,
                       const gchar* subgroup_column,
                       GList *data_column_list,
@@ -12263,7 +12263,7 @@ buffer_word_counts_seq (gpointer value, gpointer buffer)
  * @param[in]  first_group   Index of the first word to output, starting at 0.
  * @param[in]  max_groups    Maximum number of words to output or -1 for all.
  */
-void
+static void
 buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
                          const gchar* type, const char* group_column,
                          GArray* sort_data,
@@ -12479,7 +12479,7 @@ buffer_aggregate_subgroup_value (gchar *key,
  * @param[in]  text_column_types      Types of the text_columns.
  * @param[in]  c_sums                 Array for calculating cumulative sums.
  */
-void
+static void
 buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                       const char* group_column, const char* group_column_type,
                       const char* subgroup_column,
@@ -12803,10 +12803,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
           if (subgroup_column && column_is_timestamp (data_column) == FALSE)
             {
               GTree *c_sum_tree;
-              const gchar *subgroup_value;
 
-
-              subgroup_value = aggregate_iterator_subgroup_value (aggregate);
               c_sum_tree = g_array_index (group_c_sums, GTree*, index);
               subgroup_c_sum = g_tree_lookup (c_sum_tree, subgroup_value);
 
@@ -13325,7 +13322,7 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
  *
  * @return String of |-concatenated file names. Free with g_free().
  */
-char *
+static char *
 get_ovaldi_files ()
 {
   iterator_t iterator;
@@ -14480,7 +14477,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
         {
           iterator_t prefs;
           scanner_t scanner;
-          config_t config = get_iterator_resource (&configs);
           char *s_uuid, *s_name;
 
           assert (config);
@@ -14540,7 +14536,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                || get_configs_data->get.details)
         {
           iterator_t prefs;
-          config_t config = get_iterator_resource (&configs);
 
           assert (config);
 
@@ -17023,7 +17018,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   if (strcmp (get_reports_data->type, "assets") == 0)
     {
       gchar *extension, *content_type;
-      int ret, pos;
+      int pos;
       get_data_t * get;
 
       /* An asset report. */
@@ -17204,7 +17199,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   while (next_report (&reports, &report))
     {
       gchar *extension, *content_type;
-      int ret;
       GString *prefix;
 
       prefix = g_string_new ("");
@@ -19872,14 +19866,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
           if (schedule_available && schedule)
             {
-              time_t first_time, next_time;
+              time_t first_time, info_next_time;
               int period, period_months, duration;
               gchar *icalendar, *timezone;
 
               icalendar = timezone = NULL;
 
               if (schedule_info (schedule, schedule_in_trash,
-                                 &first_time, &next_time, &period,
+                                 &first_time, &info_next_time, &period,
                                  &period_months, &duration,
                                  &icalendar, &timezone) == 0)
                 {
@@ -19889,8 +19883,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                   first_time_str = g_strdup (first_time
                                               ? iso_time (&first_time)
                                               : "");
-                  next_time_str = g_strdup (next_time
-                                              ? iso_time (&next_time)
+                  next_time_str = g_strdup (info_next_time
+                                              ? iso_time (&info_next_time)
                                               : "over");
 
                   SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
@@ -25874,7 +25868,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           config_t config = 0;
           target_t target = 0;
           scanner_t scanner = 0;
-          char *tsk_uuid = NULL, *name;
+          char *tsk_uuid = NULL;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -26152,14 +26146,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for name. */
 
-          name = task_name (create_task_data->task);
-          if (name == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE_TASK requires a name attribute"));
-              goto create_task_fail;
-            }
+          {
+            char *name;
+
+            name = task_name (create_task_data->task);
+            if (name == NULL)
+              {
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_task",
+                                    "CREATE_TASK requires a name attribute"));
+                goto create_task_fail;
+              }
+          }
 
           if (find_scanner_with_permission (create_task_data->scanner_id,
                                             &scanner,
@@ -31423,7 +31421,7 @@ process_gmp_client_input ()
  *
  * @return TRUE if failed, else FALSE.
  */
-int
+static int
 process_gmp_write (const char* msg, void* buffer)
 {
   g_debug ("-> client internal: %s\n", msg);

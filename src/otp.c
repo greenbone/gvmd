@@ -229,13 +229,14 @@ write_message (task_t task, message_t* message, char* type)
 {
   result_t result;
 
-  assert (current_report);
+  assert (global_current_report);
 
   manage_transaction_start ();
   result = make_result (task, message->host, message->hostname,
                         message->port.string, message->oid,
                         type, message->description);
-  if (current_report) report_add_result (current_report, result);
+  if (global_current_report)
+    report_add_result (global_current_report, result);
 }
 
 /**
@@ -271,7 +272,7 @@ append_alarm_message (task_t task, message_t* message)
 static void
 append_log_message (task_t task, message_t* message)
 {
-  assert (current_report);
+  assert (global_current_report);
 
   if (message->port.string
       && (strcmp (message->port.string, "general/Host_Details") == 0))
@@ -284,7 +285,7 @@ append_log_message (task_t task, message_t* message)
           && (message->description[len - 2] == '\\'))
         message->description[len - 2] = '\0';
       /* Add detail to report. */
-      if (manage_report_host_detail (current_report,
+      if (manage_report_host_detail (global_current_report,
                                      message->host,
                                      message->description))
         g_warning ("%s: Failed to add report detail for host '%s': %s\n",
@@ -1424,13 +1425,13 @@ process_otp_scanner_input ()
               case SCANNER_STATUS_PROGRESS:
                 {
                   /* Store the progress in the ports slots in the db. */
-                  assert (current_report);
-                  if (current_report && current_host)
+                  assert (global_current_report);
+                  if (global_current_report && current_host)
                     {
                       unsigned int current, max;
                       g_debug ("   scanner got ports: %s\n", field);
                       if (sscanf (field, "%u/%u", &current, &max) == 2)
-                        set_scan_ports (current_report,
+                        set_scan_ports (global_current_report,
                                         current_host,
                                         current,
                                         max);
@@ -1478,9 +1479,9 @@ process_otp_scanner_input ()
                   if (current_scanner_task)
                     {
                       assert (current_host);
-                      assert (current_report);
+                      assert (global_current_report);
 
-                      set_scan_host_start_time_otp (current_report,
+                      set_scan_host_start_time_otp (global_current_report,
                                                     current_host,
                                                     field);
                       g_free (current_host);
@@ -1507,12 +1508,13 @@ process_otp_scanner_input ()
               case SCANNER_TIME_HOST_END_TIME:
                 {
                   assert (current_host);
-                  assert (current_report);
+                  assert (global_current_report);
 
-                  if (report_host_noticeable (current_report, current_host))
+                  if (report_host_noticeable (global_current_report,
+                                              current_host))
                     {
                       char *uuid;
-                      uuid = report_uuid (current_report);
+                      uuid = report_uuid (global_current_report);
                       host_notice (current_host, "ip", current_host,
                                    "Report Host", uuid, 1, 0);
                       free (uuid);
@@ -1521,7 +1523,7 @@ process_otp_scanner_input ()
                   if (current_scanner_task)
                     {
                       assert (current_host);
-                      set_scan_host_end_time_otp (current_report,
+                      set_scan_host_end_time_otp (global_current_report,
                                                   current_host,
                                                   field);
                       g_free (current_host);
@@ -1549,11 +1551,13 @@ process_otp_scanner_input ()
                                                TASK_STATUS_RUNNING);
                           /* If the scan has been started before, then leave
                            * the start time alone. */
-                          if (scan_start_time_epoch (current_report) == 0)
+                          if (scan_start_time_epoch (global_current_report)
+                              == 0)
                             {
                               set_task_start_time_otp (current_scanner_task,
                                                        g_strdup (field));
-                              set_scan_start_time_otp (current_report, field);
+                              set_scan_start_time_otp (global_current_report,
+                                                       field);
                             }
                         }
                     }
@@ -1575,12 +1579,14 @@ process_otp_scanner_input ()
                       /* Stop transaction now, because delete_task_lock and
                        * set_scan_end_time_otp run transactions themselves. */
                       manage_transaction_stop (TRUE);
-                      if (current_report)
+                      if (global_current_report)
                         {
-                          hosts_set_identifiers (current_report);
-                          hosts_set_max_severity (current_report, NULL, NULL);
-                          hosts_set_details (current_report);
-                          set_scan_end_time_otp (current_report, field);
+                          hosts_set_identifiers (global_current_report);
+                          hosts_set_max_severity (global_current_report,
+                                                  NULL,
+                                                  NULL);
+                          hosts_set_details (global_current_report);
+                          set_scan_end_time_otp (global_current_report, field);
                         }
                       switch (task_run_status (current_scanner_task))
                         {
@@ -1596,14 +1602,14 @@ process_otp_scanner_input ()
                             set_task_run_status (current_scanner_task,
                                                  TASK_STATUS_STOPPED);
                             delete_task_lock (current_scanner_task, 0);
-                            current_report = (report_t) 0;
+                            global_current_report = (report_t) 0;
                             break;
                           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
                           case TASK_STATUS_DELETE_ULTIMATE_WAITING:
                             set_task_run_status (current_scanner_task,
                                                  TASK_STATUS_STOPPED);
                             delete_task_lock (current_scanner_task, 1);
-                            current_report = (report_t) 0;
+                            global_current_report = (report_t) 0;
                             break;
                           default:
                             set_task_end_time (current_scanner_task,
@@ -1613,7 +1619,7 @@ process_otp_scanner_input ()
                         }
                       clear_duration_schedules (current_scanner_task);
                       update_duration_schedule_periods (current_scanner_task);
-                      current_report = (report_t) 0;
+                      global_current_report = (report_t) 0;
                       current_scanner_task = (task_t) 0;
                     }
                   set_scanner_state (SCANNER_DONE);
