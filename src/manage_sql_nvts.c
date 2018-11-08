@@ -343,7 +343,7 @@ make_nvt_from_nvti (const nvti_t *nvti)
          " cve, bid, xref, tag, category, family, cvss_base,"
          " creation_time, modification_time, uuid, solution_type,"
          " qod, qod_type)"
-         " VALUES ('%s', '%s', '%s', '%s', '%s', '%s',"
+         " VALUES ('%s', '%s', '%s', '%s', '%s',"
          " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
          nvti_oid (nvti), quoted_name,
          quoted_cve, quoted_bid, quoted_xref, quoted_tag,
