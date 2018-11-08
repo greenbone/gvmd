@@ -17018,7 +17018,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   if (strcmp (get_reports_data->type, "assets") == 0)
     {
       gchar *extension, *content_type;
-      int ret, pos;
+      int pos;
       get_data_t * get;
 
       /* An asset report. */
@@ -17199,7 +17199,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   while (next_report (&reports, &report))
     {
       gchar *extension, *content_type;
-      int ret;
       GString *prefix;
 
       prefix = g_string_new ("");
