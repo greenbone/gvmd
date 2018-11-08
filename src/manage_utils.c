@@ -1121,7 +1121,6 @@ icalendar_from_string (const char *ical_string, gchar **error)
   int vevent_count = 0;
   int other_component_count = 0;
   icalcompiter ical_iter;
-  icalcomponent *new_vevent;
   GHashTableIter tzids_iter;
   gchar *tzid;
 
@@ -1232,11 +1231,15 @@ icalendar_from_string (const char *ical_string, gchar **error)
           }
         break;
       case ICAL_VEVENT_COMPONENT:
-        new_vevent = icalendar_simplify_vevent (ical_parsed, tzids,
-                                                error, warnings_buffer);
-        if (new_vevent == NULL)
-          ICAL_RETURN_ERROR (*error);
-        icalcomponent_add_component (ical_new, new_vevent);
+        {
+          icalcomponent *new_vevent;
+
+          new_vevent = icalendar_simplify_vevent (ical_parsed, tzids,
+                                                  error, warnings_buffer);
+          if (new_vevent == NULL)
+            ICAL_RETURN_ERROR (*error);
+          icalcomponent_add_component (ical_new, new_vevent);
+        }
         break;
       default:
         ICAL_RETURN_ERROR

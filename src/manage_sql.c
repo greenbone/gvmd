@@ -1890,13 +1890,79 @@ filter_free (array_t *split)
 }
 
 /**
- * @brief Flag to control the default sorting produced by split filter.
+ * @brief Flag to control the default sorting produced by split_filter.
  *
  * If this is true, and the filter does not specify a sort field, then
  * split_filter will not insert a default sort term, so that the random
  * (and fast) table order in the database will be used.
  */
 int table_order_if_sort_not_specified = 0;
+
+/**
+ * @brief Ensure filter parts contains the special keywords.
+ *
+ * @param[in]  parts         Array of keyword strings.
+ * @param[in]  given_filter  Filter term.
+ */
+void
+split_filter_add_specials (array_t *parts, const gchar* given_filter)
+{
+  int index, first, max, sort;
+  keyword_t *keyword;
+
+  index = parts->len;
+  first = max = sort = 0;
+  while (index--)
+    {
+      keyword_t *item;
+      item = (keyword_t*) g_ptr_array_index (parts, index);
+      if (item->column && (strcmp (item->column, "first") == 0))
+        first = 1;
+      else if (item->column && (strcmp (item->column, "rows") == 0))
+        max = 1;
+      else if (item->column
+               && ((strcmp (item->column, "sort") == 0)
+                   || (strcmp (item->column, "sort-reverse") == 0)))
+        sort = 1;
+    }
+
+  if (first == 0)
+    {
+      keyword = g_malloc0 (sizeof (keyword_t));
+      keyword->column = g_strdup ("first");
+      keyword->string = g_strdup ("1");
+      keyword->type = KEYWORD_TYPE_STRING;
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+      array_add (parts, keyword);
+    }
+
+  if (max == 0)
+    {
+      keyword = g_malloc0 (sizeof (keyword_t));
+      keyword->column = g_strdup ("rows");
+      /* If there was a filter, make max_return default to Rows Per
+       * Page.  This keeps the pre-filters GMP behaviour when the filter
+       * is empty, but is more convenenient for clients that set the
+       * filter. */
+      if (strlen (given_filter))
+        keyword->string = g_strdup ("-2");
+      else
+        keyword->string = g_strdup ("-1");
+      keyword->type = KEYWORD_TYPE_STRING;
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+      array_add (parts, keyword);
+    }
+
+  if (table_order_if_sort_not_specified == 0 && sort == 0)
+    {
+      keyword = g_malloc0 (sizeof (keyword_t));
+      keyword->column = g_strdup ("sort");
+      keyword->string = g_strdup ("name");
+      keyword->type = KEYWORD_TYPE_STRING;
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+      array_add (parts, keyword);
+    }
+}
 
 /**
  * @brief Split the filter term into parts.
@@ -1914,6 +1980,8 @@ split_filter (const gchar* given_filter)
   keyword_t *keyword;
 
   assert (given_filter);
+
+  /* Collect the filter terms in an array. */
 
   filter = given_filter;
   parts = make_array ();
@@ -2060,63 +2128,9 @@ split_filter (const gchar* given_filter)
     }
   assert (keyword == NULL);
 
-  {
-    int index, first, max, sort;
-    keyword_t *keyword;
+  /* Make sure the special keywords appear in the array. */
 
-    index = parts->len;
-    first = max = sort = 0;
-    while (index--)
-      {
-        keyword_t *item;
-        item = (keyword_t*) g_ptr_array_index (parts, index);
-        if (item->column && (strcmp (item->column, "first") == 0))
-          first = 1;
-        else if (item->column && (strcmp (item->column, "rows") == 0))
-          max = 1;
-        else if (item->column
-                 && ((strcmp (item->column, "sort") == 0)
-                     || (strcmp (item->column, "sort-reverse") == 0)))
-          sort = 1;
-      }
-
-    if (first == 0)
-      {
-        keyword = g_malloc0 (sizeof (keyword_t));
-        keyword->column = g_strdup ("first");
-        keyword->string = g_strdup ("1");
-        keyword->type = KEYWORD_TYPE_STRING;
-        keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-        array_add (parts, keyword);
-      }
-
-    if (max == 0)
-      {
-        keyword = g_malloc0 (sizeof (keyword_t));
-        keyword->column = g_strdup ("rows");
-        /* If there was a filter, make max_return default to Rows Per
-         * Page.  This keeps the pre-filters GMP behaviour when the filter
-         * is empty, but is more convenenient for clients that set the
-         * filter. */
-        if (strlen (given_filter))
-          keyword->string = g_strdup ("-2");
-        else
-          keyword->string = g_strdup ("-1");
-        keyword->type = KEYWORD_TYPE_STRING;
-        keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-        array_add (parts, keyword);
-      }
-
-    if (table_order_if_sort_not_specified == 0 && sort == 0)
-      {
-        keyword = g_malloc0 (sizeof (keyword_t));
-        keyword->column = g_strdup ("sort");
-        keyword->string = g_strdup ("name");
-        keyword->type = KEYWORD_TYPE_STRING;
-        keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-        array_add (parts, keyword);
-      }
-  }
+  split_filter_add_specials (parts, given_filter);
 
   array_add (parts, NULL);
 
@@ -6593,7 +6607,7 @@ collate_ip (void* data,
                   two_a, two_b, two_c, &two_dot, two_d)
           == 4))
     {
-      int ret = collate_ip_compare (one_a, two_a);
+      ret = collate_ip_compare (one_a, two_a);
       if (ret) return ret < 0 ? -1 : 1;
 
       ret = collate_ip_compare (one_b, two_b);
@@ -7479,14 +7493,16 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
     {
       int validation_result;
-      gchar *name = sql_quote (item);
+      gchar *data_name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
 
-      validation_result = validate_alert_condition_data (name, data, condition);
+      validation_result = validate_alert_condition_data (data_name,
+                                                         data,
+                                                         condition);
 
       if (validation_result)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
 
@@ -7506,9 +7522,9 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       sql ("INSERT INTO alert_condition_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
-           name,
+           data_name,
            data);
-      g_free (name);
+      g_free (data_name);
       g_free (data);
     }
 
@@ -7516,14 +7532,14 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   while ((item = (gchar*) g_ptr_array_index (event_data, index++)))
     {
       int validation_result;
-      gchar *name = sql_quote (item);
+      gchar *data_name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
 
-      validation_result = validate_alert_event_data (name, data, event);
+      validation_result = validate_alert_event_data (data_name, data, event);
 
       if (validation_result)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
 
@@ -7541,92 +7557,91 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       sql ("INSERT INTO alert_event_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
-           name,
+           data_name,
            data);
-      g_free (name);
+      g_free (data_name);
       g_free (data);
     }
 
   index = 0;
   while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
     {
-      int ret;
-      gchar *name, *data;
+      gchar *data_name, *data;
 
-      name = sql_quote (item);
+      data_name = sql_quote (item);
       data = sql_quote (item + strlen (item) + 1);
 
       if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "to_address") == 0
+          && strcmp (data_name, "to_address") == 0
           && validate_email_list (data))
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return 2;
         }
 
       if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "from_address") == 0
+          && strcmp (data_name, "from_address") == 0
           && validate_email (data))
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return 2;
         }
 
       if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "subject") == 0
+          && strcmp (data_name, "subject") == 0
           && strlen (data) > 80)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return 7;
         }
 
       if (method == ALERT_METHOD_EMAIL
-          && strcmp (name, "message") == 0
+          && strcmp (data_name, "message") == 0
           && strlen (data) > max_email_message_length)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return 8;
         }
 
-      ret = validate_scp_data (method, name, &data);
+      ret = validate_scp_data (method, data_name, &data);
       if (ret)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return ret;
         }
 
-      ret = validate_send_data (method, name, &data);
+      ret = validate_send_data (method, data_name, &data);
       if (ret)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return ret;
         }
 
-      ret = validate_smb_data (method, name, &data);
+      ret = validate_smb_data (method, data_name, &data);
       if (ret)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return ret;
         }
 
-      ret = validate_tippingpoint_data (method, name, &data);
+      ret = validate_tippingpoint_data (method, data_name, &data);
       if (ret)
         {
-          g_free (name);
+          g_free (data_name);
           g_free (data);
           sql_rollback ();
           return ret;
@@ -7635,9 +7650,9 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
-           name,
+           data_name,
            data);
-      g_free (name);
+      g_free (data_name);
       g_free (data);
     }
 
@@ -7854,14 +7869,16 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       while ((item = (gchar*) g_ptr_array_index (event_data, index++)))
         {
           int validation_result;
-          gchar *name = sql_quote (item);
+          gchar *data_name = sql_quote (item);
           gchar *data = sql_quote (item + strlen (item) + 1);
 
-          validation_result = validate_alert_event_data (name, data, event);
+          validation_result = validate_alert_event_data (data_name,
+                                                         data,
+                                                         event);
 
           if (validation_result)
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
 
@@ -7879,9 +7896,9 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
           sql ("INSERT INTO alert_event_data (alert, name, data)"
                " VALUES (%llu, '%s', '%s');",
                alert,
-               name,
+               data_name,
                data);
-          g_free (name);
+          g_free (data_name);
           g_free (data);
         }
     }
@@ -7897,15 +7914,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
         {
           int validation_result;
-          gchar *name = sql_quote (item);
+          gchar *data_name = sql_quote (item);
           gchar *data = sql_quote (item + strlen (item) + 1);
 
-          validation_result = validate_alert_condition_data (name, data,
+          validation_result = validate_alert_condition_data (data_name, data,
                                                              condition);
 
           if (validation_result)
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
 
@@ -7925,9 +7942,9 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
           sql ("INSERT INTO alert_condition_data (alert, name, data)"
                " VALUES (%llu, '%s', '%s');",
                alert,
-               name,
+               data_name,
                data);
-          g_free (name);
+          g_free (data_name);
           g_free (data);
         }
     }
@@ -7940,83 +7957,82 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       index = 0;
       while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
         {
-          int ret;
-          gchar *name, *data;
+          gchar *data_name, *data;
 
-          name = sql_quote (item);
+          data_name = sql_quote (item);
           data = sql_quote (item + strlen (item) + 1);
 
           if (method == ALERT_METHOD_EMAIL
-              && strcmp (name, "to_address") == 0
+              && strcmp (data_name, "to_address") == 0
               && validate_email_list (data))
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
               return 6;
             }
 
           if (method == ALERT_METHOD_EMAIL
-              && strcmp (name, "from_address") == 0
+              && strcmp (data_name, "from_address") == 0
               && validate_email (data))
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
               return 6;
             }
 
           if (method == ALERT_METHOD_EMAIL
-              && strcmp (name, "subject") == 0
+              && strcmp (data_name, "subject") == 0
               && strlen (data) > 80)
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
               return 9;
             }
 
           if (method == ALERT_METHOD_EMAIL
-              && strcmp (name, "message") == 0
+              && strcmp (data_name, "message") == 0
               && strlen (data) > max_email_message_length)
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
               return 10;
             }
 
-          ret = validate_scp_data (method, name, &data);
+          ret = validate_scp_data (method, data_name, &data);
           if (ret)
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
               return ret;
             }
 
-          ret = validate_send_data (method, name, &data);
+          ret = validate_send_data (method, data_name, &data);
           if (ret)
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
               return ret;
             }
 
-          ret = validate_smb_data (method, name, &data);
+          ret = validate_smb_data (method, data_name, &data);
           if (ret)
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
               return ret;
             }
 
-          ret = validate_tippingpoint_data (method, name, &data);
+          ret = validate_tippingpoint_data (method, data_name, &data);
           if (ret)
             {
-              g_free (name);
+              g_free (data_name);
               g_free (data);
               sql_rollback ();
               return ret;
@@ -8025,9 +8041,9 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
           sql ("INSERT INTO alert_method_data (alert, name, data)"
                " VALUES (%llu, '%s', '%s');",
                alert,
-               name,
+               data_name,
                data);
-          g_free (name);
+          g_free (data_name);
           g_free (data);
         }
     }
@@ -9207,7 +9223,6 @@ alert_script_exec (const char *alert_id, const char *command_args,
                    gchar **message)
 {
   gchar *script, *script_dir;
-  GError *error;
 
   /* Setup script file name. */
   script_dir = g_build_filename (GVMD_DATA_DIR,
@@ -9352,6 +9367,8 @@ alert_script_exec (const char *alert_id, const char *command_args,
                   }
                 else if (ret != 0)
                   {
+                    GError *error;
+
                     if (g_file_get_contents (error_path, message,
                                              NULL, &error) == FALSE)
                       {
@@ -11387,29 +11404,32 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             const get_data_t *get, int notes_details, int overrides_details,
             gchar **script_message)
 {
-  char *name_alert, *name_task;
-  gchar *event_desc, *alert_desc;
   report_t delta_report;
 
   if (script_message)
     *script_message = NULL;
 
-  name_alert = alert_name (alert);
-  name_task = task_name (task);
-  event_desc = event_description (event, event_data, NULL);
-  alert_desc = alert_condition_description (condition, alert);
-  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-         "The alert %s%s%s was triggered "
-         "(Event: %s, Condition: %s)",
-         name_alert,
-         name_task ? " for task " : "",
-         name_task ? name_task : "",
-         event_desc,
-         alert_desc);
-  free (name_task);
-  free (name_alert);
-  free (event_desc);
-  free (alert_desc);
+  {
+    char *name_alert, *name_task;
+    gchar *event_desc, *alert_desc;
+
+    name_alert = alert_name (alert);
+    name_task = task_name (task);
+    event_desc = event_description (event, event_data, NULL);
+    alert_desc = alert_condition_description (condition, alert);
+    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+           "The alert %s%s%s was triggered "
+           "(Event: %s, Condition: %s)",
+           name_alert,
+           name_task ? " for task " : "",
+           name_task ? name_task : "",
+           event_desc,
+           alert_desc);
+    free (name_task);
+    free (name_alert);
+    free (event_desc);
+    free (alert_desc);
+  }
 
   switch (method)
     {
@@ -13073,7 +13093,6 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   if (alert_event (alert) == EVENT_NEW_SECINFO
       || alert_event (alert) == EVENT_UPDATED_SECINFO)
     {
-      int ret;
       char *alert_event_data;
       gchar *type;
 
@@ -16853,13 +16872,13 @@ stop_active_tasks ()
               task_t index = get_iterator_resource (&tasks);
               /* Set the current user, for event checks. */
               current_credentials.uuid = task_owner_uuid (index);
-              task_last_report_any_status (index, &current_report);
+              task_last_report_any_status (index, &global_current_report);
               set_task_interrupted (index,
                                     "Task process exited abnormally"
                                     " (e.g. machine lost power or process was"
                                     " sent SIGKILL)."
                                     "  Setting scan status to Interrupted.");
-              current_report = 0;
+              global_current_report = 0;
               free (current_credentials.uuid);
               break;
             }
@@ -17192,14 +17211,14 @@ cleanup_manage_process (gboolean cleanup)
         {
           if (current_scanner_task)
             {
-              if (current_report)
+              if (global_current_report)
                 {
                   result_t result;
                   result = make_result (current_scanner_task,
                                         "", "", "", "", "Error Message",
                                         "Interrupting scan because GVM is"
                                         " exiting.");
-                  report_add_result (current_report, result);
+                  report_add_result (global_current_report, result);
                 }
               set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
             }
@@ -17244,7 +17263,7 @@ manage_cleanup_process_error (int signal)
 void
 manage_reset_currents ()
 {
-  current_report = 0;
+  global_current_report = 0;
   current_scanner_task = (task_t) 0;
 }
 
@@ -18302,13 +18321,13 @@ report_scheduled (report_t report)
 static void
 set_task_run_status_internal (task_t task, task_status_t status)
 {
-  if ((task == current_scanner_task) && current_report)
+  if ((task == current_scanner_task) && global_current_report)
     {
       sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
            status,
-           current_report);
+           global_current_report);
       if (setting_auto_cache_rebuild_int ())
-        report_cache_counts (current_report, 0, 0, NULL);
+        report_cache_counts (global_current_report, 0, 0, NULL);
     }
 
   sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
@@ -18341,7 +18360,7 @@ set_task_run_status (task_t task, task_status_t status)
   free (name);
 
   event (task,
-         (task == current_scanner_task) ? current_report : 0,
+         (task == current_scanner_task) ? global_current_report : 0,
          EVENT_TASK_RUN_STATUS_CHANGED, (void*) status);
 }
 
@@ -18361,7 +18380,7 @@ set_task_requested (task_t task, task_status_t *status)
   task_status_t run_status;
   char *uuid, *name;
 
-  assert ((task != current_scanner_task) && (current_report == 0));
+  assert ((task != current_scanner_task) && (global_current_report == 0));
 
   /* Locking here prevents another process from starting the task
    * concurrently. */
@@ -18414,7 +18433,7 @@ set_task_requested (task_t task, task_status_t *status)
    * reports. */
 
   event (task,
-         (task == current_scanner_task) ? current_report : 0,
+         (task == current_scanner_task) ? global_current_report : 0,
          EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_REQUESTED);
 
   *status = run_status;
@@ -21080,16 +21099,17 @@ make_report (task_t task, const char* uuid, task_status_t status)
  * @param[out]  report_id  Report ID.
  * @param[in]   status     Run status of scan associated with report.
  *
- * @return 0 success, -1 current_report is already set, -2 failed to generate ID.
+ * @return 0 success, -1 global_current_report is already set, -2 failed to
+ *         generate ID.
  */
 int
 create_current_report (task_t task, char **report_id, task_status_t status)
 {
   char *id;
 
-  assert (current_report == (report_t) 0);
+  assert (global_current_report == (report_t) 0);
 
-  if (current_report) return -1;
+  if (global_current_report) return -1;
 
   if (report_id == NULL) report_id = &id;
 
@@ -21100,9 +21120,9 @@ create_current_report (task_t task, char **report_id, task_status_t status)
 
   /* Create the report. */
 
-  current_report = make_report (task, *report_id, status);
+  global_current_report = make_report (task, *report_id, status);
 
-  set_report_scheduled (current_report);
+  set_report_scheduled (global_current_report);
 
   return 0;
 }
@@ -21337,11 +21357,11 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       case -1:
         /* Parent when error. */
         g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
-        current_report = report;
+        global_current_report = report;
         set_task_interrupted (task,
                               "Failed to fork child to import report."
                               "  Setting task status to Interrupted.");
-        current_report = 0;
+        global_current_report = 0;
         return -1;
         break;
       default:
@@ -21611,10 +21631,10 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   g_string_free (insert, TRUE);
 
   current_scanner_task = task;
-  current_report = report;
+  global_current_report = report;
   set_task_run_status (task, TASK_STATUS_DONE);
   current_scanner_task = 0;
-  current_report = 0;
+  global_current_report = 0;
 
   if (in_assets_int)
     {
@@ -29794,13 +29814,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
           if (f_host_result_counts)
             {
-              const char *host = result_iterator_host (&results);
+              const char *result_host = result_iterator_host (&results);
               int result_count
                     = GPOINTER_TO_INT
-                        (g_hash_table_lookup (f_host_result_counts, host));
+                        (g_hash_table_lookup (f_host_result_counts, result_host));
 
               g_hash_table_replace (f_host_result_counts,
-                                    g_strdup (host),
+                                    g_strdup (result_host),
                                     GINT_TO_POINTER (result_count + 1));
             }
 
@@ -29889,19 +29909,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (get->details && result_hosts_only)
     {
-      gchar *host;
+      gchar *result_host;
       int index = 0;
       array_terminate (result_hosts);
-      while ((host = g_ptr_array_index (result_hosts, index++)))
+      while ((result_host = g_ptr_array_index (result_hosts, index++)))
         {
           gboolean present;
           iterator_t hosts;
-          init_report_host_iterator (&hosts, report, host, 0);
+          init_report_host_iterator (&hosts, report, result_host, 0);
           present = next (&hosts);
           if (delta && (present == FALSE))
             {
               cleanup_iterator (&hosts);
-              init_report_host_iterator (&hosts, delta, host, 0);
+              init_report_host_iterator (&hosts, delta, result_host, 0);
               present = next (&hosts);
             }
           if (present)
@@ -29933,7 +29953,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                     (g_hash_table_lookup ( f_host_false_positives, current_host));
 
               host_summary_append (host_summary_buffer,
-                                   host,
+                                   result_host,
                                    host_iterator_start_time (&hosts),
                                    host_iterator_end_time (&hosts));
               PRINT (out,
@@ -29951,7 +29971,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      "<log><page>%d</page></log>"
                      "<false_positive><page>%d</page></false_positive>"
                      "</result_count>",
-                     host,
+                     result_host,
                      host_iterator_asset_uuid (&hosts)
                        ? host_iterator_asset_uuid (&hosts)
                        : "",
@@ -31055,7 +31075,7 @@ manage_send_report (report_t report, report_t delta_report,
       dest = chunk;
       while (1)
         {
-          int ret = fread (dest, 1, left, stream);
+          ret = fread (dest, 1, left, stream);
           if (ferror (stream))
             {
               fclose (stream);
@@ -38756,12 +38776,12 @@ nvt_selector_nvt_count (const char *selector,
      init_family_iterator (&families, 0, NULL, 1);
      while (next (&families))
        {
-         const char *family = family_iterator_name (&families);
-         if (family)
+         const char *name = family_iterator_name (&families);
+         if (name)
            count += nvt_selector_nvt_count (selector,
-                                            family,
+                                            name,
                                             nvt_selector_family_growing
-                                             (selector, family, growing));
+                                             (selector, name, growing));
        }
      cleanup_iterator (&families);
 
@@ -50704,11 +50724,9 @@ verify_report_format_internal (report_format_t report_format)
           GString *format;
           file_iterator_t files;
           iterator_t params;
-          report_format_t report_format;
 
           format = g_string_new ("");
 
-          report_format = get_iterator_resource (&formats);
           g_string_append_printf
            (format, "%s%s%s%i", uuid ? uuid : get_iterator_uuid (&formats),
             report_format_iterator_extension (&formats),
@@ -52492,7 +52510,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
         {
           set_task_start_time (current_scanner_task,
                                g_strdup (entity_text (start)));
-          set_scan_start_time (current_report, entity_text (start));
+          set_scan_start_time (global_current_report, entity_text (start));
           break;
         }
       entities = next_entities (entities);
@@ -52517,12 +52535,12 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
           if (start == NULL)
             goto rollback_fail;
 
-          uuid = report_uuid (current_report);
+          uuid = report_uuid (global_current_report);
           host_notice (entity_text (ip), "ip", entity_text (ip),
                        "Report Host", uuid, 1, 1);
           free (uuid);
 
-          set_scan_host_start_time (current_report,
+          set_scan_host_start_time (global_current_report,
                                     entity_text (ip),
                                     entity_text (start));
         }
@@ -52534,7 +52552,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   if (entity == NULL)
     return -1;
 
-  assert (current_report);
+  assert (global_current_report);
 
   sql_begin_immediate ();
   results = entity->entities;
@@ -52580,7 +52598,8 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
                                   oid,
                                   threat_message_type (entity_text (threat)),
                                   entity_text (description));
-            if (current_report) report_add_result (current_report, result);
+            if (global_current_report)
+              report_add_result (global_current_report, result);
           }
 
           (*next_result)++;
@@ -55372,7 +55391,6 @@ create_port_list (const char* id, const char* name, const char* comment,
                   const char* port_ranges, array_t *ranges,
                   port_list_t* port_list_return)
 {
-  gchar *quoted_name;
   port_list_t port_list;
   int ret;
 
@@ -55381,7 +55399,7 @@ create_port_list (const char* id, const char* name, const char* comment,
   if (ranges)
     {
       int suffix;
-      gchar *quoted_id;
+      gchar *quoted_name, *quoted_id;
 
       if (id == NULL)
         return -1;
@@ -55465,7 +55483,6 @@ create_port_list (const char* id, const char* name, const char* comment,
       return 1;
     }
 
-  quoted_name = sql_quote (name);
   if (port_ranges == NULL || (strcmp (port_ranges, "default") == 0))
     {
       gchar *quoted_comment, *quoted_name;
@@ -55488,9 +55505,15 @@ create_port_list (const char* id, const char* name, const char* comment,
     }
   else
     {
+      gchar *quoted_name;
+
+      quoted_name = sql_quote (name);
+
       ranges = port_range_ranges (port_ranges);
       ret = create_port_list_lock (NULL, quoted_name, comment ? comment : "",
                                    ranges, &port_list);
+
+      g_free (quoted_name);
       array_free (ranges);
       if (ret)
         {

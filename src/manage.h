@@ -655,7 +655,7 @@ task_alert_iterator_name (iterator_t*);
  */
 extern task_t current_scanner_task;
 
-extern report_t current_report;
+extern report_t global_current_report;
 
 
 /* Task code specific to the representation of tasks. */

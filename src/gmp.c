@@ -12803,10 +12803,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
           if (subgroup_column && column_is_timestamp (data_column) == FALSE)
             {
               GTree *c_sum_tree;
-              const gchar *subgroup_value;
 
-
-              subgroup_value = aggregate_iterator_subgroup_value (aggregate);
               c_sum_tree = g_array_index (group_c_sums, GTree*, index);
               subgroup_c_sum = g_tree_lookup (c_sum_tree, subgroup_value);
 
@@ -14480,7 +14477,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
         {
           iterator_t prefs;
           scanner_t scanner;
-          config_t config = get_iterator_resource (&configs);
           char *s_uuid, *s_name;
 
           assert (config);
@@ -14540,7 +14536,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                || get_configs_data->get.details)
         {
           iterator_t prefs;
-          config_t config = get_iterator_resource (&configs);
 
           assert (config);
 
@@ -17023,7 +17018,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   if (strcmp (get_reports_data->type, "assets") == 0)
     {
       gchar *extension, *content_type;
-      int ret, pos;
+      int pos;
       get_data_t * get;
 
       /* An asset report. */
@@ -17204,7 +17199,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   while (next_report (&reports, &report))
     {
       gchar *extension, *content_type;
-      int ret;
       GString *prefix;
 
       prefix = g_string_new ("");
@@ -19872,14 +19866,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
           if (schedule_available && schedule)
             {
-              time_t first_time, next_time;
+              time_t first_time, info_next_time;
               int period, period_months, duration;
               gchar *icalendar, *timezone;
 
               icalendar = timezone = NULL;
 
               if (schedule_info (schedule, schedule_in_trash,
-                                 &first_time, &next_time, &period,
+                                 &first_time, &info_next_time, &period,
                                  &period_months, &duration,
                                  &icalendar, &timezone) == 0)
                 {
@@ -19889,8 +19883,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                   first_time_str = g_strdup (first_time
                                               ? iso_time (&first_time)
                                               : "");
-                  next_time_str = g_strdup (next_time
-                                              ? iso_time (&next_time)
+                  next_time_str = g_strdup (info_next_time
+                                              ? iso_time (&info_next_time)
                                               : "over");
 
                   SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
@@ -25874,7 +25868,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           config_t config = 0;
           target_t target = 0;
           scanner_t scanner = 0;
-          char *tsk_uuid = NULL, *name;
+          char *tsk_uuid = NULL;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -26152,14 +26146,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for name. */
 
-          name = task_name (create_task_data->task);
-          if (name == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE_TASK requires a name attribute"));
-              goto create_task_fail;
-            }
+          {
+            char *name;
+
+            name = task_name (create_task_data->task);
+            if (name == NULL)
+              {
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_task",
+                                    "CREATE_TASK requires a name attribute"));
+                goto create_task_fail;
+              }
+          }
 
           if (find_scanner_with_permission (create_task_data->scanner_id,
                                             &scanner,
