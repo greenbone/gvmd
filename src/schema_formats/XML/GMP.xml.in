@@ -163,7 +163,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <name>threat</name>
     <summary>A threat level</summary>
     <description>
-      Threat levels are a textual classification of severity scores only
+      Threat levels are a classification of severity scores only
       supported for importing reports from OpenVAS-6 and older.
       The use of these elements is deprecated as they are otherwise replaced by
       severity elements, which should be used instead.
@@ -697,7 +697,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -1061,7 +1061,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -4240,7 +4240,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -4380,7 +4380,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -5485,7 +5485,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts, which may be empty</summary>
+      <summary>A comma-separated list of hosts, which may be empty</summary>
       <pattern>
         text
       </pattern>
@@ -5874,7 +5874,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>User access rules: a textual list of hosts</summary>
+      <summary>User access rules: a comma-separated list of hosts</summary>
       <pattern>
         <attrib>
           <name>allow</name>
@@ -5886,7 +5886,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>ifaces</name>
-      <summary>User access rules: a textual list of ifaces</summary>
+      <summary>User access rules: a comma-separated list of ifaces</summary>
       <pattern>
         <attrib>
           <name>allow</name>
@@ -23570,7 +23570,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -23703,7 +23703,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -24947,7 +24947,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>User access rules: a textual list of hosts</summary>
+      <summary>User access rules: a comma-separated list of hosts</summary>
       <description>
         User is allowed to access any host if this element is missing.
       </description>
@@ -24962,7 +24962,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>ifaces</name>
-      <summary>User access rules: a textual list of ifaces</summary>
+      <summary>User access rules: a comma-separated list of ifaces</summary>
       <pattern>
         <attrib>
           <name>allow</name>

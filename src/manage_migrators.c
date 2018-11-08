@@ -14746,6 +14746,65 @@ migrate_195_to_196 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 196 to version 197.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_196_to_197 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 196. */
+
+  if (manage_db_version () != 196)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The hidden column was removed from reports. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE reports RENAME TO reports_196;");
+
+      sql ("CREATE TABLE IF NOT EXISTS reports"
+           " (id INTEGER PRIMARY KEY, uuid, owner INTEGER,"
+           "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
+           "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags INTEGER);");
+
+      sql ("INSERT INTO reports"
+           " (id, uuid, owner, task, date, start_time, end_time, nbefile,"
+           "  comment, scan_run_status, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags)"
+           " SELECT"
+           "  id, uuid, owner, task, date, start_time, end_time, nbefile,"
+           "  comment, scan_run_status, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags"
+           " FROM reports_196;");
+
+      sql ("DROP TABLE reports_196;");
+    }
+  else
+    sql ("ALTER TABLE reports DROP COLUMN hidden;");
+
+  /* Set the database version to 197. */
+
+  set_db_version (197);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14956,6 +15015,7 @@ static migrator_t database_migrators[]
     {194, migrate_193_to_194},
     {195, migrate_194_to_195},
     {196, migrate_195_to_196},
+    {197, migrate_196_to_197},
     /* End marker. */
     {-1, NULL}};
 
@@ -14989,7 +15049,7 @@ manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
  *
  * @return 1 yes, 0 no, -1 error.
  */
-int
+static int
 migrate_is_available (int old_version, int new_version)
 {
   migrator_t *migrators;
