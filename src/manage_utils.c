@@ -59,7 +59,7 @@
  *
  * @return Seconds east of UTC.
  */
-long
+static long
 time_offset (const char *zone, time_t time)
 {
   gchar *tz;
@@ -213,7 +213,7 @@ current_offset (const char *zone)
  *
  * @return Number of full months between time1 and time2.
  */
-time_t
+static time_t
 months_between (time_t time1, time_t time2)
 {
   struct tm broken1, *broken2;
@@ -1396,7 +1396,7 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
  *
  * @return  GPtrArray with pointers to collected times or NULL on error.
  */
-GPtrArray*
+static GPtrArray*
 icalendar_times_from_vevent (icalcomponent *vevent, icalproperty_kind type)
 {
   GPtrArray* times;
@@ -1441,7 +1441,7 @@ icalendar_times_from_vevent (icalcomponent *vevent, icalproperty_kind type)
  *
  * @return  Whether a match was found.
  */
-gboolean
+static gboolean
 icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
 {
   gboolean found = FALSE;
@@ -1478,7 +1478,7 @@ icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
  *
  * @return  The next or previous time as time_t.
  */
-time_t
+static time_t
 icalendar_next_time_from_rdates (GPtrArray *rdates,
                                  icaltimetype ref_time_ical,
                                  icaltimezone *tz,
@@ -1531,7 +1531,7 @@ icalendar_next_time_from_rdates (GPtrArray *rdates,
  *
  * @return  The next time.
  */
-time_t
+static time_t
 icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
                                      icaltimetype dtstart,
                                      icaltimetype reference_time,

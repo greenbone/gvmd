@@ -50,8 +50,8 @@
 /* Current OpenVAS Scanner connection. */
 gnutls_session_t openvas_scanner_session = NULL;
 gnutls_certificate_credentials_t openvas_scanner_credentials = NULL;
-int openvas_scanner_socket = -1;
-struct sockaddr_in openvas_scanner_address;
+static int openvas_scanner_socket = -1;
+static struct sockaddr_in openvas_scanner_address;
 char *openvas_scanner_ca_pub = NULL;
 char *openvas_scanner_key_pub = NULL;
 char *openvas_scanner_key_priv = NULL;
@@ -75,12 +75,12 @@ buffer_size_t from_scanner_end = 0;
 /**
  * @brief The current size of the \ref from_scanner buffer.
  */
-buffer_size_t from_scanner_size = 1048576;
+static buffer_size_t from_scanner_size = 1048576;
 
 /**
  * @brief The max size of the \ref from_scanner buffer.
  */
-buffer_size_t from_scanner_max_size = 1073741824;
+static buffer_size_t from_scanner_max_size = 1073741824;
 
 /* XXX: gvm-comm.c content should be moved to scanner.c to better abstract
  * scanner reading/writing. */
@@ -452,7 +452,7 @@ openvas_scanner_write (int nvt_cache_mode)
  *
  * @return 0 on success, -1 on error.
  */
-int
+static int
 openvas_scanner_wait ()
 {
   if (openvas_scanner_socket == -1)
@@ -575,7 +575,7 @@ openvas_scanner_fork ()
   reset_scanner_states ();
 }
 
-int
+static int
 openvas_scanner_connect_unix ()
 {
   struct sockaddr_un addr;

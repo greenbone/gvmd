@@ -3759,7 +3759,7 @@ create_tables ()
        "  trust_time, flags INTEGER, original_uuid, creation_time,"
        "  modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS reports"
-       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER,"
        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
        "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
        "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"

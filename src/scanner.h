@@ -35,9 +35,6 @@ int
 openvas_scanner_write (int);
 
 int
-openvas_scanner_wait ();
-
-int
 openvas_scanner_close ();
 
 void

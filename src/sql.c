@@ -268,52 +268,6 @@ sql_giveup (char* sql, ...)
 }
 
 /**
- * @brief Perform an SQL statement, without logging.
- *
- * @param[in]  sql    Format string for SQL statement.
- * @param[in]  ...    Arguments for format string.
- */
-void
-sql_quiet (char* sql, ...)
-{
-  int ret;
-  sql_stmt_t *stmt;
-  va_list args;
-
-  /* Prepare statement. */
-
-  while (1)
-    {
-      va_start (args, sql);
-      ret = sql_prepare_internal (1, 0, sql, args, &stmt);
-      va_end (args);
-      if (ret)
-        {
-          g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
-          abort ();
-        }
-
-      /* Run statement. */
-
-      while ((ret = sql_exec_internal (1, stmt)) == 1);
-      if (ret == -1)
-        {
-          if (log_errors)
-            g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
-          abort ();
-        }
-      if (ret == -3 || ret == -2 || ret == 2)
-        {
-          /* Busy or locked, with statement reset.  Or schema changed. */
-          sql_finalize (stmt);
-          continue;
-        }
-      break;
-    }
-  sql_finalize (stmt);
-}
-
-/**
  * @brief Get a particular cell from a SQL query.
  *
  * @param[in]   log          Whether to do g_debug logging.

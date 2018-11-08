@@ -94,12 +94,6 @@
 void
 check_db_nvts ();
 
-gchar *
-nvt_iterator_columns ();
-
-gchar *
-nvt_iterator_columns_nvts ();
-
 int
 check_config_families ();
 

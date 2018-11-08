@@ -399,7 +399,7 @@ certificate_time_status (time_t activates, time_t expires)
  * @param[in]     xml      Whether to preserve XML entities.
  * @param[in]     suffix   The suffix to append when the string is shortened.
  */
-void
+static void
 truncate_text (gchar *string, size_t max_len, gboolean xml, const char *suffix)
 {
   if (strlen (string) <= max_len)
@@ -489,7 +489,7 @@ xml_escape_text_truncated (const char *string, size_t max_len,
  *
  * @param[in]  list  The list.
  */
-void
+static void
 slist_free (GSList* list)
 {
   GSList *head = list;
@@ -722,6 +722,8 @@ severity_in_level (double severity, const char *level)
 /**
  * @brief Check whether a severity matches an override's severity.
  *
+ * Only used by SQLite backend.
+ *
  * @param[in] severity     severity score
  * @param[in] ov_severity  override severity score to match
  *
@@ -844,7 +846,7 @@ delete_reports (task_t task)
 /**
  * @brief Create a basic filter term to get report results.
  */
-gchar *
+static gchar *
 report_results_filter_term (int first, int rows,
                             int apply_overrides, int autofp, int min_qod)
 {
@@ -881,7 +883,7 @@ report_results_get_data (int first, int rows,
  *
  * @return      The index, 0 for invalid severity scores.
  */
-int
+static int
 severity_data_index (double severity)
 {
   int ret;
@@ -991,7 +993,7 @@ severity_data_add_count (severity_data_t* severity_data, double severity,
  *
  * @return     The total of severity counts in the specified range.
  */
-int
+static int
 severity_data_range_count (const severity_data_t* severity_data,
                            double min_severity, double max_severity)
 {
@@ -2075,7 +2077,7 @@ static gvm_connection_t *global_slave_connection = NULL;
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 update_slave_progress (entity_t get_tasks)
 {
   entity_t entity;
@@ -2124,7 +2126,7 @@ connection_authenticate (gvm_connection_t *connection)
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 slave_authenticate (gnutls_session_t *session, scanner_t slave)
 {
   int ret;
@@ -2252,7 +2254,7 @@ slave_sleep_connect (gvm_connection_t *connection, task_t task)
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 update_end_times (entity_t report)
 {
   entity_t end;
@@ -4135,7 +4137,7 @@ fork_osp_scan_handler (task_t task, target_t target)
  *
  * @return 0 success, 99 permission denied, -1 error.
  */
-int
+static int
 run_osp_task (task_t task)
 {
   target_t target;
@@ -4891,7 +4893,7 @@ run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
  */
-int
+static int
 run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
 {
   char title[128], *hosts, *port_range, *port, *uuid;
@@ -7786,7 +7788,7 @@ get_dfn_cert_adv_filename (char *item_id)
  * @return A dynamically allocated (to be g_free'd) string containing the
  *         result of the operation of NULL on failure.
  */
-gchar *
+static gchar *
 xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
                gchar **param_values)
 {
