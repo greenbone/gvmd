@@ -17489,7 +17489,7 @@ credentials_setup (credentials_t *credentials)
   assert (credentials->uuid);
 
   credentials->role
-    = g_strdup (user_is_super_admin (credentials->uuid)
+    = g_strdup (acl_user_is_super_admin (credentials->uuid)
                  ? "Super Admin"
                  : (acl_user_is_admin (credentials->uuid)
                      ? "Admin"
@@ -63822,7 +63822,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       char *uuid;
 
       uuid = user_uuid (user);
-      if (user_is_super_admin (uuid))
+      if (acl_user_is_super_admin (uuid))
         {
           free (uuid);
           sql_rollback ();
