@@ -1096,7 +1096,7 @@ task_t current_scanner_task = (task_t) 0;
 /**
  * @brief The report of the current task.
  */
-report_t current_report = (report_t) 0;
+report_t global_current_report = (report_t) 0;
 
 
 /* Alerts. */
@@ -2087,10 +2087,10 @@ update_slave_progress (entity_t get_tasks)
   if (entity == NULL)
     return -1;
 
-  if (current_report == 0)
+  if (global_current_report == 0)
     return -1;
 
-  set_report_slave_progress (current_report,
+  set_report_slave_progress (global_current_report,
                              atoi (entity_text (entity)));
 
   return 0;
@@ -2272,7 +2272,7 @@ update_end_times (entity_t report)
             break;
           set_task_end_time (current_scanner_task,
                              g_strdup (entity_text (end)));
-          set_scan_end_time (current_report, entity_text (end));
+          set_scan_end_time (global_current_report, entity_text (end));
           break;
         }
       entities = next_entities (entities);
@@ -2299,12 +2299,12 @@ update_end_times (entity_t report)
           text = entity_text (time);
           while (*text && isspace (*text)) text++;
           if ((*text != '\0')
-              && (scan_host_end_time (current_report, entity_text (ip)) == 0))
+              && (scan_host_end_time (global_current_report, entity_text (ip)) == 0))
             {
-              set_scan_host_end_time (current_report,
+              set_scan_host_end_time (global_current_report,
                                       entity_text (ip),
                                       entity_text (time));
-              if (manage_report_host_details (current_report,
+              if (manage_report_host_details (global_current_report,
                                               entity_text (ip),
                                               end))
                 return -1;
@@ -2348,7 +2348,7 @@ get_tasks_last_report (entity_t get_tasks)
     {
       entity_t get_tasks_current_report;
       get_tasks_current_report = entity_child (task, "current_report");
-      if (current_report)
+      if (global_current_report)
         {
           entity_t report;
           report = entity_child (get_tasks_current_report, "report");
@@ -2481,7 +2481,7 @@ setup_ids (gvm_connection_t *connection, task_t task,
 /**
  * @brief Set a task to interrupted.
  *
- * Expects current_report to match the task.
+ * Expects global_current_report to match the task.
  *
  * @param[in]   task     Task
  * @param[in]   message  Message for error result.
@@ -2490,11 +2490,11 @@ void
 set_task_interrupted (task_t task, const gchar *message)
 {
   set_task_run_status (task, TASK_STATUS_INTERRUPTED);
-  if (current_report)
+  if (global_current_report)
     {
       result_t result;
       result = make_result (task, "", "", "", "", "Error Message", message);
-      report_add_result (current_report, result);
+      report_add_result (global_current_report, result);
     }
 }
 
@@ -3164,7 +3164,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         opts.name = name;
         task_uuid (task, &uuid_task);
         name_task = task_name (task);
-        uuid_report = report_uuid (current_report);
+        uuid_report = report_uuid (global_current_report);
         comment = g_strdup_printf ("Slave task for master task %s (%s)"
                                    " report %s.",
                                    name_task,
@@ -3215,7 +3215,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
       if (global_slave_report_uuid == NULL)
         goto fail_stop_task;
 
-      set_report_slave_task_uuid (current_report, global_slave_task_uuid);
+      set_report_slave_task_uuid (global_current_report, global_slave_task_uuid);
     }
 
   /* Setup the current task for functions like set_task_run_status. */
@@ -3419,11 +3419,11 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           free_entity (get_tasks);
 
           /* Add results to assets. */
-          if (current_report)
+          if (global_current_report)
             {
-              hosts_set_identifiers (current_report);
-              hosts_set_max_severity (current_report, NULL, NULL);
-              hosts_set_details (current_report);
+              hosts_set_identifiers (global_current_report);
+              hosts_set_max_severity (global_current_report, NULL, NULL);
+              hosts_set_details (global_current_report);
             }
 
           set_task_run_status (task, TASK_STATUS_DONE);
@@ -3442,7 +3442,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
   gmp_delete_task_ext (&connection->session,
                        global_slave_task_uuid,
                        del_opts);
-  set_report_slave_task_uuid (current_report, "");
+  set_report_slave_task_uuid (global_current_report, "");
   gmp_delete_config_ext (&connection->session,
                          global_slave_config_uuid,
                          del_opts);
@@ -3500,7 +3500,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
   gmp_delete_task_ext (&connection->session,
                        global_slave_task_uuid,
                        del_opts);
-  set_report_slave_task_uuid (current_report, "");
+  set_report_slave_task_uuid (global_current_report, "");
   free (global_slave_task_uuid);
  fail_config:
   gmp_delete_config_ext (&connection->session,
@@ -3595,10 +3595,10 @@ handle_slave_task (task_t task, target_t target,
 
   // FIX permission checks  may the user still access the slave, target, port list etc?
 
-  report_set_slave_uuid (current_report, slave_id);
-  report_set_slave_name (current_report, slave_name);
-  report_set_slave_port (current_report, connection->port);
-  report_set_slave_host (current_report, connection->host_string);
+  report_set_slave_uuid (global_current_report, slave_id);
+  report_set_slave_name (global_current_report, slave_name);
+  report_set_slave_port (global_current_report, connection->port);
+  report_set_slave_host (global_current_report, connection->host_string);
 
   uuid = gvm_uuid_make ();
   if (uuid == NULL)
@@ -3636,8 +3636,8 @@ handle_slave_task (task_t task, target_t target,
                               "Error Message",
                               "Authentication with the slave failed.");
         g_free (port_string);
-        if (current_report)
-          report_add_result (current_report, result);
+        if (global_current_report)
+          report_add_result (global_current_report, result);
 
         g_free (slave_task_name);
         return 1;
@@ -3655,9 +3655,9 @@ handle_slave_task (task_t task, target_t target,
                          __FUNCTION__,
                          sys_siglist[get_termination_signal()]);
               }
-            if (current_report)
+            if (global_current_report)
               {
-                set_report_scan_run_status (current_report,
+                set_report_scan_run_status (global_current_report,
                                             TASK_STATUS_STOPPED);
               }
             set_task_run_status (task, TASK_STATUS_STOPPED);
@@ -3674,9 +3674,9 @@ handle_slave_task (task_t task, target_t target,
           g_debug ("%s: Received %s signal.",
                    __FUNCTION__,
                    sys_siglist[get_termination_signal()]);
-          if (current_report)
+          if (global_current_report)
             {
-              set_report_scan_run_status (current_report,
+              set_report_scan_run_status (global_current_report,
                                           TASK_STATUS_STOPPED);
             }
           set_task_run_status (task, TASK_STATUS_STOPPED);
@@ -4069,9 +4069,9 @@ fork_osp_scan_handler (task_t task, target_t target)
         set_task_interrupted (task,
                               "Error forking scan handler."
                               "  Interrupting scan.");
-        set_report_scan_run_status (current_report,
+        set_report_scan_run_status (global_current_report,
                                     TASK_STATUS_INTERRUPTED);
-        current_report = (report_t) 0;
+        global_current_report = (report_t) 0;
         return -9;
       default:
         /* Parent, successfully forked. */
@@ -4091,11 +4091,11 @@ fork_osp_scan_handler (task_t task, target_t target)
       g_warning ("OSP start_scan %s: %s", report_id, error);
       result = make_osp_result (task, "", "", threat_message_type ("Error"),
                                 error, "", "", QOD_DEFAULT);
-      report_add_result (current_report, result);
+      report_add_result (global_current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
-      set_report_scan_run_status (current_report, TASK_STATUS_DONE);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
       set_task_end_time_epoch (task, time (NULL));
-      set_scan_end_time_epoch (current_report, time (NULL));
+      set_scan_end_time_epoch (global_current_report, time (NULL));
 
       g_free (error);
       g_free (report_id);
@@ -4103,27 +4103,27 @@ fork_osp_scan_handler (task_t task, target_t target)
     }
 
   set_task_run_status (task, TASK_STATUS_RUNNING);
-  set_report_scan_run_status (current_report, TASK_STATUS_RUNNING);
+  set_report_scan_run_status (global_current_report, TASK_STATUS_RUNNING);
 
   snprintf (title, sizeof (title), "gvmd: OSP: Handling scan %s", report_id);
   proctitle_set (title);
 
-  rc = handle_osp_scan (task, current_report, report_id);
+  rc = handle_osp_scan (task, global_current_report, report_id);
   g_free (report_id);
   if (rc == 0)
     {
       set_task_run_status (task, TASK_STATUS_DONE);
-      set_report_scan_run_status (current_report, TASK_STATUS_DONE);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }
   else if (rc == -1 || rc == -2)
     {
       set_task_run_status (task, TASK_STATUS_STOPPED);
-      set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_STOPPED);
     }
 
   set_task_end_time_epoch (task, time (NULL));
-  set_scan_end_time_epoch (current_report, time (NULL));
-  current_report = 0;
+  set_scan_end_time_epoch (global_current_report, time (NULL));
+  global_current_report = 0;
   current_scanner_task = (task_t) 0;
   exit (rc);
 }
@@ -4226,8 +4226,8 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
               gchar *desc, *location;
               result_t result;
 
-              if (current_report && (prognosis_report_host == 0))
-                prognosis_report_host = manage_report_host_add (current_report,
+              if (global_current_report && (prognosis_report_host == 0))
+                prognosis_report_host = manage_report_host_add (global_current_report,
                                                                 ip,
                                                                 start_time,
                                                                 0);
@@ -4258,22 +4258,22 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
 
               result = make_cve_result (task, ip, cve, severity, desc);
               g_free (desc);
-              if (current_report)
+              if (global_current_report)
                 {
-                  report_add_result (current_report, result);
+                  report_add_result (global_current_report, result);
 
-                  insert_report_host_detail (current_report, ip, "cve", cve,
+                  insert_report_host_detail (global_current_report, ip, "cve", cve,
                                              "CVE Scanner", "App", app);
 
                   if (location)
                     {
-                      insert_report_host_detail (current_report, ip, "cve", cve,
+                      insert_report_host_detail (global_current_report, ip, "cve", cve,
                                                  "CVE Scanner", app, location);
 
-                      insert_report_host_detail (current_report, ip, "cve", cve,
+                      insert_report_host_detail (global_current_report, ip, "cve", cve,
                                                  "CVE Scanner", "detected_at",
                                                  location);
-                      insert_report_host_detail (current_report, ip, "cve", cve,
+                      insert_report_host_detail (global_current_report, ip, "cve", cve,
                                                  "CVE Scanner", "detected_by",
                                                  /* Detected by itself. */
                                                  cve);
@@ -4288,7 +4288,7 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
               /* Complete the report_host. */
 
               report_host_set_end_time (prognosis_report_host, time (NULL));
-              insert_report_host_detail (current_report, ip, "cve", "",
+              insert_report_host_detail (global_current_report, ip, "cve", "",
                                          "CVE Scanner", "CVE Scan", "1");
             }
         }
@@ -4340,9 +4340,9 @@ fork_cve_scan_handler (task_t task, target_t target)
         set_task_interrupted (task,
                               "Error forking scan handler."
                               "  Interrupting scan.");
-        set_report_scan_run_status (current_report,
+        set_report_scan_run_status (global_current_report,
                                     TASK_STATUS_INTERRUPTED);
-        current_report = (report_t) 0;
+        global_current_report = (report_t) 0;
         return -9;
       default:
         /* Parent, successfully forked. */
@@ -4371,13 +4371,13 @@ fork_cve_scan_handler (task_t task, target_t target)
       set_task_interrupted (task,
                             "Error in target host list."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, TASK_STATUS_INTERRUPTED);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
       exit (1);
     }
 
   reset_task (task);
   set_task_start_time_epoch (task, time (NULL));
-  set_scan_start_time_epoch (current_report, time (NULL));
+  set_scan_start_time_epoch (global_current_report, time (NULL));
 
   /* Add the results. */
 
@@ -4389,7 +4389,7 @@ fork_cve_scan_handler (task_t task, target_t target)
         set_task_interrupted (task,
                               "Failed to get nthlast report."
                               "  Interrupting scan.");
-        set_report_scan_run_status (current_report, TASK_STATUS_INTERRUPTED);
+        set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
         gvm_hosts_free (gvm_hosts);
         exit (1);
       }
@@ -4397,11 +4397,11 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   /* Set the end states. */
 
-  set_scan_end_time_epoch (current_report, time (NULL));
+  set_scan_end_time_epoch (global_current_report, time (NULL));
   set_task_end_time_epoch (task, time (NULL));
   set_task_run_status (task, TASK_STATUS_DONE);
-  set_report_scan_run_status (current_report, TASK_STATUS_DONE);
-  current_report = 0;
+  set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+  global_current_report = 0;
   current_scanner_task = (task_t) 0;
   exit (0);
 }
@@ -4607,7 +4607,7 @@ run_task_prepare_report (task_t task, char **report_id, int from,
           return -1;
         }
 
-      current_report = *last_stopped_report;
+      global_current_report = *last_stopped_report;
       if (report_id) *report_id = report_uuid (*last_stopped_report);
 
       /* Remove partial host information from the report. */
@@ -4616,11 +4616,11 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 
       /* Ensure the report is marked as requested. */
 
-      set_report_scan_run_status (current_report, TASK_STATUS_REQUESTED);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_REQUESTED);
 
       /* Clear the end times of the task and partial report. */
 
-      set_task_start_time_epoch (task, scan_start_time_epoch (current_report));
+      set_task_start_time_epoch (task, scan_start_time_epoch (global_current_report));
       set_task_end_time (task, NULL);
       set_scan_end_time (*last_stopped_report, NULL);
     }
@@ -4710,10 +4710,10 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
       return -4;
     }
 
-  set_report_scheduled (current_report);
+  set_report_scheduled (global_current_report);
 
   /* Every fail exit from here must reset to this run status, and must
-   * clear current_report. */
+   * clear global_current_report. */
 
   /** @todo On fail exits only, may need to honour request states that one of
    *        the other processes has set on the task (stop_task,
@@ -4740,8 +4740,8 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
         set_task_interrupted (task,
                               "Failed to fork task child."
                               "  Interrupting scan.");
-        set_report_scan_run_status (current_report, run_status);
-        current_report = (report_t) 0;
+        set_report_scan_run_status (global_current_report, run_status);
+        global_current_report = (report_t) 0;
         return -9;
         break;
       default:
@@ -4749,7 +4749,7 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
                  __FUNCTION__,
                  pid);
         /* Parent.  Return, in order to respond to client. */
-        current_report = (report_t) 0;
+        global_current_report = (report_t) 0;
         return 0;
         break;
     }
@@ -4760,13 +4760,13 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
     char *iface;
     iface = task_preference_value (task, "source_iface");
     if (iface)
-      report_set_source_iface (current_report, iface);
+      report_set_source_iface (global_current_report, iface);
     else
-      report_set_source_iface (current_report, "");
+      report_set_source_iface (global_current_report, "");
     free (iface);
   }
 
-  uuid = report_uuid (current_report);
+  uuid = report_uuid (global_current_report);
   snprintf (title, sizeof (title),
             "gvmd: OTP: Handling slave scan %s",
             uuid);
@@ -4786,19 +4786,19 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
         set_task_interrupted (task,
                               "Authentication with slave failed."
                               "  Interrupting scan.");
-        set_report_scan_run_status (current_report, run_status);
+        set_report_scan_run_status (global_current_report, run_status);
         exit (EXIT_FAILURE);
       case -1:
         set_task_interrupted (task,
                               "Failed to make UUID."
                               "  Interrupting scan.");
-        set_report_scan_run_status (current_report, run_status);
+        set_report_scan_run_status (global_current_report, run_status);
         exit (EXIT_FAILURE);
       case -2:
         set_task_interrupted (task,
                               "Failed to get slave task name."
                               "  Interrupting scan.");
-        set_report_scan_run_status (current_report, run_status);
+        set_report_scan_run_status (global_current_report, run_status);
         exit (EXIT_FAILURE);
     }
   exit (EXIT_SUCCESS);
@@ -4966,10 +4966,10 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       return -4;
     }
 
-  set_report_scheduled (current_report);
+  set_report_scheduled (global_current_report);
 
   /* Every fail exit from here must reset to this run status, and must
-   * clear current_report. */
+   * clear global_current_report. */
 
   /** @todo On fail exits only, may need to honour request states that one of
    *        the other processes has set on the task (stop_task,
@@ -4999,13 +4999,13 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
         set_task_interrupted (task,
                               "Failed to fork task child."
                               "  Interrupting scan.");
-        set_report_scan_run_status (current_report, run_status);
-        current_report = (report_t) 0;
+        set_report_scan_run_status (global_current_report, run_status);
+        global_current_report = (report_t) 0;
         return -9;
         break;
       default:
         /* Parent.  Return, in order to respond to client. */
-        current_report = (report_t) 0;
+        global_current_report = (report_t) 0;
         return 0;
         break;
     }
@@ -5016,21 +5016,21 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
     char *iface;
     iface = task_preference_value (task, "source_iface");
     if (iface)
-      report_set_source_iface (current_report, iface);
+      report_set_source_iface (global_current_report, iface);
     else
-      report_set_source_iface (current_report, "");
+      report_set_source_iface (global_current_report, "");
     free (iface);
   }
 
-  uuid = report_uuid (current_report);
+  uuid = report_uuid (global_current_report);
   snprintf (title, sizeof (title), "gvmd: OTP: Handling scan %s", uuid);
   free (uuid);
   proctitle_set (title);
 
-  report_set_slave_uuid (current_report, "");
-  report_set_slave_name (current_report, "");
-  report_set_slave_port (current_report, 0);
-  report_set_slave_host (current_report, "");
+  report_set_slave_uuid (global_current_report, "");
+  report_set_slave_name (global_current_report, "");
+  report_set_slave_port (global_current_report, 0);
+  report_set_slave_host (global_current_report, "");
 
   /* Send the preferences header. */
 
@@ -5040,8 +5040,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP PREFERENCES."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5078,8 +5078,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP plugin set."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5090,8 +5090,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP SERVER PREFS."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5100,8 +5100,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP task preferences."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5115,8 +5115,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP port_range."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
   free (port_range);
@@ -5130,8 +5130,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP auth_port_ssh."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
   free (port);
@@ -5150,8 +5150,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP PLUGINS_PREFS."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5165,8 +5165,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP scanner preferences."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5204,8 +5204,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
               set_task_interrupted (task,
                                     "Failed to send OTP SSH preferences."
                                     "  Interrupting scan.");
-              set_report_scan_run_status (current_report, run_status);
-              current_report = (report_t) 0;
+              set_report_scan_run_status (global_current_report, run_status);
+              global_current_report = (report_t) 0;
               return -10;
             }
 
@@ -5254,8 +5254,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
               set_task_interrupted (task,
                                     "Failed to send OTP SMB preferences."
                                     "  Interrupting scan.");
-              set_report_scan_run_status (current_report, run_status);
-              current_report = (report_t) 0;
+              set_report_scan_run_status (global_current_report, run_status);
+              global_current_report = (report_t) 0;
               return -10;
             }
         }
@@ -5286,8 +5286,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
               set_task_interrupted (task,
                                     "Failed to send OTP EXSi preferences."
                                     "  Interrupting scan.");
-              set_report_scan_run_status (current_report, run_status);
-              current_report = (report_t) 0;
+              set_report_scan_run_status (global_current_report, run_status);
+              global_current_report = (report_t) 0;
               return -10;
             }
         }
@@ -5341,8 +5341,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
               set_task_interrupted (task,
                                     "Failed to send OTP SNMP preferences."
                                     "  Interrupting scan.");
-              set_report_scan_run_status (current_report, run_status);
-              current_report = (report_t) 0;
+              set_report_scan_run_status (global_current_report, run_status);
+              global_current_report = (report_t) 0;
               return -10;
             }
         }
@@ -5360,8 +5360,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP alive test preferences."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5377,8 +5377,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP network_targets."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5392,8 +5392,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP CLIENT."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5429,8 +5429,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
             set_task_interrupted (task,
                                   "Failed to send OTP file."
                                   "  Interrupting scan.");
-            set_report_scan_run_status (current_report, run_status);
-            current_report = (report_t) 0;
+            set_report_scan_run_status (global_current_report, run_status);
+            global_current_report = (report_t) 0;
             return -10;
           }
         index++;
@@ -5451,8 +5451,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
           set_task_interrupted (task,
                                 "Failed to send an OTP task file."
                                 "  Interrupting scan.");
-          set_report_scan_run_status (current_report, run_status);
-          current_report = (report_t) 0;
+          set_report_scan_run_status (global_current_report, run_status);
+          global_current_report = (report_t) 0;
           return -10;
         }
       files = g_slist_next (files);
@@ -5474,8 +5474,8 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
       set_task_interrupted (task,
                             "Failed to send OTP LONG_ATTACK."
                             "  Interrupting scan.");
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
+      set_report_scan_run_status (global_current_report, run_status);
+      global_current_report = (report_t) 0;
       return -10;
     }
 
@@ -5598,9 +5598,9 @@ stop_osp_task (task_t task)
 
 end_stop_osp:
   set_task_end_time_epoch (task, time (NULL));
-  set_scan_end_time_epoch (current_report, time (NULL));
+  set_scan_end_time_epoch (global_current_report, time (NULL));
   set_task_run_status (task, TASK_STATUS_STOPPED);
-  set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
+  set_report_scan_run_status (global_current_report, TASK_STATUS_STOPPED);
   if (ret)
     return -1;
   return 0;

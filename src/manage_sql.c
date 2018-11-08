@@ -16830,13 +16830,13 @@ stop_active_tasks ()
               task_t index = get_iterator_resource (&tasks);
               /* Set the current user, for event checks. */
               current_credentials.uuid = task_owner_uuid (index);
-              task_last_report_any_status (index, &current_report);
+              task_last_report_any_status (index, &global_current_report);
               set_task_interrupted (index,
                                     "Task process exited abnormally"
                                     " (e.g. machine lost power or process was"
                                     " sent SIGKILL)."
                                     "  Setting scan status to Interrupted.");
-              current_report = 0;
+              global_current_report = 0;
               free (current_credentials.uuid);
               break;
             }
@@ -17169,14 +17169,14 @@ cleanup_manage_process (gboolean cleanup)
         {
           if (current_scanner_task)
             {
-              if (current_report)
+              if (global_current_report)
                 {
                   result_t result;
                   result = make_result (current_scanner_task,
                                         "", "", "", "", "Error Message",
                                         "Interrupting scan because GVM is"
                                         " exiting.");
-                  report_add_result (current_report, result);
+                  report_add_result (global_current_report, result);
                 }
               set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
             }
@@ -17221,7 +17221,7 @@ manage_cleanup_process_error (int signal)
 void
 manage_reset_currents ()
 {
-  current_report = 0;
+  global_current_report = 0;
   current_scanner_task = (task_t) 0;
 }
 
@@ -18326,13 +18326,13 @@ report_scheduled (report_t report)
 static void
 set_task_run_status_internal (task_t task, task_status_t status)
 {
-  if ((task == current_scanner_task) && current_report)
+  if ((task == current_scanner_task) && global_current_report)
     {
       sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
            status,
-           current_report);
+           global_current_report);
       if (setting_auto_cache_rebuild_int ())
-        report_cache_counts (current_report, 0, 0, NULL);
+        report_cache_counts (global_current_report, 0, 0, NULL);
     }
 
   sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
@@ -18365,7 +18365,7 @@ set_task_run_status (task_t task, task_status_t status)
   free (name);
 
   event (task,
-         (task == current_scanner_task) ? current_report : 0,
+         (task == current_scanner_task) ? global_current_report : 0,
          EVENT_TASK_RUN_STATUS_CHANGED, (void*) status);
 }
 
@@ -18385,7 +18385,7 @@ set_task_requested (task_t task, task_status_t *status)
   task_status_t run_status;
   char *uuid, *name;
 
-  assert ((task != current_scanner_task) && (current_report == 0));
+  assert ((task != current_scanner_task) && (global_current_report == 0));
 
   /* Locking here prevents another process from starting the task
    * concurrently. */
@@ -18438,7 +18438,7 @@ set_task_requested (task_t task, task_status_t *status)
    * reports. */
 
   event (task,
-         (task == current_scanner_task) ? current_report : 0,
+         (task == current_scanner_task) ? global_current_report : 0,
          EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_REQUESTED);
 
   *status = run_status;
@@ -21113,16 +21113,17 @@ make_report (task_t task, const char* uuid, task_status_t status)
  * @param[out]  report_id  Report ID.
  * @param[in]   status     Run status of scan associated with report.
  *
- * @return 0 success, -1 current_report is already set, -2 failed to generate ID.
+ * @return 0 success, -1 global_current_report is already set, -2 failed to
+ *         generate ID.
  */
 int
 create_current_report (task_t task, char **report_id, task_status_t status)
 {
   char *id;
 
-  assert (current_report == (report_t) 0);
+  assert (global_current_report == (report_t) 0);
 
-  if (current_report) return -1;
+  if (global_current_report) return -1;
 
   if (report_id == NULL) report_id = &id;
 
@@ -21133,9 +21134,9 @@ create_current_report (task_t task, char **report_id, task_status_t status)
 
   /* Create the report. */
 
-  current_report = make_report (task, *report_id, status);
+  global_current_report = make_report (task, *report_id, status);
 
-  set_report_scheduled (current_report);
+  set_report_scheduled (global_current_report);
 
   return 0;
 }
@@ -21370,11 +21371,11 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       case -1:
         /* Parent when error. */
         g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
-        current_report = report;
+        global_current_report = report;
         set_task_interrupted (task,
                               "Failed to fork child to import report."
                               "  Setting task status to Interrupted.");
-        current_report = 0;
+        global_current_report = 0;
         return -1;
         break;
       default:
@@ -21644,10 +21645,10 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   g_string_free (insert, TRUE);
 
   current_scanner_task = task;
-  current_report = report;
+  global_current_report = report;
   set_task_run_status (task, TASK_STATUS_DONE);
   current_scanner_task = 0;
-  current_report = 0;
+  global_current_report = 0;
 
   if (in_assets_int)
     {
@@ -52629,7 +52630,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
         {
           set_task_start_time (current_scanner_task,
                                g_strdup (entity_text (start)));
-          set_scan_start_time (current_report, entity_text (start));
+          set_scan_start_time (global_current_report, entity_text (start));
           break;
         }
       entities = next_entities (entities);
@@ -52654,12 +52655,12 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
           if (start == NULL)
             goto rollback_fail;
 
-          uuid = report_uuid (current_report);
+          uuid = report_uuid (global_current_report);
           host_notice (entity_text (ip), "ip", entity_text (ip),
                        "Report Host", uuid, 1, 1);
           free (uuid);
 
-          set_scan_host_start_time (current_report,
+          set_scan_host_start_time (global_current_report,
                                     entity_text (ip),
                                     entity_text (start));
         }
@@ -52671,7 +52672,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   if (entity == NULL)
     return -1;
 
-  assert (current_report);
+  assert (global_current_report);
 
   sql_begin_immediate ();
   results = entity->entities;
@@ -52717,7 +52718,8 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
                                   oid,
                                   threat_message_type (entity_text (threat)),
                                   entity_text (description));
-            if (current_report) report_add_result (current_report, result);
+            if (global_current_report)
+              report_add_result (global_current_report, result);
           }
 
           (*next_result)++;
