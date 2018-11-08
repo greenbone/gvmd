@@ -5,4 +5,4 @@ with Greenbone Security Manager. It is fully compatible
 with OpenVAS, but some variable names and tag use
 the abbreviation "gsm".
 These are required by Verinice, a Open Source ISMS-Tool
-avaiable from www.verinice.org
+available from www.verinice.org

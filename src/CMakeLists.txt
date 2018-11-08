@@ -88,30 +88,6 @@ else (BACKEND STREQUAL SQLITE3)
   include_directories (${PostgreSQL_INCLUDE_DIRS} ${PostgreSQL_SERVER_INCLUDE_DIRS})
 endif (BACKEND STREQUAL SQLITE3)
 
-add_library (manage STATIC
-             manage_utils.c manage.c sql.c
-             manage_ranges_all_tcp_nmap_5_51_top_100.c
-             manage_ranges_all_tcp_nmap_5_51_top_1000.c
-             manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
-             manage_ranges_nmap_5_51_top_2000_top_100.c
-             manage_acl.c manage_config_discovery.c
-             manage_config_host_discovery.c manage_config_system_discovery.c
-             manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
-             manage_migrators.c scanner.c
-             ${BACKEND_FILES}
-             lsc_user.c lsc_crypt.c utils.c comm.c)
-
-if (BACKEND STREQUAL SQLITE3)
-  target_link_libraries (manage m ${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-else (BACKEND STREQUAL SQLITE3)
-  target_link_libraries (manage m ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-  target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-endif (BACKEND STREQUAL SQLITE3)
-
-add_library (gmp STATIC gmp.c)
-
-add_library (otp STATIC otp.c)
-
 ## Program
 
 if (BACKEND STREQUAL SQLITE3)
@@ -120,10 +96,41 @@ else (BACKEND STREQUAL SQLITE3)
   set (BINARY_NAME "gvmd-pg")
 endif (BACKEND STREQUAL SQLITE3)
 
-add_executable (${BINARY_NAME} gvmd.c gmpd.c)
-target_link_libraries (${BINARY_NAME} gmp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS})
+add_executable (${BINARY_NAME}
+                gvmd.c gmpd.c
+                manage_utils.c manage.c sql.c
+                manage_ranges_all_tcp_nmap_5_51_top_100.c
+                manage_ranges_all_tcp_nmap_5_51_top_1000.c
+                manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
+                manage_ranges_nmap_5_51_top_2000_top_100.c
+                manage_acl.c manage_config_discovery.c
+                manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_migrators.c scanner.c
+                ${BACKEND_FILES}
+                lsc_user.c lsc_crypt.c utils.c comm.c
+				otp.c gmp.c)
+
+if (BACKEND STREQUAL SQLITE3)
+  target_link_libraries (${BINARY_NAME} m
+                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                         ${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+else (BACKEND STREQUAL SQLITE3)
+  target_link_libraries (${BINARY_NAME} m
+                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                         ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+  target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+endif (BACKEND STREQUAL SQLITE3)
 
 set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
+
+if (DEBUG_FUNCTION_NAMES)
+  add_definitions (-DDEBUG_FUNCTION_NAMES)
+endif (DEBUG_FUNCTION_NAMES)
 
 if (GVMD_VERSION)
   add_definitions (-DGVMD_VERSION="${GVMD_VERSION}")

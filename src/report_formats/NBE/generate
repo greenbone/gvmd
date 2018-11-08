@@ -10,7 +10,7 @@
 # format called NBE.
 #
 # To run this generator properly, the tool xsltproc
-# needs to be accesible.
+# needs to be accessible.
 #
 # Authors:
 # Matthew Mundell <matthew.mundell@greenbone.net>

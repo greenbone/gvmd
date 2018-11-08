@@ -694,7 +694,8 @@ next (iterator_t* iterator)
 
   if (iterator->done) return FALSE;
 
-  lsc_crypt_flush (iterator->crypt_ctx);
+  if (iterator->crypt_ctx)
+    lsc_crypt_flush (iterator->crypt_ctx);
   while (1)
     {
       ret = sql_exec_internal (1, iterator->stmt);

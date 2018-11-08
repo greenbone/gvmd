@@ -1962,8 +1962,6 @@ manage_create_sql_functions ()
            "   AND ($3 IS NULL OR results.report = $3)"
            "   AND ($4 IS NULL OR results.host = $4)"
            "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
-           "   AND (SELECT hidden = 0 FROM tasks"
-           "         WHERE tasks.id = results.task)"
            "   AND (SELECT has_permission FROM permissions_get_tasks"
            "         WHERE \"user\" = (SELECT id FROM users"
            "                           WHERE uuid ="
@@ -2630,6 +2628,25 @@ create_tables ()
        "  date integer,"
        "  hostname text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS results_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  host text,"
+       "  port text,"
+       "  nvt text,"
+       "  result_nvt integer," // REFERENCES result_nvts (id),"
+       "  type text,"
+       "  description text,"
+       "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  nvt_version text,"
+       "  severity real,"
+       "  qod integer,"
+       "  qod_type text,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  date integer,"
+       "  hostname text);");
+
   /* All the NVTs that have ever been encountered in results and overrides.
    *
    * This gives the textual NVT oids an integer ID, so that they can be
@@ -3038,9 +3055,7 @@ create_tables ()
 #define VULNS_RESULTS_WHERE                                           \
   " WHERE uuid IN"                                                    \
   "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")" \
-  "       AND (SELECT hidden = 0 FROM tasks"                          \
-  "            WHERE tasks.id = results.task))"
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
   sql ("DROP VIEW IF EXISTS vulns;");
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"

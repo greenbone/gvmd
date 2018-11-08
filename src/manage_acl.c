@@ -589,6 +589,13 @@ acl_user_owns_uuid (const char *type, const char *uuid, int trash)
                    "                       WHERE users.uuid = '%s'));",
                    quoted_uuid,
                    current_credentials.uuid);
+  else if (strcmp (type, "report") == 0)
+    ret = sql_int ("SELECT count(*) FROM reports"
+                   " WHERE uuid = '%s'"
+                   " AND (owner = (SELECT users.id FROM users"
+                   "               WHERE users.uuid = '%s'));",
+                   quoted_uuid,
+                   current_credentials.uuid);
   else if (strcmp (type, "permission") == 0)
     ret = sql_int ("SELECT count(*) FROM permissions%s"
                    " WHERE uuid = '%s'"

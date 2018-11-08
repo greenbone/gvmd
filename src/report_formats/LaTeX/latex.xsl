@@ -251,9 +251,6 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <xsl:when test="openvas:report()/delta">
     <xsl:text>\title{Delta Report}</xsl:text>
   </xsl:when>
-  <xsl:when test="openvas:report()/@type = 'prognostic'">
-    <xsl:text>\title{Prognostic Report}</xsl:text>
-  </xsl:when>
   <xsl:otherwise>
     <xsl:text>\title{Scan Report}</xsl:text>
   </xsl:otherwise>
@@ -483,16 +480,6 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <!-- The Abstract. -->
   <xsl:template name="abstract">
     <xsl:choose>
-      <xsl:when test="openvas:report()/@type = 'prognostic' and openvas:report()/report_format/param[name='summary']">
-        <xsl:text>
-\renewcommand{\abstractname}{Prognostic Report Summary}
-\begin{abstract}
-</xsl:text>
-        <xsl:value-of select="openvas:report()/report_format/param[name='summary']/value"/>
-        <xsl:text>
-\end{abstract}
-</xsl:text>
-      </xsl:when>
       <xsl:when test="openvas:report()/delta and openvas:report()/report_format/param[name='summary']">
         <xsl:text>
 \renewcommand{\abstractname}{Delta Report Summary}
@@ -510,23 +497,6 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 </xsl:text>
         <xsl:value-of select="openvas:report()/report_format/param[name='summary']/value"/>
         <xsl:text>
-\end{abstract}
-</xsl:text>
-      </xsl:when>
-      <xsl:when test="openvas:report()/@type = 'prognostic'">
-        <xsl:text>
-\renewcommand{\abstractname}{Prognostic Report Summary}
-\begin{abstract}
-This document predicts the results of a security scan, based on
-scan information already gathered for the hosts.
-All dates are displayed using the timezone ``</xsl:text>
-        <xsl:value-of select="timezone"/>
-        <xsl:text>'', which is abbreviated ``</xsl:text>
-        <xsl:value-of select="timezone_abbrev"/>
-        <xsl:text>''.
-The report first summarises the predicted results.  Then, for each host,
-the report describes every predicted issue.  Please consider the
-advice given in each description, in order to rectify the issue.
 \end{abstract}
 </xsl:text>
       </xsl:when>
@@ -754,53 +724,48 @@ advice given in each description, in order to rectify the issue.
     <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
 
     <xsl:choose>
-      <xsl:when test="openvas:report()/@type = 'prognostic'">
+      <xsl:when test="openvas:report()/filters/keywords/keyword[column='autofp']/value='1'">
+        <xsl:text>Vendor security updates are trusted, using full CVE matching.</xsl:text>
+      </xsl:when>
+      <xsl:when test="openvas:report()/filters/keywords/keyword[column='autofp']/value='2'">
+        <xsl:text>Vendor security updates are trusted, using partial CVE matching.</xsl:text>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:choose>
-          <xsl:when test="openvas:report()/filters/keywords/keyword[column='autofp']/value='1'">
-            <xsl:text>Vendor security updates are trusted, using full CVE matching.</xsl:text>
-          </xsl:when>
-          <xsl:when test="openvas:report()/filters/keywords/keyword[column='autofp']/value='2'">
-            <xsl:text>Vendor security updates are trusted, using partial CVE matching.</xsl:text>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:text>Vendor security updates are not trusted.</xsl:text>
-          </xsl:otherwise>
-        </xsl:choose>
-        <xsl:call-template name="latex-newline"/>
-        <xsl:choose>
-          <xsl:when test="openvas:report()/filters/keywords/keyword[column='apply_overrides']/value='1'">
-            <xsl:text>Overrides are on.  When a result has an override, this report uses the threat of the override.</xsl:text>
-            <xsl:call-template name="latex-newline"/>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:text>Overrides are off.  Even when a result has an override, this report uses the actual threat of the result.</xsl:text>
-            <xsl:call-template name="latex-newline"/>
-          </xsl:otherwise>
-        </xsl:choose>
-        <xsl:choose>
-          <xsl:when test="openvas:report()/filters/keywords/keyword[column='overrides']/value = 0">
-            <xsl:text>Information on overrides is excluded from the report.</xsl:text>
-            <xsl:call-template name="latex-newline"/>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:text>Information on overrides is included in the report.</xsl:text>
-            <xsl:call-template name="latex-newline"/>
-          </xsl:otherwise>
-        </xsl:choose>
-        <xsl:choose>
-          <xsl:when test="openvas:report()/filters/keywords/keyword[column='notes']/value = 0">
-            <xsl:text>Notes are excluded from the report.</xsl:text>
-            <xsl:call-template name="latex-newline"/>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:text>Notes are included in the report.</xsl:text>
-            <xsl:call-template name="latex-newline"/>
-          </xsl:otherwise>
-        </xsl:choose>
+        <xsl:text>Vendor security updates are not trusted.</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
+    <xsl:call-template name="latex-newline"/>
+    <xsl:choose>
+      <xsl:when test="openvas:report()/filters/keywords/keyword[column='apply_overrides']/value='1'">
+        <xsl:text>Overrides are on.  When a result has an override, this report uses the threat of the override.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>Overrides are off.  Even when a result has an override, this report uses the actual threat of the result.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:choose>
+      <xsl:when test="openvas:report()/filters/keywords/keyword[column='overrides']/value = 0">
+        <xsl:text>Information on overrides is excluded from the report.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>Information on overrides is included in the report.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:choose>
+      <xsl:when test="openvas:report()/filters/keywords/keyword[column='notes']/value = 0">
+        <xsl:text>Notes are excluded from the report.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>Notes are included in the report.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:otherwise>
+    </xsl:choose>
+
     <xsl:text>This report might not show details of all issues that were found.</xsl:text><xsl:call-template name="latex-newline"/>
     <xsl:if test="openvas:report()/filters/keywords/keyword[column='result_hosts_only']/value = 1">
       <xsl:text>It only lists hosts that produced issues.</xsl:text><xsl:call-template name="latex-newline"/>
@@ -880,8 +845,6 @@ advice given in each description, in order to rectify the issue.
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="openvas:report()/@type = 'prognostic'">
-      </xsl:when>
       <xsl:when test="openvas:report()/delta">
       </xsl:when>
       <xsl:otherwise>
@@ -1155,18 +1118,6 @@ advice given in each description, in order to rectify the issue.
   </xsl:template>
 
 <!-- SUBSECTION: Results for a single host. -->
-
-  <xsl:template name="prognostic-description">
-    <xsl:param name="string"/>
-
-    <xsl:for-each select="str:split($string, '&#10;&#10;')">
-      <xsl:call-template name="latex-newline"/>
-      <xsl:for-each select="str:split(., '&#10;')">
-        <xsl:value-of select="."/>
-        <xsl:call-template name="latex-newline"/>
-      </xsl:for-each>
-    </xsl:for-each>
-  </xsl:template>
 
   <!-- Overview table for a single host -->
   <xsl:template name="result-details-host-port-threat">
@@ -1470,99 +1421,6 @@ advice given in each description, in order to rectify the issue.
     </xsl:if>
   </xsl:template>
 
-  <!-- A prognostic result. -->
-  <xsl:template name="prognostic-result">
-    <xsl:text>\begin{longtable}{|p{\textwidth * 1}|}</xsl:text><xsl:call-template name="newline"/>
-    <xsl:call-template name="latex-hline"/>
-    <xsl:text>\rowcolor{</xsl:text>
-    <xsl:call-template name="threat-to-color">
-      <xsl:with-param name="threat" select="threat" />
-    </xsl:call-template>
-    <xsl:text>}{\color{white}{</xsl:text>
-    <xsl:value-of select="threat"/>
-    <xsl:if test="string-length(cve/cvss_base) &gt; 0">
-      <xsl:text> (CVSS: </xsl:text>
-      <xsl:value-of select="cve/cvss_base"/>
-      <xsl:text>) </xsl:text>
-    </xsl:if>
-    <xsl:text>}}</xsl:text>
-    <xsl:call-template name="latex-newline"/>
-    <xsl:text>\rowcolor{</xsl:text>
-    <xsl:call-template name="threat-to-color">
-      <xsl:with-param name="threat" select="threat"/>
-    </xsl:call-template>
-    <xsl:text>}{\color{white}{</xsl:text>
-    <xsl:value-of select="cve/@id"/>
-    <xsl:text>}}</xsl:text>
-    <xsl:call-template name="latex-newline"/>
-    <xsl:text>\rowcolor{</xsl:text>
-    <xsl:call-template name="threat-to-color">
-      <xsl:with-param name="threat" select="threat"/>
-    </xsl:call-template>
-    <xsl:text>}{\color{white}{</xsl:text>
-    <xsl:call-template name="escape_text">
-      <xsl:with-param name="string" select="cve/cpe/@id"/>
-    </xsl:call-template>
-    <xsl:text>}}</xsl:text>
-    <xsl:call-template name="latex-newline"/>
-    <xsl:call-template name="latex-hline"/>
-    <xsl:text>\endfirsthead</xsl:text><xsl:call-template name="newline"/>
-    <xsl:text>\hfill\ldots continued from previous page \ldots </xsl:text><xsl:call-template name="latex-newline"/>
-    <xsl:call-template name="latex-hline"/>
-    <xsl:text>\endhead</xsl:text><xsl:call-template name="newline"/>
-    <xsl:call-template name="latex-hline"/>
-    <xsl:text>\ldots continues on next page \ldots </xsl:text><xsl:call-template name="latex-newline"/>
-    <xsl:text>\endfoot</xsl:text><xsl:call-template name="newline"/>
-    <xsl:call-template name="latex-hline"/>
-    <xsl:text>\endlastfoot</xsl:text><xsl:call-template name="newline"/>
-
-    <xsl:call-template name="text-to-escaped-row">
-      <xsl:with-param name="string" select="description"/>
-    </xsl:call-template>
-    <xsl:call-template name="latex-newline"/>
-
-    <xsl:text>\end{longtable}</xsl:text>
-    <xsl:call-template name="newline"/>
-    <xsl:call-template name="newline"/>
-  </xsl:template>
-
-  <!-- Findings for a single prognostic host -->
-  <xsl:template name="results-per-host-prognostic">
-    <xsl:param name="host"/>
-
-    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='High']">
-      <xsl:call-template name="prognostic-result"/>
-    </xsl:for-each>
-
-    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='Medium']">
-      <xsl:call-template name="prognostic-result"/>
-    </xsl:for-each>
-
-    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='Low']">
-      <xsl:call-template name="prognostic-result"/>
-    </xsl:for-each>
-
-    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='Log']">
-      <xsl:call-template name="prognostic-result"/>
-    </xsl:for-each>
-
-    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='Debug']">
-      <xsl:call-template name="prognostic-result"/>
-    </xsl:for-each>
-
-    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='False Positive']">
-      <xsl:call-template name="prognostic-result"/>
-    </xsl:for-each>
-
-    <xsl:text>\begin{footnotesize}</xsl:text>
-    <xsl:call-template name="latex-hyperref">
-      <xsl:with-param name="target" select="concat('host:', $host)"/>
-      <xsl:with-param name="text" select="concat('[ return to ', $host, ' ]')"/>
-    </xsl:call-template>
-
-    <xsl:text>\end{footnotesize}</xsl:text><xsl:call-template name="newline"/>
-  </xsl:template>
-
   <!-- Findings for a single host -->
   <xsl:template name="results-per-host-single-host-findings">
     <xsl:param name="host"/>
@@ -1628,43 +1486,28 @@ advice given in each description, in order to rectify the issue.
     </xsl:call-template>
     <xsl:call-template name="newline"/>
 
-    <xsl:choose>
-      <xsl:when test="openvas:report()/@type = 'prognostic'">
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:text>\begin{tabular}{ll}</xsl:text><xsl:call-template name="newline"/>
-        <xsl:text>Host scan start&amp;</xsl:text>
-        <xsl:call-template name="format-date">
-          <xsl:with-param name="date" select="start"/>
-        </xsl:call-template>
-        <xsl:call-template name="latex-newline"/>
-        <xsl:text>Host scan end&amp;</xsl:text>
-        <xsl:call-template name="format-date">
-          <xsl:with-param name="date" select="end"/>
-        </xsl:call-template>
-        <xsl:call-template name="latex-newline"/>
-        <xsl:text>\end{tabular}</xsl:text><xsl:call-template name="newline"/>
-        <xsl:call-template name="newline"/>
-        <xsl:call-template name="results-per-host-single-host-port-findings"/>
-        <xsl:call-template name="newline"/>
-        <xsl:call-template name="results-per-host-single-host-closed-cves"/>
-        <xsl:call-template name="newline"/>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:text>\begin{tabular}{ll}</xsl:text><xsl:call-template name="newline"/>
+    <xsl:text>Host scan start&amp;</xsl:text>
+    <xsl:call-template name="format-date">
+      <xsl:with-param name="date" select="start"/>
+    </xsl:call-template>
+    <xsl:call-template name="latex-newline"/>
+    <xsl:text>Host scan end&amp;</xsl:text>
+    <xsl:call-template name="format-date">
+      <xsl:with-param name="date" select="end"/>
+    </xsl:call-template>
+    <xsl:call-template name="latex-newline"/>
+    <xsl:text>\end{tabular}</xsl:text><xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="results-per-host-single-host-port-findings"/>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="results-per-host-single-host-closed-cves"/>
+    <xsl:call-template name="newline"/>
 
     <xsl:text>%\subsection*{Security Issues and Fixes -- </xsl:text><xsl:value-of select="$host"/><xsl:text>}</xsl:text>
     <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
-    <xsl:choose>
-      <xsl:when test="openvas:report()/@type = 'prognostic'">
-        <xsl:call-template name="results-per-host-prognostic">
-          <xsl:with-param name="host" select="$host"/>
-        </xsl:call-template>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:call-template name="results-per-host-single-host-findings"><xsl:with-param name="host" select="$host"/></xsl:call-template>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:call-template name="results-per-host-single-host-findings"><xsl:with-param name="host" select="$host"/></xsl:call-template>
   </xsl:template>
 
   <!-- Section with Results per Host. -->

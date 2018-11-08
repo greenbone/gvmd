@@ -163,7 +163,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <name>threat</name>
     <summary>A threat level</summary>
     <description>
-      Threat levels are a textual classification of severity scores only
+      Threat levels are a classification of severity scores only
       supported for importing reports from OpenVAS-6 and older.
       The use of these elements is deprecated as they are otherwise replaced by
       severity elements, which should be used instead.
@@ -697,7 +697,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -1061,7 +1061,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -1659,7 +1659,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <alts>
             <alt>scan</alt>
             <alt>assets</alt>
-            <alt>prognostic</alt>
           </alts>
         </type>
       </attrib>
@@ -1765,7 +1764,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <alts>
               <alt>scan</alt>
               <alt>assets</alt>
-              <alt>prognostic</alt>
             </alts>
           </type>
         </attrib>
@@ -2014,7 +2012,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>ip</name>
             <summary>
-              IP of single host in report (for "delta" and "prognostic")
+              IP of single host in report (for "delta")
             </summary>
             <pattern>text</pattern>
           </ele>
@@ -4230,7 +4228,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -4370,7 +4368,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -5475,7 +5473,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts, which may be empty</summary>
+      <summary>A comma-separated list of hosts, which may be empty</summary>
       <pattern>
         text
       </pattern>
@@ -5864,7 +5862,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>User access rules: a textual list of hosts</summary>
+      <summary>User access rules: a comma-separated list of hosts</summary>
       <pattern>
         <attrib>
           <name>allow</name>
@@ -5876,7 +5874,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>ifaces</name>
-      <summary>User access rules: a textual list of ifaces</summary>
+      <summary>User access rules: a comma-separated list of ifaces</summary>
       <pattern>
         <attrib>
           <name>allow</name>
@@ -13514,7 +13512,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>cve_id</name>
-          <summary>IDs of the CVEs the NVT adresses</summary>
+          <summary>IDs of the CVEs the NVT addresses</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -15612,7 +15610,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <alts>
             <alt>scan</alt>
             <alt>assets</alt>
-            <alt>prognostic</alt>
           </alts>
         </type>
       </attrib>
@@ -15644,32 +15641,32 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <attrib>
         <name>host</name>
-        <summary>For "assets" or "prognostic", single host to retrieve</summary>
+        <summary>For "assets", single host to retrieve</summary>
         <type>text</type>
       </attrib>
       <attrib>
         <name>host_first_result</name>
-        <summary>For "assets" or "prognostic", first host to retrieve</summary>
+        <summary>For "assets", first host to retrieve</summary>
         <type>integer</type>
       </attrib>
       <attrib>
         <name>host_max_results</name>
         <summary>
-          For "assets" or "prognostic", maximum hosts to retrieve
+          For "assets", maximum hosts to retrieve
         </summary>
         <type>integer</type>
       </attrib>
       <attrib>
         <name>host_levels</name>
         <summary>
-          For "assets" or "prognostic", which threat levels to include in hosts
+          For "assets", which threat levels to include in hosts
         </summary>
         <type>levels</type>
       </attrib>
       <attrib>
         <name>host_search_phrase</name>
         <summary>
-          For "assets" or "prognostic", the search phrase to limit hosts to
+          For "assets", the search phrase to limit hosts to
         </summary>
         <type>text</type>
       </attrib>
@@ -15762,7 +15759,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>host</name>
-          <summary>Single host selected for prognostic or delta report</summary>
+          <summary>Single host selected for delta report</summary>
           <pattern>
             <e>ip</e>
           </pattern>
@@ -16132,7 +16129,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>trust</name>
             <type>boolean</type>
-            <summary>Whether the the report format is trusted</summary>
+            <summary>Whether the report format is trusted</summary>
           </column>
           <column>
             <name>trust_time</name>
@@ -16142,7 +16139,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>active</name>
             <type>boolean</type>
-            <summary>Whether the the report format is active</summary>
+            <summary>Whether the report format is active</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -17725,13 +17722,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             text
           </pattern>
         </ele>
-		<ele>
-		  <name>copy</name>
-		  <summary>The UUID of an existing scanner</summary>
-		  <pattern>
-			<t>uuid</t>
-		  </pattern>
-		</ele>
+        <ele>
+          <name>copy</name>
+          <summary>The UUID of an existing scanner</summary>
+          <pattern>
+            <t>uuid</t>
+          </pattern>
+        </ele>
         <ele>
           <name>creation_time</name>
           <pattern><t>iso_time</t></pattern>
@@ -23551,7 +23548,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -23684,7 +23681,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>A textual list of hosts</summary>
+      <summary>A comma-separated list of hosts</summary>
       <pattern>
         text
       </pattern>
@@ -24392,10 +24389,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>value</name>
-      <summary>The value of the setting</summary>
-      <pattern>
-        text
-      </pattern>
+      <summary>The value of the setting, in base64 encoding</summary>
+      <pattern><t>base64</t></pattern>
     </ele>
     <response>
       <pattern>
@@ -24416,7 +24411,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <modify_setting>
           <name>Timezone</name>
-          <value>Africa/Johannesburg</value>
+          <value>QWZyaWNhL0pvaGFubmVzYnVyZw==</value>
         </modify_setting>
       </request>
       <response>
@@ -24930,7 +24925,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>User access rules: a textual list of hosts</summary>
+      <summary>User access rules: a comma-separated list of hosts</summary>
       <description>
         User is allowed to access any host if this element is missing.
       </description>
@@ -24945,7 +24940,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>ifaces</name>
-      <summary>User access rules: a textual list of ifaces</summary>
+      <summary>User access rules: a comma-separated list of ifaces</summary>
       <pattern>
         <attrib>
           <name>allow</name>
@@ -25564,6 +25559,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <!-- Compatibility changes between versions. -->
 
   <change>
+    <command>GET_REPORTS</command>
+    <summary>The report type &quot;prognostic&quot; has been removed.</summary>
+    <description>
+      <p>
+        The report type &quot;prognostic&quot; has been removed. Instead, tasks
+        using the CVE Scanner should be used.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
+  <change>
     <command>All Commands</command>
     <summary>OMP is renamed to Greenbone Management Protocol (GMP)</summary>
     <description>
@@ -25618,7 +25624,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The SYNC_FEED, SYNC_SCAP and SYNC_CERT commands have been removed, as
         they are no longer used by GSA, and they have been (or will be)
-        superceded by automatic feed updating.
+        superseded by automatic feed updating.
       </p>
     </description>
     <version>8.0</version>
@@ -25658,7 +25664,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The element CATEGORY was using a string represantation of a integer eumeration.
-        Now the original integer represenation is used.
+        Now the original integer representation is used.
       </p>
     </description>
     <version>8.0</version>
@@ -25686,11 +25692,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         Severity Class "OpenVAS Classic" (short name "classic", UUID
-		"dc1d556a-89e1-11e3-bc21-406186ea4fc5") has been removed.
+        "dc1d556a-89e1-11e3-bc21-406186ea4fc5") has been removed.
       </p>
       <p>
-	    When migrating to this version all users using the "OpenVAS Classic"
-		class will be switched to "NVD Vulnerability Severity Ratings".
+        When migrating to this version all users using the "OpenVAS Classic"
+        class will be switched to "NVD Vulnerability Severity Ratings".
       </p>
     </description>
     <version>8.0</version>
@@ -25701,7 +25707,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The task status "Internal Error" is now called "Interrupted", to
-		better fit its function.
+        better fit its function.
       </p>
     </description>
     <version>8.0</version>
