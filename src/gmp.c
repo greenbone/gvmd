@@ -14477,7 +14477,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
         {
           iterator_t prefs;
           scanner_t scanner;
-          config_t config = get_iterator_resource (&configs);
           char *s_uuid, *s_name;
 
           assert (config);
@@ -14537,7 +14536,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                || get_configs_data->get.details)
         {
           iterator_t prefs;
-          config_t config = get_iterator_resource (&configs);
 
           assert (config);
 
