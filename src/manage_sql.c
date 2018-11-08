@@ -40831,7 +40831,7 @@ create_credential (const char* name, const char* comment, const char* login,
   if (key_private)
     {
       lsc_crypt_ctx_t crypt_ctx;
-      gchar *key_private_truncated, *key_public;
+      gchar *key_private_truncated, *generated_key_public;
 
       /* Try truncate the private key, but if that fails try get the public
        * key anyway, in case it's a key type that truncate_private_key does
@@ -40842,16 +40842,17 @@ create_credential (const char* name, const char* comment, const char* login,
       else
         return 3;
 
-      key_public = gvm_ssh_public_from_private (key_private_truncated
-                                                ? key_private_truncated
-                                                : key_private,
-                                                given_password);
-      if (key_public == NULL)
+      generated_key_public = gvm_ssh_public_from_private
+                                (key_private_truncated
+                                    ? key_private_truncated
+                                    : key_private,
+                                 given_password);
+      if (generated_key_public == NULL)
         {
           g_free (key_private_truncated);
           return 3;
         }
-      g_free (key_public);
+      g_free (generated_key_public);
 
       /* Encrypt password and private key.  Note that we do not need
          to call sql_quote because the result of the encryption is
