@@ -2577,7 +2577,6 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  hidden integer,"
        "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
        "  date integer,"
        "  start_time integer,"

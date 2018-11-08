@@ -21078,11 +21078,11 @@ report_clear_count_cache (report_t report,
 report_t
 make_report (task_t task, const char* uuid, task_status_t status)
 {
-  sql ("INSERT into reports (uuid, owner, hidden, task, date, nbefile, comment,"
+  sql ("INSERT into reports (uuid, owner, task, date, nbefile, comment,"
        " scan_run_status, slave_progress, slave_task_uuid)"
        " VALUES ('%s',"
        " (SELECT owner FROM tasks WHERE tasks.id = %llu),"
-       " 0, %llu, %i, '', '', %u, 0, '');",
+       " %llu, %i, '', '', %u, 0, '');",
        uuid, task, task, time (NULL), status);
   return sql_last_insert_id ();
 }
@@ -25385,16 +25385,13 @@ report_severity (report_t report, int overrides, int min_qod)
  *
  * @param[in]  report  Report.
  *
- * @return 0 success, 1 report is hidden, 2 report is in use, -1 error.
+ * @return 0 success, 2 report is in use, -1 error.
  */
 int
 delete_report_internal (report_t report)
 {
   task_t task;
   char *slave_task_uuid;
-
-  if (sql_int ("SELECT hidden FROM reports WHERE id = %llu;", report))
-    return 1;
 
   if (sql_int ("SELECT count(*) FROM reports WHERE id = %llu"
                " AND (scan_run_status = %u OR scan_run_status = %u"
@@ -31909,14 +31906,6 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       return 0;
     }
 
-  if (sql_int ("SELECT hidden from tasks WHERE id = %llu;",
-               task)
-      == 1)
-    {
-      sql_rollback ();
-      return 2;
-    }
-
   if (current_credentials.uuid == NULL)
     {
       sql_rollback ();
@@ -31985,7 +31974,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
  * @param[in]  task      The task.
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
- * @return 0 on success, 1 if task is hidden, -1 on error.
+ * @return 0 on success, -1 on error.
  */
 int
 delete_task (task_t task, int ultimate)
