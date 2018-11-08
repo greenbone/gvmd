@@ -19866,14 +19866,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
           if (schedule_available && schedule)
             {
-              time_t first_time, next_time;
+              time_t first_time, info_next_time;
               int period, period_months, duration;
               gchar *icalendar, *timezone;
 
               icalendar = timezone = NULL;
 
               if (schedule_info (schedule, schedule_in_trash,
-                                 &first_time, &next_time, &period,
+                                 &first_time, &info_next_time, &period,
                                  &period_months, &duration,
                                  &icalendar, &timezone) == 0)
                 {
@@ -19883,8 +19883,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                   first_time_str = g_strdup (first_time
                                               ? iso_time (&first_time)
                                               : "");
-                  next_time_str = g_strdup (next_time
-                                              ? iso_time (&next_time)
+                  next_time_str = g_strdup (info_next_time
+                                              ? iso_time (&info_next_time)
                                               : "over");
 
                   SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
@@ -25868,7 +25868,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           config_t config = 0;
           target_t target = 0;
           scanner_t scanner = 0;
-          char *tsk_uuid = NULL, *name;
+          char *tsk_uuid = NULL;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -26146,14 +26146,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for name. */
 
-          name = task_name (create_task_data->task);
-          if (name == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE_TASK requires a name attribute"));
-              goto create_task_fail;
-            }
+          {
+            char *name;
+
+            name = task_name (create_task_data->task);
+            if (name == NULL)
+              {
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_task",
+                                    "CREATE_TASK requires a name attribute"));
+                goto create_task_fail;
+              }
+          }
 
           if (find_scanner_with_permission (create_task_data->scanner_id,
                                             &scanner,
