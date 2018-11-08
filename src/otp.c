@@ -1244,7 +1244,6 @@ process_otp_scanner_input ()
                 }
               case SCANNER_PLUGIN_LIST_COPYRIGHT:
                 {
-                  nvti_set_copyright (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_FAMILY);
                   break;
                 }
