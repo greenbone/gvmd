@@ -340,7 +340,7 @@ acl_user_is_observer (const char *uuid)
  * @return 1 if user is a Super Admin, else 0.
  */
 int
-user_is_super_admin (const char *uuid)
+acl_user_is_super_admin (const char *uuid)
 {
   int ret;
   gchar *quoted_uuid;

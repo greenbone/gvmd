@@ -3863,18 +3863,6 @@ modify_user (const gchar *, gchar **, const gchar *, const gchar *,
              gchar **);
 
 int
-user_is_admin (const char *);
-
-int
-user_is_super_admin (const char *);
-
-int
-user_is_observer (const char *);
-
-int
-user_is_user (const char *);
-
-int
 user_in_use (user_t);
 
 int
