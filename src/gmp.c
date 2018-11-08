@@ -12803,10 +12803,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
           if (subgroup_column && column_is_timestamp (data_column) == FALSE)
             {
               GTree *c_sum_tree;
-              const gchar *subgroup_value;
 
-
-              subgroup_value = aggregate_iterator_subgroup_value (aggregate);
               c_sum_tree = g_array_index (group_c_sums, GTree*, index);
               subgroup_c_sum = g_tree_lookup (c_sum_tree, subgroup_value);
 
