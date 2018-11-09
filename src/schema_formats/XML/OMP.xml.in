@@ -9619,6 +9619,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>type</name>
+        <summary>Type of assets to get</summary>
+        <type>
+          <alts>
+            <alt>host</alt>
+            <alt>os</alt>
+          </alts>
+        </type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
