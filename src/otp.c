@@ -362,7 +362,6 @@ typedef enum
   SCANNER_NVT_INFO,
   SCANNER_PLUGIN_LIST_BUGTRAQ_ID,
   SCANNER_PLUGIN_LIST_CATEGORY,
-  SCANNER_PLUGIN_LIST_COPYRIGHT,
   SCANNER_PLUGIN_LIST_CVE_ID,
   SCANNER_PLUGIN_LIST_FAMILY,
   SCANNER_PLUGIN_LIST_NAME,
@@ -1240,11 +1239,6 @@ process_otp_scanner_input ()
               case SCANNER_PLUGIN_LIST_CATEGORY:
                 {
                   nvti_set_category (current_plugin, atoi (field));
-                  set_scanner_state (SCANNER_PLUGIN_LIST_COPYRIGHT);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_COPYRIGHT:
-                {
                   set_scanner_state (SCANNER_PLUGIN_LIST_FAMILY);
                   break;
                 }
