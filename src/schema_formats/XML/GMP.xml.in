@@ -13389,7 +13389,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>creation_time</e>
               <e>modification_time</e>
               <e>category</e>
-              <e>copyright</e>
               <e>summary</e>
               <e>family</e>
               <e>cvss_base</e>
@@ -13471,11 +13470,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern>text</pattern>
             </ele>
           </ele>
-        </ele>
-        <ele>
-          <name>copyright</name>
-          <summary>Copyright info of the NVT</summary>
-          <pattern>text</pattern>
         </ele>
         <ele>
           <name>summary</name>
@@ -13664,7 +13658,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <creation_time>2011-01-14T10:12:23+01:00</creation_time>
             <modification_time>2012-09-19T20:56:15+02:00</modification_time>
             <category>3</category>
-            <copyright>GNU GPL v2</copyright>
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
             <cvss_base></cvss_base>
@@ -13695,7 +13688,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <creation_time>2011-01-14T10:12:23+01:00</creation_time>
             <modification_time>2012-09-19T20:56:15+02:00</modification_time>
             <category>3</category>
-            <copyright>GNU GPL v2</copyright>
             <description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>
             <truncated>...</truncated>
           </nvt>
@@ -25558,6 +25550,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_NVTS</command>
+    <summary>Remove COPYRIGHT</summary>
+    <version>8.0</version>
+    <description>
+      <p>
+        COPYRIGHT is removed from NVT, as it is no longer supported by the
+        scanner.
+      </p>
+    </description>
+  </change>
   <change>
     <command>GET_REPORTS</command>
     <summary>The report type &quot;prognostic&quot; has been removed.</summary>
