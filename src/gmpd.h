@@ -66,9 +66,4 @@ init_gmpd_process (const gchar *, gchar **);
 int
 serve_gmp (gvm_connection_t*, const gchar*, gchar**);
 
-/** @todo Temporarily declared here, for gmp.c SEND_TO_CLIENT. */
-extern char to_client[];
-extern buffer_size_t to_client_start;
-extern buffer_size_t to_client_end;
-
 #endif
