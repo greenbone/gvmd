@@ -3248,15 +3248,11 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                 case 0:
                   break;
                 case 404:
-                  if (ret == 404)
-                    {
-                      /* Resource Missing. */
-                      set_task_interrupted (task,
-                                            "Failed to find task on slave."
-                                            "  Interrupting scan.");
-                      goto giveup;
-                    }
-                  break;
+                  /* Resource Missing. */
+                  set_task_interrupted (task,
+                                        "Failed to find task on slave."
+                                        "  Interrupting scan.");
+                  goto giveup;
                 default:
                   goto fail_stop_task;
               }
