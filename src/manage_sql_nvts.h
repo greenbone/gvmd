@@ -46,7 +46,6 @@
    { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
    { "modification_time", "version", KEYWORD_TYPE_INTEGER },                \
    { "name", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
    { "cve", NULL, KEYWORD_TYPE_STRING },                                    \
    { "bid", NULL, KEYWORD_TYPE_STRING },                                    \
    { "xref", NULL, KEYWORD_TYPE_STRING },                                   \
@@ -74,7 +73,6 @@
    { "oid", NULL, KEYWORD_TYPE_STRING },                                    \
    { "modification_time", "version", KEYWORD_TYPE_INTEGER },                \
    { "nvts.name", NULL, KEYWORD_TYPE_STRING },                              \
-   { "copyright", NULL, KEYWORD_TYPE_STRING },                              \
    { "cve", NULL, KEYWORD_TYPE_STRING },                                    \
    { "bid", NULL, KEYWORD_TYPE_STRING },                                    \
    { "xref", NULL, KEYWORD_TYPE_STRING },                                   \
