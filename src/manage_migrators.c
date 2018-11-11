@@ -14805,6 +14805,62 @@ migrate_196_to_197 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 197 to version 198.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_197_to_198 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 197. */
+
+  if (manage_db_version () != 197)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The copyright column was removed from nvts. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE nvts RENAME TO nvts_197;");
+
+      sql ("CREATE TABLE IF NOT EXISTS nvts"
+           " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
+           "  cve, bid, xref, tag, category INTEGER, family, cvss_base,"
+           "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
+           "  qod_type TEXT);");
+
+      sql ("INSERT INTO nvts"
+           " (id, uuid, oid, name, comment, cve, bid, xref, tag, category,"
+           "  family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type)"
+           " SELECT"
+           "  id, uuid, oid, name, comment, cve, bid, xref, tag, category,"
+           "  family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type"
+           " FROM nvts_197;");
+
+      sql ("DROP TABLE nvts_197;");
+    }
+  else
+    sql ("ALTER TABLE nvts DROP COLUMN copyright;");
+
+  /* Set the database version to 198. */
+
+  set_db_version (198);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15016,6 +15072,7 @@ static migrator_t database_migrators[]
     {195, migrate_194_to_195},
     {196, migrate_195_to_196},
     {197, migrate_196_to_197},
+    {198, migrate_197_to_198},
     /* End marker. */
     {-1, NULL}};
 

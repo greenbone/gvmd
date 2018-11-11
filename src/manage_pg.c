@@ -2752,7 +2752,6 @@ create_tables ()
        "  oid text UNIQUE NOT NULL,"
        "  name text,"
        "  comment text,"
-       "  copyright text,"
        "  cve text,"
        "  bid text,"
        "  xref text,"
