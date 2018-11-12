@@ -60,6 +60,9 @@ sql_x (char*, va_list args, sql_stmt_t**);
 
 /* Types. */
 
+/**
+ * @brief An SQL statement.
+ */
 struct sql_stmt
 {
   gchar *sql;             ///< SQL statement.

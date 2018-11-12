@@ -983,6 +983,9 @@ severity_to_level (double, int);
 const char*
 severity_to_type (double);
 
+/**
+ * @brief Severity data for result count cache.
+ */
 typedef struct
 {
   int* counts;
@@ -4028,6 +4031,9 @@ trash_tag_writable (tag_t);
 
 /* Resource aggregates */
 
+/**
+ * @brief Sort data for aggregates commands.
+ */
 typedef struct {
   gchar *field;  ///< The field to sort by.
   gchar *stat;   ///< The statistic to sort by.

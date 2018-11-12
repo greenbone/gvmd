@@ -354,8 +354,8 @@ option_lock (lockfile_t *lockfile_checking)
 
 /* Forking, serving the client. */
 
-/*
- * Connection watcher thread data
+/**
+ * @brief Connection watcher thread data.
  */
 typedef struct {
   gvm_connection_t *client_connection;

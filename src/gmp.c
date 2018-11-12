@@ -1793,6 +1793,9 @@ create_task_data_reset (create_task_data_t *data)
 
 /* Command data passed between parser callbacks. */
 
+/**
+ * @brief Command data for the create_user command.
+ */
 typedef struct
 {
   char *copy;             ///< UUID of resource to copy.

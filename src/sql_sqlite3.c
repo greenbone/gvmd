@@ -66,6 +66,9 @@ sqlv (int, char*, va_list);
 
 /* Types. */
 
+/**
+ * @brief An SQL statement.
+ */
 struct sql_stmt
 {
   sqlite3_stmt *stmt;
