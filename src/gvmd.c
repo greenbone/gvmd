@@ -358,9 +358,9 @@ option_lock (lockfile_t *lockfile_checking)
  * @brief Connection watcher thread data.
  */
 typedef struct {
-  gvm_connection_t *client_connection;
-  int connection_closed;
-  pthread_mutex_t mutex;
+  gvm_connection_t *client_connection;  ///< Client connection.
+  int connection_closed;                ///< Whether connection is closed.
+  pthread_mutex_t mutex;                ///< Mutex.
 } connection_watcher_data_t;
 
 
@@ -985,6 +985,12 @@ setup_signal_handler_info (int signal,
 
 #ifndef NDEBUG
 #include <execinfo.h>
+
+/**
+ * @brief Maximum number of frames in backtrace.
+ *
+ * For debugging backtrace in \ref handle_sigabrt.
+ */
 #define BA_SIZE 100
 #endif
 

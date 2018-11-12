@@ -988,9 +988,9 @@ severity_to_type (double);
  */
 typedef struct
 {
-  int* counts;
-  int total;
-  double max;
+  int* counts;       ///< Counts.
+  int total;         ///< Total.
+  double max;        ///< Max.
 } severity_data_t;
 
 double

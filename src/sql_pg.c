@@ -413,6 +413,8 @@ sql_changes ()
 
 /**
  * @brief Get the ID of the last inserted row.
+ *
+ * @return Resource.
  */
 resource_t
 sql_last_insert_id ()
