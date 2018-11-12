@@ -47,7 +47,7 @@
 /**
  * @brief Enable extra GNU functions.
  *
- * pthread_sigmask () needs this with glibc < 2.19 */
+ * pthread_sigmask () needs this with glibc < 2.19
  */
 #define _GNU_SOURCE
 
