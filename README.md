@@ -24,8 +24,8 @@ This module can be configured, built and installed with following commands:
     make install
 
 For detailed installation requirements and instructions, please see the file
-[INSTALL](INSTALL). The file also contains instructions for setting up `gvmd`
-and for connecting `gvmd` to vulnerability scanners and to the *GSA* web
+[INSTALL.md](INSTALL.md). The file also contains instructions for setting up
+`gvmd` and for connecting `gvmd` to vulnerability scanners and to the *GSA* web
 interface.
 
 In case everything was installed using the defaults, then starting the manager
