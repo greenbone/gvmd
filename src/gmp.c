@@ -1803,18 +1803,18 @@ create_task_data_reset (create_task_data_t *data)
 typedef struct
 {
   char *copy;             ///< UUID of resource to copy.
-  int sort_order;
+  int sort_order;         ///< Sort order.
   array_t *groups;        ///< IDs of groups.
-  char *hosts;
-  int hosts_allow;
-  char *ifaces;
-  int ifaces_allow;
-  char *name;
-  char *password;
-  char *comment;
-  array_t *roles;
-  gchar *current_source;
-  array_t *sources;
+  char *hosts;            ///< Hosts.
+  int hosts_allow;        ///< Whether hosts are allowed.
+  char *ifaces;           ///< Interfaces.
+  int ifaces_allow;       ///< Whether interfaces are allowed.
+  char *name;             ///< User name.
+  char *password;         ///< Password.
+  char *comment;          ///< Comment.
+  array_t *roles;         ///< User's roles.
+  gchar *current_source;  ///< Current source, for collecting sources.
+  array_t *sources;       ///< Sources.
 } create_user_data_t;
 
 /**
@@ -3958,21 +3958,21 @@ modify_override_data_reset (modify_override_data_t *data)
  */
 typedef struct
 {
-  array_t *groups;        ///< IDs of groups.
-  int sort_order;
-  gchar *hosts;
-  int hosts_allow;
-  char *ifaces;
-  int ifaces_allow;
-  gboolean modify_password;
-  gchar *name;
-  gchar *new_name;
-  gchar *password;
-  gchar *comment;
-  array_t *roles;         ///< IDs of roles.
-  array_t *sources;
-  gchar *current_source;
-  gchar *user_id;
+  array_t *groups;           ///< IDs of groups.
+  int sort_order;            ///< Sort order.
+  gchar *hosts;              ///< Hosts.
+  int hosts_allow;           ///< Whether hosts are allowed.
+  char *ifaces;              ///< Interfaces.
+  int ifaces_allow;          ///< Whether interfaces are allowed.
+  gboolean modify_password;  ///< Whether to modify password.
+  gchar *name;               ///< User name.
+  gchar *new_name;           ///< New user name.
+  gchar *password;           ///< Password.
+  gchar *comment;            ///< Comment.
+  array_t *roles;            ///< IDs of roles.
+  array_t *sources;          ///< Sources.
+  gchar *current_source;     ///< Current source, for collecting sources.
+  gchar *user_id;            ///< ID of user.
 } modify_user_data_t;
 
 /**
