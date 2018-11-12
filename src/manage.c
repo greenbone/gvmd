@@ -37,9 +37,18 @@
  * running the tasks.
  */
 
-/* time.h in glibc2 needs this for strptime. */
+/**
+ * @brief Enable extra functions.
+ *
+ * time.h in glibc2 needs this for strptime.
+ */
 #define _XOPEN_SOURCE
-/* pthread_sigmask () needs this with glibc < 2.19 */
+
+/**
+ * @brief Enable extra GNU functions.
+ *
+ * pthread_sigmask () needs this with glibc < 2.19 */
+ */
 #define _GNU_SOURCE
 
 #include "manage.h"
@@ -159,6 +168,9 @@
 
 extern volatile int termination_signal;
 
+/**
+ * @brief Number of minutes before overdue tasks timeout.
+ */
 static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
 
 
@@ -845,6 +857,14 @@ delete_reports (task_t task)
 
 /**
  * @brief Create a basic filter term to get report results.
+ *
+ * @param[in]  first            First row.
+ * @param[in]  rows             Number of rows.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ * @param[in]  autofp           Auto-FP value.
+ * @param[in]  min_qod          Minimum QOD.
+ *
+ * @return Filter term.
  */
 static gchar *
 report_results_filter_term (int first, int rows,
@@ -859,6 +879,14 @@ report_results_filter_term (int first, int rows,
 
 /**
  * @brief Create a new basic get_data_t struct to get report results.
+ *
+ * @param[in]  first            First row.
+ * @param[in]  rows             Number of rows.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ * @param[in]  autofp           Auto-FP value.
+ * @param[in]  min_qod          Minimum QOD.
+ *
+ * @return GET data struct.
  */
 get_data_t*
 report_results_get_data (int first, int rows,
@@ -873,7 +901,9 @@ report_results_get_data (int first, int rows,
   return get;
 }
 
-/* Array index of severity 0.0 in the severity_data_t.counts array */
+/**
+ * @brief Array index of severity 0.0 in the severity_data_t.counts array.
+ */
 #define ZERO_SEVERITY_INDEX 4
 
 /**
@@ -1760,6 +1790,8 @@ send_hosts_access_preferences (void)
 
 /**
  * @brief Gives a comma-separated list of a report's finished hosts.
+ *
+ * @param[in]  stopped_report  Report.
  *
  * @return String of finished hosts if found, NULL otherwise.
  */
@@ -3801,6 +3833,16 @@ task_scanner_options (task_t task, target_t target)
   return table;
 }
 
+/**
+ * @brief Delete an OSP scan.
+ *
+ * @param[in]   report_id   Report ID.
+ * @param[in]   host        Scanner host.
+ * @param[in]   port        Scanner port.
+ * @param[in]   ca_pub      CA Certificate.
+ * @param[in]   key_pub     Certificate.
+ * @param[in]   key_priv    Private key.
+ */
 static void
 delete_osp_scan (const char *report_id, const char *host, int port,
                  const char *ca_pub, const char *key_pub, const char *key_priv)
@@ -5576,6 +5618,13 @@ start_task (const char *task_id, char **report_id)
   return run_task (task_id, report_id, 0);
 }
 
+/**
+ * @brief Stop an OSP task.
+ *
+ * @param[in]   task  The task.
+ *
+ * @return 0 on success, else -1.
+ */
 static int
 stop_osp_task (task_t task)
 {
@@ -6393,6 +6442,9 @@ slave_system_report (const char *name, const char *duration,
 "produce more powerful reports.  Please contact your system administrator\n" \
 "for more information.\n\n"
 
+/**
+ * @brief Default duration for system reports.
+ */
 #define DEFAULT_DURATION 86400L
 
 /**
@@ -6649,11 +6701,13 @@ typedef struct
 } scheduled_task_t;
 
 /**
- * @brief Set UUID of user that scheduled the current task.
+ * @brief Create a schedule task structure.
  *
  * @param[in] task_uuid   UUID of task.
  * @param[in] owner_uuid  UUID of owner.
  * @param[in] owner_name  Name of owner.
+ *
+ * @return Scheduled task structure.
  */
 static scheduled_task_t *
 scheduled_task_new (const gchar* task_uuid, const gchar* owner_uuid,
@@ -7249,6 +7303,8 @@ report_format_param_type_from_name (const char *name)
 
 /**
  * @brief Return whether a name is a backup file name.
+ *
+ * @param[in]  name  Name.
  *
  * @return 0 if normal file name, 1 if backup file name.
  */
@@ -8661,7 +8717,7 @@ gvm_migrate_secinfo (int feed_type)
 /**
  * @brief Run a wizard.
  *
- * @param[in]  name              Wizard name.
+ * @param[in]  wizard_name       Wizard name.
  * @param[in]  run_command       Function to run GMP command.
  * @param[in]  run_command_data  Argument for run_command.
  * @param[in]  params            Wizard params.  Array of name_value_t.
