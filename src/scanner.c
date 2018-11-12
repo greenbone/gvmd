@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  scanner.c
+ * @brief GVM management layer: Scanner connection handling
+ *
+ * This file provides facilities for working with scanner connections.
+ */
+
 #include "scanner.h"
 #include "gmpd.h"
 #include "otp.h"

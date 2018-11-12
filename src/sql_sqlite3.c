@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file sql_sqlite3.c
+ * @brief Generic SQL interface: SQLite3 backend
+ *
+ * SQLite3 backend of the SQL interface.
+ */
+
 #include "sql.h"
 #include "utils.h"
 

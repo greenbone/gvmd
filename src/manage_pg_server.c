@@ -23,6 +23,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  manage_pg_server.c
+ * @brief GVM management layer: Postgres server-side functions.
+ *
+ * This file contains a server-side module for Postgres, that defines SQL
+ * functions for the management layer that need to be implemented in C.
+ */
+
 #include "manage_utils.h"
 
 #include "postgres.h"

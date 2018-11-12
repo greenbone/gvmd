@@ -23,6 +23,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  manage_pg.c
+ * @brief GVM management layer: PostgreSQL specific facilities
+ *
+ * This file contains the parts of the GVM management layer that need
+ * to be coded for each backend.  This is the PostgreSQL version.
+ */
+
 #include <strings.h> /* for strcasecmp() */
 #include <assert.h>  /* for assert() */
 

@@ -23,6 +23,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  manage_sqlite3.c
+ * @brief GVM management layer: SQLite3 specific facilities
+ *
+ * This file contains the parts of the GVM management layer that need
+ * to be coded for each backend.  This is the SQLite3 version.
+ */
+
 #define _XOPEN_SOURCE /* Glibc2 needs this for strptime. */
 
 #include "sql.h"

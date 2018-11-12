@@ -24,6 +24,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file manage_sql_secinfo.c
+ * @brief GVM management layer: SecInfo
+ *
+ * The SecInfo parts of the GVM management layer.
+ */
+
 #define _GNU_SOURCE
 
 #include "manage_sql.h"

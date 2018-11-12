@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file sql_pg.c
+ * @brief Generic SQL interface: PostgreSQL backend
+ *
+ * PostreSQL backend of the SQL interface.
+ */
+
 #include "sql.h"
 
 #include <assert.h>

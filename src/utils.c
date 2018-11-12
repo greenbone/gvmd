@@ -23,6 +23,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file utils.c
+ * @brief Generic utilities
+ *
+ * Generic helper utilities.  None of these are GVM specific.  They could
+ * be used anywhere.
+ */
+
 /* This is so that time.h includes strptime. */
 #define _XOPEN_SOURCE
 

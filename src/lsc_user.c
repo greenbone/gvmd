@@ -25,6 +25,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  lsc_user.c
+ * @brief GVM: Utilities for LSC credential package generation
+ *
+ * This file provides support for generating packages for LSC credentials.
+ */
+
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <stdio.h>

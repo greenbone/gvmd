@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  lsc_crypt.c
+ * @brief GVM: Utilities for LSC credential encryption
+ *
+ * This file provides support for encrypting LSC credentials.
+ */
+
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <stdlib.h>

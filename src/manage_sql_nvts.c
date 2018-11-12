@@ -24,6 +24,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file manage_sql_nvts.c
+ * @brief GVM management layer: NVTs
+ *
+ * The NVT parts of the GVM management layer.
+ */
+
 #define _GNU_SOURCE
 
 #include <assert.h>
