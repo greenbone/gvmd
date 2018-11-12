@@ -49,6 +49,8 @@ PG_MODULE_MAGIC;
  *
  * @param[in]  text_arg  Text.
  * @param[in]  length    Length to create.
+ *
+ * @return Freshly allocated string.
  */
 static char *
 textndup (text *text_arg, int length)
@@ -96,6 +98,8 @@ PG_FUNCTION_INFO_V1 (sql_hosts_contains);
  * @brief Return if argument 1 matches regular expression in argument 2.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_hosts_contains (PG_FUNCTION_ARGS)
@@ -134,6 +138,8 @@ PG_FUNCTION_INFO_V1 (sql_next_time);
  * @brief Get the next time given schedule times.
  *
  * This is a callback for a SQL function of four to six arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_next_time (PG_FUNCTION_ARGS)
@@ -174,6 +180,8 @@ PG_FUNCTION_INFO_V1 (sql_next_time_ical);
  * @brief Get the next time given schedule times.
  *
  * This is a callback for a SQL function of four to six arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_next_time_ical (PG_FUNCTION_ARGS)
@@ -220,6 +228,8 @@ PG_FUNCTION_INFO_V1 (sql_max_hosts);
  * @brief Return number of hosts.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_max_hosts (PG_FUNCTION_ARGS)
@@ -260,6 +270,8 @@ PG_FUNCTION_INFO_V1 (sql_level_min_severity);
  * @brief Return min severity of level.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_level_min_severity (PG_FUNCTION_ARGS)
@@ -292,6 +304,8 @@ PG_FUNCTION_INFO_V1 (sql_level_max_severity);
  * @brief Return max severity of level.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_level_max_severity (PG_FUNCTION_ARGS)
@@ -324,6 +338,8 @@ PG_FUNCTION_INFO_V1 (sql_severity_matches_ov);
  * @brief Return max severity of level.
  *
  * This is a callback for a SQL function of one argument.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_severity_matches_ov (PG_FUNCTION_ARGS)
@@ -351,6 +367,8 @@ PG_FUNCTION_INFO_V1 (sql_valid_db_resource_type);
  * @brief Return max severity of level.
  *
  * This is a callback for a SQL function of one argument.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_valid_db_resource_type (PG_FUNCTION_ARGS)
@@ -379,6 +397,8 @@ PG_FUNCTION_INFO_V1 (sql_regexp);
  * @brief Return if argument 1 matches regular expression in argument 2.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_regexp (PG_FUNCTION_ARGS)

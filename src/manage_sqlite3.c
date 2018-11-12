@@ -31,7 +31,12 @@
  * to be coded for each backend.  This is the SQLite3 version.
  */
 
-#define _XOPEN_SOURCE /* Glibc2 needs this for strptime. */
+/**
+ * @brief Enable extra functions.
+ *
+ * Glibc2 needs this for strptime.
+ */
+#define _XOPEN_SOURCE
 
 #include "sql.h"
 #include "manage.h"
@@ -115,6 +120,14 @@ tag_value (const gchar *tags, const gchar *tag);
 /* Session. */
 
 /**
+ * @brief WHERE clause for view vulns.
+ */
+#define VULNS_RESULTS_WHERE                                           \
+  " WHERE uuid IN"                                                    \
+  "   (SELECT nvt FROM results"                                       \
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
+
+/**
  * @brief Setup session.
  *
  * @param[in]  uuid  User UUID.
@@ -132,10 +145,6 @@ manage_session_init (const char *uuid)
 
   /* Vulnerabilities view must be created as temporary to allow using
    * tables from SCAP database */
-#define VULNS_RESULTS_WHERE                                           \
-  " WHERE uuid IN"                                                    \
-  "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
   sql ("DROP VIEW IF EXISTS vulns;");
   if (manage_scap_loaded ())
@@ -4109,6 +4118,8 @@ manage_attach_databases ()
 
 /**
  * @brief Remove external database.
+ *
+ * @param[in]  name  Database name.
  */
 void
 manage_db_remove (const gchar *name)

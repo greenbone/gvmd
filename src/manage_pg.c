@@ -506,6 +506,43 @@ sql_rename_column (const char *old_table, const char *new_table,
 }
 
 /**
+ * @brief Common overrides SQL for SQL functions.
+ */
+#define OVERRIDES_SQL(severity_sql)                         \
+ " coalesce"                                                \
+ "  ((SELECT overrides.new_severity"                        \
+ "    FROM overrides"                                       \
+ "    WHERE overrides.result_nvt = results.result_nvt"      \
+ "    AND ((overrides.owner IS NULL)"                       \
+ "         OR (overrides.owner ="                           \
+ "             (SELECT id FROM users"                       \
+ "              WHERE users.uuid"                           \
+ "                    = (SELECT uuid"                       \
+ "                       FROM current_credentials))))"      \
+ "    AND ((overrides.end_time = 0)"                        \
+ "         OR (overrides.end_time >= m_now ()))"            \
+ "    AND (overrides.task = results.task"                   \
+ "         OR overrides.task = 0)"                          \
+ "    AND (overrides.result = results.id"                   \
+ "         OR overrides.result = 0)"                        \
+ "    AND (overrides.hosts is NULL"                         \
+ "         OR overrides.hosts = ''"                         \
+ "         OR hosts_contains (overrides.hosts,"             \
+ "                            results.host))"               \
+ "    AND (overrides.port is NULL"                          \
+ "         OR overrides.port = ''"                          \
+ "         OR overrides.port = results.port)"               \
+ "    AND severity_matches_ov"                              \
+ "         (" severity_sql ", overrides.severity)"          \
+ "    ORDER BY overrides.result DESC,"                      \
+ "             overrides.task DESC,"                        \
+ "             overrides.port DESC,"                        \
+ "             overrides.severity ASC,"                     \
+ "             overrides.creation_time DESC"                \
+ "    LIMIT 1),"                                            \
+ "   " severity_sql ")"
+
+/**
  * @brief Create functions.
  *
  * @return 0 success, -1 error.
@@ -1323,40 +1360,6 @@ manage_create_sql_functions ()
            "                   $1);"
            "$$ LANGUAGE SQL;");
 
-#define OVERRIDES_SQL(severity_sql)                         \
- " coalesce"                                                \
- "  ((SELECT overrides.new_severity"                        \
- "    FROM overrides"                                       \
- "    WHERE overrides.result_nvt = results.result_nvt"      \
- "    AND ((overrides.owner IS NULL)"                       \
- "         OR (overrides.owner ="                           \
- "             (SELECT id FROM users"                       \
- "              WHERE users.uuid"                           \
- "                    = (SELECT uuid"                       \
- "                       FROM current_credentials))))"      \
- "    AND ((overrides.end_time = 0)"                        \
- "         OR (overrides.end_time >= m_now ()))"            \
- "    AND (overrides.task = results.task"                   \
- "         OR overrides.task = 0)"                          \
- "    AND (overrides.result = results.id"                   \
- "         OR overrides.result = 0)"                        \
- "    AND (overrides.hosts is NULL"                         \
- "         OR overrides.hosts = ''"                         \
- "         OR hosts_contains (overrides.hosts,"             \
- "                            results.host))"               \
- "    AND (overrides.port is NULL"                          \
- "         OR overrides.port = ''"                          \
- "         OR overrides.port = results.port)"               \
- "    AND severity_matches_ov"                              \
- "         (" severity_sql ", overrides.severity)"          \
- "    ORDER BY overrides.result DESC,"                      \
- "             overrides.task DESC,"                        \
- "             overrides.port DESC,"                        \
- "             overrides.severity ASC,"                     \
- "             overrides.creation_time DESC"                \
- "    LIMIT 1),"                                            \
- "   " severity_sql ")"
-
        /* min_qod column was added in version 147 */
       if (current_db_version >= 147)
         sql ("CREATE OR REPLACE FUNCTION report_severity (report integer,"
@@ -1997,6 +2000,14 @@ manage_create_result_indexes ()
   sql ("SELECT create_index ('results_by_task', 'results', 'task');");
   sql ("SELECT create_index ('results_by_date', 'results', 'date');");
 }
+
+/**
+ * @brief Results WHERE SQL for creating views in create_tabes.
+ */
+#define VULNS_RESULTS_WHERE                                           \
+  " WHERE uuid IN"                                                    \
+  "   (SELECT nvt FROM results"                                       \
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
 /**
  * @brief Create all tables.
@@ -3058,11 +3069,6 @@ create_tables ()
        "   UNION SELECT 1 AS autofp_selection"
        "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
 
-#define VULNS_RESULTS_WHERE                                           \
-  " WHERE uuid IN"                                                    \
-  "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
-
   sql ("DROP VIEW IF EXISTS vulns;");
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
@@ -3243,6 +3249,8 @@ manage_attach_databases ()
 
 /**
  * @brief Attach external databases.
+ *
+ * @param[in]  name  Database name.
  */
 void
 manage_db_remove (const gchar *name)

@@ -31,7 +31,11 @@
  * be used anywhere.
  */
 
-/* This is so that time.h includes strptime. */
+/**
+ * @brief Enable extra functions.
+ *
+ * time.h in glibc2 needs this for strptime.
+ */
 #define _XOPEN_SOURCE
 
 #include "utils.h"

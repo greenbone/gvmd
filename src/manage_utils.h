@@ -77,7 +77,9 @@ valid_db_resource_type (const char*);
 int
 hosts_str_contains (const char*, const char*, int);
 
-
+/**
+ * @brief Unused ical struct.
+ */
 typedef struct
 {
   icalcomponent *ical;

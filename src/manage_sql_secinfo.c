@@ -31,6 +31,9 @@
  * The SecInfo parts of the GVM management layer.
  */
 
+/**
+ * @brief Enable extra GNU functions.
+ */
 #define _GNU_SOURCE
 
 #include "manage_sql.h"
@@ -63,6 +66,9 @@
 
 /* Static variables. */
 
+/**
+ * @brief Commit size for updates.
+ */
 static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
 
 
@@ -3585,6 +3591,8 @@ update_scap_ovaldefs (int last_scap_update, int private)
 
 /**
  * @brief Write start time to sync lock file.
+ *
+ * @param[in]  lockfile  Lock file.
  */
 static void
 write_sync_start (int lockfile)
@@ -3616,6 +3624,8 @@ write_sync_start (int lockfile)
 
 /**
  * @brief Reinit a db.
+ *
+ * @param[in]  name  Name of db.
  *
  * @return 0 success, -1 error.
  */
