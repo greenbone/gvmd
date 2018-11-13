@@ -2374,7 +2374,7 @@ create_tables ()
    * result_new_severities. */
   manage_create_sql_functions ();
 
-  owned_clause = acl_where_owned_for_get ("override", "users.id", NULL);
+  owned_clause = acl_where_owned_for_get ("override", "users.id");
 
   sql ("CREATE OR REPLACE VIEW result_overrides AS"
        " SELECT users.id AS user,"
