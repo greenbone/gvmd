@@ -595,9 +595,12 @@ check_certificate_smime (const char *cert_str)
 }
 
 /**
- * @brief Check that a string represents a valid Certificate.
+ * @brief Check that a string represents a valid certificate.
  *
- * @param[in]  cert_str     Certificate string.
+ * The type of certificate accepted depends on the credential_type.
+ *
+ * @param[in]  cert_str         Certificate string.
+ * @param[in]  credential_type  The credential type to assume.
  *
  * @return 0 if valid, 1 otherwise.
  */
