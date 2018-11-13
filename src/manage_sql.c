@@ -60,12 +60,14 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <grp.h>
+#include <gpgme.h>
 
 #include <gvm/base/hosts.h>
 #include <gvm/base/pwpolicy.h>
 #include <gvm/base/logging.h>
 #include <gvm/base/proctitle.h>
 #include <gvm/util/fileutils.h>
+#include <gvm/util/gpgmeutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
 #include <gvm/util/radiusutils.h>
@@ -7068,6 +7070,69 @@ validate_alert_event_data (gchar *name, gchar* data, event_t event)
 }
 
 /**
+ * @brief Validate method data for the email method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ * @param[in]  for_modify      Whether to return error codes for modify_alert.
+ *
+ * @return 0 valid, 2 or 6: validation of email address failed, 
+ *         7 or 9 subject too long, 8 or 10 message too long,
+ *         60 recipient credential not found, 61 invalid recipient credential
+ *         type, -1 error. When for_modify is 0, the first code is returned,
+ *         otherwise the second one.
+ */
+int
+validate_email_data (alert_method_t method, const gchar *name, gchar **data,
+                     int for_modify)
+{
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "to_address") == 0
+      && validate_email_list (*data))
+    return for_modify ? 6 : 2;
+
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "from_address") == 0
+      && validate_email (*data))
+    return for_modify ? 6 : 2;
+
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "subject") == 0
+      && strlen (*data) > 80)
+    return for_modify ? 9 : 7;
+
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "message") == 0
+      && strlen (*data) > max_email_message_length)
+    return for_modify ? 10 : 8;
+
+  if (method == ALERT_METHOD_EMAIL
+      && strcmp (name, "recipient_credential") == 0
+      && *data && strcmp (*data, ""))
+    {
+      credential_t credential;
+      char *type;
+
+      if (find_credential_with_permission (*data, &credential, NULL))
+        return -1;
+      else if (credential == 0)
+        return 60;
+
+      type = credential_type (credential);
+      if (strcmp (type, "pgp")
+          && strcmp (type, "smime"))
+        {
+          free (type);
+          return 61;
+        }
+      free (type);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Validate method data for the SCP method.
  *
  * @param[in]  method          Method that data corresponds to.
@@ -7399,7 +7464,8 @@ check_alert_params (event_t event, alert_condition_t condition,
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
- *         workaround setting.
+ *         workaround setting, 60 recipient credential not found, 61 invalid
+ *         recipient credential type,
  *         99 permission denied, -1 error.
  */
 int
@@ -7571,44 +7637,13 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       data_name = sql_quote (item);
       data = sql_quote (item + strlen (item) + 1);
 
-      if (method == ALERT_METHOD_EMAIL
-          && strcmp (data_name, "to_address") == 0
-          && validate_email_list (data))
+      ret = validate_email_data (method, name, &data, 0);
+      if (ret)
         {
           g_free (data_name);
           g_free (data);
           sql_rollback ();
-          return 2;
-        }
-
-      if (method == ALERT_METHOD_EMAIL
-          && strcmp (data_name, "from_address") == 0
-          && validate_email (data))
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return 2;
-        }
-
-      if (method == ALERT_METHOD_EMAIL
-          && strcmp (data_name, "subject") == 0
-          && strlen (data) > 80)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return 7;
-        }
-
-      if (method == ALERT_METHOD_EMAIL
-          && strcmp (data_name, "message") == 0
-          && strlen (data) > max_email_message_length)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return 8;
+          return ret;
         }
 
       ret = validate_scp_data (method, data_name, &data);
@@ -7752,7 +7787,8 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
- *         workaround setting.
+ *         workaround setting, 60 recipient credential not found, 61 invalid
+ *         recipient credential type,
  *         99 permission denied, -1 internal error.
  */
 int
@@ -7962,44 +7998,13 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
           data_name = sql_quote (item);
           data = sql_quote (item + strlen (item) + 1);
 
-          if (method == ALERT_METHOD_EMAIL
-              && strcmp (data_name, "to_address") == 0
-              && validate_email_list (data))
+          ret = validate_email_data (method, name, &data, 1);
+          if (ret)
             {
               g_free (data_name);
               g_free (data);
               sql_rollback ();
-              return 6;
-            }
-
-          if (method == ALERT_METHOD_EMAIL
-              && strcmp (data_name, "from_address") == 0
-              && validate_email (data))
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return 6;
-            }
-
-          if (method == ALERT_METHOD_EMAIL
-              && strcmp (data_name, "subject") == 0
-              && strlen (data) > 80)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return 9;
-            }
-
-          if (method == ALERT_METHOD_EMAIL
-              && strcmp (data_name, "message") == 0
-              && strlen (data) > max_email_message_length)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return 10;
+              return ret;
             }
 
           ret = validate_scp_data (method, data_name, &data);
@@ -8833,8 +8838,9 @@ task_alert_iterator_active (iterator_t* iterator)
 }
 
 /**
- * @brief Send an email.
+ * @brief Write the content of a plain text email to a stream.
  *
+ * @param[in]  content_file  Stream to write the email content to.
  * @param[in]  to_address    Address to send to.
  * @param[in]  from_address  Address to send to.
  * @param[in]  subject       Subject of email.
@@ -8843,39 +8849,15 @@ task_alert_iterator_active (iterator_t* iterator)
  * @param[in]  attachment_type  Attachment MIME type, or NULL.
  * @param[in]  attachment_name  Base file name of the attachment, or NULL.
  * @param[in]  attachment_extension  Attachment file extension, or NULL.
- *
- * @return 0 success, -1 error.
  */
 static int
-email (const char *to_address, const char *from_address, const char *subject,
-       const char *body, const gchar *attachment, const char *attachment_type,
-       const char *attachment_name, const char *attachment_extension)
+email_write_content (FILE *content_file,
+                     const char *to_address, const char *from_address,
+                     const char *subject, const char *body,
+                     const gchar *attachment, const char *attachment_type,
+                     const char *attachment_name,
+                     const char *attachment_extension)
 {
-  int ret, content_fd, to_fd;
-  gchar *command;
-  GError *error = NULL;
-  char content_file_name[] = "/tmp/gvmd-content-XXXXXX";
-  char to_file_name[] = "/tmp/gvmd-to-XXXXXX";
-  FILE *content_file;
-
-  content_fd = mkstemp (content_file_name);
-  if (content_fd == -1)
-    {
-      g_warning ("%s: mkstemp: %s\n", __FUNCTION__, strerror (errno));
-      return -1;
-    }
-
-  g_debug ("   EMAIL to %s from %s subject: %s, body: %s",
-          to_address, from_address, subject, body);
-
-  content_file = fdopen (content_fd, "w");
-  if (content_file == NULL)
-    {
-      g_warning ("%s: %s", __FUNCTION__, strerror (errno));
-      close (content_fd);
-      return -1;
-    }
-
   if (fprintf (content_file,
                "To: %s\n"
                "From: %s\n"
@@ -8907,7 +8889,6 @@ email (const char *to_address, const char *from_address, const char *subject,
       < 0)
     {
       g_warning ("%s: output error", __FUNCTION__);
-      fclose (content_file);
       return -1;
     }
 
@@ -8928,7 +8909,6 @@ email (const char *to_address, const char *from_address, const char *subject,
           < 0)
         {
           g_warning ("%s: output error", __FUNCTION__);
-          fclose (content_file);
           return -1;
         }
 
@@ -8943,7 +8923,6 @@ email (const char *to_address, const char *from_address, const char *subject,
                 < 0)
               {
                 g_warning ("%s: output error", __FUNCTION__);
-                fclose (content_file);
                 return -1;
               }
             attachment += 72;
@@ -8957,7 +8936,6 @@ email (const char *to_address, const char *from_address, const char *subject,
                 < 0)
               {
                 g_warning ("%s: output error", __FUNCTION__);
-                fclose (content_file);
                 return -1;
               }
             break;
@@ -8968,7 +8946,6 @@ email (const char *to_address, const char *from_address, const char *subject,
           < 0)
         {
           g_warning ("%s: output error", __FUNCTION__);
-          fclose (content_file);
           return -1;
         }
     }
@@ -8979,9 +8956,312 @@ email (const char *to_address, const char *from_address, const char *subject,
     else
       {
         g_warning ("%s", strerror (errno));
-        fclose (content_file);
         return -1;
       }
+
+  return 0;
+}
+
+/**
+ * @brief  Create a PGP encrypted email from a plain text one.
+ *
+ * @param[in]  plain_file     Stream to read the plain text email from.
+ * @param[in]  encrypted_file Stream to write the encrypted email to.
+ * @param[in]  to_address     Address to send to.
+ * @param[in]  from_address   Address to send to.
+ * @param[in]  subject        Subject of email.
+ */
+static int
+email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
+                   const char *public_key,
+                   const char *to_address, const char *from_address,
+                   const char *subject)
+{
+  // Headers and metadata parts
+  if (fprintf (encrypted_file,
+               "To: %s\n"
+               "From: %s\n"
+               "Subject: %s\n"
+               "MIME-Version: 1.0\n"
+               "Content-Type: multipart/encrypted;\n"
+               " protocol=\"application/pgp-encrypted\";\n"
+               " boundary=\"=-=-=-=-=\"\n"
+               "\n"
+               "--=-=-=-=-=\n"
+               "Content-Type: application/pgp-encrypted\n"
+               "Content-Description: PGP/MIME version identification\n"
+               "\n"
+               "Version: 1\n"
+               "\n"
+               "--=-=-=-=-=\n"
+               "Content-Type: application/octet-stream\n"
+               "Content-Description: OpenPGP encrypted message\n"
+               "Content-Disposition: inline; filename=\"encrypted.asc\"\n"
+               "\n",
+               to_address,
+               from_address ? from_address
+                            : "automated@openvas.org",
+               subject) < 0)
+    {
+      g_warning ("%s: output error at headers", __FUNCTION__);
+      return -1;
+    }
+
+  // Encrypted message
+  if (gvm_pgp_pubkey_encrypt_stream (plain_file, encrypted_file, to_address,
+                                     public_key, -1))
+    {
+      return -1;
+    }
+
+  // End of message
+  if (fprintf (encrypted_file,
+               "\n"
+               "--=-=-=-=-=--\n") < 0)
+    {
+      g_warning ("%s: output error at end of message", __FUNCTION__);
+      return -1;
+    }
+
+  while (fflush (encrypted_file))
+    if (errno == EINTR)
+      continue;
+    else
+      {
+        g_warning ("%s", strerror (errno));
+        return -1;
+      }
+
+  return 0;
+}
+
+/**
+ * @brief  Create a S/MIME encrypted email from a plain text one.
+ *
+ * @param[in]  plain_file     Stream to read the plain text email from.
+ * @param[in]  encrypted_file Stream to write the encrypted email to.
+ * @param[in]  to_address     Address to send to.
+ * @param[in]  from_address   Address to send to.
+ * @param[in]  subject        Subject of email.
+ */
+static int
+email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
+                     const char *certificate,
+                     const char *to_address, const char *from_address,
+                     const char *subject)
+{
+  // Headers and metadata parts
+  if (fprintf (encrypted_file,
+               "To: %s\n"
+               "From: %s\n"
+               "Subject: %s\n"
+               "Content-Type: application/x-pkcs7-mime;"
+               " smime-type=enveloped-data; name=\"smime.p7m\"\n"
+               "Content-Disposition: attachment; filename=\"smime.p7m\"\n"
+               "Content-Transfer-Encoding: base64\n"
+               "\n",
+               to_address,
+               from_address ? from_address
+                            : "automated@openvas.org",
+               subject) < 0)
+    {
+      g_warning ("%s: output error at headers", __FUNCTION__);
+      return -1;
+    }
+
+  // Encrypted message
+  if (gvm_smime_encrypt_stream (plain_file, encrypted_file, to_address,
+                                certificate, -1))
+    {
+      g_warning ("%s: encryption failed", __FUNCTION__);
+      return -1;
+    }
+
+  // End of message
+  if (fprintf (encrypted_file, 
+               "\n") < 0)
+    {
+      g_warning ("%s: output error at end of message", __FUNCTION__);
+      return -1;
+    }
+
+  while (fflush (encrypted_file))
+    if (errno == EINTR)
+      continue;
+    else
+      {
+        g_warning ("%s", strerror (errno));
+        return -1;
+      }
+
+  return 0;
+}
+
+/**
+ * @brief Send an email.
+ *
+ * @param[in]  to_address    Address to send to.
+ * @param[in]  from_address  Address to send to.
+ * @param[in]  subject       Subject of email.
+ * @param[in]  body          Body of email.
+ * @param[in]  attachment    Attachment in line broken base64, or NULL.
+ * @param[in]  attachment_type  Attachment MIME type, or NULL.
+ * @param[in]  attachment_name  Base file name of the attachment, or NULL.
+ * @param[in]  attachment_extension  Attachment file extension, or NULL.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+email (const char *to_address, const char *from_address, const char *subject,
+       const char *body, const gchar *attachment, const char *attachment_type,
+       const char *attachment_name, const char *attachment_extension,
+       credential_t recipient_credential)
+{
+  int ret, content_fd, to_fd;
+  gchar *command;
+  GError *error = NULL;
+  char content_file_name[] = "/tmp/gvmd-content-XXXXXX";
+  char to_file_name[] = "/tmp/gvmd-to-XXXXXX";
+  FILE *content_file;
+
+  content_fd = mkstemp (content_file_name);
+  if (content_fd == -1)
+    {
+      g_warning ("%s: mkstemp: %s\n", __FUNCTION__, strerror (errno));
+      return -1;
+    }
+
+  g_debug ("   EMAIL to %s from %s subject: %s, body: %s",
+          to_address, from_address, subject, body);
+
+  content_file = fdopen (content_fd, "w");
+  if (content_file == NULL)
+    {
+      g_warning ("%s: Could not open content file: %s",
+                 __FUNCTION__, strerror (errno));
+      close (content_fd);
+      return -1;
+    }
+
+  if (recipient_credential)
+    {
+      iterator_t iterator;
+      init_credential_iterator_one (&iterator, recipient_credential);
+
+      if (next (&iterator))
+        {
+          const char *type = credential_iterator_type (&iterator);
+          const char *public_key = credential_iterator_public_key (&iterator);
+          const char *certificate
+            = credential_iterator_certificate (&iterator);
+          char plain_file_name[] = "/tmp/gvmd-plain-XXXXXX";
+          int plain_fd;
+          FILE *plain_file;
+
+          // Create plain text message
+          plain_fd = mkstemp (plain_file_name);
+          if (plain_fd == -1)
+            {
+              g_warning ("%s: mkstemp for plain text file: %s\n",
+                         __FUNCTION__, strerror (errno));
+              fclose (content_file);
+              unlink (content_file_name);
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+
+          plain_file = fdopen (plain_fd, "w+");
+          if (plain_file == NULL)
+            {
+              g_warning ("%s: Could not open plain text file: %s",
+                         __FUNCTION__, strerror (errno));
+              fclose (content_file);
+              unlink (content_file_name);
+              close (plain_fd);
+              unlink (plain_file_name);
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+
+          if (email_write_content (plain_file,
+                                   to_address, from_address,
+                                   subject, body, attachment,
+                                   attachment_type, attachment_name,
+                                   attachment_extension))
+            {
+              fclose (content_file);
+              unlink (content_file_name);
+              fclose (plain_file);
+              unlink (plain_file_name);
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+
+          rewind (plain_file);
+
+          // Create encrypted email
+          if (strcmp (type, "pgp") == 0)
+            {
+              ret = email_encrypt_gpg (plain_file, content_file,
+                                       public_key,
+                                       to_address, from_address, subject);
+
+              fclose (plain_file);
+              unlink (plain_file_name);
+
+              if (ret)
+                {
+                  g_warning ("%s: PGP encryption failed", __FUNCTION__);
+                  fclose (content_file);
+                  unlink (content_file_name);
+                  cleanup_iterator (&iterator);
+                  return -1;
+                }
+            }
+          else if (strcmp (type, "smime") == 0)
+            {
+              ret = email_encrypt_smime (plain_file, content_file,
+                                         certificate,
+                                         to_address, from_address, subject);
+
+              fclose (plain_file);
+              unlink (plain_file_name);
+
+              if (ret)
+                {
+                  g_warning ("%s: S/MIME encryption failed", __FUNCTION__);
+                  fclose (content_file);
+                  unlink (content_file_name);
+                  cleanup_iterator (&iterator);
+                  return -1;
+                }
+            }
+          else
+            {
+              g_warning ("%s: Invalid recipient credential type",
+                        __FUNCTION__);
+              fclose (content_file);
+              unlink (content_file_name);
+              fclose (plain_file);
+              unlink (plain_file_name);
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+        }
+
+      cleanup_iterator (&iterator);
+    }
+  else
+    {
+      if (email_write_content (content_file,
+                               to_address, from_address,
+                               subject, body, attachment, attachment_type,
+                               attachment_name, attachment_extension))
+        {
+          fclose (content_file);
+          return -1;
+        }
+    }
 
   to_fd = mkstemp (to_file_name);
   if (to_fd == -1)
@@ -11086,7 +11366,8 @@ email_secinfo (alert_t alert, task_t task, event_t event,
 {
   gchar *alert_subject, *message, *subject, *example, *list, *type, *base64;
   gchar *body;
-  char *notice;
+  char *notice, *recipient_credential_id;
+  credential_t recipient_credential;
   int ret, count;
 
   list = new_secinfo_list (event, event_data, alert, &count);
@@ -11163,16 +11444,28 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   g_free (message);
   g_free (list);
 
+  /* Get credential */
+  recipient_credential_id = alert_data (alert, "method",
+                                        "recipient_credential");
+  recipient_credential = 0;
+  if (recipient_credential_id)
+    {
+      find_credential_with_permission (recipient_credential_id,
+                                       &recipient_credential, NULL);
+    }
+
   /* Send email. */
 
   ret = email (to_address, from_address, subject,
                body, base64,
                base64 ? "text/plain" : NULL,
                base64 ? "secinfo-alert" : NULL,
-               base64 ? "txt" : NULL);
+               base64 ? "txt" : NULL,
+               recipient_credential);
   g_free (body);
   g_free (type);
   g_free (subject);
+  free (recipient_credential_id);
   return ret;
 }
 
@@ -11834,6 +12127,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
               gchar *fname_format, *file_name;
               gchar *report_id, *creation_time, *modification_time;
+              char *recipient_credential_id;
+              credential_t recipient_credential;
 
               fname_format
                 = sql_string ("SELECT value FROM settings"
@@ -11863,9 +12158,20 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                         "report", report_id,
                                         creation_time, modification_time,
                                         name, format_name);
+
+              /* Get credential */
+              recipient_credential_id = alert_data (alert, "method",
+                                                    "recipient_credential");
+              recipient_credential = 0;
+              if (recipient_credential_id)
+                {
+                  find_credential_with_permission (recipient_credential_id,
+                                                  &recipient_credential, NULL);
+                }
+
               ret = email (to_address, from_address, subject, body, base64,
                            type, file_name ? file_name : "openvas-report",
-                           extension);
+                           extension, recipient_credential);
 
               free (extension);
               free (type);
@@ -11881,6 +12187,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               g_free (report_id);
               g_free (creation_time);
               g_free (modification_time);
+              free (recipient_credential_id);
               return ret;
             }
           return -1;
@@ -40305,6 +40612,7 @@ validate_credential_username_for_format (const gchar *username,
  * @param[in]  given_password  Password for password-only credential, NULL to
  *                             generate credentials.
  * @param[in]  key_private     Private key, or NULL.
+ * @param[in]  key_public      Public key, or NULL.
  * @param[in]  certificate     Certificate, or NULL.
  * @param[in]  community          SNMP community string, or NULL.
  * @param[in]  auth_algorithm     SNMP authentication algorithm, or NULL.
@@ -40318,14 +40626,16 @@ validate_credential_username_for_format (const gchar *username,
  *         3 Failed to create public key from private key/password,
  *         4 Invalid credential type, 5 login username missing,
  *         6 password missing, 7 private key missing, 8 certificate missing,
- *         10 autogenerate not supported, 11 community missing,
- *         12 auth algorithm missing, 13 privacy password missing, 14 privacy
- *         algorithm missing, 15 invalid auth algorithm, 16 invalid privacy
- *         algorithm, 17 invalid certificate, 99 permission denied, -1 error.
+ *         9 public key missing, 10 autogenerate not supported,
+ *         11 community missing, 12 auth algorithm missing,
+ *         13 privacy password missing, 14 privacy algorithm missing,
+ *         15 invalid auth algorithm, 16 invalid privacy algorithm,
+ *         17 invalid certificate, 99 permission denied, -1 error.
  */
 int
 create_credential (const char* name, const char* comment, const char* login,
-                   const char* given_password, const char* key_private,
+                   const char* given_password,
+                   const char* key_private, const char* key_public,
                    const char* certificate, const char* community,
                    const char* auth_algorithm, const char* privacy_password,
                    const char* privacy_algorithm,
@@ -40369,7 +40679,9 @@ create_credential (const char* name, const char* comment, const char* login,
   if (given_type && strcmp (given_type, ""))
     {
       if (strcmp (given_type, "cc")
+          && strcmp (given_type, "pgp")
           && strcmp (given_type, "snmp")
+          && strcmp (given_type, "smime")
           && strcmp (given_type, "up")
           && strcmp (given_type, "usk"))
         {
@@ -40398,16 +40710,21 @@ create_credential (const char* name, const char* comment, const char* login,
 
   /* Validate credential data */
   auto_generate = ((given_password == NULL) && (key_private == NULL)
-                   && (certificate == NULL) && (community == NULL));
+                   && (key_public == NULL) && (certificate == NULL)
+                   && (community == NULL));
   ret = 0;
 
   if (auto_generate
       && (strcmp (quoted_type, "cc") == 0
+          || strcmp (quoted_type, "pgp") == 0
+          || strcmp (quoted_type, "smime") == 0
           || strcmp (quoted_type, "snmp") == 0))
     ret = 10; // Type does not support autogenerate
 
   if (login == NULL
       && strcmp (quoted_type, "cc")
+      && strcmp (quoted_type, "pgp")
+      && strcmp (quoted_type, "smime")
       && strcmp (quoted_type, "snmp"))
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
@@ -40419,8 +40736,12 @@ create_credential (const char* name, const char* comment, const char* login,
                || strcmp (quoted_type, "usk") == 0))
     ret = 7;
   else if (certificate == NULL && auto_generate == 0
-           && (strcmp (quoted_type, "cc") == 0))
+           && (strcmp (quoted_type, "cc") == 0
+               || strcmp (quoted_type, "smime") == 0))
     ret = 8;
+  else if (key_public == NULL && auto_generate == 0
+           && strcmp (quoted_type, "pgp") == 0)
+    ret = 9;
   else if (strcmp (quoted_type, "snmp") == 0)
     {
       int using_snmp_v3 = 0;
@@ -40482,6 +40803,9 @@ create_credential (const char* name, const char* comment, const char* login,
   if (login)
     set_credential_data (new_credential,
                          "username", login);
+  if (key_public)
+    set_credential_data (new_credential, "public_key", key_public);
+
   if (certificate)
     {
       gchar *certificate_truncated;
@@ -40507,7 +40831,7 @@ create_credential (const char* name, const char* comment, const char* login,
   if (key_private)
     {
       lsc_crypt_ctx_t crypt_ctx;
-      gchar *key_private_truncated, *key_public;
+      gchar *key_private_truncated, *generated_key_public;
 
       /* Try truncate the private key, but if that fails try get the public
        * key anyway, in case it's a key type that truncate_private_key does
@@ -40518,16 +40842,17 @@ create_credential (const char* name, const char* comment, const char* login,
       else
         return 3;
 
-      key_public = gvm_ssh_public_from_private (key_private_truncated
-                                                ? key_private_truncated
-                                                : key_private,
-                                                given_password);
-      if (key_public == NULL)
+      generated_key_public = gvm_ssh_public_from_private
+                                (key_private_truncated
+                                    ? key_private_truncated
+                                    : key_private,
+                                 given_password);
+      if (generated_key_public == NULL)
         {
           g_free (key_private_truncated);
           return 3;
         }
-      g_free (key_public);
+      g_free (generated_key_public);
 
       /* Encrypt password and private key.  Note that we do not need
          to call sql_quote because the result of the encryption is
@@ -40777,6 +41102,7 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   login               Login of Credential.
  * @param[in]   password            Password or passphrase of Credential.
  * @param[in]   key_private         Private key of Credential.
+ * @param[in]   key_public          Public key of Credential.
  * @param[in]   certificate         Certificate of Credential.
  * @param[in]   community           SNMP Community of Credential.
  * @param[in]   auth_algorithm      Authentication algorithm of Credential.
@@ -40795,7 +41121,8 @@ int
 modify_credential (const char *credential_id,
                    const char *name, const char *comment,
                    const char *login, const char* password,
-                   const char* key_private, const char* certificate,
+                   const char* key_private, const char* key_public,
+                   const char* certificate,
                    const char* community, const char* auth_algorithm,
                    const char* privacy_password, const char* privacy_algorithm,
                    const char* allow_insecure)
@@ -40910,6 +41237,11 @@ modify_credential (const char *credential_id,
         set_credential_privacy_algorithm (credential, privacy_algorithm);
     }
 
+  if (key_public && ret == 0)
+    {
+      set_credential_public_key (credential, key_public);
+    }
+
   if (ret)
     {
       sql_rollback ();
@@ -40925,7 +41257,7 @@ modify_credential (const char *credential_id,
 
       if (key_private)
         {
-          char *key_public = NULL;
+          char *generated_key_public = NULL;
           /* Try truncate the private key, but if that fails try get the
            * public key anyway, in case it's a key type that
            * truncate_private_key does not understand. */
@@ -40935,27 +41267,29 @@ modify_credential (const char *credential_id,
 
           if (strcmp (type, "cc") == 0)
             {
-              key_public = gvm_ssh_public_from_private
+              generated_key_public
+                  = gvm_ssh_public_from_private
                               (key_private_to_use,
                                NULL);
             }
           else if (strcmp (type, "usk") == 0)
             {
-              key_public = gvm_ssh_public_from_private
+              generated_key_public
+                  = gvm_ssh_public_from_private
                               (key_private_to_use,
                                password
                                 ? password
                                 : credential_iterator_password (&iterator));
             }
 
-          if (key_public == NULL)
+          if (generated_key_public == NULL)
             {
               sql_rollback ();
               cleanup_iterator (&iterator);
-              g_free (key_public);
+              g_free (generated_key_public);
               return 8;
             }
-          g_free (key_public);
+          g_free (generated_key_public);
         }
       else
         key_private_to_use = NULL;
@@ -41192,6 +41526,10 @@ delete_credential (const char *credential_id, int ultimate)
      " WHERE credential = credentials.id AND type = 'privacy_algorithm')",    \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'public_key')",           \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'secret')",               \
@@ -41242,6 +41580,10 @@ delete_credential (const char *credential_id, int ultimate)
    { "(SELECT value FROM credentials_trash_data"                              \
      " WHERE credential = credentials_trash.id"                               \
      "   AND type = 'privacy_algorithm')",                                    \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'public_key')",           \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
@@ -41306,7 +41648,8 @@ credential_in_use (credential_t credential)
                        " WHERE credential = %llu;",
                        credential)
            || sql_int ("SELECT count (*) FROM alert_method_data"
-                       " WHERE (name = 'scp_credential'"
+                       " WHERE (name = 'recipient_credential'"
+                       "        OR name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
                        "        OR name = 'tp_sms_credential'"
                        "        OR name = 'verinice_server_credential')"
@@ -41341,7 +41684,8 @@ trash_credential_in_use (credential_t credential)
                        "      = " G_STRINGIFY (LOCATION_TRASH) ";",
                        credential)
            || sql_int ("SELECT count (*) FROM alert_method_data_trash"
-                       " WHERE (name = 'scp_credential'"
+                       " WHERE (name = 'recipient_credential'"
+                       "        OR name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
                        "        OR name = 'tp_sms_credential'"
                        "        OR name = 'verinice_server_credential')"
@@ -41622,6 +41966,22 @@ set_credential_private_key (credential_t credential,
 }
 
 /**
+ * @brief Set the public key of a Credential.
+ *
+ * @param[in]  credential      The Credential.
+ * @param[in]  public_key      Public key.
+ */
+void
+set_credential_public_key (credential_t credential, const char *public_key)
+{
+  set_credential_data (credential, "public_key", public_key);
+  sql ("UPDATE credentials SET"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       credential);
+}
+
+/**
  * @brief Set the community, password and privacy password of a Credential.
  *
  * @param[in]  credential         The Credential.
@@ -41730,20 +42090,20 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 
   if (iterator->done)
     return NULL;
-  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
   if (type == NULL)
     {
       g_warning ("%s: NULL data type given", __FUNCTION__);
       return NULL;
     }
   else if (strcmp (type, "password") == 0)
-    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
   else if (strcmp (type, "private_key") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
-  else if (strcmp (type, "community") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
-  else if (strcmp (type, "privacy_password") == 0)
+  else if (strcmp (type, "community") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
+  else if (strcmp (type, "privacy_password") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
   else
     {
       g_warning ("%s: unknown data type \"%s\"", __FUNCTION__, type);
@@ -41828,6 +42188,17 @@ DEF_ACCESS (credential_iterator_auth_algorithm, GET_ITERATOR_COLUMN_COUNT + 4);
  */
 DEF_ACCESS (credential_iterator_privacy_algorithm,
             GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get the public key from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Public key, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_public_key,
+            GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get the password from a Credential iterator.

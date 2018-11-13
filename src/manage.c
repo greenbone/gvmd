@@ -169,28 +169,64 @@ static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
  *
  * @param[in]  certificate    The certificate.
  *
- * @return  The truncated private key as a newly allocated string or NULL.
+ * @return  The truncated certficate as a newly allocated string or NULL.
  */
 gchar *
 truncate_certificate (const gchar* certificate)
 {
-  gchar *cert_start, *cert_end;
-  cert_start = strstr (certificate, "-----BEGIN CERTIFICATE-----");
-  if (cert_start)
+  GString *cert_buffer;
+  gchar *current_pos, *cert_start, *cert_end;
+  gboolean done = FALSE;
+  cert_buffer = g_string_new ("");
+
+  current_pos = (gchar *) certificate;
+  while (done == FALSE && *current_pos != '\0')
     {
-      cert_end = strstr (cert_start, "-----END CERTIFICATE-----");
+      cert_start = NULL;
+      cert_end = NULL;
+      if (g_str_has_prefix (current_pos,
+                            "-----BEGIN CERTIFICATE-----"))
+        {
+          cert_start = current_pos;
+          cert_end = strstr (cert_start,
+                             "-----END CERTIFICATE-----");
+          if (cert_end)
+            cert_end += strlen ("-----END CERTIFICATE-----");
+          else
+            done = TRUE;
+        }
+      else if (g_str_has_prefix (current_pos,
+                                 "-----BEGIN TRUSTED CERTIFICATE-----"))
+        {
+          cert_start = current_pos;
+          cert_end = strstr (cert_start,
+                             "-----END TRUSTED CERTIFICATE-----");
+          if (cert_end)
+            cert_end += strlen ("-----END TRUSTED CERTIFICATE-----");
+          else
+            done = TRUE;
+        }
+      else if (g_str_has_prefix (current_pos,
+                                 "-----BEGIN PKCS7-----"))
+        {
+          cert_start = current_pos;
+          cert_end = strstr (cert_start,
+                             "-----END PKCS7-----");
+          if (cert_end)
+            cert_end += strlen ("-----END PKCS7-----");
+          else
+            done = TRUE;
+        }
 
-      if (cert_end == NULL)
-        return NULL;
-
-      cert_end += strlen ("-----END CERTIFICATE-----");
-
-      if (cert_end[0] == '\n')
-        cert_end++;
-
-      return g_strndup (cert_start, cert_end - cert_start);
+      if (cert_start && cert_end)
+        {
+          g_string_append_len (cert_buffer, cert_start, cert_end - cert_start);
+          g_string_append_c (cert_buffer, '\n');
+        }
+      current_pos++;
     }
-  return NULL;
+
+  return g_string_free (cert_buffer, cert_buffer->len == 0);
 }
 
 /**
