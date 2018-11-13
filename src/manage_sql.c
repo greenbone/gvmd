@@ -56281,7 +56281,7 @@ port_list_uuid (port_list_t port_list)
 /**
  * @brief Return the UUID of a port_range.
  *
- * @param[in]  port_range  Port_Range.
+ * @param[in]  port_range  Port Range.
  *
  * @return Newly allocated UUID if available, else NULL.
  */
@@ -56292,6 +56292,13 @@ port_range_uuid (port_range_t port_range)
                      port_range);
 }
 
+/**
+ * @brief Return whether a port list is predefined.
+ *
+ * @param[in]  port_list  Port List.
+ *
+ * @return Whether port list is predefined.
+ */
 static int
 port_list_is_predefined (port_list_t port_list)
 {
@@ -65610,6 +65617,9 @@ vuln_count (const get_data_t *get)
   return ret;
 }
 
+/**
+ * @brief Extra WHERE clause for vulns.
+ */
 static gchar*
 vulns_extra_where ()
 {
