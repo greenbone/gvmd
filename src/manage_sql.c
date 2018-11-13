@@ -164,7 +164,7 @@ const char *message_type_threat (const char *);
 
 int delete_reports (task_t);
 
-int delete_slave_task (const char *, int, const char *, const char *,
+int delete_slave_task (const gchar *, int, const gchar *, const gchar *,
                        const char *);
 
 int
@@ -201,16 +201,16 @@ void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
 void
-make_config_discovery (char *const, const char * const);
+make_config_discovery (char *const, char *const);
 
 void
 make_config_discovery_service_detection (char * const);
 
 void
-make_config_host_discovery (char *const, const char * const);
+make_config_host_discovery (char *const, char *const);
 
 void
-make_config_system_discovery (char *const, const char * const);
+make_config_system_discovery (char *const, char * const);
 
 int
 check_config_discovery (const char *);

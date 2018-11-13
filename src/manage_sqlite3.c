@@ -108,7 +108,7 @@ int
 user_owns (const char *, resource_t, int);
 
 int
-resource_name (const char *, const char *, int, gchar **);
+resource_name (const char *, const char *, int, char **);
 
 int
 resource_exists (const char *, resource_t, int);

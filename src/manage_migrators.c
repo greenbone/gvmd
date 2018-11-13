@@ -179,7 +179,7 @@
 int
 manage_create_migrate_51_to_52_convert ();
 
-int
+void
 manage_create_result_indexes ();
 
 
