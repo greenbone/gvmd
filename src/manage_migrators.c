@@ -180,7 +180,7 @@
 int
 manage_create_migrate_51_to_52_convert ();
 
-int
+void
 manage_create_result_indexes ();
 
 
@@ -6160,6 +6160,9 @@ migrate_78_to_79 ()
   return 0;
 }
 
+/**
+ * @brief Delete table for migrate_79_to_80.
+ */
 #define MIGRATE_79_to_80_DELETE(table)                                \
  sql ("DELETE FROM " table                                            \
       " WHERE owner IN (SELECT id FROM users WHERE %s);",             \
@@ -6328,6 +6331,9 @@ migrate_79_to_80_remove_users (const char *where)
        where);
 }
 
+/**
+ * @brief User access rules header for migrate_79_to_80.
+ */
 #define RULES_HEADER "# This file is managed by the OpenVAS Administrator.\n# Any modifications must keep to the format that the Administrator expects.\n"
 
 /**
@@ -8368,6 +8374,9 @@ migrate_115_to_116 ()
   return 0;
 }
 
+/**
+ * @brief ID SQL for migrate_116_to_117.
+ */
 #define ID_WHEN_WITH_TRASH(type)                                 \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
  "   COALESCE ((SELECT id FROM " G_STRINGIFY (type) "s"          \
@@ -8376,12 +8385,18 @@ migrate_115_to_116 ()
  "               WHERE uuid = attach_id),"                       \
  "             0)"
 
+/**
+ * @brief ID SQL for migrate_116_to_117.
+ */
 #define ID_WHEN_WITHOUT_TRASH(type)                              \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
  "   COALESCE ((SELECT id FROM " G_STRINGIFY (type) "s"          \
  "                WHERE uuid = attach_id),"                      \
  "             0)"
 
+/**
+ * @brief Trash SQL for migrate_116_to_117.
+ */
 #define RESOURCE_TRASH(type)                                     \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
  "  (SELECT CASE WHEN "                                          \
@@ -10201,6 +10216,12 @@ migrate_149_to_150 ()
   return 0;
 }
 
+/**
+ * @brief Permission SQL for migrate_150_to_151.
+ *
+ * @param[in]  name  Name.
+ * @param[in]  role  Role.
+ */
 #define INSERT_PERMISSION(name, role)                                          \
   sql ("INSERT INTO permissions"                                               \
        " (uuid, owner, name, comment, resource_type, resource, resource_uuid," \
@@ -10288,6 +10309,12 @@ migrate_151_to_152 ()
   return 0;
 }
 
+/**
+ * @brief Permission SQL for migrate_152_to_153.
+ *
+ * @param[in]  name  Name.
+ * @param[in]  role  Role.
+ */
 #define DELETE_PERMISSION(name, role)                                          \
   sql ("DELETE FROM permissions"                                               \
        " WHERE subject_type = 'role'"                                          \
@@ -11881,7 +11908,14 @@ migrate_162_to_163 ()
   return 0;
 }
 
-
+/**
+ * @brief Chart SQL for migrate_163_to_164.
+ *
+ * @param[in]  type        Type.
+ * @param[in]  default     Default
+ * @param[in]  left_uuid   Left UUID.
+ * @param[in]  right_uuid  Left UUID.
+ */
 #define UPDATE_CHART_SETTINGS(type, default, left_uuid, right_uuid)          \
   sql ("INSERT INTO settings (owner, uuid, name, value)"                     \
        " SELECT owner, '%s', 'Dummy', 'left-' || '%s' FROM settings"         \
@@ -11909,6 +11943,9 @@ migrate_162_to_163 ()
        " WHERE uuid = '%s';",                                                \
        right_uuid);
 
+/**
+ * @brief Dashboard SQL for migrate_163_to_164.
+ */
 #define UPDATE_DASHBOARD_SETTINGS(type, default,                             \
                                   uuid_1, uuid_2, uuid_3, uuid_4,            \
                                   filter_1, filter_2, filter_3, filter_4)    \
@@ -12463,6 +12500,8 @@ migrate_165_to_166 ()
 
 /**
  * @brief Mark a report format predefined.
+ *
+ * @param[in]  uuid  UUID of report format.
  */
 static void
 insert_predefined (const gchar *uuid)
@@ -14865,6 +14904,11 @@ migrate_197_to_198 ()
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
+/**
+ * @brief Conditional for database_migrators.
+ *
+ * Expands to the given function only if the backend is SQLite3.
+ */
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else

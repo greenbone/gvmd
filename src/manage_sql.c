@@ -32,6 +32,9 @@
  * management library.
  */
 
+/**
+ * @brief Enable extra GNU functions.
+ */
 #define _GNU_SOURCE
 
 #include "manage_sql.h"
@@ -157,7 +160,7 @@ const char *message_type_threat (const char *);
 
 int delete_reports (task_t);
 
-int delete_slave_task (const char *, int, const char *, const char *,
+int delete_slave_task (const gchar *, int, const gchar *, const gchar *,
                        const char *);
 
 int
@@ -194,16 +197,16 @@ void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
 void
-make_config_discovery (char *const, const char * const);
+make_config_discovery (char *const, char *const);
 
 void
 make_config_discovery_service_detection (char * const);
 
 void
-make_config_host_discovery (char *const, const char * const);
+make_config_host_discovery (char *const, char *const);
 
 void
-make_config_system_discovery (char *const, const char * const);
+make_config_system_discovery (char *const, char * const);
 
 int
 check_config_discovery (const char *);
@@ -262,9 +265,6 @@ valid_type (const char*);
 
 static gboolean
 find_user_by_name (const char *, user_t *user);
-
-gboolean
-find_role (const char *, group_t *);
 
 static gboolean
 find_role_with_permission (const char *, role_t *, const char *);
@@ -370,15 +370,6 @@ find_trash_task (const char*, task_t*);
 static gboolean
 find_trash_report_with_permission (const char *, report_t *, const char *);
 
-static const char*
-agent_iterator_installer (iterator_t*);
-
-static gsize
-agent_iterator_installer_size (iterator_t*);
-
-static const char*
-agent_iterator_installer_signature_64 (iterator_t*);
-
 static int
 cleanup_schedule_times ();
 
@@ -411,9 +402,6 @@ report_host_dead (report_host_t);
 
 static int
 report_host_result_count (report_host_t);
-
-static const char*
-report_format_param_iterator_type_regex (iterator_t *);
 
 static int
 set_credential_data (credential_t, const char*, const char*);
@@ -783,6 +771,8 @@ gmp_command_takes_resource (const char* name)
  * @param[in]   name      Name of resource to check for.
  * @param[in]   type      Type of resource.
  * @param[in]   resource  Resource to ignore, 0 otherwise.
+ *
+ * @return Whether resource with name exists.
  */
 static gboolean
 resource_with_name_exists (const char *name, const char *type,
@@ -822,6 +812,8 @@ resource_with_name_exists (const char *name, const char *type,
  * @param[in]   name      Name of resource to check for.
  * @param[in]   type      Type of resource.
  * @param[in]   resource  Resource to ignore, 0 otherwise.
+ *
+ * @return Whether resource with name exists.
  */
 static gboolean
 resource_with_name_exists_global (const char *name, const char *type,
@@ -1270,6 +1262,8 @@ nvts_check_time ()
 
 /**
  * @brief Get last time SCAP SecInfo alerts were checked.
+ *
+ * @return Last time SCAP was checked.
  */
 static int
 scap_check_time ()
@@ -1286,6 +1280,8 @@ scap_check_time ()
 
 /**
  * @brief Get last time CERT SecInfo alerts were checked.
+ *
+ * @return Last time CERT was checked.
  */
 static int
 cert_check_time ()
@@ -1358,6 +1354,8 @@ manage_option_cleanup ()
  * @brief Copy an array of columns.
  *
  * @param[in]  columns  Columns.
+ *
+ * @return Freshly allocated array.
  */
 static column_t *
 column_array_copy (column_t *columns)
@@ -5834,7 +5832,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   return 0;
 }
 
+/**
+ * @brief Offset for aggregate iterator.
+ */
 #define AGGREGATE_ITERATOR_OFFSET 3
+
+/**
+ * @brief Number of stats, for aggregate iterator.
+ */
 #define AGGREGATE_ITERATOR_N_STATS 4
 
 /**
@@ -6148,6 +6153,10 @@ resource_predefined (const gchar *type, resource_t resource)
  * @brief Mark a resource as predefined.
  *
  * Currently only report formats use this.
+ *
+ * @param[in]  type      Resource type.
+ * @param[in]  resource  Resource.
+ * @param[in]  enable    If true mark as predefined, else remove mark.
  */
 static void
 resource_set_predefined (const gchar *type, resource_t resource, int enable)
@@ -10768,6 +10777,14 @@ send_to_verinice (const char *url, const char *username, const char *password,
 /**
  * @brief Convert an XML report and send it to a TippingPoint SMS.
  *
+ * @param[in]  report           Report to send.
+ * @param[in]  report_size      Size of report.
+ * @param[in]  username         Username.
+ * @param[in]  password         Password.
+ * @param[in]  hostname         Hostname.
+ * @param[in]  certificate      Certificate.
+ * @param[in]  cert_workaround  Whether to use cert workaround.
+ * @param[out] message          Custom error message of the script.
  *
  * @return 0 success, -1 error.
  */
@@ -18599,6 +18616,8 @@ set_report_scheduled (report_t report)
  * @brief Get a report's scheduled flag.
  *
  * @param[in]   report  Report.
+ *
+ * @return Scheduled flag.
  */
 static int
 report_scheduled (report_t report)
@@ -19475,9 +19494,11 @@ task_schedule_next_time (task_t task)
 }
 
 /**
- * @brief Set the next time a scheduled task will be due.
+ * @brief Get the next time a scheduled task will be due.
  *
  * @param[in]  task_id  Task UUID.
+ *
+ * @return Next scheduled time.
  */
 time_t
 task_schedule_next_time_uuid (const gchar *task_id)
@@ -20618,9 +20639,11 @@ detect_cleanup:
 /* Prognostics. */
 
 /**
- * @brief Return highest CVE for an App.
+ * @brief Return highest CVSS for an App.
  *
  * @param[in]  cpe  CPE.
+ *
+ * @return Highest CVSS.
  */
 static double
 cpe_highest_cvss (const char *cpe)
@@ -20724,6 +20747,8 @@ prognosis_iterator_cvss_double (iterator_t* iterator)
  *
  * @param[in]  report_host  Report host.
  * @param[in]  app          CPE.
+ *
+ * @return Location if there is one, else NULL.
  */
 gchar *
 app_location (report_host_t report_host, const gchar *app)
@@ -24940,6 +24965,8 @@ set_scan_end_time_otp (report_t report, const char* timestamp)
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
+ *
+ * @return End time.
  */
 int
 scan_host_end_time (report_t report, const char* host)
@@ -26780,6 +26807,8 @@ add_port (GTree *ports, iterator_t *results)
  * @param[in]  key     Port.
  * @param[in]  value   Threat.
  * @param[in]  data    Host and stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_port (gpointer key, gpointer value, gpointer data)
@@ -26808,6 +26837,8 @@ print_host_port (gpointer key, gpointer value, gpointer data)
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports (gpointer key, gpointer value, gpointer stream)
@@ -26826,6 +26857,8 @@ print_host_ports (gpointer key, gpointer value, gpointer stream)
  * @param[in]  key     Port.
  * @param[in]  value   Threat.
  * @param[in]  ports   Ports array.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 array_add_port (gpointer key, gpointer value, gpointer ports)
@@ -26844,6 +26877,8 @@ array_add_port (gpointer key, gpointer value, gpointer ports)
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
@@ -26888,6 +26923,8 @@ print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
  *
  * @param[in]  one  First.
  * @param[in]  two  Second.
+ *
+ * @return 1 one greater, -1 two greater, 0 equal.
  */
 static gint
 compare_ports_severity (gconstpointer one, gconstpointer two)
@@ -26908,6 +26945,8 @@ compare_ports_severity (gconstpointer one, gconstpointer two)
  *
  * @param[in]  one  First.
  * @param[in]  two  Second.
+ *
+ * @return 1 one less, -1 two less, 0 equal.
  */
 static gint
 compare_ports_severity_desc (gconstpointer one, gconstpointer two)
@@ -26930,6 +26969,8 @@ compare_ports_severity_desc (gconstpointer one, gconstpointer two)
  * @param[in]  value      Port tree.
  * @param[in]  stream     Stream.
  * @param[in]  ascending  Ascending or descending.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports_by_severity (gpointer key, gpointer value, gpointer stream,
@@ -26985,6 +27026,8 @@ print_host_ports_by_severity (gpointer key, gpointer value, gpointer stream,
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports_by_severity_desc (gpointer key, gpointer value,
@@ -26999,6 +27042,8 @@ print_host_ports_by_severity_desc (gpointer key, gpointer value,
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports_by_severity_asc (gpointer key, gpointer value,
@@ -27012,6 +27057,8 @@ print_host_ports_by_severity_asc (gpointer key, gpointer value,
  *
  * @param[in]  host_ports  Ports.
  * @param[in]  dummy       Dummy.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 free_host_ports (GTree *host_ports, gpointer dummy)
@@ -27029,6 +27076,8 @@ free_host_ports (GTree *host_ports, gpointer dummy)
  * @param[in]  host         Host.
  * @param[in]  report_host  Report host.
  * @param[in]  position     Position from end.
+ *
+ * @return N'th last report_host.
  */
 gboolean
 host_nthlast_report_host (const char *host, report_host_t *report_host,
@@ -27357,6 +27406,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
 /**
  * @brief Count a report's total number of hosts.
  *
+ * @param[in]  report  Report.
+ *
  * @return Host count.
  */
 int
@@ -27389,7 +27440,10 @@ report_result_host_count (report_t report, int min_qod)
 
 /**
  * @brief Count a report's total number of tcp/ip ports.
- * @brief Ignores ports entries in "general/..." form.
+ *
+ * Ignores port entries in "general/..." form.
+ *
+ * @param[in]  report  Report.
  *
  * @return Ports count.
  */
@@ -27405,6 +27459,8 @@ report_port_count (report_t report)
 
 /**
  * @brief Count a report's total number of closed cves.
+ *
+ * @param[in]  report  Report.
  *
  * @return Closed CVE count.
  */
@@ -27426,6 +27482,8 @@ report_closed_cve_count (report_t report)
 /**
  * @brief Count a report's total number of vulnerabilities.
  *
+ * @param[in]  report  Report.
+ *
  * @return Vulnerabilities count.
  */
 static int
@@ -27439,6 +27497,8 @@ report_vuln_count (report_t report)
 
 /**
  * @brief Count a report's total number of detected Operating Systems.
+ *
+ * @param[in]  report  Report.
  *
  * @return OS count.
  */
@@ -27455,6 +27515,8 @@ report_os_count (report_t report)
 /**
  * @brief Count a report's total number of detected Apps.
  *
+ * @param[in]  report  Report.
+ *
  * @return App count.
  */
 static int
@@ -27470,6 +27532,8 @@ report_app_count (report_t report)
 /**
  * @brief Count a report's total number of found SSL Certificates.
  *
+ * @param[in]  report  Report.
+ *
  * @return SSL Certificates count.
  */
 static int
@@ -27484,6 +27548,8 @@ report_ssl_cert_count (report_t report)
 
 /**
  * @brief Count a report's total number of error messages.
+ *
+ * @param[in]  report  Report.
  *
  * @return Error Messages count.
  */
@@ -30441,6 +30507,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
  * @param[in]   xml_start      Path of file containing start of report.
  * @param[in]   xml_full       Path to file to print full report to.
  * @param[in]   report_format  Format of report that will be created from XML.
+ *
+ * @return 0 success, -1 error.
  */
 static int
 print_report_xml_end (gchar *xml_start, gchar *xml_full,
@@ -41715,6 +41783,8 @@ trash_credential_writable (credential_t credential)
  *
  * @param[in]  credential     The Credential.
  * @param[in]  value_name     Name of the value.
+ *
+ * @return Value.
  */
 gchar *
 credential_value (credential_t credential, const char* value_name)
@@ -41733,6 +41803,8 @@ credential_value (credential_t credential, const char* value_name)
  *
  * @param[in]  credential     The Credential.
  * @param[in]  value_name     Name of the value.
+ *
+ * @return Value.
  */
 gchar *
 credential_encrypted_value (credential_t credential, const char* value_name)
@@ -42068,8 +42140,13 @@ init_credential_iterator (iterator_t* iterator, const get_data_t *get)
                             TRUE);
 }
 
-/*
- * Common code for getting possibly encrypted data from credentials.
+/**
+ * @brief Get possibly encrypted data from credentials.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  type      Type of data.
+ *
+ * @return Data.
  */
 static const char*
 credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
@@ -43448,145 +43525,6 @@ trash_agent_writable (agent_t agent)
 }
 
 /**
- * @brief Verify an agent.
- *
- * @param[in]  agent_id  Agent UUID.
- *
- * @return 0 success, 1 failed to find agent, 99 permission denied, -1 error.
- */
-int
-verify_agent (const char *agent_id)
-{
-  agent_t agent;
-  int agent_trust = TRUST_UNKNOWN;
-  iterator_t agents;
-  get_data_t get;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("verify_agent") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  agent = 0;
-  if (find_agent_with_permission (agent_id, &agent, "verify_agent"))
-    return -1;
-
-  if (agent == 0)
-    return 1;
-
-  memset (&get, 0, sizeof (get));
-  get.filter = g_strdup_printf ("uuid=%s owner=any permission=any", agent_id);
-  init_agent_iterator (&agents, &get);
-  g_free (get.filter);
-  if (next (&agents))
-    {
-      const char *signature_64;
-      gchar *agent_signature = NULL;
-      gsize agent_signature_size;
-
-      signature_64 = agent_iterator_installer_signature_64 (&agents);
-
-      g_debug ("%s: finding signature\n", __FUNCTION__);
-
-      find_signature ("agents",
-                      agent_iterator_installer_filename (&agents),
-                      &agent_signature,
-                      &agent_signature_size,
-                      NULL);
-
-      if ((signature_64 && strlen (signature_64))
-          || agent_signature)
-        {
-          const char *installer;
-          gsize installer_size;
-
-          installer = agent_iterator_installer (&agents);
-          installer_size = agent_iterator_installer_size (&agents);
-
-          if (signature_64 && strlen (signature_64))
-            {
-              gchar *signature;
-              gsize signature_length;
-
-              /* Try the signature from the database. */
-
-              g_debug ("%s: trying database signature\n", __FUNCTION__);
-
-              signature = (gchar*) g_base64_decode (signature_64,
-                                                    &signature_length);
-
-              if (verify_signature (installer, installer_size, signature,
-                                    signature_length, &agent_trust))
-                {
-                  g_warning ("%s: verify_signature error\n", __FUNCTION__);
-                  cleanup_iterator (&agents);
-                  g_free (agent_signature);
-                  sql_rollback ();
-                  return -1;
-                }
-            }
-
-          /* If the database signature is empty or the database
-           * signature is bad, and there is a feed signature, then
-           * try the feed signature. */
-          if (((agent_trust == TRUST_NO)
-               || (agent_trust == TRUST_UNKNOWN))
-              && agent_signature)
-            {
-              g_debug ("%s: trying feed signature\n", __FUNCTION__);
-
-              if (verify_signature (installer, installer_size, agent_signature,
-                                    strlen (agent_signature), &agent_trust))
-                {
-                  g_warning ("%s: verify_signature error\n", __FUNCTION__);
-                  cleanup_iterator (&agents);
-                  g_free (agent_signature);
-                  sql_rollback ();
-                  return -1;
-                }
-
-              if (agent_trust == TRUST_YES)
-                {
-                  gchar *quoted_signature, *base64;
-                  base64 = (strlen (agent_signature)
-                            ? g_base64_encode ((guchar*) agent_signature,
-                                               agent_signature_size)
-                            : g_strdup (""));
-                  quoted_signature = sql_quote (base64);
-                  g_free (base64);
-                  sql ("UPDATE agents SET installer_signature_64 = '%s'"
-                       " WHERE id = %llu;",
-                       quoted_signature,
-                       agent);
-                  g_free (quoted_signature);
-                }
-            }
-          g_free (agent_signature);
-        }
-    }
-  else
-    {
-      g_warning ("%s: agent iterator empty\n", __FUNCTION__);
-      cleanup_iterator (&agents);
-      sql_rollback ();
-      return -1;
-    }
-  cleanup_iterator (&agents);
-
-  sql ("UPDATE agents SET installer_trust = %i, installer_trust_time = %i"
-       " WHERE id = %llu;",
-       agent_trust,
-       time (NULL),
-       agent);
-  sql_commit ();
-
-  return 0;
-}
-
-/**
  * @brief Return the UUID of an agent.
  *
  * @param[in]   agent  Agent.
@@ -43921,6 +43859,145 @@ agent_count (const get_data_t *get)
                 0, 0, 0, TRUE);
 }
 
+/**
+ * @brief Verify an agent.
+ *
+ * @param[in]  agent_id  Agent UUID.
+ *
+ * @return 0 success, 1 failed to find agent, 99 permission denied, -1 error.
+ */
+int
+verify_agent (const char *agent_id)
+{
+  agent_t agent;
+  int agent_trust = TRUST_UNKNOWN;
+  iterator_t agents;
+  get_data_t get;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("verify_agent") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  agent = 0;
+  if (find_agent_with_permission (agent_id, &agent, "verify_agent"))
+    return -1;
+
+  if (agent == 0)
+    return 1;
+
+  memset (&get, 0, sizeof (get));
+  get.filter = g_strdup_printf ("uuid=%s owner=any permission=any", agent_id);
+  init_agent_iterator (&agents, &get);
+  g_free (get.filter);
+  if (next (&agents))
+    {
+      const char *signature_64;
+      gchar *agent_signature = NULL;
+      gsize agent_signature_size;
+
+      signature_64 = agent_iterator_installer_signature_64 (&agents);
+
+      g_debug ("%s: finding signature\n", __FUNCTION__);
+
+      find_signature ("agents",
+                      agent_iterator_installer_filename (&agents),
+                      &agent_signature,
+                      &agent_signature_size,
+                      NULL);
+
+      if ((signature_64 && strlen (signature_64))
+          || agent_signature)
+        {
+          const char *installer;
+          gsize installer_size;
+
+          installer = agent_iterator_installer (&agents);
+          installer_size = agent_iterator_installer_size (&agents);
+
+          if (signature_64 && strlen (signature_64))
+            {
+              gchar *signature;
+              gsize signature_length;
+
+              /* Try the signature from the database. */
+
+              g_debug ("%s: trying database signature\n", __FUNCTION__);
+
+              signature = (gchar*) g_base64_decode (signature_64,
+                                                    &signature_length);
+
+              if (verify_signature (installer, installer_size, signature,
+                                    signature_length, &agent_trust))
+                {
+                  g_warning ("%s: verify_signature error\n", __FUNCTION__);
+                  cleanup_iterator (&agents);
+                  g_free (agent_signature);
+                  sql_rollback ();
+                  return -1;
+                }
+            }
+
+          /* If the database signature is empty or the database
+           * signature is bad, and there is a feed signature, then
+           * try the feed signature. */
+          if (((agent_trust == TRUST_NO)
+               || (agent_trust == TRUST_UNKNOWN))
+              && agent_signature)
+            {
+              g_debug ("%s: trying feed signature\n", __FUNCTION__);
+
+              if (verify_signature (installer, installer_size, agent_signature,
+                                    strlen (agent_signature), &agent_trust))
+                {
+                  g_warning ("%s: verify_signature error\n", __FUNCTION__);
+                  cleanup_iterator (&agents);
+                  g_free (agent_signature);
+                  sql_rollback ();
+                  return -1;
+                }
+
+              if (agent_trust == TRUST_YES)
+                {
+                  gchar *quoted_signature, *base64;
+                  base64 = (strlen (agent_signature)
+                            ? g_base64_encode ((guchar*) agent_signature,
+                                               agent_signature_size)
+                            : g_strdup (""));
+                  quoted_signature = sql_quote (base64);
+                  g_free (base64);
+                  sql ("UPDATE agents SET installer_signature_64 = '%s'"
+                       " WHERE id = %llu;",
+                       quoted_signature,
+                       agent);
+                  g_free (quoted_signature);
+                }
+            }
+          g_free (agent_signature);
+        }
+    }
+  else
+    {
+      g_warning ("%s: agent iterator empty\n", __FUNCTION__);
+      cleanup_iterator (&agents);
+      sql_rollback ();
+      return -1;
+    }
+  cleanup_iterator (&agents);
+
+  sql ("UPDATE agents SET installer_trust = %i, installer_trust_time = %i"
+       " WHERE id = %llu;",
+       agent_trust,
+       time (NULL),
+       agent);
+  sql_commit ();
+
+  return 0;
+}
+
 
 /* Notes. */
 
@@ -43940,8 +44017,15 @@ find_note_with_permission (const char* uuid, note_t* note,
   return find_resource_with_permission ("note", uuid, note, permission, 0);
 }
 
+/**
+ * @brief Check if an NVT exists.
+ *
+ * @param[in]  nvt  NVT OID.
+ *
+ * @return 1 if exists, else 0.
+ */
 static gboolean
-nvt_exists(const char* nvt)
+nvt_exists (const char* nvt)
 {
   gchar *quoted_nvt;
 
@@ -49729,6 +49813,9 @@ lookup_report_format (const char* name, report_format_t* report_format)
  *
  * @param[in]  one  First.
  * @param[in]  two  Second.
+ *
+ * @return Less than, equal to, or greater than zero if one is found to be
+ *         less than, to match, or be greater than two.
  */
 static gint
 compare_files (gconstpointer one, gconstpointer two)
@@ -51045,203 +51132,6 @@ delete_report_format (const char *report_format_id, int ultimate)
 
   sql_commit ();
 
-  return 0;
-}
-
-/**
- * @brief Verify a report format.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 0 success, -1 error.
- */
-static int
-verify_report_format_internal (report_format_t report_format)
-{
-  int format_trust = TRUST_UNKNOWN;
-  iterator_t formats;
-  get_data_t get;
-  gchar *uuid;
-
-  memset(&get, '\0', sizeof (get));
-  get.id = report_format_uuid (report_format);
-  init_report_format_iterator (&formats, &get);
-  if (next (&formats))
-    {
-      const char *signature;
-      gchar *format_signature = NULL;
-      gsize format_signature_size;
-
-      signature = report_format_iterator_signature (&formats);
-
-      find_signature ("report_formats", get_iterator_uuid (&formats),
-                      &format_signature, &format_signature_size, &uuid);
-
-      if ((signature && strlen (signature))
-          || format_signature)
-        {
-          GString *format;
-          file_iterator_t files;
-          iterator_t params;
-
-          format = g_string_new ("");
-
-          g_string_append_printf
-           (format, "%s%s%s%i", uuid ? uuid : get_iterator_uuid (&formats),
-            report_format_iterator_extension (&formats),
-            report_format_iterator_content_type (&formats),
-            report_format_predefined (report_format) & 1);
-          g_free (uuid);
-
-          init_report_format_file_iterator (&files, report_format);
-          while (next_file (&files))
-            {
-              gchar *content = file_iterator_content_64 (&files);
-              g_string_append_printf (format,
-                                      "%s%s",
-                                      file_iterator_name (&files),
-                                      content);
-              g_free (content);
-            }
-          cleanup_file_iterator (&files);
-
-          init_report_format_param_iterator (&params,
-                                             report_format,
-                                             0,
-                                             1,
-                                             NULL);
-          while (next (&params))
-            {
-              g_string_append_printf
-               (format,
-                "%s%s",
-                report_format_param_iterator_name (&params),
-                report_format_param_iterator_type_name (&params));
-
-              if (report_format_param_iterator_type_min (&params) > LLONG_MIN)
-                g_string_append_printf
-                 (format,
-                  "%lli",
-                  report_format_param_iterator_type_min (&params));
-
-              if (report_format_param_iterator_type_max (&params) < LLONG_MAX)
-                g_string_append_printf
-                 (format,
-                  "%lli",
-                  report_format_param_iterator_type_max (&params));
-
-              g_string_append_printf
-               (format,
-                "%s%s",
-                report_format_param_iterator_type_regex (&params),
-                report_format_param_iterator_fallback (&params));
-
-              {
-                iterator_t options;
-                init_param_option_iterator
-                 (&options,
-                  report_format_param_iterator_param (&params),
-                  1,
-                  NULL);
-                while (next (&options))
-                  if (param_option_iterator_value (&options))
-                    g_string_append_printf
-                     (format,
-                      "%s",
-                      param_option_iterator_value (&options));
-              }
-            }
-          cleanup_iterator (&params);
-
-          g_string_append_printf (format, "\n");
-
-          if (format_signature)
-            {
-              /* Try the feed signature. */
-              if (verify_signature (format->str, format->len, format_signature,
-                                    strlen (format_signature), &format_trust))
-                {
-                  cleanup_iterator (&formats);
-                  g_free (format_signature);
-                  g_string_free (format, TRUE);
-                  return -1;
-                }
-            }
-          else if (signature && strlen (signature))
-            {
-              /* Try the signature from the database. */
-              if (verify_signature (format->str, format->len, signature,
-                                    strlen (signature), &format_trust))
-                {
-                  cleanup_iterator (&formats);
-                  g_free (format_signature);
-                  g_string_free (format, TRUE);
-                  return -1;
-                }
-            }
-
-          g_free (format_signature);
-          g_string_free (format, TRUE);
-        }
-    }
-  else
-    {
-      return -1;
-    }
-  cleanup_iterator (&formats);
-
-  sql ("UPDATE report_formats SET trust = %i, trust_time = %i,"
-       "                          modification_time = m_now ()"
-       " WHERE id = %llu;",
-       format_trust,
-       time (NULL),
-       report_format);
-
-  return 0;
-}
-
-/**
- * @brief Verify a report format.
- *
- * @param[in]  report_format_id  Report format UUID.
- *
- * @return 0 success, 1 failed to find report format, 99 permission denied,
- *         -1 error.
- */
-int
-verify_report_format (const char *report_format_id)
-{
-  int ret;
-  report_format_t report_format;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("verify_report_format") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  report_format = 0;
-  if (find_report_format_with_permission (report_format_id, &report_format,
-                                          "verify_report_format"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-  if (report_format == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  ret = verify_report_format_internal (report_format);
-  if (ret)
-    {
-      sql_rollback ();
-      return ret;
-    }
-  sql_commit ();
   return 0;
 }
 
@@ -52830,6 +52720,203 @@ check_report_format (const gchar *uuid)
   g_free (config_path);
   free_entity (entity);
   return -1;
+}
+
+/**
+ * @brief Verify a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+verify_report_format_internal (report_format_t report_format)
+{
+  int format_trust = TRUST_UNKNOWN;
+  iterator_t formats;
+  get_data_t get;
+  gchar *uuid;
+
+  memset(&get, '\0', sizeof (get));
+  get.id = report_format_uuid (report_format);
+  init_report_format_iterator (&formats, &get);
+  if (next (&formats))
+    {
+      const char *signature;
+      gchar *format_signature = NULL;
+      gsize format_signature_size;
+
+      signature = report_format_iterator_signature (&formats);
+
+      find_signature ("report_formats", get_iterator_uuid (&formats),
+                      &format_signature, &format_signature_size, &uuid);
+
+      if ((signature && strlen (signature))
+          || format_signature)
+        {
+          GString *format;
+          file_iterator_t files;
+          iterator_t params;
+
+          format = g_string_new ("");
+
+          g_string_append_printf
+           (format, "%s%s%s%i", uuid ? uuid : get_iterator_uuid (&formats),
+            report_format_iterator_extension (&formats),
+            report_format_iterator_content_type (&formats),
+            report_format_predefined (report_format) & 1);
+          g_free (uuid);
+
+          init_report_format_file_iterator (&files, report_format);
+          while (next_file (&files))
+            {
+              gchar *content = file_iterator_content_64 (&files);
+              g_string_append_printf (format,
+                                      "%s%s",
+                                      file_iterator_name (&files),
+                                      content);
+              g_free (content);
+            }
+          cleanup_file_iterator (&files);
+
+          init_report_format_param_iterator (&params,
+                                             report_format,
+                                             0,
+                                             1,
+                                             NULL);
+          while (next (&params))
+            {
+              g_string_append_printf
+               (format,
+                "%s%s",
+                report_format_param_iterator_name (&params),
+                report_format_param_iterator_type_name (&params));
+
+              if (report_format_param_iterator_type_min (&params) > LLONG_MIN)
+                g_string_append_printf
+                 (format,
+                  "%lli",
+                  report_format_param_iterator_type_min (&params));
+
+              if (report_format_param_iterator_type_max (&params) < LLONG_MAX)
+                g_string_append_printf
+                 (format,
+                  "%lli",
+                  report_format_param_iterator_type_max (&params));
+
+              g_string_append_printf
+               (format,
+                "%s%s",
+                report_format_param_iterator_type_regex (&params),
+                report_format_param_iterator_fallback (&params));
+
+              {
+                iterator_t options;
+                init_param_option_iterator
+                 (&options,
+                  report_format_param_iterator_param (&params),
+                  1,
+                  NULL);
+                while (next (&options))
+                  if (param_option_iterator_value (&options))
+                    g_string_append_printf
+                     (format,
+                      "%s",
+                      param_option_iterator_value (&options));
+              }
+            }
+          cleanup_iterator (&params);
+
+          g_string_append_printf (format, "\n");
+
+          if (format_signature)
+            {
+              /* Try the feed signature. */
+              if (verify_signature (format->str, format->len, format_signature,
+                                    strlen (format_signature), &format_trust))
+                {
+                  cleanup_iterator (&formats);
+                  g_free (format_signature);
+                  g_string_free (format, TRUE);
+                  return -1;
+                }
+            }
+          else if (signature && strlen (signature))
+            {
+              /* Try the signature from the database. */
+              if (verify_signature (format->str, format->len, signature,
+                                    strlen (signature), &format_trust))
+                {
+                  cleanup_iterator (&formats);
+                  g_free (format_signature);
+                  g_string_free (format, TRUE);
+                  return -1;
+                }
+            }
+
+          g_free (format_signature);
+          g_string_free (format, TRUE);
+        }
+    }
+  else
+    {
+      return -1;
+    }
+  cleanup_iterator (&formats);
+
+  sql ("UPDATE report_formats SET trust = %i, trust_time = %i,"
+       "                          modification_time = m_now ()"
+       " WHERE id = %llu;",
+       format_trust,
+       time (NULL),
+       report_format);
+
+  return 0;
+}
+
+/**
+ * @brief Verify a report format.
+ *
+ * @param[in]  report_format_id  Report format UUID.
+ *
+ * @return 0 success, 1 failed to find report format, 99 permission denied,
+ *         -1 error.
+ */
+int
+verify_report_format (const char *report_format_id)
+{
+  int ret;
+  report_format_t report_format;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("verify_report_format") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  report_format = 0;
+  if (find_report_format_with_permission (report_format_id, &report_format,
+                                          "verify_report_format"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+  if (report_format == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  ret = verify_report_format_internal (report_format);
+  if (ret)
+    {
+      sql_rollback ();
+      return ret;
+    }
+  sql_commit ();
+  return 0;
 }
 
 
@@ -55541,6 +55628,8 @@ find_port_range_with_permission (const char *uuid, port_range_t *port_range,
  *
  * @param[in]  one  First range.
  * @param[in]  two  Second range.
+ *
+ * @return 0 equal, 1 one greater, -1 two greater.
  */
 static int
 range_compare (gconstpointer one, gconstpointer two)
@@ -56539,7 +56628,7 @@ port_list_uuid (port_list_t port_list)
 /**
  * @brief Return the UUID of a port_range.
  *
- * @param[in]  port_range  Port_Range.
+ * @param[in]  port_range  Port Range.
  *
  * @return Newly allocated UUID if available, else NULL.
  */
@@ -56550,6 +56639,13 @@ port_range_uuid (port_range_t port_range)
                      port_range);
 }
 
+/**
+ * @brief Return whether a port list is predefined.
+ *
+ * @param[in]  port_list  Port List.
+ *
+ * @return Whether port list is predefined.
+ */
 static int
 port_list_is_predefined (port_list_t port_list)
 {
@@ -59789,6 +59885,9 @@ manage_restore (const char *id)
   return 2;
 }
 
+/**
+ * @brief Owner SQL for manage_empty_trash.
+ */
 #define WHERE_OWNER                                          \
  " WHERE owner = (SELECT id FROM users WHERE uuid = '%s')",  \
  current_credentials.uuid
@@ -60195,6 +60294,8 @@ typedef struct
 
 /**
  * @brief Free an identifier.
+ *
+ * @param[in]  identifier  Identifier.
  */
 static void
 identifier_free (identifier_t *identifier)
@@ -60613,6 +60714,8 @@ hosts_set_details (report_t report)
  * @brief Get XML of a detailed host route.
  *
  * @param[in]  host  The host.
+ *
+ * @return XML.
  */
 gchar*
 host_routes_xml (host_t host)
@@ -61128,6 +61231,9 @@ DEF_ACCESS (host_identifier_iterator_os_title,
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
  }
 
+/**
+ * @brief Host iterator WHERE columns.
+ */
 #define HOST_ITERATOR_WHERE_COLUMNS                                   \
  {                                                                    \
    {                                                                  \
@@ -63021,6 +63127,10 @@ modify_setting (const gchar *uuid, const gchar *name,
 
 /**
  * @brief Return max, adjusted according to maximum allowed rows.
+ *
+ * @param[in]  max  Max.
+ *
+ * @return Adjusted max.
  */
 int
 manage_max_rows (int max)
@@ -65482,6 +65592,9 @@ user_resources_in_use (user_t user,
    "oldest", "newest", "type", NULL                                          \
  }
 
+/**
+ * @brief Results SQL for VULN_ITERATOR_COLUMNS.
+ */
 #define VULN_RESULTS_WHERE                                                   \
      "  WHERE nvt = vulns.uuid"                                              \
      "    AND (opts.report IS NULL OR results.report = opts.report)"         \
@@ -65494,6 +65607,9 @@ user_resources_in_use (user_t user,
      "                             (SELECT uuid FROM current_credentials))"  \
      "           AND task = results.task)"
 
+/**
+ * @brief Vuln iterator columns.
+ */
 #define VULN_ITERATOR_COLUMNS                                                \
  {                                                                           \
    /* The following must match GET_ITERATOR_COLUMNS */                       \
@@ -65848,6 +65964,11 @@ vuln_count (const get_data_t *get)
   return ret;
 }
 
+/**
+ * @brief Extra WHERE clause for vulns.
+ *
+ * @return WHERE clause.
+ */
 static gchar*
 vulns_extra_where ()
 {
@@ -67889,6 +68010,12 @@ cache_permissions_for_users (const char *type, GArray *cache_users)
     g_array_free (cache_users, TRUE);
 }
 
+/**
+ * @brief Update entire permission cache the given users.
+ *
+ * @param[in]  cache_users  GArray of users to create cache for.  NULL means
+ *                          all users.
+ */
 static void
 cache_all_permissions_for_users (GArray *cache_users)
 {
@@ -67909,6 +68036,12 @@ cache_all_permissions_for_users (GArray *cache_users)
     g_array_free (cache_users, TRUE);
 }
 
+/**
+ * @brief Delete permission cache a resource.
+ *
+ * @param[in]  type      Resource type.
+ * @param[in]  resource  Resource.
+ */
 void
 delete_permissions_cache_for_resource (const char* type, resource_t resource)
 {
@@ -67922,6 +68055,11 @@ delete_permissions_cache_for_resource (const char* type, resource_t resource)
     }
 }
 
+/**
+ * @brief Delete permission cache the given user.
+ *
+ * @param[in]  user  User.
+ */
 void
 delete_permissions_cache_for_user (user_t user)
 {

@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  manage_ranges_all_tcp_nmap_5_51_top_100.c
+ * @brief GVM management layer: Predefined port range
+ *
+ * This file defines the ranges for a predefined port list.
+ */
+
 #include "manage_sql.h"
 
 #undef G_LOG_DOMAIN

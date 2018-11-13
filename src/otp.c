@@ -94,6 +94,9 @@ static message_t* current_message = NULL;
  */
 static gchar* current_host = NULL;
 
+/**
+ * @brief The version of the NVT feed.
+ */
 static char *plugins_feed_version = NULL;
 
 /**
@@ -391,6 +394,8 @@ static scanner_state_t scanner_state = SCANNER_TOP;
 
 /**
  * @brief Set the scanner state, \ref scanner_state.
+ *
+ * @param[in]  state  New state.
  */
 static void
 set_scanner_state (scanner_state_t state)
@@ -421,6 +426,8 @@ int scanner_total_loading = 0;
 
 /**
  * @brief Set the scanner initialisation state, \ref scanner_init_state.
+ *
+ * @param[in]  state  New init state.
  */
 void
 set_scanner_init_state (scanner_init_state_t state)
@@ -709,6 +716,13 @@ parse_scanner_server (char** messages)
   return -4;
 }
 
+/**
+ * @brief Check if current message is the scanner loading message.
+ *
+ * @param[in]  messages  Message.
+ *
+ * @return 1 if scanner loading message, else 0.
+ */
 static int
 scanner_is_loading (char *messages)
 {
@@ -718,8 +732,11 @@ scanner_is_loading (char *messages)
 }
 
 /**
- * @brief Parses SCANNER_LOADING response, updating scanner_current_loading and
- *        scanner_total_loading values.
+ * @brief Parse SCANNER_LOADING response.
+ *
+ * Updates scanner_current_loading and scanner_total_loading values.
+ *
+ * @param[in]  messages  Messages.
  */
 static void
 parse_scanner_loading (char *messages)

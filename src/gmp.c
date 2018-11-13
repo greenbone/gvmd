@@ -931,7 +931,9 @@ typedef struct
 } create_agent_data_t;
 
 /**
- * @brief Free members of a create_agent_data_t and set them to NULL.
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
  */
 static void
 create_agent_data_reset (create_agent_data_t *data)
@@ -961,7 +963,9 @@ typedef struct
 } create_asset_data_t;
 
 /**
- * @brief Free members of a create_asset_data_t and set them to NULL.
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
  */
 static void
 create_asset_data_reset (create_asset_data_t *data)
@@ -1876,25 +1880,28 @@ create_task_data_reset (create_task_data_t *data)
 
 /* Command data passed between parser callbacks. */
 
+/**
+ * @brief Command data for the create_user command.
+ */
 typedef struct
 {
   char *copy;             ///< UUID of resource to copy.
-  int sort_order;
+  int sort_order;         ///< Sort order.
   array_t *groups;        ///< IDs of groups.
-  char *hosts;
-  int hosts_allow;
-  char *ifaces;
-  int ifaces_allow;
-  char *name;
-  char *password;
-  char *comment;
-  array_t *roles;
-  gchar *current_source;
-  array_t *sources;
+  char *hosts;            ///< Hosts.
+  int hosts_allow;        ///< Whether hosts are allowed.
+  char *ifaces;           ///< Interfaces.
+  int ifaces_allow;       ///< Whether interfaces are allowed.
+  char *name;             ///< User name.
+  char *password;         ///< Password.
+  char *comment;          ///< Comment.
+  array_t *roles;         ///< User's roles.
+  gchar *current_source;  ///< Current source, for collecting sources.
+  array_t *sources;       ///< Sources.
 } create_user_data_t;
 
 /**
- * @brief Reset CREATE_USER data.
+ * @brief Reset command data.
  *
  * @param[in]  data  Command data.
  */
@@ -3143,7 +3150,9 @@ typedef struct
 } get_users_data_t;
 
 /**
- * @brief Reset GET_USERS data.
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
  */
 static void
 get_users_data_reset (get_users_data_t * data)
@@ -3161,7 +3170,9 @@ typedef struct
 } get_vulns_data_t;
 
 /**
- * @brief Reset GET_USERS data.
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
  */
 static void
 get_vulns_data_reset (get_vulns_data_t * data)
@@ -4032,25 +4043,27 @@ modify_override_data_reset (modify_override_data_t *data)
  */
 typedef struct
 {
-  array_t *groups;        ///< IDs of groups.
-  int sort_order;
-  gchar *hosts;
-  int hosts_allow;
-  char *ifaces;
-  int ifaces_allow;
-  gboolean modify_password;
-  gchar *name;
-  gchar *new_name;
-  gchar *password;
-  gchar *comment;
-  array_t *roles;         ///< IDs of roles.
-  array_t *sources;
-  gchar *current_source;
-  gchar *user_id;
+  array_t *groups;           ///< IDs of groups.
+  int sort_order;            ///< Sort order.
+  gchar *hosts;              ///< Hosts.
+  int hosts_allow;           ///< Whether hosts are allowed.
+  char *ifaces;              ///< Interfaces.
+  int ifaces_allow;          ///< Whether interfaces are allowed.
+  gboolean modify_password;  ///< Whether to modify password.
+  gchar *name;               ///< User name.
+  gchar *new_name;           ///< New user name.
+  gchar *password;           ///< Password.
+  gchar *comment;            ///< Comment.
+  array_t *roles;            ///< IDs of roles.
+  array_t *sources;          ///< Sources.
+  gchar *current_source;     ///< Current source, for collecting sources.
+  gchar *user_id;            ///< ID of user.
 } modify_user_data_t;
 
 /**
- * @brief Reset MODIFY_USER data.
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
  */
 static void
 modify_user_data_reset (modify_user_data_t * data)
@@ -4166,9 +4179,6 @@ typedef struct
   char *task_id;   ///< ID of task to stop.
 } stop_task_data_t;
 
-/**
- * @brief Free members of a stop_task_data_t and set them to NULL.
- */
 /**
  * @brief Reset command data.
  *
@@ -4442,6 +4452,8 @@ typedef union
 
 /**
  * @brief Initialise command data.
+ *
+ * @param[in]  data  Command data.
  */
 static void
 command_data_init (command_data_t *data)
@@ -5782,6 +5794,8 @@ static client_state_t client_state = CLIENT_TOP;
 
 /**
  * @brief Set the client state.
+ *
+ * @param[in]  state  New state.
  */
 static void
 set_client_state (client_state_t state)
@@ -12546,6 +12560,8 @@ buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
  * @param[in]     key     The subgroup value used as key in the GTree.
  * @param[in]     value   The cumulative count used as value in the GTree.
  * @param[in,out] buffer  A GString buffer to output the XML to.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 buffer_aggregate_subgroup_value (gchar *key,

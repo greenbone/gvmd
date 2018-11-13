@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file sql_pg.c
+ * @brief Generic SQL interface: PostgreSQL backend
+ *
+ * PostreSQL backend of the SQL interface.
+ */
+
 #include "sql.h"
 
 #include <assert.h>
@@ -53,6 +60,9 @@ sql_x (char*, va_list args, sql_stmt_t**);
 
 /* Types. */
 
+/**
+ * @brief An SQL statement.
+ */
 struct sql_stmt
 {
   gchar *sql;             ///< SQL statement.
@@ -403,6 +413,8 @@ sql_changes ()
 
 /**
  * @brief Get the ID of the last inserted row.
+ *
+ * @return Resource.
  */
 resource_t
 sql_last_insert_id ()
