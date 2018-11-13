@@ -137,6 +137,7 @@
 #include <dirent.h>
 
 #include "manage_sql.h"
+#include "utils.h"
 #include "sql.h"
 
 #include <gvm/base/logging.h>

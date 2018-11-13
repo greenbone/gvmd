@@ -1027,14 +1027,6 @@ resume_task (const char *, char **);
 int
 move_task (const char*, const char*);
 
-/* Iteration. */
-
-void
-cleanup_iterator (iterator_t*);
-
-gboolean
-next (iterator_t*);
-
 
 /* Access control. */
 
@@ -1760,9 +1752,6 @@ char*
 config_nvt_selector (config_t);
 
 int
-config_type (config_t);
-
-int
 config_in_use (config_t);
 
 int
@@ -2321,9 +2310,6 @@ int
 asset_os_iterator_installs (iterator_t *);
 
 const char*
-asset_os_iterator_title (iterator_t *);
-
-const char*
 asset_os_iterator_latest_severity (iterator_t *);
 
 const char*
@@ -2617,9 +2603,6 @@ trash_scanner_writable (scanner_t);
 
 int
 scanner_writable (scanner_t);
-
-char *
-scanner_uuid (scanner_t);
 
 const char *
 scanner_uuid_default ();
@@ -4108,15 +4091,6 @@ manage_run_wizard (const gchar *, int (*) (void*, gchar*, gchar**),
 
 gchar *
 xml_escape_text_truncated (const char *, size_t, const char *);
-
-char *
-iso_time (time_t *);
-
-char *
-iso_time_tz (time_t *, const char *, const char **);
-
-int
-valid_db_resource_type (const char*);
 
 int
 column_is_timestamp (const char*);

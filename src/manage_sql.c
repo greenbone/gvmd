@@ -141,12 +141,6 @@ check_db_encryption_key ();
 void
 manage_attach_databases ();
 
-int
-manage_cert_loaded ();
-
-int
-manage_scap_loaded ();
-
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
@@ -256,9 +250,6 @@ static int
 validate_param_value (report_format_t, report_format_param_t param, const char *,
                       const char *);
 
-int
-delete_task_lock (task_t, int);
-
 gchar*
 clean_hosts (const char *, int*);
 
@@ -277,9 +268,6 @@ find_role (const char *, group_t *);
 
 static gboolean
 find_role_with_permission (const char *, role_t *, const char *);
-
-static gboolean
-find_user_by_name (const char *, user_t *);
 
 static int
 user_ensure_in_db (const gchar *, const gchar *);
