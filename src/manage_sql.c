@@ -8846,6 +8846,8 @@ task_alert_iterator_active (iterator_t* iterator)
  * @param[in]  attachment_type  Attachment MIME type, or NULL.
  * @param[in]  attachment_name  Base file name of the attachment, or NULL.
  * @param[in]  attachment_extension  Attachment file extension, or NULL.
+ *
+ * @return 0 success, -1 error.
  */
 static int
 email_write_content (FILE *content_file,
@@ -8964,9 +8966,12 @@ email_write_content (FILE *content_file,
  *
  * @param[in]  plain_file     Stream to read the plain text email from.
  * @param[in]  encrypted_file Stream to write the encrypted email to.
- * @param[in]  to_address     Address to send to.
- * @param[in]  from_address   Address to send to.
+ * @param[in]  public_key     Recipient public key to use for encryption.
+ * @param[in]  to_address     Email address to send to.
+ * @param[in]  from_address   Email address to use as sender.
  * @param[in]  subject        Subject of email.
+ *
+ * @return 0 success, -1 error.
  */
 static int
 email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
@@ -9033,13 +9038,16 @@ email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
 }
 
 /**
- * @brief  Create a S/MIME encrypted email from a plain text one.
+ * @brief  Create an S/MIME encrypted email from a plain text one.
  *
  * @param[in]  plain_file     Stream to read the plain text email from.
  * @param[in]  encrypted_file Stream to write the encrypted email to.
- * @param[in]  to_address     Address to send to.
- * @param[in]  from_address   Address to send to.
+ * @param[in]  certificate    Recipient certificate chain for encryption.
+ * @param[in]  to_address     Email address to send to.
+ * @param[in]  from_address   Email address to use as sender.
  * @param[in]  subject        Subject of email.
+ *
+ * @return 0 success, -1 error.
  */
 static int
 email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
@@ -9105,6 +9113,7 @@ email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
  * @param[in]  attachment_type  Attachment MIME type, or NULL.
  * @param[in]  attachment_name  Base file name of the attachment, or NULL.
  * @param[in]  attachment_extension  Attachment file extension, or NULL.
+ * @param[in]  recipient_credential  Optional credential to use for encryption.
  *
  * @return 0 success, -1 error.
  */
