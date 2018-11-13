@@ -394,7 +394,6 @@ const char *otp_pref_iterator_name (iterator_t *);
 const char *otp_pref_iterator_value (iterator_t *);
 
 port_list_t target_port_list (target_t);
-char* target_port_range (target_t);
 credential_t target_ssh_credential (target_t);
 credential_t target_smb_credential (target_t);
 credential_t target_esxi_credential (target_t);
@@ -454,8 +453,6 @@ void check_generate_scripts ();
 void auto_delete_reports ();
 
 int parse_iso_time (const char *);
-
-int days_from_now (time_t *epoch_time);
 
 void set_report_scheduled (report_t);
 

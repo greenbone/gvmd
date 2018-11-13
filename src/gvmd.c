@@ -47,7 +47,7 @@
  * \subpage manpage
  *
  * \section Installation
- * \verbinclude INSTALL
+ * \verbinclude INSTALL.md
  *
  * \section Implementation
  *
@@ -1807,7 +1807,7 @@ main (int argc, char** argv)
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
         { "dh-params", '\0', 0, G_OPTION_ARG_STRING, &dh_params, "Diffie-Hellman parameters file", "<file>" },
         { "value", '\0', 0, G_OPTION_ARG_STRING, &value, "Value for --modify-setting.", "<value>" },
-        { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Has no effect.  See INSTALL for logging config.", NULL },
+        { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Has no effect.  See INSTALL.md for logging config.", NULL },
         { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
       };

@@ -1030,14 +1030,6 @@ resume_task (const char *, char **);
 int
 move_task (const char*, const char*);
 
-/* Iteration. */
-
-void
-cleanup_iterator (iterator_t*);
-
-gboolean
-next (iterator_t*);
-
 
 /* Access control. */
 
@@ -1763,9 +1755,6 @@ char*
 config_nvt_selector (config_t);
 
 int
-config_type (config_t);
-
-int
 config_in_use (config_t);
 
 int
@@ -2062,7 +2051,7 @@ int
 create_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   credential_t*);
+                   const char*, credential_t*);
 
 int
 copy_credential (const char*, const char*, const char*,
@@ -2071,7 +2060,8 @@ copy_credential (const char*, const char*, const char*,
 int
 modify_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*);
+                   const char*, const char*, const char*, const char*,
+                   const char*);
 
 int
 delete_credential (const char *, int);
@@ -2081,6 +2071,9 @@ credential_count (const get_data_t *);
 
 void
 set_credential_privacy_algorithm (credential_t, const char *);
+
+void
+set_credential_public_key (credential_t, const char *);
 
 void
 init_credential_iterator_one (iterator_t*, credential_t);
@@ -2105,6 +2098,9 @@ credential_iterator_community (iterator_t*);
 
 const char*
 credential_iterator_privacy_password (iterator_t*);
+
+const char*
+credential_iterator_public_key (iterator_t*);
 
 const char*
 credential_iterator_private_key (iterator_t*);
@@ -2315,9 +2311,6 @@ asset_os_iterator_title (iterator_t *);
 
 int
 asset_os_iterator_installs (iterator_t *);
-
-const char*
-asset_os_iterator_title (iterator_t *);
 
 const char*
 asset_os_iterator_latest_severity (iterator_t *);
@@ -2613,9 +2606,6 @@ trash_scanner_writable (scanner_t);
 
 int
 scanner_writable (scanner_t);
-
-char *
-scanner_uuid (scanner_t);
 
 const char *
 scanner_uuid_default ();
@@ -4107,15 +4097,6 @@ manage_run_wizard (const gchar *, int (*) (void*, gchar*, gchar**),
 
 gchar *
 xml_escape_text_truncated (const char *, size_t, const char *);
-
-char *
-iso_time (time_t *);
-
-char *
-iso_time_tz (time_t *, const char *, const char **);
-
-int
-valid_db_resource_type (const char*);
 
 int
 column_is_timestamp (const char*);

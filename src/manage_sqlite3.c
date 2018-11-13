@@ -98,17 +98,11 @@ iso_time (time_t *);
 int
 days_from_now (time_t *);
 
-long
-current_offset (const char *);
-
 int
 resource_name (const char *, const char *, int, char **);
 
 int
 resource_exists (const char *, resource_t, int);
-
-gchar *
-tag_value (const gchar *tags, const gchar *tag);
 
 
 /* Session. */
