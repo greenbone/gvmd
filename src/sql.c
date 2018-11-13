@@ -59,9 +59,6 @@ sql_exec_internal (int, sql_stmt_t *);
 int
 sql_explain_internal (const char*, va_list);
 
-int
-sql_explain (const char*, ...);
-
 
 /* Variables. */
 
