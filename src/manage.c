@@ -181,7 +181,7 @@ static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
  *
  * @param[in]  certificate    The certificate.
  *
- * @return  The truncated certficate as a newly allocated string or NULL.
+ * @return  The truncated certificate as a newly allocated string or NULL.
  */
 gchar *
 truncate_certificate (const gchar* certificate)
