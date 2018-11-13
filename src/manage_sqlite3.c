@@ -102,12 +102,6 @@ long
 current_offset (const char *);
 
 int
-user_can_everything (const char *);
-
-int
-user_owns (const char *, resource_t, int);
-
-int
 resource_name (const char *, const char *, int, char **);
 
 int

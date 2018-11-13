@@ -273,9 +273,6 @@ valid_type (const char*);
 static gboolean
 find_user_by_name (const char *, user_t *user);
 
-gboolean
-find_role (const char *, group_t *);
-
 static gboolean
 find_role_with_permission (const char *, role_t *, const char *);
 
