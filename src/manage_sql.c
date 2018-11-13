@@ -32,6 +32,9 @@
  * management library.
  */
 
+/**
+ * @brief Enable extra GNU functions.
+ */
 #define _GNU_SOURCE
 
 #include "manage_sql.h"
@@ -793,6 +796,8 @@ gmp_command_takes_resource (const char* name)
  * @param[in]   name      Name of resource to check for.
  * @param[in]   type      Type of resource.
  * @param[in]   resource  Resource to ignore, 0 otherwise.
+ *
+ * @return Whether resource with name exists.
  */
 static gboolean
 resource_with_name_exists (const char *name, const char *type,
@@ -832,6 +837,8 @@ resource_with_name_exists (const char *name, const char *type,
  * @param[in]   name      Name of resource to check for.
  * @param[in]   type      Type of resource.
  * @param[in]   resource  Resource to ignore, 0 otherwise.
+ *
+ * @return Whether resource with name exists.
  */
 static gboolean
 resource_with_name_exists_global (const char *name, const char *type,
@@ -1280,6 +1287,8 @@ nvts_check_time ()
 
 /**
  * @brief Get last time SCAP SecInfo alerts were checked.
+ *
+ * @return Last time SCAP was checked.
  */
 static int
 scap_check_time ()
@@ -1296,6 +1305,8 @@ scap_check_time ()
 
 /**
  * @brief Get last time CERT SecInfo alerts were checked.
+ *
+ * @return Last time CERT was checked.
  */
 static int
 cert_check_time ()
@@ -1368,6 +1379,8 @@ manage_option_cleanup ()
  * @brief Copy an array of columns.
  *
  * @param[in]  columns  Columns.
+ *
+ * @return Freshly allocated array.
  */
 static column_t *
 column_array_copy (column_t *columns)
@@ -5844,7 +5857,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   return 0;
 }
 
+/**
+ * @brief Offset for aggregate iterator.
+ */
 #define AGGREGATE_ITERATOR_OFFSET 3
+
+/**
+ * @brief Number of stats, for aggregate iterator.
+ */
 #define AGGREGATE_ITERATOR_N_STATS 4
 
 /**
@@ -6158,6 +6178,10 @@ resource_predefined (const gchar *type, resource_t resource)
  * @brief Mark a resource as predefined.
  *
  * Currently only report formats use this.
+ *
+ * @param[in]  type      Resource type.
+ * @param[in]  resource  Resource.
+ * @param[in]  enable    If true mark as predefined, else remove mark.
  */
 static void
 resource_set_predefined (const gchar *type, resource_t resource, int enable)
@@ -10500,6 +10524,14 @@ send_to_verinice (const char *url, const char *username, const char *password,
 /**
  * @brief Convert an XML report and send it to a TippingPoint SMS.
  *
+ * @param[in]  report           Report to send.
+ * @param[in]  report_size      Size of report.
+ * @param[in]  username         Username.
+ * @param[in]  password         Password.
+ * @param[in]  hostname         Hostname.
+ * @param[in]  certificate      Certificate.
+ * @param[in]  cert_workaround  Whether to use cert workaround.
+ * @param[out] message          Custom error message of the script.
  *
  * @return 0 success, -1 error.
  */
@@ -18304,6 +18336,8 @@ set_report_scheduled (report_t report)
  * @brief Get a report's scheduled flag.
  *
  * @param[in]   report  Report.
+ *
+ * @return Scheduled flag.
  */
 static int
 report_scheduled (report_t report)
@@ -19180,9 +19214,11 @@ task_schedule_next_time (task_t task)
 }
 
 /**
- * @brief Set the next time a scheduled task will be due.
+ * @brief Get the next time a scheduled task will be due.
  *
  * @param[in]  task_id  Task UUID.
+ *
+ * @return Next scheduled time.
  */
 time_t
 task_schedule_next_time_uuid (const gchar *task_id)
@@ -20323,9 +20359,11 @@ detect_cleanup:
 /* Prognostics. */
 
 /**
- * @brief Return highest CVE for an App.
+ * @brief Return highest CVSS for an App.
  *
  * @param[in]  cpe  CPE.
+ *
+ * @return Highest CVSS.
  */
 static double
 cpe_highest_cvss (const char *cpe)
@@ -20429,6 +20467,8 @@ prognosis_iterator_cvss_double (iterator_t* iterator)
  *
  * @param[in]  report_host  Report host.
  * @param[in]  app          CPE.
+ *
+ * @return Location if there is one, else NULL.
  */
 gchar *
 app_location (report_host_t report_host, const gchar *app)
@@ -24645,6 +24685,8 @@ set_scan_end_time_otp (report_t report, const char* timestamp)
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
+ *
+ * @return End time.
  */
 int
 scan_host_end_time (report_t report, const char* host)
@@ -26485,6 +26527,8 @@ add_port (GTree *ports, iterator_t *results)
  * @param[in]  key     Port.
  * @param[in]  value   Threat.
  * @param[in]  data    Host and stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_port (gpointer key, gpointer value, gpointer data)
@@ -26513,6 +26557,8 @@ print_host_port (gpointer key, gpointer value, gpointer data)
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports (gpointer key, gpointer value, gpointer stream)
@@ -26531,6 +26577,8 @@ print_host_ports (gpointer key, gpointer value, gpointer stream)
  * @param[in]  key     Port.
  * @param[in]  value   Threat.
  * @param[in]  ports   Ports array.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 array_add_port (gpointer key, gpointer value, gpointer ports)
@@ -26549,6 +26597,8 @@ array_add_port (gpointer key, gpointer value, gpointer ports)
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
@@ -26593,6 +26643,8 @@ print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
  *
  * @param[in]  one  First.
  * @param[in]  two  Second.
+ *
+ * @return 1 one greater, -1 two greater, 0 equal.
  */
 static gint
 compare_ports_severity (gconstpointer one, gconstpointer two)
@@ -26613,6 +26665,8 @@ compare_ports_severity (gconstpointer one, gconstpointer two)
  *
  * @param[in]  one  First.
  * @param[in]  two  Second.
+ *
+ * @return 1 one less, -1 two less, 0 equal.
  */
 static gint
 compare_ports_severity_desc (gconstpointer one, gconstpointer two)
@@ -26635,6 +26689,8 @@ compare_ports_severity_desc (gconstpointer one, gconstpointer two)
  * @param[in]  value      Port tree.
  * @param[in]  stream     Stream.
  * @param[in]  ascending  Ascending or descending.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports_by_severity (gpointer key, gpointer value, gpointer stream,
@@ -26690,6 +26746,8 @@ print_host_ports_by_severity (gpointer key, gpointer value, gpointer stream,
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports_by_severity_desc (gpointer key, gpointer value,
@@ -26704,6 +26762,8 @@ print_host_ports_by_severity_desc (gpointer key, gpointer value,
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 print_host_ports_by_severity_asc (gpointer key, gpointer value,
@@ -26717,6 +26777,8 @@ print_host_ports_by_severity_asc (gpointer key, gpointer value,
  *
  * @param[in]  host_ports  Ports.
  * @param[in]  dummy       Dummy.
+ *
+ * @return Always FALSE.
  */
 static gboolean
 free_host_ports (GTree *host_ports, gpointer dummy)
@@ -26734,6 +26796,8 @@ free_host_ports (GTree *host_ports, gpointer dummy)
  * @param[in]  host         Host.
  * @param[in]  report_host  Report host.
  * @param[in]  position     Position from end.
+ *
+ * @return N'th last report_host.
  */
 gboolean
 host_nthlast_report_host (const char *host, report_host_t *report_host,
@@ -27062,6 +27126,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
 /**
  * @brief Count a report's total number of hosts.
  *
+ * @param[in]  report  Report.
+ *
  * @return Host count.
  */
 int
@@ -27094,7 +27160,10 @@ report_result_host_count (report_t report, int min_qod)
 
 /**
  * @brief Count a report's total number of tcp/ip ports.
- * @brief Ignores ports entries in "general/..." form.
+ *
+ * Ignores port entries in "general/..." form.
+ *
+ * @param[in]  report  Report.
  *
  * @return Ports count.
  */
@@ -27110,6 +27179,8 @@ report_port_count (report_t report)
 
 /**
  * @brief Count a report's total number of closed cves.
+ *
+ * @param[in]  report  Report.
  *
  * @return Closed CVE count.
  */
@@ -27131,6 +27202,8 @@ report_closed_cve_count (report_t report)
 /**
  * @brief Count a report's total number of vulnerabilities.
  *
+ * @param[in]  report  Report.
+ *
  * @return Vulnerabilities count.
  */
 static int
@@ -27144,6 +27217,8 @@ report_vuln_count (report_t report)
 
 /**
  * @brief Count a report's total number of detected Operating Systems.
+ *
+ * @param[in]  report  Report.
  *
  * @return OS count.
  */
@@ -27160,6 +27235,8 @@ report_os_count (report_t report)
 /**
  * @brief Count a report's total number of detected Apps.
  *
+ * @param[in]  report  Report.
+ *
  * @return App count.
  */
 static int
@@ -27175,6 +27252,8 @@ report_app_count (report_t report)
 /**
  * @brief Count a report's total number of found SSL Certificates.
  *
+ * @param[in]  report  Report.
+ *
  * @return SSL Certificates count.
  */
 static int
@@ -27189,6 +27268,8 @@ report_ssl_cert_count (report_t report)
 
 /**
  * @brief Count a report's total number of error messages.
+ *
+ * @param[in]  report  Report.
  *
  * @return Error Messages count.
  */
@@ -30146,6 +30227,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
  * @param[in]   xml_start      Path of file containing start of report.
  * @param[in]   xml_full       Path to file to print full report to.
  * @param[in]   report_format  Format of report that will be created from XML.
+ *
+ * @return 0 success, -1 error.
  */
 static int
 print_report_xml_end (gchar *xml_start, gchar *xml_full,
@@ -41383,6 +41466,8 @@ trash_credential_writable (credential_t credential)
  *
  * @param[in]  credential     The Credential.
  * @param[in]  value_name     Name of the value.
+ *
+ * @return Value.
  */
 gchar *
 credential_value (credential_t credential, const char* value_name)
@@ -41401,6 +41486,8 @@ credential_value (credential_t credential, const char* value_name)
  *
  * @param[in]  credential     The Credential.
  * @param[in]  value_name     Name of the value.
+ *
+ * @return Value.
  */
 gchar *
 credential_encrypted_value (credential_t credential, const char* value_name)
@@ -41720,8 +41807,13 @@ init_credential_iterator (iterator_t* iterator, const get_data_t *get)
                             TRUE);
 }
 
-/*
- * Common code for getting possibly encrypted data from credentials.
+/**
+ * @brief Get possibly encrypted data from credentials.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  type      Type of data.
+ *
+ * @return Data.
  */
 static const char*
 credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
@@ -43581,8 +43673,15 @@ find_note_with_permission (const char* uuid, note_t* note,
   return find_resource_with_permission ("note", uuid, note, permission, 0);
 }
 
+/**
+ * @brief Check if an NVT exists.
+ *
+ * @param[in]  nvt  NVT OID.
+ *
+ * @return 1 if exists, else 0.
+ */
 static gboolean
-nvt_exists(const char* nvt)
+nvt_exists (const char* nvt)
 {
   gchar *quoted_nvt;
 
@@ -49370,6 +49469,9 @@ lookup_report_format (const char* name, report_format_t* report_format)
  *
  * @param[in]  one  First.
  * @param[in]  two  Second.
+ *
+ * @return Less than, equal to, or greater than zero if one is found to be
+ *         less than, to match, or be greater than two.
  */
 static gint
 compare_files (gconstpointer one, gconstpointer two)
@@ -55182,6 +55284,8 @@ find_port_range_with_permission (const char *uuid, port_range_t *port_range,
  *
  * @param[in]  one  First range.
  * @param[in]  two  Second range.
+ *
+ * @return 0 equal, 1 one greater, -1 two greater.
  */
 static int
 range_compare (gconstpointer one, gconstpointer two)
@@ -59430,6 +59534,9 @@ manage_restore (const char *id)
   return 2;
 }
 
+/**
+ * @brief Owner SQL for manage_empty_trash.
+ */
 #define WHERE_OWNER                                          \
  " WHERE owner = (SELECT id FROM users WHERE uuid = '%s')",  \
  current_credentials.uuid
@@ -59836,6 +59943,8 @@ typedef struct
 
 /**
  * @brief Free an identifier.
+ *
+ * @param[in]  identifier  Identifier.
  */
 static void
 identifier_free (identifier_t *identifier)
@@ -60254,6 +60363,8 @@ hosts_set_details (report_t report)
  * @brief Get XML of a detailed host route.
  *
  * @param[in]  host  The host.
+ *
+ * @return XML.
  */
 gchar*
 host_routes_xml (host_t host)
@@ -60769,6 +60880,9 @@ DEF_ACCESS (host_identifier_iterator_os_title,
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
  }
 
+/**
+ * @brief Host iterator WHERE columns.
+ */
 #define HOST_ITERATOR_WHERE_COLUMNS                                   \
  {                                                                    \
    {                                                                  \
@@ -62662,6 +62776,10 @@ modify_setting (const gchar *uuid, const gchar *name,
 
 /**
  * @brief Return max, adjusted according to maximum allowed rows.
+ *
+ * @param[in]  max  Max.
+ *
+ * @return Adjusted max.
  */
 int
 manage_max_rows (int max)
@@ -65123,6 +65241,9 @@ user_resources_in_use (user_t user,
    "oldest", "newest", "type", NULL                                          \
  }
 
+/**
+ * @brief Results SQL for VULN_ITERATOR_COLUMNS.
+ */
 #define VULN_RESULTS_WHERE                                                   \
      "  WHERE nvt = vulns.uuid"                                              \
      "    AND (opts.report IS NULL OR results.report = opts.report)"         \
@@ -65135,6 +65256,9 @@ user_resources_in_use (user_t user,
      "                             (SELECT uuid FROM current_credentials))"  \
      "           AND task = results.task)"
 
+/**
+ * @brief Vuln iterator columns.
+ */
 #define VULN_ITERATOR_COLUMNS                                                \
  {                                                                           \
    /* The following must match GET_ITERATOR_COLUMNS */                       \
@@ -67530,6 +67654,12 @@ cache_permissions_for_users (const char *type, GArray *cache_users)
     g_array_free (cache_users, TRUE);
 }
 
+/**
+ * @brief Update entire permission cache the given users.
+ *
+ * @param[in]  cache_users  GArray of users to create cache for.  NULL means
+ *                          all users.
+ */
 static void
 cache_all_permissions_for_users (GArray *cache_users)
 {
@@ -67550,6 +67680,12 @@ cache_all_permissions_for_users (GArray *cache_users)
     g_array_free (cache_users, TRUE);
 }
 
+/**
+ * @brief Delete permission cache a resource.
+ *
+ * @param[in]  type      Resource type.
+ * @param[in]  resource  Resource.
+ */
 void
 delete_permissions_cache_for_resource (const char* type, resource_t resource)
 {
@@ -67563,6 +67699,11 @@ delete_permissions_cache_for_resource (const char* type, resource_t resource)
     }
 }
 
+/**
+ * @brief Delete permission cache the given user.
+ *
+ * @param[in]  user  User.
+ */
 void
 delete_permissions_cache_for_user (user_t user)
 {

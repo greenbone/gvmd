@@ -92,6 +92,9 @@ get_max_hosts ()
   return max_hosts;
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_hosts_contains);
 
 /**
@@ -132,6 +135,9 @@ sql_hosts_contains (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_next_time);
 
 /**
@@ -174,6 +180,9 @@ sql_next_time (PG_FUNCTION_ARGS)
   PG_RETURN_INT32 (ret);
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_next_time_ical);
 
 /**
@@ -222,6 +231,9 @@ sql_next_time_ical (PG_FUNCTION_ARGS)
   PG_RETURN_INT32 (ret);
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_max_hosts);
 
 /**
@@ -264,6 +276,9 @@ sql_max_hosts (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_level_min_severity);
 
 /**
@@ -298,6 +313,9 @@ sql_level_min_severity (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_level_max_severity);
 
 /**
@@ -332,6 +350,9 @@ sql_level_max_severity (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_severity_matches_ov);
 
 /**
@@ -361,6 +382,9 @@ sql_severity_matches_ov (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_valid_db_resource_type);
 
 /**
@@ -391,6 +415,9 @@ sql_valid_db_resource_type (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_regexp);
 
 /**
