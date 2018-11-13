@@ -13146,7 +13146,6 @@ convert_to_manage_ranges (array_t *ranges)
  */
 #define CLOSE(parent, element)                                           \
   case parent ## _ ## element:                                           \
-    assert (strcasecmp (G_STRINGIFY (element), element_name) == 0);      \
     set_client_state (parent);                                           \
     break
 
@@ -13160,7 +13159,6 @@ convert_to_manage_ranges (array_t *ranges)
  */
 #define CLOSE_READ_OVER(parent, element)                                 \
   case parent ## _ ## element:                                           \
-    assert (strcasecmp (G_STRINGIFY (element), element_name) == 0);      \
     gmp_parser->read_over = 0;                                           \
     set_client_state (parent);                                           \
     break
@@ -13225,7 +13223,6 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
  */
 #define CASE_DELETE(upper, type, capital)                                   \
   case CLIENT_DELETE_ ## upper :                                            \
-    assert (strcasecmp ("DELETE_" G_STRINGIFY (upper), element_name) == 0); \
     if (delete_ ## type ## _data-> type ## _id)                             \
       switch (delete_ ## type (delete_ ## type ## _data-> type ## _id,      \
                              delete_ ## type ## _data->ultimate))           \
@@ -21588,24 +21585,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_AUTHENTICATE_CREDENTIALS:
-        assert (strcasecmp ("CREDENTIALS", element_name) == 0);
         set_client_state (CLIENT_AUTHENTICATE);
         break;
 
       case CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME:
-        assert (strcasecmp ("USERNAME", element_name) == 0);
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
       case CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
       case CLIENT_AUTHENTIC:
       case CLIENT_COMMANDS:
       case CLIENT_AUTHENTIC_COMMANDS:
-        assert (strcasecmp ("COMMANDS", element_name) == 0);
         SENDF_TO_CLIENT_OR_FAIL ("</commands_response>");
         break;
 
@@ -21613,7 +21606,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_DELETE (ALERT, alert, "Alert");
 
       case CLIENT_DELETE_ASSET:
-        assert (strcasecmp ("DELETE_ASSET", element_name) == 0);
         if (delete_asset_data->asset_id
             || delete_asset_data->report_id)
           switch (delete_asset (delete_asset_data->asset_id,
@@ -21777,7 +21769,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_USER:
-        assert (strcasecmp ("DELETE_USER", element_name) == 0);
         if (delete_user_data->user_id || delete_user_data->name)
           switch (delete_user (delete_user_data->user_id,
                                delete_user_data->name,
@@ -22004,11 +21995,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
       case CLIENT_GET_AGENTS:
-        assert (strcasecmp ("GET_AGENTS", element_name) == 0);
         return handle_get_agents (gmp_parser, error);
 
       case CLIENT_GET_AGGREGATES:
-        assert (strcasecmp ("GET_AGGREGATES", element_name) == 0);
         return handle_get_aggregates (gmp_parser, error);
 
       CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
@@ -22016,120 +22005,91 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_GET_AGGREGATES, TEXT_COLUMN);
 
       case CLIENT_GET_ALERTS:
-        assert (strcasecmp ("GET_ALERTS", element_name) == 0);
         return handle_get_alerts (gmp_parser, error);
 
       case CLIENT_GET_ASSETS:
-        assert (strcasecmp ("GET_ASSETS", element_name) == 0);
         return handle_get_assets (gmp_parser, error);
 
       case CLIENT_GET_CONFIGS:
-        assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
         return handle_get_configs (gmp_parser, error);
 
       case CLIENT_GET_CREDENTIALS:
-        assert (strcasecmp ("GET_CREDENTIALS", element_name) == 0);
         return handle_get_credentials (gmp_parser, error);
 
       case CLIENT_GET_FEEDS:
-        assert (strcasecmp ("GET_FEEDS", element_name) == 0);
         return handle_get_feeds (gmp_parser, error);
 
       case CLIENT_GET_FILTERS:
-        assert (strcasecmp ("GET_FILTERS", element_name) == 0);
         return handle_get_filters (gmp_parser, error);
 
       case CLIENT_GET_GROUPS:
-        assert (strcasecmp ("GET_GROUPS", element_name) == 0);
         return handle_get_groups (gmp_parser, error);
 
       case CLIENT_GET_INFO:
-        assert (strcasecmp ("GET_INFO", element_name) == 0);
         return handle_get_info (gmp_parser, error);
 
       case CLIENT_GET_NOTES:
-        assert (strcasecmp ("GET_NOTES", element_name) == 0);
         return handle_get_notes (gmp_parser, error);
 
       case CLIENT_GET_NVTS:
-        assert (strcasecmp ("GET_NVTS", element_name) == 0);
         return handle_get_nvts (gmp_parser, error);
 
       case CLIENT_GET_NVT_FAMILIES:
-        assert (strcasecmp ("GET_NVT_FAMILIES", element_name) == 0);
         return handle_get_nvt_families (gmp_parser, error);
 
       case CLIENT_GET_OVERRIDES:
-        assert (strcasecmp ("GET_OVERRIDES", element_name) == 0);
         return handle_get_overrides (gmp_parser, error);
 
       case CLIENT_GET_PERMISSIONS:
-        assert (strcasecmp ("GET_PERMISSIONS", element_name) == 0);
         return handle_get_permissions (gmp_parser, error);
 
       case CLIENT_GET_PORT_LISTS:
-        assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
         return handle_get_port_lists (gmp_parser, error);
 
       case CLIENT_GET_PREFERENCES:
-        assert (strcasecmp ("GET_PREFERENCES", element_name) == 0);
         return handle_get_preferences (gmp_parser, error);
 
       case CLIENT_GET_REPORTS:
-        assert (strcasecmp ("GET_REPORTS", element_name) == 0);
         return handle_get_reports (gmp_parser, error);
 
       case CLIENT_GET_REPORT_FORMATS:
-        assert (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0);
         return handle_get_report_formats (gmp_parser, error);
 
       case CLIENT_GET_RESULTS:
-        assert (strcasecmp ("GET_RESULTS", element_name) == 0);
         return handle_get_results (gmp_parser, error);
 
       case CLIENT_GET_ROLES:
-        assert (strcasecmp ("GET_ROLES", element_name) == 0);
         return handle_get_roles (gmp_parser, error);
 
       case CLIENT_GET_SCANNERS:
-        assert (strcasecmp ("GET_SCANNERS", element_name) == 0);
         return handle_get_scanners (gmp_parser, error);
 
       case CLIENT_GET_SCHEDULES:
-        assert (strcasecmp ("GET_SCHEDULES", element_name) == 0);
         return handle_get_schedules (gmp_parser, error);
 
       case CLIENT_GET_SETTINGS:
-        assert (strcasecmp ("GET_SETTINGS", element_name) == 0);
         return handle_get_settings (gmp_parser, error);
 
       case CLIENT_GET_SYSTEM_REPORTS:
-        assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
         return handle_get_system_reports (gmp_parser, error);
 
       case CLIENT_GET_TAGS:
-        assert (strcasecmp ("GET_TAGS", element_name) == 0);
         return handle_get_tags (gmp_parser, error);
 
       case CLIENT_GET_TARGETS:
-        assert (strcasecmp ("GET_TARGETS", element_name) == 0);
         return handle_get_targets (gmp_parser, error);
 
       case CLIENT_GET_TASKS:
-        assert (strcasecmp ("GET_TASKS", element_name) == 0);
         return handle_get_tasks (gmp_parser, error);
 
       case CLIENT_GET_USERS:
-        assert (strcasecmp ("GET_USERS", element_name) == 0);
         return handle_get_users (gmp_parser, error);
 
       case CLIENT_GET_VERSION:
       case CLIENT_GET_VERSION_AUTHENTIC:
-        assert (strcasecmp ("GET_VERSION", element_name) == 0);
         return handle_get_version (gmp_parser, error);
 
       case CLIENT_GET_VULNS:
-        assert (strcasecmp ("GET_VULNS", element_name) == 0);
         return handle_get_vulns (gmp_parser, error);
 
       case CLIENT_HELP:
@@ -22297,8 +22257,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           agent_t agent;
 
-          assert (strcasecmp ("CREATE_AGENT", element_name) == 0);
-
           if (create_agent_data->copy)
             switch (copy_agent (create_agent_data->name,
                                 create_agent_data->comment,
@@ -22421,8 +22379,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           resource_t asset;
 
-          assert (strcasecmp ("CREATE_ASSET", element_name) == 0);
-
           if (create_asset_data->report_id == NULL
               && create_asset_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -22521,7 +22477,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           config_t new_config;
 
-          assert (strcasecmp ("CREATE_CONFIG", element_name) == 0);
           assert (import_config_data->import
                   || (create_config_data->name != NULL));
 
@@ -22719,7 +22674,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CONFIG, NAME);
 
       case CLIENT_C_C_GCR:
-        assert (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_CONFIG);
         break;
       CLOSE (CLIENT_C_C_GCR, CONFIG);
@@ -22729,8 +22683,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR:
         {
           int include;
-
-          assert (strcasecmp ("NVT_SELECTOR", element_name) == 0);
 
           if (import_config_data->nvt_selector_include
               && strcmp (import_config_data->nvt_selector_include, "0") == 0)
@@ -22760,7 +22712,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, FAMILY_OR_NVT);
       CLOSE (CLIENT_C_C_GCR_CONFIG, PREFERENCES);
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE:
-        assert (strcasecmp ("PREFERENCE", element_name) == 0);
         array_terminate (import_config_data->preference_alts);
 
         char* preference_hr_name;
@@ -22803,7 +22754,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES);
         break;
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT:
-        assert (strcasecmp ("ALT", element_name) == 0);
         array_add (import_config_data->preference_alts,
                    import_config_data->preference_alt);
         import_config_data->preference_alt = NULL;
@@ -22825,7 +22775,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           alert_method_t method;
           alert_t new_alert;
 
-          assert (strcasecmp ("CREATE_ALERT", element_name) == 0);
           assert (create_alert_data->name != NULL);
           assert (create_alert_data->condition != NULL);
           assert (create_alert_data->method != NULL);
@@ -23145,7 +23094,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (create_alert_data->condition_data);
           assert (create_alert_data->part_data);
           assert (create_alert_data->part_name);
@@ -23165,7 +23113,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
       case CLIENT_CREATE_ALERT_CONDITION_DATA_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_ALERT_CONDITION_DATA);
         break;
 
@@ -23173,7 +23120,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (create_alert_data->event_data);
           assert (create_alert_data->part_data);
           assert (create_alert_data->part_name);
@@ -23198,7 +23144,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (create_alert_data->method_data);
           assert (create_alert_data->part_data);
           assert (create_alert_data->part_name);
@@ -23223,7 +23168,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           credential_t new_credential;
 
-          assert (strcasecmp ("CREATE_CREDENTIAL", element_name) == 0);
           assert (create_credential_data->name != NULL);
 
           if (create_credential_data->copy)
@@ -23456,7 +23400,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           filter_t new_filter;
 
-          assert (strcasecmp ("CREATE_FILTER", element_name) == 0);
           assert (create_filter_data->term != NULL);
 
           if (create_filter_data->copy)
@@ -23573,7 +23516,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           group_t new_group;
 
-          assert (strcasecmp ("CREATE_GROUP", element_name) == 0);
           assert (create_group_data->users != NULL);
 
           if (create_group_data->copy)
@@ -23700,8 +23642,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           result_t result = 0;
           note_t new_note;
           int max;
-
-          assert (strcasecmp ("CREATE_NOTE", element_name) == 0);
 
           if (create_note_data->copy)
             switch (copy_note (create_note_data->copy, &new_note))
@@ -23866,8 +23806,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           result_t result = 0;
           override_t new_override;
           int max;
-
-          assert (strcasecmp ("CREATE_OVERRIDE", element_name) == 0);
 
           if (create_override_data->copy)
             switch (copy_override (create_override_data->copy, &new_override))
@@ -24047,8 +23985,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           permission_t new_permission;
 
-          assert (strcasecmp ("CREATE_PERMISSION", element_name) == 0);
-
           if (create_permission_data->copy)
             switch (copy_permission (create_permission_data->comment,
                                      create_permission_data->copy,
@@ -24203,8 +24139,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           port_list_t new_port_list;
           array_t *manage_ranges;
-
-          assert (strcasecmp ("CREATE_PORT_LIST", element_name) == 0);
 
           manage_ranges = NULL;
 
@@ -24402,7 +24336,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_PORT_LIST, COMMENT);
       CLOSE (CLIENT_CREATE_PORT_LIST, COPY);
       case CLIENT_CPL_GPLR:
-        assert (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_PORT_LIST);
         break;
       CLOSE (CLIENT_CREATE_PORT_LIST, NAME);
@@ -24418,7 +24351,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE:
         {
-          assert (strcasecmp ("PORT_RANGE", element_name) == 0);
           assert (create_port_list_data->ranges);
 
           array_add (create_port_list_data->ranges,
@@ -24435,8 +24367,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_PORT_RANGE:
         {
           port_range_t new_port_range;
-
-          assert (strcasecmp ("CREATE_PORT_RANGE", element_name) == 0);
 
           if (create_port_range_data->start == NULL
               || create_port_range_data->end == NULL
@@ -24530,8 +24460,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           char *uuid;
 
-          assert (strcasecmp ("CREATE_REPORT", element_name) == 0);
-
           array_terminate (create_report_data->results);
           array_terminate (create_report_data->host_ends);
           array_terminate (create_report_data->host_starts);
@@ -24618,7 +24546,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT, IN_ASSETS);
       CLOSE (CLIENT_CREATE_REPORT, REPORT);
       case CLIENT_CREATE_REPORT_RR:
-        assert (strcasecmp ("REPORT", element_name) == 0);
         if (create_report_data->wrapper)
           set_client_state (CLIENT_CREATE_REPORT_REPORT);
         else
@@ -24631,7 +24558,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           create_report_result_t *result;
 
-          assert (strcasecmp ("ERROR", element_name) == 0);
           assert (create_report_data->results);
 
           if (create_report_data->result_scan_nvt_version == NULL)
@@ -24691,8 +24617,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, FILTERS);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOST_COUNT);
       case CLIENT_CREATE_REPORT_RR_HOST_END:
-        assert (strcasecmp ("HOST_END", element_name) == 0);
-
         if (create_report_data->host_end_host)
           {
             create_report_result_t *result;
@@ -24715,8 +24639,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_REPORT_RR);
         break;
       case CLIENT_CREATE_REPORT_RR_HOST_START:
-        assert (strcasecmp ("HOST_START", element_name) == 0);
-
         if (create_report_data->host_start_host)
           {
             create_report_result_t *result;
@@ -24766,7 +24688,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_REPORT_RR_H_DETAIL:
         {
-          assert (strcasecmp ("DETAIL", element_name) == 0);
           assert (create_report_data->details);
 
           if (create_report_data->ip)
@@ -24801,7 +24722,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE, TYPE);
       CLOSE (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE, NAME);
       case CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_DESC:
-        assert (strcasecmp ("DESCRIPTION", element_name) == 0);
         set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE);
         break;
 
@@ -24809,7 +24729,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           create_report_result_t *result;
 
-          assert (strcasecmp ("RESULT", element_name) == 0);
           assert (create_report_data->results);
 
           if (create_report_data->result_scan_nvt_version == NULL)
@@ -24908,8 +24827,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_REPORT_FORMAT:
         {
           report_format_t new_report_format;
-
-          assert (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0);
 
           if (create_report_format_data->copy)
             {
@@ -25117,7 +25034,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_REPORT_FORMAT, COPY);
       case CLIENT_CRF_GRFR:
-        assert (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_REPORT_FORMAT);
         break;
       CLOSE (CLIENT_CRF_GRFR, REPORT_FORMAT);
@@ -25128,7 +25044,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("FILE", element_name) == 0);
           assert (create_report_format_data->files);
           assert (create_report_format_data->file);
           assert (create_report_format_data->file_name);
@@ -25150,7 +25065,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           create_report_format_param_t *param;
 
-          assert (strcasecmp ("PARAM", element_name) == 0);
           assert (create_report_format_data->params);
           assert (create_report_format_data->param_name);
           assert (create_report_format_data->param_value);
@@ -25207,7 +25121,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                        REPORT_FORMAT);
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
-        assert (strcasecmp ("OPTION", element_name) == 0);
         array_add (create_report_format_data->param_options,
                    create_report_format_data->param_option);
         create_report_format_data->param_option = NULL;
@@ -25221,7 +25134,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           role_t new_role;
 
-          assert (strcasecmp ("CREATE_ROLE", element_name) == 0);
           assert (create_role_data->users != NULL);
 
           if (create_role_data->copy)
@@ -25339,7 +25251,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ROLE, USERS);
 
       case CLIENT_CREATE_SCANNER:
-        assert (strcasecmp ("CREATE_SCANNER", element_name) == 0);
         return handle_create_scanner (gmp_parser, error);
       CLOSE (CLIENT_CREATE_SCANNER, COMMENT);
       CLOSE (CLIENT_CREATE_SCANNER, COPY);
@@ -25352,7 +25263,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_SCHEDULE:
         {
-          assert (strcasecmp ("CREATE_SCHEDULE", element_name) == 0);
           handle_create_schedule (gmp_parser, error);
           break;
         }
@@ -25379,8 +25289,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_TAG:
         {
           tag_t new_tag;
-
-          assert (strcasecmp ("CREATE_TAG", element_name) == 0);
 
           if (create_tag_data->resource_ids)
             array_terminate (create_tag_data->resource_ids);
@@ -25543,8 +25451,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           credential_t ssh_credential = 0, smb_credential = 0;
           credential_t esxi_credential = 0, snmp_credential = 0;
           target_t new_target;
-
-          assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
 
           if (create_target_data->copy)
             switch (copy_target (create_target_data->name,
@@ -25877,7 +25783,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
            *       after removing the option to create a task from an RC
            *       file. */
 
-          assert (strcasecmp ("CREATE_TASK", element_name) == 0);
           assert (create_task_data->task != (task_t) 0);
 
           /* The task already exists in the database at this point, so on
@@ -26280,14 +26185,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK_OBSERVERS, GROUP);
 
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
-        assert (strcasecmp ("PREFERENCE", element_name) == 0);
         array_add (create_task_data->preferences,
                    create_task_data->preference);
         create_task_data->preference = NULL;
         set_client_state (CLIENT_CREATE_TASK_PREFERENCES);
         break;
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME:
-        assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
         break;
       CLOSE (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE, VALUE);
@@ -26297,8 +26200,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           gchar *errdesc;
           gchar *fail_group_id, *fail_role_id;
           user_t new_user;
-
-          assert (strcasecmp ("CREATE_USER", element_name) == 0);
 
           errdesc = NULL;
           if (create_user_data->copy)
@@ -26450,12 +26351,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_USER, PASSWORD);
       CLOSE (CLIENT_CREATE_USER, ROLE);
       case CLIENT_CREATE_USER_SOURCES:
-        assert (strcasecmp ("SOURCES", element_name) == 0);
         array_terminate (create_user_data->sources);
         set_client_state (CLIENT_CREATE_USER);
         break;
       case CLIENT_CREATE_USER_SOURCES_SOURCE:
-        assert (strcasecmp ("SOURCE", element_name) == 0);
         if (create_user_data->current_source)
           array_add (create_user_data->sources,
                      g_strdup (create_user_data->current_source));
@@ -26487,8 +26386,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_AGENT:
         {
-          assert (strcasecmp ("MODIFY_AGENT", element_name) == 0);
-
           switch (modify_agent
                    (modify_agent_data->agent_id,
                     modify_agent_data->name,
@@ -26551,8 +26448,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           event_t event;
           alert_condition_t condition;
           alert_method_t method;
-
-          assert (strcasecmp ("MODIFY_ALERT", element_name) == 0);
 
           event = EVENT_ERROR;
           condition = ALERT_CONDITION_ERROR;
@@ -26824,7 +26719,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (modify_alert_data->event_data);
           assert (modify_alert_data->part_data);
           assert (modify_alert_data->part_name);
@@ -26849,7 +26743,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (modify_alert_data->condition_data);
           assert (modify_alert_data->part_data);
           assert (modify_alert_data->part_name);
@@ -26874,7 +26767,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (modify_alert_data->method_data);
           assert (modify_alert_data->part_data);
           assert (modify_alert_data->part_name);
@@ -26897,8 +26789,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_ASSET:
         {
-          assert (strcasecmp ("MODIFY_ASSET", element_name) == 0);
-
           switch (modify_asset
                    (modify_asset_data->asset_id,
                     modify_asset_data->comment))
@@ -26957,8 +26847,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_MODIFY_AUTH:
         {
           GSList *item;
-
-          assert (strcasecmp ("MODIFY_AUTH", element_name) == 0);
 
           if (acl_user_may ("modify_auth") == 0)
             {
@@ -27061,8 +26949,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_AUTH_GROUP:
         {
-          assert (strcasecmp ("GROUP", element_name) == 0);
-
           /* Add settings to group. */
           if (modify_auth_data->curr_group_settings)
             {
@@ -27081,8 +26967,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           auth_conf_setting_t *setting;
 
-          assert (strcasecmp ("AUTH_CONF_SETTING", element_name) == 0);
-
           setting = g_malloc0 (sizeof (auth_conf_setting_t));
           setting->key = modify_auth_data->key;
           modify_auth_data->key = NULL;
@@ -27100,13 +26984,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING, VALUE);
 
       case CLIENT_MODIFY_CONFIG:
-        assert (strcasecmp ("MODIFY_CONFIG", element_name) == 0);
         return handle_modify_config (gmp_parser, error);
       CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
       CLOSE (CLIENT_MODIFY_CONFIG, SCANNER);
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
-        assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
         assert (modify_config_data->families_growing_all);
         assert (modify_config_data->families_static_all);
         assert (modify_config_data->families_growing_empty);
@@ -27117,7 +26999,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_MODIFY_CONFIG, NAME);
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
-        assert (strcasecmp ("NVT_SELECTION", element_name) == 0);
         assert (modify_config_data->nvt_selection);
         array_terminate (modify_config_data->nvt_selection);
         set_client_state (CLIENT_MODIFY_CONFIG);
@@ -27125,7 +27006,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CONFIG, PREFERENCE);
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
-        assert (strcasecmp ("FAMILY", element_name) == 0);
         if (modify_config_data->family_selection_family_name)
           {
             if (modify_config_data->family_selection_family_growing)
@@ -27152,7 +27032,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
-        assert (strcasecmp ("GROWING", element_name) == 0);
         if (modify_config_data->family_selection_growing_text)
           {
             modify_config_data->family_selection_growing
@@ -27166,7 +27045,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
-        assert (strcasecmp ("ALL", element_name) == 0);
         if (modify_config_data->family_selection_family_all_text)
           {
             modify_config_data->family_selection_family_all
@@ -27180,7 +27058,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY, NAME);
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
-        assert (strcasecmp ("GROWING", element_name) == 0);
         if (modify_config_data->family_selection_family_growing_text)
           {
             modify_config_data->family_selection_family_growing
@@ -27195,7 +27072,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       CLOSE (CLIENT_MODIFY_CONFIG_NVT_SELECTION, FAMILY);
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
         if (modify_config_data->nvt_selection_nvt_oid)
           array_add (modify_config_data->nvt_selection,
                      modify_config_data->nvt_selection_nvt_oid);
@@ -27206,7 +27082,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NAME);
       CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NVT);
       case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
         /* Init, so it's the empty string when the value is empty. */
         gvm_append_string (&modify_config_data->preference_value, "");
         set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
@@ -27214,8 +27089,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_CREDENTIAL:
         {
-          assert (strcasecmp ("MODIFY_CREDENTIAL", element_name) == 0);
-
           switch (modify_credential
                    (modify_credential_data->credential_id,
                     modify_credential_data->name,
@@ -27352,8 +27225,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_FILTER:
         {
-          assert (strcasecmp ("MODIFY_FILTER", element_name) == 0);
-
           switch (modify_filter
                    (modify_filter_data->filter_id,
                     modify_filter_data->name,
@@ -27432,8 +27303,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_GROUP:
         {
-          assert (strcasecmp ("MODIFY_GROUP", element_name) == 0);
-
           switch (modify_group
                    (modify_group_data->group_id,
                     modify_group_data->name,
@@ -27510,8 +27379,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_NOTE:
         {
-          assert (strcasecmp ("MODIFY_NOTE", element_name) == 0);
-
           if (acl_user_may ("modify_note") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -27624,8 +27491,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_OVERRIDE:
         {
-          assert (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0);
-
           if (acl_user_may ("modify_override") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -27753,8 +27618,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_PERMISSION:
         {
-          assert (strcasecmp ("MODIFY_PERMISSION", element_name) == 0);
-
           if (modify_permission_data->permission_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_permission",
@@ -27884,8 +27747,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_PORT_LIST:
         {
-          assert (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0);
-
           switch (modify_port_list
                    (modify_port_list_data->port_list_id,
                     modify_port_list_data->name,
@@ -27950,8 +27811,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_REPORT:
         {
-          assert (strcasecmp ("MODIFY_REPORT", element_name) == 0);
-
           switch (modify_report
                    (modify_report_data->report_id,
                     modify_report_data->comment))
@@ -28012,8 +27871,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_REPORT_FORMAT:
         {
-          assert (strcasecmp ("MODIFY_REPORT_FORMAT", element_name) == 0);
-
           switch (modify_report_format
                    (modify_report_format_data->report_format_id,
                     modify_report_format_data->name,
@@ -28102,8 +27959,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_ROLE:
         {
-          assert (strcasecmp ("MODIFY_ROLE", element_name) == 0);
-
           switch (modify_role
                    (modify_role_data->role_id,
                     modify_role_data->name,
@@ -28179,7 +28034,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_ROLE, USERS);
 
       case CLIENT_MODIFY_SCANNER:
-        assert (strcasecmp ("MODIFY_SCANNER", element_name) == 0);
         return handle_modify_scanner (gmp_parser, error);
       CLOSE (CLIENT_MODIFY_SCANNER, TYPE);
       CLOSE (CLIENT_MODIFY_SCANNER, PORT);
@@ -28191,7 +28045,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_SCHEDULE:
         {
-          assert (strcasecmp ("MODIFY_SCHEDULE", element_name) == 0);
           handle_modify_schedule (gmp_parser, error);
           break;
         }
@@ -28273,7 +28126,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_TAG:
         {
-          assert (strcasecmp ("MODIFY_TAG", element_name) == 0);
           gchar *error_extra = NULL;
 
           if (modify_tag_data->resource_ids)
@@ -28397,8 +28249,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_TARGET:
         {
-          assert (strcasecmp ("MODIFY_TARGET", element_name) == 0);
-
           if (modify_target_data->target_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_target",
@@ -28684,8 +28534,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL, PORT);
 
       case CLIENT_MODIFY_TASK:
-        assert (strcasecmp ("MODIFY_TASK", element_name) == 0);
-
         if (acl_user_may ("modify_task") == 0)
           {
             SEND_TO_CLIENT_OR_FAIL
@@ -28986,22 +28834,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);
 
       case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
-        assert (strcasecmp ("PREFERENCE", element_name) == 0);
         array_add (modify_task_data->preferences,
                    modify_task_data->preference);
         modify_task_data->preference = NULL;
         set_client_state (CLIENT_MODIFY_TASK_PREFERENCES);
         break;
       case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME:
-        assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
         break;
       CLOSE (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE, VALUE);
 
       case CLIENT_MODIFY_USER:
         {
-          assert (strcasecmp ("MODIFY_USER", element_name) == 0);
-
           if ((modify_user_data->name == NULL
                && modify_user_data->user_id == NULL)
               || (modify_user_data->name
@@ -29135,12 +28979,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_USER, PASSWORD);
       CLOSE (CLIENT_MODIFY_USER, ROLE);
       case CLIENT_MODIFY_USER_SOURCES:
-        assert (strcasecmp ("SOURCES", element_name) == 0);
         array_terminate (modify_user_data->sources);
         set_client_state (CLIENT_MODIFY_USER);
         break;
       case CLIENT_MODIFY_USER_SOURCES_SOURCE:
-        assert (strcasecmp ("SOURCE", element_name) == 0);
         array_add (modify_user_data->sources,
                    g_strdup (modify_user_data->current_source));
         g_free (modify_user_data->current_source);
@@ -29731,7 +29573,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_RUN_WIZARD_PARAMS_PARAM, VALUE);
 
       case CLIENT_RUN_WIZARD_PARAMS_PARAM:
-        assert (strcasecmp ("PARAM", element_name) == 0);
         array_add (run_wizard_data->params, run_wizard_data->param);
         run_wizard_data->param = NULL;
         set_client_state (CLIENT_RUN_WIZARD_PARAMS);
@@ -29948,11 +29789,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_SYNC_CONFIG:
-        assert (strcasecmp ("SYNC_CONFIG", element_name) == 0);
         return handle_sync_config (gmp_parser, error);
 
       case CLIENT_VERIFY_AGENT:
-        assert (strcasecmp ("VERIFY_AGENT", element_name) == 0);
         if (verify_agent_data->agent_id)
           {
             switch (verify_agent (verify_agent_data->agent_id))
@@ -29990,7 +29829,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_VERIFY_REPORT_FORMAT:
-        assert (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0);
         if (verify_report_format_data->report_format_id)
           {
             switch (verify_report_format
@@ -30030,7 +29868,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_VERIFY_SCANNER:
-        assert (strcasecmp ("VERIFY_SCANNER", element_name) == 0);
         if (verify_scanner_data->scanner_id)
           {
             char *version = NULL;
