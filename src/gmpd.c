@@ -383,7 +383,7 @@ write_to_client (gvm_connection_t *client_connection)
  *
  * @return TRUE if write to client failed, else FALSE.
  */
-gboolean
+static gboolean
 gmpd_send_to_client (const char* msg, void* write_to_client_data)
 {
   assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);

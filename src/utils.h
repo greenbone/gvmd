@@ -36,9 +36,6 @@ int
 gvm_sleep (unsigned int);
 
 int
-parse_utc_time (const char *, const char *);
-
-int
 parse_otp_time (const char *);
 
 int

@@ -137,6 +137,7 @@
 #include <dirent.h>
 
 #include "manage_sql.h"
+#include "utils.h"
 #include "sql.h"
 
 #include <gvm/base/logging.h>
@@ -1431,7 +1432,7 @@ migrate_11_to_12 ()
   /* Tables agents, configs and escalators were relieved of the UNIQUE
    * constraint on the name column.
    *
-   * Recreate the tables, in order to remove the contraint. */
+   * Recreate the tables, in order to remove the constraint. */
 
   /** @todo ROLLBACK on failure. */
 
@@ -1851,7 +1852,7 @@ migrate_18_to_19 ()
   /* Many tables got a unique UUID column.  As a result the predefined
    * configs and target got fixed UUIDs.
    *
-   * Recreate the tables, in order to add the unique contraint. */
+   * Recreate the tables, in order to add the unique constraint. */
 
   /** @todo ROLLBACK on failure. */
 
@@ -14674,6 +14675,193 @@ migrate_194_to_195 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 195 to version 196.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_195_to_196 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 195. */
+
+  if (manage_db_version () != 195)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ensure new tables exist. */
+
+  if (sql_is_sqlite3 ())
+    sql ("CREATE TABLE IF NOT EXISTS results_trash"
+         " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
+         "  result_nvt, type, description, report, nvt_version, severity REAL,"
+         "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER,"
+         "  hostname TEXT)");
+  else
+    sql ("CREATE TABLE IF NOT EXISTS results_trash"
+         " (id SERIAL PRIMARY KEY,"
+         "  uuid text UNIQUE NOT NULL,"
+         "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+         "  host text,"
+         "  port text,"
+         "  nvt text,"
+         "  result_nvt integer," // REFERENCES result_nvts (id),"
+         "  type text,"
+         "  description text,"
+         "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+         "  nvt_version text,"
+         "  severity real,"
+         "  qod integer,"
+         "  qod_type text,"
+         "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+         "  date integer,"
+         "  hostname text);");
+
+  /* Results of trashcan tasks are now stored in results_trash. */
+
+  sql ("INSERT INTO results_trash"
+       " (uuid, task, host, port, nvt, result_nvt, type, description,"
+       "  report, nvt_version, severity, qod, qod_type, owner, date,"
+       "  hostname)"
+       " SELECT uuid, task, host, port, nvt, result_nvt, type,"
+       "        description, report, nvt_version, severity, qod,"
+       "         qod_type, owner, date, hostname"
+       " FROM results"
+       " WHERE task IN (SELECT id FROM tasks WHERE hidden = 2);");
+
+  sql ("DELETE FROM results"
+       " WHERE task IN (SELECT id FROM tasks WHERE hidden = 2);");
+
+  /* Set the database version to 196. */
+
+  set_db_version (196);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 196 to version 197.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_196_to_197 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 196. */
+
+  if (manage_db_version () != 196)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The hidden column was removed from reports. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE reports RENAME TO reports_196;");
+
+      sql ("CREATE TABLE IF NOT EXISTS reports"
+           " (id INTEGER PRIMARY KEY, uuid, owner INTEGER,"
+           "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
+           "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags INTEGER);");
+
+      sql ("INSERT INTO reports"
+           " (id, uuid, owner, task, date, start_time, end_time, nbefile,"
+           "  comment, scan_run_status, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags)"
+           " SELECT"
+           "  id, uuid, owner, task, date, start_time, end_time, nbefile,"
+           "  comment, scan_run_status, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags"
+           " FROM reports_196;");
+
+      sql ("DROP TABLE reports_196;");
+    }
+  else
+    sql ("ALTER TABLE reports DROP COLUMN hidden;");
+
+  /* Set the database version to 197. */
+
+  set_db_version (197);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 197 to version 198.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_197_to_198 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 197. */
+
+  if (manage_db_version () != 197)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The copyright column was removed from nvts. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE nvts RENAME TO nvts_197;");
+
+      sql ("CREATE TABLE IF NOT EXISTS nvts"
+           " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
+           "  cve, bid, xref, tag, category INTEGER, family, cvss_base,"
+           "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
+           "  qod_type TEXT);");
+
+      sql ("INSERT INTO nvts"
+           " (id, uuid, oid, name, comment, cve, bid, xref, tag, category,"
+           "  family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type)"
+           " SELECT"
+           "  id, uuid, oid, name, comment, cve, bid, xref, tag, category,"
+           "  family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type"
+           " FROM nvts_197;");
+
+      sql ("DROP TABLE nvts_197;");
+    }
+  else
+    sql ("ALTER TABLE nvts DROP COLUMN copyright;");
+
+  /* Set the database version to 198. */
+
+  set_db_version (198);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -14883,6 +15071,9 @@ static migrator_t database_migrators[]
     {193, migrate_192_to_193},
     {194, migrate_193_to_194},
     {195, migrate_194_to_195},
+    {196, migrate_195_to_196},
+    {197, migrate_196_to_197},
+    {198, migrate_197_to_198},
     /* End marker. */
     {-1, NULL}};
 
@@ -14916,7 +15107,7 @@ manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
  *
  * @return 1 yes, 0 no, -1 error.
  */
-int
+static int
 migrate_is_available (int old_version, int new_version)
 {
   migrator_t *migrators;

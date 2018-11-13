@@ -340,7 +340,7 @@ acl_user_is_observer (const char *uuid)
  * @return 1 if user is a Super Admin, else 0.
  */
 int
-user_is_super_admin (const char *uuid)
+acl_user_is_super_admin (const char *uuid)
 {
   int ret;
   gchar *quoted_uuid;
@@ -480,7 +480,7 @@ acl_user_is_user (const char *uuid)
  *
  * @return 1 if user has Super, else 0.
  */
-int
+static int
 acl_user_has_super_on (const char *type, const char *field, const char *value,
                        int trash)
 {
@@ -508,7 +508,7 @@ acl_user_has_super_on (const char *type, const char *field, const char *value,
  *
  * @return 1 if user has Super, else 0.
  */
-int
+static int
 acl_user_has_super_on_resource (const char *type, const char *field,
                                 resource_t resource, int trash)
 {
@@ -587,6 +587,13 @@ acl_user_owns_uuid (const char *type, const char *uuid, int trash)
                    " AND results.report = reports.id"
                    " AND (reports.owner = (SELECT users.id FROM users"
                    "                       WHERE users.uuid = '%s'));",
+                   quoted_uuid,
+                   current_credentials.uuid);
+  else if (strcmp (type, "report") == 0)
+    ret = sql_int ("SELECT count(*) FROM reports"
+                   " WHERE uuid = '%s'"
+                   " AND (owner = (SELECT users.id FROM users"
+                   "               WHERE users.uuid = '%s'));",
                    quoted_uuid,
                    current_credentials.uuid);
   else if (strcmp (type, "permission") == 0)
@@ -908,7 +915,7 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
  *
  * @return Newly allocated owned clause.
  */
-gchar *
+static gchar *
 acl_where_owned_user (const char *user_id, const char *user_sql,
                       const char *type, const get_data_t *get, int owned,
                       const gchar *owner_filter, resource_t resource,

@@ -505,42 +505,6 @@ lsc_crypt_release (lsc_crypt_ctx_t ctx)
   g_free (ctx);
 }
 
-/**
- * @brief Create the standard credential encryption key
- *
- * This function creates a standard encryption key if such a key does
- * not yet exists.  Note, that in general an encryption key is created
- * on-the-fly.
- *
- * @return 0 on success, 1 if the key already exists, and -1 for other
- * errors.
- */
-int
-lsc_crypt_create_key ()
-{
-  int res = -1;
-  lsc_crypt_ctx_t ctx;
-  gpgme_key_t key;
-
-  ctx = lsc_crypt_new ();
-  key = find_the_key (ctx, TRUE);
-  if (key)
-    {
-      gpgme_key_unref (key);
-      g_warning ("A credentials encryption key already exists - "
-                 "not creating another one.");
-      res = 1;
-    }
-  else
-    {
-      if (!create_the_key (ctx))
-        res = 0;
-    }
-
-  lsc_crypt_release (ctx);
-  return res;
-}
-
 
 /**
  * @brief Flush an LSC encryption context
@@ -575,7 +539,7 @@ lsc_crypt_flush (lsc_crypt_ctx_t ctx)
  * @param[in] ctx        The context
  * @param[in] first_name The name of the first name/value pair.  This
  *                       must be followed by a string value and
- *                       optionaly followed by more name and value
+ *                       optionally followed by more name and value
  *                       pairs.  This list is terminated by a single
  *                       NULL instead of a name.
  *

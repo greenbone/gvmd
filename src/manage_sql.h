@@ -357,9 +357,6 @@ extern gchar *task_db_name;
 
 typedef long long int rowid_t;
 
-void
-array_add_new_string (array_t *, const gchar *);
-
 int manage_db_empty ();
 
 gboolean
@@ -397,7 +394,6 @@ const char *otp_pref_iterator_name (iterator_t *);
 const char *otp_pref_iterator_value (iterator_t *);
 
 port_list_t target_port_list (target_t);
-char* target_port_range (target_t);
 credential_t target_ssh_credential (target_t);
 credential_t target_smb_credential (target_t);
 credential_t target_esxi_credential (target_t);
@@ -416,13 +412,9 @@ const char *task_schedule_iterator_task_uuid (iterator_t *);
 
 schedule_t task_schedule_iterator_schedule (iterator_t *);
 
-time_t task_schedule_iterator_next_time (iterator_t *);
-
 const char *task_schedule_iterator_icalendar (iterator_t *);
 
 const char *task_schedule_iterator_timezone (iterator_t *);
-
-time_t task_schedule_iterator_duration (iterator_t *);
 
 const char *task_schedule_iterator_owner_uuid (iterator_t *);
 
@@ -462,16 +454,12 @@ void auto_delete_reports ();
 
 int parse_iso_time (const char *);
 
-int days_from_now (time_t *epoch_time);
-
 void set_report_scheduled (report_t);
 
 gchar *resource_uuid (const gchar *, resource_t);
 
 gboolean find_resource_with_permission (const char *, const char *,
                                         resource_t *, const char *, int);
-
-char *task_definitions_file (task_t);
 
 void parse_osp_report (task_t, report_t, const char *);
 
@@ -519,12 +507,6 @@ manage_option_setup (GSList *, const gchar *);
 
 void
 manage_option_cleanup ();
-
-int
-nvt_selector_families_growing (const char *);
-
-int
-nvt_selector_nvts_growing_2 (const char*, int);
 
 void
 update_all_config_caches ();

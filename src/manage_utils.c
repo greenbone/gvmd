@@ -59,7 +59,7 @@
  *
  * @return Seconds east of UTC.
  */
-long
+static long
 time_offset (const char *zone, time_t time)
 {
   gchar *tz;
@@ -213,7 +213,7 @@ current_offset (const char *zone)
  *
  * @return Number of full months between time1 and time2.
  */
-time_t
+static time_t
 months_between (time_t time1, time_t time2)
 {
   struct tm broken1, *broken2;
@@ -688,12 +688,13 @@ level_max_severity (const char *level, const char *class)
 
 /**
  * @brief Returns whether a host has an equal host in a hosts string.
- * eg. 192.168.10.1 has an equal in a hosts string
+ *
+ * For example, 192.168.10.1 has an equal in a hosts string
  * "192.168.10.1-5, 192.168.10.10-20" string while 192.168.10.7 doesn't.
  *
- * @param[in] host        The host object to find.
- * @param[in] hosts_str   Hosts string to check.
- * @param[in] max_hosts   Maximum number of hosts allowed in hosts_str.
+ * @param[in] hosts_str      Hosts string to check.
+ * @param[in] find_host_str  The host to find.
+ * @param[in] max_hosts      Maximum number of hosts allowed in hosts_str.
  *
  * @return 1 if host has equal in hosts_str, 0 otherwise.
  */
@@ -1120,7 +1121,6 @@ icalendar_from_string (const char *ical_string, gchar **error)
   int vevent_count = 0;
   int other_component_count = 0;
   icalcompiter ical_iter;
-  icalcomponent *new_vevent;
   GHashTableIter tzids_iter;
   gchar *tzid;
 
@@ -1231,11 +1231,15 @@ icalendar_from_string (const char *ical_string, gchar **error)
           }
         break;
       case ICAL_VEVENT_COMPONENT:
-        new_vevent = icalendar_simplify_vevent (ical_parsed, tzids,
-                                                error, warnings_buffer);
-        if (new_vevent == NULL)
-          ICAL_RETURN_ERROR (*error);
-        icalcomponent_add_component (ical_new, new_vevent);
+        {
+          icalcomponent *new_vevent;
+
+          new_vevent = icalendar_simplify_vevent (ical_parsed, tzids,
+                                                  error, warnings_buffer);
+          if (new_vevent == NULL)
+            ICAL_RETURN_ERROR (*error);
+          icalcomponent_add_component (ical_new, new_vevent);
+        }
         break;
       default:
         ICAL_RETURN_ERROR
@@ -1392,7 +1396,7 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
  *
  * @return  GPtrArray with pointers to collected times or NULL on error.
  */
-GPtrArray*
+static GPtrArray*
 icalendar_times_from_vevent (icalcomponent *vevent, icalproperty_kind type)
 {
   GPtrArray* times;
@@ -1437,7 +1441,7 @@ icalendar_times_from_vevent (icalcomponent *vevent, icalproperty_kind type)
  *
  * @return  Whether a match was found.
  */
-gboolean
+static gboolean
 icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
 {
   gboolean found = FALSE;
@@ -1474,7 +1478,7 @@ icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
  *
  * @return  The next or previous time as time_t.
  */
-time_t
+static time_t
 icalendar_next_time_from_rdates (GPtrArray *rdates,
                                  icaltimetype ref_time_ical,
                                  icaltimezone *tz,
@@ -1527,7 +1531,7 @@ icalendar_next_time_from_rdates (GPtrArray *rdates,
  *
  * @return  The next time.
  */
-time_t
+static time_t
 icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
                                      icaltimetype dtstart,
                                      icaltimetype reference_time,
@@ -1555,12 +1559,10 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
   if (icaltime_compare (recur_time, reference_time) < 0)
     {
       prev_time = recur_time;
-      next_time = icaltime_null_time ();
     }
   else
     {
       prev_time = icaltime_null_time ();
-      next_time = recur_time;
     }
 
   // Iterate over rule-based recurrences up to first time after reference time

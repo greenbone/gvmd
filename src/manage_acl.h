@@ -127,9 +127,6 @@ int
 acl_user_is_observer (const char *);
 
 int
-acl_user_owns_name (const char *, const char *);
-
-int
 acl_user_owns (const char *, resource_t, int);
 
 int
@@ -143,10 +140,6 @@ acl_user_owns_trash_uuid (const char *resource, const char *uuid);
 
 int
 acl_user_has_access_uuid (const char *, const char *, const char *, int);
-
-gchar *
-acl_where_owned_user (const char *, const char *, const char *, const get_data_t *,
-                      int, const gchar *, resource_t, array_t *, gchar **);
 
 gchar *
 acl_where_owned (const char *, const get_data_t *, int, const gchar *, resource_t,

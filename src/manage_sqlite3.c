@@ -85,12 +85,6 @@ iso_time (time_t *);
 int
 days_from_now (time_t *);
 
-long
-current_offset (const char *);
-
-int
-user_can_everything (const char *);
-
 int
 user_owns (const char *, resource_t, int);
 
@@ -99,9 +93,6 @@ resource_name (const char *, const char *, int, gchar **);
 
 int
 resource_exists (const char *, resource_t, int);
-
-gchar *
-tag_value (const gchar *tags, const gchar *tag);
 
 
 /* Session. */
@@ -127,9 +118,7 @@ manage_session_init (const char *uuid)
 #define VULNS_RESULTS_WHERE                                           \
   " WHERE uuid IN"                                                    \
   "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")" \
-  "       AND (SELECT hidden = 0 FROM tasks"                          \
-  "            WHERE tasks.id = results.task))"
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
   sql ("DROP VIEW IF EXISTS vulns;");
   if (manage_scap_loaded ())
@@ -2750,8 +2739,6 @@ sql_vuln_results (sqlite3_context *context, int argc,
                "   AND (%d OR results.task = %llu)"
                "   AND (%d OR results.host = '%s')"
                "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
-               "   AND (SELECT hidden = 0 FROM tasks"
-               "         WHERE tasks.id = results.task)"
                "   AND (SELECT has_permission FROM permissions_get_tasks"
                "         WHERE \"user\" = (SELECT id FROM users"
                "                           WHERE uuid ="
@@ -3670,7 +3657,7 @@ create_tables ()
        " ON nvt_selectors (type, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS nvts"
        " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
-       "  copyright, cve, bid, xref, tag, category INTEGER, family, cvss_base,"
+       "  cve, bid, xref, tag, category INTEGER, family, cvss_base,"
        "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
        "  qod_type TEXT);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid"
@@ -3763,7 +3750,7 @@ create_tables ()
        "  trust_time, flags INTEGER, original_uuid, creation_time,"
        "  modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS reports"
-       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER,"
        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
        "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
        "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
@@ -3778,6 +3765,11 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS resources_predefined"
        " (id INTEGER PRIMARY KEY, resource_type, resource INTEGER)");
   sql ("CREATE TABLE IF NOT EXISTS results"
+       " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
+       "  result_nvt, type, description, report, nvt_version, severity REAL,"
+       "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER,"
+       "  hostname TEXT)");
+  sql ("CREATE TABLE IF NOT EXISTS results_trash"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  result_nvt, type, description, report, nvt_version, severity REAL,"
        "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER,"

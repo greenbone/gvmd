@@ -93,18 +93,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:value-of select="translate($string, $uppercase, $lowercase)"/>
   </xsl:template>
 
-  <xsl:template name="prognostic-description">
-    <xsl:param name="string"/>
-
-    <xsl:for-each select="str:split($string, '&#10;&#10;')">
-      <xsl:for-each select="str:split(., '&#10;')">
-        <xsl:value-of select="."/>
-        <xsl:call-template name="newline"/>
-      </xsl:for-each>
-      <xsl:call-template name="newline"/>
-    </xsl:for-each>
-  </xsl:template>
-
   <xsl:template match="task">
     <xsl:value-of select="@id"/>
   </xsl:template>
@@ -534,7 +522,7 @@ CIS</value>
           </value>
       </syncAttribute>
       <syncAttribute>
-          <!-- Everything we can scan is pyhsical -->
+          <!-- Everything we can scan is physical -->
           <name>gsm_ism_asset_type</name>
           <value>asset_type_phys</value>
       </syncAttribute>
@@ -575,50 +563,35 @@ CIS</value>
 
           <!-- Result -->
           <xsl:choose>
-            <xsl:when test="$report/@type = 'prognostic'">
+            <xsl:when test="openvas:newstyle-nvt (nvt)">
+              <xsl:choose>
+                <xsl:when test="delta/text() = 'changed'">
+                  <xsl:text>Result 1:</xsl:text>
+                  <xsl:call-template name="newline"/>
+                  <xsl:call-template name="newline"/>
+                </xsl:when>
+              </xsl:choose>
+              <xsl:text>Vulnerability Detection Result:</xsl:text>
+              <xsl:call-template name="newline"/>
+              <xsl:choose>
+                <xsl:when test="string-length(description) &lt; 2">
+                  <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:value-of select="description"/>
+                </xsl:otherwise>
+              </xsl:choose>
+              <xsl:call-template name="newline"/>
+            </xsl:when>
+            <xsl:otherwise>
               <xsl:choose>
                 <xsl:when test="delta/text() = 'changed'">
                   <xsl:text>Result 1:</xsl:text>
                   <xsl:call-template name="newline"/>
                 </xsl:when>
               </xsl:choose>
-              <xsl:call-template name="prognostic-description">
-                <xsl:with-param name="string" select="description"/>
-              </xsl:call-template>
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:choose>
-                <xsl:when test="openvas:newstyle-nvt (nvt)">
-                  <xsl:choose>
-                    <xsl:when test="delta/text() = 'changed'">
-                      <xsl:text>Result 1:</xsl:text>
-                      <xsl:call-template name="newline"/>
-                      <xsl:call-template name="newline"/>
-                    </xsl:when>
-                  </xsl:choose>
-                  <xsl:text>Vulnerability Detection Result:</xsl:text>
-                  <xsl:call-template name="newline"/>
-                  <xsl:choose>
-                    <xsl:when test="string-length(description) &lt; 2">
-                      <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
-                    </xsl:when>
-                    <xsl:otherwise>
-                      <xsl:value-of select="description"/>
-                    </xsl:otherwise>
-                  </xsl:choose>
-                  <xsl:call-template name="newline"/>
-                </xsl:when>
-                <xsl:otherwise>
-                  <xsl:choose>
-                    <xsl:when test="delta/text() = 'changed'">
-                      <xsl:text>Result 1:</xsl:text>
-                      <xsl:call-template name="newline"/>
-                    </xsl:when>
-                  </xsl:choose>
-                  <xsl:value-of select="description"/>
-                  <xsl:call-template name="newline"/>
-                </xsl:otherwise>
-              </xsl:choose>
+              <xsl:value-of select="description"/>
+              <xsl:call-template name="newline"/>
             </xsl:otherwise>
           </xsl:choose>
           <xsl:call-template name="newline"/>
@@ -676,9 +649,6 @@ CIS</value>
           <xsl:text>Details:</xsl:text>
           <xsl:call-template name="newline"/>
           <xsl:choose>
-            <xsl:when test="$report/@type = 'prognostic'">
-              <xsl:value-of select="normalize-space(cve/@id)"/>
-            </xsl:when>
             <xsl:when test="nvt/@oid = 0">
               <xsl:if test="delta/text()">
                 <xsl:call-template name="newline"/>
@@ -701,15 +671,12 @@ CIS</value>
               <xsl:call-template name="newline"/>
             </xsl:otherwise>
           </xsl:choose>
-          <xsl:choose>
-            <xsl:when test="not($report/@type = 'prognostic')">
-              <xsl:if test="scan_nvt_version != ''">
-                <xsl:text>Version used: </xsl:text>
-                <xsl:value-of select="scan_nvt_version"/>
-                <xsl:call-template name="newline"/>
-              </xsl:if>
-            </xsl:when>
-          </xsl:choose>
+
+          <xsl:if test="scan_nvt_version != ''">
+            <xsl:text>Version used: </xsl:text>
+            <xsl:value-of select="scan_nvt_version"/>
+            <xsl:call-template name="newline"/>
+          </xsl:if>
 
           <xsl:if test="count (detection)">
             <xsl:text>Product Detection Result:</xsl:text>
@@ -752,7 +719,7 @@ CIS</value>
 
   <xsl:template name="control_details">
     <xsl:param name="task_id"/>
-    <!-- Filter out lines starting with + and create a comma seperated list of them-->
+    <!-- Filter out lines starting with + and create a comma separated list of them-->
     <xsl:variable name="description">
       <xsl:for-each select="str:split(text, '&#10;')">
         <xsl:if test="substring(.,0,2) != '+'">

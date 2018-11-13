@@ -27,7 +27,7 @@
 # Variables
 #
 
-# Command line paramaters
+# Command line parameters
 USERNAME="$1"
 PUBKEY_FILE="$2"
 TEMP_DIR="$3"
@@ -134,7 +134,7 @@ mkdir -p "${SSH_DATA_DIR}"
 AUTH_KEYS_FILE="${SSH_DATA_DIR}/authorized_keys"
 cp "${PUBKEY_FILE}" "${AUTH_KEYS_FILE}"
 
-# Creat doc directory
+# Create doc directory
 mkdir -p "${DOC_DATA_DIR}"
 
 # Create Changelog

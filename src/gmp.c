@@ -94,6 +94,7 @@
 #include "gmp.h"
 #include "manage.h"
 #include "manage_acl.h"
+#include "utils.h"
 /** @todo For access to scanner_t scanner. */
 #include "otp.h"
 
@@ -118,6 +119,7 @@
 #include <gvm/base/strings.h>
 #include <gvm/base/logging.h>
 #include <gvm/base/pwpolicy.h>
+#include <gvm/util/gpgmeutils.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/sshutils.h>
 #include <gvm/util/authutils.h>
@@ -327,7 +329,7 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
  *
  * @return 1 if found, else 0.
  */
-int
+static int
 find_attribute (const gchar **attribute_names,
                 const gchar **attribute_values,
                 const char *attribute_name,
@@ -356,7 +358,7 @@ find_attribute (const gchar **attribute_names,
  *
  * @return 1 if found and appended, else 0.
  */
-int
+static int
 append_attribute (const gchar **attribute_names,
                   const gchar **attribute_values,
                   const char *attribute_name,
@@ -391,7 +393,7 @@ typedef struct
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 init_get (gchar *command, get_data_t * get, const gchar *setting_name,
           int *first)
 {
@@ -503,14 +505,14 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
 }
 
 /**
- * @brief Check that a string represents a valid Certificate.
+ * @brief Check that a string represents a valid x509 Certificate.
  *
  * @param[in]  cert_str     Certificate string.
  *
  * @return 0 if valid, 1 otherwise.
  */
 static int
-check_certificate (const char *cert_str)
+check_certificate_x509 (const char *cert_str)
 {
   gnutls_x509_crt_t crt;
   gnutls_datum_t data;
@@ -544,6 +546,71 @@ check_certificate (const char *cert_str)
 }
 
 /**
+ * @brief Check that a string represents a valid public key or certificate.
+ *
+ * @param[in]  key_str     Key string.
+ * @param[in]  key_type    The data type to check for.
+ * @param[in]  protocol    The GPG protocol to check.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+try_gpgme_import (const char *key_str, gpgme_data_type_t key_type,
+                  gpgme_protocol_t protocol)
+{
+  int ret = 0;
+  gpgme_ctx_t ctx;
+  char gpg_temp_dir[] = "/tmp/gvmd-gpg-XXXXXX";
+
+  if (mkdtemp (gpg_temp_dir) == NULL)
+    {
+      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+      return -1;
+    }
+
+  gpgme_new (&ctx);
+  gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
+  gpgme_set_protocol (ctx, protocol);
+
+  ret = gvm_gpg_import_from_string (ctx, key_str, -1, key_type);
+
+  gpgme_release (ctx);
+  gvm_file_remove_recurse (gpg_temp_dir);
+
+  return (ret != 0);
+}
+
+/**
+ * @brief Check that a string represents a valid S/MIME Certificate.
+ *
+ * @param[in]  cert_str     Certificate string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+check_certificate_smime (const char *cert_str)
+{
+  return try_gpgme_import (cert_str, GPGME_DATA_TYPE_CMS_OTHER,
+                           GPGME_PROTOCOL_CMS);
+}
+
+/**
+ * @brief Check that a string represents a valid Certificate.
+ *
+ * @param[in]  cert_str     Certificate string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+check_certificate (const char *cert_str, const char *credential_type)
+{
+  if (credential_type && strcmp (credential_type, "smime") == 0)
+    return check_certificate_smime (cert_str);
+  else
+    return check_certificate_x509 (cert_str);
+}
+
+/**
  * @brief Check that a string represents a valid Private Key.
  *
  * @param[in]  key_str  Private Key string.
@@ -570,6 +637,20 @@ check_private_key (const char *key_str)
   g_free (data.data);
   gnutls_x509_privkey_deinit (key);
   return 0;
+}
+
+/**
+ * @brief Check that a string represents a valid Public Key.
+ *
+ * @param[in]  key_str  Public Key string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+static int
+check_public_key (const char *key_str)
+{
+  return try_gpgme_import (key_str, GPGME_DATA_TYPE_PGP_KEY,
+                           GPGME_PROTOCOL_OPENPGP);
 }
 
 
@@ -724,7 +805,7 @@ process_gmp (gmp_parser_t *, const gchar *, gchar **);
  *
  * @return A GMP parser.
  */
-gmp_parser_t *
+static gmp_parser_t *
 gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_client_data,
                 gchar **disable)
 {
@@ -743,7 +824,7 @@ gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_clie
  *
  * @return A GMP parser.
  */
-void
+static void
 gmp_parser_free (gmp_parser_t *gmp_parser)
 {
   g_strfreev (gmp_parser->disabled_commands);
@@ -985,7 +1066,7 @@ create_config_data_reset (create_config_data_t *data)
  * @brief Command data for the create_alert command.
  *
  * The pointers in the *_data arrays point to memory that contains two
- * strings concatentated, with a single \\0 between them.  The first string
+ * strings concatenated, with a single \\0 between them.  The first string
  * is the name of the extra data (for example "To Address"), the second is
  * the value the the data (for example "alice@example.org").
  */
@@ -1043,6 +1124,7 @@ typedef struct
   int key;                 ///< Whether the command included a key element.
   char *key_phrase;        ///< Passphrase for key.
   char *key_private;       ///< Private key from key.
+  char *key_public;        ///< Public key from key.
   char *login;             ///< Login name.
   char *name;              ///< Credential name.
   char *password;          ///< Password associated with login name.
@@ -1067,6 +1149,7 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->copy);
   free (data->key_phrase);
   free (data->key_private);
+  free (data->key_public);
   free (data->login);
   free (data->name);
   free (data->password);
@@ -3275,7 +3358,7 @@ typedef struct
  *
  * @param[in]  data  Command data.
  */
-void
+static void
 modify_auth_data_reset (modify_auth_data_t * data)
 {
   GSList *item, *subitem;
@@ -3363,6 +3446,7 @@ typedef struct
   int key;                    ///< Whether the command included a key element.
   char *key_phrase;           ///< Passphrase for key.
   char *key_private;          ///< Private key from key.
+  char *key_public;           ///< Public key from key.
   char *login;                ///< Login name.
   char *name;                 ///< Name.
   char *password;             ///< Password associated with login name.
@@ -3386,6 +3470,7 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->credential_id);
   free (data->key_phrase);
   free (data->key_private);
+  free (data->key_public);
   free (data->login);
   free (data->name);
   free (data->password);
@@ -4370,657 +4455,657 @@ command_data_init (command_data_t *data)
 /**
  * @brief Parser callback data.
  */
-command_data_t command_data;
+static command_data_t command_data;
 
 /**
  * @brief Parser callback data for CREATE_AGENT.
  */
-create_agent_data_t *create_agent_data
+static create_agent_data_t *create_agent_data
  = (create_agent_data_t*) &(command_data.create_agent);
 
 /**
  * @brief Parser callback data for CREATE_ASSET.
  */
-create_asset_data_t *create_asset_data
+static create_asset_data_t *create_asset_data
  = (create_asset_data_t*) &(command_data.create_asset);
 
 /**
  * @brief Parser callback data for CREATE_CONFIG.
  */
-create_config_data_t *create_config_data
+static create_config_data_t *create_config_data
  = (create_config_data_t*) &(command_data.create_config);
 
 /**
  * @brief Parser callback data for CREATE_ALERT.
  */
-create_alert_data_t *create_alert_data
+static create_alert_data_t *create_alert_data
  = (create_alert_data_t*) &(command_data.create_alert);
 
 /**
  * @brief Parser callback data for CREATE_CREDENTIAL.
  */
-create_credential_data_t *create_credential_data
+static create_credential_data_t *create_credential_data
  = (create_credential_data_t*) &(command_data.create_credential);
 
 /**
  * @brief Parser callback data for CREATE_FILTER.
  */
-create_filter_data_t *create_filter_data
+static create_filter_data_t *create_filter_data
  = (create_filter_data_t*) &(command_data.create_filter);
 
 /**
  * @brief Parser callback data for CREATE_GROUP.
  */
-create_group_data_t *create_group_data
+static create_group_data_t *create_group_data
  = (create_group_data_t*) &(command_data.create_group);
 
 /**
  * @brief Parser callback data for CREATE_NOTE.
  */
-create_note_data_t *create_note_data
+static create_note_data_t *create_note_data
  = (create_note_data_t*) &(command_data.create_note);
 
 /**
  * @brief Parser callback data for CREATE_OVERRIDE.
  */
-create_override_data_t *create_override_data
+static create_override_data_t *create_override_data
  = (create_override_data_t*) &(command_data.create_override);
 
 /**
  * @brief Parser callback data for CREATE_PERMISSION.
  */
-create_permission_data_t *create_permission_data
+static create_permission_data_t *create_permission_data
  = (create_permission_data_t*) &(command_data.create_permission);
 
 /**
  * @brief Parser callback data for CREATE_PORT_LIST.
  */
-create_port_list_data_t *create_port_list_data
+static create_port_list_data_t *create_port_list_data
  = (create_port_list_data_t*) &(command_data.create_port_list);
 
 /**
  * @brief Parser callback data for CREATE_PORT_RANGE.
  */
-create_port_range_data_t *create_port_range_data
+static create_port_range_data_t *create_port_range_data
  = (create_port_range_data_t*) &(command_data.create_port_range);
 
 /**
  * @brief Parser callback data for CREATE_ROLE.
  */
-create_role_data_t *create_role_data
+static create_role_data_t *create_role_data
  = (create_role_data_t*) &(command_data.create_role);
 
 /**
  * @brief Parser callback data for CREATE_REPORT.
  */
-create_report_data_t *create_report_data
+static create_report_data_t *create_report_data
  = (create_report_data_t*) &(command_data.create_report);
 
 /**
  * @brief Parser callback data for CREATE_REPORT_FORMAT.
  */
-create_report_format_data_t *create_report_format_data
+static create_report_format_data_t *create_report_format_data
  = (create_report_format_data_t*) &(command_data.create_report_format);
 
 /**
  * @brief Parser callback data for CREATE_SCANNER.
  */
-create_scanner_data_t *create_scanner_data
+static create_scanner_data_t *create_scanner_data
  = (create_scanner_data_t*) &(command_data.create_scanner);
 
 /**
  * @brief Parser callback data for CREATE_SCHEDULE.
  */
-create_schedule_data_t *create_schedule_data
+static create_schedule_data_t *create_schedule_data
  = (create_schedule_data_t*) &(command_data.create_schedule);
 
 /**
  * @brief Parser callback data for CREATE_TAG.
  */
-create_tag_data_t *create_tag_data
+static create_tag_data_t *create_tag_data
  = (create_tag_data_t*) &(command_data.create_tag);
 
 /**
  * @brief Parser callback data for CREATE_TARGET.
  */
-create_target_data_t *create_target_data
+static create_target_data_t *create_target_data
  = (create_target_data_t*) &(command_data.create_target);
 
 /**
  * @brief Parser callback data for CREATE_TASK.
  */
-create_task_data_t *create_task_data
+static create_task_data_t *create_task_data
  = (create_task_data_t*) &(command_data.create_task);
 
 /**
  * @brief Parser callback data for CREATE_USER.
  */
-create_user_data_t *create_user_data
+static create_user_data_t *create_user_data
  = &(command_data.create_user);
 
 /**
  * @brief Parser callback data for DELETE_AGENT.
  */
-delete_agent_data_t *delete_agent_data
+static delete_agent_data_t *delete_agent_data
  = (delete_agent_data_t*) &(command_data.delete_agent);
 
 /**
  * @brief Parser callback data for DELETE_ASSET.
  */
-delete_asset_data_t *delete_asset_data
+static delete_asset_data_t *delete_asset_data
  = (delete_asset_data_t*) &(command_data.delete_asset);
 
 /**
  * @brief Parser callback data for DELETE_CONFIG.
  */
-delete_config_data_t *delete_config_data
+static delete_config_data_t *delete_config_data
  = (delete_config_data_t*) &(command_data.delete_config);
 
 /**
  * @brief Parser callback data for DELETE_ALERT.
  */
-delete_alert_data_t *delete_alert_data
+static delete_alert_data_t *delete_alert_data
  = (delete_alert_data_t*) &(command_data.delete_alert);
 
 /**
  * @brief Parser callback data for DELETE_CREDENTIAL.
  */
-delete_credential_data_t *delete_credential_data
+static delete_credential_data_t *delete_credential_data
  = (delete_credential_data_t*) &(command_data.delete_credential);
 
 /**
  * @brief Parser callback data for DELETE_FILTER.
  */
-delete_filter_data_t *delete_filter_data
+static delete_filter_data_t *delete_filter_data
  = (delete_filter_data_t*) &(command_data.delete_filter);
 
 /**
  * @brief Parser callback data for DELETE_GROUP.
  */
-delete_group_data_t *delete_group_data
+static delete_group_data_t *delete_group_data
  = (delete_group_data_t*) &(command_data.delete_group);
 
 /**
  * @brief Parser callback data for DELETE_NOTE.
  */
-delete_note_data_t *delete_note_data
+static delete_note_data_t *delete_note_data
  = (delete_note_data_t*) &(command_data.delete_note);
 
 /**
  * @brief Parser callback data for DELETE_OVERRIDE.
  */
-delete_override_data_t *delete_override_data
+static delete_override_data_t *delete_override_data
  = (delete_override_data_t*) &(command_data.delete_override);
 
 /**
  * @brief Parser callback data for DELETE_PERMISSION.
  */
-delete_permission_data_t *delete_permission_data
+static delete_permission_data_t *delete_permission_data
  = (delete_permission_data_t*) &(command_data.delete_permission);
 
 /**
  * @brief Parser callback data for DELETE_PORT_LIST.
  */
-delete_port_list_data_t *delete_port_list_data
+static delete_port_list_data_t *delete_port_list_data
  = (delete_port_list_data_t*) &(command_data.delete_port_list);
 
 /**
  * @brief Parser callback data for DELETE_PORT_RANGE.
  */
-delete_port_range_data_t *delete_port_range_data
+static delete_port_range_data_t *delete_port_range_data
  = (delete_port_range_data_t*) &(command_data.delete_port_range);
 
 /**
  * @brief Parser callback data for DELETE_REPORT.
  */
-delete_report_data_t *delete_report_data
+static delete_report_data_t *delete_report_data
  = (delete_report_data_t*) &(command_data.delete_report);
 
 /**
  * @brief Parser callback data for DELETE_REPORT_FORMAT.
  */
-delete_report_format_data_t *delete_report_format_data
+static delete_report_format_data_t *delete_report_format_data
  = (delete_report_format_data_t*) &(command_data.delete_report_format);
 
 /**
  * @brief Parser callback data for DELETE_ROLE.
  */
-delete_role_data_t *delete_role_data
+static delete_role_data_t *delete_role_data
  = (delete_role_data_t*) &(command_data.delete_role);
 
 /**
  * @brief Parser callback data for DELETE_SCANNER.
  */
-delete_scanner_data_t *delete_scanner_data
+static delete_scanner_data_t *delete_scanner_data
  = (delete_scanner_data_t*) &(command_data.delete_scanner);
 
 /**
  * @brief Parser callback data for DELETE_SCHEDULE.
  */
-delete_schedule_data_t *delete_schedule_data
+static delete_schedule_data_t *delete_schedule_data
  = (delete_schedule_data_t*) &(command_data.delete_schedule);
 
 /**
  * @brief Parser callback data for DELETE_TAG.
  */
-delete_tag_data_t *delete_tag_data
+static delete_tag_data_t *delete_tag_data
  = (delete_tag_data_t*) &(command_data.delete_tag);
 
 /**
  * @brief Parser callback data for DELETE_TARGET.
  */
-delete_target_data_t *delete_target_data
+static delete_target_data_t *delete_target_data
  = (delete_target_data_t*) &(command_data.delete_target);
 
 /**
  * @brief Parser callback data for DELETE_TASK.
  */
-delete_task_data_t *delete_task_data
+static delete_task_data_t *delete_task_data
  = (delete_task_data_t*) &(command_data.delete_task);
 
 /**
  * @brief Parser callback data for DELETE_USER.
  */
-delete_user_data_t *delete_user_data
+static delete_user_data_t *delete_user_data
  = (delete_user_data_t*) &(command_data.delete_user);
 
 /**
  * @brief Parser callback data for GET_AGENTS.
  */
-get_agents_data_t *get_agents_data
+static get_agents_data_t *get_agents_data
  = &(command_data.get_agents);
 
 /**
  * @brief Parser callback data for GET_AGGREGATES.
  */
-get_aggregates_data_t *get_aggregates_data
+static get_aggregates_data_t *get_aggregates_data
  = &(command_data.get_aggregates);
 
 /**
  * @brief Parser callback data for GET_CONFIGS.
  */
-get_configs_data_t *get_configs_data
+static get_configs_data_t *get_configs_data
  = &(command_data.get_configs);
 
 /**
  * @brief Parser callback data for GET_ALERTS.
  */
-get_alerts_data_t *get_alerts_data
+static get_alerts_data_t *get_alerts_data
  = &(command_data.get_alerts);
 
 /**
  * @brief Parser callback data for GET_ASSETS.
  */
-get_assets_data_t *get_assets_data
+static get_assets_data_t *get_assets_data
  = &(command_data.get_assets);
 
 /**
  * @brief Parser callback data for GET_CREDENTIALS.
  */
-get_credentials_data_t *get_credentials_data
+static get_credentials_data_t *get_credentials_data
  = &(command_data.get_credentials);
 
 /**
  * @brief Parser callback data for GET_FEEDS.
  */
-get_feeds_data_t *get_feeds_data
+static get_feeds_data_t *get_feeds_data
  = &(command_data.get_feeds);
 
 /**
  * @brief Parser callback data for GET_FILTERS.
  */
-get_filters_data_t *get_filters_data
+static get_filters_data_t *get_filters_data
  = &(command_data.get_filters);
 
 /**
  * @brief Parser callback data for GET_GROUPS.
  */
-get_groups_data_t *get_groups_data
+static get_groups_data_t *get_groups_data
  = &(command_data.get_groups);
 
 /**
  * @brief Parser callback data for GET_INFO.
  */
-get_info_data_t *get_info_data
+static get_info_data_t *get_info_data
  = &(command_data.get_info);
 
 /**
  * @brief Parser callback data for GET_NOTES.
  */
-get_notes_data_t *get_notes_data
+static get_notes_data_t *get_notes_data
  = &(command_data.get_notes);
 
 /**
  * @brief Parser callback data for GET_NVTS.
  */
-get_nvts_data_t *get_nvts_data
+static get_nvts_data_t *get_nvts_data
  = &(command_data.get_nvts);
 
 /**
  * @brief Parser callback data for GET_NVT_FAMILIES.
  */
-get_nvt_families_data_t *get_nvt_families_data
+static get_nvt_families_data_t *get_nvt_families_data
  = &(command_data.get_nvt_families);
 
 /**
  * @brief Parser callback data for GET_OVERRIDES.
  */
-get_overrides_data_t *get_overrides_data
+static get_overrides_data_t *get_overrides_data
  = &(command_data.get_overrides);
 
 /**
  * @brief Parser callback data for GET_PERMISSIONS.
  */
-get_permissions_data_t *get_permissions_data
+static get_permissions_data_t *get_permissions_data
  = &(command_data.get_permissions);
 
 /**
  * @brief Parser callback data for GET_PORT_LISTS.
  */
-get_port_lists_data_t *get_port_lists_data
+static get_port_lists_data_t *get_port_lists_data
  = &(command_data.get_port_lists);
 
 /**
  * @brief Parser callback data for GET_PREFERENCES.
  */
-get_preferences_data_t *get_preferences_data
+static get_preferences_data_t *get_preferences_data
  = &(command_data.get_preferences);
 
 /**
  * @brief Parser callback data for GET_REPORTS.
  */
-get_reports_data_t *get_reports_data
+static get_reports_data_t *get_reports_data
  = &(command_data.get_reports);
 
 /**
  * @brief Parser callback data for GET_REPORT_FORMATS.
  */
-get_report_formats_data_t *get_report_formats_data
+static get_report_formats_data_t *get_report_formats_data
  = &(command_data.get_report_formats);
 
 /**
  * @brief Parser callback data for GET_RESULTS.
  */
-get_results_data_t *get_results_data
+static get_results_data_t *get_results_data
  = &(command_data.get_results);
 
 /**
  * @brief Parser callback data for GET_ROLES.
  */
-get_roles_data_t *get_roles_data
+static get_roles_data_t *get_roles_data
  = &(command_data.get_roles);
 
 /**
  * @brief Parser callback data for GET_scannerS.
  */
-get_scanners_data_t *get_scanners_data
+static get_scanners_data_t *get_scanners_data
  = &(command_data.get_scanners);
 
 /**
  * @brief Parser callback data for GET_SCHEDULES.
  */
-get_schedules_data_t *get_schedules_data
+static get_schedules_data_t *get_schedules_data
  = &(command_data.get_schedules);
 
 /**
  * @brief Parser callback data for GET_SETTINGS.
  */
-get_settings_data_t *get_settings_data
+static get_settings_data_t *get_settings_data
  = &(command_data.get_settings);
 
 /**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
  */
-get_system_reports_data_t *get_system_reports_data
+static get_system_reports_data_t *get_system_reports_data
  = &(command_data.get_system_reports);
 
 /**
  * @brief Parser callback data for GET_TAGS.
  */
-get_tags_data_t *get_tags_data
+static get_tags_data_t *get_tags_data
  = &(command_data.get_tags);
 
 /**
  * @brief Parser callback data for GET_TARGETS.
  */
-get_targets_data_t *get_targets_data
+static get_targets_data_t *get_targets_data
  = &(command_data.get_targets);
 
 /**
  * @brief Parser callback data for GET_TASKS.
  */
-get_tasks_data_t *get_tasks_data
+static get_tasks_data_t *get_tasks_data
  = &(command_data.get_tasks);
 
 /**
  * @brief Parser callback data for GET_USERS.
  */
-get_users_data_t *get_users_data
+static get_users_data_t *get_users_data
  = &(command_data.get_users);
 
 /**
  * @brief Parser callback data for GET_VULNS.
  */
-get_vulns_data_t *get_vulns_data
+static get_vulns_data_t *get_vulns_data
  = &(command_data.get_vulns);
 
 /**
  * @brief Parser callback data for HELP.
  */
-help_data_t *help_data
+static help_data_t *help_data
  = &(command_data.help);
 
 /**
  * @brief Parser callback data for CREATE_CONFIG (import).
  */
-import_config_data_t *import_config_data
+static import_config_data_t *import_config_data
  = (import_config_data_t*) &(command_data.create_config.import);
 
 /**
  * @brief Parser callback data for MODIFY_CONFIG.
  */
-modify_config_data_t *modify_config_data
+static modify_config_data_t *modify_config_data
  = &(command_data.modify_config);
 
 /**
  * @brief Parser callback data for MODIFY_AGENT.
  */
-modify_agent_data_t *modify_agent_data
+static modify_agent_data_t *modify_agent_data
  = &(command_data.modify_agent);
 
 /**
  * @brief Parser callback data for MODIFY_ALERT.
  */
-modify_alert_data_t *modify_alert_data
+static modify_alert_data_t *modify_alert_data
  = &(command_data.modify_alert);
 
 /**
  * @brief Parser callback data for MODIFY_ASSET.
  */
-modify_asset_data_t *modify_asset_data
+static modify_asset_data_t *modify_asset_data
  = &(command_data.modify_asset);
 
 /**
  * @brief Parser callback data for MODIFY_AUTH.
  */
-modify_auth_data_t *modify_auth_data
+static modify_auth_data_t *modify_auth_data
  = &(command_data.modify_auth);
 
 /**
  * @brief Parser callback data for MODIFY_CREDENTIAL.
  */
-modify_credential_data_t *modify_credential_data
+static modify_credential_data_t *modify_credential_data
  = &(command_data.modify_credential);
 
 /**
  * @brief Parser callback data for MODIFY_FILTER.
  */
-modify_filter_data_t *modify_filter_data
+static modify_filter_data_t *modify_filter_data
  = &(command_data.modify_filter);
 
 /**
  * @brief Parser callback data for MODIFY_GROUP.
  */
-modify_group_data_t *modify_group_data
+static modify_group_data_t *modify_group_data
  = &(command_data.modify_group);
 
 /**
  * @brief Parser callback data for MODIFY_NOTE.
  */
-modify_note_data_t *modify_note_data
+static modify_note_data_t *modify_note_data
  = (modify_note_data_t*) &(command_data.create_note);
 
 /**
  * @brief Parser callback data for MODIFY_OVERRIDE.
  */
-modify_override_data_t *modify_override_data
+static modify_override_data_t *modify_override_data
  = (modify_override_data_t*) &(command_data.create_override);
 
 /**
  * @brief Parser callback data for MODIFY_PERMISSION.
  */
-modify_permission_data_t *modify_permission_data
+static modify_permission_data_t *modify_permission_data
  = &(command_data.modify_permission);
 
 /**
  * @brief Parser callback data for MODIFY_PORT_LIST.
  */
-modify_port_list_data_t *modify_port_list_data
+static modify_port_list_data_t *modify_port_list_data
  = &(command_data.modify_port_list);
 
 /**
  * @brief Parser callback data for MODIFY_REPORT.
  */
-modify_report_data_t *modify_report_data
+static modify_report_data_t *modify_report_data
  = &(command_data.modify_report);
 
 /**
  * @brief Parser callback data for MODIFY_REPORT_FORMAT.
  */
-modify_report_format_data_t *modify_report_format_data
+static modify_report_format_data_t *modify_report_format_data
  = &(command_data.modify_report_format);
 
 /**
  * @brief Parser callback data for MODIFY_ROLE.
  */
-modify_role_data_t *modify_role_data
+static modify_role_data_t *modify_role_data
  = &(command_data.modify_role);
 
 /**
  * @brief Parser callback data for MODIFY_SCANNER.
  */
-modify_scanner_data_t *modify_scanner_data
+static modify_scanner_data_t *modify_scanner_data
  = &(command_data.modify_scanner);
 
 /**
  * @brief Parser callback data for MODIFY_SCHEDULE.
  */
-modify_schedule_data_t *modify_schedule_data
+static modify_schedule_data_t *modify_schedule_data
  = &(command_data.modify_schedule);
 
 /**
  * @brief Parser callback data for MODIFY_SETTING.
  */
-modify_setting_data_t *modify_setting_data
+static modify_setting_data_t *modify_setting_data
  = &(command_data.modify_setting);
 
 /**
  * @brief Parser callback data for MODIFY_TAG.
  */
-modify_tag_data_t *modify_tag_data
+static modify_tag_data_t *modify_tag_data
  = (modify_tag_data_t*) &(command_data.modify_tag);
 
 /**
  * @brief Parser callback data for MODIFY_TARGET.
  */
-modify_target_data_t *modify_target_data
+static modify_target_data_t *modify_target_data
  = &(command_data.modify_target);
 
 /**
  * @brief Parser callback data for MODIFY_TASK.
  */
-modify_task_data_t *modify_task_data
+static modify_task_data_t *modify_task_data
  = &(command_data.modify_task);
 
 /**
  * @brief Parser callback data for MODIFY_USER.
  */
-modify_user_data_t *modify_user_data = &(command_data.modify_user);
+static modify_user_data_t *modify_user_data = &(command_data.modify_user);
 
 /**
  * @brief Parser callback data for MOVE_TASK.
  */
-move_task_data_t *move_task_data = &(command_data.move_task);
+static move_task_data_t *move_task_data = &(command_data.move_task);
 
 /**
  * @brief Parser callback data for RESTORE.
  */
-restore_data_t *restore_data
+static restore_data_t *restore_data
  = (restore_data_t*) &(command_data.restore);
 
 /**
  * @brief Parser callback data for RESUME_TASK.
  */
-resume_task_data_t *resume_task_data
+static resume_task_data_t *resume_task_data
  = (resume_task_data_t*) &(command_data.resume_task);
 
 /**
  * @brief Parser callback data for START_TASK.
  */
-start_task_data_t *start_task_data
+static start_task_data_t *start_task_data
  = (start_task_data_t*) &(command_data.start_task);
 
 /**
  * @brief Parser callback data for STOP_TASK.
  */
-stop_task_data_t *stop_task_data
+static stop_task_data_t *stop_task_data
  = (stop_task_data_t*) &(command_data.stop_task);
 
 /**
  * @brief Parser callback data for SYNC_CONFIG.
  */
-sync_config_data_t *sync_config_data
+static sync_config_data_t *sync_config_data
  = (sync_config_data_t*) &(command_data.delete_target);
 
 /**
  * @brief Parser callback data for TEST_ALERT.
  */
-test_alert_data_t *test_alert_data
+static test_alert_data_t *test_alert_data
  = (test_alert_data_t*) &(command_data.test_alert);
 
 /**
  * @brief Parser callback data for VERIFY_AGENT.
  */
-verify_agent_data_t *verify_agent_data
+static verify_agent_data_t *verify_agent_data
  = (verify_agent_data_t*) &(command_data.verify_agent);
 
 /**
  * @brief Parser callback data for VERIFY_REPORT_FORMAT.
  */
-verify_report_format_data_t *verify_report_format_data
+static verify_report_format_data_t *verify_report_format_data
  = (verify_report_format_data_t*) &(command_data.verify_report_format);
 
 /**
  * @brief Parser callback data for VERIFY_SCANNER.
  */
-verify_scanner_data_t *verify_scanner_data
+static verify_scanner_data_t *verify_scanner_data
  = (verify_scanner_data_t*) &(command_data.verify_scanner);
 
 /**
  * @brief Parser callback data for WIZARD.
  */
-run_wizard_data_t *run_wizard_data
+static run_wizard_data_t *run_wizard_data
  = (run_wizard_data_t*) &(command_data.wizard);
 
 /**
  * @brief Hack for returning forked process status from the callbacks.
  */
-int current_error;
+static int current_error;
 
 /**
  * @brief Hack for returning fork status to caller.
  */
-int forked;
+static int forked;
 
 /**
  * @brief Buffer of output to the client.
@@ -5111,6 +5196,7 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_KEY,
   CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
   CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
+  CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC,
   CLIENT_CREATE_CREDENTIAL_LOGIN,
   CLIENT_CREATE_CREDENTIAL_NAME,
   CLIENT_CREATE_CREDENTIAL_PASSWORD,
@@ -5526,6 +5612,7 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_KEY,
   CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
   CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
+  CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC,
   CLIENT_MODIFY_CREDENTIAL_LOGIN,
   CLIENT_MODIFY_CREDENTIAL_NAME,
   CLIENT_MODIFY_CREDENTIAL_PASSWORD,
@@ -5979,7 +6066,7 @@ make_xml_error_syntax (const char *tag, const char *text)
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
-int
+static int
 send_get_start (const char *type, int (*write_to_client) (const char*, void*),
                 void* write_to_client_data)
 {
@@ -6019,7 +6106,7 @@ send_get_start (const char *type, int (*write_to_client) (const char*, void*),
  *
  * @return 0 success, 1 send error.
  */
-int
+static int
 send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                  int (*write_to_client) (const char *, void*),
                  void* write_to_client_data, int writable, int in_use)
@@ -6272,7 +6359,7 @@ buffer_get_filter_xml (GString *msg, const char* type,
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
-int
+static int
 send_get_end_internal (const char *type, get_data_t *get, int get_counts,
                        int count, int filtered, int full,
                        int (*write_to_client) (const char *, void*),
@@ -6412,7 +6499,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
-int
+static int
 send_get_end (const char *type, get_data_t *get, int count, int filtered,
               int full, int (*write_to_client) (const char *, void*),
               void* write_to_client_data)
@@ -6432,7 +6519,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
-int
+static int
 send_get_end_no_counts (const char *type, get_data_t *get,
                         int (*write_to_client) (const char *, void*),
                         void* write_to_client_data)
@@ -8442,6 +8529,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE);
           }
+        else if (strcasecmp ("PUBLIC", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC);
+          }
         ELSE_ERROR ("modify_credential");
 
       case CLIENT_MODIFY_CREDENTIAL_PRIVACY:
@@ -9288,6 +9379,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVATE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE);
+        else if (strcasecmp ("PUBLIC", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC);
         ELSE_ERROR ("create_credential");
 
       case CLIENT_CREATE_CREDENTIAL_PRIVACY:
@@ -11309,7 +11402,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
  *
  * @return Output of "diff", or NULL on error.
  */
-gchar *
+static gchar *
 strdiff (const gchar *one, const gchar *two)
 {
   gchar **cmd, *ret, *one_file, *two_file, *old_lc_all, *old_language;
@@ -11987,7 +12080,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
  * @param[out] sort_data         sort_data_list copied to a GArray.
  * @param[out] c_sums            Array for calculating cumulative sums.
  */
-void
+static void
 init_aggregate_lists (const gchar* group_column,
                       const gchar* subgroup_column,
                       GList *data_column_list,
@@ -12263,7 +12356,7 @@ buffer_word_counts_seq (gpointer value, gpointer buffer)
  * @param[in]  first_group   Index of the first word to output, starting at 0.
  * @param[in]  max_groups    Maximum number of words to output or -1 for all.
  */
-void
+static void
 buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
                          const gchar* type, const char* group_column,
                          GArray* sort_data,
@@ -12479,7 +12572,7 @@ buffer_aggregate_subgroup_value (gchar *key,
  * @param[in]  text_column_types      Types of the text_columns.
  * @param[in]  c_sums                 Array for calculating cumulative sums.
  */
-void
+static void
 buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                       const char* group_column, const char* group_column_type,
                       const char* subgroup_column,
@@ -12803,10 +12896,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
           if (subgroup_column && column_is_timestamp (data_column) == FALSE)
             {
               GTree *c_sum_tree;
-              const gchar *subgroup_value;
 
-
-              subgroup_value = aggregate_iterator_subgroup_value (aggregate);
               c_sum_tree = g_array_index (group_c_sums, GTree*, index);
               subgroup_c_sum = g_tree_lookup (c_sum_tree, subgroup_value);
 
@@ -13149,7 +13239,6 @@ convert_to_manage_ranges (array_t *ranges)
  */
 #define CLOSE(parent, element)                                           \
   case parent ## _ ## element:                                           \
-    assert (strcasecmp (G_STRINGIFY (element), element_name) == 0);      \
     set_client_state (parent);                                           \
     break
 
@@ -13163,7 +13252,6 @@ convert_to_manage_ranges (array_t *ranges)
  */
 #define CLOSE_READ_OVER(parent, element)                                 \
   case parent ## _ ## element:                                           \
-    assert (strcasecmp (G_STRINGIFY (element), element_name) == 0);      \
     gmp_parser->read_over = 0;                                           \
     set_client_state (parent);                                           \
     break
@@ -13228,7 +13316,6 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
  */
 #define CASE_DELETE(upper, type, capital)                                   \
   case CLIENT_DELETE_ ## upper :                                            \
-    assert (strcasecmp ("DELETE_" G_STRINGIFY (upper), element_name) == 0); \
     if (delete_ ## type ## _data-> type ## _id)                             \
       switch (delete_ ## type (delete_ ## type ## _data-> type ## _id,      \
                              delete_ ## type ## _data->ultimate))           \
@@ -13325,7 +13412,7 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
  *
  * @return String of |-concatenated file names. Free with g_free().
  */
-char *
+static char *
 get_ovaldi_files ()
 {
   iterator_t iterator;
@@ -14480,7 +14567,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
         {
           iterator_t prefs;
           scanner_t scanner;
-          config_t config = get_iterator_resource (&configs);
           char *s_uuid, *s_name;
 
           assert (config);
@@ -14540,7 +14626,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                || get_configs_data->get.details)
         {
           iterator_t prefs;
-          config_t config = get_iterator_resource (&configs);
 
           assert (config);
 
@@ -14738,7 +14823,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START("credential");
   while (1)
     {
-      const char *private_key, *login, *type, *cert;
+      const char *private_key, *public_key, *login, *type, *cert;
       gchar *formats_xml;
 
       ret = get_next (&credentials, &get_credentials_data->get,
@@ -14753,6 +14838,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 
       SEND_GET_COMMON (credential, &get_credentials_data->get, &credentials);
       private_key = credential_iterator_private_key (&credentials);
+      public_key = credential_iterator_public_key (&credentials);
       login = credential_iterator_login (&credentials);
       type = credential_iterator_type (&credentials);
       cert = credential_iterator_certificate (&credentials);
@@ -14822,14 +14908,22 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 
           case CREDENTIAL_FORMAT_KEY:
             {
-              char *pub;
-              const char *pass;
+              if (public_key && strcmp (public_key, ""))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL
+                    ("<public_key>%s</public_key>", public_key);
+                }
+              else
+                {
+                  char *pub;
+                  const char *pass;
 
-              pass = credential_iterator_password (&credentials);
-              pub = gvm_ssh_public_from_private (private_key, pass);
-              SENDF_TO_CLIENT_OR_FAIL
-                ("<public_key>%s</public_key>", pub ?: "");
-              g_free (pub);
+                  pass = credential_iterator_password (&credentials);
+                  pub = gvm_ssh_public_from_private (private_key, pass);
+                  SENDF_TO_CLIENT_OR_FAIL
+                    ("<public_key>%s</public_key>", pub ?: "");
+                  g_free (pub);
+                }
               break;
             }
           case CREDENTIAL_FORMAT_RPM:
@@ -16851,6 +16945,17 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  if (get_reports_data->get.trash)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_reports",
+                          "GET_REPORTS does not support getting trashcan"
+                          " reports"));
+      get_reports_data_reset (get_reports_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
   /** @todo Some checks only required when type is "scan". */
 
   /** @todo Respond in all error cases.
@@ -16862,26 +16967,12 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     * it would probably take too long and/or use to much memory. */
 
   if (strcmp (get_reports_data->type, "scan")
-      && strcmp (get_reports_data->type, "assets")
-      && strcmp (get_reports_data->type, "prognostic"))
+      && strcmp (get_reports_data->type, "assets"))
     {
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_reports",
-                          "GET_REPORTS type must be scan, assets or"
-                          " prognostic"));
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-
-  if (strcmp (get_reports_data->type, "prognostic") == 0
-      && manage_scap_loaded () == 0)
-    {
-      get_reports_data_reset (get_reports_data);
-      SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("get_reports",
-                          "GET_REPORTS with type prognostic requires the"
-                          " SCAP database"));
+                          "GET_REPORTS type must be scan or assets"));
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
@@ -17026,7 +17117,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   if (strcmp (get_reports_data->type, "assets") == 0)
     {
       gchar *extension, *content_type;
-      int ret, pos;
+      int pos;
       get_data_t * get;
 
       /* An asset report. */
@@ -17083,87 +17174,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 get_reports_data->host,
                                 pos,
                                 NULL, NULL, 0, 0, NULL);
-
-      if (ret)
-        {
-          internal_error_send_to_client (error);
-          get_reports_data_reset (get_reports_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          return;
-        }
-
-      SEND_TO_CLIENT_OR_FAIL ("</report>"
-                              "</get_reports_response>");
-
-      get_reports_data_reset (get_reports_data);
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-
-  if (strcmp (get_reports_data->type, "prognostic") == 0)
-    {
-      gchar *extension, *content_type;
-      int ret, pos;
-      get_data_t * get;
-
-      /* A prognostic report. */
-
-      get = &get_reports_data->get;
-      if (get->filt_id && strcmp (get->filt_id, FILT_ID_USER_SETTING) == 0)
-        {
-          g_free (get->filt_id);
-          get->filt_id = g_strdup ("0");
-        }
-
-      if (get_reports_data->alert_id == NULL)
-        SEND_TO_CLIENT_OR_FAIL
-          ("<get_reports_response"
-          " status=\"" STATUS_OK "\""
-          " status_text=\"" STATUS_OK_TEXT "\">");
-
-      content_type = report_format_content_type (report_format);
-      extension = report_format_extension (report_format);
-
-      SENDF_TO_CLIENT_OR_FAIL
-        ("<report"
-        " type=\"prognostic\""
-        " format_id=\"%s\""
-        " extension=\"%s\""
-        " content_type=\"%s\">",
-        get_reports_data->format_id,
-        extension,
-        content_type);
-
-      g_free (extension);
-      g_free (content_type);
-
-      pos = get_reports_data->pos ? atoi (get_reports_data->pos) : 1;
-      ret = manage_send_report (0,
-                                0,
-                                report_format,
-                                &get_reports_data->get,
-                                get_reports_data->notes_details,
-                                get_reports_data->overrides_details,
-                                get_reports_data->ignore_pagination,
-                                /* Special case the XML report, bah. */
-                                strcmp
-                                  (get_reports_data->format_id,
-                                  "a994b278-1f62-11e1-96ac-406186ea4fc5")
-                                && strcmp
-                                    (get_reports_data->format_id,
-                                      "5057e5cc-b825-11e4-9d0e-28d24461215b"),
-                                send_to_client,
-                                gmp_parser->client_writer,
-                                gmp_parser->client_writer_data,
-                                get_reports_data->alert_id,
-                                "prognostic",
-                                get_reports_data->host,
-                                pos,
-                                get_reports_data->host_search_phrase,
-                                get_reports_data->host_levels,
-                                get_reports_data->host_first_result,
-                                get_reports_data->host_max_results,
-                                NULL);
 
       if (ret)
         {
@@ -17288,7 +17298,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   while (next_report (&reports, &report))
     {
       gchar *extension, *content_type;
-      int ret;
       GString *prefix;
 
       prefix = g_string_new ("");
@@ -17893,6 +17902,17 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
     {
       get_results_data_reset (get_results_data);
       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if (get_results_data->get.trash)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_results",
+                          "GET_RESULTS does not support getting trashcan"
+                          " results"));
+      get_results_data_reset (get_results_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
@@ -19945,14 +19965,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
           if (schedule_available && schedule)
             {
-              time_t first_time, next_time;
+              time_t first_time, info_next_time;
               int period, period_months, duration;
               gchar *icalendar, *timezone;
 
               icalendar = timezone = NULL;
 
               if (schedule_info (schedule, schedule_in_trash,
-                                 &first_time, &next_time, &period,
+                                 &first_time, &info_next_time, &period,
                                  &period_months, &duration,
                                  &icalendar, &timezone) == 0)
                 {
@@ -19962,8 +19982,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                   first_time_str = g_strdup (first_time
                                               ? iso_time (&first_time)
                                               : "");
-                  next_time_str = g_strdup (next_time
-                                              ? iso_time (&next_time)
+                  next_time_str = g_strdup (info_next_time
+                                              ? iso_time (&info_next_time)
                                               : "over");
 
                   SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
@@ -20088,7 +20108,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             current_report = g_strdup ("");
 
           first_report_id = task_iterator_first_report (&tasks);
-          if (first_report_id)
+          if (first_report_id && (get_tasks_data->get.trash == 0))
             {
               gchar *timestamp;
               char *scan_start, *scan_end;
@@ -20152,7 +20172,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             first_report = g_strdup ("");
 
           second_last_report_id = task_second_last_report_id (index);
-          if (second_last_report_id)
+          if (second_last_report_id && (get_tasks_data->get.trash == 0))
             {
               gchar *timestamp;
               char *scan_start, *scan_end;
@@ -20217,7 +20237,36 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             second_last_report = g_strdup ("");
 
           last_report_id = task_iterator_last_report (&tasks);
-          if (last_report_id)
+          if (get_tasks_data->get.trash && last_report_id)
+            {
+              gchar *timestamp;
+              char *scan_start, *scan_end;
+
+              if (report_timestamp (last_report_id, &timestamp))
+                g_error ("%s: GET_TASKS: error getting timestamp for"
+                         " last report, aborting",
+                         __FUNCTION__);
+
+              scan_start = scan_start_time_uuid (last_report_id);
+              scan_end = scan_end_time_uuid (last_report_id);
+
+              last_report = g_strdup_printf ("<last_report>"
+                                             "<report id=\"%s\">"
+                                             "<timestamp>%s</timestamp>"
+                                             "<scan_start>%s</scan_start>"
+                                             "<scan_end>%s</scan_end>"
+                                             "</report>"
+                                             "</last_report>",
+                                             last_report_id,
+                                             timestamp,
+                                             scan_start,
+                                             scan_end);
+
+              free (scan_start);
+              free (scan_end);
+              g_free (timestamp);
+            }
+          else if (last_report_id)
             {
               gchar *timestamp;
               char *scan_start, *scan_end;
@@ -20474,9 +20523,11 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        progress_xml,
                        task_iterator_total_reports (&tasks),
                        task_iterator_finished_reports (&tasks),
-                       task_iterator_trend_counts
-                        (&tasks, holes, warnings, infos, severity,
-                         holes_2, warnings_2, infos_2, severity_2),
+                       get_tasks_data->get.trash
+                        ? ""
+                        : task_iterator_trend_counts
+                           (&tasks, holes, warnings, infos, severity,
+                            holes_2, warnings_2, infos_2, severity_2),
                        task_schedule_uuid,
                        task_schedule_name_escaped,
                        (next_time == 0 ? "over" : iso_time (&next_time)),
@@ -21077,7 +21128,7 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
       goto create_scanner_leave;
     }
   if (create_scanner_data->ca_pub
-      && check_certificate (create_scanner_data->ca_pub))
+      && check_certificate_x509 (create_scanner_data->ca_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_scanner", "Erroneous CA Certificate."));
@@ -21163,7 +21214,7 @@ static void
 handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
 {
   if (modify_scanner_data->ca_pub && *modify_scanner_data->ca_pub
-      && check_certificate (modify_scanner_data->ca_pub))
+      && check_certificate_x509 (modify_scanner_data->ca_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous CA Certificate."));
@@ -21636,24 +21687,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_AUTHENTICATE_CREDENTIALS:
-        assert (strcasecmp ("CREDENTIALS", element_name) == 0);
         set_client_state (CLIENT_AUTHENTICATE);
         break;
 
       case CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME:
-        assert (strcasecmp ("USERNAME", element_name) == 0);
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
       case CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
       case CLIENT_AUTHENTIC:
       case CLIENT_COMMANDS:
       case CLIENT_AUTHENTIC_COMMANDS:
-        assert (strcasecmp ("COMMANDS", element_name) == 0);
         SENDF_TO_CLIENT_OR_FAIL ("</commands_response>");
         break;
 
@@ -21661,7 +21708,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_DELETE (ALERT, alert, "Alert");
 
       case CLIENT_DELETE_ASSET:
-        assert (strcasecmp ("DELETE_ASSET", element_name) == 0);
         if (delete_asset_data->asset_id
             || delete_asset_data->report_id)
           switch (delete_asset (delete_asset_data->asset_id,
@@ -21825,7 +21871,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_USER:
-        assert (strcasecmp ("DELETE_USER", element_name) == 0);
         if (delete_user_data->user_id || delete_user_data->name)
           switch (delete_user (delete_user_data->user_id,
                                delete_user_data->name,
@@ -22052,11 +22097,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
       case CLIENT_GET_AGENTS:
-        assert (strcasecmp ("GET_AGENTS", element_name) == 0);
         return handle_get_agents (gmp_parser, error);
 
       case CLIENT_GET_AGGREGATES:
-        assert (strcasecmp ("GET_AGGREGATES", element_name) == 0);
         return handle_get_aggregates (gmp_parser, error);
 
       CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
@@ -22064,120 +22107,91 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_GET_AGGREGATES, TEXT_COLUMN);
 
       case CLIENT_GET_ALERTS:
-        assert (strcasecmp ("GET_ALERTS", element_name) == 0);
         return handle_get_alerts (gmp_parser, error);
 
       case CLIENT_GET_ASSETS:
-        assert (strcasecmp ("GET_ASSETS", element_name) == 0);
         return handle_get_assets (gmp_parser, error);
 
       case CLIENT_GET_CONFIGS:
-        assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
         return handle_get_configs (gmp_parser, error);
 
       case CLIENT_GET_CREDENTIALS:
-        assert (strcasecmp ("GET_CREDENTIALS", element_name) == 0);
         return handle_get_credentials (gmp_parser, error);
 
       case CLIENT_GET_FEEDS:
-        assert (strcasecmp ("GET_FEEDS", element_name) == 0);
         return handle_get_feeds (gmp_parser, error);
 
       case CLIENT_GET_FILTERS:
-        assert (strcasecmp ("GET_FILTERS", element_name) == 0);
         return handle_get_filters (gmp_parser, error);
 
       case CLIENT_GET_GROUPS:
-        assert (strcasecmp ("GET_GROUPS", element_name) == 0);
         return handle_get_groups (gmp_parser, error);
 
       case CLIENT_GET_INFO:
-        assert (strcasecmp ("GET_INFO", element_name) == 0);
         return handle_get_info (gmp_parser, error);
 
       case CLIENT_GET_NOTES:
-        assert (strcasecmp ("GET_NOTES", element_name) == 0);
         return handle_get_notes (gmp_parser, error);
 
       case CLIENT_GET_NVTS:
-        assert (strcasecmp ("GET_NVTS", element_name) == 0);
         return handle_get_nvts (gmp_parser, error);
 
       case CLIENT_GET_NVT_FAMILIES:
-        assert (strcasecmp ("GET_NVT_FAMILIES", element_name) == 0);
         return handle_get_nvt_families (gmp_parser, error);
 
       case CLIENT_GET_OVERRIDES:
-        assert (strcasecmp ("GET_OVERRIDES", element_name) == 0);
         return handle_get_overrides (gmp_parser, error);
 
       case CLIENT_GET_PERMISSIONS:
-        assert (strcasecmp ("GET_PERMISSIONS", element_name) == 0);
         return handle_get_permissions (gmp_parser, error);
 
       case CLIENT_GET_PORT_LISTS:
-        assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
         return handle_get_port_lists (gmp_parser, error);
 
       case CLIENT_GET_PREFERENCES:
-        assert (strcasecmp ("GET_PREFERENCES", element_name) == 0);
         return handle_get_preferences (gmp_parser, error);
 
       case CLIENT_GET_REPORTS:
-        assert (strcasecmp ("GET_REPORTS", element_name) == 0);
         return handle_get_reports (gmp_parser, error);
 
       case CLIENT_GET_REPORT_FORMATS:
-        assert (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0);
         return handle_get_report_formats (gmp_parser, error);
 
       case CLIENT_GET_RESULTS:
-        assert (strcasecmp ("GET_RESULTS", element_name) == 0);
         return handle_get_results (gmp_parser, error);
 
       case CLIENT_GET_ROLES:
-        assert (strcasecmp ("GET_ROLES", element_name) == 0);
         return handle_get_roles (gmp_parser, error);
 
       case CLIENT_GET_SCANNERS:
-        assert (strcasecmp ("GET_SCANNERS", element_name) == 0);
         return handle_get_scanners (gmp_parser, error);
 
       case CLIENT_GET_SCHEDULES:
-        assert (strcasecmp ("GET_SCHEDULES", element_name) == 0);
         return handle_get_schedules (gmp_parser, error);
 
       case CLIENT_GET_SETTINGS:
-        assert (strcasecmp ("GET_SETTINGS", element_name) == 0);
         return handle_get_settings (gmp_parser, error);
 
       case CLIENT_GET_SYSTEM_REPORTS:
-        assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
         return handle_get_system_reports (gmp_parser, error);
 
       case CLIENT_GET_TAGS:
-        assert (strcasecmp ("GET_TAGS", element_name) == 0);
         return handle_get_tags (gmp_parser, error);
 
       case CLIENT_GET_TARGETS:
-        assert (strcasecmp ("GET_TARGETS", element_name) == 0);
         return handle_get_targets (gmp_parser, error);
 
       case CLIENT_GET_TASKS:
-        assert (strcasecmp ("GET_TASKS", element_name) == 0);
         return handle_get_tasks (gmp_parser, error);
 
       case CLIENT_GET_USERS:
-        assert (strcasecmp ("GET_USERS", element_name) == 0);
         return handle_get_users (gmp_parser, error);
 
       case CLIENT_GET_VERSION:
       case CLIENT_GET_VERSION_AUTHENTIC:
-        assert (strcasecmp ("GET_VERSION", element_name) == 0);
         return handle_get_version (gmp_parser, error);
 
       case CLIENT_GET_VULNS:
-        assert (strcasecmp ("GET_VULNS", element_name) == 0);
         return handle_get_vulns (gmp_parser, error);
 
       case CLIENT_HELP:
@@ -22345,8 +22359,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           agent_t agent;
 
-          assert (strcasecmp ("CREATE_AGENT", element_name) == 0);
-
           if (create_agent_data->copy)
             switch (copy_agent (create_agent_data->name,
                                 create_agent_data->comment,
@@ -22469,8 +22481,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           resource_t asset;
 
-          assert (strcasecmp ("CREATE_ASSET", element_name) == 0);
-
           if (create_asset_data->report_id == NULL
               && create_asset_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -22569,7 +22579,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           config_t new_config;
 
-          assert (strcasecmp ("CREATE_CONFIG", element_name) == 0);
           assert (import_config_data->import
                   || (create_config_data->name != NULL));
 
@@ -22767,7 +22776,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CONFIG, NAME);
 
       case CLIENT_C_C_GCR:
-        assert (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_CONFIG);
         break;
       CLOSE (CLIENT_C_C_GCR, CONFIG);
@@ -22777,8 +22785,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR:
         {
           int include;
-
-          assert (strcasecmp ("NVT_SELECTOR", element_name) == 0);
 
           if (import_config_data->nvt_selector_include
               && strcmp (import_config_data->nvt_selector_include, "0") == 0)
@@ -22808,7 +22814,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, FAMILY_OR_NVT);
       CLOSE (CLIENT_C_C_GCR_CONFIG, PREFERENCES);
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE:
-        assert (strcasecmp ("PREFERENCE", element_name) == 0);
         array_terminate (import_config_data->preference_alts);
 
         char* preference_hr_name;
@@ -22851,7 +22856,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES);
         break;
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT:
-        assert (strcasecmp ("ALT", element_name) == 0);
         array_add (import_config_data->preference_alts,
                    import_config_data->preference_alt);
         import_config_data->preference_alt = NULL;
@@ -22873,7 +22877,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           alert_method_t method;
           alert_t new_alert;
 
-          assert (strcasecmp ("CREATE_ALERT", element_name) == 0);
           assert (create_alert_data->name != NULL);
           assert (create_alert_data->condition != NULL);
           assert (create_alert_data->method != NULL);
@@ -23161,6 +23164,22 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         " set to 0 or 1"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 60:
+                    {
+                      SEND_TO_CLIENT_OR_FAIL
+                        ("<create_alert_response"
+                         " status=\"" STATUS_ERROR_MISSING "\""
+                         " status_text=\"Recipient credential not found\"/>");
+                      log_event_fail ("alert", "Alert", NULL, "created");
+                    }
+                    break;
+                  case 61:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Email recipient credential must have"
+                                        " type 'pgp' or 'smime'"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -23193,7 +23212,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (create_alert_data->condition_data);
           assert (create_alert_data->part_data);
           assert (create_alert_data->part_name);
@@ -23213,7 +23231,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
       case CLIENT_CREATE_ALERT_CONDITION_DATA_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_ALERT_CONDITION_DATA);
         break;
 
@@ -23221,7 +23238,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (create_alert_data->event_data);
           assert (create_alert_data->part_data);
           assert (create_alert_data->part_name);
@@ -23246,7 +23262,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (create_alert_data->method_data);
           assert (create_alert_data->part_data);
           assert (create_alert_data->part_name);
@@ -23271,7 +23286,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           credential_t new_credential;
 
-          assert (strcasecmp ("CREATE_CREDENTIAL", element_name) == 0);
           assert (create_credential_data->name != NULL);
 
           if (create_credential_data->copy)
@@ -23336,23 +23350,34 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   " least one character long"));
             }
           else if (create_credential_data->key
-                   && create_credential_data->key_private == NULL)
+                   && create_credential_data->key_private == NULL
+                   && create_credential_data->key_public == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_credential",
                                   "CREATE_CREDENTIAL KEY requires a PRIVATE"
-                                  " key"));
+                                  " or PUBLIC key"));
             }
           else if (create_credential_data->key
-                   && create_credential_data->key_private == NULL
+                   && create_credential_data->key_private
                    && check_private_key (create_credential_data->key_private))
             {
               SEND_TO_CLIENT_OR_FAIL
               (XML_ERROR_SYNTAX ("create_credential",
                                  "Erroneous Private Key."));
             }
+          else if (create_credential_data->key
+                   && create_credential_data->key_public
+                   && check_public_key (create_credential_data->key_public))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("create_credential",
+                                 "Erroneous Public Key."));
+            }
           else if (create_credential_data->certificate
-                   && check_certificate (create_credential_data->certificate))
+                   && check_certificate
+                          (create_credential_data->certificate,
+                           create_credential_data->type))
             {
               SEND_TO_CLIENT_OR_FAIL
               (XML_ERROR_SYNTAX ("create_credential",
@@ -23366,6 +23391,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                           ? create_credential_data->key_phrase
                           : create_credential_data->password,
                          create_credential_data->key_private,
+                         create_credential_data->key_public,
                          create_credential_data->certificate,
                          create_credential_data->community,
                          create_credential_data->auth_algorithm,
@@ -23426,6 +23452,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires a certificate"));
+                break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a public key"));
                 break;
               case 10:
                 SEND_TO_CLIENT_OR_FAIL
@@ -23498,6 +23529,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PRIVATE);
+      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PUBLIC);
       CLOSE (CLIENT_CREATE_CREDENTIAL, LOGIN);
       CLOSE (CLIENT_CREATE_CREDENTIAL, NAME);
       CLOSE (CLIENT_CREATE_CREDENTIAL, PASSWORD);
@@ -23510,7 +23542,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           filter_t new_filter;
 
-          assert (strcasecmp ("CREATE_FILTER", element_name) == 0);
           assert (create_filter_data->term != NULL);
 
           if (create_filter_data->copy)
@@ -23627,7 +23658,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           group_t new_group;
 
-          assert (strcasecmp ("CREATE_GROUP", element_name) == 0);
           assert (create_group_data->users != NULL);
 
           if (create_group_data->copy)
@@ -23754,8 +23784,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           result_t result = 0;
           note_t new_note;
           int max;
-
-          assert (strcasecmp ("CREATE_NOTE", element_name) == 0);
 
           if (create_note_data->copy)
             switch (copy_note (create_note_data->copy, &new_note))
@@ -23920,8 +23948,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           result_t result = 0;
           override_t new_override;
           int max;
-
-          assert (strcasecmp ("CREATE_OVERRIDE", element_name) == 0);
 
           if (create_override_data->copy)
             switch (copy_override (create_override_data->copy, &new_override))
@@ -24101,8 +24127,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           permission_t new_permission;
 
-          assert (strcasecmp ("CREATE_PERMISSION", element_name) == 0);
-
           if (create_permission_data->copy)
             switch (copy_permission (create_permission_data->comment,
                                      create_permission_data->copy,
@@ -24257,8 +24281,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           port_list_t new_port_list;
           array_t *manage_ranges;
-
-          assert (strcasecmp ("CREATE_PORT_LIST", element_name) == 0);
 
           manage_ranges = NULL;
 
@@ -24456,7 +24478,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_PORT_LIST, COMMENT);
       CLOSE (CLIENT_CREATE_PORT_LIST, COPY);
       case CLIENT_CPL_GPLR:
-        assert (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_PORT_LIST);
         break;
       CLOSE (CLIENT_CREATE_PORT_LIST, NAME);
@@ -24472,7 +24493,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE:
         {
-          assert (strcasecmp ("PORT_RANGE", element_name) == 0);
           assert (create_port_list_data->ranges);
 
           array_add (create_port_list_data->ranges,
@@ -24489,8 +24509,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_PORT_RANGE:
         {
           port_range_t new_port_range;
-
-          assert (strcasecmp ("CREATE_PORT_RANGE", element_name) == 0);
 
           if (create_port_range_data->start == NULL
               || create_port_range_data->end == NULL
@@ -24584,8 +24602,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           char *uuid;
 
-          assert (strcasecmp ("CREATE_REPORT", element_name) == 0);
-
           array_terminate (create_report_data->results);
           array_terminate (create_report_data->host_ends);
           array_terminate (create_report_data->host_starts);
@@ -24672,7 +24688,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT, IN_ASSETS);
       CLOSE (CLIENT_CREATE_REPORT, REPORT);
       case CLIENT_CREATE_REPORT_RR:
-        assert (strcasecmp ("REPORT", element_name) == 0);
         if (create_report_data->wrapper)
           set_client_state (CLIENT_CREATE_REPORT_REPORT);
         else
@@ -24685,7 +24700,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           create_report_result_t *result;
 
-          assert (strcasecmp ("ERROR", element_name) == 0);
           assert (create_report_data->results);
 
           if (create_report_data->result_scan_nvt_version == NULL)
@@ -24745,8 +24759,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, FILTERS);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOST_COUNT);
       case CLIENT_CREATE_REPORT_RR_HOST_END:
-        assert (strcasecmp ("HOST_END", element_name) == 0);
-
         if (create_report_data->host_end_host)
           {
             create_report_result_t *result;
@@ -24769,8 +24781,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_REPORT_RR);
         break;
       case CLIENT_CREATE_REPORT_RR_HOST_START:
-        assert (strcasecmp ("HOST_START", element_name) == 0);
-
         if (create_report_data->host_start_host)
           {
             create_report_result_t *result;
@@ -24820,7 +24830,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_REPORT_RR_H_DETAIL:
         {
-          assert (strcasecmp ("DETAIL", element_name) == 0);
           assert (create_report_data->details);
 
           if (create_report_data->ip)
@@ -24855,7 +24864,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE, TYPE);
       CLOSE (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE, NAME);
       case CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_DESC:
-        assert (strcasecmp ("DESCRIPTION", element_name) == 0);
         set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE);
         break;
 
@@ -24863,7 +24871,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           create_report_result_t *result;
 
-          assert (strcasecmp ("RESULT", element_name) == 0);
           assert (create_report_data->results);
 
           if (create_report_data->result_scan_nvt_version == NULL)
@@ -24962,8 +24969,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_REPORT_FORMAT:
         {
           report_format_t new_report_format;
-
-          assert (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0);
 
           if (create_report_format_data->copy)
             {
@@ -25171,7 +25176,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_REPORT_FORMAT, COPY);
       case CLIENT_CRF_GRFR:
-        assert (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_REPORT_FORMAT);
         break;
       CLOSE (CLIENT_CRF_GRFR, REPORT_FORMAT);
@@ -25182,7 +25186,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("FILE", element_name) == 0);
           assert (create_report_format_data->files);
           assert (create_report_format_data->file);
           assert (create_report_format_data->file_name);
@@ -25204,7 +25207,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           create_report_format_param_t *param;
 
-          assert (strcasecmp ("PARAM", element_name) == 0);
           assert (create_report_format_data->params);
           assert (create_report_format_data->param_name);
           assert (create_report_format_data->param_value);
@@ -25261,7 +25263,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                        REPORT_FORMAT);
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
-        assert (strcasecmp ("OPTION", element_name) == 0);
         array_add (create_report_format_data->param_options,
                    create_report_format_data->param_option);
         create_report_format_data->param_option = NULL;
@@ -25275,7 +25276,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           role_t new_role;
 
-          assert (strcasecmp ("CREATE_ROLE", element_name) == 0);
           assert (create_role_data->users != NULL);
 
           if (create_role_data->copy)
@@ -25393,7 +25393,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ROLE, USERS);
 
       case CLIENT_CREATE_SCANNER:
-        assert (strcasecmp ("CREATE_SCANNER", element_name) == 0);
         return handle_create_scanner (gmp_parser, error);
       CLOSE (CLIENT_CREATE_SCANNER, COMMENT);
       CLOSE (CLIENT_CREATE_SCANNER, COPY);
@@ -25406,7 +25405,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_SCHEDULE:
         {
-          assert (strcasecmp ("CREATE_SCHEDULE", element_name) == 0);
           handle_create_schedule (gmp_parser, error);
           break;
         }
@@ -25433,8 +25431,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_TAG:
         {
           tag_t new_tag;
-
-          assert (strcasecmp ("CREATE_TAG", element_name) == 0);
 
           if (create_tag_data->resource_ids)
             array_terminate (create_tag_data->resource_ids);
@@ -25597,8 +25593,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           credential_t ssh_credential = 0, smb_credential = 0;
           credential_t esxi_credential = 0, snmp_credential = 0;
           target_t new_target;
-
-          assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
 
           if (create_target_data->copy)
             switch (copy_target (create_target_data->name,
@@ -25922,7 +25916,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           config_t config = 0;
           target_t target = 0;
           scanner_t scanner = 0;
-          char *tsk_uuid = NULL, *name;
+          char *tsk_uuid = NULL;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -25931,7 +25925,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
            *       after removing the option to create a task from an RC
            *       file. */
 
-          assert (strcasecmp ("CREATE_TASK", element_name) == 0);
           assert (create_task_data->task != (task_t) 0);
 
           /* The task already exists in the database at this point, so on
@@ -26200,14 +26193,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for name. */
 
-          name = task_name (create_task_data->task);
-          if (name == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE_TASK requires a name attribute"));
-              goto create_task_fail;
-            }
+          {
+            char *name;
+
+            name = task_name (create_task_data->task);
+            if (name == NULL)
+              {
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_task",
+                                    "CREATE_TASK requires a name attribute"));
+                goto create_task_fail;
+              }
+          }
 
           if (find_scanner_with_permission (create_task_data->scanner_id,
                                             &scanner,
@@ -26330,14 +26327,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK_OBSERVERS, GROUP);
 
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
-        assert (strcasecmp ("PREFERENCE", element_name) == 0);
         array_add (create_task_data->preferences,
                    create_task_data->preference);
         create_task_data->preference = NULL;
         set_client_state (CLIENT_CREATE_TASK_PREFERENCES);
         break;
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME:
-        assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
         break;
       CLOSE (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE, VALUE);
@@ -26347,8 +26342,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           gchar *errdesc;
           gchar *fail_group_id, *fail_role_id;
           user_t new_user;
-
-          assert (strcasecmp ("CREATE_USER", element_name) == 0);
 
           errdesc = NULL;
           if (create_user_data->copy)
@@ -26500,12 +26493,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_USER, PASSWORD);
       CLOSE (CLIENT_CREATE_USER, ROLE);
       case CLIENT_CREATE_USER_SOURCES:
-        assert (strcasecmp ("SOURCES", element_name) == 0);
         array_terminate (create_user_data->sources);
         set_client_state (CLIENT_CREATE_USER);
         break;
       case CLIENT_CREATE_USER_SOURCES_SOURCE:
-        assert (strcasecmp ("SOURCE", element_name) == 0);
         if (create_user_data->current_source)
           array_add (create_user_data->sources,
                      g_strdup (create_user_data->current_source));
@@ -26537,8 +26528,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_AGENT:
         {
-          assert (strcasecmp ("MODIFY_AGENT", element_name) == 0);
-
           switch (modify_agent
                    (modify_agent_data->agent_id,
                     modify_agent_data->name,
@@ -26601,8 +26590,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           event_t event;
           alert_condition_t condition;
           alert_method_t method;
-
-          assert (strcasecmp ("MODIFY_ALERT", element_name) == 0);
 
           event = EVENT_ERROR;
           condition = ALERT_CONDITION_ERROR;
@@ -26843,6 +26830,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " set to 0 or 1"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
+              case 60:
+                SEND_TO_CLIENT_OR_FAIL
+                   ("<create_alert_response"
+                    " status=\"" STATUS_ERROR_MISSING "\""
+                    " status_text=\"Recipient credential not found\"/>");
+                  log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 61:
+                SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_alert",
+                                      "Email recipient credential must have"
+                                      " type 'pgp' or 'smime'"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
@@ -26874,7 +26875,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (modify_alert_data->event_data);
           assert (modify_alert_data->part_data);
           assert (modify_alert_data->part_name);
@@ -26899,7 +26899,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (modify_alert_data->condition_data);
           assert (modify_alert_data->part_data);
           assert (modify_alert_data->part_name);
@@ -26924,7 +26923,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           gchar *string;
 
-          assert (strcasecmp ("DATA", element_name) == 0);
           assert (modify_alert_data->method_data);
           assert (modify_alert_data->part_data);
           assert (modify_alert_data->part_name);
@@ -26947,8 +26945,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_ASSET:
         {
-          assert (strcasecmp ("MODIFY_ASSET", element_name) == 0);
-
           switch (modify_asset
                    (modify_asset_data->asset_id,
                     modify_asset_data->comment))
@@ -27007,8 +27003,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_MODIFY_AUTH:
         {
           GSList *item;
-
-          assert (strcasecmp ("MODIFY_AUTH", element_name) == 0);
 
           if (acl_user_may ("modify_auth") == 0)
             {
@@ -27111,8 +27105,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_AUTH_GROUP:
         {
-          assert (strcasecmp ("GROUP", element_name) == 0);
-
           /* Add settings to group. */
           if (modify_auth_data->curr_group_settings)
             {
@@ -27131,8 +27123,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         {
           auth_conf_setting_t *setting;
 
-          assert (strcasecmp ("AUTH_CONF_SETTING", element_name) == 0);
-
           setting = g_malloc0 (sizeof (auth_conf_setting_t));
           setting->key = modify_auth_data->key;
           modify_auth_data->key = NULL;
@@ -27150,13 +27140,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING, VALUE);
 
       case CLIENT_MODIFY_CONFIG:
-        assert (strcasecmp ("MODIFY_CONFIG", element_name) == 0);
         return handle_modify_config (gmp_parser, error);
       CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
       CLOSE (CLIENT_MODIFY_CONFIG, SCANNER);
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
-        assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
         assert (modify_config_data->families_growing_all);
         assert (modify_config_data->families_static_all);
         assert (modify_config_data->families_growing_empty);
@@ -27167,7 +27155,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_MODIFY_CONFIG, NAME);
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
-        assert (strcasecmp ("NVT_SELECTION", element_name) == 0);
         assert (modify_config_data->nvt_selection);
         array_terminate (modify_config_data->nvt_selection);
         set_client_state (CLIENT_MODIFY_CONFIG);
@@ -27175,7 +27162,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CONFIG, PREFERENCE);
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
-        assert (strcasecmp ("FAMILY", element_name) == 0);
         if (modify_config_data->family_selection_family_name)
           {
             if (modify_config_data->family_selection_family_growing)
@@ -27202,7 +27188,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
-        assert (strcasecmp ("GROWING", element_name) == 0);
         if (modify_config_data->family_selection_growing_text)
           {
             modify_config_data->family_selection_growing
@@ -27216,7 +27201,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
-        assert (strcasecmp ("ALL", element_name) == 0);
         if (modify_config_data->family_selection_family_all_text)
           {
             modify_config_data->family_selection_family_all
@@ -27230,7 +27214,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY, NAME);
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
-        assert (strcasecmp ("GROWING", element_name) == 0);
         if (modify_config_data->family_selection_family_growing_text)
           {
             modify_config_data->family_selection_family_growing
@@ -27245,7 +27228,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       CLOSE (CLIENT_MODIFY_CONFIG_NVT_SELECTION, FAMILY);
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
         if (modify_config_data->nvt_selection_nvt_oid)
           array_add (modify_config_data->nvt_selection,
                      modify_config_data->nvt_selection_nvt_oid);
@@ -27256,7 +27238,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NAME);
       CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NVT);
       case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
         /* Init, so it's the empty string when the value is empty. */
         gvm_append_string (&modify_config_data->preference_value, "");
         set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
@@ -27264,8 +27245,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_CREDENTIAL:
         {
-          assert (strcasecmp ("MODIFY_CREDENTIAL", element_name) == 0);
-
           switch (modify_credential
                    (modify_credential_data->credential_id,
                     modify_credential_data->name,
@@ -27276,6 +27255,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       ? modify_credential_data->key_phrase
                       : modify_credential_data->password,
                     modify_credential_data->key_private,
+                    modify_credential_data->key_public,
                     modify_credential_data->certificate,
                     modify_credential_data->community,
                     modify_credential_data->auth_algorithm,
@@ -27361,6 +27341,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 modify_credential_data->credential_id,
                                 "modified");
                 break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid or empty public key"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
@@ -27393,6 +27381,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, KEY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PRIVATE);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PUBLIC);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, LOGIN);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, NAME);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, PASSWORD);
@@ -27402,8 +27391,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_FILTER:
         {
-          assert (strcasecmp ("MODIFY_FILTER", element_name) == 0);
-
           switch (modify_filter
                    (modify_filter_data->filter_id,
                     modify_filter_data->name,
@@ -27482,8 +27469,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_GROUP:
         {
-          assert (strcasecmp ("MODIFY_GROUP", element_name) == 0);
-
           switch (modify_group
                    (modify_group_data->group_id,
                     modify_group_data->name,
@@ -27560,8 +27545,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_NOTE:
         {
-          assert (strcasecmp ("MODIFY_NOTE", element_name) == 0);
-
           if (acl_user_may ("modify_note") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -27674,8 +27657,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_OVERRIDE:
         {
-          assert (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0);
-
           if (acl_user_may ("modify_override") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -27803,8 +27784,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_PERMISSION:
         {
-          assert (strcasecmp ("MODIFY_PERMISSION", element_name) == 0);
-
           if (modify_permission_data->permission_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_permission",
@@ -27934,8 +27913,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_PORT_LIST:
         {
-          assert (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0);
-
           switch (modify_port_list
                    (modify_port_list_data->port_list_id,
                     modify_port_list_data->name,
@@ -28000,8 +27977,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_REPORT:
         {
-          assert (strcasecmp ("MODIFY_REPORT", element_name) == 0);
-
           switch (modify_report
                    (modify_report_data->report_id,
                     modify_report_data->comment))
@@ -28062,8 +28037,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_REPORT_FORMAT:
         {
-          assert (strcasecmp ("MODIFY_REPORT_FORMAT", element_name) == 0);
-
           switch (modify_report_format
                    (modify_report_format_data->report_format_id,
                     modify_report_format_data->name,
@@ -28152,8 +28125,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_ROLE:
         {
-          assert (strcasecmp ("MODIFY_ROLE", element_name) == 0);
-
           switch (modify_role
                    (modify_role_data->role_id,
                     modify_role_data->name,
@@ -28229,7 +28200,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_ROLE, USERS);
 
       case CLIENT_MODIFY_SCANNER:
-        assert (strcasecmp ("MODIFY_SCANNER", element_name) == 0);
         return handle_modify_scanner (gmp_parser, error);
       CLOSE (CLIENT_MODIFY_SCANNER, TYPE);
       CLOSE (CLIENT_MODIFY_SCANNER, PORT);
@@ -28241,7 +28211,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_SCHEDULE:
         {
-          assert (strcasecmp ("MODIFY_SCHEDULE", element_name) == 0);
           handle_modify_schedule (gmp_parser, error);
           break;
         }
@@ -28323,7 +28292,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_TAG:
         {
-          assert (strcasecmp ("MODIFY_TAG", element_name) == 0);
           gchar *error_extra = NULL;
 
           if (modify_tag_data->resource_ids)
@@ -28447,8 +28415,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_TARGET:
         {
-          assert (strcasecmp ("MODIFY_TARGET", element_name) == 0);
-
           if (modify_target_data->target_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_target",
@@ -28734,8 +28700,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL, PORT);
 
       case CLIENT_MODIFY_TASK:
-        assert (strcasecmp ("MODIFY_TASK", element_name) == 0);
-
         if (acl_user_may ("modify_task") == 0)
           {
             SEND_TO_CLIENT_OR_FAIL
@@ -29036,22 +29000,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);
 
       case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
-        assert (strcasecmp ("PREFERENCE", element_name) == 0);
         array_add (modify_task_data->preferences,
                    modify_task_data->preference);
         modify_task_data->preference = NULL;
         set_client_state (CLIENT_MODIFY_TASK_PREFERENCES);
         break;
       case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME:
-        assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
         break;
       CLOSE (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE, VALUE);
 
       case CLIENT_MODIFY_USER:
         {
-          assert (strcasecmp ("MODIFY_USER", element_name) == 0);
-
           if ((modify_user_data->name == NULL
                && modify_user_data->user_id == NULL)
               || (modify_user_data->name
@@ -29185,12 +29145,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_USER, PASSWORD);
       CLOSE (CLIENT_MODIFY_USER, ROLE);
       case CLIENT_MODIFY_USER_SOURCES:
-        assert (strcasecmp ("SOURCES", element_name) == 0);
         array_terminate (modify_user_data->sources);
         set_client_state (CLIENT_MODIFY_USER);
         break;
       case CLIENT_MODIFY_USER_SOURCES_SOURCE:
-        assert (strcasecmp ("SOURCE", element_name) == 0);
         array_add (modify_user_data->sources,
                    g_strdup (modify_user_data->current_source));
         g_free (modify_user_data->current_source);
@@ -29781,7 +29739,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_RUN_WIZARD_PARAMS_PARAM, VALUE);
 
       case CLIENT_RUN_WIZARD_PARAMS_PARAM:
-        assert (strcasecmp ("PARAM", element_name) == 0);
         array_add (run_wizard_data->params, run_wizard_data->param);
         run_wizard_data->param = NULL;
         set_client_state (CLIENT_RUN_WIZARD_PARAMS);
@@ -29998,11 +29955,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_SYNC_CONFIG:
-        assert (strcasecmp ("SYNC_CONFIG", element_name) == 0);
         return handle_sync_config (gmp_parser, error);
 
       case CLIENT_VERIFY_AGENT:
-        assert (strcasecmp ("VERIFY_AGENT", element_name) == 0);
         if (verify_agent_data->agent_id)
           {
             switch (verify_agent (verify_agent_data->agent_id))
@@ -30040,7 +29995,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_VERIFY_REPORT_FORMAT:
-        assert (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0);
         if (verify_report_format_data->report_format_id)
           {
             switch (verify_report_format
@@ -30080,7 +30034,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_VERIFY_SCANNER:
-        assert (strcasecmp ("VERIFY_SCANNER", element_name) == 0);
         if (verify_scanner_data->scanner_id)
           {
             char *version = NULL;
@@ -30215,6 +30168,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
               &modify_credential_data->key_private);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC,
+              &modify_credential_data->key_public);
 
       APPEND (CLIENT_MODIFY_CREDENTIAL_LOGIN,
               &modify_credential_data->login);
@@ -30441,6 +30397,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
               &create_credential_data->key_private);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC,
+              &create_credential_data->key_public);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_LOGIN,
               &create_credential_data->login);
@@ -31471,7 +31430,7 @@ process_gmp_client_input ()
  *
  * @return TRUE if failed, else FALSE.
  */
-int
+static int
 process_gmp_write (const char* msg, void* buffer)
 {
   g_debug ("-> client internal: %s\n", msg);

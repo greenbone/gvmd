@@ -27,7 +27,7 @@
 # Variables
 #
 
-# Command line paramaters
+# Command line parameters
 USERNAME=$1
 PUBKEY_FILE=$2
 TEMP_DIR=$3

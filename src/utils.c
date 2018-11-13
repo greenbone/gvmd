@@ -102,7 +102,7 @@ gvm_sleep (unsigned int seconds)
  *
  * @return Time since epoch.  0 on error.
  */
-int
+static int
 parse_utc_time (const char *format, const char *text_time)
 {
   int epoch_time;

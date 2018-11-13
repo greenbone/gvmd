@@ -204,16 +204,6 @@ DEF_ACCESS (cpe_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
 DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
- * @brief Get the id of the deprecating CPE from a CPE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The deprecated_by CVD ID, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_deprecated_by, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
  * @brief Get the Highest CVSS Score of all CVE's referencing this cpe.
  *
  * @param[in]  iterator  Iterator.
@@ -1121,7 +1111,7 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
  *
  * @param[in]  get  GET params.
  *
- * @return Total number of SecInfo entires in filtered set.
+ * @return Total number of SecInfo entries in filtered set.
  */
 int
 all_info_count (const get_data_t *get)
@@ -1135,7 +1125,7 @@ all_info_count (const get_data_t *get)
  * @param[in]   get  GET params.
  * @param[in]   filtered Whether to count entries in filtered set only.
  *
- * @return Total number of SecInfo entires.
+ * @return Total number of SecInfo entries.
  */
 int
 total_info_count (const get_data_t *get, int filtered)
@@ -3589,7 +3579,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
 /**
  * @brief Write start time to sync lock file.
  */
-void
+static void
 write_sync_start (int lockfile)
 {
   time_t now;
@@ -3740,7 +3730,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
  *
  * @return Timestamp from feed.  0 if missing.  -1 on error.
  */
-int
+static int
 manage_feed_timestamp (const gchar *name)
 {
   GError *error;
@@ -4418,17 +4408,6 @@ manage_sync_scap (sigset_t *sigmask_current)
                 sync_scap,
                 "gvmd: Syncing SCAP",
                 "gvm-sync-scap");
-}
-
-/**
- * @brief Get the current SecInfo update commit size.
- *
- * @return The SecInfo update commit size.
- */
-int
-get_secinfo_commit_size ()
-{
-  return secinfo_commit_size;
 }
 
 /**
