@@ -65619,6 +65619,8 @@ vuln_count (const get_data_t *get)
 
 /**
  * @brief Extra WHERE clause for vulns.
+ *
+ * @return WHERE clause.
  */
 static gchar*
 vulns_extra_where ()
