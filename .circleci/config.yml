@@ -97,7 +97,7 @@ jobs:
       - checkout
       - run:
           name: Configure and Scan Build (Debug, PostgreSQL)
-          command: mkdir build && cd build/ && scan-build cmake -DCMAKE_BUILD_TYPE=Debug .. && scan-build -o ~/scan-build-report-postgresql make && [ -z "$(ls -A ~/scan-build-report-postgresql/)" ]
+          command: mkdir build && cd build/ && scan-build cmake -DBACKEND=POSTGRESQL -DCMAKE_BUILD_TYPE=Debug .. && scan-build -o ~/scan-build-report-postgresql make && [ -z "$(ls -A ~/scan-build-report-postgresql/)" ]
       - store_artifacts:
           path: ~/scan-build-report-postgresql
   build_doc:
