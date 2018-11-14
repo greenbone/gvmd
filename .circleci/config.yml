@@ -117,6 +117,7 @@ workflows:
       - build_postgresql_debug
       - build_sqlite_release
       - build_postgresql_release
+      - build_doc
       - gen_xml_doc
       - doc_coverage:
           requires:
