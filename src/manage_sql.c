@@ -49448,7 +49448,7 @@ schedule_task_iterator_readable (iterator_t* iterator)
  * @param[in]   byday        Which days of week schedule will run.
  * @param[in]   duration     The length of the time window the action will run
  *                           in.  0 means entire duration of action.
- * @param[in]   timezone     Timezone.
+ * @param[in]   zone         Timezone.
  * @param[out]  error_out    Output for iCalendar errors and warnings.
  *
  * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,

@@ -320,7 +320,7 @@ iso_time (time_t *epoch_time)
  * @brief Create an ISO time from seconds since epoch, given a timezone.
  *
  * @param[in]  epoch_time  Time in seconds from epoch.
- * @param[in]  timezone    Timezone.
+ * @param[in]  zone        Timezone.
  * @param[out] abbrev      Timezone abbreviation.
  *
  * @return Pointer to ISO time in static memory, or NULL on error.
