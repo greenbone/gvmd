@@ -23,6 +23,17 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file sql.c
+ * @brief Generic SQL interface
+ *
+ * This is a small generic interface for SQL database access.
+ *
+ * To add support for a specific database, like Postgres, a few functions
+ * (for example, sql_prepare_internal and sql_exec_internal) need to be
+ * implemented for that database.
+ */
+
 #include "sql.h"
 
 #include <assert.h>

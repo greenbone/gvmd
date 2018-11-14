@@ -23,7 +23,20 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#define _XOPEN_SOURCE /* Glibc2 needs this for strptime. */
+/**
+ * @file  manage_sqlite3.c
+ * @brief GVM management layer: SQLite3 specific facilities
+ *
+ * This file contains the parts of the GVM management layer that need
+ * to be coded for each backend.  This is the SQLite3 version.
+ */
+
+/**
+ * @brief Enable extra functions.
+ *
+ * Glibc2 needs this for strptime.
+ */
+#define _XOPEN_SOURCE
 
 #include "sql.h"
 #include "manage.h"
@@ -86,16 +99,21 @@ int
 days_from_now (time_t *);
 
 int
-user_owns (const char *, resource_t, int);
-
-int
-resource_name (const char *, const char *, int, gchar **);
+resource_name (const char *, const char *, int, char **);
 
 int
 resource_exists (const char *, resource_t, int);
 
 
 /* Session. */
+
+/**
+ * @brief WHERE clause for view vulns.
+ */
+#define VULNS_RESULTS_WHERE                                           \
+  " WHERE uuid IN"                                                    \
+  "   (SELECT nvt FROM results"                                       \
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
 /**
  * @brief Setup session.
@@ -115,10 +133,6 @@ manage_session_init (const char *uuid)
 
   /* Vulnerabilities view must be created as temporary to allow using
    * tables from SCAP database */
-#define VULNS_RESULTS_WHERE                                           \
-  " WHERE uuid IN"                                                    \
-  "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
   sql ("DROP VIEW IF EXISTS vulns;");
   if (manage_scap_loaded ())
@@ -4092,6 +4106,8 @@ manage_attach_databases ()
 
 /**
  * @brief Remove external database.
+ *
+ * @param[in]  name  Database name.
  */
 void
 manage_db_remove (const gchar *name)

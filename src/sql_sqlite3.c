@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file sql_sqlite3.c
+ * @brief Generic SQL interface: SQLite3 backend
+ *
+ * SQLite3 backend of the SQL interface.
+ */
+
 #include "sql.h"
 #include "utils.h"
 
@@ -59,9 +66,12 @@ sqlv (int, char*, va_list);
 
 /* Types. */
 
+/**
+ * @brief An SQL statement.
+ */
 struct sql_stmt
 {
-  sqlite3_stmt *stmt;
+  sqlite3_stmt *stmt;     ///< The statement.
 };
 
 
@@ -307,6 +317,8 @@ sql_close_fork ()
 
 /**
  * @brief Get the number of rows changed or inserted in last statement.
+ *
+ * @return Number of rows changed or inserted in last statement.
  */
 int
 sql_changes ()
@@ -316,6 +328,8 @@ sql_changes ()
 
 /**
  * @brief Get the ID of the last inserted row.
+ *
+ * @return Resource.
  */
 resource_t
 sql_last_insert_id ()

@@ -23,7 +23,19 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/* This is so that time.h includes strptime. */
+/**
+ * @file utils.c
+ * @brief Generic utilities
+ *
+ * Generic helper utilities.  None of these are GVM specific.  They could
+ * be used anywhere.
+ */
+
+/**
+ * @brief Enable extra functions.
+ *
+ * time.h in glibc2 needs this for strptime.
+ */
 #define _XOPEN_SOURCE
 
 #include "utils.h"

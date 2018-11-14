@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  scanner.c
+ * @brief GVM management layer: Scanner connection handling
+ *
+ * This file provides facilities for working with scanner connections.
+ */
+
 #include "scanner.h"
 #include "gmpd.h"
 #include "otp.h"
@@ -47,14 +54,44 @@
  */
 #define G_LOG_DOMAIN "md   main"
 
-/* Current OpenVAS Scanner connection. */
+/**
+ * @brief Current OpenVAS Scanner session.
+ */
 gnutls_session_t openvas_scanner_session = NULL;
+
+/**
+ * @brief Current OpenVAS Scanner credentials.
+ */
 gnutls_certificate_credentials_t openvas_scanner_credentials = NULL;
+
+/**
+ * @brief Current OpenVAS Scanner socket.
+ */
 static int openvas_scanner_socket = -1;
+
+/**
+ * @brief Current OpenVAS Scanner address.
+ */
 static struct sockaddr_in openvas_scanner_address;
+
+/**
+ * @brief Current OpenVAS Scanner CA Cert.
+ */
 char *openvas_scanner_ca_pub = NULL;
+
+/**
+ * @brief Current OpenVAS Scanner public key.
+ */
 char *openvas_scanner_key_pub = NULL;
+
+/**
+ * @brief Current OpenVAS Scanner private key.
+ */
 char *openvas_scanner_key_priv = NULL;
+
+/**
+ * @brief Current OpenVAS Scanner UNIX path.
+ */
 char *openvas_scanner_unix_path = NULL;
 
 /**
@@ -82,11 +119,15 @@ static buffer_size_t from_scanner_size = 1048576;
  */
 static buffer_size_t from_scanner_max_size = 1073741824;
 
+/** @cond STATIC */
+
 /* XXX: gvm-comm.c content should be moved to scanner.c to better abstract
  * scanner reading/writing. */
 extern char to_server[];
 extern int to_server_end;
 extern int to_server_start;
+
+/** @endcond */
 
 /**
  * @brief Write as much as possible from a string to the server.
@@ -332,6 +373,8 @@ openvas_scanner_realloc ()
 /**
  * @brief Write as much as possible from the to_scanner buffer to the scanner.
  *
+ * @param[in]  nvt_cache_mode  NVT cache mode.
+ *
  * @return 0 wrote everything, -1 error, -2 wrote as much as scanner accepted,
  *         -3 did an initialisation step.
  */
@@ -575,6 +618,13 @@ openvas_scanner_fork ()
   reset_scanner_states ();
 }
 
+/**
+ * @brief Create a new connection to the scanner and set it as current scanner.
+ *
+ * Use a UNIX socket for the connection.
+ *
+ * @return 0 on success, -1 on error.
+ */
 static int
 openvas_scanner_connect_unix ()
 {

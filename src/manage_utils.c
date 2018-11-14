@@ -289,6 +289,8 @@ add_months (time_t time, int months)
 /**
  * @brief Calculate day of week corresponding to a time.
  *
+ * @param[in]  time  Time.
+ *
  * @return Day of week mask: 1 Monday, 2 Tuesday, 4 Wednesday...
  */
 static int
@@ -764,6 +766,9 @@ valid_db_resource_type (const char* type)
          || (strcasecmp (type, "user") == 0);
 }
 
+/**
+ * @brief GVM product ID.
+ */
 #define GVM_PRODID "-//Greenbone.net//NONSGML Greenbone Security Manager " \
                    GVMD_VERSION "//EN"
 
@@ -1090,6 +1095,9 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
   return vevent_simplified;
 }
 
+/**
+ * @brief Error return for icalendar_from_string.
+ */
 #define ICAL_RETURN_ERROR(message)              \
   do                                            \
     {                                           \

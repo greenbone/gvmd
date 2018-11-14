@@ -77,15 +77,6 @@ valid_db_resource_type (const char*);
 int
 hosts_str_contains (const char*, const char*, int);
 
-
-typedef struct
-{
-  icalcomponent *ical;
-  icaltimezone *ical_tz;
-  gchar *ical_string;
-  gchar *tz_string;
-} schedule_ical_t;
-
 icalcomponent *
 icalendar_from_old_schedule_data (time_t, time_t, time_t, time_t, int,
                                   const char *);
