@@ -32,6 +32,14 @@ jobs:
       - run:
           name: Configure and Compile
           command: mkdir build && cd build/ && cmake -DBACKEND=POSTGRESQL -DCMAKE_BUILD_TYPE=Debug .. && make install
+  build_doc:
+    docker:
+      - image: greenbone/code-metrics-doxygen-debian-stretch
+    steps:
+      - checkout
+      - run:
+          name: Build standard documentation, failing if there are warnings
+          command: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc 2>&1 1>/dev/null | ! grep --invert-match "CGI::Pretty"
   gen_xml_doc:
     docker:
       - image: greenbone/code-metrics-doxygen-debian-stretch
