@@ -320,26 +320,26 @@ iso_time (time_t *epoch_time)
  * @brief Create an ISO time from seconds since epoch, given a timezone.
  *
  * @param[in]  epoch_time  Time in seconds from epoch.
- * @param[in]  timezone    Timezone.
+ * @param[in]  zone        Timezone.
  * @param[out] abbrev      Timezone abbreviation.
  *
  * @return Pointer to ISO time in static memory, or NULL on error.
  */
 char *
-iso_time_tz (time_t *epoch_time, const char *timezone, const char **abbrev)
+iso_time_tz (time_t *epoch_time, const char *zone, const char **abbrev)
 {
   gchar *tz;
   char *ret;
 
-  if (timezone == NULL)
+  if (zone == NULL)
     return iso_time (epoch_time);
 
   /* Store current TZ. */
   tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
 
-  if (setenv ("TZ", timezone, 1) == -1)
+  if (setenv ("TZ", zone, 1) == -1)
     {
-      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+      g_warning ("%s: Failed to switch to zone", __FUNCTION__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
