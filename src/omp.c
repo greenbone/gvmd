@@ -22508,13 +22508,15 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires a"
-                                    " password in a privacy element"));
+                                    " password in the privacy element"
+                                    " if an algorithm is given"));
                 break;
               case 14:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires an"
-                                    " algorithm in a privacy element"));
+                                    " algorithm in the privacy element"
+                                    " if a password is given"));
                 break;
               case 15:
                 SEND_TO_CLIENT_OR_FAIL
@@ -22524,8 +22526,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 16:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
-                                    "privacy algorithm must be 'aes'"
-                                    " or 'des'"));
+                                    "privacy algorithm must be 'aes', 'des'"
+                                    " or empty"));
                 break;
               case 17:
                 SEND_TO_CLIENT_OR_FAIL
@@ -26466,6 +26468,15 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
                                     "Invalid or empty private key"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 10:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Privacy algorithm and password"
+                                    " must be both empty or non-empty"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
