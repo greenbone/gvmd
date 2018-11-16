@@ -151,7 +151,7 @@ Datum
 sql_next_time (PG_FUNCTION_ARGS)
 {
   int32 first, period, period_months, byday, periods_offset;
-  char *timezone;
+  char *zone;
   int32 ret;
 
   first = PG_GETARG_INT32 (0);
@@ -160,12 +160,12 @@ sql_next_time (PG_FUNCTION_ARGS)
   byday = PG_GETARG_INT32 (3);
 
   if (PG_NARGS() < 5 || PG_ARGISNULL (4))
-    timezone = NULL;
+    zone = NULL;
   else
     {
       text* timezone_arg;
       timezone_arg = PG_GETARG_TEXT_P (4);
-      timezone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
+      zone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
   if (PG_NARGS() < 6 || PG_ARGISNULL (5))
@@ -173,10 +173,10 @@ sql_next_time (PG_FUNCTION_ARGS)
   else
     periods_offset = PG_GETARG_INT32 (5);
 
-  ret = next_time (first, period, period_months, byday, timezone,
+  ret = next_time (first, period, period_months, byday, zone,
                    periods_offset);
-  if (timezone)
-    pfree (timezone);
+  if (zone)
+    pfree (zone);
   PG_RETURN_INT32 (ret);
 }
 
@@ -195,7 +195,7 @@ PG_FUNCTION_INFO_V1 (sql_next_time_ical);
 Datum
 sql_next_time_ical (PG_FUNCTION_ARGS)
 {
-  char *ical_string, *timezone;
+  char *ical_string, *zone;
   int periods_offset;
   int32 ret;
 
@@ -212,22 +212,22 @@ sql_next_time_ical (PG_FUNCTION_ARGS)
     }
 
   if (PG_NARGS() < 2 || PG_ARGISNULL (1))
-    timezone = NULL;
+    zone = NULL;
   else
     {
       text* timezone_arg;
       timezone_arg = PG_GETARG_TEXT_P (1);
-      timezone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
+      zone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
   periods_offset = PG_GETARG_INT32 (2);
 
-  ret = icalendar_next_time_from_string (ical_string, timezone,
+  ret = icalendar_next_time_from_string (ical_string, zone,
                                          periods_offset);
   if (ical_string)
     pfree (ical_string);
-  if (timezone)
-    pfree (timezone);
+  if (zone)
+    pfree (zone);
   PG_RETURN_INT32 (ret);
 }
 

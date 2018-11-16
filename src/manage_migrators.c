@@ -14356,7 +14356,7 @@ migrate_190_to_191 ()
   schedule_t schedule;
   time_t first_time, period, period_months, duration;
   int byday;
-  const char *timezone;
+  const char *zone;
   icalcomponent *ical_component;
   gchar *quoted_ical;
 
@@ -14393,19 +14393,19 @@ migrate_190_to_191 ()
       period_months = (time_t) iterator_int64 (&schedule_iter, 3);
       duration = (time_t) iterator_int64 (&schedule_iter, 4);
       byday = iterator_int (&schedule_iter, 5);
-      timezone = iterator_string (&schedule_iter, 6);
+      zone = iterator_string (&schedule_iter, 6);
 
       ical_component
         = icalendar_from_old_schedule_data (first_time, period, period_months,
-                                            duration, byday, timezone);
+                                            duration, byday, zone);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
 
       g_debug ("%s: schedule %llu - first: %s (%s), period: %ld,"
                " period_months: %ld, duration: %ld - byday: %d\n"
                "generated iCalendar:\n%s",
                __FUNCTION__, schedule,
-               iso_time_tz (&first_time, timezone, NULL),
-               timezone, period, period_months, duration, byday,
+               iso_time_tz (&first_time, zone, NULL),
+               zone, period, period_months, duration, byday,
                quoted_ical);
 
       sql ("UPDATE schedules SET icalendar = '%s' WHERE id = %llu",
@@ -14431,19 +14431,19 @@ migrate_190_to_191 ()
       period_months = (time_t) iterator_int64 (&schedule_iter, 3);
       duration = (time_t) iterator_int64 (&schedule_iter, 4);
       byday = iterator_int (&schedule_iter, 5);
-      timezone = iterator_string (&schedule_iter, 6);
+      zone = iterator_string (&schedule_iter, 6);
 
       ical_component
         = icalendar_from_old_schedule_data (first_time, period, period_months,
-                                            duration, byday, timezone);
+                                            duration, byday, zone);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
 
       g_debug ("%s: trash schedule %llu - first: %s (%s), period: %ld,"
                " period_months: %ld, duration: %ld - byday: %d\n"
                "generated iCalendar:\n%s",
                __FUNCTION__, schedule,
-               iso_time_tz (&first_time, timezone, NULL),
-               timezone, period, period_months, duration, byday,
+               iso_time_tz (&first_time, zone, NULL),
+               zone, period, period_months, duration, byday,
                quoted_ical);
 
       sql ("UPDATE schedules_trash SET icalendar = '%s' WHERE id = %llu",

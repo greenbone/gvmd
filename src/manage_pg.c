@@ -68,12 +68,12 @@ manage_session_init (const char *uuid)
 /**
  * @brief Setup session timezone.
  *
- * @param[in]  timezone  Timezone.
+ * @param[in]  zone  Timezone.
  */
 void
-manage_session_set_timezone (const char *timezone)
+manage_session_set_timezone (const char *zone)
 {
-  sql ("SET SESSION TIME ZONE '%s';", timezone);
+  sql ("SET SESSION TIME ZONE '%s';", zone);
   return;
 }
 
