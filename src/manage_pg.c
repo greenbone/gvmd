@@ -1544,7 +1544,7 @@ manage_create_sql_functions ()
              " RETURNS double precision AS $$"
              /* Calculate the severity of a task. */
              "  SELECT CASE"
-             "         WHEN (SELECT target IS NULL OR target = 0"
+             "         WHEN (SELECT target = 0"
              "               FROM tasks WHERE id = $1)"
              "         THEN CAST (NULL AS double precision)"
              "         ELSE"
