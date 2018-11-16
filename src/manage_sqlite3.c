@@ -2994,7 +2994,7 @@ create_tables ()
 
   /* Result views */
 
-  owned_clause = acl_where_owned_for_get ("override", "users.id", NULL);
+  owned_clause = acl_where_owned_for_get ("override", "users.id");
 
   sql ("DROP VIEW IF EXISTS result_overrides;");
   sql ("CREATE VIEW result_overrides AS"

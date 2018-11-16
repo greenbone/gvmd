@@ -4968,7 +4968,7 @@ resource_uuid (const gchar *type, resource_t resource)
 /**
  * @brief Initialise a GET iterator, including observed resources.
  *
- * This version includes the extra_with arg.
+ * This version includes the pre_sql arg.
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  type            Type of resource.
@@ -4989,27 +4989,27 @@ resource_uuid (const gchar *type, resource_t resource)
  * @param[in]  owned           Only get items owned by the current user.
  * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
  * @param[in]  extra_order     Extra ORDER clauses.
- * @param[in]  extra_with      Extra WITH clauses.
+ * @param[in]  pre_sql         SQL to add before the SELECT.  Useful for WITH.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
  */
 static int
-init_get_iterator2_with (iterator_t* iterator, const char *type,
-                         const get_data_t *get, column_t *select_columns,
-                         column_t *trash_select_columns,
-                         column_t *where_columns,
-                         column_t *trash_where_columns,
-                         const char **filter_columns, int distinct,
-                         const char *extra_tables,
-                         const char *extra_where, int owned,
-                         int ignore_id,
-                         const char *extra_order,
-                         const char *extra_with,
-                         int assume_permitted)
+init_get_iterator2_pre (iterator_t* iterator, const char *type,
+                        const get_data_t *get, column_t *select_columns,
+                        column_t *trash_select_columns,
+                        column_t *where_columns,
+                        column_t *trash_where_columns,
+                        const char **filter_columns, int distinct,
+                        const char *extra_tables,
+                        const char *extra_where, int owned,
+                        int ignore_id,
+                        const char *extra_order,
+                        const char *pre_sql,
+                        int assume_permitted)
 {
   int first, max;
-  gchar *clause, *order, *filter, *owned_clause, *with_clause;
+  gchar *clause, *order, *filter, *owned_clause;
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
@@ -5096,8 +5096,6 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
 
   g_free (filter);
 
-  with_clause = NULL;
-
   if (resource)
     /* Ownership test is done above by find function. */
     owned_clause = g_strdup (" t ()");
@@ -5105,21 +5103,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     owned_clause = g_strdup (" t ()");
   else
     owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
-                                    permissions, &with_clause);
-
-  if (extra_with)
-    {
-      if (with_clause)
-        {
-          gchar *old_with;
-
-          old_with = with_clause;
-          with_clause = g_strdup_printf ("%s, %s", old_with, extra_with);
-          g_free (old_with);
-        }
-      else
-        with_clause = g_strdup_printf ("WITH %s", extra_with);
-    }
+                                    permissions);
 
   g_free (owner_filter);
   array_free (permissions);
@@ -5153,7 +5137,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    " WHERE id = %llu"
                    " AND %s"
                    "%s%s;",
-                   with_clause ? with_clause : "",
+                   pre_sql ? pre_sql : "",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
@@ -5170,7 +5154,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    "%s"
                    "%s"
                    "%s%s;",
-                   with_clause ? with_clause : "",
+                   pre_sql ? pre_sql : "",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
@@ -5186,7 +5170,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    " WHERE id = %llu"
                    " AND %s"
                    "%s%s;",
-                   with_clause ? with_clause : "",
+                   pre_sql ? pre_sql : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
@@ -5201,7 +5185,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    " WHERE %s"
                    " %s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i;",
-                   with_clause ? with_clause : "",
+                   pre_sql ? pre_sql : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
@@ -5223,7 +5207,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    " %s"
                    "%s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i%s;",
-                   with_clause ? with_clause : "",
+                   pre_sql ? pre_sql : "",
                    distinct ? "SELECT DISTINCT * FROM (" : "",
                    columns,
                    type,
@@ -5241,7 +5225,6 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     }
 
   g_free (columns);
-  g_free (with_clause);
   g_free (owned_clause);
   g_free (order);
   g_free (clause);
@@ -5286,7 +5269,7 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                     int ignore_id,
                     const char *extra_order)
 {
-  return init_get_iterator2_with (iterator, type, get, select_columns,
+  return init_get_iterator2_pre (iterator, type, get, select_columns,
                                  trash_select_columns, where_columns,
                                  trash_where_columns, filter_columns, distinct,
                                  extra_tables, extra_where, owned, ignore_id,
@@ -5567,8 +5550,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     /* Ownership test is done above by find function. */
     owned_clause = g_strdup (" 1");
   else
-    owned_clause = acl_where_owned (type, get, owned, owner_filter,
-                                    resource, permissions, &with);
+    owned_clause = acl_where_owned_with (type, get, owned, owner_filter,
+                                         resource, permissions, &with);
 
   if (strcasecmp (type, "TASK") == 0)
     {
@@ -6108,8 +6091,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
 
   g_free (filter);
 
-  owned_clause = acl_where_owned (type, get, owned, owner_filter, 0,
-                                  permissions, &with);
+  owned_clause = acl_where_owned_with (type, get, owned, owner_filter, 0,
+                                       permissions, &with);
 
   g_free (owner_filter);
   array_free (permissions);
@@ -8847,60 +8830,50 @@ alert_data (alert_t alert, const char *type, const char *name)
 void
 init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
 {
-  gchar *owned_clause, *with_clause;
+  gchar *owned_clause;
   get_data_t get;
   array_t *permissions;
 
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  owned_clause = acl_where_owned ("alert", &get, 0, "any", 0, permissions,
-                                  &with_clause);
+  owned_clause = acl_where_owned ("alert", &get, 0, "any", 0, permissions);
   array_free (permissions);
 
   if (task && event)
     init_iterator (iterator,
-                   "%s"
-                   " SELECT alerts.id, alerts.uuid, alerts.name"
+                   "SELECT alerts.id, alerts.uuid, alerts.name"
                    " FROM alerts, task_alerts"
                    " WHERE task_alerts.task = %llu AND event = %i"
                    " AND task_alerts.alert = alerts.id"
                    " AND %s;",
-                   with_clause ? with_clause : "",
                    task,
                    event,
                    owned_clause);
   else if (task)
     init_iterator (iterator,
-                   "%s"
-                   " SELECT alerts.id, alerts.uuid, alerts.name"
+                   "SELECT alerts.id, alerts.uuid, alerts.name"
                    " FROM alerts, task_alerts"
                    " WHERE task_alerts.task = %llu"
                    " AND task_alerts.alert = alerts.id"
                    " AND %s;",
-                   with_clause ? with_clause : "",
                    task,
                    owned_clause);
   else if (event)
     init_iterator (iterator,
-                   "%s"
-                   " SELECT alerts.id, alerts.uuid, alerts.name"
+                   "SELECT alerts.id, alerts.uuid, alerts.name"
                    " FROM alerts"
                    " WHERE event = %i"
                    " AND %s;",
-                   with_clause ? with_clause : "",
                    event,
                    owned_clause);
   else
     init_iterator (iterator,
-                   "%s"
-                   " SELECT alerts.id, alerts.uuid, alerts.name"
+                   "SELECT alerts.id, alerts.uuid, alerts.name"
                    " FROM alerts"
                    " WHERE %s;",
-                   with_clause ? with_clause : "",
                    owned_clause);
 
-  g_free (with_clause);
   g_free (owned_clause);
 }
 
@@ -13679,7 +13652,7 @@ void
 init_alert_task_iterator (iterator_t* iterator, alert_t alert,
                               int ascending)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -13688,23 +13661,19 @@ init_alert_task_iterator (iterator_t* iterator, alert_t alert,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT tasks.name, tasks.uuid, %s FROM tasks, task_alerts"
+                 "SELECT tasks.name, tasks.uuid, %s FROM tasks, task_alerts"
                  " WHERE tasks.id = task_alerts.task"
                  " AND task_alerts.alert = %llu"
                  " AND hidden = 0"
                  " ORDER BY tasks.name %s;",
-                 with_clause ? with_clause : "",
                  available,
                  alert,
                  ascending ? "ASC" : "DESC");
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -21793,14 +21762,12 @@ report_add_result (report_t report, result_t result)
       if (override && user != previous_user)
         {
           char *ov_severity_str;
-          gchar *owned_clause, *with_clause;
+          gchar *owned_clause;
 
-          owned_clause = acl_where_owned_for_get ("override", NULL,
-                                                  &with_clause);
+          owned_clause = acl_where_owned_for_get ("override", NULL);
 
           ov_severity_str
-            = sql_string ("%s"
-                          " SELECT coalesce (overrides.new_severity, %1.1f)"
+            = sql_string ("SELECT coalesce (overrides.new_severity, %1.1f)"
                           " FROM overrides, results"
                           " WHERE results.id = %llu"
                           " AND overrides.nvt = results.nvt"
@@ -21827,14 +21794,12 @@ report_add_result (report_t report, result_t result)
                           "   overrides.severity ASC,"
                           "   overrides.creation_time DESC"
                           " LIMIT 1",
-                          with_clause ? with_clause : "",
                           severity,
                           result,
                           owned_clause,
                           report,
                           severity);
 
-          g_free (with_clause);
           g_free (owned_clause);
 
           if (ov_severity_str == NULL
@@ -22889,8 +22854,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   int ret;
   gchar *filter, *value;
   int autofp, apply_overrides, dynamic_severity;
-  gchar *extra_tables, *extra_where, *owned_clause, *with_clause;
-  gchar *with_clauses;
+  gchar *extra_tables, *extra_where, *owned_clause;
+  gchar *pre_sql;
   char *user_id;
 
   assert (report);
@@ -23047,36 +23012,27 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
                         current_credentials.uuid);
-  owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
+  owned_clause = acl_where_owned_for_get ("override", user_id);
   free (user_id);
-  with_clauses = g_strdup_printf ("%s%s"
-                                  " valid_overrides"
-                                  " AS (SELECT nvt, hosts, new_severity, port,"
-                                  "            severity, result"
-                                  "     FROM overrides"
-                                  "     WHERE %s"
-                                  "     AND (task = 0"
-                                  "          OR task = (SELECT reports.task"
-                                  "                     FROM reports"
-                                  "                     WHERE reports.id = %llu))"
-                                  "     AND ((end_time = 0) OR (end_time >= m_now ()))"
-                                  "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
-                                  "           creation_time DESC)"
-                                  " ",
-                                  with_clause
-                                   /* Skip the leading "WITH" because init_get..
-                                    * below will add it.  A bit of a hack, but
-                                    * it's the only place that needs this. */
-                                   ? with_clause + 4
-                                   : "",
-                                  with_clause ? "," : "",
-                                  owned_clause,
-                                  report);
-  g_free (with_clause);
+  pre_sql = g_strdup_printf ("WITH valid_overrides"
+                             " AS (SELECT nvt, hosts, new_severity, port,"
+                             "            severity, result"
+                             "     FROM overrides"
+                             "     WHERE %s"
+                             "     AND (task = 0"
+                             "          OR task = (SELECT reports.task"
+                             "                     FROM reports"
+                             "                     WHERE reports.id = %llu))"
+                             "     AND ((end_time = 0) OR (end_time >= m_now ()))"
+                             "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
+                             "           creation_time DESC)"
+                             " ",
+                             owned_clause,
+                             report);
   g_free (owned_clause);
 
   table_order_if_sort_not_specified = 1;
-  ret = init_get_iterator2_with (iterator,
+  ret = init_get_iterator2_pre (iterator,
                                 "result",
                                 get,
                                 /* SELECT columns. */
@@ -23092,11 +23048,11 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                 TRUE,
                                 report ? TRUE : FALSE,
                                 extra_order,
-                                with_clauses,
+                                pre_sql,
                                 1);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
-  g_free (with_clauses);
+  g_free (pre_sql);
   g_free (extra_tables);
   g_free (extra_where);
   return ret;
@@ -24101,14 +24057,12 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
 
       if (apply_overrides)
         {
-          gchar *ov, *owned_clause, *with_clause;
+          gchar *ov, *owned_clause;
 
-          owned_clause = acl_where_owned_for_get ("override", NULL,
-                                                  &with_clause);
+          owned_clause = acl_where_owned_for_get ("override", NULL);
 
           ov = g_strdup_printf
-                ("%s"
-                 " SELECT overrides.new_severity"
+                ("SELECT overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
                  " AND %s"
@@ -24132,11 +24086,9 @@ init_classic_asset_iterator (iterator_t* iterator, int first_result,
                  " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC"
                  " LIMIT 1",
-                 with_clause ? with_clause : "",
                  owned_clause,
                  severity_sql);
 
-          g_free (with_clause);
           g_free (owned_clause);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
@@ -24706,6 +24658,79 @@ set_report_scan_run_status (report_t report, task_status_t status)
   if (setting_auto_cache_rebuild_int ())
     report_cache_counts (report, 0, 0, NULL);
   return 0;
+}
+
+/**
+ * @brief Prepare quick statement for report_severity_data.
+ *
+ * @return Statement.
+ */
+sql_stmt_t *
+report_severity_data_prepare ()
+{
+  sql_stmt_t *stmt;
+  gchar *owned_clause;
+
+  owned_clause = acl_where_owned_for_get ("override", NULL);
+  stmt = sql_prepare ("SELECT 1 FROM overrides"
+                      " WHERE (overrides.nvt = $1)"
+                      " AND %s"
+                      " AND ((overrides.end_time = 0)"
+                      "      OR (overrides.end_time >= m_now ()))",
+                      owned_clause);
+  g_free (owned_clause);
+  if (stmt == NULL)
+    {
+      g_warning ("%s: sql_prepare stmt failed\n", __FUNCTION__);
+      abort ();
+    }
+  return stmt;
+}
+
+/**
+ * @brief Prepare quick statement for report_severity_data.
+ *
+ * @return Statement.
+ */
+sql_stmt_t *
+report_severity_data_prepare_full (task_t task)
+{
+  sql_stmt_t *full_stmt;
+  gchar *owned_clause;
+
+  owned_clause = acl_where_owned_for_get ("override", NULL);
+  full_stmt = sql_prepare
+               ("SELECT severity_to_type (overrides.new_severity),"
+                 "       overrides.new_severity"
+                 " FROM overrides"
+                 " WHERE overrides.nvt = $1" // 1
+                 " AND %s"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= m_now ()))"
+                 " AND (overrides.task = 0"
+                 "      OR overrides.task = %llu)"
+                 " AND (overrides.result = 0"
+                 "      OR overrides.result = $2)" // 2
+                 " AND (overrides.hosts is NULL"
+                 "      OR overrides.hosts = ''"
+                 "      OR hosts_contains (overrides.hosts, $3))" // 3
+                 " AND (overrides.port is NULL"
+                 "      OR overrides.port = ''"
+                 "      OR overrides.port = $4)" // 4
+                 " AND severity_matches_ov ($5," // 5
+                 "                          overrides.severity)"
+                 " ORDER BY overrides.result DESC, overrides.task DESC,"
+                 " overrides.port DESC, overrides.severity ASC,"
+                 " overrides.modification_time DESC;",
+                 owned_clause,
+                 task);
+  g_free (owned_clause);
+  if (full_stmt == NULL)
+    {
+      g_warning ("%s: sql_prepare full_stmt failed\n", __FUNCTION__);
+      abort ();
+    }
+  return full_stmt;
 }
 
 /**
@@ -26783,14 +26808,12 @@ filtered_host_count (const char *levels, const char *search_phrase,
 
       if (apply_overrides)
         {
-          gchar *ov, *owned_clause, *with_clause;
+          gchar *ov, *owned_clause;
 
-          owned_clause = acl_where_owned_for_get ("override", NULL,
-                                                  &with_clause);
+          owned_clause = acl_where_owned_for_get ("override", NULL);
 
           ov = g_strdup_printf
-                ("%s"
-                 " SELECT overrides.new_severity"
+                ("SELECT overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
                  " AND %s"
@@ -26813,11 +26836,9 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC"
                  " LIMIT 1",
-                 with_clause ? with_clause : "",
                  owned_clause,
                  severity_sql);
 
-          g_free (with_clause);
           g_free (owned_clause);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s),%s)",
@@ -35291,7 +35312,7 @@ trash_target_writable (target_t target)
 void
 init_target_task_iterator (iterator_t* iterator, target_t target)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -35300,21 +35321,17 @@ init_target_task_iterator (iterator_t* iterator, target_t target)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT name, uuid, %s FROM tasks"
+                 "SELECT name, uuid, %s FROM tasks"
                  " WHERE target = %llu"
                  " AND hidden = 0"
                  " ORDER BY name ASC;",
-                 with_clause ? with_clause : "",
                  available,
                  target);
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -36612,19 +36629,6 @@ config_iterator_type (iterator_t* iterator)
 int
 config_in_use (config_t config)
 {
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE id = %i"
-               " AND (uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
-               "      OR uuid = '" CONFIG_UUID_EMPTY "'"
-               "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
-               "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
-               "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
-               config))
-    return 1;
-
   return sql_int ("SELECT count(*) FROM tasks"
                   " WHERE config = %llu"
                   " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
@@ -36637,11 +36641,24 @@ config_in_use (config_t config)
  *
  * @param[in]  config  Config.
  *
- * @return Always 1.
+ * @return 0 if predefined config, else 1.
  */
 int
 config_writable (config_t config)
 {
+  if (sql_int ("SELECT count(*) FROM configs"
+               " WHERE id = %i"
+               " AND (uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
+               "      OR uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
+               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
+               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
+               "      OR uuid = '" CONFIG_UUID_EMPTY "'"
+               "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
+               "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
+               "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
+               config))
+    return 0;
+
   return 1;
 }
 
@@ -37382,7 +37399,7 @@ void
 init_config_task_iterator (iterator_t* iterator, config_t config,
                            int ascending)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -37391,23 +37408,17 @@ init_config_task_iterator (iterator_t* iterator, config_t config,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT name, uuid, %s FROM tasks"
+                 "SELECT name, uuid, %s FROM tasks"
                  " WHERE config = %llu"
                  " AND hidden = 0"
                  " ORDER BY name %s;",
-                 with_clause ? with_clause : "",
                  available,
                  config,
                  ascending ? "ASC" : "DESC");
-
-  g_free (with_clause);
-  g_free (available);
 }
 
 /**
@@ -43676,7 +43687,7 @@ init_credential_target_iterator (iterator_t* iterator,
                                  credential_t credential,
                                  int ascending)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -43685,23 +43696,19 @@ init_credential_target_iterator (iterator_t* iterator,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_targets"));
-  available = acl_where_owned ("target", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("target", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT uuid, name, %s FROM targets"
+                 "SELECT uuid, name, %s FROM targets"
                  " WHERE id IN"
                  "   (SELECT target FROM targets_login_data"
                  "    WHERE credential = %llu)"
                  " ORDER BY name %s;",
-                 with_clause ? with_clause : "",
                  available,
                  credential,
                  ascending ? "ASC" : "DESC");
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -43753,7 +43760,7 @@ init_credential_scanner_iterator (iterator_t* iterator,
                                   credential_t credential,
                                   int ascending)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -43762,21 +43769,17 @@ init_credential_scanner_iterator (iterator_t* iterator,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_scanners"));
-  available = acl_where_owned ("scanner", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("scanner", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT uuid, name, %s FROM scanners"
+                 "SELECT uuid, name, %s FROM scanners"
                  " WHERE credential = %llu"
                  " ORDER BY name %s;",
-                 with_clause ? with_clause : "",
                  available,
                  credential,
                  ascending ? "ASC" : "DESC");
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -48414,7 +48417,7 @@ scanner_iterator_key_priv (iterator_t* iterator)
 void
 init_scanner_task_iterator (iterator_t* iterator, scanner_t scanner)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -48423,20 +48426,16 @@ init_scanner_task_iterator (iterator_t* iterator, scanner_t scanner)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT id, uuid, name, %s FROM tasks"
+                 "SELECT id, uuid, name, %s FROM tasks"
                  " WHERE scanner = %llu AND hidden = 0"
                  " ORDER BY name ASC;",
-                 with_clause ? with_clause : "",
                  available,
                  scanner);
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -50100,7 +50099,7 @@ task_schedule_iterator_timed_out (iterator_t* iterator)
 void
 init_schedule_task_iterator (iterator_t* iterator, schedule_t schedule)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -50109,19 +50108,15 @@ init_schedule_task_iterator (iterator_t* iterator, schedule_t schedule)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
   init_iterator (iterator,
-                 "%s"
-                 " SELECT id, uuid, name, %s FROM tasks"
+                 "SELECT id, uuid, name, %s FROM tasks"
                  " WHERE schedule = %llu AND hidden = 0"
                  " ORDER BY name ASC;",
-                 with_clause ? with_clause : "",
                  available,
                  schedule,
                  current_credentials.uuid);
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -52669,7 +52664,7 @@ void
 init_report_format_alert_iterator (iterator_t* iterator,
                                    report_format_t report_format)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -52678,22 +52673,18 @@ init_report_format_alert_iterator (iterator_t* iterator,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT DISTINCT alerts.name, alerts.uuid, %s"
+                 "SELECT DISTINCT alerts.name, alerts.uuid, %s"
                  " FROM alerts, alert_method_data"
                  " WHERE alert_method_data.data = '%s'"
                  " AND alert_method_data.alert = alerts.id"
                  " ORDER BY alerts.name ASC;",
-                 with_clause ? with_clause : "",
                  available,
                  report_format_uuid (report_format));
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -57421,7 +57412,7 @@ void
 init_port_list_target_iterator (iterator_t* iterator, port_list_t port_list,
                                 int ascending)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -57430,21 +57421,17 @@ init_port_list_target_iterator (iterator_t* iterator, port_list_t port_list,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_targets"));
-  available = acl_where_owned ("target", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("target", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT uuid, name, %s FROM targets"
+                 "SELECT uuid, name, %s FROM targets"
                  " WHERE port_list = %llu"
                  " ORDER BY name %s;",
-                 with_clause ? with_clause : "",
                  available,
                  port_list,
                  ascending ? "ASC" : "DESC");
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -58712,7 +58699,7 @@ DEF_ACCESS (filter_iterator_term, GET_ITERATOR_COLUMN_COUNT + 1);
 void
 init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -58721,13 +58708,11 @@ init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT name, uuid, %s FROM alerts"
+                 "SELECT name, uuid, %s FROM alerts"
                  " WHERE filter = %llu"
                  " OR (EXISTS (SELECT * FROM alert_condition_data"
                  "             WHERE name = 'filter_id'"
@@ -58736,14 +58721,12 @@ init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
                  "             AND alert = alerts.id)"
                  "     AND (condition = %i OR condition = %i))"
                  " ORDER BY name ASC;",
-                 with_clause ? with_clause : "",
                  available,
                  filter,
                  filter,
                  ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
                  ALERT_CONDITION_FILTER_COUNT_CHANGED);
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -61014,9 +60997,9 @@ host_routes_xml (host_t host)
   iterator_t routes;
   GString* buffer;
 
-  gchar *owned_clause, *with_clause;
+  gchar *owned_clause;
 
-  owned_clause = acl_where_owned_for_get ("host", NULL, &with_clause);
+  owned_clause = acl_where_owned_for_get ("host", NULL);
 
   buffer = g_string_new ("<routes>");
   init_iterator (&routes,
@@ -61068,8 +61051,7 @@ host_routes_xml (host_t host)
         int same_source;
 
         init_iterator (&best_host_iterator,
-                       "%s"
-                       " SELECT hosts.uuid,"
+                       "SELECT hosts.uuid,"
                        "       (source_id='%s')"
                        "         AS same_source"
                        "  FROM hosts, host_identifiers"
@@ -61081,7 +61063,6 @@ host_routes_xml (host_t host)
                        "          abs(host_identifiers.modification_time"
                        "              - %llu) ASC"
                        " LIMIT 1;",
-                       with_clause ? with_clause : "",
                        source_id,
                        *hop_ip,
                        owned_clause,
@@ -61118,9 +61099,6 @@ host_routes_xml (host_t host)
       g_string_append (buffer, "</route>");
       g_strfreev(hop_ips);
     }
-
-  g_free (with_clause);
-  g_free (owned_clause);
 
   cleanup_iterator (&routes);
 
@@ -66114,6 +66092,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE permissions_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
+      sql ("UPDATE scanners SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE scanners_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
       sql ("UPDATE schedules SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE schedules_trash SET owner = %llu WHERE owner = %llu;",
@@ -67111,7 +67093,7 @@ user_iterator_ifaces_allow (iterator_t* iterator)
 void
 init_user_group_iterator (iterator_t *iterator, user_t user)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -67120,21 +67102,17 @@ init_user_group_iterator (iterator_t *iterator, user_t user)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_groups"));
-  available = acl_where_owned ("group", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("group", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT DISTINCT id, uuid, name, %s FROM groups"
+                 "SELECT DISTINCT id, uuid, name, %s FROM groups"
                  " WHERE id IN (SELECT \"group\" FROM group_users"
                  "              WHERE \"user\" = %llu)"
                  " ORDER by name;",
-                 with_clause ? with_clause : "",
                  available,
                  user);
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -67179,7 +67157,7 @@ user_group_iterator_readable (iterator_t* iterator)
 void
 init_user_role_iterator (iterator_t *iterator, user_t user)
 {
-  gchar *available, *with_clause;
+  gchar *available;
   get_data_t get;
   array_t *permissions;
 
@@ -67188,22 +67166,18 @@ init_user_role_iterator (iterator_t *iterator, user_t user)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_roles"));
-  available = acl_where_owned ("role", &get, 1, "any", 0, permissions,
-                               &with_clause);
+  available = acl_where_owned ("role", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT DISTINCT id, uuid, name, order_role (name), %s"
+                 "SELECT DISTINCT id, uuid, name, order_role (name), %s"
                  " FROM roles"
                  " WHERE id IN (SELECT role FROM role_users"
                  "              WHERE \"user\" = %llu)"
                  " ORDER by order_role (name);",
-                 with_clause ? with_clause : "",
                  available,
                  user);
 
-  g_free (with_clause);
   g_free (available);
 }
 
@@ -68178,26 +68152,23 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                             const char* sort_field, int ascending)
 {
   get_data_t get;
-  gchar *owned_clause, *with_clause;
+  gchar *owned_clause;
 
   assert (type);
   assert (resource);
   assert (current_credentials.uuid);
 
   get.trash = 0;
-  owned_clause = acl_where_owned ("tag", &get, 1, "any", 0, NULL,
-                                  &with_clause);
+  owned_clause = acl_where_owned ("tag", &get, 1, "any", 0, NULL);
 
   init_iterator (iterator,
-                 "%s"
-                 " SELECT id, uuid, name, value, comment"
+                 "SELECT id, uuid, name, value, comment"
                  " FROM tags"
                  " WHERE resource_type = '%s'"
                  " AND resource = %llu"
                  "%s"
                  " AND %s"
                  " ORDER BY %s %s;",
-                 with_clause ? with_clause : "",
                  type,
                  resource,
                  active_only ? " AND active=1" : "",
@@ -68205,7 +68176,6 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                  sort_field ? sort_field : "active DESC, name",
                  ascending ? "ASC" : "DESC");
 
-  g_free (with_clause);
   g_free (owned_clause);
   return 0;
 }
