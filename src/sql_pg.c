@@ -88,7 +88,7 @@ extern int log_errors;
 /**
  * @brief Handle on the database.
  */
-PGconn *conn = NULL;
+static PGconn *conn = NULL;
 
 
 /* Helpers. */

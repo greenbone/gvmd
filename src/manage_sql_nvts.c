@@ -181,7 +181,7 @@ find_nvt (const char* oid, nvt_t* nvt)
 /**
  * @brief Counter for chunking in insert_nvts_list.
  */
-int chunk_count = 0;
+static int chunk_count = 0;
 
 /**
  * @brief Size of chunk for insert_nvts_list.
