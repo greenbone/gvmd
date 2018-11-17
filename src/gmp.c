@@ -1611,6 +1611,7 @@ create_report_format_data_reset (create_report_format_data_t *data)
   free (data->param_type_max);
   free (data->param_value);
   array_free (data->params);
+  free (data->signature);
   free (data->summary);
 
   memset (data, 0, sizeof (create_report_format_data_t));
