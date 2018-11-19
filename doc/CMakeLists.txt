@@ -51,18 +51,6 @@ find_program (XSLTPROC_EXECUTABLE xsltproc
 
 message (STATUS "Looking for xsltproc... ${XSLTPROC_EXECUTABLE}")
 
-message (STATUS "Looking for SQLFairy...")
-
-find_program (SQLT-DIAGRAM_EXECUTABLE sqlt-diagram
-              PATHS /bin /usr/bin /usr/local/bin/
-              DOC "sqlt-diagram location")
-
-find_program (SQLT_EXECUTABLE sqlt
-              PATHS /bin /usr/bin /usr/local/bin/
-              DOC "sqlt location")
-
-message (STATUS "Looking for SQLFairy... ${SQLT-DIAGRAM_EXECUTABLE}, ${SQLT_EXECUTABLE}")
-
 ## build
 
 set_directory_properties (PROPERTIES CLEAN_NO_CUSTOM true)
@@ -74,7 +62,7 @@ if (NOT DOXYGEN_EXECUTABLE)
   message (STATUS "WARNING: Doxygen is required to build the HTML docs.")
 else (NOT DOXYGEN_EXECUTABLE)
   add_custom_target (doc COMMENT "Building documentation..."
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gvmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/.built-html ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db)
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gvmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/.built-html)
 
   add_custom_command (OUTPUT .built-html
     COMMAND sh
@@ -82,7 +70,7 @@ else (NOT DOXYGEN_EXECUTABLE)
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gvmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
   add_custom_target (doc-full COMMENT "Building documentation..."
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gvmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_db)
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gvmd.8 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full)
 
   add_custom_command (OUTPUT .built-html_full
     COMMAND sh
@@ -194,29 +182,6 @@ else (XMLMANTOHTML_EXECUTABLE)
                       COMMAND echo "[Error: xmlmantohtml required to see manpage here]"
 					          > gvmd.html)
 endif (XMLMANTOHTML_EXECUTABLE)
-
-if (SQLT-DIAGRAM_EXECUTABLE)
-  add_custom_command (OUTPUT db.png
-					  COMMAND sh
-					  ARGS -c \"${SQLT-DIAGRAM_EXECUTABLE} --color --title=\\\"Manager database \(version ${GVMD_DATABASE_VERSION}\)\\\" -d PostgreSQL ${CMAKE_CURRENT_SOURCE_DIR}/db_postgres.sql -o db.png\;\"
-					  DEPENDS db_postgres.sql)
-else (SQLT_EXECUTABLE)
-  add_custom_command (OUTPUT db.png
-					  COMMAND sh
-					  ARGS -c \"touch db.png;\")
-endif (SQLT-DIAGRAM_EXECUTABLE)
-
-if (SQLT_EXECUTABLE)
-  add_custom_command (OUTPUT .built-html_db
-					  COMMAND sh
-					  ARGS -c \"${SQLT_EXECUTABLE} --from PostgreSQL --to HTML --pretty --title=\\\"Manager database \(version ${GVMD_DATABASE_VERSION}\)\\\" ${CMAKE_CURRENT_SOURCE_DIR}/db_postgres.sql > db.html && touch .built-html_db\;\"
-					  DEPENDS db_postgres.sql)
-else (SQLT_EXECUTABLE)
-  add_custom_command (OUTPUT .built-html_db
-					  COMMAND sh
-					  ARGS -c \"echo \\\"[Error: sqlt, from SQLFairy, required to see database here]\\\" > db.html && touch .built-html_db\;\")
-endif (SQLT_EXECUTABLE)
-
 
 ## Install
 
