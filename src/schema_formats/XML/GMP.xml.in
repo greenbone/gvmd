@@ -4003,6 +4003,44 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </create_credential_response>
       </response>
     </example>
+    <example>
+      <summary>Create a PGP public key credential</summary>
+      <request>
+        <create_credential>
+          <name>Email public key</name>
+          <type>pgp</type>
+          <key>
+            <public>-----BEGIN PGP PUBLIC KEY BLOCK-----
+              [...]
+            </public>
+          </key>
+        </create_credential>
+      </request>
+      <response>
+        <create_credential_response status="201"
+                                    status_text="OK, resource created"
+                                    id="e81be3f4-a9a6-45a0-853f-980383a5d9eb">
+        </create_credential_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create an S/MIME credential</summary>
+      <request>
+        <create_credential>
+          <name>Email certificate</name>
+          <type>smime</type>
+          <certificate>-----BEGIN PKCS7-----
+            [...]
+          </certificate>
+        </create_credential>
+      </request>
+      <response>
+        <create_credential_response status="201"
+                                    status_text="OK, resource created"
+                                    id="4aa5bf8a-502d-4023-96b0-352fe202a097">
+        </create_credential_response>
+      </response>
+    </example>
   </command>
   <command>
     <name>create_filter</name>
