@@ -31945,11 +31945,11 @@ make_task (char* name, char* comment, int in_assets, int event)
   quoted_comment = comment ? sql_quote ((gchar*) comment) : NULL;
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, comment, schedule,"
-       "  schedule_next_time, config_location, target_location,"
+       "  schedule_next_time, config_location, target, target_location,"
        "  scanner_location, schedule_location, alterable,"
        "  creation_time, modification_time)"
        " VALUES ((SELECT id FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, m_now (),"
+       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
        "         m_now ());",
        current_credentials.uuid,
        uuid,

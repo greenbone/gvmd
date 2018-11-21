@@ -30,7 +30,6 @@ Prerequisites for building documentation:
 * Doxygen
 * xsltproc (for building the GMP HTML documentation)
 * xmltoman (optional, for building man page)
-* sqlfairy (optional, for producing database diagram)
 
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
