@@ -94,6 +94,7 @@
 #include "gmp.h"
 #include "gmp_base.h"
 #include "gmp_get.h"
+#include "gmp_tickets.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "utils.h"
@@ -5241,6 +5242,7 @@ typedef enum
   CLIENT_GET_TAGS,
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
+  CLIENT_GET_TICKETS,
   CLIENT_GET_USERS,
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
@@ -5506,7 +5508,19 @@ make_xml_error_syntax (const char *tag, const char *text)
 }
 
 /**
- * @brief Insert else clause for gmp_xml_handle_start_element.
+ * @brief Insert else clause for GET command in gmp_xml_handle_start_element.
+ *
+ * @param[in]  op  Operation.
+ */
+#define ELSE_GET_START(lower, upper)                                    \
+  else if (strcasecmp ("GET_" G_STRINGIFY (upper), element_name) == 0)  \
+    {                                                                   \
+      get_ ## lower ## _start (attribute_names, attribute_values);      \
+      set_client_state (CLIENT_GET_ ## upper);                          \
+    }
+
+/**
+ * @brief Insert else clause for error in gmp_xml_handle_start_element.
  *
  * @param[in]  op  Operation.
  */
@@ -6731,6 +6745,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_tasks_data->schedules_only = 0;
             set_client_state (CLIENT_GET_TASKS);
           }
+        ELSE_GET_START (tickets, TICKETS)
         else if (strcasecmp ("GET_USERS", element_name) == 0)
           {
             get_data_parse_attributes (&get_users_data->get, "user",
@@ -12096,6 +12111,18 @@ convert_to_manage_ranges (array_t *ranges)
     gmp_parser->read_over = 0;                                           \
     set_client_state (parent);                                           \
     break
+
+/**
+ * @brief Insert GET case for gmp_xml_handle_end_element.
+ *
+ * @param[in]  upper    What to GET, in uppercase.
+ * @param[in]  lower    What to GET, in lowercase.
+ */
+#define CASE_GET_END(upper, lower)              \
+  case CLIENT_GET_ ## upper:                    \
+    get_ ## lower ## _run (gmp_parser, error);  \
+    set_client_state (CLIENT_AUTHENTIC);        \
+    break;
 
 /**
  * @brief Insert DELETE case for gmp_xml_handle_end_element.
@@ -20943,6 +20970,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_TASKS:
         return handle_get_tasks (gmp_parser, error);
+
+      CASE_GET_END (TICKETS, tickets);
 
       case CLIENT_GET_USERS:
         return handle_get_users (gmp_parser, error);

@@ -654,6 +654,7 @@ command_t gmp_commands[]
     {"GET_TAGS", "Get all tags."},
     {"GET_TARGETS", "Get all targets."},
     {"GET_TASKS", "Get all tasks."},
+    {"GET_TICKETS", "Get all tickets."},
     {"GET_USERS", "Get all users."},
     {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
