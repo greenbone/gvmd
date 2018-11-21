@@ -41311,7 +41311,7 @@ modify_credential (const char *credential_id,
       // Truncate certificate which also validates it.
       gchar *certificate_truncated;
       certificate_truncated = truncate_certificate (certificate);
-      if (certificate_truncated == NULL)
+      if (certificate_truncated)
         {
           set_credential_certificate (credential, certificate_truncated);
           g_free (certificate_truncated);
@@ -41438,11 +41438,18 @@ modify_credential (const char *credential_id,
                   : credential_iterator_privacy_password (&iterator));
             }
         }
+      else if (strcmp (type, "pgp") == 0
+               || strcmp (type, "smime") == 0)
+        {
+          set_credential_data (credential, "secret", "");
+        }
       else
         {
           g_warning ("%s: Unknown credential type: %s", __FUNCTION__, type);
           sql_rollback ();
           cleanup_iterator (&iterator);
+          g_free (key_private_truncated);
+          return -1;
         }
 
       g_free (key_private_truncated);
