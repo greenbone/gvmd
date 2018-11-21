@@ -507,7 +507,7 @@ type_build_select (const char *, const char *, const get_data_t *,
 /**
  * @brief Function to fork a connection that will accept GMP requests.
  */
-int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
+static int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
 
 /**
  * @brief Max number of hosts per target.
@@ -553,7 +553,7 @@ static int max_email_message_length = MAX_EMAIL_MESSAGE_LENGTH;
 /**
  * @brief Memory cache of NVT information from the database.
  */
-nvtis_t* nvti_cache = NULL;
+static nvtis_t* nvti_cache = NULL;
 
 /**
  * @brief Name of the database file.
@@ -1884,7 +1884,7 @@ filter_free (array_t *split)
  * split_filter will not insert a default sort term, so that the random
  * (and fast) table order in the database will be used.
  */
-int table_order_if_sort_not_specified = 0;
+static int table_order_if_sort_not_specified = 0;
 
 /**
  * @brief Ensure filter parts contains the special keywords.
@@ -60286,7 +60286,7 @@ array_t *identifiers = NULL;
 /**
  * @brief Unique hosts listed in host_identifiers.
  */
-array_t *identifier_hosts = NULL;
+static array_t *identifier_hosts = NULL;
 
 /**
  * @brief Host identifier type.
