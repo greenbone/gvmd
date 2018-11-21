@@ -2428,6 +2428,36 @@ create_tables ()
        "  port INTEGER,"
        "  credential_location INTEGER);");
 
+  sql ("CREATE TABLE IF NOT EXISTS tickets"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
+       "  comment text,"
+       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  severity real,"
+       "  host text,"
+       "  location text,"
+       "  solution_type text,"
+       "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  status integer,"
+       "  open_time integer,"
+       "  solved_time integer,"
+       "  solved_comment text,"
+       "  confirmed_time integer,"
+       "  confirmed_result integer REFERENCES results (id) ON DELETE RESTRICT,"
+       "  closed_time integer,"
+       "  closed_rationale text,"
+       "  orphaned_time integer,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS ticket_results"
+       " (id SERIAL PRIMARY KEY,"
+       "  ticket integer REFERENCES tickets (id) ON DELETE RESTRICT,"
+       "  result integer REFERENCES results (id) ON DELETE RESTRICT);");
+
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
