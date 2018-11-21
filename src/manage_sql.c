@@ -507,7 +507,7 @@ type_build_select (const char *, const char *, const get_data_t *,
 /**
  * @brief Function to fork a connection that will accept GMP requests.
  */
-int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
+static int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
 
 /**
  * @brief Max number of hosts per target.
@@ -553,7 +553,7 @@ static int max_email_message_length = MAX_EMAIL_MESSAGE_LENGTH;
 /**
  * @brief Memory cache of NVT information from the database.
  */
-nvtis_t* nvti_cache = NULL;
+static nvtis_t* nvti_cache = NULL;
 
 /**
  * @brief Name of the database file.
@@ -1884,7 +1884,7 @@ filter_free (array_t *split)
  * split_filter will not insert a default sort term, so that the random
  * (and fast) table order in the database will be used.
  */
-int table_order_if_sort_not_specified = 0;
+static int table_order_if_sort_not_specified = 0;
 
 /**
  * @brief Ensure filter parts contains the special keywords.
@@ -3368,6 +3368,24 @@ filter_clause (const char* type, const char* filter,
                   "    END)"
                   " ASC");
               else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN target = 0"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp"
+                  "                   FROM reports"
+                  "                   WHERE task = tasks.id"
+                  "                   ORDER BY date DESC LIMIT 1)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " ASC");
+              else if ((strcmp (type, "task") == 0)
                        && (strcmp (keyword->string, "threat") == 0))
                 {
                   gchar *column;
@@ -3523,6 +3541,24 @@ filter_clause (const char* type, const char* filter,
                   "                    || CAST (temp / 10 AS text)"
                   "                    || CAST (temp %% 10 as text)"
                   "             FROM (SELECT report_progress (id) AS temp)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " DESC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN target = 0"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp"
+                  "                   FROM reports"
+                  "                   WHERE task = tasks.id"
+                  "                   ORDER BY date DESC LIMIT 1)"
                   "                  AS temp_sub)"
                   "    END)"
                   " DESC");
@@ -60286,7 +60322,7 @@ array_t *identifiers = NULL;
 /**
  * @brief Unique hosts listed in host_identifiers.
  */
-array_t *identifier_hosts = NULL;
+static array_t *identifier_hosts = NULL;
 
 /**
  * @brief Host identifier type.

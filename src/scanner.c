@@ -57,12 +57,12 @@
 /**
  * @brief Current OpenVAS Scanner session.
  */
-gnutls_session_t openvas_scanner_session = NULL;
+static gnutls_session_t openvas_scanner_session = NULL;
 
 /**
  * @brief Current OpenVAS Scanner credentials.
  */
-gnutls_certificate_credentials_t openvas_scanner_credentials = NULL;
+static gnutls_certificate_credentials_t openvas_scanner_credentials = NULL;
 
 /**
  * @brief Current OpenVAS Scanner socket.
@@ -77,22 +77,22 @@ static struct sockaddr_in openvas_scanner_address;
 /**
  * @brief Current OpenVAS Scanner CA Cert.
  */
-char *openvas_scanner_ca_pub = NULL;
+static char *openvas_scanner_ca_pub = NULL;
 
 /**
  * @brief Current OpenVAS Scanner public key.
  */
-char *openvas_scanner_key_pub = NULL;
+static char *openvas_scanner_key_pub = NULL;
 
 /**
  * @brief Current OpenVAS Scanner private key.
  */
-char *openvas_scanner_key_priv = NULL;
+static char *openvas_scanner_key_priv = NULL;
 
 /**
  * @brief Current OpenVAS Scanner UNIX path.
  */
-char *openvas_scanner_unix_path = NULL;
+static char *openvas_scanner_unix_path = NULL;
 
 /**
  * @brief Buffer of input from the scanner.

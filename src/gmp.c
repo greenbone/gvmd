@@ -1502,7 +1502,41 @@ create_report_data_reset (create_report_data_t *data)
       array_free (data->details);
     }
   free (data->host_end);
+  if (data->host_ends)
+    {
+      guint index = data->host_ends->len;
+      while (index--)
+        {
+          create_report_result_t *result;
+          result = (create_report_result_t*) g_ptr_array_index
+                                              (data->host_ends,
+                                               index);
+          if (result)
+            {
+              free (result->description);
+              free (result->host);
+            }
+        }
+      array_free (data->host_ends);
+    }
   free (data->host_start);
+  if (data->host_starts)
+    {
+      guint index = data->host_starts->len;
+      while (index--)
+        {
+          create_report_result_t *result;
+          result = (create_report_result_t*) g_ptr_array_index
+                                              (data->host_starts,
+                                               index);
+          if (result)
+            {
+              free (result->description);
+              free (result->host);
+            }
+        }
+      array_free (data->host_starts);
+    }
   free (data->in_assets);
   free (data->ip);
   free (data->result_description);
@@ -1611,6 +1645,7 @@ create_report_format_data_reset (create_report_format_data_t *data)
   free (data->param_type_max);
   free (data->param_value);
   array_free (data->params);
+  free (data->signature);
   free (data->summary);
 
   memset (data, 0, sizeof (create_report_format_data_t));
