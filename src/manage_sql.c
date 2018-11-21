@@ -3368,6 +3368,24 @@ filter_clause (const char* type, const char* filter,
                   "    END)"
                   " ASC");
               else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN target = 0"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp"
+                  "                   FROM reports"
+                  "                   WHERE task = tasks.id"
+                  "                   ORDER BY date DESC LIMIT 1)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " ASC");
+              else if ((strcmp (type, "task") == 0)
                        && (strcmp (keyword->string, "threat") == 0))
                 {
                   gchar *column;
@@ -3523,6 +3541,24 @@ filter_clause (const char* type, const char* filter,
                   "                    || CAST (temp / 10 AS text)"
                   "                    || CAST (temp %% 10 as text)"
                   "             FROM (SELECT report_progress (id) AS temp)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " DESC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN target = 0"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp"
+                  "                   FROM reports"
+                  "                   WHERE task = tasks.id"
+                  "                   ORDER BY date DESC LIMIT 1)"
                   "                  AS temp_sub)"
                   "    END)"
                   " DESC");
