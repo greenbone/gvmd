@@ -273,6 +273,8 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
  * @param[in]  type                  Type.
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
+ *
+ * @return 0 success, 1 send to client failed.
  */
 int
 send_get_start (const char *type, int (*write_to_client) (const char*, void*),
@@ -493,6 +495,9 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
  * @param[in] type         The filtered type.
  * @param[in] get          GET data.
  * @param[in] filter_term  Filter term.
+ * @param[in] extra_xml    Extra XML to include in the FILTER element.
+ *
+ * @return Always 0.
  */
 int
 buffer_get_filter_xml (GString *msg, const char* type,
@@ -566,6 +571,9 @@ buffer_get_filter_xml (GString *msg, const char* type,
  * @param[in]  full                  Full count.
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
+ *
+ * @return 0 success, 1 sending to client failed, 2 failed to allocate filter
+ *         term.
  */
 static int
 send_get_end_internal (const char *type, get_data_t *get, int get_counts,
@@ -706,6 +714,9 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
  * @param[in]  full                  Full count.
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
+ *
+ * @return 0 success, 1 sending to client failed, 2 failed to allocate filter
+ *         term.
  */
 int
 send_get_end (const char *type, get_data_t *get, int count, int filtered,
@@ -721,11 +732,11 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
  *
  * @param[in]  type                  Type.
  * @param[in]  get                   GET data.
- * @param[in]  count                 Page count.
- * @param[in]  filtered              Filtered count.
- * @param[in]  full                  Full count.
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
+ *
+ * @return 0 success, 1 sending to client failed, 2 failed to allocate filter
+ *         term.
  */
 int
 send_get_end_no_counts (const char *type, get_data_t *get,

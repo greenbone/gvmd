@@ -63,8 +63,6 @@ static get_tickets_t get_tickets_data;
 
 /**
  * @brief Reset command data.
- *
- * @param[in]  data  Command data.
  */
 static void
 get_tickets_reset ()

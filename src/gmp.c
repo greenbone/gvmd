@@ -5484,7 +5484,7 @@ set_client_state (client_state_t state)
 /**
  * @brief Expand to XML for a STATUS_ERROR_SYNTAX response.
  *
- * This is a variant of the \ref XML_ERROR_SYNTAX macro to allow for a
+ * This is a variant of the XML_ERROR_SYNTAX macro to allow for a
  * runtime defined syntax_text attribute value.
  *
  * @param  tag   Name of the command generating the response.
@@ -5510,7 +5510,8 @@ make_xml_error_syntax (const char *tag, const char *text)
 /**
  * @brief Insert else clause for GET command in gmp_xml_handle_start_element.
  *
- * @param[in]  op  Operation.
+ * @param[in]  lower  What to get, in lowercase.
+ * @param[in]  upper  What to get, in uppercase.
  */
 #define ELSE_GET_START(lower, upper)                                    \
   else if (strcasecmp ("GET_" G_STRINGIFY (upper), element_name) == 0)  \
