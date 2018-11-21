@@ -230,7 +230,7 @@ FILE* log_stream = NULL;
 /**
  * @brief Whether to use TLS for client connections.
  */
-int use_tls = 0;
+static int use_tls = 0;
 
 /**
  * @brief The client session.
@@ -284,7 +284,7 @@ char client_address[INET6_ADDRSTRLEN];
 /**
  * @brief Signal mask to restore when going from blocked to normal signaling.
  */
-sigset_t *sigmask_normal = NULL;
+static sigset_t *sigmask_normal = NULL;
 
 /**
  * @brief GnuTLS priorities.
@@ -294,12 +294,12 @@ static gchar *priorities_option = "NORMAL";
 /**
  * @brief GnuTLS DH params file.
  */
-gchar *dh_params_option = NULL;
+static gchar *dh_params_option = NULL;
 
 /**
  * @brief Whether an NVT update is in progress.
  */
-int update_in_progress = 0;
+static int update_in_progress = 0;
 
 /**
  * @brief Logging parameters, as passed to setup_log_handlers.

@@ -507,7 +507,7 @@ type_build_select (const char *, const char *, const get_data_t *,
 /**
  * @brief Function to fork a connection that will accept GMP requests.
  */
-int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
+static int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
 
 /**
  * @brief Max number of hosts per target.
@@ -553,7 +553,7 @@ static int max_email_message_length = MAX_EMAIL_MESSAGE_LENGTH;
 /**
  * @brief Memory cache of NVT information from the database.
  */
-nvtis_t* nvti_cache = NULL;
+static nvtis_t* nvti_cache = NULL;
 
 /**
  * @brief Name of the database file.
@@ -1884,7 +1884,7 @@ filter_free (array_t *split)
  * split_filter will not insert a default sort term, so that the random
  * (and fast) table order in the database will be used.
  */
-int table_order_if_sort_not_specified = 0;
+static int table_order_if_sort_not_specified = 0;
 
 /**
  * @brief Ensure filter parts contains the special keywords.
@@ -31981,11 +31981,11 @@ make_task (char* name, char* comment, int in_assets, int event)
   quoted_comment = comment ? sql_quote ((gchar*) comment) : NULL;
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, comment, schedule,"
-       "  schedule_next_time, config_location, target_location,"
+       "  schedule_next_time, config_location, target, target_location,"
        "  scanner_location, schedule_location, alterable,"
        "  creation_time, modification_time)"
        " VALUES ((SELECT id FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, m_now (),"
+       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
        "         m_now ());",
        current_credentials.uuid,
        uuid,
@@ -48461,7 +48461,7 @@ byday_from_string (const char* byday)
  * @param[in]   byday       Which days of week schedule will run.
  * @param[in]   duration    The length of the time window the action will run
  *                          in.  0 means entire duration of action.
- * @param[in]   timezone    Timezone.
+ * @param[in]   zone        Timezone.
  * @param[out]  schedule    Created schedule.
  * @param[out]  error_out   Output for iCalendar errors and warnings.
  *
@@ -48472,7 +48472,7 @@ int
 create_schedule (const char* name, const char *comment,
                  const char *ical_string, time_t first_time,
                  time_t period, time_t period_months, const char *byday,
-                 time_t duration, const char* timezone, schedule_t *schedule,
+                 time_t duration, const char* zone, schedule_t *schedule,
                  gchar **error_out)
 {
   gchar *quoted_comment, *quoted_name, *quoted_timezone;
@@ -48507,8 +48507,8 @@ create_schedule (const char* name, const char *comment,
 
   quoted_name = sql_quote (name);
 
-  if (timezone && strcmp (timezone, ""))
-    insert_timezone = g_strdup (timezone);
+  if (zone && strcmp (zone, ""))
+    insert_timezone = g_strdup (zone);
   else
     insert_timezone = sql_string ("SELECT timezone FROM users"
                                   " WHERE users.uuid = '%s';",
@@ -48543,7 +48543,7 @@ create_schedule (const char* name, const char *comment,
         }
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
       first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                        timezone);
+                                                        zone);
       duration = icalendar_duration_from_vcalendar (ical_component);
 
       icalendar_approximate_rrule_from_vcalendar (ical_component,
@@ -48555,7 +48555,7 @@ create_schedule (const char* name, const char *comment,
     {
       ical_component = icalendar_from_old_schedule_data
                           (first_time, period, period_months, duration,
-                           byday_mask, timezone);
+                           byday_mask, zone);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
     }
 
@@ -48880,7 +48880,7 @@ schedule_duration (schedule_t schedule)
  * @param[out] period_months  Period months.
  * @param[out] duration       Duration.
  * @param[out] icalendar      iCalendar string.
- * @param[out] timezone       timezone string.
+ * @param[out] zone           Timezone string.
  *
  * @return 0 success, -1 error.
  */
@@ -48888,7 +48888,7 @@ int
 schedule_info (schedule_t schedule, int trash,
                time_t *first_time, time_t *next_time,
                int *period, int *period_months, int *duration,
-               gchar **icalendar, gchar **timezone)
+               gchar **icalendar, gchar **zone)
 {
   iterator_t schedules;
 
@@ -48910,7 +48910,7 @@ schedule_info (schedule_t schedule, int trash,
       *period_months = iterator_int (&schedules, 3);
       *duration = iterator_int (&schedules, 4);
       *icalendar = g_strdup (iterator_string (&schedules, 5));
-      *timezone = g_strdup (iterator_string (&schedules, 6));
+      *zone = g_strdup (iterator_string (&schedules, 6));
       cleanup_iterator (&schedules);
       return 0;
     }
@@ -49318,13 +49318,13 @@ task_schedule_iterator_start_due (iterator_t* iterator)
 gboolean
 task_schedule_iterator_stop_due (iterator_t* iterator)
 {
-  const char *icalendar, *timezone;
+  const char *icalendar, *zone;
   time_t duration;
 
   if (iterator->done) return FALSE;
 
   icalendar = task_schedule_iterator_icalendar (iterator);
-  timezone = task_schedule_iterator_timezone (iterator);
+  zone = task_schedule_iterator_timezone (iterator);
   duration = task_schedule_iterator_duration (iterator);
 
   if (duration)
@@ -49345,7 +49345,7 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
 
           now = time (NULL);
 
-          start = icalendar_next_time_from_string (icalendar, timezone, -1);
+          start = icalendar_next_time_from_string (icalendar, zone, -1);
           if ((start + duration) < now)
             return TRUE;
         }
@@ -49484,7 +49484,7 @@ schedule_task_iterator_readable (iterator_t* iterator)
  * @param[in]   byday        Which days of week schedule will run.
  * @param[in]   duration     The length of the time window the action will run
  *                           in.  0 means entire duration of action.
- * @param[in]   timezone     Timezone.
+ * @param[in]   zone         Timezone.
  * @param[out]  error_out    Output for iCalendar errors and warnings.
  *
  * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
@@ -49496,7 +49496,7 @@ int
 modify_schedule (const char *schedule_id, const char *name, const char *comment,
                  const char *ical_string,
                  time_t first_time, time_t period, time_t period_months,
-                 const char *byday, time_t duration, const char *timezone,
+                 const char *byday, time_t duration, const char *zone,
                  gchar **error_out)
 {
   gchar *quoted_name, *quoted_comment, *quoted_timezone, *quoted_icalendar;
@@ -49562,7 +49562,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update basic data */
   quoted_comment = comment ? sql_quote (comment) : NULL;
-  quoted_timezone = timezone ? sql_quote (timezone) : NULL;
+  quoted_timezone = timezone ? sql_quote (zone) : NULL;
 
   sql ("UPDATE schedules SET"
        " name = %s%s%s,"
@@ -49673,8 +49673,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
       if (first_time)
         {
-          if (timezone)
-            offset_string = g_strdup_printf ("%li", current_offset (timezone));
+          if (zone)
+            offset_string = g_strdup_printf ("%li", current_offset (zone));
           else
             offset_string = NULL;
         }
@@ -60322,7 +60322,7 @@ array_t *identifiers = NULL;
 /**
  * @brief Unique hosts listed in host_identifiers.
  */
-array_t *identifier_hosts = NULL;
+static array_t *identifier_hosts = NULL;
 
 /**
  * @brief Host identifier type.

@@ -168,7 +168,7 @@ is_uuid (const char *uuid)
  * @param[in]   day_of_month  Day of month (1 to 31).
  * @param[in]   month         Month (1 to 12).
  * @param[in]   year          Year.
- * @param[in]   timezone      Timezone.
+ * @param[in]   zone          Timezone.
  *
  * @return Time described by arguments on success, -2 if failed to switch to
  *         timezone, -1 on error.
@@ -176,19 +176,19 @@ is_uuid (const char *uuid)
 static time_t
 time_from_strings (const char *hour, const char *minute,
                    const char *day_of_month, const char *month,
-                   const char *year, const char *timezone)
+                   const char *year, const char *zone)
 {
   struct tm given_broken, *now_broken;
   time_t now, ret;
   gchar *tz;
 
   tz = NULL;
-  if (timezone)
+  if (zone)
     {
       /* Store current TZ. */
       tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
 
-      if (setenv ("TZ", timezone, 1) == -1)
+      if (setenv ("TZ", zone, 1) == -1)
         {
           g_free (tz);
           return -2;
@@ -211,7 +211,7 @@ time_from_strings (const char *hour, const char *minute,
 
   ret = mktime (&given_broken);
 
-  if (timezone)
+  if (zone)
     {
       /* Revert to stored TZ. */
       if (tz)
@@ -1502,7 +1502,41 @@ create_report_data_reset (create_report_data_t *data)
       array_free (data->details);
     }
   free (data->host_end);
+  if (data->host_ends)
+    {
+      guint index = data->host_ends->len;
+      while (index--)
+        {
+          create_report_result_t *result;
+          result = (create_report_result_t*) g_ptr_array_index
+                                              (data->host_ends,
+                                               index);
+          if (result)
+            {
+              free (result->description);
+              free (result->host);
+            }
+        }
+      array_free (data->host_ends);
+    }
   free (data->host_start);
+  if (data->host_starts)
+    {
+      guint index = data->host_starts->len;
+      while (index--)
+        {
+          create_report_result_t *result;
+          result = (create_report_result_t*) g_ptr_array_index
+                                              (data->host_starts,
+                                               index);
+          if (result)
+            {
+              free (result->description);
+              free (result->host);
+            }
+        }
+      array_free (data->host_starts);
+    }
   free (data->in_assets);
   free (data->ip);
   free (data->result_description);
@@ -1611,6 +1645,7 @@ create_report_format_data_reset (create_report_format_data_t *data)
   free (data->param_type_max);
   free (data->param_value);
   array_free (data->params);
+  free (data->signature);
   free (data->summary);
 
   memset (data, 0, sizeof (create_report_format_data_t));
@@ -18508,7 +18543,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
         {
           time_t first_time, next_time;
           gchar *iso;
-          const char *timezone, *abbrev, *icalendar;
+          const char *zone, *abbrev, *icalendar;
           char *simple_period_unit, *simple_duration_unit;
           int period, period_minutes, period_hours, period_days;
           int period_weeks, period_months, duration, duration_minutes;
@@ -18527,14 +18562,14 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
 
           SEND_GET_COMMON (schedule, &get_schedules_data->get, &schedules);
 
-          timezone = schedule_iterator_timezone (&schedules);
+          zone = schedule_iterator_timezone (&schedules);
           first_time = schedule_iterator_first_time (&schedules);
           next_time = schedule_iterator_next_time (&schedules);
           icalendar = schedule_iterator_icalendar (&schedules);
 
           /* Duplicate static string because there's an iso_time_tz below. */
           abbrev = NULL;
-          iso = g_strdup (iso_time_tz (&first_time, timezone, &abbrev));
+          iso = g_strdup (iso_time_tz (&first_time, zone, &abbrev));
 
           period = schedule_iterator_period (&schedules);
           if (period)
@@ -18619,7 +18654,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
             "<timezone>%s</timezone>"
             "<timezone_abbrev>%s</timezone_abbrev>",
             iso,
-            (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone, NULL)),
+            (next_time == 0 ? "over" : iso_time_tz (&next_time, zone, NULL)),
             icalendar ? icalendar : "",
             schedule_iterator_period (&schedules),
             schedule_iterator_period_months (&schedules),
@@ -19986,14 +20021,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               time_t first_time, info_next_time;
               int period, period_months, duration;
-              gchar *icalendar, *timezone;
+              gchar *icalendar, *zone;
 
-              icalendar = timezone = NULL;
+              icalendar = zone = NULL;
 
               if (schedule_info (schedule, schedule_in_trash,
                                  &first_time, &info_next_time, &period,
                                  &period_months, &duration,
-                                 &icalendar, &timezone) == 0)
+                                 &icalendar, &zone) == 0)
                 {
                   gchar *first_time_str, *next_time_str;
 
@@ -20030,7 +20065,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                            period,
                                            period_months,
                                            duration,
-                                           timezone ? timezone : "",
+                                           zone ? zone : "",
                                            task_schedule_periods (index));
 
                   g_free (first_time_str);
@@ -20038,7 +20073,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 }
 
               g_free (icalendar);
-              g_free (timezone);
+              g_free (zone);
             }
           else
             {
@@ -21617,15 +21652,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
               else
                 {
-                  const char *timezone, *severity;
+                  const char *zone, *severity;
                   char *pw_warning;
 
-                  timezone = (current_credentials.timezone
-                              && strlen (current_credentials.timezone))
-                               ? current_credentials.timezone
-                               : "UTC";
+                  zone = (current_credentials.timezone
+                          && strlen (current_credentials.timezone))
+                           ? current_credentials.timezone
+                           : "UTC";
 
-                  if (setenv ("TZ", timezone, 1) == -1)
+                  if (setenv ("TZ", zone, 1) == -1)
                     {
                       free_credentials (&current_credentials);
                       g_warning ("Timezone setting failure for %s",
@@ -21637,7 +21672,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     }
                   tzset ();
 
-                  manage_session_set_timezone (timezone);
+                  manage_session_set_timezone (zone);
 
                   severity = setting_severity ();
                   pw_warning = gvm_validate_password
@@ -21657,7 +21692,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       current_credentials.role
                         ? current_credentials.role
                         : "",
-                      timezone,
+                      zone,
                       severity,
                       pw_warning ? pw_warning : "");
                   else
@@ -21672,7 +21707,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       current_credentials.role
                         ? current_credentials.role
                         : "",
-                      timezone,
+                      zone,
                       severity);
 
                   free (pw_warning);
