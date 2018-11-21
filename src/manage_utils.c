@@ -59,7 +59,7 @@
  *
  * @return Seconds east of UTC.
  */
-long
+static long
 time_offset (const char *zone, time_t time)
 {
   gchar *tz;
@@ -213,7 +213,7 @@ current_offset (const char *zone)
  *
  * @return Number of full months between time1 and time2.
  */
-time_t
+static time_t
 months_between (time_t time1, time_t time2)
 {
   struct tm broken1, *broken2;
@@ -289,6 +289,8 @@ add_months (time_t time, int months)
 /**
  * @brief Calculate day of week corresponding to a time.
  *
+ * @param[in]  time  Time.
+ *
  * @return Day of week mask: 1 Monday, 2 Tuesday, 4 Wednesday...
  */
 static int
@@ -343,7 +345,7 @@ next_day (int day_of_week, int byday)
  * @param[in] period          The period in seconds.
  * @param[in] period_months   The period in months.
  * @param[in] byday           Days of week to run schedule.
- * @param[in] timezone        The timezone to use.
+ * @param[in] zone            The timezone to use.
  * @param[in] periods_offset  Number of periods to offset.
  *                            e.g. 0 = next time, -1 current/last time
  *
@@ -351,18 +353,18 @@ next_day (int day_of_week, int byday)
  */
 time_t
 next_time (time_t first, int period, int period_months, int byday,
-           const char* timezone, int periods_offset)
+           const char* zone, int periods_offset)
 {
   int periods_diff;
   time_t now;
   long offset_diff;
 
-  if (timezone)
+  if (zone)
     {
       long first_offset_val, current_offset_val;
 
-      first_offset_val = time_offset (timezone, first);
-      current_offset_val = current_offset (timezone);
+      first_offset_val = time_offset (zone, first);
+      current_offset_val = current_offset (zone);
       offset_diff = current_offset_val - first_offset_val;
     }
   else
@@ -426,7 +428,7 @@ next_time (time_t first, int period, int period_months, int byday,
       /* Store current TZ. */
       tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
 
-      if (setenv ("TZ", timezone ? timezone : "UTC", 1) == -1)
+      if (setenv ("TZ", zone ? zone : "UTC", 1) == -1)
         {
           g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
           if (tz != NULL)
@@ -764,6 +766,9 @@ valid_db_resource_type (const char* type)
          || (strcasecmp (type, "user") == 0);
 }
 
+/**
+ * @brief GVM product ID.
+ */
 #define GVM_PRODID "-//Greenbone.net//NONSGML Greenbone Security Manager " \
                    GVMD_VERSION "//EN"
 
@@ -802,7 +807,7 @@ icalendar_timezone_from_tzid (const char *tzid)
  * @param[in]  period_months  The period in months.
  * @param[in]  duration       The duration in seconds.
  * @param[in]  byday_mask     The byday mask.
- * @param[in]  timezone       The timezone id / city name.
+ * @param[in]  zone           The timezone id / city name.
  *
  * @return  The generated iCalendar component.
  */
@@ -811,7 +816,7 @@ icalendar_from_old_schedule_data (time_t first_time,
                                   time_t period, time_t period_months,
                                   time_t duration,
                                   int byday_mask,
-                                  const char *timezone)
+                                  const char *zone)
 {
   gchar *uid;
   icalcomponent *ical_new, *vevent;
@@ -842,9 +847,9 @@ icalendar_from_old_schedule_data (time_t first_time,
   icalcomponent_set_dtstamp (vevent, dtstamp);
 
   // Get timezone and set first start time
-  if (timezone)
+  if (zone)
     {
-      ical_timezone = icalendar_timezone_from_tzid (timezone);
+      ical_timezone = icalendar_timezone_from_tzid (zone);
     }
   else
     {
@@ -1090,6 +1095,9 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
   return vevent_simplified;
 }
 
+/**
+ * @brief Error return for icalendar_from_string.
+ */
 #define ICAL_RETURN_ERROR(message)              \
   do                                            \
     {                                           \
@@ -1121,7 +1129,6 @@ icalendar_from_string (const char *ical_string, gchar **error)
   int vevent_count = 0;
   int other_component_count = 0;
   icalcompiter ical_iter;
-  icalcomponent *new_vevent;
   GHashTableIter tzids_iter;
   gchar *tzid;
 
@@ -1232,11 +1239,15 @@ icalendar_from_string (const char *ical_string, gchar **error)
           }
         break;
       case ICAL_VEVENT_COMPONENT:
-        new_vevent = icalendar_simplify_vevent (ical_parsed, tzids,
-                                                error, warnings_buffer);
-        if (new_vevent == NULL)
-          ICAL_RETURN_ERROR (*error);
-        icalcomponent_add_component (ical_new, new_vevent);
+        {
+          icalcomponent *new_vevent;
+
+          new_vevent = icalendar_simplify_vevent (ical_parsed, tzids,
+                                                  error, warnings_buffer);
+          if (new_vevent == NULL)
+            ICAL_RETURN_ERROR (*error);
+          icalcomponent_add_component (ical_new, new_vevent);
+        }
         break;
       default:
         ICAL_RETURN_ERROR
@@ -1393,7 +1404,7 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
  *
  * @return  GPtrArray with pointers to collected times or NULL on error.
  */
-GPtrArray*
+static GPtrArray*
 icalendar_times_from_vevent (icalcomponent *vevent, icalproperty_kind type)
 {
   GPtrArray* times;
@@ -1438,7 +1449,7 @@ icalendar_times_from_vevent (icalcomponent *vevent, icalproperty_kind type)
  *
  * @return  Whether a match was found.
  */
-gboolean
+static gboolean
 icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
 {
   gboolean found = FALSE;
@@ -1475,7 +1486,7 @@ icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
  *
  * @return  The next or previous time as time_t.
  */
-time_t
+static time_t
 icalendar_next_time_from_rdates (GPtrArray *rdates,
                                  icaltimetype ref_time_ical,
                                  icaltimezone *tz,
@@ -1528,7 +1539,7 @@ icalendar_next_time_from_rdates (GPtrArray *rdates,
  *
  * @return  The next time.
  */
-time_t
+static time_t
 icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
                                      icaltimetype dtstart,
                                      icaltimetype reference_time,

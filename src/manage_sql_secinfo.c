@@ -24,6 +24,16 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file manage_sql_secinfo.c
+ * @brief GVM management layer: SecInfo
+ *
+ * The SecInfo parts of the GVM management layer.
+ */
+
+/**
+ * @brief Enable extra GNU functions.
+ */
 #define _GNU_SOURCE
 
 #include "manage_sql.h"
@@ -56,6 +66,9 @@
 
 /* Static variables. */
 
+/**
+ * @brief Commit size for updates.
+ */
 static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
 
 
@@ -202,16 +215,6 @@ DEF_ACCESS (cpe_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
  *         cleanup_iterator.
  */
 DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
- * @brief Get the id of the deprecating CPE from a CPE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The deprecated_by CVD ID, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_deprecated_by, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the Highest CVSS Score of all CVE's referencing this cpe.
@@ -2434,37 +2437,40 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                       sql_int64 (&cve_rowid,
                                  "SELECT id FROM cves WHERE uuid='%s';",
                                  quoted_id);
-                    }
 
-                  while ((product = first_entity (products)))
-                    {
-                      if ((strcmp (entity_name (product), "vuln:product") == 0)
-                          && strlen (entity_text (product)))
+                      while ((product = first_entity (products)))
                         {
-                          gchar *quoted_product, *product_decoded;
-                          gchar *product_tilde;
+                          if ((strcmp (entity_name (product), "vuln:product")
+                               == 0)
+                              && strlen (entity_text (product)))
+                            {
+                              gchar *quoted_product, *product_decoded;
+                              gchar *product_tilde;
 
-                          product_decoded = g_uri_unescape_string
-                                             (entity_text (product), NULL);
-                          product_tilde = string_replace (product_decoded,
-                                                          "~", "%7E", "%7e", NULL);
-                          g_free (product_decoded);
-                          quoted_product = sql_quote (product_tilde);
-                          g_free (product_tilde);
+                              product_decoded = g_uri_unescape_string
+                                                 (entity_text (product), NULL);
+                              product_tilde = string_replace (product_decoded,
+                                                              "~", "%7E", "%7e",
+                                                              NULL);
+                              g_free (product_decoded);
+                              quoted_product = sql_quote (product_tilde);
+                              g_free (product_tilde);
 
-                          sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
-                               quoted_product, quoted_product, time_published,
-                               time_modified);
-                          sql ("SELECT merge_affected_product"
-                               "        (%llu,"
-                               "         (SELECT id FROM cpes WHERE name='%s'))",
-                               cve_rowid, quoted_product);
-                          transaction_size ++;
-                          increment_transaction_size (&transaction_size);
-                          g_free (quoted_product);
+                              sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
+                                   quoted_product, quoted_product, time_published,
+                                   time_modified);
+                              sql ("SELECT merge_affected_product"
+                                   "        (%llu,"
+                                   "         (SELECT id FROM cpes"
+                                   "          WHERE name='%s'))",
+                                   cve_rowid, quoted_product);
+                              transaction_size ++;
+                              increment_transaction_size (&transaction_size);
+                              g_free (quoted_product);
+                            }
+
+                          products = next_entities (products);
                         }
-
-                      products = next_entities (products);
                     }
                 }
 
@@ -3588,8 +3594,10 @@ update_scap_ovaldefs (int last_scap_update, int private)
 
 /**
  * @brief Write start time to sync lock file.
+ *
+ * @param[in]  lockfile  Lock file.
  */
-void
+static void
 write_sync_start (int lockfile)
 {
   time_t now;
@@ -3619,6 +3627,8 @@ write_sync_start (int lockfile)
 
 /**
  * @brief Reinit a db.
+ *
+ * @param[in]  name  Name of db.
  *
  * @return 0 success, -1 error.
  */
@@ -3740,7 +3750,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
  *
  * @return Timestamp from feed.  0 if missing.  -1 on error.
  */
-int
+static int
 manage_feed_timestamp (const gchar *name)
 {
   GError *error;
@@ -4418,17 +4428,6 @@ manage_sync_scap (sigset_t *sigmask_current)
                 sync_scap,
                 "gvmd: Syncing SCAP",
                 "gvm-sync-scap");
-}
-
-/**
- * @brief Get the current SecInfo update commit size.
- *
- * @return The SecInfo update commit size.
- */
-int
-get_secinfo_commit_size ()
-{
-  return secinfo_commit_size;
 }
 
 /**

@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  lsc_crypt.c
+ * @brief GVM: Utilities for LSC credential encryption
+ *
+ * This file provides support for encrypting LSC credentials.
+ */
+
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <stdlib.h>
@@ -58,8 +65,10 @@
 #define MAX_VALUE_LENGTH  (128 * 1024)
 
 
-/* Provide a replacement for an error code in libgpg-error > 1.10. */
 #ifndef GPG_ERR_AMBIGUOUS
+/**
+ * @brief Replacement for an error code in libgpg-error > 1.10.
+ */
 # define  GPG_ERR_AMBIGUOUS GPG_ERR_AMBIGUOUS_NAME
 #endif
 
@@ -68,14 +77,14 @@
  */
 struct namelist_s
 {
-  struct namelist_s *next;
+  struct namelist_s *next; ///< Next element in list
   size_t valoff;      /**< Offset to the value in the plaintext buffer
                          or 0 if VALUE below is used instead.  Note
                          that a value will never be at the begin of
                          the plaintext buffer.  VALOFF and VALUE
                          0/NULL indicates a NULL value. */
-  char *value;
-  char name[1];       /**< The name.  */
+  char *value;             ///< The value.
+  char name[1];            ///< The name.
 };
 
 /**
@@ -86,11 +95,11 @@ struct namelist_s
  */
 struct lsc_crypt_ctx_s
 {
-  gpgme_ctx_t encctx;
-  gpgme_key_t enckey;    /**< The key to be used for encryption.  */
-  char *plaintext;
-  size_t plaintextlen;
-  struct namelist_s *namelist; /**< Info describing PLAINTEXT.  */
+  gpgme_ctx_t encctx;          ///< Encryption context.
+  gpgme_key_t enckey;          ///< The key to be used for encryption.
+  char *plaintext;             ///< Text to be encrypted.
+  size_t plaintextlen;         ///< Length of text.
+  struct namelist_s *namelist; ///< Info describing PLAINTEXT.
 };
 
 
@@ -103,6 +112,10 @@ struct lsc_crypt_ctx_s
  * a NULL pointer.  Some printf implementations already do that for
  * the "s" format but it is not a standard.  Thus we use this little
  * helper.
+ *
+ * @param s  String.
+ *
+ * @return "[none]" if \p s is NULL, else \p s.
  */
 static G_GNUC_CONST const char *
 nonnull (const char *s)
@@ -503,42 +516,6 @@ lsc_crypt_release (lsc_crypt_ctx_t ctx)
   if (ctx->encctx) /* Check required for gpgme < 1.3.1 */
     gpgme_release (ctx->encctx);
   g_free (ctx);
-}
-
-/**
- * @brief Create the standard credential encryption key
- *
- * This function creates a standard encryption key if such a key does
- * not yet exists.  Note, that in general an encryption key is created
- * on-the-fly.
- *
- * @return 0 on success, 1 if the key already exists, and -1 for other
- * errors.
- */
-int
-lsc_crypt_create_key ()
-{
-  int res = -1;
-  lsc_crypt_ctx_t ctx;
-  gpgme_key_t key;
-
-  ctx = lsc_crypt_new ();
-  key = find_the_key (ctx, TRUE);
-  if (key)
-    {
-      gpgme_key_unref (key);
-      g_warning ("A credentials encryption key already exists - "
-                 "not creating another one.");
-      res = 1;
-    }
-  else
-    {
-      if (!create_the_key (ctx))
-        res = 0;
-    }
-
-  lsc_crypt_release (ctx);
-  return res;
 }
 
 

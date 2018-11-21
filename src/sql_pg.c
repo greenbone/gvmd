@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file sql_pg.c
+ * @brief Generic SQL interface: PostgreSQL backend
+ *
+ * PostreSQL backend of the SQL interface.
+ */
+
 #include "sql.h"
 
 #include <assert.h>
@@ -53,6 +60,9 @@ sql_x (char*, va_list args, sql_stmt_t**);
 
 /* Types. */
 
+/**
+ * @brief An SQL statement.
+ */
 struct sql_stmt
 {
   gchar *sql;             ///< SQL statement.
@@ -403,6 +413,8 @@ sql_changes ()
 
 /**
  * @brief Get the ID of the last inserted row.
+ *
+ * @return Resource.
  */
 resource_t
 sql_last_insert_id ()
@@ -699,37 +711,6 @@ iterator_null (iterator_t* iterator, int col)
   return PQgetisnull (iterator->stmt->result, 0, col);
 }
 
-/**
- * @brief Get a column name from an iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  col       Column offset.
- *
- * @return Name of given column.
- */
-const char*
-iterator_column_name (iterator_t* iterator, int col)
-{
-  if (iterator->done) abort ();
-  assert (iterator->stmt->result);
-  return PQfname (iterator->stmt->result, col);
-}
-
-/**
- * @brief Get number of columns from an iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Number of columns.
- */
-int
-iterator_column_count (iterator_t* iterator)
-{
-  if (iterator->done) abort ();
-  assert (iterator->stmt->result);
-  return PQnfields (iterator->stmt->result);
-}
-
 
 /* Prepared statements. */
 
@@ -772,44 +753,6 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
                int value_size)
 {
   bind_param (stmt, position, value, value_size, 1);
-  return 0;
-}
-
-/**
- * @brief Bind an int64 value to a statement.
- *
- * @param[in]  stmt        Statement.
- * @param[in]  position    Position in statement.
- * @param[in]  value       Value.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_bind_int64 (sql_stmt_t *stmt, int position, long long int *value)
-{
-  int actual;
-  /* Caller is really binding an int4, because IDs in Postgres are int4s. */
-  actual = *value;
-  bind_param (stmt, position, &actual, sizeof (actual), 1);
-  return 0;
-}
-
-/**
- * @brief Bind a double value to a statement.
- *
- * @param[in]  stmt        Statement.
- * @param[in]  position    Position in statement.
- * @param[in]  value       Value.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_bind_double (sql_stmt_t *stmt, int position, double *value)
-{
-  gchar *string;
-  string = g_strdup_printf ("%f", *value);
-  bind_param (stmt, position, string, strlen (string), 0);
-  g_free (string);
   return 0;
 }
 

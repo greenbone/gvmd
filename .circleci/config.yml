@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build_sqlite:
+  build_sqlite_debug:
     docker:
       - image: greenbone/build-env-gvm-master-debian-stretch-gcc-sqlite
     steps:
@@ -10,13 +10,13 @@ jobs:
           command: git clone --depth 1 https://github.com/greenbone/gvm-libs.git
       - run:
           working_directory: ~/gvm-libs
-          name: Configure and compile gvm-libs
-          command: pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install && popd
+          name: Configure and compile gvm-libs (Debug)
+          command: pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install && popd
       - checkout
       - run:
-          name: Configure and Compile
-          command: mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install
-  build_postgresql:
+          name: Configure and Compile (Debug)
+          command: mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install
+  build_postgresql_debug:
     docker:
       - image: greenbone/build-env-gvm-master-debian-stretch-gcc-postgresql
     steps:
@@ -26,12 +26,84 @@ jobs:
           command: git clone --depth 1 https://github.com/greenbone/gvm-libs.git
       - run:
           working_directory: ~/gvm-libs
-          name: Configure and compile gvm-libs
+          name: Configure and compile gvm-libs (Debug)
+          command: pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install && popd
+      - checkout
+      - run:
+          name: Configure and Compile (Debug)
+          command: mkdir build && cd build/ && cmake -DBACKEND=POSTGRESQL -DCMAKE_BUILD_TYPE=Debug .. && make install
+  build_sqlite_release:
+    docker:
+      - image: greenbone/build-env-gvm-master-debian-stretch-gcc-sqlite
+    steps:
+      - run:
+          working_directory: ~/gvm-libs
+          name: Checkout gvm-libs
+          command: git clone --depth 1 https://github.com/greenbone/gvm-libs.git
+      - run:
+          working_directory: ~/gvm-libs
+          name: Configure and compile gvm-libs (Release)
           command: pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install && popd
       - checkout
       - run:
-          name: Configure and Compile
+          name: Configure and Compile (Release)
+          command: mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install
+  build_postgresql_release:
+    docker:
+      - image: greenbone/build-env-gvm-master-debian-stretch-gcc-postgresql
+    steps:
+      - run:
+          working_directory: ~/gvm-libs
+          name: Checkout gvm-libs
+          command: git clone --depth 1 https://github.com/greenbone/gvm-libs.git
+      - run:
+          working_directory: ~/gvm-libs
+          name: Configure and compile gvm-libs (Release)
+          command: pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install && popd
+      - checkout
+      - run:
+          name: Configure and Compile (Release)
           command: mkdir build && cd build/ && cmake -DBACKEND=POSTGRESQL -DCMAKE_BUILD_TYPE=Release .. && make install
+  build_sqlite3_debug_clang:
+    docker:
+      - image: greenbone/build-env-gvm-master-debian-stretch-clang-sqlite
+    steps:
+      - run:
+          working_directory: ~/gvm-libs
+          name: Checkout gvm-libs
+          command: git clone --depth 1 https://github.com/greenbone/gvm-libs.git
+      - run:
+          working_directory: ~/gvm-libs
+          name: Configure and compile gvm-libs (Release)
+          command: pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install && popd
+      - checkout
+      - run:
+          name: Configure and Compile with Clang (Debug, SQLite3)
+          command: mkdir build && cd build/ && cmake -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS="-Wno-ignored-attributes" -DCMAKE_BUILD_TYPE=Debug .. && make install
+  build_postgresql_debug_clang:
+    docker:
+      - image: greenbone/build-env-gvm-master-debian-stretch-clang-postgresql
+    steps:
+      - run:
+          working_directory: ~/gvm-libs
+          name: Checkout gvm-libs
+          command: git clone --depth 1 https://github.com/greenbone/gvm-libs.git
+      - run:
+          working_directory: ~/gvm-libs
+          name: Configure and compile gvm-libs (Release)
+          command: pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Release .. && make install && popd
+      - checkout
+      - run:
+          name: Configure and Compile with Clang (Debug, PostgreSQL)
+          command: mkdir build && cd build/ && cmake -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS="-Wno-ignored-attributes" -DBACKEND=POSTGRESQL -DCMAKE_BUILD_TYPE=Debug .. && make install
+  build_doc:
+    docker:
+      - image: greenbone/code-metrics-doxygen-debian-stretch
+    steps:
+      - checkout
+      - run:
+          name: Build standard documentation, failing if there are warnings
+          command: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc 2>&1 1>/dev/null | { ! grep --invert-match "CGI::Pretty"; }
   gen_xml_doc:
     docker:
       - image: greenbone/code-metrics-doxygen-debian-stretch
@@ -73,8 +145,13 @@ workflows:
   version: 2
   build:
     jobs:
-      - build_sqlite
-      - build_postgresql
+      - build_sqlite_debug
+      - build_postgresql_debug
+      - build_sqlite_release
+      - build_postgresql_release
+      - build_sqlite3_debug_clang
+      - build_postgresql_debug_clang
+      - build_doc
       - gen_xml_doc
       - doc_coverage:
           requires:

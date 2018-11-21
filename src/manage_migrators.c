@@ -137,6 +137,7 @@
 #include <dirent.h>
 
 #include "manage_sql.h"
+#include "utils.h"
 #include "sql.h"
 
 #include <gvm/base/logging.h>
@@ -179,7 +180,7 @@
 int
 manage_create_migrate_51_to_52_convert ();
 
-int
+void
 manage_create_result_indexes ();
 
 
@@ -6159,6 +6160,9 @@ migrate_78_to_79 ()
   return 0;
 }
 
+/**
+ * @brief Delete table for migrate_79_to_80.
+ */
 #define MIGRATE_79_to_80_DELETE(table)                                \
  sql ("DELETE FROM " table                                            \
       " WHERE owner IN (SELECT id FROM users WHERE %s);",             \
@@ -6327,6 +6331,9 @@ migrate_79_to_80_remove_users (const char *where)
        where);
 }
 
+/**
+ * @brief User access rules header for migrate_79_to_80.
+ */
 #define RULES_HEADER "# This file is managed by the OpenVAS Administrator.\n# Any modifications must keep to the format that the Administrator expects.\n"
 
 /**
@@ -8367,6 +8374,9 @@ migrate_115_to_116 ()
   return 0;
 }
 
+/**
+ * @brief ID SQL for migrate_116_to_117.
+ */
 #define ID_WHEN_WITH_TRASH(type)                                 \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
  "   COALESCE ((SELECT id FROM " G_STRINGIFY (type) "s"          \
@@ -8375,12 +8385,18 @@ migrate_115_to_116 ()
  "               WHERE uuid = attach_id),"                       \
  "             0)"
 
+/**
+ * @brief ID SQL for migrate_116_to_117.
+ */
 #define ID_WHEN_WITHOUT_TRASH(type)                              \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
  "   COALESCE ((SELECT id FROM " G_STRINGIFY (type) "s"          \
  "                WHERE uuid = attach_id),"                      \
  "             0)"
 
+/**
+ * @brief Trash SQL for migrate_116_to_117.
+ */
 #define RESOURCE_TRASH(type)                                     \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
  "  (SELECT CASE WHEN "                                          \
@@ -10200,6 +10216,12 @@ migrate_149_to_150 ()
   return 0;
 }
 
+/**
+ * @brief Permission SQL for migrate_150_to_151.
+ *
+ * @param[in]  name  Name.
+ * @param[in]  role  Role.
+ */
 #define INSERT_PERMISSION(name, role)                                          \
   sql ("INSERT INTO permissions"                                               \
        " (uuid, owner, name, comment, resource_type, resource, resource_uuid," \
@@ -10287,6 +10309,12 @@ migrate_151_to_152 ()
   return 0;
 }
 
+/**
+ * @brief Permission SQL for migrate_152_to_153.
+ *
+ * @param[in]  name  Name.
+ * @param[in]  role  Role.
+ */
 #define DELETE_PERMISSION(name, role)                                          \
   sql ("DELETE FROM permissions"                                               \
        " WHERE subject_type = 'role'"                                          \
@@ -11880,7 +11908,14 @@ migrate_162_to_163 ()
   return 0;
 }
 
-
+/**
+ * @brief Chart SQL for migrate_163_to_164.
+ *
+ * @param[in]  type        Type.
+ * @param[in]  default     Default
+ * @param[in]  left_uuid   Left UUID.
+ * @param[in]  right_uuid  Left UUID.
+ */
 #define UPDATE_CHART_SETTINGS(type, default, left_uuid, right_uuid)          \
   sql ("INSERT INTO settings (owner, uuid, name, value)"                     \
        " SELECT owner, '%s', 'Dummy', 'left-' || '%s' FROM settings"         \
@@ -11908,6 +11943,9 @@ migrate_162_to_163 ()
        " WHERE uuid = '%s';",                                                \
        right_uuid);
 
+/**
+ * @brief Dashboard SQL for migrate_163_to_164.
+ */
 #define UPDATE_DASHBOARD_SETTINGS(type, default,                             \
                                   uuid_1, uuid_2, uuid_3, uuid_4,            \
                                   filter_1, filter_2, filter_3, filter_4)    \
@@ -12462,6 +12500,8 @@ migrate_165_to_166 ()
 
 /**
  * @brief Mark a report format predefined.
+ *
+ * @param[in]  uuid  UUID of report format.
  */
 static void
 insert_predefined (const gchar *uuid)
@@ -14316,7 +14356,7 @@ migrate_190_to_191 ()
   schedule_t schedule;
   time_t first_time, period, period_months, duration;
   int byday;
-  const char *timezone;
+  const char *zone;
   icalcomponent *ical_component;
   gchar *quoted_ical;
 
@@ -14353,19 +14393,19 @@ migrate_190_to_191 ()
       period_months = (time_t) iterator_int64 (&schedule_iter, 3);
       duration = (time_t) iterator_int64 (&schedule_iter, 4);
       byday = iterator_int (&schedule_iter, 5);
-      timezone = iterator_string (&schedule_iter, 6);
+      zone = iterator_string (&schedule_iter, 6);
 
       ical_component
         = icalendar_from_old_schedule_data (first_time, period, period_months,
-                                            duration, byday, timezone);
+                                            duration, byday, zone);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
 
       g_debug ("%s: schedule %llu - first: %s (%s), period: %ld,"
                " period_months: %ld, duration: %ld - byday: %d\n"
                "generated iCalendar:\n%s",
                __FUNCTION__, schedule,
-               iso_time_tz (&first_time, timezone, NULL),
-               timezone, period, period_months, duration, byday,
+               iso_time_tz (&first_time, zone, NULL),
+               zone, period, period_months, duration, byday,
                quoted_ical);
 
       sql ("UPDATE schedules SET icalendar = '%s' WHERE id = %llu",
@@ -14391,19 +14431,19 @@ migrate_190_to_191 ()
       period_months = (time_t) iterator_int64 (&schedule_iter, 3);
       duration = (time_t) iterator_int64 (&schedule_iter, 4);
       byday = iterator_int (&schedule_iter, 5);
-      timezone = iterator_string (&schedule_iter, 6);
+      zone = iterator_string (&schedule_iter, 6);
 
       ical_component
         = icalendar_from_old_schedule_data (first_time, period, period_months,
-                                            duration, byday, timezone);
+                                            duration, byday, zone);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
 
       g_debug ("%s: trash schedule %llu - first: %s (%s), period: %ld,"
                " period_months: %ld, duration: %ld - byday: %d\n"
                "generated iCalendar:\n%s",
                __FUNCTION__, schedule,
-               iso_time_tz (&first_time, timezone, NULL),
-               timezone, period, period_months, duration, byday,
+               iso_time_tz (&first_time, zone, NULL),
+               zone, period, period_months, duration, byday,
                quoted_ical);
 
       sql ("UPDATE schedules_trash SET icalendar = '%s' WHERE id = %llu",
@@ -14746,9 +14786,129 @@ migrate_195_to_196 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 196 to version 197.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_196_to_197 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 196. */
+
+  if (manage_db_version () != 196)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The hidden column was removed from reports. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE reports RENAME TO reports_196;");
+
+      sql ("CREATE TABLE IF NOT EXISTS reports"
+           " (id INTEGER PRIMARY KEY, uuid, owner INTEGER,"
+           "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
+           "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags INTEGER);");
+
+      sql ("INSERT INTO reports"
+           " (id, uuid, owner, task, date, start_time, end_time, nbefile,"
+           "  comment, scan_run_status, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags)"
+           " SELECT"
+           "  id, uuid, owner, task, date, start_time, end_time, nbefile,"
+           "  comment, scan_run_status, slave_progress, slave_task_uuid,"
+           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+           "  flags"
+           " FROM reports_196;");
+
+      sql ("DROP TABLE reports_196;");
+    }
+  else
+    sql ("ALTER TABLE reports DROP COLUMN hidden;");
+
+  /* Set the database version to 197. */
+
+  set_db_version (197);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 197 to version 198.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_197_to_198 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 197. */
+
+  if (manage_db_version () != 197)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The copyright column was removed from nvts. */
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE nvts RENAME TO nvts_197;");
+
+      sql ("CREATE TABLE IF NOT EXISTS nvts"
+           " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
+           "  cve, bid, xref, tag, category INTEGER, family, cvss_base,"
+           "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
+           "  qod_type TEXT);");
+
+      sql ("INSERT INTO nvts"
+           " (id, uuid, oid, name, comment, cve, bid, xref, tag, category,"
+           "  family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type)"
+           " SELECT"
+           "  id, uuid, oid, name, comment, cve, bid, xref, tag, category,"
+           "  family, cvss_base, creation_time, modification_time,"
+           "  solution_type, qod, qod_type"
+           " FROM nvts_197;");
+
+      sql ("DROP TABLE nvts_197;");
+    }
+  else
+    sql ("ALTER TABLE nvts DROP COLUMN copyright;");
+
+  /* Set the database version to 198. */
+
+  set_db_version (198);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
+/**
+ * @brief Conditional for database_migrators.
+ *
+ * Expands to the given function only if the backend is SQLite3.
+ */
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -14956,6 +15116,8 @@ static migrator_t database_migrators[]
     {194, migrate_193_to_194},
     {195, migrate_194_to_195},
     {196, migrate_195_to_196},
+    {197, migrate_196_to_197},
+    {198, migrate_197_to_198},
     /* End marker. */
     {-1, NULL}};
 
@@ -14989,7 +15151,7 @@ manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
  *
  * @return 1 yes, 0 no, -1 error.
  */
-int
+static int
 migrate_is_available (int old_version, int new_version)
 {
   migrator_t *migrators;

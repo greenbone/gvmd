@@ -51,14 +51,9 @@
 #define SEVERITY_SUBDIVISIONS 10
 
 long
-time_offset (const char *, time_t);
-
-long
 current_offset (const char *);
 
 time_t add_months (time_t, int);
-
-time_t months_between (time_t, time_t);
 
 time_t
 next_time (time_t, int, int, int, const char*, int);
@@ -81,15 +76,6 @@ valid_db_resource_type (const char*);
 
 int
 hosts_str_contains (const char*, const char*, int);
-
-
-typedef struct
-{
-  icalcomponent *ical;
-  icaltimezone *ical_tz;
-  gchar *ical_string;
-  gchar *tz_string;
-} schedule_ical_t;
 
 icalcomponent *
 icalendar_from_old_schedule_data (time_t, time_t, time_t, time_t, int,

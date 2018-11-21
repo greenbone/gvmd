@@ -23,6 +23,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  manage_pg_server.c
+ * @brief GVM management layer: Postgres server-side functions.
+ *
+ * This file contains a server-side module for Postgres, that defines SQL
+ * functions for the management layer that need to be implemented in C.
+ */
+
 #include "manage_utils.h"
 
 #include "postgres.h"
@@ -41,6 +49,8 @@ PG_MODULE_MAGIC;
  *
  * @param[in]  text_arg  Text.
  * @param[in]  length    Length to create.
+ *
+ * @return Freshly allocated string.
  */
 static char *
 textndup (text *text_arg, int length)
@@ -82,12 +92,17 @@ get_max_hosts ()
   return max_hosts;
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_hosts_contains);
 
 /**
  * @brief Return if argument 1 matches regular expression in argument 2.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_hosts_contains (PG_FUNCTION_ARGS)
@@ -120,18 +135,23 @@ sql_hosts_contains (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_next_time);
 
 /**
  * @brief Get the next time given schedule times.
  *
  * This is a callback for a SQL function of four to six arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_next_time (PG_FUNCTION_ARGS)
 {
   int32 first, period, period_months, byday, periods_offset;
-  char *timezone;
+  char *zone;
   int32 ret;
 
   first = PG_GETARG_INT32 (0);
@@ -140,12 +160,12 @@ sql_next_time (PG_FUNCTION_ARGS)
   byday = PG_GETARG_INT32 (3);
 
   if (PG_NARGS() < 5 || PG_ARGISNULL (4))
-    timezone = NULL;
+    zone = NULL;
   else
     {
       text* timezone_arg;
       timezone_arg = PG_GETARG_TEXT_P (4);
-      timezone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
+      zone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
   if (PG_NARGS() < 6 || PG_ARGISNULL (5))
@@ -153,24 +173,29 @@ sql_next_time (PG_FUNCTION_ARGS)
   else
     periods_offset = PG_GETARG_INT32 (5);
 
-  ret = next_time (first, period, period_months, byday, timezone,
+  ret = next_time (first, period, period_months, byday, zone,
                    periods_offset);
-  if (timezone)
-    pfree (timezone);
+  if (zone)
+    pfree (zone);
   PG_RETURN_INT32 (ret);
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_next_time_ical);
 
 /**
  * @brief Get the next time given schedule times.
  *
  * This is a callback for a SQL function of four to six arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_next_time_ical (PG_FUNCTION_ARGS)
 {
-  char *ical_string, *timezone;
+  char *ical_string, *zone;
   int periods_offset;
   int32 ret;
 
@@ -187,31 +212,36 @@ sql_next_time_ical (PG_FUNCTION_ARGS)
     }
 
   if (PG_NARGS() < 2 || PG_ARGISNULL (1))
-    timezone = NULL;
+    zone = NULL;
   else
     {
       text* timezone_arg;
       timezone_arg = PG_GETARG_TEXT_P (1);
-      timezone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
+      zone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
   periods_offset = PG_GETARG_INT32 (2);
 
-  ret = icalendar_next_time_from_string (ical_string, timezone,
+  ret = icalendar_next_time_from_string (ical_string, zone,
                                          periods_offset);
   if (ical_string)
     pfree (ical_string);
-  if (timezone)
-    pfree (timezone);
+  if (zone)
+    pfree (zone);
   PG_RETURN_INT32 (ret);
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_max_hosts);
 
 /**
  * @brief Return number of hosts.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_max_hosts (PG_FUNCTION_ARGS)
@@ -246,12 +276,17 @@ sql_max_hosts (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_level_min_severity);
 
 /**
  * @brief Return min severity of level.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_level_min_severity (PG_FUNCTION_ARGS)
@@ -278,12 +313,17 @@ sql_level_min_severity (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_level_max_severity);
 
 /**
  * @brief Return max severity of level.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_level_max_severity (PG_FUNCTION_ARGS)
@@ -310,12 +350,17 @@ sql_level_max_severity (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_severity_matches_ov);
 
 /**
  * @brief Return max severity of level.
  *
  * This is a callback for a SQL function of one argument.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_severity_matches_ov (PG_FUNCTION_ARGS)
@@ -337,12 +382,17 @@ sql_severity_matches_ov (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_valid_db_resource_type);
 
 /**
  * @brief Return max severity of level.
  *
  * This is a callback for a SQL function of one argument.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_valid_db_resource_type (PG_FUNCTION_ARGS)
@@ -365,12 +415,17 @@ sql_valid_db_resource_type (PG_FUNCTION_ARGS)
     }
 }
 
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_regexp);
 
 /**
  * @brief Return if argument 1 matches regular expression in argument 2.
  *
  * This is a callback for a SQL function of two arguments.
+ *
+ * @return Postgres Datum.
  */
 Datum
 sql_regexp (PG_FUNCTION_ARGS)

@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file sql_sqlite3.c
+ * @brief Generic SQL interface: SQLite3 backend
+ *
+ * SQLite3 backend of the SQL interface.
+ */
+
 #include "sql.h"
 #include "utils.h"
 
@@ -59,9 +66,12 @@ sqlv (int, char*, va_list);
 
 /* Types. */
 
+/**
+ * @brief An SQL statement.
+ */
 struct sql_stmt
 {
-  sqlite3_stmt *stmt;
+  sqlite3_stmt *stmt;     ///< The statement.
 };
 
 
@@ -307,6 +317,8 @@ sql_close_fork ()
 
 /**
  * @brief Get the number of rows changed or inserted in last statement.
+ *
+ * @return Number of rows changed or inserted in last statement.
  */
 int
 sql_changes ()
@@ -316,6 +328,8 @@ sql_changes ()
 
 /**
  * @brief Get the ID of the last inserted row.
+ *
+ * @return Resource.
  */
 resource_t
 sql_last_insert_id ()
@@ -670,76 +684,6 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
         }
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_blob failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      return -1;
-    }
-  return 0;
-}
-
-/**
- * @brief Bind an int64 value to a statement.
- *
- * @param[in]  stmt        Statement.
- * @param[in]  position    Position in statement.
- * @param[in]  value       Value.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_bind_int64 (sql_stmt_t *stmt, int position, long long int *value)
-{
-  unsigned int retries;
-  retries = 0;
-  while (1)
-    {
-      int ret;
-      ret = sqlite3_bind_int64 (stmt->stmt, position, *value);
-      if (ret == SQLITE_BUSY)
-        {
-          if ((retries > 10) && (GVM_SQLITE_SLEEP_MAX > 0))
-            gvm_usleep (MIN ((retries - 10) * 10000,
-                             GVM_SQLITE_SLEEP_MAX));
-          retries++;
-          continue;
-        }
-      if (ret == SQLITE_OK) break;
-      g_warning ("%s: sqlite3_bind_int64 failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      return -1;
-    }
-  return 0;
-}
-
-/**
- * @brief Bind a double value to a statement.
- *
- * @param[in]  stmt        Statement.
- * @param[in]  position    Position in statement.
- * @param[in]  value       Value.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_bind_double (sql_stmt_t *stmt, int position, double *value)
-{
-  unsigned int retries;
-  retries = 0;
-  while (1)
-    {
-      int ret;
-      ret = sqlite3_bind_double (stmt->stmt, position, *value);
-      if (ret == SQLITE_BUSY)
-        {
-          if ((retries > 10) && (GVM_SQLITE_SLEEP_MAX > 0))
-            gvm_usleep (MIN ((retries - 10) * 10000,
-                             GVM_SQLITE_SLEEP_MAX));
-          retries++;
-          continue;
-        }
-      if (ret == SQLITE_OK) break;
-      g_warning ("%s: sqlite3_bind_double failed: %s\n",
                  __FUNCTION__,
                  sqlite3_errmsg (task_db));
       return -1;

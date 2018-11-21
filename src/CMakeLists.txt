@@ -137,6 +137,8 @@ if (GVMD_VERSION)
 endif (GVMD_VERSION)
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
+  target_compile_options (${BINARY_NAME} PUBLIC ${C_FLAGS_DEBUG_GVMD})
+
   # If we got GIT_REVISION at configure time,
   # assume we can get it at build time as well
   if (GIT_REVISION)

@@ -2,7 +2,7 @@ INSTALLATION INSTRUCTIONS FOR GREENBONE VULNERABILITY MANAGER
 =============================================================
 
 Please note: The reference system used by most of the developers is Debian
-GNU/Linux 'Stretch' 9. The build might fail on any other system. Also it is
+GNU/Linux 'Stretch' 9. The build might fail on any other system. Also, it is
 necessary to install dependent development packages.
 
 IMPORTANT NOTICE: This version changes quite a number of locations
@@ -30,51 +30,57 @@ Prerequisites for building documentation:
 * Doxygen
 * xsltproc (for building the GMP HTML documentation)
 * xmltoman (optional, for building man page)
-* sqlfairy (optional, for producing database diagram)
 
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
 
 Install prerequisites on Debian GNU/Linux 'Stretch' 9:
 For SQLite backend:
-  # apt-get install libsqlite3-dev
+
+    apt-get install libsqlite3-dev
+
 For PostgreSQL backend:
-  # apt-get install libpq-dev postgresql-server-dev-9.6
+
+    apt-get install libpq-dev postgresql-server-dev-9.6
 
 
 Compiling Greenbone Vulnerability Manager
 -----------------------------------------
 
 If you have installed required libraries to a non-standard location, remember to
-set the PKG_CONFIG_PATH environment variable to the location of you pkg-config
+set the `PKG_CONFIG_PATH` environment variable to the location of you pkg-config
 files before configuring:
 
-    $ export PKG_CONFIG_PATH=/your/location/lib/pkgconfig:$PKG_CONFIG_PATH
+    export PKG_CONFIG_PATH=/your/location/lib/pkgconfig:$PKG_CONFIG_PATH
 
-Create a build directory and change into it with
+Create a build directory and change into it with:
 
-    $ mkdir build
-    $ cd build
+    mkdir build
+    cd build
 
-Then configure the build with
+Then configure the build with:
 
-    $ cmake -DCMAKE_INSTALL_PREFIX=/path/to/your/installation ..
+    cmake -DCMAKE_INSTALL_PREFIX=/path/to/your/installation ..
 
-or (if you want to use the default installation path /usr/local)
+Or (if you want to use the default installation path `/usr/local/`):
 
-    $ cmake ..
+    cmake ..
 
-This only needs to be done once.  Note: It is assumed that the other
-Greenbone components are installed to the same path.  If not, you need to set
-some paths separately, see below for details.
+This only needs to be done once.
 
-Thereafter, the following commands are useful.
+Thereafter, the following commands are useful:
 
-    $ make                # build the manager
-    $ make doc            # build the documentation
-    $ make doc-full       # build more developer-oriented documentation
-    $ make install        # install the build
-    $ make rebuild_cache  # rebuild the cmake cache
+    make                # build the scanner
+    make doc            # build the documentation
+    make doc-full       # build more developer-oriented documentation
+    make install        # install the build
+    make rebuild_cache  # rebuild the cmake cache
+
+Please note that you may have to execute `make install` as root, especially if
+you have specified a prefix for which your user does not have full permissions.
+
+To clean up the build environment, simply remove the contents of the `build`
+directory you created above.
 
 
 Choosing the Connection Type
@@ -83,15 +89,15 @@ Choosing the Connection Type
 Greenbone Vulnerability Manager can serve client connections on either a TCP
 socket or a UNIX domain socket.
 
-The default is a UNIX domain socket, at
+The default is a UNIX domain socket at:
 
     <install-prefix>/var/run/gvmd.sock
 
-This location can be overridden with the --unix-socket option, and the
-permissions of the socket can be specified with the --list-owner,
---listen-group and --listen-mode options.
+This location can be overridden with the `--unix-socket` option, and the
+permissions of the socket can be specified with the `--listen-owner`,
+`--listen-group` and `--listen-mode` options.
 
-To use a TCP socket, call gvmd with the --listen option, for example
+To use a TCP socket, call gvmd with the --listen option, for example:
 
     gvmd --listen=127.0.0.1
 
@@ -109,16 +115,17 @@ Greenbone Vulnerability Manager uses a client certificate when connecting to
 a scanner via the OSP protocol.
 
 The easiest way to generate this certificate is to use the
-"gvm-manage-certs" script. A quick way to set up required certificates
-on the local system is to execute the command "gvm-manage-certs -a".
+`gvm-manage-certs` script. A quick way to set up required certificates
+on the local system is to execute the command `gvm-manage-certs -a`.
 
 If you intend to use OSP scanners and Manager on separate systems you need to make
 sure that the mutual trust is properly configured via the TLS certificates.
-The "gvm-manage-certs" script can assist you in setting up your infrastructure.
+The `gvm-manage-certs` script can assist you in setting up your infrastructure.
 Please refer to the documentation provided with the script for usage details.
 
-If certificates expired or in other ways there is need to update certificates
-for scanners, please see also section "Updating Scanner Certificates".
+If certificates have expired or in other ways there is need to update
+certificates for scanners, please see also section `Updating Scanner
+Certificates`.
 
 
 Choosing the Database Backend
@@ -132,48 +139,47 @@ the sqlite3 library installed. No further configuration
 is required, the database is created automatically.
 
 In order to use PostgreSQL as database backend, follow the
-instructions given in file doc/postgres-HOWTO.
+instructions given in file [doc/postgres-HOWTO](doc/postgres-HOWTO).
 
 
 Migrating to Version 8.0
 ------------------------
 
-Before starting gvmd 8.0 for the first time you need to move
-some files to the new locations where they are expected now.
-If you do not do this, the files are freshly initialized
-and it gets more complicated to transfer the old data properly.
+Before starting gvmd 8.0 for the first time you need to move some files to the
+new locations where they are expected now.  If you do not do this, the files are
+freshly initialized and it gets more complicated to transfer the old data
+properly.
 
- - move $prefix/etc/openvas/pwpolicy.conf to
-   $prefix/etc/gvm/
+ - move `$prefix/etc/openvas/pwpolicy.conf` to
+   `$prefix/etc/gvm/`
 
- - move $prefix/etc/openvas/openvasmd_log.conf to
-   $prefix/etc/gvm/gvmd_log.conf
+ - move `$prefix/etc/openvas/openvasmd_log.conf` to
+   `$prefix/etc/gvm/gvmd_log.conf`
 
- - copy $prefix/etc/openvas/gsf-access-key to
-   $prefix/etc/gvm/
-   If the gsf-access-key was already migrated for openvas-scanner module
-   as well, then there needs not to remain the file gsf-acces-key under
-   $prefix/etc/openvas.
+ - copy `$prefix/etc/openvas/gsf-access-key` to
+   `$prefix/etc/gvm/`
+   If the `gsf-access-key` file was already migrated for the `openvas-scanner`
+   module it can be removed from the `$prefix/etc/openvas/` directory.
 
- - move $prefix/var/lib/openvas/scap-data to
+ - move ´$prefix/var/lib/openvas/scap-data`` to
    $prefix/var/lib/gvm/scap-data
 
- - move $prefix/var/lib/openvas/cert-data to
-   $prefix/var/lib/gvm/cert-data
+ - move `$prefix/var/lib/openvas/cert-data` to
+   `$prefix/var/lib/gvm/cert-data`
 
- - move $prefix/var/lib/openvas/openvasmd to
-   $prefix/var/lib/gvm/gvmd
+ - move `$prefix/var/lib/openvas/openvasmd` to
+   `$prefix/var/lib/gvm/gvmd`
 
- - move $prefix/var/lib/openvas/CA to
-   $prefix/var/lib/gvm/CA
+ - move `$prefix/var/lib/openvas/CA` to
+   `$prefix/var/lib/gvm/CA`
 
- - move $prefix/var/lib/openvas/private to
-   $prefix/var/lib/gvm/private
+ - move `$prefix/var/lib/openvas/private` to
+   `$prefix/var/lib/gvm/private`
 
- - (SQLite backend only) move $prefix/var/lib/openvas/mgr/tasks.db to
-   $prefix/var/lib/gvm/gvmd/gvmd.db
+ - (SQLite backend only) move `$prefix/var/lib/openvas/mgr/tasks.db` to
+   `$prefix/var/lib/gvm/gvmd/gvmd.db`
 
- - (Postgres backend only) rename database to "gvmd":
+ - (Postgres backend only) rename database to `gvmd`:
        sudo -u postgres sh
        psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
 
@@ -181,25 +187,23 @@ and it gets more complicated to transfer the old data properly.
 Migrating the Database
 ----------------------
 
-If you have used Manager before, you might need to migrate
-the database to the current data model. Use this command
-to run the migration:
+If you have used Manager before, you might need to migrate the database to the
+current data model. Use this command to run the migration:
 
-    $ gvmd --migrate
+    gvmd --migrate
 
 
 Creating an administrator user for GVM
 --------------------------------------
 
-You can create an administrator user with the --create-user option of
-"gvmd":
+You can create an administrator user with the `--create-user` option of `gvmd`:
 
-    $ gvmd --create-user=myuser
+    gvmd --create-user=myuser
 
 The new user's password is printed on success.
 
-An administrator user can later create further users or
-administrators via clients like the Greenbone Security Assistant (GSA).
+An administrator user can later create further users or administrators via
+clients like the Greenbone Security Assistant (GSA).
 
 Also, the new user can change their password via GSA.
 
@@ -207,7 +211,7 @@ Also, the new user can change their password via GSA.
 Logging Configuration
 ---------------------
 
-By default Manager writes logs to the file
+By default, Manager writes logs to the file
 
     <install-prefix>/var/log/gvm/gvmd.log
 
@@ -223,8 +227,8 @@ The configuration is divided into domains like this one
     file=/var/log/gvm/gvmd.log
     level=128
 
-The "level" field controls the amount of logging that is written.
-The value of "level" can be
+The `level` field controls the amount of logging that is written.
+The value of `level` can be
 
       4  Errors.
       8  Critical situation.
@@ -239,7 +243,7 @@ will include Warnings, Critical situations and Errors.
 To get absolutely all logging, set the level to 128 for all domains in the
 configuration file.
 
-Logging to "syslog" can be enabled in each domain like:
+Logging to `syslog` can be enabled in each domain like:
 
     [md   main]
     prepend=%t %p
@@ -253,51 +257,59 @@ Optimizing the database
 -----------------------
 
 Greenbone Vulnerability Manager offers the command line option
---optimize=<name> to run various optimization of the database. The currently
-supported values for <name> are:
+`--optimize=<name>` to run various optimization of the database. The currently
+supported values for `<name>` are:
 
-vacuum
+- `vacuum`
+
   This option can reduce the file size by freeing some unused storage
   space in the database.
-  For more information see the documentation for the VACUUM command of the
+  For more information see the documentation for the `VACUUM` command of the
   database back-end you are using.
 
-analyze
+- `analyze`
+
   This option updates various internal statistics of the database used to
   optimize queries.
-  For more information see the documentation for the ANALYZE command of the
+  For more information see the documentation for the `ANALYZE` command of the
   database back-end you are using.
 
-cleanup-config-prefs
+- `cleanup-config-prefs`
+
   This option removes duplicate preferences from Scan Configs and corrects
   some broken preference values.  For the latter, the NVT preferences in the
   database must be up to date (if Manager and Scanner are both running, then
   this should happen automatically).
 
-remove-open-port-results
+- `remove-open-port-results`
+
   This option removes results which were used in older versions of GVM to
   indicate an open port. Since open ports are now part of the host details
   these results are now obsolete in most cases.
 
-cleanup-port-names
+- `cleanup-port-names`
+
   This cleans up the ports of results as stored in the database by removing
-  parts that do not conform to the format <port>/<protocol>.
+  parts that do not conform to the format `<port>/<protocol>`.
   For example the application name will be removed from a port using the old
-  format "telnet (23/tcp)", reducing it to the new format "23/tcp".
+  format `telnet (23/tcp)`, reducing it to the new format `23/tcp`.
   This makes filtering results and delta reports more consistent.
 
-cleanup-result-severities
+- `cleanup-result-severities`
+
   This cleans up results with no severity by assigning the default
   severity set by the user owning the result.
   All new results should have a severity assigned but this was not ensured in
   older versions, so this function can be used to correct missing severity
   scores in older reports.
 
-rebuild-report-cache
+- `rebuild-report-cache`
+
   This clears the cache containing the unfiltered result counts of all reports
   and fully rebuilds it.
 
-update-report-cache
+- `update-report-cache`
+
   This creates the cache containing the unfiltered result counts of all reports
   that are not cached yet.
 
@@ -310,16 +322,16 @@ instance, you need to import the information from a Services Names list.
 
 In order to update the database, download the port names list:
 
-    $ wget http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
+    wget https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
 
 Then provide it as an argument to gvm-portnames-update script:
 
-    $ gvm-portnames-update service-names-port-numbers.xml
+    gvm-portnames-update service-names-port-numbers.xml
 
 You can safely delete the list after that as it is not needed and all relevant
 information has been imported into the database.
 
-    $ rm service-names-port-numbers.xml
+    rm service-names-port-numbers.xml
 
 Note that IANA updates this list frequently. The same steps could be followed to
 update the information in the database from a newer list.
@@ -330,60 +342,60 @@ Currently, the helper tool supports only the official IANA Services Names list.
 Encrypted Credentials
 ---------------------
 
-By default the Manager stores private key and password parts of target
-credentials encrypted in the database.  This voids leaking such keys
+By default, the Manager stores private key and password parts of target
+credentials encrypted in the database.  This avoids leaking such keys
 via backups.  To be able to do a proper restore of the data, it is
 important to also backup the encryption key.  The easiest way to do
 this is to create backup of the entire directory tree
 
-    <install-prefix>/var/lib/gvm/gvmd/gnupg
+    <install-prefix>/var/lib/gvm/gvmd/gnupg/
 
-and store it at a safe place independent from the database backups.
+and store it at a safe place independent of the database backups.
 This needs to be done only once after the key has been created or
 changed.  The Manager creates the key at startup if it does not
 exist.
 
-To check whether the key has been generated you may use the command
+To check whether the key has been generated you may use the command:
 
-$ gpg --homedir <install-prefix>/var/lib/gvm/gvmd/gnupg --list-secret-keys
+    gpg --homedir <install-prefix>/var/lib/gvm/gvmd/gnupg --list-secret-keys
 
-An example output would be
+An example output would be:
 
-  sec   2048R/1B55390F 2013-01-18
-  uid                  GVM Credential Encryption
+    sec   2048R/1B55390F 2013-01-18
+    uid                  GVM Credential Encryption
 
-Your key will have the same user ID ("GVM Credential Encryption")
+Your key will have the same user ID (`GVM Credential Encryption`)
 but another keyid (1B55390F) and another creation date (2013-01-18).
 
-Older versions of the Manager didn't used encrypted credentials.  Thus
+Older versions of the Manager didn't used encrypted credentials.  Thus,
 for old installations the database may hold a mix of cleartext and
 encrypted credentials.  Note, that after changing a cleartext
 credential it will be saved encrypted.
 
-To encrypt all existing credentials you may use
+To encrypt all existing credentials you may use:
 
-    $ gvmd --encrypt-all-credentials
+    gvmd --encrypt-all-credentials
 
 Key change: If you disable the current key (see also the gpg manual) and
 create a new key, this command will decrypt using the old but disabled key
-and then re-encrypt using the new key.  The command --decrypt-all-credentials
+and then re-encrypt using the new key.  The command `--decrypt-all-credentials`
 may be used to revert to plaintext credentials:
 
-    $ gpg --homedir /var/lib/gvm/gvmd/gnupg -K
+    gpg --homedir /var/lib/gvm/gvmd/gnupg -K
 
 Look for the current key and remember its keyid. Then:
 
-    $ gpg --homedir /var/lib/gvm/gvmd/gnupg --edit-key KEYID
+    gpg --homedir /var/lib/gvm/gvmd/gnupg --edit-key KEYID
 
-At the prompt enter "disable" followed by "save" and "quit".
+At the prompt enter `disable` followed by `save` and `quit`.
 Then create a new key and re-encrypt all passwords:
 
-    $ gvmd --create-credentials-encryption-key
-    $ gvmd --encrypt-all-credentials
+    gvmd --create-credentials-encryption-key
+    gvmd --encrypt-all-credentials
 
 No encryption: If for backward compatibility reasons encrypted credentials
 are not desired, the manager must _always_ be started with the option
---disable-encrypted-credentials.
+`--disable-encrypted-credentials`.
 
 
 Resetting Credentials Encryption Key
@@ -398,19 +410,19 @@ will need to enter all of them anew afterwards.
 
 Get the key fingerprint:
 
-    $ gpg --homedir <install-prefix>/var/lib/gvm/gvmd/gnupg --list-secret-keys
+    gpg --homedir <install-prefix>/var/lib/gvm/gvmd/gnupg --list-secret-keys
 
 Remove the secret key:
 
-    $ gpg --homedir=<prefix>/etc/openvas/gnupg --delete-secret-keys KEYID
+    gpg --homedir=<prefix>/etc/openvas/gnupg --delete-secret-keys KEYID
 
 Remove the key:
 
-    $ gpg --homedir=<prefix>/etc/openvas/gnupg --delete-keys KEYID
+    gpg --homedir=<prefix>/etc/openvas/gnupg --delete-keys KEYID
 
 Create a new key:
 
-    $ gvmd --create-credentials-encryption-key
+    gvmd --create-credentials-encryption-key
 
 Finally, reset all credentials, by hand.
 
@@ -433,56 +445,66 @@ certificates in Manager database as well.
 
 The database can be updated using the following command:
 
-    $ gvmd --modify-scanner <uuid> \
-           --scanner-ca-pub <cacert> \
-           --scanner-key-pub <clientcert> \
-           --scanner-key-priv <clientkey>
+    gvmd --modify-scanner <uuid> \
+         --scanner-ca-pub <cacert> \
+         --scanner-key-pub <clientcert> \
+         --scanner-key-priv <clientkey>
 
 Where:
-<uuid>       refers to the UUID used by OpenVAS Manager to identify the scanner;
-             the UUID can be retrieved with "gvmd --get-scanners"
-<cacert>     refers to the certificate of the CA used to sign the scanner
-             certificate. Leaving this empty will delete the CA certificate of
-             the scanner. This option can be dropped if the scanner uses
-             a certificate that corresponds with the default CA certificate of Manager
-<clientcert> refers to the certificate Manager uses to authenticate when
-             connecting to the scanner. For a default OSP scanner setup
-             with self-signed certificates this would be
-             /var/lib/gvm/CA/clientcert.pem
-<clientkey>  refers to the private key Manager uses to authenticate when
-             connecting to the scanner. For a default OSP scanner setup
-             with self-signed certificates this would be
-             /var/lib/gvm/private/CA/clientkey.pem
+- `<uuid>`
+
+  refers to the UUID used by OpenVAS Manager to identify the scanner;
+  the UUID can be retrieved with `gvmd --get-scanners`.
+
+- `<cacert>`
+
+  refers to the certificate of the CA used to sign the scanner certificate.
+  Leaving this empty will delete the CA certificate of the scanner. This option
+  can be dropped if the scanner uses a certificate that corresponds with the
+  default CA certificate of Manager.
+
+- `<clientcert>`
+
+  refers to the certificate Manager uses to authenticate when
+  connecting to the scanner. For a default OSP scanner setup
+  with self-signed certificates this would be
+  `/var/lib/gvm/CA/clientcert.pem`.
+
+- `<clientkey>`
+  refers to the private key Manager uses to authenticate when
+  connecting to the scanner. For a default OSP scanner setup
+  with self-signed certificates this would be
+  `/var/lib/gvm/private/CA/clientkey.pem`.
 
 To set just a new default CA certificate:
 
-    $ gvmd --modify-setting 9ac801ea-39f8-11e6-bbaa-28d24461215b \
-           --value "`cat /var/lib/gvm/CA/cacert.pem`"
+    gvmd --modify-setting 9ac801ea-39f8-11e6-bbaa-28d24461215b \
+         --value "`cat /var/lib/gvm/CA/cacert.pem`"
 
 Replace the path to the pem-file with the one of your setup. The
 UUID is the fixed one of the immutable global setting for the default
 CA certificate and thus does not need to be changed.
 
 
-
 Changing the Maximum Number of Rows per Page
 --------------------------------------------
 
-The maximum number of rows returned by the GMP "GET" commands, like GET_TARGETS,
+The maximum number of rows returned by the GMP `GET` commands, like `GET_TARGETS`,
 is controlled by the GMP setting "Max Rows Per Page".  This setting is an upper
-limit on the number of resources returned by any GET command, regardless of the
-value given for "rows" in the command's filter.
+limit on the number of resources returned by any `GET` command, regardless of the
+value given for `rows` in the command's filter.
 
 The default value for "Max Rows Per Page" is 1000.  0 indicates no limit.
 
 This setting can not be changed via GMP.  However, the gvmd option
---modify-setting can be used to change it.
+`--modify-setting` can be used to change it.
 
-    $ gvmd --modify-setting 76374a7a-0569-11e6-b6da-28d24461215b \
-           --value 100
+    gvmd --modify-setting 76374a7a-0569-11e6-b6da-28d24461215b \
+        --value 100
 
 This changes the global value of the setting, and so applies to all users.
-Adding --user to the command will set a value for maximum rows only for that user.
+Adding `--user` to the command will set a value for maximum rows only for that
+user.
 
 
 Prerequisites for Optional Features
@@ -511,15 +533,15 @@ Prerequisites for generating credentials .exe packages:
 * makensis (usually distributed as part of nsis)
 
 Prerequisites for generating system reports:
-* A program in the PATH, with usage "gvmcg seconds type", where
+* A program in the `PATH`, with usage `gvmcg seconds type`, where
   seconds is the number of seconds before now that the report covers,
-  and type is the type of report.  When called with type "titles" the
+  and type is the type of report.  When called with type `titles` the
   script must print a list of possible types, where the name of the
   type is everything up to the first space and everything else is a
-  title for the report.  When called with one of these types gvmcg
+  title for the report.  When called with one of these types, `gvmcg`
   must print a PNG in base64 encoding.  When called with the special
-  type "blank", gvmcg must print a PNG in base64 for the Manager to
-  use when a request for one of the titled types fails.  gvmcg may
+  type `blank`, gvmcg must print a PNG in base64 for the Manager to
+  use when a request for one of the titled types fails. `gvmcg` may
   indicate failure by simply refraining from printing.
 
 Prerequisites for signature verification:
@@ -529,11 +551,11 @@ Prerequisites for HTTP alerts:
 * wget
 
 Prerequisites for Sourcefire Connector alert:
-* A program in the PATH called greenbone_sourcefire_connector that takes args
-  IP, port, PKCS12 file and report file in Sourcefire format.
+* A program in the `PATH` called `greenbone_sourcefire_connector` that takes
+  args IP, port, PKCS12 file and report file in Sourcefire format.
 
 Prerequisites for verinice .PRO Connector alert:
-* A program in the PATH called greenbone_verinice_connector that takes args
+* A program in the `PATH` called `greenbone_verinice_connector` that takes args
   IP, port, username, password and report file in verinice .PRO format.
 
 Prerequisites for SCP alert:
@@ -555,24 +577,18 @@ Prerequisites for Tipping Point alert:
 Prerequisites for key generation on systems with low entropy:
 * haveged (or a similar tool)
 
+
 Static code analysis with the Clang Static Analyzer
 ---------------------------------------------------
 
-If you want to use the Clang Static Analyzer (http://clang-analyzer.llvm.org/)
-to do a static code analysis, you can do so by adding the following parameter
-when configuring the build:
+If you want to use the Clang Static Analyzer (https://clang-analyzer.llvm.org/)
+to do a static code analysis, you can do so by prefixing the configuration and
+build commands with `scan-build`:
 
-    -DCMAKE_C_COMPILER=/usr/share/clang/scan-build/ccc-analyzer
-
-Note that the example above uses the default location of ccc-analyzer in Debian
-GNU/Linux and may be different in other environments.
-
-To have the analysis results aggregated into a set of HTML files, use the
-following command:
-
-    $ scan-build make
+    scan-build cmake ..
+    scan-build make
 
 The tool will provide a hint on how to launch a web browser with the results.
 
 It is recommended to do this analysis in a separate, empty build directory and
-to empty the build directory before "scan-build" call.
+to empty the build directory before `scan-build` call.

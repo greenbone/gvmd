@@ -23,6 +23,17 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file sql.c
+ * @brief Generic SQL interface
+ *
+ * This is a small generic interface for SQL database access.
+ *
+ * To add support for a specific database, like Postgres, a few functions
+ * (for example, sql_prepare_internal and sql_exec_internal) need to be
+ * implemented for that database.
+ */
+
 #include "sql.h"
 
 #include <assert.h>
@@ -47,9 +58,6 @@ sql_exec_internal (int, sql_stmt_t *);
 
 int
 sql_explain_internal (const char*, va_list);
-
-int
-sql_explain (const char*, ...);
 
 
 /* Variables. */
@@ -265,52 +273,6 @@ sql_giveup (char* sql, ...)
   ret = sqlv (0, sql, args);
   va_end (args);
   return ret;
-}
-
-/**
- * @brief Perform an SQL statement, without logging.
- *
- * @param[in]  sql    Format string for SQL statement.
- * @param[in]  ...    Arguments for format string.
- */
-void
-sql_quiet (char* sql, ...)
-{
-  int ret;
-  sql_stmt_t *stmt;
-  va_list args;
-
-  /* Prepare statement. */
-
-  while (1)
-    {
-      va_start (args, sql);
-      ret = sql_prepare_internal (1, 0, sql, args, &stmt);
-      va_end (args);
-      if (ret)
-        {
-          g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
-          abort ();
-        }
-
-      /* Run statement. */
-
-      while ((ret = sql_exec_internal (1, stmt)) == 1);
-      if (ret == -1)
-        {
-          if (log_errors)
-            g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
-          abort ();
-        }
-      if (ret == -3 || ret == -2 || ret == 2)
-        {
-          /* Busy or locked, with statement reset.  Or schema changed. */
-          sql_finalize (stmt);
-          continue;
-        }
-      break;
-    }
-  sql_finalize (stmt);
 }
 
 /**

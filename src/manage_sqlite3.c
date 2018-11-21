@@ -23,7 +23,20 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#define _XOPEN_SOURCE /* Glibc2 needs this for strptime. */
+/**
+ * @file  manage_sqlite3.c
+ * @brief GVM management layer: SQLite3 specific facilities
+ *
+ * This file contains the parts of the GVM management layer that need
+ * to be coded for each backend.  This is the SQLite3 version.
+ */
+
+/**
+ * @brief Enable extra functions.
+ *
+ * Glibc2 needs this for strptime.
+ */
+#define _XOPEN_SOURCE
 
 #include "sql.h"
 #include "manage.h"
@@ -85,26 +98,22 @@ iso_time (time_t *);
 int
 days_from_now (time_t *);
 
-long
-current_offset (const char *);
-
 int
-user_can_everything (const char *);
-
-int
-user_owns (const char *, resource_t, int);
-
-int
-resource_name (const char *, const char *, int, gchar **);
+resource_name (const char *, const char *, int, char **);
 
 int
 resource_exists (const char *, resource_t, int);
 
-gchar *
-tag_value (const gchar *tags, const gchar *tag);
-
 
 /* Session. */
+
+/**
+ * @brief WHERE clause for view vulns.
+ */
+#define VULNS_RESULTS_WHERE                                           \
+  " WHERE uuid IN"                                                    \
+  "   (SELECT nvt FROM results"                                       \
+  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
 /**
  * @brief Setup session.
@@ -124,10 +133,6 @@ manage_session_init (const char *uuid)
 
   /* Vulnerabilities view must be created as temporary to allow using
    * tables from SCAP database */
-#define VULNS_RESULTS_WHERE                                           \
-  " WHERE uuid IN"                                                    \
-  "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
   sql ("DROP VIEW IF EXISTS vulns;");
   if (manage_scap_loaded ())
@@ -161,10 +166,10 @@ manage_session_init (const char *uuid)
 /**
  * @brief Setup session timezone.
  *
- * @param[in]  timezone  Timezone.
+ * @param[in]  zone  Timezone.
  */
 void
-manage_session_set_timezone (const char *timezone)
+manage_session_set_timezone (const char *zone)
 {
   return;
 }
@@ -1291,7 +1296,7 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
   time_t first;
   time_t period;
   int period_months, byday, periods_offset;
-  const char *timezone;
+  const char *zone;
 
   assert (argc == 4 || argc == 5 || argc == 6);
 
@@ -1300,9 +1305,9 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
   period_months = sqlite3_value_int (argv[2]);
   byday = sqlite3_value_int (argv[3]);
   if (argc < 5 || sqlite3_value_type (argv[4]) == SQLITE_NULL)
-    timezone = NULL;
+    zone = NULL;
   else
-    timezone = (char*) sqlite3_value_text (argv[4]);
+    zone = (char*) sqlite3_value_text (argv[4]);
 
   if (argc < 6 || sqlite3_value_type (argv[5]) == SQLITE_NULL)
     periods_offset = 0;
@@ -1310,7 +1315,7 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
     periods_offset = sqlite3_value_int (argv[5]);
 
   sqlite3_result_int (context,
-                      next_time (first, period, period_months, byday, timezone,
+                      next_time (first, period, period_months, byday, zone,
                                  periods_offset));
 }
 
@@ -1327,7 +1332,7 @@ void
 sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   int periods_offset;
-  const char *icalendar, *timezone;
+  const char *icalendar, *zone;
 
   assert (argc == 2 || argc == 3 );
 
@@ -1337,9 +1342,9 @@ sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
     icalendar = (char*) sqlite3_value_text (argv[0]);
 
   if (argc < 2 || sqlite3_value_type (argv[1]) == SQLITE_NULL)
-    timezone = NULL;
+    zone = NULL;
   else
-    timezone = (char*) sqlite3_value_text (argv[1]);
+    zone = (char*) sqlite3_value_text (argv[1]);
 
   if (argc < 3 || sqlite3_value_type (argv[2]) == SQLITE_NULL)
     periods_offset = 0;
@@ -1347,7 +1352,7 @@ sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
     periods_offset = sqlite3_value_int (argv[2]);
 
   sqlite3_result_int (context,
-                      icalendar_next_time_from_string (icalendar, timezone,
+                      icalendar_next_time_from_string (icalendar, zone,
                                                        periods_offset));
 }
 
@@ -3666,7 +3671,7 @@ create_tables ()
        " ON nvt_selectors (type, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS nvts"
        " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
-       "  copyright, cve, bid, xref, tag, category INTEGER, family, cvss_base,"
+       "  cve, bid, xref, tag, category INTEGER, family, cvss_base,"
        "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
        "  qod_type TEXT);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid"
@@ -3759,7 +3764,7 @@ create_tables ()
        "  trust_time, flags INTEGER, original_uuid, creation_time,"
        "  modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS reports"
-       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER,"
        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
        "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
        "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
@@ -4101,6 +4106,8 @@ manage_attach_databases ()
 
 /**
  * @brief Remove external database.
+ *
+ * @param[in]  name  Database name.
  */
 void
 manage_db_remove (const gchar *name)

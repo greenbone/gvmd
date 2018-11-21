@@ -23,6 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  manage_config_discovery.c
+ * @brief GVM management layer: Predefined config: Discovery
+ *
+ * This file contains the creation of the predefined config Discovery.
+ */
+
 #include "manage.h"
 #include "sql.h"
 
