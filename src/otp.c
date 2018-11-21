@@ -319,12 +319,12 @@ static nvti_t* current_plugin = NULL;
 /**
  * @brief The full plugins list, during reading of scanner plugin list.
  */
-GList* scanner_plugins_list = NULL;
+static GList* scanner_plugins_list = NULL;
 
 /**
  * @brief The full preferences list, during reading of scanner plugin list.
  */
-GList* scanner_preferences_list = NULL;
+static GList* scanner_preferences_list = NULL;
 
 
 /* Scanner state. */

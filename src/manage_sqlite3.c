@@ -166,10 +166,10 @@ manage_session_init (const char *uuid)
 /**
  * @brief Setup session timezone.
  *
- * @param[in]  timezone  Timezone.
+ * @param[in]  zone  Timezone.
  */
 void
-manage_session_set_timezone (const char *timezone)
+manage_session_set_timezone (const char *zone)
 {
   return;
 }
@@ -1296,7 +1296,7 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
   time_t first;
   time_t period;
   int period_months, byday, periods_offset;
-  const char *timezone;
+  const char *zone;
 
   assert (argc == 4 || argc == 5 || argc == 6);
 
@@ -1305,9 +1305,9 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
   period_months = sqlite3_value_int (argv[2]);
   byday = sqlite3_value_int (argv[3]);
   if (argc < 5 || sqlite3_value_type (argv[4]) == SQLITE_NULL)
-    timezone = NULL;
+    zone = NULL;
   else
-    timezone = (char*) sqlite3_value_text (argv[4]);
+    zone = (char*) sqlite3_value_text (argv[4]);
 
   if (argc < 6 || sqlite3_value_type (argv[5]) == SQLITE_NULL)
     periods_offset = 0;
@@ -1315,7 +1315,7 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
     periods_offset = sqlite3_value_int (argv[5]);
 
   sqlite3_result_int (context,
-                      next_time (first, period, period_months, byday, timezone,
+                      next_time (first, period, period_months, byday, zone,
                                  periods_offset));
 }
 
@@ -1332,7 +1332,7 @@ void
 sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   int periods_offset;
-  const char *icalendar, *timezone;
+  const char *icalendar, *zone;
 
   assert (argc == 2 || argc == 3 );
 
@@ -1342,9 +1342,9 @@ sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
     icalendar = (char*) sqlite3_value_text (argv[0]);
 
   if (argc < 2 || sqlite3_value_type (argv[1]) == SQLITE_NULL)
-    timezone = NULL;
+    zone = NULL;
   else
-    timezone = (char*) sqlite3_value_text (argv[1]);
+    zone = (char*) sqlite3_value_text (argv[1]);
 
   if (argc < 3 || sqlite3_value_type (argv[2]) == SQLITE_NULL)
     periods_offset = 0;
@@ -1352,7 +1352,7 @@ sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
     periods_offset = sqlite3_value_int (argv[2]);
 
   sqlite3_result_int (context,
-                      icalendar_next_time_from_string (icalendar, timezone,
+                      icalendar_next_time_from_string (icalendar, zone,
                                                        periods_offset));
 }
 

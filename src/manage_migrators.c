@@ -14901,6 +14901,39 @@ migrate_197_to_198 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 198 to version 199.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_198_to_199 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 198. */
+
+  if (manage_db_version () != 198)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Container target are now only 0, and never NULL. */
+
+  sql ("UPDATE tasks SET target = 0 WHERE target IS NULL;");
+
+  /* Set the database version to 199. */
+
+  set_db_version (199);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15118,6 +15151,7 @@ static migrator_t database_migrators[]
     {196, migrate_195_to_196},
     {197, migrate_196_to_197},
     {198, migrate_197_to_198},
+    {199, migrate_198_to_199},
     /* End marker. */
     {-1, NULL}};
 
