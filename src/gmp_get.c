@@ -30,7 +30,8 @@
  * Common GET command code for the GVM GMP layer.
  */
 
-#include "gmp_tickets.h"
+#include "gmp_get.h"
+#include "gmp_base.h"
 #include "manage_acl.h"
 
 #include <stdlib.h>
