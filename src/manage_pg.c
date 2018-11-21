@@ -68,12 +68,12 @@ manage_session_init (const char *uuid)
 /**
  * @brief Setup session timezone.
  *
- * @param[in]  timezone  Timezone.
+ * @param[in]  zone  Timezone.
  */
 void
-manage_session_set_timezone (const char *timezone)
+manage_session_set_timezone (const char *zone)
 {
-  sql ("SET SESSION TIME ZONE '%s';", timezone);
+  sql ("SET SESSION TIME ZONE '%s';", zone);
   return;
 }
 
@@ -1544,7 +1544,7 @@ manage_create_sql_functions ()
              " RETURNS double precision AS $$"
              /* Calculate the severity of a task. */
              "  SELECT CASE"
-             "         WHEN (SELECT target IS NULL OR target = 0"
+             "         WHEN (SELECT target = 0"
              "               FROM tasks WHERE id = $1)"
              "         THEN CAST (NULL AS double precision)"
              "         ELSE"

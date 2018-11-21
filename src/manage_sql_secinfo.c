@@ -2437,37 +2437,40 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                       sql_int64 (&cve_rowid,
                                  "SELECT id FROM cves WHERE uuid='%s';",
                                  quoted_id);
-                    }
 
-                  while ((product = first_entity (products)))
-                    {
-                      if ((strcmp (entity_name (product), "vuln:product") == 0)
-                          && strlen (entity_text (product)))
+                      while ((product = first_entity (products)))
                         {
-                          gchar *quoted_product, *product_decoded;
-                          gchar *product_tilde;
+                          if ((strcmp (entity_name (product), "vuln:product")
+                               == 0)
+                              && strlen (entity_text (product)))
+                            {
+                              gchar *quoted_product, *product_decoded;
+                              gchar *product_tilde;
 
-                          product_decoded = g_uri_unescape_string
-                                             (entity_text (product), NULL);
-                          product_tilde = string_replace (product_decoded,
-                                                          "~", "%7E", "%7e", NULL);
-                          g_free (product_decoded);
-                          quoted_product = sql_quote (product_tilde);
-                          g_free (product_tilde);
+                              product_decoded = g_uri_unescape_string
+                                                 (entity_text (product), NULL);
+                              product_tilde = string_replace (product_decoded,
+                                                              "~", "%7E", "%7e",
+                                                              NULL);
+                              g_free (product_decoded);
+                              quoted_product = sql_quote (product_tilde);
+                              g_free (product_tilde);
 
-                          sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
-                               quoted_product, quoted_product, time_published,
-                               time_modified);
-                          sql ("SELECT merge_affected_product"
-                               "        (%llu,"
-                               "         (SELECT id FROM cpes WHERE name='%s'))",
-                               cve_rowid, quoted_product);
-                          transaction_size ++;
-                          increment_transaction_size (&transaction_size);
-                          g_free (quoted_product);
+                              sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
+                                   quoted_product, quoted_product, time_published,
+                                   time_modified);
+                              sql ("SELECT merge_affected_product"
+                                   "        (%llu,"
+                                   "         (SELECT id FROM cpes"
+                                   "          WHERE name='%s'))",
+                                   cve_rowid, quoted_product);
+                              transaction_size ++;
+                              increment_transaction_size (&transaction_size);
+                              g_free (quoted_product);
+                            }
+
+                          products = next_entities (products);
                         }
-
-                      products = next_entities (products);
                     }
                 }
 
