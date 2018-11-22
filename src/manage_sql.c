@@ -285,12 +285,6 @@ static int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
 
 static void
-permissions_set_locations (const char *, resource_t, resource_t, int);
-
-static void
-permissions_set_orphans (const char *, resource_t, int);
-
-static void
 permissions_set_subjects (const char *, resource_t, resource_t, int);
 
 static resource_t
@@ -301,12 +295,6 @@ permission_subject (permission_t);
 
 static char *
 permission_subject_type (permission_t);
-
-static void
-tags_remove_resource (const char *, resource_t, int);
-
-static void
-tags_set_locations (const char *, resource_t, resource_t, int);
 
 static int
 role_is_predefined (role_t);
@@ -891,7 +879,7 @@ array_add_new_string (array_t *array, const gchar *string)
  * @return FALSE on success (including if failed to find resource), TRUE on
  *         error.
  */
-static gboolean
+gboolean
 find_trash (const char *type, const char *uuid, resource_t *resource)
 {
   gchar *quoted_uuid;
@@ -53851,7 +53839,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
  * @param[in]   new   Resource ID in new table.
  * @param[in]   to    Destination, trash or table.
  */
-static void
+void
 permissions_set_locations (const char *type, resource_t old, resource_t new,
                            int to)
 {
@@ -53880,7 +53868,7 @@ permissions_set_locations (const char *type, resource_t old, resource_t new,
  * @param[in]  resource  Resource ID.
  * @param[in]  location  Location: table or trash.
  */
-static void
+void
 permissions_set_orphans (const char *type, resource_t resource, int location)
 {
   sql ("UPDATE permissions SET resource = -1"
@@ -67846,7 +67834,7 @@ type_build_select (const char *type, const char *columns_str,
  * @param[in]  resource  Resource.
  * @param[in]  location  Location: table or trash.
  */
-static void
+void
 tags_remove_resource (const char *type, resource_t resource, int location)
 {
   sql ("DELETE FROM tag_resources"
@@ -67865,7 +67853,7 @@ tags_remove_resource (const char *type, resource_t resource, int location)
  * @param[in]   new   Resource ID in new table.
  * @param[in]   to    Destination, trash or table.
  */
-static void
+void
 tags_set_locations (const char *type, resource_t old, resource_t new,
                     int to)
 {
