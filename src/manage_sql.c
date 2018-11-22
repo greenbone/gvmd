@@ -4278,6 +4278,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "tag") == 0)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
+         || (strcasecmp (type, "ticket") == 0)
          || (strcasecmp (type, "user") == 0)
          || (strcasecmp (type, "vuln") == 0);
 }
@@ -4336,6 +4337,8 @@ type_db_name (const char* type)
     return "target";
   if (strcasecmp (type, "Task") == 0)
     return "task";
+  if (strcasecmp (type, "Ticket") == 0)
+    return "ticket";
   if (strcasecmp (type, "SecInfo") == 0)
     return "info";
   return NULL;
