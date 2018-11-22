@@ -393,6 +393,9 @@ type_name (const char*);
 int
 type_is_scap (const char*);
 
+int
+delete_resource (const char *, const char *, int);
+
 
 /* Events and Alerts. */
 
