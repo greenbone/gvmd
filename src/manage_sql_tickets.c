@@ -31,6 +31,7 @@
  */
 
 #include "manage_tickets.h"
+#include "manage_acl.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql.h"
 #include "sql.h"
@@ -173,4 +174,96 @@ int
 trash_ticket_writable (ticket_t ticket)
 {
   return trash_ticket_in_use (ticket) == 0;
+}
+
+/**
+ * @brief Delete a ticket.
+ *
+ * @param[in]  ticket_id  UUID of ticket.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 fail because ticket is in use, 2 failed to find ticket,
+ *         3 predefined ticket, 99 permission denied, -1 error.
+ */
+int
+delete_ticket (const char *ticket_id, int ultimate)
+{
+  ticket_t ticket = 0;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("delete_ticket") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (find_resource_with_permission ("ticket", ticket_id, &ticket,
+                                     "delete_ticket", 0))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (ticket == 0)
+    {
+      if (find_trash ("ticket", ticket_id, &ticket))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (ticket == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql_commit ();
+          return 0;
+        }
+
+      tags_remove_resource ("ticket", ticket, LOCATION_TRASH);
+
+      sql ("DELETE FROM tickets_trash WHERE id = %llu;", ticket);
+      sql_commit ();
+      return 0;
+    }
+
+  if (ultimate == 0)
+    {
+      ticket_t trash_ticket;
+
+      sql ("INSERT INTO tickets_trash"
+           " (uuid, owner, name, comment, task, report, severity, host,"
+           "  location, solution_type, assigned_to, status, open_time,"
+           "  solved_time, solved_comment, confirmed_time, confirmed_result,"
+           "  closed_time, closed_rationale, orphaned_time, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, task, report, severity, host,"
+           "        location, solution_type, assigned_to, status, open_time,"
+           "        solved_time, solved_comment, confirmed_time,"
+           "        confirmed_result, closed_time, closed_rationale,"
+           "        orphaned_time, creation_time, modification_time"
+           " FROM tickets WHERE id = %llu;",
+           ticket);
+
+      trash_ticket = sql_last_insert_id ();
+
+      permissions_set_locations ("ticket", ticket, trash_ticket,
+                                 LOCATION_TRASH);
+      tags_set_locations ("ticket", ticket, trash_ticket,
+                          LOCATION_TRASH);
+    }
+  else
+    {
+      permissions_set_orphans ("ticket", ticket, LOCATION_TABLE);
+      tags_remove_resource ("ticket", ticket, LOCATION_TABLE);
+    }
+
+  sql ("DELETE FROM tickets WHERE id = %llu;", ticket);
+
+  sql_commit ();
+  return 0;
 }

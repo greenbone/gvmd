@@ -26,4 +26,7 @@
 #ifndef _GVMD_MANAGE_SQL_TICKETS_H
 #define _GVMD_MANAGE_SQL_TICKETS_H
 
+int
+delete_ticket (const char *, int);
+
 #endif /* not _GVMD_MANAGE_SQL_TICKETS_H */
