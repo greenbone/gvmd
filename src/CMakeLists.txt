@@ -111,7 +111,7 @@ add_executable (${BINARY_NAME}
                 ${BACKEND_FILES}
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_get.c gmp_tickets.c)
+                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c)
 
 if (BACKEND STREQUAL SQLITE3)
   target_link_libraries (${BINARY_NAME} m
@@ -281,6 +281,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_base.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/otp.c"
