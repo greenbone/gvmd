@@ -32,7 +32,9 @@
  */
 
 #include "gmp_base.h"
+#include "manage.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #include <gvm/base/strings.h>
@@ -218,4 +220,89 @@ internal_error_send_to_client (GError** error)
 {
   g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
                "Internal Error.");
+}
+
+/**
+ * @brief Creates a log event entry for a resource action.
+ *
+ * @param[in]   type        Resource type.
+ * @param[in]   type_name   Resource type name.
+ * @param[in]   id          Resource id.
+ * @param[in]   action      Action done.
+ * @param[in]   fail        Whether it is a fail event.
+ */
+static void
+log_event_internal (const char *type, const char *type_name, const char *id,
+                    const char *action, int fail)
+{
+  gchar *domain;
+
+  domain = g_strdup_printf ("event %s", type);
+
+  if (id)
+    {
+      char *name;
+
+      if (manage_resource_name (type, id, &name))
+        name = NULL;
+      else if ((name == NULL)
+               && manage_trash_resource_name (type, id, &name))
+        name = NULL;
+
+      if (name)
+        g_log (domain, G_LOG_LEVEL_MESSAGE,
+               "%s %s (%s) %s %s by %s",
+               type_name, name, id,
+               fail ? "could not be" : "has been",
+               action,
+               current_credentials.username);
+      else
+        g_log (domain, G_LOG_LEVEL_MESSAGE,
+               "%s %s %s %s by %s",
+               type_name, id,
+               fail ? "could not be" : "has been",
+               action,
+               current_credentials.username);
+
+      free (name);
+    }
+  else
+    g_log (domain, G_LOG_LEVEL_MESSAGE,
+           "%s %s %s by %s",
+           type_name,
+           fail ? "could not be" : "has been",
+           action,
+           current_credentials.username);
+
+  g_free (domain);
+}
+
+/**
+ * @brief Creates a log event entry for a resource action.
+ *
+ * @param[in]   type        Resource type.
+ * @param[in]   type_name   Resource type name.
+ * @param[in]   id          Resource id.
+ * @param[in]   action      Action done.
+ */
+void
+log_event (const char *type, const char *type_name, const char *id,
+           const char *action)
+{
+  log_event_internal (type, type_name, id, action, 0);
+}
+
+/**
+ * @brief Creates a log event failure entry for a resource action.
+ *
+ * @param[in]   type        Resource type.
+ * @param[in]   type_name   Resource type name.
+ * @param[in]   id          Resource id.
+ * @param[in]   action      Action done.
+ */
+void
+log_event_fail (const char *type, const char *type_name, const char *id,
+                const char *action)
+{
+  log_event_internal (type, type_name, id, action, 1);
 }
