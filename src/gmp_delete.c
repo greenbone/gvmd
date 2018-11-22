@@ -62,8 +62,6 @@ static delete_t delete;
 
 /**
  * @brief Reset command data.
- *
- * @param[in]  delete  Command data.
  */
 static void
 delete_reset ()
