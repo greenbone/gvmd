@@ -93,6 +93,7 @@
 
 #include "gmp.h"
 #include "gmp_base.h"
+#include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_tickets.h"
 #include "manage.h"
@@ -5208,6 +5209,7 @@ typedef enum
   CLIENT_DELETE_TAG,
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_TASK,
+  CLIENT_DELETE_TICKET,
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
@@ -6016,6 +6018,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               delete_task_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_TASK);
+          }
+        else if (strcasecmp ("DELETE_TICKET", element_name) == 0)
+          {
+            delete_start ("ticket", "Ticket",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_TICKET);
           }
         else if (strcasecmp ("DELETE_USER", element_name) == 0)
           {
@@ -20570,6 +20578,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
            (XML_ERROR_SYNTAX ("delete_task",
                               "DELETE_TASK requires a task_id attribute"));
         delete_task_data_reset (delete_task_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_TICKET:
+        delete_run (gmp_parser, error);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

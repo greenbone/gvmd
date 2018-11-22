@@ -611,6 +611,7 @@ command_t gmp_commands[]
     {"DELETE_TAG", "Delete a tag."},
     {"DELETE_TARGET", "Delete a target."},
     {"DELETE_TASK", "Delete a task."},
+    {"DELETE_TICKET", "Delete a ticket."},
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
