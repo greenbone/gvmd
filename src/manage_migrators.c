@@ -14356,7 +14356,7 @@ migrate_190_to_191 ()
   schedule_t schedule;
   time_t first_time, period, period_months, duration;
   int byday;
-  const char *timezone;
+  const char *zone;
   icalcomponent *ical_component;
   gchar *quoted_ical;
 
@@ -14393,19 +14393,19 @@ migrate_190_to_191 ()
       period_months = (time_t) iterator_int64 (&schedule_iter, 3);
       duration = (time_t) iterator_int64 (&schedule_iter, 4);
       byday = iterator_int (&schedule_iter, 5);
-      timezone = iterator_string (&schedule_iter, 6);
+      zone = iterator_string (&schedule_iter, 6);
 
       ical_component
         = icalendar_from_old_schedule_data (first_time, period, period_months,
-                                            duration, byday, timezone);
+                                            duration, byday, zone);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
 
       g_debug ("%s: schedule %llu - first: %s (%s), period: %ld,"
                " period_months: %ld, duration: %ld - byday: %d\n"
                "generated iCalendar:\n%s",
                __FUNCTION__, schedule,
-               iso_time_tz (&first_time, timezone, NULL),
-               timezone, period, period_months, duration, byday,
+               iso_time_tz (&first_time, zone, NULL),
+               zone, period, period_months, duration, byday,
                quoted_ical);
 
       sql ("UPDATE schedules SET icalendar = '%s' WHERE id = %llu",
@@ -14431,19 +14431,19 @@ migrate_190_to_191 ()
       period_months = (time_t) iterator_int64 (&schedule_iter, 3);
       duration = (time_t) iterator_int64 (&schedule_iter, 4);
       byday = iterator_int (&schedule_iter, 5);
-      timezone = iterator_string (&schedule_iter, 6);
+      zone = iterator_string (&schedule_iter, 6);
 
       ical_component
         = icalendar_from_old_schedule_data (first_time, period, period_months,
-                                            duration, byday, timezone);
+                                            duration, byday, zone);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
 
       g_debug ("%s: trash schedule %llu - first: %s (%s), period: %ld,"
                " period_months: %ld, duration: %ld - byday: %d\n"
                "generated iCalendar:\n%s",
                __FUNCTION__, schedule,
-               iso_time_tz (&first_time, timezone, NULL),
-               timezone, period, period_months, duration, byday,
+               iso_time_tz (&first_time, zone, NULL),
+               zone, period, period_months, duration, byday,
                quoted_ical);
 
       sql ("UPDATE schedules_trash SET icalendar = '%s' WHERE id = %llu",
@@ -14901,6 +14901,39 @@ migrate_197_to_198 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 198 to version 199.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_198_to_199 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 198. */
+
+  if (manage_db_version () != 198)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Container target are now only 0, and never NULL. */
+
+  sql ("UPDATE tasks SET target = 0 WHERE target IS NULL;");
+
+  /* Set the database version to 199. */
+
+  set_db_version (199);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15118,6 +15151,7 @@ static migrator_t database_migrators[]
     {196, migrate_195_to_196},
     {197, migrate_196_to_197},
     {198, migrate_197_to_198},
+    {199, migrate_198_to_199},
     /* End marker. */
     {-1, NULL}};
 

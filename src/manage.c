@@ -6691,7 +6691,7 @@ int authenticate_allow_all = 0;
  * @brief UUID of user whose scheduled task is to be started (in connection
  *        with authenticate_allow_all).
  */
-gchar* schedule_user_uuid = NULL;
+static gchar* schedule_user_uuid = NULL;
 
 /**
  * @brief Ensure that any subsequent authentications succeed.
@@ -7133,7 +7133,7 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
   while (next (&schedules))
     if (task_schedule_iterator_start_due (&schedules))
       {
-        const char *icalendar, *timezone;
+        const char *icalendar, *zone;
         int timed_out;
 
         /* Check if task schedule is timed out before updating next due time */
@@ -7142,14 +7142,14 @@ manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
         /* Update the task schedule info to prevent multiple schedules. */
 
         icalendar = task_schedule_iterator_icalendar (&schedules);
-        timezone = task_schedule_iterator_timezone (&schedules);
+        zone = task_schedule_iterator_timezone (&schedules);
 
         g_debug ("%s: start due for %llu, setting next_time",
                  __FUNCTION__,
                  task_schedule_iterator_task (&schedules));
         set_task_schedule_next_time
          (task_schedule_iterator_task (&schedules),
-          icalendar_next_time_from_string (icalendar, timezone, 0));
+          icalendar_next_time_from_string (icalendar, zone, 0));
 
         /* Skip this task if it was already added to the starts list
          * to avoid conflicts between multiple users with permissions. */

@@ -345,7 +345,7 @@ next_day (int day_of_week, int byday)
  * @param[in] period          The period in seconds.
  * @param[in] period_months   The period in months.
  * @param[in] byday           Days of week to run schedule.
- * @param[in] timezone        The timezone to use.
+ * @param[in] zone            The timezone to use.
  * @param[in] periods_offset  Number of periods to offset.
  *                            e.g. 0 = next time, -1 current/last time
  *
@@ -353,18 +353,18 @@ next_day (int day_of_week, int byday)
  */
 time_t
 next_time (time_t first, int period, int period_months, int byday,
-           const char* timezone, int periods_offset)
+           const char* zone, int periods_offset)
 {
   int periods_diff;
   time_t now;
   long offset_diff;
 
-  if (timezone)
+  if (zone)
     {
       long first_offset_val, current_offset_val;
 
-      first_offset_val = time_offset (timezone, first);
-      current_offset_val = current_offset (timezone);
+      first_offset_val = time_offset (zone, first);
+      current_offset_val = current_offset (zone);
       offset_diff = current_offset_val - first_offset_val;
     }
   else
@@ -428,7 +428,7 @@ next_time (time_t first, int period, int period_months, int byday,
       /* Store current TZ. */
       tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
 
-      if (setenv ("TZ", timezone ? timezone : "UTC", 1) == -1)
+      if (setenv ("TZ", zone ? zone : "UTC", 1) == -1)
         {
           g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
           if (tz != NULL)
@@ -807,7 +807,7 @@ icalendar_timezone_from_tzid (const char *tzid)
  * @param[in]  period_months  The period in months.
  * @param[in]  duration       The duration in seconds.
  * @param[in]  byday_mask     The byday mask.
- * @param[in]  timezone       The timezone id / city name.
+ * @param[in]  zone           The timezone id / city name.
  *
  * @return  The generated iCalendar component.
  */
@@ -816,7 +816,7 @@ icalendar_from_old_schedule_data (time_t first_time,
                                   time_t period, time_t period_months,
                                   time_t duration,
                                   int byday_mask,
-                                  const char *timezone)
+                                  const char *zone)
 {
   gchar *uid;
   icalcomponent *ical_new, *vevent;
@@ -847,9 +847,9 @@ icalendar_from_old_schedule_data (time_t first_time,
   icalcomponent_set_dtstamp (vevent, dtstamp);
 
   // Get timezone and set first start time
-  if (timezone)
+  if (zone)
     {
-      ical_timezone = icalendar_timezone_from_tzid (timezone);
+      ical_timezone = icalendar_timezone_from_tzid (zone);
     }
   else
     {
