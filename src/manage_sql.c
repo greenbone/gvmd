@@ -40729,7 +40729,7 @@ validate_credential_username_for_format (const gchar *username,
  *         6 password missing, 7 private key missing, 8 certificate missing,
  *         9 public key missing, 10 autogenerate not supported,
  *         11 community missing, 12 auth algorithm missing,
- *         13 privacy password missing, 14 privacy algorithm missing,
+ *         14 privacy algorithm missing,
  *         15 invalid auth algorithm, 16 invalid privacy algorithm,
  *         17 invalid certificate, 99 permission denied, -1 error.
  */
@@ -40857,15 +40857,17 @@ create_credential (const char* name, const char* comment, const char* login,
         }
       else if (auth_algorithm == NULL && using_snmp_v3)
         ret = 12;
-      else if (privacy_password == NULL && privacy_algorithm)
-        ret = 13;
-      else if (privacy_algorithm == NULL && privacy_password)
+      else if ((privacy_algorithm == NULL
+                || strcmp (privacy_algorithm, "") == 0)
+               && privacy_password
+               && strcmp (privacy_password, ""))
         ret = 14;
       else if (auth_algorithm
                && strcmp (auth_algorithm, "md5")
                && strcmp (auth_algorithm, "sha1"))
         ret = 15;
       else if (privacy_algorithm
+               && strcmp (privacy_algorithm, "")
                && strcmp (privacy_algorithm, "aes")
                && strcmp (privacy_algorithm, "des"))
         ret = 16;
@@ -41004,7 +41006,8 @@ create_credential (const char* name, const char* comment, const char* login,
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "community", community,
                                       "password", given_password,
-                                      "privacy_password", privacy_password,
+                                      "privacy_password",
+                                      privacy_password ? privacy_password : "",
                                       NULL);
           if (!secret)
             {
@@ -41020,7 +41023,8 @@ create_credential (const char* name, const char* comment, const char* login,
           crypt_ctx = NULL;
           set_credential_data (new_credential, "community", community);
           set_credential_data (new_credential, "password", given_password);
-          set_credential_data (new_credential, "priv_password", privacy_password);
+          set_credential_data (new_credential, "privacy_password",
+                               privacy_password ? privacy_password : "");
         }
       lsc_crypt_release (crypt_ctx);
 
@@ -41215,6 +41219,8 @@ copy_credential (const char* name, const char* comment,
  *         exists, 3 credential_id required, 4 invalid login name,
  *         5 invalid certificate, 6 invalid auth_algorithm,
  *         7 invalid privacy_algorithm, 8 invalid private key,
+ *         9 invalid public key,
+ *         10 privacy password must be empty if algorithm is empty
  *         99 permission denied,
  *         -1 internal error.
  */
@@ -41311,7 +41317,7 @@ modify_credential (const char *credential_id,
       // Truncate certificate which also validates it.
       gchar *certificate_truncated;
       certificate_truncated = truncate_certificate (certificate);
-      if (certificate_truncated == NULL)
+      if (certificate_truncated)
         {
           set_credential_certificate (credential, certificate_truncated);
           g_free (certificate_truncated);
@@ -41331,11 +41337,37 @@ modify_credential (const char *credential_id,
 
   if (privacy_algorithm && ret == 0)
     {
-      if (strcmp (auth_algorithm, "aes")
-          && strcmp (auth_algorithm, "des"))
+      if (strcmp (privacy_algorithm, "aes")
+          && strcmp (privacy_algorithm, "des")
+          && strcmp (privacy_algorithm, ""))
         ret = 7;
       else
-        set_credential_privacy_algorithm (credential, privacy_algorithm);
+        {
+          iterator_t credential_iterator;
+          const char *used_password;
+
+          init_credential_iterator_one (&credential_iterator, credential);
+
+          if (privacy_password)
+            used_password = privacy_password;
+          else
+            {
+              next (&credential_iterator);
+              used_password
+                = credential_iterator_privacy_password (&credential_iterator);
+              if (used_password == NULL)
+                used_password = "";
+            }
+
+          // Privacy password must be empty if algorithm is empty
+          if (strcmp (privacy_algorithm, "") == 0
+              && strcmp (used_password, ""))
+            ret = 10;
+          else
+            set_credential_privacy_algorithm (credential, privacy_algorithm);
+
+          cleanup_iterator (&credential_iterator);
+        }
     }
 
   if (key_public && ret == 0)
@@ -41423,6 +41455,26 @@ modify_credential (const char *credential_id,
         }
       else if (strcmp (type, "snmp") == 0)
         {
+          if (privacy_password)
+            {
+              const char *used_algorithm;
+
+              // Privacy_algorithm should be set above if given
+              used_algorithm
+                = credential_iterator_privacy_algorithm (&iterator);
+              if (used_algorithm == NULL)
+                used_algorithm = "";
+
+              // privacy password must be empty if algorithm is empty
+              if (strcmp (used_algorithm, "") == 0
+                  && strcmp (privacy_password, ""))
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  return 10;
+                }
+            }
+
           if (community || password || privacy_password)
             {
               set_credential_snmp_secret
@@ -41438,11 +41490,18 @@ modify_credential (const char *credential_id,
                   : credential_iterator_privacy_password (&iterator));
             }
         }
+      else if (strcmp (type, "pgp") == 0
+               || strcmp (type, "smime") == 0)
+        {
+          set_credential_data (credential, "secret", "");
+        }
       else
         {
           g_warning ("%s: Unknown credential type: %s", __FUNCTION__, type);
           sql_rollback ();
           cleanup_iterator (&iterator);
+          g_free (key_private_truncated);
+          return -1;
         }
 
       g_free (key_private_truncated);
