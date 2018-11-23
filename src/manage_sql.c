@@ -41735,8 +41735,9 @@ validate_credential_username_for_format (const gchar *username,
  *         6 password missing, 7 private key missing, 8 certificate missing,
  *         10 autogenerate not supported, 11 community missing,
  *         12 auth algorithm missing, 13 privacy password missing, 14 privacy
- *         algorithm missing, 15 invalid auth algorithm, 16 invalid privacy
- *         algorithm, 17 invalid certificate, 99 permission denied, -1 error.
+ *         14 privacy algorithm missing,
+ *         15 invalid auth algorithm, 16 invalid privacy algorithm,
+ *         17 invalid certificate, 99 permission denied, -1 error.
  */
 int
 create_credential (const char* name, const char* comment, const char* login,
@@ -41851,11 +41852,6 @@ create_credential (const char* name, const char* comment, const char* login,
         }
       else if (auth_algorithm == NULL && using_snmp_v3)
         ret = 12;
-      else if ((privacy_password == NULL
-                || strcmp (privacy_password, "") == 0)
-               && privacy_algorithm
-               && strcmp (privacy_algorithm, ""))
-        ret = 13;
       else if ((privacy_algorithm == NULL
                 || strcmp (privacy_algorithm, "") == 0)
                && privacy_password
@@ -42020,7 +42016,8 @@ create_credential (const char* name, const char* comment, const char* login,
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "community", community,
                                       "password", given_password,
-                                      "privacy_password", privacy_password,
+                                      "privacy_password",
+                                      privacy_password ? privacy_password : "",
                                       NULL);
           if (!secret)
             {
@@ -42036,7 +42033,8 @@ create_credential (const char* name, const char* comment, const char* login,
           crypt_ctx = NULL;
           set_credential_data (new_credential, "community", community);
           set_credential_data (new_credential, "password", given_password);
-          set_credential_data (new_credential, "priv_password", privacy_password);
+          set_credential_data (new_credential, "privacy_password",
+                               privacy_password ? privacy_password : "");
         }
       lsc_crypt_release (crypt_ctx);
 
@@ -42216,7 +42214,7 @@ copy_credential (const char* name, const char* comment,
  *         5 invalid certificate, 6 invalid auth_algorithm,
  *         7 invalid privacy_algorithm, 8 invalid private key,
  *         9 invalid public key,
- *         10 privacy password and algorithm must be both empty or non-empty,
+ *         10 privacy password must be empty if algorithm is empty
  *         99 permission denied,
  *         -1 internal error.
  */
@@ -42351,12 +42349,12 @@ modify_credential (const char *credential_id,
                 used_password = "";
             }
 
-          // password and algorithm must be both empty or non-empty
-          if ((strcmp (used_password, "") == 0)
-              == (strcmp (privacy_algorithm, "") == 0))
-            set_credential_privacy_algorithm (credential, privacy_algorithm);
-          else
+          // Privacy password must be empty if algorithm is empty
+          if (strcmp (privacy_algorithm, "") == 0
+              && strcmp (used_password, ""))
             ret = 10;
+          else
+            set_credential_privacy_algorithm (credential, privacy_algorithm);
 
           cleanup_iterator (&credential_iterator);
         }
@@ -42444,15 +42442,15 @@ modify_credential (const char *credential_id,
             {
               const char *used_algorithm;
 
-              // privacy_algorithm should be set above if given
+              // Privacy_algorithm should be set above if given
               used_algorithm
                 = credential_iterator_privacy_algorithm (&iterator);
               if (used_algorithm == NULL)
                 used_algorithm = "";
 
-              // password and algorithm must be both empty or non-empty
-              if ((strcmp (privacy_password, "") == 0)
-                  != (strcmp (used_algorithm, "") == 0))
+              // privacy password must be empty if algorithm is empty
+              if (strcmp (used_algorithm, "") == 0
+                  && strcmp (privacy_password, ""))
                 {
                   sql_rollback ();
                   cleanup_iterator (&iterator);

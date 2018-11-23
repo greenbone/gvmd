@@ -22504,13 +22504,6 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "Selected type requires an"
                                     " auth_algorithm"));
                 break;
-              case 13:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a"
-                                    " password in the privacy element"
-                                    " if an algorithm is given"));
-                break;
               case 14:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
@@ -26475,8 +26468,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 10:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Privacy algorithm and password"
-                                    " must be both empty or non-empty"));
+                                    "Privacy password must also be empty"
+                                    " if privacy algorithm is empty"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
