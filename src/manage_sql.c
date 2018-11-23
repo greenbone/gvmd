@@ -40,6 +40,7 @@
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
+#include "manage_sql_tickets.h"
 #include "manage_acl.h"
 #include "lsc_user.h"
 #include "sql.h"
@@ -58763,6 +58764,7 @@ int
 manage_restore (const char *id)
 {
   resource_t resource = 0;
+  int ret;
 
   assert (current_credentials.uuid);
 
@@ -58773,6 +58775,10 @@ manage_restore (const char *id)
       sql_rollback ();
       return 99;
     }
+
+  ret = restore_ticket (id);
+  if (ret != 2)
+    return ret;
 
   /* Agent. */
 

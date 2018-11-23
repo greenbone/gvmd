@@ -267,3 +267,66 @@ delete_ticket (const char *ticket_id, int ultimate)
   sql_commit ();
   return 0;
 }
+
+/**
+ * @brief Try restore a ticket.
+ *
+ * Ends transaction for caller before exiting.
+ *
+ * @param[in]  ticket_id  UUID of resource.
+ *
+ * @return 0 success, 1 fail because ticket is in use, 2 failed to find ticket,
+ *         3 predefined ticket, -1 error.
+ */
+int
+restore_ticket (const char *ticket_id)
+{
+  ticket_t ticket;
+
+  if (find_trash ("ticket", ticket_id, &ticket))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (ticket)
+    {
+      if (sql_int ("SELECT count(*) FROM tickets"
+                   " WHERE name ="
+                   " (SELECT name FROM tickets_trash WHERE id = %llu)"
+                   " AND " ACL_USER_OWNS () ";",
+                   ticket,
+                   current_credentials.uuid))
+        {
+          sql_rollback ();
+          return 3;
+        }
+
+      sql ("INSERT INTO tickets"
+           " (uuid, owner, name, comment, task, report, severity, host,"
+           "  location, solution_type, assigned_to, status, open_time,"
+           "  solved_time, solved_comment, confirmed_time, confirmed_result,"
+           "  closed_time, closed_rationale, orphaned_time, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, task, report, severity, host,"
+           "        location, solution_type, assigned_to, status, open_time,"
+           "        solved_time, solved_comment, confirmed_time,"
+           "        confirmed_result, closed_time, closed_rationale,"
+           "        orphaned_time, creation_time, modification_time"
+           " FROM tickets_trash WHERE id = %llu;",
+           ticket);
+
+      permissions_set_locations ("ticket", ticket,
+                                 sql_last_insert_id (),
+                                 LOCATION_TABLE);
+      tags_set_locations ("ticket", ticket,
+                          sql_last_insert_id (),
+                          LOCATION_TABLE);
+
+      sql ("DELETE FROM tickets_trash WHERE id = %llu;", ticket);
+      sql_commit ();
+      return 0;
+    }
+
+  return 2;
+}

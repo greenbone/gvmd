@@ -29,4 +29,7 @@
 int
 delete_ticket (const char *, int);
 
+int
+restore_ticket (const char *);
+
 #endif /* not _GVMD_MANAGE_SQL_TICKETS_H */
