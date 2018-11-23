@@ -607,8 +607,6 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17586", "Brute force attacks");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17584", "Brute force attacks");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17368", "Brute force attacks");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902799", "Databases");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.13859", "Denial of Service");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11762", "Firewalls");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80059", "Firewalls");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100083", "Firewalls");
@@ -626,7 +624,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10990", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901108", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900510", "FTP");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900600", "FTP");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108477", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801057", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900506", "FTP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10920", "Malware");
@@ -721,7 +719,6 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900330", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800329", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900482", "General");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900188", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100127", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900189", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100129", "General");
@@ -731,7 +728,6 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800029", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800257", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800108", "General");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100353", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.13849", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900191", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900490", "General");
@@ -792,7 +788,6 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103416", "SNMP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18528", "SMTP problems");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.91984", "Remote file access");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.12639", "Remote file access");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900602", "RPC");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11111", "RPC");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11239", "Web Servers");
@@ -800,10 +795,10 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80024", "Web Servers");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19689", "Web Servers");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10386", "Web Servers");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100075", "Useless services");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100080", "Useless services");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901206", "Useless services");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10942", "Useless services");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108479", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108102", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108478", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10942", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.12231", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80039", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10394", "Windows");
