@@ -16,7 +16,7 @@ Michael Wiegand <michael.wiegand@greenbone.net>
 Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 Copyright:
-Copyright (C) 2010, 2013 Greenbone Networks GmbH
+Copyright (C) 2010, 2013, 2018 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -55,8 +55,8 @@ digraph scan {
   overlap = "true";
   fontsize = 8.0;
   concentrate = "true";
-  root = "OpenVAS";
-  "OpenVAS" [label="OpenVAS", style=filled, color=chartreuse3];
+  root = "Greenbone";
+  "Greenbone" [label="Greenbone", style=filled, color=chartreuse3];
     <xsl:for-each select="host" >
       <xsl:variable name="current_host" select="ip"/>
       <xsl:choose>
@@ -97,7 +97,7 @@ digraph scan {
     <xsl:variable name="nexthop" select="substring-before($route, ',')" />
     <xsl:choose>
       <xsl:when test="contains($route, ',')">
-        "OpenVAS" -> "<xsl:value-of select="$nexthop"/>";
+        "Greenbone" -> "<xsl:value-of select="$nexthop"/>";
         <xsl:call-template name="trace_recurse">
           <xsl:with-param name="trace_list" select="$route"/>
         </xsl:call-template>
@@ -105,10 +105,10 @@ digraph scan {
       <xsl:otherwise>
         <xsl:choose>
           <xsl:when test="$route">
-            "OpenVAS" -> "<xsl:value-of select="$route"/>";
+            "Greenbone" -> "<xsl:value-of select="$route"/>";
           </xsl:when>
           <xsl:otherwise>
-            "OpenVAS" -> "127.0.0.1" [style=dashed];
+            "Greenbone" -> "127.0.0.1" [style=dashed];
           </xsl:otherwise>
         </xsl:choose>
       </xsl:otherwise>
