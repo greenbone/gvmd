@@ -29,9 +29,9 @@ import subprocess
 
 def smb_error_print (message, stdout, stderr):
   print (message, file=sys.stderr)
-  if (len (stderr) > 0):
+  if stderr:
     print (stderr, file=sys.stderr)
-  if (len (stdout) > 0):
+  if stdout:
     print (stdout, file=sys.stderr)
 
 def smb_call (auth_path, share, command):
@@ -41,7 +41,7 @@ def smb_call (auth_path, share, command):
   stderr = ''
   retry_regex = re.compile ("^Connection to .* failed")
 
-  while (retries > 0):
+  while retries > 0:
     retries = retries - 1
     try:
       p = subprocess.Popen(args,
@@ -59,12 +59,16 @@ def smb_call (auth_path, share, command):
     stdout = stdout_bytes.decode("UTF-8")
     stderr = stderr_bytes.decode("UTF-8")
     ret = p.returncode
-    if (ret == 0 or retry_regex.match (stdout) == None):
-      return p.returncode, stdout, stderr
-    if (ret < 0 or ret > 1):
+
+    # Unexpected exit code from smbclient
+    if ret != 0 and ret != 1:
       smb_error_print ("smbclient exited with code %d" % (ret),
                        stdout, stderr)
       sys.exit(1)
+
+    # Success or an error that is not expected to occur just temporarily
+    if ret == 0 or retry_regex.match (stdout) is None:
+      return p.returncode, stdout, stderr
 
   smb_error_print ("smbclient call failed:", stdout, stderr)
   sys.exit (1)
@@ -73,10 +77,10 @@ def smb_dir_exists (auth_path, share, check_dir):
   command = "cd \"%s\"" % (check_dir)
   rc, stdout, stderr = smb_call (auth_path, share, command)
 
-  if (rc == 0):
+  if rc == 0:
     return True
-  elif (stdout.endswith ("NT_STATUS_OBJECT_NAME_NOT_FOUND\n")
-        or stdout.endswith ("NT_STATUS_OBJECT_PATH_NOT_FOUND\n")):
+  elif stdout.endswith ("NT_STATUS_OBJECT_NAME_NOT_FOUND\n")
+       or stdout.endswith ("NT_STATUS_OBJECT_PATH_NOT_FOUND\n"):
     return False
   else:
     smb_error_print ("Error checking directory %s" % check_dir,
@@ -87,8 +91,8 @@ def smb_mkdir (auth_path, share, check_dir):
   command = "mkdir \"%s\"" % (check_dir)
   rc, stdout, stderr = smb_call (auth_path, share, command)
 
-  if (rc == 0):
-    if (not smb_dir_exists (auth_path, share, check_dir)):
+  if rc == 0:
+    if not smb_dir_exists (auth_path, share, check_dir):
       print ("Could not create directory %s" % check_dir, file=sys.stderr)
       sys.exit(1)
     else:
@@ -102,7 +106,7 @@ def smb_put (auth_path, share, report_path, dest_path):
   command = "put \"%s\" \"%s\"" % (report_path, dest_path)
   rc, stdout, stderr = smb_call (auth_path, share, command)
 
-  if (rc == 0):
+  if rc == 0:
     print ("Report copied to directory %s" % dest_path)
   else:
     smb_error_print ("Error copying to %s:" % dest_path,
@@ -110,7 +114,7 @@ def smb_put (auth_path, share, report_path, dest_path):
     sys.exit(1)
 
 def main ():
-  if (len(sys.argv) != 5):
+  if len(sys.argv) != 5:
     print ("usage: %s <share> <dest_path> <auth_path> <report_path>" % sys.argv[0], file=sys.stderr);
     sys.exit(1);
 
@@ -124,7 +128,7 @@ def main ():
   # get list of subdirectory paths
   dest_parts = dest_path.split('\\')
   dest_subpaths = [dest_parts[0]]
-  if (len (dest_parts) >= 2):
+  if len (dest_parts) >= 2:
     make_dest = dest_parts[0]
     for i in range(1, len(dest_parts)):
       dest_subpaths.append (make_dest)
@@ -133,12 +137,12 @@ def main ():
   # Find first existing path
   first_existing_path_index = -1
   for i in range (len(dest_subpaths)-1, 0, -1):
-    if (smb_dir_exists (auth_path, share, dest_subpaths[i])):
+    if smb_dir_exists (auth_path, share, dest_subpaths[i]):
       first_existing_path_index = i
       break;
 
   # Create missing directories
-  if (create_dirs):
+  if create_dirs:
     for i in range (first_existing_path_index + 1, len(dest_subpaths)):
       smb_mkdir (auth_path, share, dest_subpaths[i])
 
