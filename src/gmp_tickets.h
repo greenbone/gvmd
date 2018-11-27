@@ -34,4 +34,17 @@ get_tickets_start (const gchar **, const gchar **);
 void
 get_tickets_run (gmp_parser_t *, GError **);
 
+void
+create_ticket_start (gmp_parser_t *, const gchar **, const gchar **);
+
+void
+create_ticket_element_start (gmp_parser_t *, const gchar *, const gchar **,
+                             const gchar **);
+
+int
+create_ticket_element_end (gmp_parser_t *, GError **error, const gchar *);
+
+void
+create_ticket_element_text (const gchar *, gsize);
+
 #endif /* not _GVMD_GMP_TICKETS_H */

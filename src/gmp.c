@@ -5177,6 +5177,7 @@ typedef enum
   CLIENT_CREATE_TASK_SCHEDULE,
   CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
   CLIENT_CREATE_TASK_TARGET,
+  CLIENT_CREATE_TICKET,
   CLIENT_CREATE_USER,
   CLIENT_CREATE_USER_COMMENT,
   CLIENT_CREATE_USER_COPY,
@@ -5781,6 +5782,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_task_data->alerts = make_array ();
             create_task_data->groups = make_array ();
             set_client_state (CLIENT_CREATE_TASK);
+          }
+        else if (strcasecmp ("CREATE_TICKET", element_name) == 0)
+          {
+            create_ticket_start (gmp_parser, attribute_names,
+                                 attribute_values);
+            set_client_state (CLIENT_CREATE_TICKET);
           }
         else if (strcasecmp ("CREATE_USER", element_name) == 0)
           {
@@ -9198,6 +9205,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE);
         ELSE_ERROR_CREATE_TASK ();
+
+      case CLIENT_CREATE_TICKET:
+        create_ticket_element_start (gmp_parser, element_name,
+                                     attribute_names,
+                                     attribute_values);
+        break;
 
       case CLIENT_CREATE_USER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -25049,6 +25062,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE, VALUE);
 
+      case CLIENT_CREATE_TICKET:
+        if (create_ticket_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_CREATE_USER:
         {
           gchar *errdesc;
@@ -29622,6 +29640,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
               &create_task_data->schedule_periods);
+
+
+      case CLIENT_CREATE_TICKET:
+        create_ticket_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_CREATE_USER_COMMENT,
