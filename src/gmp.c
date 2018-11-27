@@ -22200,30 +22200,31 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires a community and/or"
                                     " username + password"));
+                break;
               case 12:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires an"
                                     " auth_algorithm"));
-              case 13:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a"
-                                    " password in a privacy element"));
+                break;
               case 14:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires an"
-                                    " algorithm in a privacy element"));
+                                    " algorithm in the privacy element"
+                                    " if a password is given"));
+                break;
               case 15:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "auth algorithm must be 'md5' or 'sha1'"));
+                break;
               case 16:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
-                                    "privacy algorithm must be 'aes'"
-                                    " or 'des'"));
+                                    "privacy algorithm must be 'aes', 'des'"
+                                    " or empty"));
+                break;
               case 17:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
@@ -26075,6 +26076,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
                                     "Invalid or empty public key"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 10:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Privacy password must also be empty"
+                                    " if privacy algorithm is empty"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");

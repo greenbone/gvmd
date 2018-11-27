@@ -14934,6 +14934,78 @@ migrate_198_to_199 ()
   return 0;
 }
 
+/**
+ * @brief UUID of 'Discovery' NVT selector, for migrator.
+ */
+#define MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "0d9a2738-8fe2-4e22-8f26-bb886179e759"
+
+/**
+ * @brief NVT selector type for "NVT" rule.
+ */
+#define MIGRATE_TO_200_NVT_SELECTOR_TYPE_NVT 2
+
+/**
+ * @brief Migrate the database from version 199 to version 200.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_199_to_200 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 199. */
+
+  if (manage_db_version () != 199)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Various NVTs were added to and removed from the Discovery scan config. */
+
+  sql ("DELETE FROM nvt_selectors WHERE "
+       " name='" MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "'"
+       " AND (family_or_nvt='1.3.6.1.4.1.25623.1.0.902799'"
+       "      OR family_or_nvt='1.3.6.1.4.1.25623.1.0.13859'"
+       "      OR family_or_nvt='1.3.6.1.4.1.25623.1.0.900188'"
+       "      OR family_or_nvt='1.3.6.1.4.1.25623.1.0.100353'"
+       "      OR family_or_nvt='1.3.6.1.4.1.25623.1.0.12639'"
+       "      OR family_or_nvt='1.3.6.1.4.1.25623.1.0.900600'"
+       "      OR family_or_nvt='1.3.6.1.4.1.25623.1.0.100075'"
+       "      OR family_or_nvt='1.3.6.1.4.1.25623.1.0.100080'"
+       "      OR family_or_nvt='1.3.6.1.4.1.25623.1.0.901206'"
+       "      OR family_or_nvt='1.3.6.1.4.1.25623.1.0.10942');");
+
+  sql ("INSERT into nvt_selectors"
+       " (name, exclude, type, family_or_nvt, family)"
+       " VALUES ('" MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "', 0,"
+       "         " G_STRINGIFY (MIGRATE_TO_200_NVT_SELECTOR_TYPE_NVT) ","
+       "         '1.3.6.1.4.1.25623.1.0.108477', 'FTP'),"
+       "        ('" MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "', 0,"
+       "         " G_STRINGIFY (MIGRATE_TO_200_NVT_SELECTOR_TYPE_NVT) ","
+       "         '1.3.6.1.4.1.25623.1.0.108479', 'Service detection'),"
+       "        ('" MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "', 0,"
+       "         " G_STRINGIFY (MIGRATE_TO_200_NVT_SELECTOR_TYPE_NVT) ","
+       "         '1.3.6.1.4.1.25623.1.0.108102', 'Service detection'),"
+       "        ('" MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "', 0,"
+       "         " G_STRINGIFY (MIGRATE_TO_200_NVT_SELECTOR_TYPE_NVT) ","
+       "         '1.3.6.1.4.1.25623.1.0.108478', 'Service detection'),"
+       "        ('" MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "', 0,"
+       "         " G_STRINGIFY (MIGRATE_TO_200_NVT_SELECTOR_TYPE_NVT) ","
+       "         '1.3.6.1.4.1.25623.1.0.10942', 'Service detection');");
+
+  /* Set the database version to 200. */
+
+  set_db_version (200);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15152,6 +15224,7 @@ static migrator_t database_migrators[]
     {197, migrate_196_to_197},
     {198, migrate_197_to_198},
     {199, migrate_198_to_199},
+    {200, migrate_199_to_200},
     /* End marker. */
     {-1, NULL}};
 
