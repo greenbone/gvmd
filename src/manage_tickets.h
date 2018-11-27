@@ -50,4 +50,13 @@ ticket_writable (ticket_t);
 int
 trash_ticket_writable (ticket_t);
 
+int
+create_ticket (const char *, const char *, ticket_t *);
+
+int
+copy_ticket (const char *, const char *, const char *, ticket_t *);
+
+char*
+ticket_uuid (ticket_t);
+
 #endif /* not _GVMD_MANAGE_TICKETS_H */

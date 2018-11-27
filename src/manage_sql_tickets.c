@@ -330,3 +330,111 @@ restore_ticket (const char *ticket_id)
 
   return 2;
 }
+
+/**
+ * @brief Create a ticket.
+ *
+ * @param[in]   name            Name of ticket.
+ * @param[in]   comment         Comment on ticket.
+ * @param[out]  ticket          Created ticket.
+ *
+ * @return 0 success, 1 ticket exists already, 2 error in host specification,
+ *         99 permission denied, -1 error.
+ */
+int
+create_ticket (const char *name, const char *comment,
+               ticket_t *ticket)
+{
+  gchar *quoted_name, *quoted_comment;
+  ticket_t new_ticket;
+
+  assert (current_credentials.uuid);
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("create_ticket") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (resource_with_name_exists (name, "ticket", 0))
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  quoted_name = sql_quote (name);
+
+  if (comment)
+    quoted_comment = sql_quote (comment);
+  else
+    quoted_comment = sql_quote ("");
+
+  sql ("INSERT INTO tickets"
+       " (uuid, name, owner, comment,"
+       "  creation_time, modification_time)"
+       " VALUES (make_uuid (), '%s',"
+       " (SELECT id FROM users WHERE users.uuid = '%s'),"
+       " '%s',"
+       " m_now (), m_now ());",
+        quoted_name, current_credentials.uuid,
+        quoted_comment);
+
+  new_ticket = sql_last_insert_id ();
+  if (ticket)
+    *ticket = new_ticket;
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Create a ticket from an existing ticket.
+ *
+ * @param[in]  name        Name of new ticket.  NULL to copy from existing.
+ * @param[in]  comment     Comment on new ticket.  NULL to copy from existing.
+ * @param[in]  ticket_id   UUID of existing ticket.
+ * @param[out] new_ticket  New ticket.
+ *
+ * @return 0 success, 1 ticket exists already, 2 failed to find existing
+ *         ticket, 99 permission denied, -1 error.
+ */
+int
+copy_ticket (const char *name, const char *comment, const char *ticket_id,
+             ticket_t *new_ticket)
+{
+  int ret;
+  ticket_t old_ticket;
+
+  assert (new_ticket);
+
+  ret = copy_resource ("ticket", name, comment, ticket_id,
+                       "task, report, severity, host, location, solution_type,"
+                       " assigned_to, status, open_time, solved_time,"
+                       " solved_comment, confirmed_time, confirmed_result,"
+                       " closed_time, closed_rationale, orphaned_time",
+                       1, new_ticket, &old_ticket);
+  if (ret)
+    return ret;
+
+  return 0;
+}
+
+/**
+ * @brief Return the UUID of a ticket.
+ *
+ * @param[in]  ticket  Ticket.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+ticket_uuid (ticket_t ticket)
+{
+  return sql_string ("SELECT uuid FROM tickets WHERE id = %llu;",
+                     ticket);
+}

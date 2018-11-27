@@ -768,7 +768,7 @@ gmp_command_takes_resource (const char* name)
  *
  * @return Whether resource with name exists.
  */
-static gboolean
+gboolean
 resource_with_name_exists (const char *name, const char *type,
                            resource_t resource)
 {
@@ -4855,7 +4855,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
  * @return 0 success, 1 resource exists already, 2 failed to find existing
  *         resource, 99 permission denied, -1 error.
  */
-static int
+int
 copy_resource (const char *type, const char *name, const char *comment,
                const char *resource_id, const char *columns,
                int make_name_unique, resource_t* new_resource,

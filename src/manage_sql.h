@@ -529,4 +529,11 @@ permissions_set_locations (const char *, resource_t, resource_t, int);
 void
 permissions_set_orphans (const char *, resource_t, int);
 
+int
+copy_resource (const char *, const char *, const char *, const char *,
+               const char *, int, resource_t *, resource_t *);
+
+gboolean
+resource_with_name_exists (const char *, const char *, resource_t);
+
 #endif /* not _GVMD_MANAGE_SQL_H */
