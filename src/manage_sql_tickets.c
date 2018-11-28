@@ -271,6 +271,45 @@ DEF_ACCESS (ticket_iterator_solved_comment, GET_ITERATOR_COLUMN_COUNT + 8);
 DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 9);
 
 /**
+ * @brief Initialise a ticket result iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  ticket_id   UUID of ticket.
+ *
+ * @return 0 success, 1 failed to find ticket, -1 error.
+ */
+int
+init_ticket_result_iterator (iterator_t *iterator, const gchar *ticket_id)
+{
+  ticket_t ticket;
+
+  if (find_resource_with_permission ("ticket", ticket_id, &ticket, NULL, 0))
+    return -1;
+
+  if (ticket == 0)
+    return 1;
+
+  init_iterator (iterator,
+                 "SELECT result,"
+                 "       ticket,"
+                 "       (SELECT uuid FROM results WHERE id = result)"
+                 " FROM ticket_results"
+                 " WHERE ticket = %llu"
+                 " ORDER BY id;",
+                 ticket);
+  return 0;
+}
+
+/**
+ * @brief Get column value from a ticket result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_result_iterator_result_id, 2);
+
+/**
  * @brief Return whether a ticket is in use.
  *
  * @param[in]  ticket  Ticket.
@@ -484,17 +523,19 @@ restore_ticket (const char *ticket_id)
  * @param[in]   comment         Comment on ticket.
  * @param[out]  ticket          Created ticket.
  *
- * @return 0 success, 1 ticket exists already, 2 error in host specification,
+ * @return 0 success, 1 ticket exists already, 2 failed to find result,
  *         99 permission denied, -1 error.
  */
 int
-create_ticket (const char *name, const char *comment,
+create_ticket (const char *name, const char *comment, const char *result_id,
                ticket_t *ticket)
 {
   gchar *quoted_name, *quoted_comment;
   ticket_t new_ticket;
+  result_t result;
 
   assert (current_credentials.uuid);
+  assert (result_id);
 
   sql_begin_immediate ();
 
@@ -508,6 +549,18 @@ create_ticket (const char *name, const char *comment,
     {
       sql_rollback ();
       return 1;
+    }
+
+  if (find_result_with_permission (result_id, &result, NULL))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (result == 0)
+    {
+      sql_rollback ();
+      return 2;
     }
 
   quoted_name = sql_quote (name);
@@ -530,6 +583,10 @@ create_ticket (const char *name, const char *comment,
   new_ticket = sql_last_insert_id ();
   if (ticket)
     *ticket = new_ticket;
+
+  sql ("INSERT INTO ticket_results (ticket, result) VALUES (%llu, %llu)",
+       new_ticket,
+       result);
 
   g_free (quoted_comment);
   g_free (quoted_name);

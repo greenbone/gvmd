@@ -165,6 +165,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
   while (1)
     {
       const char *host;
+      iterator_t results;
 
       ret = get_next (&tickets, &get_tickets_data.get, &first,
                       &count, init_ticket_iterator);
@@ -203,6 +204,17 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
           SENDF_TO_CLIENT_OR_FAIL ("<closed_comment>%s</closed_comment>",
                                    ticket_iterator_closed_comment (&tickets));
         }
+
+      if (init_ticket_result_iterator (&results, get_iterator_uuid (&tickets)))
+        {
+          internal_error_send_to_client (error);
+          get_tickets_reset ();
+          return;
+        }
+      while (next (&results))
+        SENDF_TO_CLIENT_OR_FAIL ("<result id=\"%s\"/>",
+                                 ticket_result_iterator_result_id (&results));
+      cleanup_iterator (&results);
 
       SEND_TO_CLIENT_OR_FAIL ("</ticket>");
       count++;
@@ -316,8 +328,9 @@ create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, copy, name, comment;
+  entity_t entity, copy, name, comment, result;
   ticket_t new_ticket;
+  const char *result_id;
 
   entity = (entity_t) create_ticket_data.context->first->data;
 
@@ -376,6 +389,18 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   comment = entity_child (entity, "comment");
+  result = entity_child (entity, "result");
+
+  if (result == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_ticket",
+                          "CREATE_TICKET requires a RESULT"));
+      create_ticket_reset (create_ticket_data);
+      return;
+    }
+
+  result_id = entity_attribute (result, "id");
 
   if (name == NULL)
     SEND_TO_CLIENT_OR_FAIL
@@ -386,28 +411,18 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
      (XML_ERROR_SYNTAX ("create_ticket",
                         "CREATE_TICKET name must be at"
                         " least one character long"));
+  else if ((result_id == NULL) || (strlen (result_id) == 0))
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("create_ticket",
+                        "CREATE_TICKET RESULT must have an id"
+                        " attribute"));
   else switch (create_ticket
                 (entity_text (name),
                  comment ? entity_text (comment) : "",
+                 result_id,
                  &new_ticket))
     {
-      case 1:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("create_ticket",
-                            "Ticket exists already"));
-        log_event_fail ("ticket", "Ticket", NULL, "created");
-        break;
-      case 99:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("create_ticket",
-                            "Permission denied"));
-        log_event_fail ("ticket", "Ticket", NULL, "created");
-        break;
-      case -1:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_ticket"));
-        log_event_fail ("ticket", "Ticket", NULL, "created");
-        break;
-      default:
+      case 0:
         {
           char *uuid = ticket_uuid (new_ticket);
           SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_ticket"),
@@ -416,6 +431,32 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
           free (uuid);
           break;
         }
+      case 1:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_ticket",
+                            "Ticket exists already"));
+        log_event_fail ("ticket", "Ticket", NULL, "created");
+        break;
+      case 2:
+        log_event_fail ("ticket", "Ticket", NULL, "created");
+        if (send_find_error_to_client ("create_ticket", "result", result_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_ticket",
+                            "Permission denied"));
+        log_event_fail ("ticket", "Ticket", NULL, "created");
+        break;
+      case -1:
+      default:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_ticket"));
+        log_event_fail ("ticket", "Ticket", NULL, "created");
+        break;
     }
 
   create_ticket_reset (create_ticket_data);

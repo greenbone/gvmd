@@ -57,6 +57,12 @@ const char*
 ticket_iterator_closed_comment (iterator_t*);
 
 int
+init_ticket_result_iterator (iterator_t *, const gchar *);
+
+const char*
+ticket_result_iterator_result_id (iterator_t*);
+
+int
 ticket_in_use (ticket_t);
 
 int
@@ -69,7 +75,7 @@ int
 trash_ticket_writable (ticket_t);
 
 int
-create_ticket (const char *, const char *, ticket_t *);
+create_ticket (const char *, const char *, const char *, ticket_t *);
 
 int
 copy_ticket (const char *, const char *, const char *, ticket_t *);
