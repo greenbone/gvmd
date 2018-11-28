@@ -164,7 +164,6 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START ("ticket");
   while (1)
     {
-      const char *host;
       iterator_t results;
 
       ret = get_next (&tickets, &get_tickets_data.get, &first,
@@ -180,12 +179,20 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
       SEND_GET_COMMON (ticket, &get_tickets_data.get, &tickets);
 
-      host = ticket_iterator_host (&tickets);
-
-      SENDF_TO_CLIENT_OR_FAIL ("<host>%s</host>"
+      SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\"/>"
+                               "<report id=\"%s\"/>"
+                               "<severity>%1.1f</severity>"
+                               "<host>%s</host>"
+                               "<location>%s</location>"
+                               "<solution_type>%s</solution_type>"
                                "<status>%s</status>"
                                "<open_time>%s</open_time>",
-                               host,
+                               ticket_iterator_task_id (&tickets),
+                               ticket_iterator_report_id (&tickets),
+                               ticket_iterator_severity (&tickets),
+                               ticket_iterator_host (&tickets),
+                               ticket_iterator_location (&tickets),
+                               ticket_iterator_solution_type (&tickets),
                                ticket_iterator_status (&tickets),
                                ticket_iterator_open_time (&tickets));
 

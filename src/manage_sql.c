@@ -24075,6 +24075,16 @@ result_iterator_level (iterator_t *iterator)
 }
 
 /**
+ * @brief Get the solution type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution type of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 16);
+
+/**
  * @brief Get the qod from a result iterator.
  *
  * @param[in]  iterator  Iterator.

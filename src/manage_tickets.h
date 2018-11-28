@@ -36,7 +36,22 @@ int
 init_ticket_iterator (iterator_t *, const get_data_t *);
 
 const char*
+ticket_iterator_task_id (iterator_t*);
+
+const char*
+ticket_iterator_report_id (iterator_t*);
+
+double
+ticket_iterator_severity (iterator_t*);
+
+const char*
 ticket_iterator_host (iterator_t*);
+
+const char*
+ticket_iterator_location (iterator_t*);
+
+const char*
+ticket_iterator_solution_type (iterator_t*);
 
 const char*
 ticket_iterator_status (iterator_t*);

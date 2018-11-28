@@ -122,7 +122,20 @@ ticket_status_name (ticket_status_t status)
 #define TICKET_ITERATOR_COLUMNS                             \
  {                                                          \
    GET_ITERATOR_COLUMNS (tickets),                          \
+   {                                                        \
+     "(SELECT uuid FROM tasks WHERE id = task)",            \
+     NULL,                                                  \
+     KEYWORD_TYPE_STRING                                    \
+   },                                                       \
+   {                                                        \
+     "(SELECT uuid FROM reports WHERE id = report)",        \
+     NULL,                                                  \
+    KEYWORD_TYPE_STRING                                     \
+   },                                                       \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },               \
    { "host", NULL, KEYWORD_TYPE_STRING },                   \
+   { "location", NULL, KEYWORD_TYPE_STRING },               \
+   { "solution_type", NULL, KEYWORD_TYPE_STRING },          \
    { "status", NULL, KEYWORD_TYPE_STRING },                 \
    { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },   \
    { "open_time", "opened", KEYWORD_TYPE_INTEGER },         \
@@ -138,20 +151,33 @@ ticket_status_name (ticket_status_t status)
 /**
  * @brief Ticket iterator columns for trash case.
  */
-#define TICKET_ITERATOR_TRASH_COLUMNS                               \
- {                                                                  \
-   GET_ITERATOR_COLUMNS (tickets_trash),                            \
-   { "host", NULL, KEYWORD_TYPE_STRING },                           \
-   { "status", NULL, KEYWORD_TYPE_STRING },                         \
-   { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },           \
-   { "open_time", "opened", KEYWORD_TYPE_INTEGER },                 \
-   { "iso_time (solved_time)", NULL, KEYWORD_TYPE_STRING },         \
-   { "solved_time", "solved", KEYWORD_TYPE_INTEGER },               \
-   { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING },         \
-   { "closed_time", "closed", KEYWORD_TYPE_INTEGER },               \
-   { "solved_comment", NULL, KEYWORD_TYPE_STRING },                 \
-   { "closed_comment", NULL, KEYWORD_TYPE_STRING },                 \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
+#define TICKET_ITERATOR_TRASH_COLUMNS                       \
+ {                                                          \
+   GET_ITERATOR_COLUMNS (tickets_trash),                    \
+   {                                                        \
+     "(SELECT uuid FROM tasks WHERE id = task)",            \
+     NULL,                                                  \
+     KEYWORD_TYPE_STRING                                    \
+   },                                                       \
+   {                                                        \
+     "(SELECT uuid FROM reports WHERE id = report)",        \
+     NULL,                                                  \
+    KEYWORD_TYPE_STRING                                     \
+   },                                                       \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },               \
+   { "host", NULL, KEYWORD_TYPE_STRING },                   \
+   { "location", NULL, KEYWORD_TYPE_STRING },               \
+   { "solution_type", NULL, KEYWORD_TYPE_STRING },          \
+   { "status", NULL, KEYWORD_TYPE_STRING },                 \
+   { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },   \
+   { "open_time", "opened", KEYWORD_TYPE_INTEGER },         \
+   { "iso_time (solved_time)", NULL, KEYWORD_TYPE_STRING }, \
+   { "solved_time", "solved", KEYWORD_TYPE_INTEGER },       \
+   { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING }, \
+   { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
+   { "solved_comment", NULL, KEYWORD_TYPE_STRING },         \
+   { "closed_comment", NULL, KEYWORD_TYPE_STRING },         \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                     \
  }
 
 /**
@@ -201,13 +227,63 @@ init_ticket_iterator (iterator_t *iterator, const get_data_t *get)
 }
 
 /**
- * @brief Get the host from a ticket iterator.
+ * @brief Get a column value from a ticket iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Host of the ticket or NULL if iteration is complete.
+ * @return Value of the column or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_host, GET_ITERATOR_COLUMN_COUNT);
+DEF_ACCESS (ticket_iterator_task_id, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get a column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_report_id, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get a column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column, or SEVERITY_MISSING if iteration is complete.
+ */
+double
+ticket_iterator_severity (iterator_t* iterator)
+{
+  if (iterator->done) return SEVERITY_MISSING;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
+}
+
+/**
+ * @brief Get a column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_host, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get a column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_location, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get a column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the status from a ticket iterator.
@@ -221,7 +297,7 @@ ticket_iterator_status (iterator_t* iterator)
 {
   int status;
   if (iterator->done) return NULL;
-  status = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+  status = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
   return ticket_status_name (status);
 }
 
@@ -232,7 +308,7 @@ ticket_iterator_status (iterator_t* iterator)
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_open_time, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (ticket_iterator_open_time, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -241,7 +317,7 @@ DEF_ACCESS (ticket_iterator_open_time, GET_ITERATOR_COLUMN_COUNT + 2);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_solved_time, GET_ITERATOR_COLUMN_COUNT + 4);
+DEF_ACCESS (ticket_iterator_solved_time, GET_ITERATOR_COLUMN_COUNT + 9);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -250,7 +326,7 @@ DEF_ACCESS (ticket_iterator_solved_time, GET_ITERATOR_COLUMN_COUNT + 4);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_closed_time, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (ticket_iterator_closed_time, GET_ITERATOR_COLUMN_COUNT + 11);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -259,7 +335,7 @@ DEF_ACCESS (ticket_iterator_closed_time, GET_ITERATOR_COLUMN_COUNT + 6);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_solved_comment, GET_ITERATOR_COLUMN_COUNT + 8);
+DEF_ACCESS (ticket_iterator_solved_comment, GET_ITERATOR_COLUMN_COUNT + 13);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -268,7 +344,7 @@ DEF_ACCESS (ticket_iterator_solved_comment, GET_ITERATOR_COLUMN_COUNT + 8);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 9);
+DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 14);
 
 /**
  * @brief Initialise a ticket result iterator.
@@ -523,16 +599,18 @@ restore_ticket (const char *ticket_id)
  * @param[in]   comment         Comment on ticket.
  * @param[out]  ticket          Created ticket.
  *
- * @return 0 success, 1 ticket exists already, 2 failed to find result,
+ * @return 0 success, 2 failed to find result,
  *         99 permission denied, -1 error.
  */
 int
 create_ticket (const char *name, const char *comment, const char *result_id,
                ticket_t *ticket)
 {
-  gchar *quoted_name, *quoted_comment;
   ticket_t new_ticket;
-  result_t result;
+  iterator_t results;
+  get_data_t get;
+  gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_location;
+  gchar *quoted_solution;
 
   assert (current_credentials.uuid);
   assert (result_id);
@@ -545,40 +623,61 @@ create_ticket (const char *name, const char *comment, const char *result_id,
       return 99;
     }
 
-  if (resource_with_name_exists (name, "ticket", 0))
+  memset (&get, 0, sizeof (get));
+  get.id = g_strdup (result_id);
+  switch (init_result_get_iterator (&results, &get, 0, NULL, NULL))
     {
-      sql_rollback ();
-      return 1;
+      case 0:
+        break;
+      case 1:
+        g_free (get.id);
+        sql_rollback ();
+        return 2;
+      default:
+        g_free (get.id);
+        sql_rollback ();
+        return -1;
     }
+  g_free (get.id);
 
-  if (find_result_with_permission (result_id, &result, NULL))
+  if (next (&results) == 0)
     {
       sql_rollback ();
       return -1;
     }
-
-  if (result == 0)
-    {
-      sql_rollback ();
-      return 2;
-    }
-
-  quoted_name = sql_quote (name);
 
   if (comment)
     quoted_comment = sql_quote (comment);
   else
     quoted_comment = sql_quote ("");
 
+  quoted_name = sql_quote (result_iterator_nvt_name (&results) ?: "");
+  quoted_host = sql_quote (result_iterator_host (&results) ?: "");
+  quoted_location = sql_quote (result_iterator_port (&results) ?: "");
+  quoted_solution = sql_quote (result_iterator_solution_type (&results) ?: "");
+
   sql ("INSERT INTO tickets"
-       " (uuid, name, owner, comment, status,"
-       "  open_time, creation_time, modification_time)"
+       " (uuid, name, owner, comment, task, report, severity, host, location,"
+       "  solution_type, status, open_time, creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', %i,"
-       " m_now (), m_now (), m_now ());",
-        quoted_name, current_credentials.uuid,
-        quoted_comment, TICKET_STATUS_OPEN);
+       " '%s', %llu, %llu, %0.1f, '%s', '%s', '%s',"
+       " %i, m_now (), m_now (), m_now ());",
+        quoted_name,
+        current_credentials.uuid,
+        quoted_comment,
+        result_iterator_task (&results),
+        result_iterator_report (&results),
+        result_iterator_severity_double (&results),
+        quoted_host,
+        quoted_location,
+        quoted_solution,
+        TICKET_STATUS_OPEN);
+
+  g_free (quoted_location);
+  g_free (quoted_host);
+  g_free (quoted_comment);
+  g_free (quoted_name);
 
   new_ticket = sql_last_insert_id ();
   if (ticket)
@@ -586,10 +685,9 @@ create_ticket (const char *name, const char *comment, const char *result_id,
 
   sql ("INSERT INTO ticket_results (ticket, result) VALUES (%llu, %llu)",
        new_ticket,
-       result);
+       result_iterator_result (&results));
 
-  g_free (quoted_comment);
-  g_free (quoted_name);
+  cleanup_iterator (&results);
 
   sql_commit ();
 
