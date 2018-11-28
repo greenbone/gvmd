@@ -182,9 +182,19 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
       host = ticket_iterator_host (&tickets);
 
       SENDF_TO_CLIENT_OR_FAIL ("<host>%s</host>"
-                               "<status>%s</status>",
+                               "<status>%s</status>"
+                               "<open_time>%s</open_time>",
                                host,
-                               ticket_iterator_status (&tickets));
+                               ticket_iterator_status (&tickets),
+                               ticket_iterator_open_time (&tickets));
+
+      if (ticket_iterator_solved_time (&tickets))
+        SENDF_TO_CLIENT_OR_FAIL ("<solved_time>%s</solved_time>",
+                                 ticket_iterator_solved_time (&tickets));
+
+      if (ticket_iterator_closed_time (&tickets))
+        SENDF_TO_CLIENT_OR_FAIL ("<closed_time>%s</closed_time>",
+                                 ticket_iterator_closed_time (&tickets));
 
       SEND_TO_CLIENT_OR_FAIL ("</ticket>");
       count++;

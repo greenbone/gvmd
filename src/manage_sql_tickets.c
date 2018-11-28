@@ -112,7 +112,8 @@ ticket_status_name (ticket_status_t status)
  * @brief Filter columns for ticket iterator.
  */
 #define TICKET_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "host", "status",                              \
+ { GET_ITERATOR_FILTER_COLUMNS, "host", "status", "opened", "solved",          \
+   "closed",                                                                   \
    NULL }
 
 /**
@@ -123,6 +124,12 @@ ticket_status_name (ticket_status_t status)
    GET_ITERATOR_COLUMNS (tickets),                          \
    { "host", NULL, KEYWORD_TYPE_STRING },                   \
    { "status", NULL, KEYWORD_TYPE_STRING },                 \
+   { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },   \
+   { "open_time", "opened", KEYWORD_TYPE_INTEGER },         \
+   { "iso_time (solved_time)", NULL, KEYWORD_TYPE_STRING }, \
+   { "solved_time", "solved", KEYWORD_TYPE_INTEGER },       \
+   { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING }, \
+   { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                     \
  }
 
@@ -134,6 +141,12 @@ ticket_status_name (ticket_status_t status)
    GET_ITERATOR_COLUMNS (tickets_trash),                            \
    { "host", NULL, KEYWORD_TYPE_STRING },                           \
    { "status", NULL, KEYWORD_TYPE_STRING },                         \
+   { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },           \
+   { "open_time", "opened", KEYWORD_TYPE_INTEGER },                 \
+   { "iso_time (solved_time)", NULL, KEYWORD_TYPE_STRING },         \
+   { "solved_time", "solved", KEYWORD_TYPE_INTEGER },               \
+   { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING },         \
+   { "closed_time", "closed", KEYWORD_TYPE_INTEGER },               \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
  }
 
@@ -207,6 +220,33 @@ ticket_iterator_status (iterator_t* iterator)
   status = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
   return ticket_status_name (status);
 }
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_open_time, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_solved_time, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_closed_time, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Return whether a ticket is in use.
@@ -457,11 +497,11 @@ create_ticket (const char *name, const char *comment,
 
   sql ("INSERT INTO tickets"
        " (uuid, name, owner, comment, status,"
-       "  creation_time, modification_time)"
+       "  open_time, creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
        " '%s', %i,"
-       " m_now (), m_now ());",
+       " m_now (), m_now (), m_now ());",
         quoted_name, current_credentials.uuid,
         quoted_comment, TICKET_STATUS_OPEN);
 
@@ -609,21 +649,32 @@ modify_ticket (const gchar *ticket_id, const gchar *name, const gchar *comment,
   if (status_name)
     {
       ticket_status_t status;
+      const gchar *time_column;
 
       status = ticket_status_integer (status_name);
-      if (status != TICKET_STATUS_OPEN
-          && status != TICKET_STATUS_SOLVED
-          && status != TICKET_STATUS_CLOSED)
+      switch (status)
         {
-          sql_rollback ();
-          return 4;
+          case TICKET_STATUS_OPEN:
+            time_column = "open_time";
+            break;
+          case TICKET_STATUS_SOLVED:
+            time_column = "solved_time";
+            break;
+          case TICKET_STATUS_CLOSED:
+            time_column = "closed_time";
+            break;
+          default:
+            sql_rollback ();
+            return 4;
         }
 
       sql ("UPDATE tickets SET"
            " status = %i,"
-           " modification_time = m_now ()"
+           " modification_time = m_now (),"
+           " %s = m_now ()"
            " WHERE id = %llu;",
            status,
+           time_column,
            ticket);
     }
 

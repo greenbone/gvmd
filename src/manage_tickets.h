@@ -41,6 +41,15 @@ ticket_iterator_host (iterator_t*);
 const char*
 ticket_iterator_status (iterator_t*);
 
+const char*
+ticket_iterator_open_time (iterator_t*);
+
+const char*
+ticket_iterator_solved_time (iterator_t*);
+
+const char*
+ticket_iterator_closed_time (iterator_t*);
+
 int
 ticket_in_use (ticket_t);
 
