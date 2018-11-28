@@ -36,6 +36,8 @@
 #include "manage_sql.h"
 #include "sql.h"
 
+#include <string.h>
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -437,4 +439,89 @@ ticket_uuid (ticket_t ticket)
 {
   return sql_string ("SELECT uuid FROM tickets WHERE id = %llu;",
                      ticket);
+}
+
+/**
+ * @brief Modify a ticket.
+ *
+ * @param[in]   ticket_id       UUID of ticket.
+ * @param[in]   name            Name of ticket.
+ * @param[in]   comment         Comment on ticket.
+ *
+ * @return 0 success, 1 ticket exists already, 2 failed to find ticket,
+ *         3 zero length name, 99 permission denied, -1 error.
+ */
+int
+modify_ticket (const char *ticket_id, const char *name, const char *comment)
+{
+  ticket_t ticket;
+
+  assert (ticket_id);
+
+  sql_begin_immediate ();
+
+  assert (current_credentials.uuid);
+
+  if (acl_user_may ("modify_ticket") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  ticket = 0;
+  if (find_resource_with_permission ("ticket", ticket_id, &ticket,
+                                     "modify_ticket", 0))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (ticket == 0)
+    {
+      sql_rollback ();
+      return 9;
+    }
+
+  if (name)
+    {
+      gchar *quoted_name;
+
+      if (strlen (name) == 0)
+        {
+          sql_rollback ();
+          return 11;
+        }
+      if (resource_with_name_exists (name, "ticket", ticket))
+        {
+          sql_rollback ();
+          return 1;
+        }
+
+      quoted_name = sql_quote (name);
+      sql ("UPDATE tickets SET"
+           " name = '%s',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           quoted_name,
+           ticket);
+      g_free (quoted_name);
+    }
+
+  if (comment)
+    {
+      gchar *quoted_comment;
+
+      quoted_comment = sql_quote (comment);
+      sql ("UPDATE tickets SET"
+           " comment = '%s',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           quoted_comment,
+           ticket);
+      g_free (quoted_comment);
+    }
+
+  sql_commit ();
+
+  return 0;
 }

@@ -59,4 +59,7 @@ copy_ticket (const char *, const char *, const char *, ticket_t *);
 char*
 ticket_uuid (ticket_t);
 
+int
+modify_ticket (const char *, const char *, const char *);
+
 #endif /* not _GVMD_MANAGE_TICKETS_H */
