@@ -50,6 +50,12 @@ ticket_iterator_solved_time (iterator_t*);
 const char*
 ticket_iterator_closed_time (iterator_t*);
 
+const char*
+ticket_iterator_solved_comment (iterator_t*);
+
+const char*
+ticket_iterator_closed_comment (iterator_t*);
+
 int
 ticket_in_use (ticket_t);
 
@@ -72,6 +78,7 @@ char*
 ticket_uuid (ticket_t);
 
 int
-modify_ticket (const gchar *, const gchar *, const gchar *, const gchar *);
+modify_ticket (const gchar *, const gchar *, const gchar *, const gchar *,
+               const gchar *, const gchar *);
 
 #endif /* not _GVMD_MANAGE_TICKETS_H */

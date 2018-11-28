@@ -130,6 +130,8 @@ ticket_status_name (ticket_status_t status)
    { "solved_time", "solved", KEYWORD_TYPE_INTEGER },       \
    { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING }, \
    { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
+   { "solved_comment", NULL, KEYWORD_TYPE_STRING },         \
+   { "closed_comment", NULL, KEYWORD_TYPE_STRING },         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                     \
  }
 
@@ -147,6 +149,8 @@ ticket_status_name (ticket_status_t status)
    { "solved_time", "solved", KEYWORD_TYPE_INTEGER },               \
    { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING },         \
    { "closed_time", "closed", KEYWORD_TYPE_INTEGER },               \
+   { "solved_comment", NULL, KEYWORD_TYPE_STRING },                 \
+   { "closed_comment", NULL, KEYWORD_TYPE_STRING },                 \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
  }
 
@@ -247,6 +251,24 @@ DEF_ACCESS (ticket_iterator_solved_time, GET_ITERATOR_COLUMN_COUNT + 4);
  * @return Iterator column value or NULL if iteration is complete.
  */
 DEF_ACCESS (ticket_iterator_closed_time, GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_solved_comment, GET_ITERATOR_COLUMN_COUNT + 8);
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 9);
 
 /**
  * @brief Return whether a ticket is in use.
@@ -363,12 +385,12 @@ delete_ticket (const char *ticket_id, int ultimate)
            " (uuid, owner, name, comment, task, report, severity, host,"
            "  location, solution_type, assigned_to, status, open_time,"
            "  solved_time, solved_comment, confirmed_time, confirmed_result,"
-           "  closed_time, closed_rationale, orphaned_time, creation_time,"
+           "  closed_time, closed_comment, orphaned_time, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, task, report, severity, host,"
            "        location, solution_type, assigned_to, status, open_time,"
            "        solved_time, solved_comment, confirmed_time,"
-           "        confirmed_result, closed_time, closed_rationale,"
+           "        confirmed_result, closed_time, closed_comment,"
            "        orphaned_time, creation_time, modification_time"
            " FROM tickets WHERE id = %llu;",
            ticket);
@@ -430,12 +452,12 @@ restore_ticket (const char *ticket_id)
            " (uuid, owner, name, comment, task, report, severity, host,"
            "  location, solution_type, assigned_to, status, open_time,"
            "  solved_time, solved_comment, confirmed_time, confirmed_result,"
-           "  closed_time, closed_rationale, orphaned_time, creation_time,"
+           "  closed_time, closed_comment, orphaned_time, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, task, report, severity, host,"
            "        location, solution_type, assigned_to, status, open_time,"
            "        solved_time, solved_comment, confirmed_time,"
-           "        confirmed_result, closed_time, closed_rationale,"
+           "        confirmed_result, closed_time, closed_comment,"
            "        orphaned_time, creation_time, modification_time"
            " FROM tickets_trash WHERE id = %llu;",
            ticket);
@@ -541,7 +563,7 @@ copy_ticket (const char *name, const char *comment, const char *ticket_id,
                        "task, report, severity, host, location, solution_type,"
                        " assigned_to, status, open_time, solved_time,"
                        " solved_comment, confirmed_time, confirmed_result,"
-                       " closed_time, closed_rationale, orphaned_time",
+                       " closed_time, closed_comment, orphaned_time",
                        1, new_ticket, &old_ticket);
   if (ret)
     return ret;
@@ -570,14 +592,18 @@ ticket_uuid (ticket_t ticket)
  * @param[in]   name            Name of ticket.
  * @param[in]   comment         Comment on ticket.
  * @param[in]   status_name     Status of ticket.
+ * @param[in]   solved_comment  Comment if status is 'Solved'.
+ * @param[in]   closed_comment  Comment if status is 'Closed'.
  *
  * @return 0 success, 1 ticket exists already, 2 failed to find ticket,
- *         3 zero length name, 4 error in status, 99 permission denied,
- *         -1 error.
+ *         3 zero length name, 4 error in status, 5 Solved status requires
+ *         a solved_comment, 6 Closed status requires a closed_comment,
+ *         99 permission denied, -1 error.
  */
 int
 modify_ticket (const gchar *ticket_id, const gchar *name, const gchar *comment,
-               const gchar *status_name)
+               const gchar *status_name, const gchar *solved_comment,
+               const gchar *closed_comment)
 {
   ticket_t ticket;
 
@@ -658,10 +684,40 @@ modify_ticket (const gchar *ticket_id, const gchar *name, const gchar *comment,
             time_column = "open_time";
             break;
           case TICKET_STATUS_SOLVED:
-            time_column = "solved_time";
+            {
+              gchar *quoted_comment;
+
+              time_column = "solved_time";
+              if ((solved_comment == NULL) || (strlen (solved_comment) == 0))
+                {
+                  sql_rollback ();
+                  return 5;
+                }
+              quoted_comment = sql_quote (solved_comment);
+              sql ("UPDATE tickets SET solved_comment = '%s'"
+                   " WHERE id = %llu;",
+                   quoted_comment,
+                   ticket);
+              g_free (quoted_comment);
+            }
             break;
           case TICKET_STATUS_CLOSED:
-            time_column = "closed_time";
+            {
+              gchar *quoted_comment;
+
+              time_column = "closed_time";
+              if ((closed_comment == NULL) || (strlen (closed_comment) == 0))
+                {
+                  sql_rollback ();
+                  return 6;
+                }
+              quoted_comment = sql_quote (closed_comment);
+              sql ("UPDATE tickets SET closed_comment = '%s'"
+                   " WHERE id = %llu;",
+                   quoted_comment,
+                   ticket);
+              g_free (quoted_comment);
+            }
             break;
           default:
             sql_rollback ();

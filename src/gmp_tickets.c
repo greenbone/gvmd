@@ -189,12 +189,20 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                ticket_iterator_open_time (&tickets));
 
       if (ticket_iterator_solved_time (&tickets))
-        SENDF_TO_CLIENT_OR_FAIL ("<solved_time>%s</solved_time>",
-                                 ticket_iterator_solved_time (&tickets));
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<solved_time>%s</solved_time>",
+                                   ticket_iterator_solved_time (&tickets));
+          SENDF_TO_CLIENT_OR_FAIL ("<solved_comment>%s</solved_comment>",
+                                   ticket_iterator_solved_comment (&tickets));
+        }
 
       if (ticket_iterator_closed_time (&tickets))
-        SENDF_TO_CLIENT_OR_FAIL ("<closed_time>%s</closed_time>",
-                                 ticket_iterator_closed_time (&tickets));
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<closed_time>%s</closed_time>",
+                                   ticket_iterator_closed_time (&tickets));
+          SENDF_TO_CLIENT_OR_FAIL ("<closed_comment>%s</closed_comment>",
+                                   ticket_iterator_closed_comment (&tickets));
+        }
 
       SEND_TO_CLIENT_OR_FAIL ("</ticket>");
       count++;
@@ -527,7 +535,7 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, name, comment, status;
+  entity_t entity, name, comment, status, solved_comment, closed_comment;
   const char *ticket_id;
 
   entity = (entity_t) modify_ticket_data.context->first->data;
@@ -537,6 +545,8 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
   name = entity_child (entity, "name");
   comment = entity_child (entity, "comment");
   status = entity_child (entity, "status");
+  solved_comment = entity_child (entity, "solved_comment");
+  closed_comment = entity_child (entity, "closed_comment");
 
   if (ticket_id == NULL)
     SEND_TO_CLIENT_OR_FAIL
@@ -547,8 +557,14 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
                 (ticket_id,
                  name ? entity_text (name) : NULL,
                  comment ? entity_text (comment) : NULL,
-                 status ? entity_text (status) : NULL))
+                 status ? entity_text (status) : NULL,
+                 solved_comment ? entity_text (solved_comment) : NULL,
+                 closed_comment ? entity_text (closed_comment) : NULL))
     {
+      case 0:
+        SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_ticket"));
+        log_event ("ticket", "Ticket", ticket_id, "modified");
+        break;
       case 1:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_ticket",
@@ -577,6 +593,18 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
                             "Error in status"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
+      case 5:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_ticket",
+                            "Solved STATUS requires a SOLVED_COMMENT"));
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        break;
+      case 6:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_ticket",
+                            "Closed STATUS requires a CLOSED_COMMENT"));
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_ticket",
@@ -584,16 +612,11 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case -1:
+      default:
         SEND_TO_CLIENT_OR_FAIL
          (XML_INTERNAL_ERROR ("modify_ticket"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
-      default:
-        {
-          SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_ticket"));
-          log_event ("ticket", "Ticket", ticket_id, "modified");
-          break;
-        }
     }
 
   modify_ticket_reset (modify_ticket_data);

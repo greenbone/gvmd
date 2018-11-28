@@ -2448,7 +2448,7 @@ create_tables ()
        "  confirmed_time integer,"
        "  confirmed_result integer REFERENCES results (id) ON DELETE RESTRICT,"
        "  closed_time integer,"
-       "  closed_rationale text,"
+       "  closed_comment text,"
        "  orphaned_time integer,"
        "  creation_time integer,"
        "  modification_time integer);");
@@ -2478,7 +2478,7 @@ create_tables ()
        "  confirmed_time integer,"
        "  confirmed_result integer REFERENCES results (id) ON DELETE RESTRICT,"
        "  closed_time integer,"
-       "  closed_rationale text,"
+       "  closed_comment text,"
        "  orphaned_time integer,"
        "  creation_time integer,"
        "  modification_time integer);");
