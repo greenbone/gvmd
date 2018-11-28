@@ -5433,6 +5433,7 @@ typedef enum
   CLIENT_MODIFY_TASK_TARGET,
   CLIENT_MODIFY_TASK_HOSTS_ORDERING,
   CLIENT_MODIFY_TASK_SCANNER,
+  CLIENT_MODIFY_TICKET,
   CLIENT_MODIFY_USER,
   CLIENT_MODIFY_USER_COMMENT,
   CLIENT_MODIFY_USER_GROUPS,
@@ -6858,6 +6859,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             modify_task_data->groups = make_array ();
             set_client_state (CLIENT_MODIFY_TASK);
           }
+        else if (strcasecmp ("MODIFY_TICKET", element_name) == 0)
+          {
+            modify_ticket_start (gmp_parser, attribute_names,
+                                 attribute_values);
+            set_client_state (CLIENT_MODIFY_TICKET);
+          }
         else if (strcasecmp ("MODIFY_USER", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "user_id",
@@ -7809,6 +7816,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE);
         ELSE_ERROR ("modify_task");
+
+      case CLIENT_MODIFY_TICKET:
+        modify_ticket_element_start (gmp_parser, element_name,
+                                     attribute_names,
+                                     attribute_values);
+        break;
 
       case CLIENT_MODIFY_USER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -27750,6 +27763,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE, VALUE);
 
+      case CLIENT_MODIFY_TICKET:
+        if (modify_ticket_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_MODIFY_USER:
         {
           if ((modify_user_data->name == NULL
@@ -29957,6 +29975,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
               &modify_target_data->ssh_lsc_port);
+
+
+      case CLIENT_MODIFY_TICKET:
+        modify_ticket_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_RUN_WIZARD_MODE,

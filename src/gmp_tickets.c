@@ -436,3 +436,181 @@ create_ticket_element_text (const gchar *text, gsize text_len)
   //element_text (&spec, create_ticket_data.context...);
   xml_handle_text (create_ticket_data.context, text, text_len);
 }
+
+
+/* MODIFY_TICKET. */
+
+/**
+ * @brief The modify_ticket command.
+ */
+typedef struct
+{
+  context_data_t *context;     ///< XML parser context.
+} modify_ticket_t;
+
+/**
+ * @brief Parser callback data.
+ *
+ * This is initially 0 because it's a global variable.
+ */
+static modify_ticket_t modify_ticket_data;
+
+/**
+ * @brief Reset command data.
+ */
+static void
+modify_ticket_reset ()
+{
+  if (modify_ticket_data.context->first)
+    {
+      free_entity (modify_ticket_data.context->first->data);
+      g_slist_free_1 (modify_ticket_data.context->first);
+    }
+  g_free (modify_ticket_data.context);
+  memset (&modify_ticket_data, 0, sizeof (get_tickets_t));
+}
+
+/**
+ * @brief Start a command.
+ *
+ * @param[in]  gmp_parser        GMP parser.
+ * @param[in]  attribute_names   All attribute names.
+ * @param[in]  attribute_values  All attribute values.
+ */
+void
+modify_ticket_start (gmp_parser_t *gmp_parser,
+                     const gchar **attribute_names,
+                     const gchar **attribute_values)
+{
+  memset (&modify_ticket_data, 0, sizeof (get_tickets_t));
+  modify_ticket_data.context = g_malloc0 (sizeof (context_data_t));
+  modify_ticket_element_start (gmp_parser, "modify_ticket", attribute_names,
+                               attribute_values);
+}
+
+/**
+ * @brief Start element.
+ *
+ * @param[in]  gmp_parser        GMP parser.
+ * @param[in]  name              Element name.
+ * @param[in]  attribute_names   All attribute names.
+ * @param[in]  attribute_values  All attribute values.
+ */
+void
+modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
+                             const gchar **attribute_names,
+                             const gchar **attribute_values)
+{
+  //element_start (&spec, modify_ticket_data.context...);
+  xml_handle_start_element (modify_ticket_data.context, name, attribute_names,
+                            attribute_values);
+}
+
+/**
+ * @brief Execute command.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+void
+modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
+{
+  entity_t entity, name, comment;
+  const char *ticket_id;
+
+  entity = (entity_t) modify_ticket_data.context->first->data;
+
+  ticket_id = entity_attribute (entity, "ticket_id");
+
+  name = entity_child (entity, "name");
+  comment = entity_child (entity, "comment");
+
+  if (ticket_id == NULL)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("modify_ticket",
+                        "MODIFY_TICKET requires a ticket_id"
+                        " attribute"));
+  else switch (modify_ticket
+                (ticket_id,
+                 name ? entity_text (name) : NULL,
+                 comment ? entity_text (comment) : NULL))
+    {
+      case 1:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_ticket",
+                            "Ticket exists already"));
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        break;
+      case 2:
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        if (send_find_error_to_client ("modify_ticket", "ticket", ticket_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        break;
+      case 3:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_ticket",
+                            "MODIFY_TICKET name must be at"
+                            " least one character long"));
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_ticket",
+                            "Permission denied"));
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        break;
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_INTERNAL_ERROR ("modify_ticket"));
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        break;
+      default:
+        {
+          SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_ticket"));
+          log_event ("ticket", "Ticket", ticket_id, "modified");
+          break;
+        }
+    }
+
+  modify_ticket_reset (modify_ticket_data);
+}
+
+/**
+ * @brief End element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ * @param[in]  name         Element name.
+ *
+ * @return 0 success, 1 command finished.
+ */
+int
+modify_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
+                           const gchar *name)
+{
+  //element_end (&spec, modify_ticket_data.context...);
+  xml_handle_end_element (modify_ticket_data.context, name);
+  if (modify_ticket_data.context->done)
+    {
+      modify_ticket_run (gmp_parser, error);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Add text to element.
+ *
+ * @param[in]  text         Text.
+ * @param[in]  text_len     Text length.
+ */
+void
+modify_ticket_element_text (const gchar *text, gsize text_len)
+{
+  //element_text (&spec, modify_ticket_data.context...);
+  xml_handle_text (modify_ticket_data.context, text, text_len);
+}
