@@ -45,10 +45,74 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
+ * @brief Ticket statuses.
+ */
+typedef enum
+{
+  TICKET_STATUS_OPEN = 0,
+  TICKET_STATUS_SOLVED = 1,
+  TICKET_STATUS_CONFIRMED = 2,
+  TICKET_STATUS_CLOSED = 3,
+  TICKET_STATUS_ORPHANED = 4,
+  TICKET_STATUS_MAX,
+  TICKET_STATUS_ERROR = 100
+} ticket_status_t;
+
+/**
+ * @brief Get ticket status DB identifier from string.
+ *
+ * @param[in]   status  Status name.
+ *
+ * @return Status integer.
+ */
+static ticket_status_t
+ticket_status_integer (const char *status)
+{
+  if (strcasecmp (status, "open") == 0)
+    return TICKET_STATUS_OPEN;
+  if (strcasecmp (status, "solved") == 0)
+    return TICKET_STATUS_SOLVED;
+  if (strcasecmp (status, "confirmed") == 0)
+    return TICKET_STATUS_CONFIRMED;
+  if (strcasecmp (status, "closed") == 0)
+    return TICKET_STATUS_CLOSED;
+  if (strcasecmp (status, "orphaned") == 0)
+    return TICKET_STATUS_ORPHANED;
+  return TICKET_STATUS_ERROR;
+}
+
+/**
+ * @brief Get ticket status name from DB identifier.
+ *
+ * @param[in]   status  Status integer.
+ *
+ * @return Status name.
+ */
+static const gchar *
+ticket_status_name (ticket_status_t status)
+{
+  switch (status)
+    {
+      case TICKET_STATUS_OPEN:
+        return "Open";
+      case TICKET_STATUS_SOLVED:
+        return "Solved";
+      case TICKET_STATUS_CONFIRMED:
+        return "Confirmed";
+      case TICKET_STATUS_CLOSED:
+        return "Closed";
+      case TICKET_STATUS_ORPHANED:
+        return "Orphaned";
+      default:
+        return "Error";
+    }
+}
+
+/**
  * @brief Filter columns for ticket iterator.
  */
 #define TICKET_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "host",                                        \
+ { GET_ITERATOR_FILTER_COLUMNS, "host", "status",                              \
    NULL }
 
 /**
@@ -58,6 +122,7 @@
  {                                                          \
    GET_ITERATOR_COLUMNS (tickets),                          \
    { "host", NULL, KEYWORD_TYPE_STRING },                   \
+   { "status", NULL, KEYWORD_TYPE_STRING },                 \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                     \
  }
 
@@ -68,6 +133,7 @@
  {                                                                  \
    GET_ITERATOR_COLUMNS (tickets_trash),                            \
    { "host", NULL, KEYWORD_TYPE_STRING },                           \
+   { "status", NULL, KEYWORD_TYPE_STRING },                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
  }
 
@@ -125,6 +191,22 @@ init_ticket_iterator (iterator_t *iterator, const get_data_t *get)
  * @return Host of the ticket or NULL if iteration is complete.
  */
 DEF_ACCESS (ticket_iterator_host, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the status from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Status of the ticket or NULL if iteration is complete.
+ */
+const char*
+ticket_iterator_status (iterator_t* iterator)
+{
+  int status;
+  if (iterator->done) return NULL;
+  status = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+  return ticket_status_name (status);
+}
 
 /**
  * @brief Return whether a ticket is in use.
@@ -374,14 +456,14 @@ create_ticket (const char *name, const char *comment,
     quoted_comment = sql_quote ("");
 
   sql ("INSERT INTO tickets"
-       " (uuid, name, owner, comment,"
+       " (uuid, name, owner, comment, status,"
        "  creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s',"
+       " '%s', %i,"
        " m_now (), m_now ());",
         quoted_name, current_credentials.uuid,
-        quoted_comment);
+        quoted_comment, TICKET_STATUS_OPEN);
 
   new_ticket = sql_last_insert_id ();
   if (ticket)
@@ -447,12 +529,15 @@ ticket_uuid (ticket_t ticket)
  * @param[in]   ticket_id       UUID of ticket.
  * @param[in]   name            Name of ticket.
  * @param[in]   comment         Comment on ticket.
+ * @param[in]   status_name     Status of ticket.
  *
  * @return 0 success, 1 ticket exists already, 2 failed to find ticket,
- *         3 zero length name, 99 permission denied, -1 error.
+ *         3 zero length name, 4 error in status, 99 permission denied,
+ *         -1 error.
  */
 int
-modify_ticket (const char *ticket_id, const char *name, const char *comment)
+modify_ticket (const gchar *ticket_id, const gchar *name, const gchar *comment,
+               const gchar *status_name)
 {
   ticket_t ticket;
 
@@ -479,7 +564,7 @@ modify_ticket (const char *ticket_id, const char *name, const char *comment)
   if (ticket == 0)
     {
       sql_rollback ();
-      return 9;
+      return 2;
     }
 
   if (name)
@@ -489,7 +574,7 @@ modify_ticket (const char *ticket_id, const char *name, const char *comment)
       if (strlen (name) == 0)
         {
           sql_rollback ();
-          return 11;
+          return 3;
         }
       if (resource_with_name_exists (name, "ticket", ticket))
         {
@@ -519,6 +604,27 @@ modify_ticket (const char *ticket_id, const char *name, const char *comment)
            quoted_comment,
            ticket);
       g_free (quoted_comment);
+    }
+
+  if (status_name)
+    {
+      ticket_status_t status;
+
+      status = ticket_status_integer (status_name);
+      if (status != TICKET_STATUS_OPEN
+          && status != TICKET_STATUS_SOLVED
+          && status != TICKET_STATUS_CLOSED)
+        {
+          sql_rollback ();
+          return 4;
+        }
+
+      sql ("UPDATE tickets SET"
+           " status = %i,"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           status,
+           ticket);
     }
 
   sql_commit ();

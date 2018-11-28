@@ -181,8 +181,10 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
       host = ticket_iterator_host (&tickets);
 
-      SENDF_TO_CLIENT_OR_FAIL ("<host>%s</host>",
-                               host);
+      SENDF_TO_CLIENT_OR_FAIL ("<host>%s</host>"
+                               "<status>%s</status>",
+                               host,
+                               ticket_iterator_status (&tickets));
 
       SEND_TO_CLIENT_OR_FAIL ("</ticket>");
       count++;
@@ -515,7 +517,7 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, name, comment;
+  entity_t entity, name, comment, status;
   const char *ticket_id;
 
   entity = (entity_t) modify_ticket_data.context->first->data;
@@ -524,6 +526,7 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   name = entity_child (entity, "name");
   comment = entity_child (entity, "comment");
+  status = entity_child (entity, "status");
 
   if (ticket_id == NULL)
     SEND_TO_CLIENT_OR_FAIL
@@ -533,7 +536,8 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
   else switch (modify_ticket
                 (ticket_id,
                  name ? entity_text (name) : NULL,
-                 comment ? entity_text (comment) : NULL))
+                 comment ? entity_text (comment) : NULL,
+                 status ? entity_text (status) : NULL))
     {
       case 1:
         SEND_TO_CLIENT_OR_FAIL
@@ -555,6 +559,12 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("modify_ticket",
                             "MODIFY_TICKET name must be at"
                             " least one character long"));
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_ticket",
+                            "Error in status"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case 99:

@@ -38,6 +38,9 @@ init_ticket_iterator (iterator_t *, const get_data_t *);
 const char*
 ticket_iterator_host (iterator_t*);
 
+const char*
+ticket_iterator_status (iterator_t*);
+
 int
 ticket_in_use (ticket_t);
 
@@ -60,6 +63,6 @@ char*
 ticket_uuid (ticket_t);
 
 int
-modify_ticket (const char *, const char *, const char *);
+modify_ticket (const gchar *, const gchar *, const gchar *, const gchar *);
 
 #endif /* not _GVMD_MANAGE_TICKETS_H */
