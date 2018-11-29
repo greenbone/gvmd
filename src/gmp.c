@@ -10862,6 +10862,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       g_free (nl_descr_escaped);
     }
 
+  buffer_result_tickets_xml (buffer, get_iterator_uuid (results));
+
   g_string_append (buffer, "</result>");
 }
 

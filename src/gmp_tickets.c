@@ -760,3 +760,37 @@ modify_ticket_element_text (const gchar *text, gsize text_len)
   //element_text (&spec, modify_ticket_data.context...);
   xml_handle_text (modify_ticket_data.context, text, text_len);
 }
+
+
+/* Result ticket support. */
+
+/**
+ * @brief Buffer ticket XML for a result.
+ *
+ * @param[in]  buffer     Buffer.
+ * @param[in]  result_id  ID of result.
+ *
+ * 0 success, -1 internal error.
+ */
+int
+buffer_result_tickets_xml (GString *buffer, const gchar *result_id)
+{
+  iterator_t tickets;
+  int ret;
+
+  ret = init_result_ticket_iterator (&tickets, result_id);
+
+  if (ret == 0)
+    {
+      buffer_xml_append_printf (buffer, "<tickets>");
+      while (next (&tickets))
+        buffer_xml_append_printf (buffer,
+                                  "<ticket id=\"%s\"/>",
+                                  result_ticket_iterator_ticket_id
+                                   (&tickets));
+      buffer_xml_append_printf (buffer, "</tickets>");
+      cleanup_iterator (&tickets);
+    }
+
+  return ret;
+}

@@ -369,6 +369,8 @@ DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 15);
 /**
  * @brief Initialise a ticket result iterator.
  *
+ * Will iterate over all the results assigned to the ticket.
+ *
  * @param[in]  iterator    Iterator.
  * @param[in]  ticket_id   UUID of ticket.
  * @param[in]  trash       Whether ticket is in trash.
@@ -407,6 +409,49 @@ init_ticket_result_iterator (iterator_t *iterator, const gchar *ticket_id,
  * @return Iterator column value or NULL if iteration is complete.
  */
 DEF_ACCESS (ticket_result_iterator_result_id, 2);
+
+/**
+ * @brief Initialise a result ticket iterator.
+ *
+ * Will iterate over all the tickets that apply to the result's NVT.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  result_id   UUID of result.
+ *
+ * @return 0 success, 1 failed to find result, -1 error.
+ */
+int
+init_result_ticket_iterator (iterator_t *iterator, const gchar *result_id)
+{
+  result_t result;
+
+  if (find_resource_with_permission ("result", result_id, &result, NULL, 0))
+    return -1;
+
+  if (result == 0)
+    return 1;
+
+  init_iterator (iterator,
+                 "SELECT id, uuid"
+                 " FROM tickets"
+                 " WHERE (SELECT nvt FROM results WHERE id = %llu)"
+                 "       IN (SELECT nvt FROM results"
+                 "           WHERE id = (SELECT result FROM ticket_results"
+                 "                       WHERE ticket = tickets.id"
+                 "                       LIMIT 1))"
+                 " ORDER BY id;",
+                 result);
+  return 0;
+}
+
+/**
+ * @brief Get column value from a ticket result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (result_ticket_iterator_ticket_id, 1);
 
 /**
  * @brief Return whether a ticket is in use.

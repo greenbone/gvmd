@@ -60,4 +60,7 @@ modify_ticket_element_end (gmp_parser_t *, GError **error, const gchar *);
 void
 modify_ticket_element_text (const gchar *, gsize);
 
+int
+buffer_result_tickets_xml (GString *, const gchar *);
+
 #endif /* not _GVMD_GMP_TICKETS_H */

@@ -81,6 +81,12 @@ const char*
 ticket_result_iterator_result_id (iterator_t*);
 
 int
+init_result_ticket_iterator (iterator_t *, const gchar *);
+
+const char*
+result_ticket_iterator_ticket_id (iterator_t*);
+
+int
 ticket_in_use (ticket_t);
 
 int
