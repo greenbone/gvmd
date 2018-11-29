@@ -515,6 +515,13 @@ delete_ticket (const char *ticket_id, int ultimate)
            LOCATION_TRASH,
            ticket);
 
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'task'"
+           " AND comment = 'Automatically created for ticket'"
+           " AND resource = (SELECT task FROM tickets_trash"
+           "                 WHERE id = %llu);",
+           ticket);
+
       tags_remove_resource ("ticket", ticket, LOCATION_TRASH);
 
       sql ("DELETE FROM ticket_results_trash WHERE ticket = %llu;", ticket);
@@ -562,6 +569,13 @@ delete_ticket (const char *ticket_id, int ultimate)
            " AND resource_location = %i"
            " AND resource = %llu;",
            LOCATION_TABLE,
+           ticket);
+
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'task'"
+           " AND comment = 'Automatically created for ticket'"
+           " AND resource = (SELECT task FROM tickets"
+           "                 WHERE id = %llu);",
            ticket);
 
       tags_remove_resource ("ticket", ticket, LOCATION_TABLE);
@@ -659,7 +673,8 @@ create_ticket (const char *comment, const char *result_id,
   get_data_t get;
   gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_location;
   gchar *quoted_solution;
-  char *new_ticket_id;
+  char *new_ticket_id, *task_id;
+  task_t task;
 
   assert (current_credentials.uuid);
   assert (result_id);
@@ -718,6 +733,8 @@ create_ticket (const char *comment, const char *result_id,
   quoted_location = sql_quote (result_iterator_port (&results) ?: "");
   quoted_solution = sql_quote (result_iterator_solution_type (&results) ?: "");
 
+  task = result_iterator_task (&results);
+
   sql ("INSERT INTO tickets"
        " (uuid, name, owner, comment, task, report, severity, host, location,"
        "  solution_type, assigned_to, status, open_time, creation_time,"
@@ -730,7 +747,7 @@ create_ticket (const char *comment, const char *result_id,
         quoted_name,
         current_credentials.uuid,
         quoted_comment,
-        result_iterator_task (&results),
+        task,
         result_iterator_report (&results),
         result_iterator_severity_double (&results),
         quoted_host,
@@ -757,7 +774,7 @@ create_ticket (const char *comment, const char *result_id,
   new_ticket_id = ticket_uuid (new_ticket);
 
   if (create_permission_internal ("modify_ticket",
-                                  "Automatically created with ticket",
+                                  "Automatically created for ticket",
                                   NULL,
                                   new_ticket_id,
                                   "user",
@@ -767,6 +784,21 @@ create_ticket (const char *comment, const char *result_id,
       sql_rollback ();
       return -1;
     }
+
+  task_uuid (task, &task_id);
+  if (create_permission_internal ("get_tasks",
+                                  "Automatically created for ticket",
+                                  NULL,
+                                  task_id,
+                                  "user",
+                                  user_id,
+                                  &permission))
+    {
+      free (task_id);
+      sql_rollback ();
+      return -1;
+    }
+  free (task_id);
 
   free (new_ticket_id);
 
@@ -993,6 +1025,23 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
 void
 empty_trashcan_tickets ()
 {
+  sql ("DELETE FROM permissions"
+       " WHERE resource_type = 'ticket'"
+       " AND resource_location = %i"
+       " AND resource IN (SELECT id FROM tickets_trash"
+       "                  WHERE owner = (SELECT id FROM users"
+       "                                 WHERE uuid = '%s'));",
+       LOCATION_TRASH,
+       current_credentials.uuid);
+
+  sql ("DELETE FROM permissions"
+       " WHERE resource_type = 'task'"
+       " AND comment = 'Automatically created for ticket'"
+       " AND resource IN (SELECT task FROM tickets_trash"
+       "                  WHERE owner = (SELECT id FROM users"
+       "                                 WHERE uuid = '%s'));",
+       current_credentials.uuid);
+
   sql ("DELETE FROM ticket_results_trash"
        " WHERE ticket in (SELECT id FROM tickets_trash"
        "                  WHERE owner = (SELECT id FROM users"
