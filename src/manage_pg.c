@@ -2485,7 +2485,7 @@ create_tables ()
 
   sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
        " (id SERIAL PRIMARY KEY,"
-       "  ticket integer REFERENCES tickets (id) ON DELETE RESTRICT,"
+       "  ticket integer REFERENCES tickets_trash (id) ON DELETE RESTRICT,"
        "  result integer REFERENCES results (id) ON DELETE RESTRICT);");
 
   sql ("CREATE TABLE IF NOT EXISTS scanners"
