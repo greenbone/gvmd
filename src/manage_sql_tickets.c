@@ -113,8 +113,8 @@ ticket_status_name (ticket_status_t status)
  * @brief Filter columns for ticket iterator.
  */
 #define TICKET_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "host", "status", "opened", "solved",          \
-   "closed",                                                                   \
+ { GET_ITERATOR_FILTER_COLUMNS, "severity", "host", "location",                \
+   "solution_type", "status", "opened", "solved", "closed",                    \
    NULL }
 
 /**
