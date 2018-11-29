@@ -591,6 +591,7 @@ command_t gmp_commands[]
     {"CREATE_TAG", "Create a tag."},
     {"CREATE_TARGET", "Create a target."},
     {"CREATE_TASK", "Create a task."},
+    {"CREATE_TICKET", "Create a ticket."},
     {"CREATE_USER", "Create a new user."},
     {"DELETE_AGENT", "Delete an agent."},
     {"DELETE_ALERT", "Delete an alert."},
