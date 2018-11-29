@@ -216,7 +216,9 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                    ticket_iterator_closed_comment (&tickets));
         }
 
-      if (init_ticket_result_iterator (&results, get_iterator_uuid (&tickets)))
+      if (init_ticket_result_iterator (&results,
+                                       get_iterator_uuid (&tickets),
+                                       get_tickets_data.get.trash))
         {
           internal_error_send_to_client (error);
           get_tickets_reset ();

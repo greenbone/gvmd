@@ -75,7 +75,7 @@ const char*
 ticket_iterator_closed_comment (iterator_t*);
 
 int
-init_ticket_result_iterator (iterator_t *, const gchar *);
+init_ticket_result_iterator (iterator_t *, const gchar *, int);
 
 const char*
 ticket_result_iterator_result_id (iterator_t*);

@@ -370,15 +370,17 @@ DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 15);
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  ticket_id   UUID of ticket.
+ * @param[in]  trash       Whether ticket is in trash.
  *
  * @return 0 success, 1 failed to find ticket, -1 error.
  */
 int
-init_ticket_result_iterator (iterator_t *iterator, const gchar *ticket_id)
+init_ticket_result_iterator (iterator_t *iterator, const gchar *ticket_id,
+                             int trash)
 {
   ticket_t ticket;
 
-  if (find_resource_with_permission ("ticket", ticket_id, &ticket, NULL, 0))
+  if (find_resource_with_permission ("ticket", ticket_id, &ticket, NULL, trash))
     return -1;
 
   if (ticket == 0)
@@ -388,9 +390,10 @@ init_ticket_result_iterator (iterator_t *iterator, const gchar *ticket_id)
                  "SELECT result,"
                  "       ticket,"
                  "       (SELECT uuid FROM results WHERE id = result)"
-                 " FROM ticket_results"
+                 " FROM ticket_results%s"
                  " WHERE ticket = %llu"
                  " ORDER BY id;",
+                 trash ? "_trash" : "",
                  ticket);
   return 0;
 }
@@ -531,6 +534,12 @@ delete_ticket (const char *ticket_id, int ultimate)
 
       trash_ticket = sql_last_insert_id ();
 
+      sql ("INSERT INTO ticket_results_trash (ticket, result)"
+           " SELECT %llu, result FROM ticket_results"
+           " WHERE ticket = %llu;",
+           trash_ticket,
+           ticket);
+
       permissions_set_locations ("ticket", ticket, trash_ticket,
                                  LOCATION_TRASH);
       tags_set_locations ("ticket", ticket, trash_ticket,
@@ -542,6 +551,7 @@ delete_ticket (const char *ticket_id, int ultimate)
       tags_remove_resource ("ticket", ticket, LOCATION_TABLE);
     }
 
+  sql ("DELETE FROM ticket_results WHERE ticket = %llu;", ticket);
   sql ("DELETE FROM tickets WHERE id = %llu;", ticket);
 
   sql_commit ();
