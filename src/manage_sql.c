@@ -304,11 +304,6 @@ static int
 role_is_predefined_id (const char *);
 
 static int
-create_permission_internal (const char *, const char *, const char *,
-                            const char *, const char *, const char *,
-                            permission_t *);
-
-static int
 task_second_last_report (task_t, report_t *);
 
 static gchar *
@@ -54297,7 +54292,7 @@ subject_where_clause (const char* subject_type, resource_t subject)
  *         8 permission on permission, 9 permission does not accept resource,
  *         99 permission denied, -1 internal error.
  */
-static int
+int
 create_permission_internal (const char *name_arg, const char *comment,
                             const char *resource_type_arg,
                             const char *resource_id_arg,

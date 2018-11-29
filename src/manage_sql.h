@@ -536,4 +536,8 @@ copy_resource (const char *, const char *, const char *, const char *,
 gboolean
 resource_with_name_exists (const char *, const char *, resource_t);
 
+int
+create_permission_internal (const char *, const char *, const char *, const char *,
+                            const char *, const char *, permission_t *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */

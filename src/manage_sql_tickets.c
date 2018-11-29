@@ -36,6 +36,7 @@
 #include "manage_sql.h"
 #include "sql.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #undef G_LOG_DOMAIN
@@ -507,9 +508,18 @@ delete_ticket (const char *ticket_id, int ultimate)
           return 0;
         }
 
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'ticket'"
+           " AND resource_location = %i"
+           " AND resource = %llu;",
+           LOCATION_TRASH,
+           ticket);
+
       tags_remove_resource ("ticket", ticket, LOCATION_TRASH);
 
+      sql ("DELETE FROM ticket_results_trash WHERE ticket = %llu;", ticket);
       sql ("DELETE FROM tickets_trash WHERE id = %llu;", ticket);
+
       sql_commit ();
       return 0;
     }
@@ -547,7 +557,13 @@ delete_ticket (const char *ticket_id, int ultimate)
     }
   else
     {
-      permissions_set_orphans ("ticket", ticket, LOCATION_TABLE);
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'ticket'"
+           " AND resource_location = %i"
+           " AND resource = %llu;",
+           LOCATION_TABLE,
+           ticket);
+
       tags_remove_resource ("ticket", ticket, LOCATION_TABLE);
     }
 
@@ -637,11 +653,13 @@ create_ticket (const char *comment, const char *result_id,
                const char *user_id, ticket_t *ticket)
 {
   ticket_t new_ticket;
+  permission_t permission;
   user_t user;
   iterator_t results;
   get_data_t get;
   gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_location;
   gchar *quoted_solution;
+  char *new_ticket_id;
 
   assert (current_credentials.uuid);
   assert (result_id);
@@ -735,6 +753,22 @@ create_ticket (const char *comment, const char *result_id,
        result_iterator_result (&results));
 
   cleanup_iterator (&results);
+
+  new_ticket_id = ticket_uuid (new_ticket);
+
+  if (create_permission_internal ("modify_ticket",
+                                  "Automatically created with ticket",
+                                  NULL,
+                                  new_ticket_id,
+                                  "user",
+                                  user_id,
+                                  &permission))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  free (new_ticket_id);
 
   sql_commit ();
 
@@ -913,6 +947,7 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
   if (user_id)
     {
       user_t user;
+      permission_t permission;
 
       if (find_resource_with_permission ("user", user_id, &user, NULL, 0))
         {
@@ -932,6 +967,18 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            " WHERE id = %llu;",
            user,
            ticket);
+
+      if (create_permission_internal ("modify_ticket",
+                                      "Automatically created for ticket",
+                                      NULL,
+                                      ticket_id,
+                                      "user",
+                                      user_id,
+                                      &permission))
+        {
+          sql_rollback ();
+          return -1;
+        }
     }
 
 
