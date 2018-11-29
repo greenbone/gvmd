@@ -770,7 +770,7 @@ modify_ticket_element_text (const gchar *text, gsize text_len)
  * @param[in]  buffer     Buffer.
  * @param[in]  result_id  ID of result.
  *
- * 0 success, -1 internal error.
+ * @return 0 success, -1 internal error.
  */
 int
 buffer_result_tickets_xml (GString *buffer, const gchar *result_id)
