@@ -595,7 +595,6 @@ restore_ticket (const char *ticket_id)
 /**
  * @brief Create a ticket.
  *
- * @param[in]   name            Name of ticket.
  * @param[in]   comment         Comment on ticket.
  * @param[out]  ticket          Created ticket.
  *
@@ -603,8 +602,7 @@ restore_ticket (const char *ticket_id)
  *         99 permission denied, -1 error.
  */
 int
-create_ticket (const char *name, const char *comment, const char *result_id,
-               ticket_t *ticket)
+create_ticket (const char *comment, const char *result_id, ticket_t *ticket)
 {
   ticket_t new_ticket;
   iterator_t results;
@@ -697,7 +695,6 @@ create_ticket (const char *name, const char *comment, const char *result_id,
 /**
  * @brief Create a ticket from an existing ticket.
  *
- * @param[in]  name        Name of new ticket.  NULL to copy from existing.
  * @param[in]  comment     Comment on new ticket.  NULL to copy from existing.
  * @param[in]  ticket_id   UUID of existing ticket.
  * @param[out] new_ticket  New ticket.
@@ -706,15 +703,14 @@ create_ticket (const char *name, const char *comment, const char *result_id,
  *         ticket, 99 permission denied, -1 error.
  */
 int
-copy_ticket (const char *name, const char *comment, const char *ticket_id,
-             ticket_t *new_ticket)
+copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
 {
   int ret;
   ticket_t old_ticket;
 
   assert (new_ticket);
 
-  ret = copy_resource ("ticket", name, comment, ticket_id,
+  ret = copy_resource ("ticket", NULL, comment, ticket_id,
                        "task, report, severity, host, location, solution_type,"
                        " assigned_to, status, open_time, solved_time,"
                        " solved_comment, confirmed_time, confirmed_result,"
@@ -744,19 +740,18 @@ ticket_uuid (ticket_t ticket)
  * @brief Modify a ticket.
  *
  * @param[in]   ticket_id       UUID of ticket.
- * @param[in]   name            Name of ticket.
  * @param[in]   comment         Comment on ticket.
  * @param[in]   status_name     Status of ticket.
  * @param[in]   solved_comment  Comment if status is 'Solved'.
  * @param[in]   closed_comment  Comment if status is 'Closed'.
  *
  * @return 0 success, 1 ticket exists already, 2 failed to find ticket,
- *         3 zero length name, 4 error in status, 5 Solved status requires
- *         a solved_comment, 6 Closed status requires a closed_comment,
+ *         4 error in status, 5 Solved status requires a solved_comment,
+ *         6 Closed status requires a closed_comment,
  *         99 permission denied, -1 error.
  */
 int
-modify_ticket (const gchar *ticket_id, const gchar *name, const gchar *comment,
+modify_ticket (const gchar *ticket_id, const gchar *comment,
                const gchar *status_name, const gchar *solved_comment,
                const gchar *closed_comment)
 {
@@ -786,31 +781,6 @@ modify_ticket (const gchar *ticket_id, const gchar *name, const gchar *comment,
     {
       sql_rollback ();
       return 2;
-    }
-
-  if (name)
-    {
-      gchar *quoted_name;
-
-      if (strlen (name) == 0)
-        {
-          sql_rollback ();
-          return 3;
-        }
-      if (resource_with_name_exists (name, "ticket", ticket))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      quoted_name = sql_quote (name);
-      sql ("UPDATE tickets SET"
-           " name = '%s',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quoted_name,
-           ticket);
-      g_free (quoted_name);
     }
 
   if (comment)

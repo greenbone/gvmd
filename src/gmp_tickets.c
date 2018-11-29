@@ -335,20 +335,18 @@ create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, copy, name, comment, result;
+  entity_t entity, copy, comment, result;
   ticket_t new_ticket;
   const char *result_id;
 
   entity = (entity_t) create_ticket_data.context->first->data;
 
   copy = entity_child (entity, "copy");
-  name = entity_child (entity, "name");
 
   if (copy)
     {
       comment = entity_child (entity, "comment");
-      switch (copy_ticket (entity_text (name),
-                           comment ? entity_text (comment) : "",
+      switch (copy_ticket (comment ? entity_text (comment) : "",
                            entity_text (copy),
                            &new_ticket))
         {
@@ -409,23 +407,13 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   result_id = entity_attribute (result, "id");
 
-  if (name == NULL)
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("create_ticket",
-                        "CREATE_TICKET requires a NAME"));
-  else if (strlen (entity_text (name)) == 0)
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("create_ticket",
-                        "CREATE_TICKET name must be at"
-                        " least one character long"));
-  else if ((result_id == NULL) || (strlen (result_id) == 0))
+  if ((result_id == NULL) || (strlen (result_id) == 0))
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("create_ticket",
                         "CREATE_TICKET RESULT must have an id"
                         " attribute"));
   else switch (create_ticket
-                (entity_text (name),
-                 comment ? entity_text (comment) : "",
+                (comment ? entity_text (comment) : "",
                  result_id,
                  &new_ticket))
     {
@@ -583,14 +571,13 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, name, comment, status, solved_comment, closed_comment;
+  entity_t entity, comment, status, solved_comment, closed_comment;
   const char *ticket_id;
 
   entity = (entity_t) modify_ticket_data.context->first->data;
 
   ticket_id = entity_attribute (entity, "ticket_id");
 
-  name = entity_child (entity, "name");
   comment = entity_child (entity, "comment");
   status = entity_child (entity, "status");
   solved_comment = entity_child (entity, "solved_comment");
@@ -603,7 +590,6 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
                         " attribute"));
   else switch (modify_ticket
                 (ticket_id,
-                 name ? entity_text (name) : NULL,
                  comment ? entity_text (comment) : NULL,
                  status ? entity_text (status) : NULL,
                  solved_comment ? entity_text (solved_comment) : NULL,
@@ -627,13 +613,6 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
             error_send_to_client (error);
             return;
           }
-        break;
-      case 3:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("modify_ticket",
-                            "MODIFY_TICKET name must be at"
-                            " least one character long"));
-        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case 4:
         SEND_TO_CLIENT_OR_FAIL
