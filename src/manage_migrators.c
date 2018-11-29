@@ -15006,6 +15006,44 @@ migrate_199_to_200 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 200 to version 201.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_200_to_201 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 200. */
+
+  if (manage_db_version () != 200)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ticket commands were added. */
+
+  INSERT_PERMISSION (get_tickets, ROLE_UUID_OBSERVER);
+
+  INSERT_PERMISSION (get_tickets, ROLE_UUID_USER);
+  INSERT_PERMISSION (create_ticket, ROLE_UUID_USER);
+  INSERT_PERMISSION (modify_ticket, ROLE_UUID_USER);
+  INSERT_PERMISSION (delete_ticket, ROLE_UUID_USER);
+
+  /* Set the database version to 201. */
+
+  set_db_version (201);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15225,6 +15263,7 @@ static migrator_t database_migrators[]
     {198, migrate_197_to_198},
     {199, migrate_198_to_199},
     {200, migrate_199_to_200},
+    {201, migrate_200_to_201},
     /* End marker. */
     {-1, NULL}};
 
