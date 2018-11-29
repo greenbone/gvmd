@@ -1245,6 +1245,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>detection</e></o>
       <o><e>notes</e></o>
       <o><e>overrides</e></o>
+      <o><e>tickets</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -1625,7 +1626,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>overrides</name>
-      <name>overrides</name>
       <summary>List of overrides on the result</summary>
       <pattern>
         <any><e>override</e></any>
@@ -1633,6 +1633,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>override</name>
         <type>override</type>
+      </ele>
+    </ele>
+    <ele>
+      <name>tickets</name>
+      <summary>List of tickets on the result</summary>
+      <pattern>
+        <any><e>ticket</e></any>
+      </pattern>
+      <ele>
+        <name>ticket</name>
+		<pattern>
+		  <attrib>
+			<name>id</name>
+			<type>uuid</type>
+			<required>1</required>
+		  </attrib>
+		</pattern>
       </ele>
     </ele>
   </element>
