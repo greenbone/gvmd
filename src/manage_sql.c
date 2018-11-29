@@ -60042,6 +60042,7 @@ manage_empty_trashcan ()
        "                                 WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM configs_trash" WHERE_OWNER);
+  empty_trashcan_tickets ();
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'group'"
        " AND subject IN (SELECT id from groups_trash"

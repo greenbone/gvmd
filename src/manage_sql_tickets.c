@@ -939,3 +939,19 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
 
   return 0;
 }
+
+/**
+ * @brief Empty ticket trashcans.
+ */
+void
+empty_trashcan_tickets ()
+{
+  sql ("DELETE FROM ticket_results_trash"
+       " WHERE ticket in (SELECT id FROM tickets_trash"
+       "                  WHERE owner = (SELECT id FROM users"
+       "                                 WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM tickets_trash"
+       " WHERE owner = (SELECT id FROM users WHERE uuid = '%s');",
+       current_credentials.uuid);
+}
