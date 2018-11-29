@@ -179,7 +179,10 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
       SEND_GET_COMMON (ticket, &get_tickets_data.get, &tickets);
 
-      SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\"/>"
+      SENDF_TO_CLIENT_OR_FAIL ("<assigned_to>"
+                               "<user id=\"%s\"/>"
+                               "</assigned_to>"
+                               "<task id=\"%s\"/>"
                                "<report id=\"%s\"/>"
                                "<severity>%1.1f</severity>"
                                "<host>%s</host>"
@@ -187,6 +190,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                "<solution_type>%s</solution_type>"
                                "<status>%s</status>"
                                "<open_time>%s</open_time>",
+                               ticket_iterator_user_id (&tickets),
                                ticket_iterator_task_id (&tickets),
                                ticket_iterator_report_id (&tickets),
                                ticket_iterator_severity (&tickets),
@@ -335,9 +339,9 @@ create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, copy, comment, result;
+  entity_t entity, copy, comment, result, assigned_to, user;
   ticket_t new_ticket;
-  const char *result_id;
+  const char *result_id, *user_id;
 
   entity = (entity_t) create_ticket_data.context->first->data;
 
@@ -394,8 +398,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   comment = entity_child (entity, "comment");
-  result = entity_child (entity, "result");
 
+  result = entity_child (entity, "result");
   if (result == NULL)
     {
       SEND_TO_CLIENT_OR_FAIL
@@ -405,16 +409,43 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  assigned_to = entity_child (entity, "assigned_to");
+  if (assigned_to == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_ticket",
+                          "CREATE_TICKET requires an ASSIGNED_TO element"));
+      create_ticket_reset (create_ticket_data);
+      return;
+    }
+
+  user = entity_child (assigned_to, "user");
+  if (user == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_ticket",
+                          "CREATE_TICKET requires USER in ASSIGNED_TO"));
+      create_ticket_reset (create_ticket_data);
+      return;
+    }
+
   result_id = entity_attribute (result, "id");
+  user_id = entity_attribute (user, "id");
 
   if ((result_id == NULL) || (strlen (result_id) == 0))
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("create_ticket",
                         "CREATE_TICKET RESULT must have an id"
                         " attribute"));
+  else if ((user_id == NULL) || (strlen (user_id) == 0))
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("create_ticket",
+                        "CREATE_TICKET USER must have an id"
+                        " attribute"));
   else switch (create_ticket
                 (comment ? entity_text (comment) : "",
                  result_id,
+                 user_id,
                  &new_ticket))
     {
       case 0:
@@ -427,10 +458,13 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
           break;
         }
       case 1:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("create_ticket",
-                            "Ticket exists already"));
         log_event_fail ("ticket", "Ticket", NULL, "created");
+        if (send_find_error_to_client ("create_ticket", "user", user_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
         break;
       case 2:
         log_event_fail ("ticket", "Ticket", NULL, "created");
@@ -572,7 +606,8 @@ void
 modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
   entity_t entity, comment, status, solved_comment, closed_comment;
-  const char *ticket_id;
+  entity_t assigned_to;
+  const char *ticket_id, *user_id;
 
   entity = (entity_t) modify_ticket_data.context->first->data;
 
@@ -582,6 +617,35 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
   status = entity_child (entity, "status");
   solved_comment = entity_child (entity, "solved_comment");
   closed_comment = entity_child (entity, "closed_comment");
+
+  assigned_to = entity_child (entity, "assigned_to");
+  if (assigned_to)
+    {
+      entity_t user;
+
+      user = entity_child (assigned_to, "user");
+      if (user == NULL)
+        {
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("modify_ticket",
+                              "MODIFY_TICKET requires USER in ASSIGNED_TO"));
+          modify_ticket_reset (modify_ticket_data);
+          return;
+        }
+
+      user_id = entity_attribute (user, "id");
+      if ((user_id == NULL) || (strlen (user_id) == 0))
+        {
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("modify_ticket",
+                              "MODIFY_TICKET USER must have an id"
+                              " attribute"));
+          modify_ticket_reset (modify_ticket_data);
+          return;
+        }
+    }
+  else
+    user_id = NULL;
 
   if (ticket_id == NULL)
     SEND_TO_CLIENT_OR_FAIL
@@ -593,7 +657,8 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
                  comment ? entity_text (comment) : NULL,
                  status ? entity_text (status) : NULL,
                  solved_comment ? entity_text (solved_comment) : NULL,
-                 closed_comment ? entity_text (closed_comment) : NULL))
+                 closed_comment ? entity_text (closed_comment) : NULL,
+                 user_id))
     {
       case 0:
         SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_ticket"));
@@ -608,6 +673,15 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       case 2:
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         if (send_find_error_to_client ("modify_ticket", "ticket", ticket_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        break;
+      case 3:
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        if (send_find_error_to_client ("modify_ticket", "user", user_id,
                                        gmp_parser))
           {
             error_send_to_client (error);

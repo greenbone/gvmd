@@ -36,6 +36,9 @@ int
 init_ticket_iterator (iterator_t *, const get_data_t *);
 
 const char*
+ticket_iterator_user_id (iterator_t*);
+
+const char*
 ticket_iterator_task_id (iterator_t*);
 
 const char*
@@ -90,8 +93,8 @@ int
 trash_ticket_writable (ticket_t);
 
 int
-create_ticket (const char *, const char *, ticket_t *);
-
+create_ticket (const char *, const char *, const char *, ticket_t *)
+;
 int
 copy_ticket (const char *, const char *, ticket_t *);
 
@@ -100,6 +103,6 @@ ticket_uuid (ticket_t);
 
 int
 modify_ticket (const gchar *, const gchar *, const gchar *,
-               const gchar *, const gchar *);
+               const gchar *, const gchar *, const gchar *);
 
 #endif /* not _GVMD_MANAGE_TICKETS_H */
