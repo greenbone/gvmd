@@ -1643,13 +1643,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>ticket</name>
-		<pattern>
-		  <attrib>
-			<name>id</name>
-			<type>uuid</type>
-			<required>1</required>
-		  </attrib>
-		</pattern>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
       </ele>
     </ele>
   </element>
