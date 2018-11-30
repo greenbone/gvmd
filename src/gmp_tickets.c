@@ -395,7 +395,7 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
             log_event_fail ("ticket", "Ticket", NULL, "created");
             break;
         }
-      create_ticket_reset (create_ticket_data);
+      create_ticket_reset ();
       return;
     }
 
@@ -407,7 +407,7 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_ticket",
                           "CREATE_TICKET requires a RESULT"));
-      create_ticket_reset (create_ticket_data);
+      create_ticket_reset ();
       return;
     }
 
@@ -417,7 +417,7 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_ticket",
                           "CREATE_TICKET requires an ASSIGNED_TO element"));
-      create_ticket_reset (create_ticket_data);
+      create_ticket_reset ();
       return;
     }
 
@@ -427,7 +427,7 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_ticket",
                           "CREATE_TICKET requires USER in ASSIGNED_TO"));
-      create_ticket_reset (create_ticket_data);
+      create_ticket_reset ();
       return;
     }
 
@@ -490,7 +490,7 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
         break;
     }
 
-  create_ticket_reset (create_ticket_data);
+  create_ticket_reset ();
 }
 
 /**
@@ -631,7 +631,7 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("modify_ticket",
                               "MODIFY_TICKET requires USER in ASSIGNED_TO"));
-          modify_ticket_reset (modify_ticket_data);
+          modify_ticket_reset ();
           return;
         }
 
@@ -642,7 +642,7 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
            (XML_ERROR_SYNTAX ("modify_ticket",
                               "MODIFY_TICKET USER must have an id"
                               " attribute"));
-          modify_ticket_reset (modify_ticket_data);
+          modify_ticket_reset ();
           return;
         }
     }
@@ -722,7 +722,7 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
         break;
     }
 
-  modify_ticket_reset (modify_ticket_data);
+  modify_ticket_reset ();
 }
 
 /**
