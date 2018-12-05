@@ -41743,7 +41743,7 @@ delete_credential (const char *credential_id, int ultimate)
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'public_key')",           \
+     " WHERE credential = credentials_trash.id AND type = 'public_key')",     \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
