@@ -37,6 +37,7 @@
  * time.h in glibc2 needs this for strptime.
  */
 #define _XOPEN_SOURCE
+#define _POSIX_C_SOURCE 199309L
 
 #include "utils.h"
 
