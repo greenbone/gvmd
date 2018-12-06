@@ -1322,6 +1322,7 @@ alert_method_name (alert_method_t method)
       case ALERT_METHOD_SYSLOG:      return "Syslog";
       case ALERT_METHOD_TIPPINGPOINT:return "TippingPoint SMS";
       case ALERT_METHOD_VERINICE:    return "verinice Connector";
+      case ALERT_METHOD_VFIRE:       return "Alemba vFire";
       default:                       return "Internal Error";
     }
 }
@@ -1400,6 +1401,8 @@ alert_method_from_name (const char* name)
     return ALERT_METHOD_TIPPINGPOINT;
   if (strcasecmp (name, "verinice Connector") == 0)
     return ALERT_METHOD_VERINICE;
+  if (strcasecmp (name, "Alemba vFire") == 0)
+    return ALERT_METHOD_VFIRE;
   return ALERT_METHOD_ERROR;
 }
 

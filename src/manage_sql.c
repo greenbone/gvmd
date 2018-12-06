@@ -7440,6 +7440,44 @@ validate_tippingpoint_data (alert_method_t method, const gchar *name,
 }
 
 /**
+ * @brief Validate method data for the vFire alert method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ *
+ * @return 0 valid, 70 credential not found, 71 invalid credential type
+ */
+static int
+validate_vfire_data (alert_method_t method, const gchar *name,
+                     gchar **data)
+{
+  if (method == ALERT_METHOD_VFIRE)
+    {
+      if (strcmp (name, "vfire_credential") == 0)
+        {
+          credential_t credential;
+          if (find_credential_with_permission (*data, &credential,
+                                               "get_credentials"))
+            return -1;
+          else if (credential == 0)
+            return 70;
+          else
+            {
+              char *cred_type = credential_type (credential);
+              if (strcmp (cred_type, "up"))
+                {
+                  free (cred_type);
+                  return 71;
+                }
+              free (cred_type);
+            }
+        }
+    }
+  return 0;
+}
+
+/**
  * @brief Check alert params.
  *
  * @param[in]  event           Type of event.
@@ -7498,7 +7536,8 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 60 recipient credential not found, 61 invalid
- *         recipient credential type,
+ *         recipient credential type, 70 vFire credential not found,
+ *         71 invalid vFire credential type,
  *         99 permission denied, -1 error.
  */
 int
@@ -7715,6 +7754,15 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           return ret;
         }
 
+      ret = validate_vfire_data (method, data_name, &data);
+      if (ret)
+        {
+          g_free (data_name);
+          g_free (data);
+          sql_rollback ();
+          return ret;
+        }
+
       sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
@@ -7821,7 +7869,8 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 60 recipient credential not found, 61 invalid
- *         recipient credential type,
+ *         recipient credential type, 70 vFire credential not found,
+ *         71 invalid vFire credential type,
  *         99 permission denied, -1 internal error.
  */
 int
@@ -8068,6 +8117,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             }
 
           ret = validate_tippingpoint_data (method, data_name, &data);
+          if (ret)
+            {
+              g_free (data_name);
+              g_free (data);
+              sql_rollback ();
+              return ret;
+            }
+
+          ret = validate_vfire_data (method, data_name, &data);
           if (ret)
             {
               g_free (data_name);
@@ -13188,6 +13246,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
               return ret;
             }
+        }
+      case ALERT_METHOD_VFIRE:
+        {
+          int ret;
+          ret = -1; // TODO: Add actual escalation
+          return ret;
         }
       case ALERT_METHOD_START_TASK:
         {
