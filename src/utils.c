@@ -36,6 +36,7 @@
  *
  * time.h in glibc2 needs this for strptime.
  */
+
 #define _XOPEN_SOURCE
 /**
  * @brief Needed for nanosleep.
