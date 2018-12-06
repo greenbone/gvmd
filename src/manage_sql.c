@@ -41747,7 +41747,7 @@ delete_credential (const char *credential_id, int ultimate)
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
    { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'public_key')",           \
+     " WHERE credential = credentials_trash.id AND type = 'public_key')",     \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
@@ -63064,6 +63064,10 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Notes Filter");
       else if (strcmp (uuid, "956d13bd-3baa-4404-a138-5e7eb8f9630e") == 0)
         setting_name = g_strdup ("Overrides Filter");
+
+      /* Content composer defaults */
+      else if (strcmp (uuid, "b6b449ee-5d90-4ff0-af20-7e838c389d39") == 0)
+        setting_name = g_strdup ("Report Composer Defaults");
 
       /* Default resource selections */
       else if (strcmp (uuid, "f9f5a546-8018-48d0-bef5-5ad4926ea899") == 0)
