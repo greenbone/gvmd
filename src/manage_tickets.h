@@ -69,10 +69,16 @@ const char*
 ticket_iterator_closed_time (iterator_t*);
 
 const char*
+ticket_iterator_confirmed_time (iterator_t*);
+
+const char*
 ticket_iterator_solved_comment (iterator_t*);
 
 const char*
 ticket_iterator_closed_comment (iterator_t*);
+
+const char*
+ticket_iterator_confirmed_report_id (iterator_t*);
 
 int
 init_ticket_result_iterator (iterator_t *, const gchar *, int);

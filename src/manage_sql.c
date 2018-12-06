@@ -13880,6 +13880,10 @@ event (task_t task, report_t report, event_t event, void* event_data)
 
   alerts_triggered = g_array_new (TRUE, TRUE, sizeof (alert_t));
 
+  if ((event == EVENT_TASK_RUN_STATUS_CHANGED)
+      && (((task_status_t) event_data) == TASK_STATUS_DONE))
+    check_tickets (task);
+
   init_task_alert_iterator (&alerts, task, event);
   while (next (&alerts))
     {

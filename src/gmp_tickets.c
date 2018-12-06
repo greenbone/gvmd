@@ -216,6 +216,18 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                    ticket_iterator_closed_comment (&tickets));
         }
 
+      if (ticket_iterator_confirmed_time (&tickets))
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<confirmed_time>%s</confirmed_time>",
+                                   ticket_iterator_confirmed_time (&tickets));
+          if (ticket_iterator_confirmed_report_id (&tickets))
+            SENDF_TO_CLIENT_OR_FAIL ("<confirmed_report>"
+                                     "<report id=\"%s\"/>"
+                                     "</confirmed_report>",
+                                     ticket_iterator_confirmed_report_id
+                                      (&tickets));
+        }
+
       if (init_ticket_result_iterator (&results,
                                        get_iterator_uuid (&tickets),
                                        get_tickets_data.get.trash))

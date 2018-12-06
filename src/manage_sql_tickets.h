@@ -35,4 +35,7 @@ restore_ticket (const char *);
 void
 empty_trashcan_tickets ();
 
+void
+check_tickets ();
+
 #endif /* not _GVMD_MANAGE_SQL_TICKETS_H */

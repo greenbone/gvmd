@@ -149,9 +149,16 @@ ticket_status_name (ticket_status_t status)
    { "solved_time", "solved", KEYWORD_TYPE_INTEGER },       \
    { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING }, \
    { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
-   { "solved_comment", NULL, KEYWORD_TYPE_STRING },         \
-   { "closed_comment", NULL, KEYWORD_TYPE_STRING },         \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                     \
+   { "iso_time (confirmed_time)", NULL, KEYWORD_TYPE_STRING },                \
+   { "confirmed_time", "confirmed", KEYWORD_TYPE_INTEGER },                   \
+   { "solved_comment", NULL, KEYWORD_TYPE_STRING },                           \
+   { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
+   {                                                                          \
+     "(SELECT uuid FROM reports WHERE id = confirmed_report)",                \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -173,7 +180,7 @@ ticket_status_name (ticket_status_t status)
    {                                                        \
      "(SELECT uuid FROM reports WHERE id = report)",        \
      NULL,                                                  \
-    KEYWORD_TYPE_STRING                                     \
+     KEYWORD_TYPE_STRING                                    \
    },                                                       \
    { "severity", NULL, KEYWORD_TYPE_DOUBLE },               \
    { "host", NULL, KEYWORD_TYPE_STRING },                   \
@@ -186,9 +193,16 @@ ticket_status_name (ticket_status_t status)
    { "solved_time", "solved", KEYWORD_TYPE_INTEGER },       \
    { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING }, \
    { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
-   { "solved_comment", NULL, KEYWORD_TYPE_STRING },         \
-   { "closed_comment", NULL, KEYWORD_TYPE_STRING },         \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                     \
+   { "iso_time (confirmed_time)", NULL, KEYWORD_TYPE_STRING },                \
+   { "confirmed_time", "confirmed", KEYWORD_TYPE_INTEGER },                   \
+   { "solved_comment", NULL, KEYWORD_TYPE_STRING },                           \
+   { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
+   {                                                                          \
+     "(SELECT uuid FROM reports WHERE id = confirmed_report)",                \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
@@ -355,7 +369,7 @@ DEF_ACCESS (ticket_iterator_closed_time, GET_ITERATOR_COLUMN_COUNT + 12);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_solved_comment, GET_ITERATOR_COLUMN_COUNT + 14);
+DEF_ACCESS (ticket_iterator_confirmed_time, GET_ITERATOR_COLUMN_COUNT + 14);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -364,7 +378,26 @@ DEF_ACCESS (ticket_iterator_solved_comment, GET_ITERATOR_COLUMN_COUNT + 14);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 15);
+DEF_ACCESS (ticket_iterator_solved_comment, GET_ITERATOR_COLUMN_COUNT + 16);
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 17);
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_confirmed_report_id,
+            GET_ITERATOR_COLUMN_COUNT + 18);
 
 /**
  * @brief Initialise a ticket result iterator.
@@ -1095,4 +1128,46 @@ empty_trashcan_tickets ()
   sql ("DELETE FROM tickets_trash"
        " WHERE owner = (SELECT id FROM users WHERE uuid = '%s');",
        current_credentials.uuid);
+}
+
+/**
+ * @brief Check if tickets have been resolved.
+ *
+ * @param[in]  task  Task.
+ */
+void
+check_tickets (task_t task)
+{
+  report_t report;
+
+  if (task_last_report (task, &report))
+    {
+      g_warning ("%s: failed to get last report of task %llu,"
+                 " skipping ticket check",
+                 __FUNCTION__,
+                 task);
+      return;
+    }
+
+  sql ("UPDATE tickets"
+       " SET status = %i,"
+       "     confirmed_time = m_now (),"
+       "     confirmed_report = %llu"
+       " WHERE task = %llu"
+       " AND (status = %i"
+       "      OR status = %i)"
+       " AND NOT EXISTS (SELECT * FROM results"
+       "                 WHERE report = %llu"
+       "                 AND nvt = (SELECT nvt FROM results"
+       "                            WHERE id = (SELECT result"
+       "                                        FROM ticket_results"
+       "                                        WHERE ticket = tickets.id"
+       "                                        LIMIT 1)));",
+       // FIX AND NOT EXISTS failed login (or error?)
+       TICKET_STATUS_CONFIRMED,
+       report,
+       task,
+       TICKET_STATUS_OPEN,
+       TICKET_STATUS_SOLVED,
+       report);
 }
