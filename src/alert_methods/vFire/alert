@@ -17,6 +17,27 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-greenbone_vfire_connector $1
+ALERT_CONFIG="$1"
+CONNECTOR=`which greenbone_vfire_connector`
+
+if [ -z "$ALERT_CONFIG" ]
+then
+  echo "No alert config given." >&2
+  exit 1
+fi
+
+if [ ! -f "$ALERT_CONFIG" ]
+then
+  echo "Alert config file not found." >&2
+  exit 1
+fi
+
+if [ -z "$CONNECTOR" ]
+then
+  echo "Connector script 'greenbone_vfire_connector' not found." >&2
+  exit 1
+fi
+
+"$CONNECTOR" "$ALERT_CONFIG"
 EXIT_CODE=$?
 exit $EXIT_CODE
