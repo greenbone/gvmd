@@ -3596,7 +3596,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Create an alert</summary>
+      <summary>Create an email alert</summary>
       <request>
         <create_alert>
           <name>emergency</name>
@@ -3625,6 +3625,70 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               bob@example.org
             </data>
           </method>
+        </create_alert>
+      </request>
+      <response>
+        <create_alert_response status="201"
+                               status_text="OK, resource created"
+                               id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_alert_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create an Alemba vFire alert</summary>
+      <request>
+        <create_alert>
+          <name>Alemba test</name>
+          <method>Alemba vFire
+            <data>
+              <name>vfire_base_url</name>
+              https://alemba.example.com/vfire
+            </data>
+            <data>
+              <name>vfire_credential</name>
+              9431b46f-8491-45d8-81c3-efea92abb47b
+            </data>
+            <data>
+              <name>vfire_client_id</name>
+              5a52a4ff-6f5d-430d-b70a-d5329b6cbbd3
+            </data>
+            <data>
+              <name>vfire_call_description</name>
+              This an automatically created call for the GVM task %n.
+            </data>
+            <data>
+              <name>vfire_call_partition_name</name>
+              IT
+            </data>
+            <data>
+              <name>vfire_call_type_name</name>
+              GVM Report
+            </data>
+            <data>
+              <name>vfire_call_template_name</name>
+              GVM Scan Report
+            </data>
+            <data>
+              <name>vfire_call_impact_name</name>
+              3 - Team (2-10)
+            </data>
+            <data>
+              <name>vfire_call_urgency_name</name>
+              3 - Normal
+            </data>
+            <data>
+              <name>report_formats</name>
+              a3810a62-1f62-11e1-9219-406186ea4fc5,
+              c402cc3e-b531-11e1-9163-406186ea4fc5
+            </data>
+          </method>
+          <condition>always</condition>
+          <event>Task run status changed
+            <data>
+              <name>status</name>
+              Done
+            </data>
+          </event>
         </create_alert>
       </request>
       <response>
