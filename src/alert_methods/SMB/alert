@@ -81,8 +81,8 @@ def smb_dir_exists(auth_path, share, check_dir):
 
     if rc == 0:
         return True
-    elif stdout.endswith("NT_STATUS_OBJECT_NAME_NOT_FOUND\n")
-            or stdout.endswith("NT_STATUS_OBJECT_PATH_NOT_FOUND\n"):
+    elif (stdout.endswith("NT_STATUS_OBJECT_NAME_NOT_FOUND\n")
+          or stdout.endswith("NT_STATUS_OBJECT_PATH_NOT_FOUND\n")):
         return False
     else:
         smb_error_print("Error checking directory %s" % check_dir,
