@@ -2,10 +2,51 @@ SUMMARY OF RELEASE CHANGES FOR GREENBONE VULNERABILITY MANAGER
 ==============================================================
 
 For detailed code changes, please visit
- https://github.com/greenbone/gvm/commits/master
+ https://github.com/greenbone/gvmd/commits/master
 or get the entire source code repository and view log history:
-$ git clone https://github.com/greenbone/gvm.git
-$ cd gvm && git log
+$ git clone https://github.com/greenbone/gvmd.git
+$ cd gvmd && git log
+
+gvmd 8.0+beta2 (2018-12-05)
+
+This is the second beta release of the gvmd module 8.0 for the Greenbone
+Vulnerability Management (GVM) framework.
+
+It was renamed from gvm to gvmd (Greenbone Vulnerability Manager daemon).
+
+Apart from the new name, the module covers a number of significant advances
+and clean-ups compared to the previous version.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Christian Fischer, Matthew Mundell, Timo Pollmeier,
+Bjoern Ricks, Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes compared to gvm 8.0+beta1:
+* Classic report format HTML has been removed from predefined report formats.
+* External tool openvasmr has been renamed to gvmcg.
+* Size of result description and diff text in GMP has been limited.
+* Support for creating filters for vulnerabilities has been added.
+* .deb and .rpm LSC package generation has been improved.
+* SNMP and ESXi Authorization in the scan config have been hidden.
+* Support for using configurable GPG and S/MIME encryption keys for Email Alerts
+  has been added.
+* Script copyright and script version have been removed.
+* Vhosts handling has been improved.
+* User tags can now refer to multiple resources for easier bulk tagging.
+* Elements host_start and host_end have been removed
+  from the report element of response from get_reports.
+* The task status "Internal Error" has been replaced by "Interrupted", which
+  can also occur in case of errors that previously set tasks to "Stopped".
+* "OpenVAS Classic" has been removed from the list of predefined severity
+  classification schemes.
+* A results trashcan table has been added for performance reasons.
+* The prognostic type has been removed from GET_REPORTS and from the
+  report element.
+* An issue related to credential creation and modification has been addressed.
+* Several improvements and fixes related to reports have been done.
+* Documentation has been updated.
+* Several memory management aspects have been improved.
+* Various code cleanups and improvements.
 
 
 gvm 8.0+beta1 (2018-04-30)
