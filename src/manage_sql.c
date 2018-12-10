@@ -7440,6 +7440,44 @@ validate_tippingpoint_data (alert_method_t method, const gchar *name,
 }
 
 /**
+ * @brief Validate method data for the vFire alert method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ *
+ * @return 0 valid, 70 credential not found, 71 invalid credential type
+ */
+static int
+validate_vfire_data (alert_method_t method, const gchar *name,
+                     gchar **data)
+{
+  if (method == ALERT_METHOD_VFIRE)
+    {
+      if (strcmp (name, "vfire_credential") == 0)
+        {
+          credential_t credential;
+          if (find_credential_with_permission (*data, &credential,
+                                               "get_credentials"))
+            return -1;
+          else if (credential == 0)
+            return 70;
+          else
+            {
+              char *cred_type = credential_type (credential);
+              if (strcmp (cred_type, "up"))
+                {
+                  free (cred_type);
+                  return 71;
+                }
+              free (cred_type);
+            }
+        }
+    }
+  return 0;
+}
+
+/**
  * @brief Check alert params.
  *
  * @param[in]  event           Type of event.
@@ -7498,7 +7536,8 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 60 recipient credential not found, 61 invalid
- *         recipient credential type,
+ *         recipient credential type, 70 vFire credential not found,
+ *         71 invalid vFire credential type,
  *         99 permission denied, -1 error.
  */
 int
@@ -7715,6 +7754,15 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           return ret;
         }
 
+      ret = validate_vfire_data (method, data_name, &data);
+      if (ret)
+        {
+          g_free (data_name);
+          g_free (data);
+          sql_rollback ();
+          return ret;
+        }
+
       sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
@@ -7821,7 +7869,8 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 60 recipient credential not found, 61 invalid
- *         recipient credential type,
+ *         recipient credential type, 70 vFire credential not found,
+ *         71 invalid vFire credential type,
  *         99 permission denied, -1 internal error.
  */
 int
@@ -8068,6 +8117,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             }
 
           ret = validate_tippingpoint_data (method, data_name, &data);
+          if (ret)
+            {
+              g_free (data_name);
+              g_free (data);
+              sql_rollback ();
+              return ret;
+            }
+
+          ret = validate_vfire_data (method, data_name, &data);
           if (ret)
             {
               g_free (data_name);
@@ -10820,6 +10878,199 @@ send_to_verinice (const char *url, const char *username, const char *password,
 }
 
 /**
+ * @brief  Appends an XML fragment for vFire call input to a string buffer.
+ *
+ * @param[in]  key      The name of the key.
+ * @param[in]  value    The value to add.
+ * @param[in]  buffer   The string buffer to append to.
+ *
+ * @return  Always FALSE.
+ */
+gboolean
+buffer_vfire_call_input (gchar *key, gchar *value, GString *buffer)
+{
+  xml_string_append (buffer,
+                     "<%s>%s</%s>",
+                     key, value, key);
+  return FALSE;
+}
+
+/**
+ * @brief  Checks a mandatory vFire parameter and adds it to the config XML.
+ *
+ * @param[in]  param  The parameter to check.
+ */
+#define APPEND_VFIRE_PARAM(param)                                             \
+  if (param)                                                                  \
+    xml_string_append (config_xml,                                            \
+                       "<" G_STRINGIFY(param) ">%s</" G_STRINGIFY(param) ">", \
+                       param);                                                \
+  else                                                                        \
+    {                                                                         \
+      *message = g_strdup ("Mandatory " G_STRINGIFY(param) " missing.");      \
+      g_warning ("%s: Missing " G_STRINGIFY(param) ".", __FUNCTION__);        \
+      g_string_free (config_xml, TRUE);                                       \
+      return -1;                                                              \
+    }
+
+/**
+ * @brief Create a new call on an Alemba vFire server.
+ *
+ * @param[in]  base_url       Base url of the vFire server.
+ * @param[in]  client_id      The Alemba API Client ID to authenticate with.
+ * @param[in]  session_type   Alemba session type to use, e.g. "Analyst".
+ * @param[in]  username       Username.
+ * @param[in]  password       Password.
+ * @param[in]  report_data    Data for vFire call report attachments.
+ * @param[in]  call_data      Data for creating the vFire call.
+ * @param[in]  description_template  Template for the description text.
+ * @param[out] message        Error message.
+ *
+ * @return 0 success, -1 error
+ */
+static int
+send_to_vfire (const char *base_url, const char *client_id,
+               const char *session_type, const char *username,
+               const char *password, GPtrArray *report_data,
+               GTree *call_data, const char *description_template,
+               gchar **message)
+{
+  const char *alert_id = "159f79a5-fce8-4ec5-aa49-7d17a77739a3";
+  GString *config_xml;
+  int index;
+  char config_xml_filename[] = "/tmp/gvmd_vfire_data_XXXXXX.xml";
+  int config_xml_fd;
+  FILE *config_xml_file;
+  gchar **cmd;
+  gchar *alert_script;
+  int ret, exit_status;
+  GError *err;
+
+  config_xml = g_string_new ("<alert_data>");
+
+  // Mandatory parameters
+  APPEND_VFIRE_PARAM (base_url)
+  APPEND_VFIRE_PARAM (client_id)
+  APPEND_VFIRE_PARAM (username)
+  APPEND_VFIRE_PARAM (password)
+
+  // Optional parameters
+  xml_string_append (config_xml,
+                     "<session_type>%s</session_type>",
+                     session_type ? session_type : "Analyst");
+
+  // Call input
+  g_string_append (config_xml, "<call_input>");
+  g_tree_foreach (call_data, ((GTraverseFunc) buffer_vfire_call_input),
+                  config_xml);
+  g_string_append (config_xml, "</call_input>");
+
+  // Report data
+  g_string_append (config_xml, "<attach_reports>");
+  for (index = 0; index < report_data->len; index++)
+    {
+      alert_report_data_t *report_item;
+      report_item = g_ptr_array_index (report_data, index);
+
+      xml_string_append (config_xml,
+                         "<report>"
+                         "<src_path>%s</src_path>"
+                         "<dest_filename>%s</dest_filename>"
+                         "<content_type>%s</content_type>"
+                         "<report_format>%s</report_format>"
+                         "</report>",
+                         report_item->local_filename,
+                         report_item->remote_filename,
+                         report_item->content_type,
+                         report_item->report_format_name);
+
+    }
+  g_string_append (config_xml, "</attach_reports>");
+
+  // End data XML and output to file
+  g_string_append (config_xml, "</alert_data>");
+
+  config_xml_fd = g_mkstemp (config_xml_filename);
+  if (config_xml_fd == -1)
+    {
+      g_warning ("%s: Could not create alert script config file: %s",
+                 __FUNCTION__, strerror (errno));
+      g_string_free (config_xml, TRUE);
+      return -1;
+    }
+
+  config_xml_file = fdopen (config_xml_fd, "w");
+  if (config_xml_file == NULL)
+    {
+      g_warning ("%s: Could not open alert script config file: %s",
+                 __FUNCTION__, strerror (errno));
+      g_string_free (config_xml, TRUE);
+      close (config_xml_fd);
+      return -1;
+    }
+
+  if (fprintf (config_xml_file, "%s", config_xml->str) <= 0)
+    {
+      g_warning ("%s: Could not write alert script config file: %s",
+                 __FUNCTION__, strerror (errno));
+      g_string_free (config_xml, TRUE);
+      fclose (config_xml_file);
+      return -1;
+    }
+
+  fflush (config_xml_file);
+  fclose (config_xml_file);
+  g_string_free (config_xml, TRUE);
+
+  // Run the script
+  alert_script = g_build_filename (GVMD_DATA_DIR,
+                                   "global_alert_methods",
+                                   alert_id,
+                                   "alert",
+                                   NULL);
+
+  // TODO: Drop privileges when running as root
+
+  cmd = (gchar **) g_malloc (3 * sizeof (gchar *));
+  cmd[0] = alert_script;
+  cmd[1] = config_xml_filename;
+  cmd[2] = NULL;
+
+  ret = 0;
+  if (g_spawn_sync (NULL,
+                    cmd,
+                    NULL,
+                    G_SPAWN_STDOUT_TO_DEV_NULL,
+                    NULL,
+                    NULL,
+                    NULL,
+                    message,
+                    &exit_status,
+                    &err) == FALSE)
+    {
+      g_warning ("%s: Failed to run alert script: %s",
+                 __FUNCTION__, err->message);
+      ret = -1;
+    }
+
+  if (exit_status)
+    {
+      g_warning ("%s: Alert script exited with status %d",
+                 __FUNCTION__, exit_status);
+      g_message ("%s: stderr: %s",
+                 __FUNCTION__, *message);
+      ret = -1;
+    }
+
+  // Cleanup
+  g_free (cmd);
+  g_free (alert_script);
+  g_unlink (config_xml_filename);
+
+  return ret;
+}
+
+/**
  * @brief Convert an XML report and send it to a TippingPoint SMS.
  *
  * @param[in]  report           Report to send.
@@ -11720,6 +11971,416 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
   *used_report_format = report_format;
 
   return 0;
+}
+
+/**
+ * @brief  Generates a filename or path for a report.
+ *
+ * If no custom_format is given, the setting "Report Export File Name"
+ *  is used instead.
+ *
+ * @param[in]  report         The report to generate the filename for.
+ * @param[in]  report_format  The report format to use.
+ * @param[in]  custom_format  A custom format string to use for the filename.
+ * @param[in]  add_extension  Whether to add the filename extension or not.
+ *
+ * @return  Newly allocated filename.
+ */
+static gchar *
+generate_report_filename (report_t report, report_format_t report_format,
+                          const char *custom_format, gboolean add_extension)
+{
+  task_t task;
+  char *fname_format, *report_id, *creation_time, *modification_time;
+  char *report_task_name, *rf_name;
+  gchar *filename_base, *filename;
+
+  if (custom_format && strcmp (custom_format, ""))
+    fname_format = g_strdup (custom_format);
+  else
+    fname_format
+      = sql_string ("SELECT value FROM settings"
+                    " WHERE name"
+                    "       = 'Report Export File Name'"
+                    " AND " ACL_GLOBAL_OR_USER_OWNS ()
+                    " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
+                    current_credentials.uuid);
+
+  report_id = report_uuid (report);
+
+  creation_time
+    = sql_string ("SELECT iso_time (start_time)"
+                  " FROM reports"
+                  " WHERE id = %llu",
+                  report);
+
+  modification_time
+    = sql_string ("SELECT iso_time (end_time)"
+                  " FROM reports"
+                  " WHERE id = %llu",
+                  report);
+
+  report_task (report, &task);
+  report_task_name = task_name (task);
+
+  rf_name = report_format ? report_format_name (report_format)
+                          : g_strdup ("unknown");
+
+  filename_base
+    = gvm_export_file_name (fname_format,
+                            current_credentials.username,
+                            "report", report_id,
+                            creation_time, modification_time,
+                            report_task_name, rf_name);
+
+  if (add_extension && report_format)
+    {
+      gchar *extension;
+      extension = report_format_extension (report_format);
+      filename = g_strdup_printf ("%s.%s", filename_base, extension);
+      free (extension);
+    }
+  else
+    filename = g_strdup (filename_base);
+
+  free (fname_format);
+  free (report_id);
+  free (creation_time);
+  free (modification_time);
+  free (report_task_name);
+  free (rf_name);
+  g_free (filename_base);
+
+  return filename;
+}
+
+/**
+ * @brief  Generates report results get data for an alert.
+ *
+ * @param[in]  alert              The alert to try to get the filter data from.
+ * @param[in]  base_get_data      The get data for fallback and other data.
+ * @param[out] alert_filter_get   Pointer to the newly allocated get_data.
+ * @param[out] filter_return      Pointer to the filter.
+ *
+ * @return  0 success, -1 error, -3 filter not found.
+ */
+static int
+generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
+                           get_data_t **alert_filter_get,
+                           filter_t *filter_return)
+{
+  char *filt_id;
+  filter_t filter;
+
+  if (alert_filter_get == NULL)
+    return -1;
+
+  filt_id = alert_filter_id (alert);
+  filter = 0;
+  if (filt_id)
+    {
+      if (find_filter_with_permission (filt_id, &filter,
+                                       "get_filters"))
+        {
+          free (filt_id);
+          return -1;
+        }
+      if (filter == 0)
+        {
+          free (filt_id);
+          return -3;
+        }
+    }
+
+  if (filter_return)
+    *filter_return = filter;
+
+  if (filter)
+    {
+      (*alert_filter_get) = g_malloc0 (sizeof (get_data_t));
+      (*alert_filter_get)->details = base_get_data->details;
+      (*alert_filter_get)->ignore_pagination = base_get_data->ignore_pagination;
+      (*alert_filter_get)->ignore_max_rows_per_page
+        = base_get_data->ignore_max_rows_per_page;
+      (*alert_filter_get)->filt_id = g_strdup (filt_id);
+      (*alert_filter_get)->filter = filter_term (filt_id);
+    }
+  else
+    (*alert_filter_get) = NULL;
+
+  return 0;
+}
+
+/**
+ * @brief Escalate an event.
+ *
+ * @param[in]  alert       Alert.
+ * @param[in]  task        Task.
+ * @param[in]  report      Report.  0 for most recent report.
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event data.
+ * @param[in]  method      Method from alert.
+ * @param[in]  condition   Condition from alert, which was met by event.
+ * @param[in]  get         GET data for report.
+ * @param[in]  notes_details      If notes, Whether to include details.
+ * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[out] script_message  Custom error message from the script.
+ *
+ * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
+ *         find filter, -4 failed to find credential, -5 alert script failed.
+ */
+static int
+escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
+                   const void* event_data, alert_method_t method,
+                   alert_condition_t condition, const get_data_t *get,
+                   int notes_details, int overrides_details,
+                   gchar **script_message)
+{
+  int ret;
+  char *credential_id;
+  get_data_t *alert_filter_get;
+  filter_t filter;
+  credential_t credential;
+  char *base_url, *session_type, *client_id, *username, *password;
+  char *report_formats_str;
+  gchar **report_formats, **point;
+  char reports_dir[] = "/tmp/gvmd_XXXXXX";
+  gboolean is_first_report = TRUE;
+  GString *format_names;
+  GPtrArray *reports;
+  char *report_zone;
+  gchar *host_summary;
+  iterator_t data_iterator;
+  GTree *call_input;
+  char *description_template;
+  int name_offset;
+
+  // Get report
+  if (report == 0)
+    switch (sql_int64 (&report,
+                       "SELECT max (id) FROM reports"
+                       " WHERE task = %llu",
+                       task))
+      {
+        case 0:
+          if (report)
+            break;
+        case 1:        /* Too few rows in result of query. */
+        case -1:
+          return -1;
+          break;
+        default:       /* Programming error. */
+          assert (0);
+          return -1;
+      }
+
+  // Get report results filter and corresponding get data
+  alert_filter_get = NULL;
+  ret = generate_alert_filter_get (alert, get, &alert_filter_get, &filter);
+  if (ret)
+    return ret;
+
+  // Generate reports
+  if (mkdtemp (reports_dir) == NULL)
+    {
+      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+      get_data_reset (alert_filter_get);
+      g_free (alert_filter_get);
+      return -1;
+    }
+
+  reports = g_ptr_array_new_full (0, (GDestroyNotify) alert_report_data_free);
+  report_formats_str = alert_data (alert, "method", "report_formats");
+  report_formats = g_strsplit_set (report_formats_str, ",", 0);
+  point = report_formats;
+  free (report_formats_str);
+
+  report_zone = NULL;
+  host_summary = NULL;
+  format_names = g_string_new ("");
+  while (*point)
+    {
+      gchar *report_format_id;
+      report_format_t report_format;
+
+      report_format_id = g_strstrip (*point);
+      find_report_format_with_permission (report_format_id,
+                                          &report_format,
+                                          "get_report_formats");
+
+      if (report_format)
+        {
+          alert_report_data_t *alert_report_item;
+          size_t content_length;
+          gchar *report_content;
+          GError *error = NULL;
+
+          alert_report_item = g_malloc0 (sizeof (alert_report_data_t));
+
+          report_content = manage_report (report,
+                                          get_delta_report
+                                            (alert, task, report),
+                                          alert_filter_get
+                                            ? alert_filter_get 
+                                            : get,
+                                          report_format,
+                                          notes_details,
+                                          overrides_details,
+                                          NULL, /* Type. */
+                                          &content_length,
+                                          NULL /* extension */,
+                                          &(alert_report_item->content_type),
+                                          NULL /* term */,
+                                          is_first_report
+                                            ? &report_zone
+                                            : NULL,
+                                          is_first_report
+                                            ? &host_summary
+                                            : NULL);
+
+          alert_report_item->report_format_name
+            = report_format_name (report_format);
+
+          if (is_first_report == FALSE)
+            g_string_append (format_names, ", ");
+          g_string_append (format_names,
+                           alert_report_item->report_format_name);
+
+          alert_report_item->remote_filename
+            = generate_report_filename (report, report_format, NULL, TRUE);
+
+          alert_report_item->local_filename
+            = g_build_filename (reports_dir,
+                                alert_report_item->remote_filename,
+                                NULL);
+
+          g_file_set_contents (alert_report_item->local_filename,
+                               report_content, content_length,
+                               &error);
+          g_free (report_content);
+          if (error)
+            {
+              g_warning ("%s: Failed to write report to %s: %s",
+                         __FUNCTION__,
+                         alert_report_item->local_filename,
+                         error->message);
+
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+              alert_report_data_free (alert_report_item);
+              g_strfreev (report_formats);
+              return -1;
+            }
+          g_ptr_array_add (reports, alert_report_item);
+          is_first_report = FALSE;
+        }
+
+      point ++;
+    }
+  g_strfreev (report_formats);
+
+  // Find vFire credential
+  credential_id = alert_data (alert, "method",
+                              "vfire_credential");
+  if (find_credential_with_permission (credential_id, &credential,
+                                       "get_credentials"))
+    {
+      get_data_reset (alert_filter_get);
+      g_free (alert_filter_get);
+      free (credential_id);
+      return -1;
+    }
+  else if (credential == 0)
+    {
+      get_data_reset (alert_filter_get);
+      g_free (alert_filter_get);
+      free (credential_id);
+      return -4;
+    }
+
+  // vFire General data
+  base_url = alert_data (alert, "method",
+                          "vfire_base_url");
+
+  // vFire Login data
+  session_type = alert_data (alert, "method", "vfire_session_type");
+  client_id = alert_data (alert, "method", "vfire_client_id");
+
+  username = credential_value (credential, "username");
+  password = credential_encrypted_value (credential, "password");
+
+  // Call input data
+  call_input = g_tree_new_full ((GCompareDataFunc) g_strcmp0,
+                                NULL, g_free, g_free);
+  name_offset = strlen ("vfire_call_");
+  init_iterator (&data_iterator,
+                 "SELECT name, data"
+                 " FROM alert_method_data"
+                 " WHERE alert = %llu"
+                 " AND name %s 'vfire_call_%%';",
+                 alert, sql_ilike_op ());
+
+  while (next (&data_iterator))
+    {
+      gchar *name, *value;
+      name = g_strdup (iterator_string (&data_iterator, 0)
+                        + name_offset);
+      value = g_strdup (iterator_string (&data_iterator, 1));
+
+      g_tree_replace (call_input, name, value);
+    }
+  cleanup_iterator (&data_iterator);
+
+  // Special case for descriptionterm
+  description_template = alert_data (alert, "method",
+                                     "vfire_call_description");
+  if (description_template == NULL)
+    description_template = g_strdup (ALERT_VFIRE_CALL_DESCRIPTION);
+
+  gchar *description;
+  description = alert_message_print (description_template,
+                                     event,
+                                     event_data,
+                                     task,
+                                     alert,
+                                     condition,
+                                     format_names->str,
+                                     filter,
+                                     alert_filter_get
+                                       ? alert_filter_get->filter
+                                       : (get->filter ? get->filter : ""),
+                                     report_zone,
+                                     host_summary,
+                                     NULL,
+                                     0,
+                                     0,
+                                     0,
+                                     max_attach_length);
+
+  g_tree_replace (call_input,
+                  g_strdup ("description"),
+                  description);
+
+  // Create vFire ticket
+  ret = send_to_vfire (base_url, client_id, session_type, username,
+                       password, reports, call_input, description_template,
+                       script_message);
+
+  // Cleanup
+  gvm_file_remove_recurse (reports_dir);
+
+  get_data_reset (alert_filter_get);
+  g_free (alert_filter_get);
+  free (base_url);
+  free (session_type);
+  free (client_id);
+  free (username);
+  free (password);
+  g_ptr_array_free (reports, TRUE);
+  g_tree_destroy (call_input);
+  free (description_template);
+
+  return ret;
 }
 
 /**
@@ -13188,6 +13849,15 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
               return ret;
             }
+        }
+      case ALERT_METHOD_VFIRE:
+        {
+          int ret;
+          ret = escalate_to_vfire (alert, task, report, event,
+                                   event_data, method, condition,
+                                   get, notes_details, overrides_details,
+                                   script_message);
+          return ret;
         }
       case ALERT_METHOD_START_TASK:
         {

@@ -7,6 +7,12 @@ or get the entire source code repository and view log history:
 $ git clone https://github.com/greenbone/gvmd.git
 $ cd gvmd && git log
 
+gvmd 8.0+beta3 (work in progress)
+
+Main changes compared to gvm 8.0+beta2:
+* The new alert method "Alemba vFire" has been added.
+
+
 gvmd 8.0+beta2 (2018-12-05)
 
 This is the second beta release of the gvmd module 8.0 for the Greenbone
