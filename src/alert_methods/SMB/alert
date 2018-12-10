@@ -117,10 +117,10 @@ def smb_put(auth_path, share, report_path, dest_path):
         sys.exit(1)
 
 def main():
-  if len(sys.argv) != 5:
-    print("usage: %s <share> <dest_path> <auth_path> <report_path>" \
-          % sys.argv[0], file=sys.stderr)
-    sys.exit(1);
+    if len(sys.argv) != 5:
+        print("usage: %s <share> <dest_path> <auth_path> <report_path>" \
+              % sys.argv[0], file=sys.stderr)
+        sys.exit(1);
 
     share = sys.argv[1]
     dest_path = sys.argv[2]
