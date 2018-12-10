@@ -396,6 +396,22 @@ type_is_scap (const char*);
 /* Events and Alerts. */
 
 /**
+ * @brief Data about a report sent by an alert.
+ */
+typedef struct {
+  gchar *local_filename;          ///< Path to the local report file.
+  gchar *remote_filename;         ///< Path or filename to send to / as.
+  gchar *content_type;            ///< The MIME content type of the report.
+  gchar *report_format_name;      ///< Name of the report format used.
+} alert_report_data_t;
+
+void
+alert_report_data_free (alert_report_data_t *);
+
+void
+alert_report_data_reset (alert_report_data_t *);
+
+/**
  * @brief Default format string for alert email, when including report.
  */
 #define ALERT_MESSAGE_INCLUDE                                                 \
@@ -476,6 +492,26 @@ type_is_scap (const char*);
  "This email was sent to you as a configured security scan escalation.\n"     \
  "Please contact your local system administrator if you think you\n"          \
  "should not have received it.\n"
+
+/**
+ * @brief Default description format string for vFire alert.
+ */
+#define ALERT_VFIRE_CALL_DESCRIPTION                                          \
+ "GVM Task '$n': $e\n"                                                        \
+ "\n"                                                                         \
+ "After the event $e,\n"                                                      \
+ "the following condition was met: $c\n"                                      \
+ "\n"                                                                         \
+ "This ticket includes reports in the following format(s):\n"                 \
+ "$r.\n"                                                                      \
+ "Full details and other report formats are available on the scan engine.\n"  \
+ "\n"                                                                         \
+ "$t"                                                                         \
+ "\n"                                                                         \
+ "Note:\n"                                                                    \
+ "This ticket was created automatically as a security scan escalation.\n"     \
+ "Please contact your local system administrator if you think it\n"           \
+ "was created or assigned erroneously.\n"
 
 /**
  * @brief Types of task events.
