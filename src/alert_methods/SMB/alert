@@ -22,10 +22,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import io
 import re
 import sys
 import subprocess
+
 
 def smb_error_print(message, stdout, stderr):
     print(message, file=sys.stderr)
@@ -33,6 +33,7 @@ def smb_error_print(message, stdout, stderr):
         print(stderr, file=sys.stderr)
     if stdout:
         print(stdout, file=sys.stderr)
+
 
 def smb_call(auth_path, share, command):
     args = ["smbclient", "-m", "SMB3", "-A", auth_path, share, "-c", command]
@@ -75,6 +76,7 @@ def smb_call(auth_path, share, command):
     smb_error_print("smbclient call failed:", stdout, stderr)
     sys.exit(1)
 
+
 def smb_dir_exists(auth_path, share, check_dir):
     command = "cd \"%s\"" % (check_dir)
     rc, stdout, stderr = smb_call(auth_path, share, command)
@@ -88,6 +90,7 @@ def smb_dir_exists(auth_path, share, check_dir):
         smb_error_print("Error checking directory %s" % check_dir,
                         stdout, stderr)
         sys.exit(1)
+
 
 def smb_mkdir(auth_path, share, check_dir):
     command = "mkdir \"%s\"" % (check_dir)
@@ -105,6 +108,7 @@ def smb_mkdir(auth_path, share, check_dir):
                         stdout, stderr)
         sys.exit(1)
 
+
 def smb_put(auth_path, share, report_path, dest_path):
     command = "put \"%s\" \"%s\"" % (report_path, dest_path)
     rc, stdout, stderr = smb_call(auth_path, share, command)
@@ -116,11 +120,12 @@ def smb_put(auth_path, share, report_path, dest_path):
                         stdout, stderr)
         sys.exit(1)
 
+
 def main():
     if len(sys.argv) != 5:
-        print("usage: %s <share> <dest_path> <auth_path> <report_path>" \
+        print("usage: %s <share> <dest_path> <auth_path> <report_path>"
               % sys.argv[0], file=sys.stderr)
-        sys.exit(1);
+        sys.exit(1)
 
     share = sys.argv[1]
     dest_path = sys.argv[2]
@@ -143,7 +148,7 @@ def main():
     for i in range(len(dest_subpaths)-1, 0, -1):
         if smb_dir_exists(auth_path, share, dest_subpaths[i]):
             first_existing_path_index = i
-            break;
+            break
 
     # Create missing directories
     if create_dirs:
@@ -151,6 +156,7 @@ def main():
             smb_mkdir(auth_path, share, dest_subpaths[i])
 
     smb_put(auth_path, share, report_path, dest_path)
+
 
 if __name__ == '__main__':
     main()
