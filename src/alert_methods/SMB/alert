@@ -1,14 +1,13 @@
-#!/bin/sh
-#
-# OpenVAS
-# $Id$
-# Description: Escalator method script: SMB.
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Description:
+# # Description: Escalator method script: SMB.
 #
 # Authors:
 # Timo Pollmeier <timo.pollmeier@greenbone.net>
 #
 # Copyright:
-# Copyright (C) 2016 Greenbone Networks GmbH
+# Copyright (C) 2018 Greenbone Networks GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,15 +20,143 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-SHARE_LOCATION=$1        # \\host\share.
-DEST_PATH=$2             # Path relative to the share
-AUTH_PATH=$3             # Path to the authentication file
-REPORT_PATH=$4           # Path to the report
+import re
+import sys
+import subprocess
 
-smbclient -A "$AUTH_PATH" "$SHARE_LOCATION" -c "put \"$REPORT_PATH\" \"$DEST_PATH\"" >&2
-EXIT_CODE=$?
 
-exit $EXIT_CODE
+def smb_error_print(message, stdout, stderr):
+    print(message, file=sys.stderr)
+    if stderr:
+        print(stderr, file=sys.stderr)
+    if stdout:
+        print(stdout, file=sys.stderr)
+
+
+def smb_call(auth_path, share, command):
+    args = ["smbclient", "-m", "SMB3", "-A", auth_path, share, "-c", command]
+    retries = 10
+    stdout = ''
+    stderr = ''
+    retry_regex = re.compile("^Connection to .* failed")
+
+    while retries > 0:
+        retries = retries - 1
+        try:
+            p = subprocess.Popen(args,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            p.wait()
+            stdout_bytes, stderr_bytes = p.communicate()
+        except FileNotFoundError as err:
+            print("Error: Could not find smbclient", file=sys.stderr)
+            sys.exit(1)
+        except Exception as err:
+            print("%s running smbclient: %s" % (type(err).__name__, err),
+                  file=sys.stderr)
+            sys.exit(1)
+
+        stdout = stdout_bytes.decode("UTF-8")
+        stderr = stderr_bytes.decode("UTF-8")
+        ret = p.returncode
+
+        # Unexpected exit code from smbclient
+        if ret != 0 and ret != 1:
+            smb_error_print("smbclient exited with code %d" % (ret),
+                            stdout, stderr)
+            sys.exit(1)
+
+        # Success or an error that is not expected to occur
+        #  just temporarily
+        if ret == 0 or retry_regex.match(stdout) is None:
+            return p.returncode, stdout, stderr
+
+    smb_error_print("smbclient call failed:", stdout, stderr)
+    sys.exit(1)
+
+
+def smb_dir_exists(auth_path, share, check_dir):
+    command = "cd \"%s\"" % (check_dir)
+    rc, stdout, stderr = smb_call(auth_path, share, command)
+
+    if rc == 0:
+        return True
+    elif (stdout.endswith("NT_STATUS_OBJECT_NAME_NOT_FOUND\n")
+          or stdout.endswith("NT_STATUS_OBJECT_PATH_NOT_FOUND\n")):
+        return False
+    else:
+        smb_error_print("Error checking directory %s" % check_dir,
+                        stdout, stderr)
+        sys.exit(1)
+
+
+def smb_mkdir(auth_path, share, check_dir):
+    command = "mkdir \"%s\"" % (check_dir)
+    rc, stdout, stderr = smb_call(auth_path, share, command)
+
+    if rc == 0:
+        if not smb_dir_exists(auth_path, share, check_dir):
+            print("Could not create directory %s" % check_dir,
+                  file=sys.stderr)
+            sys.exit(1)
+        else:
+            print("Created directory %s" % check_dir)
+    else:
+        smb_error_print("Error creating directory %s" % check_dir,
+                        stdout, stderr)
+        sys.exit(1)
+
+
+def smb_put(auth_path, share, report_path, dest_path):
+    command = "put \"%s\" \"%s\"" % (report_path, dest_path)
+    rc, stdout, stderr = smb_call(auth_path, share, command)
+
+    if rc == 0:
+        print("Report copied to directory %s" % dest_path)
+    else:
+        smb_error_print("Error copying to %s:" % dest_path,
+                        stdout, stderr)
+        sys.exit(1)
+
+
+def main():
+    if len(sys.argv) != 5:
+        print("usage: %s <share> <dest_path> <auth_path> <report_path>"
+              % sys.argv[0], file=sys.stderr)
+        sys.exit(1)
+
+    share = sys.argv[1]
+    dest_path = sys.argv[2]
+    auth_path = sys.argv[3]
+    report_path = sys.argv[4]
+
+    create_dirs = True
+
+    # get list of subdirectory paths
+    dest_parts = dest_path.split('\\')
+    dest_subpaths = [dest_parts[0]]
+    if len(dest_parts) >= 2:
+        make_dest = dest_parts[0]
+        for i in range(1, len(dest_parts)):
+            dest_subpaths.append(make_dest)
+            make_dest += '\\' + dest_parts[i]
+
+    # Find first existing path
+    first_existing_path_index = -1
+    for i in range(len(dest_subpaths)-1, 0, -1):
+        if smb_dir_exists(auth_path, share, dest_subpaths[i]):
+            first_existing_path_index = i
+            break
+
+    # Create missing directories
+    if create_dirs:
+        for i in range(first_existing_path_index + 1, len(dest_subpaths)):
+            smb_mkdir(auth_path, share, dest_subpaths[i])
+
+    smb_put(auth_path, share, report_path, dest_path)
+
+
+if __name__ == '__main__':
+    main()
