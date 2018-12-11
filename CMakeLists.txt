@@ -536,6 +536,10 @@ install (FILES src/alert_methods/verinice/alert
          DESTINATION ${GVMD_DATA_DIR}/global_alert_methods/f9d97653-f89b-41af-9ba1-0f6ee00e9c1a/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
+install (FILES src/alert_methods/vFire/alert
+         DESTINATION ${GVMD_DATA_DIR}/global_alert_methods/159f79a5-fce8-4ec5-aa49-7d17a77739a3/
+         PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
  install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${GVMD_DATA_DIR}/wizards)")
 
 install (FILES src/wizards/quick_first_scan.xml

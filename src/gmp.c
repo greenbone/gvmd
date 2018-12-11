@@ -21926,6 +21926,22 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         " type 'pgp' or 'smime'"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 70:
+                    {
+                      SEND_TO_CLIENT_OR_FAIL
+                        ("<create_alert_response"
+                         " status=\"" STATUS_ERROR_MISSING "\""
+                         " status_text=\"Credential for vFire not found\"/>");
+                      log_event_fail ("alert", "Alert", NULL, "created");
+                    }
+                    break;
+                  case 71:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "vFire credential must have"
+                                        " type 'up'"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -25588,6 +25604,22 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                    (XML_ERROR_SYNTAX ("create_alert",
                                       "Email recipient credential must have"
                                       " type 'pgp' or 'smime'"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 70:
+                {
+                  SEND_TO_CLIENT_OR_FAIL
+                    ("<create_alert_response"
+                      " status=\"" STATUS_ERROR_MISSING "\""
+                      " status_text=\"Credential for vFire not found\"/>");
+                  log_event_fail ("alert", "Alert", NULL, "created");
+                }
+                break;
+              case 71:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "vFire credential must have"
+                                    " type 'up'"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 99:
