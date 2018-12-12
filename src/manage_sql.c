@@ -10926,7 +10926,7 @@ buffer_vfire_call_input (gchar *key, gchar *value, GString *buffer)
  * @param[in]  description_template  Template for the description text.
  * @param[out] message        Error message.
  *
- * @return 0 success, -1 error
+ * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
 send_to_vfire (const char *base_url, const char *client_id,
@@ -11059,7 +11059,7 @@ send_to_vfire (const char *base_url, const char *client_id,
                  __FUNCTION__, exit_status);
       g_message ("%s: stderr: %s",
                  __FUNCTION__, *message);
-      ret = -1;
+      ret = -5;
     }
 
   // Cleanup
