@@ -12102,8 +12102,11 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
   // Cleanup
   openvas_file_remove_recurse (reports_dir);
 
-  get_data_reset (alert_filter_get);
-  g_free (alert_filter_get);
+  if (alert_filter_get)
+    {
+      get_data_reset (alert_filter_get);
+      g_free (alert_filter_get);
+    }
   free (base_url);
   free (session_type);
   free (client_id);
