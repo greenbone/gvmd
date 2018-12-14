@@ -21228,11 +21228,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           resource_t asset;
 
           if (create_asset_data->report_id == NULL
-              && create_asset_data->name == NULL)
+              && (create_asset_data->name == NULL
+                  || create_asset_data->type == NULL))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_asset",
-                                "CREATE_ASSET requires a report ID or host"
-                                " name"));
+                                "CREATE_ASSET requires a report ID or an"
+                                " ASSET with TYPE and NAME"));
           else if (create_asset_data->report_id)
             switch (create_asset_report (create_asset_data->report_id,
                                          create_asset_data->filter_term))
@@ -21268,46 +21269,57 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   log_event_fail ("asset", "Asset", NULL, "created");
                   break;
               }
-          else switch (create_asset_host (create_asset_data->name,
-                                          create_asset_data->comment,
-                                          &asset))
+          else if (strcasecmp (create_asset_data->type, "host") == 0)
             {
-              case 0:
+              switch (create_asset_host (create_asset_data->name,
+                                         create_asset_data->comment,
+                                         &asset))
                 {
-                  char *uuid;
-                  uuid = host_uuid (asset);
-                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_asset"),
-                                           uuid);
-                  log_event ("asset", "Asset", uuid, "created");
-                  g_free (uuid);
-                  break;
+                  case 0:
+                    {
+                      char *uuid;
+                      uuid = host_uuid (asset);
+                      SENDF_TO_CLIENT_OR_FAIL
+                        (XML_OK_CREATED_ID ("create_asset"), uuid);
+                      log_event ("asset", "Asset", uuid, "created");
+                      g_free (uuid);
+                      break;
+                    }
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("create_asset",
+                                          "Asset exists already"));
+                    log_event_fail ("asset", "Asset", NULL, "created");
+                    break;
+                  case 2:
+                    SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("create_asset",
+                                          "Name may only contain alphanumeric"
+                                          " characters"));
+                    log_event_fail ("asset", "Asset", NULL, "created");
+                    break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("create_asset",
+                                          "Permission denied"));
+                    log_event_fail ("asset", "Asset", NULL, "created");
+                    break;
+                  default:
+                    assert (0);
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("create_asset"));
+                    log_event_fail ("asset", "Asset", NULL, "created");
+                    break;
                 }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
+            }
+          else
+            {
+              SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_asset",
-                                    "Asset exists already"));
-                log_event_fail ("asset", "Asset", NULL, "created");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_asset",
-                                    "Name may only contain alphanumeric"
-                                    " characters"));
-                log_event_fail ("asset", "Asset", NULL, "created");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_asset",
-                                    "Permission denied"));
-                log_event_fail ("asset", "Asset", NULL, "created");
-                break;
-              default:
-                assert (0);
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_asset"));
-                log_event_fail ("asset", "Asset", NULL, "created");
-                break;
+                                    "ASSET TYPE must be 'host'"));
+              log_event_fail ("asset", "Asset", NULL, "created");
+              break;
             }
           create_asset_data_reset (create_asset_data);
           set_client_state (CLIENT_AUTHENTIC);

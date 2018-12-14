@@ -3711,7 +3711,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>asset</name>
       <pattern>
         <e>name</e>
-        <e>comment</e>
+        <o><e>comment</e></o>
+        <e>type</e>
       </pattern>
       <ele>
         <name>name</name>
@@ -3723,6 +3724,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>comment</name>
         <summary>A comment on the asset</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <summary>The type of asset to create. Must be 'host'</summary>
         <pattern>
           text
         </pattern>
@@ -26396,6 +26404,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>CREATE_ASSET</command>
+    <summary>ASSET TYPE now mandatory</summary>
+    <description>
+      <p>
+        The TYPE subelement of the ASSET is now mandatory and must be
+        a type supported by the command.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
   <change>
     <command>GET_NVTS</command>
     <summary>Remove COPYRIGHT</summary>

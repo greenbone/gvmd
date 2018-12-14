@@ -3,7 +3,7 @@
 # Greenbone Vulnerability Manager
 
 [![GitHub releases](https://img.shields.io/github/release/greenbone/gvmd.svg)](https://github.com/greenbone/gvmd/releases)
-[![Code Documentation Coverage](https://codecov.io/gh/greenbone/gvmd/branch/master/graphs/badge.svg?flag=documentation)](https://codecov.io/gh/greenbone/gvmd)`(Documentation Coverage)`
+[![Code Documentation Coverage](https://img.shields.io/codecov/c/github/greenbone/gvmd.svg?label=Doc%20Coverage&logo=codecov)](https://codecov.io/gh/greenbone/gvmd)
 [![CircleCI](https://circleci.com/gh/greenbone/gvmd/tree/master.svg?style=svg)](https://circleci.com/gh/greenbone/gvmd/tree/master)
 
 The Greenbone Vulnerability Manager is the central management service between
