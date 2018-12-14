@@ -26776,6 +26776,8 @@ trim_report (report_t report)
        "  WHERE results.report = %llu);",
        report);
 
+  tickets_set_orphans (report);
+
   /* Remove all hosts and host details. */
 
   sql ("DELETE FROM report_host_details WHERE report_host IN"
@@ -26810,6 +26812,8 @@ trim_partial_report (report_t report)
        "  AND report_hosts.end_time = 0);",
        report,
        report);
+
+  tickets_set_orphans (report);
 
   /* Remove partial hosts and host details. */
 
