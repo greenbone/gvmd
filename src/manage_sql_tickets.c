@@ -1162,12 +1162,20 @@ check_tickets (task_t task)
        "                            WHERE id = (SELECT result"
        "                                        FROM ticket_results"
        "                                        WHERE ticket = tickets.id"
-       "                                        LIMIT 1)));",
-       // FIX AND NOT EXISTS failed login (or error?)
+       "                                        LIMIT 1)))"
+       " AND NOT EXISTS (SELECT * FROM results"
+       "                 WHERE report = %llu"
+       /*                SSH Login Failed For Authenticated Checks. */
+       "                 AND nvt = '1.3.6.1.4.1.25623.1.0.105936')"
+       " AND NOT EXISTS (SELECT * FROM results"
+       "                 WHERE report = %llu"
+       /*                SMG Login Failed For Authenticated Checks. */
+       "                 AND nvt = '1.3.6.1.4.1.25623.1.0.106091');",
        TICKET_STATUS_CONFIRMED,
        report,
        task,
        TICKET_STATUS_OPEN,
        TICKET_STATUS_SOLVED,
+       report,
        report);
 }
