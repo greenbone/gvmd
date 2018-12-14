@@ -7,6 +7,11 @@ or get the entire source code repository and view log history:
 $ git clone https://github.com/greenbone/gvm.git
 $ cd gvm && git checkout openvas-manager-7.0 && git log
 
+openvas-manager 7.0.4 (work in progress)
+
+Main changes since 7.0.3:
+* The new alert method "Alemba vFire" has been added.
+
 openvas-manager 7.0.3 (2018-03-29)
 
 This is the third maintenance release of the openvas-manager 7.0 module for the

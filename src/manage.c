@@ -1103,6 +1103,40 @@ report_t current_report = (report_t) 0;
 /* Alerts. */
 
 /**
+ * @brief Frees a alert_report_data_t struct, including contained data.
+ *
+ * @param[in]  data   The struct to free.
+ */
+void
+alert_report_data_free (alert_report_data_t *data)
+{
+  if (data == NULL)
+    return;
+
+  alert_report_data_reset (data);
+  g_free (data);
+}
+
+/**
+ * @brief Frees content of an alert_report_data_t, but not the struct itself.
+ *
+ * @param[in]  data   The struct to free.
+ */
+void
+alert_report_data_reset (alert_report_data_t *data)
+{
+  if (data == NULL)
+    return;
+
+  g_free (data->content_type);
+  g_free (data->local_filename);
+  g_free (data->remote_filename);
+  g_free (data->report_format_name);
+
+  memset (data, 0, sizeof (alert_report_data_t));
+}
+
+/**
  * @brief Get the name of an alert condition.
  *
  * @param[in]  condition  Condition.
@@ -1255,6 +1289,7 @@ alert_method_name (alert_method_t method)
       case ALERT_METHOD_SYSLOG:      return "Syslog";
       case ALERT_METHOD_TIPPINGPOINT:return "TippingPoint SMS";
       case ALERT_METHOD_VERINICE:    return "verinice Connector";
+      case ALERT_METHOD_VFIRE:       return "Alemba vFire";
       default:                       return "Internal Error";
     }
 }
@@ -1333,6 +1368,8 @@ alert_method_from_name (const char* name)
     return ALERT_METHOD_TIPPINGPOINT;
   if (strcasecmp (name, "verinice Connector") == 0)
     return ALERT_METHOD_VERINICE;
+  if (strcasecmp (name, "Alemba vFire") == 0)
+    return ALERT_METHOD_VFIRE;
   return ALERT_METHOD_ERROR;
 }
 
