@@ -38,4 +38,7 @@ empty_trashcan_tickets ();
 void
 check_tickets ();
 
+void
+tickets_set_orphans (report_t);
+
 #endif /* not _GVMD_MANAGE_SQL_TICKETS_H */

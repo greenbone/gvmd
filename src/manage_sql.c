@@ -26530,6 +26530,7 @@ delete_report_internal (report_t report)
 
   /* Adjust permissions. */
 
+  tickets_set_orphans (report);
   permissions_set_orphans ("report", report, LOCATION_TABLE);
   tags_remove_resource ("report", report, LOCATION_TABLE);
 

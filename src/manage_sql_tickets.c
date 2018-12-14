@@ -1201,3 +1201,32 @@ check_tickets (task_t task)
        report,
        report);
 }
+
+/**
+ * @brief Set tickets to orphaned, because a report has been deleted.
+ *
+ * @param[in]  report  Report that is being deleted.
+ */
+void
+tickets_set_orphans (report_t report)
+{
+  sql ("UPDATE tickets"
+       " SET report = -1,"
+       "     status = %i,"
+       "     orphaned_time = m_now ()"
+       " WHERE report = %llu",
+       TICKET_STATUS_ORPHANED,
+       report);
+  sql ("DELETE FROM ticket_results WHERE report = %llu;",
+       report);
+
+  sql ("UPDATE tickets_trash"
+       " SET report = -1,"
+       "     status = %i,"
+       "     orphaned_time = m_now ()"
+       " WHERE report = %llu",
+       TICKET_STATUS_ORPHANED,
+       report);
+  sql ("DELETE FROM ticket_results_trash WHERE report = %llu;",
+       report);
+}
