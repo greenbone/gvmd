@@ -822,17 +822,17 @@ create_ticket (const char *comment, const char *result_id,
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
        "  '%s', %llu, %llu, %0.1f, '%s', '%s', '%s',"
        "  %llu, %i, m_now (), m_now (), m_now ());",
-        quoted_name,
-        current_credentials.uuid,
-        quoted_comment,
-        task,
-        result_iterator_report (&results),
-        result_iterator_severity_double (&results),
-        quoted_host,
-        quoted_location,
-        quoted_solution,
-        user,
-        TICKET_STATUS_OPEN);
+       quoted_name,
+       current_credentials.uuid,
+       quoted_comment,
+       task,
+       result_iterator_report (&results),
+       result_iterator_severity_double (&results),
+       quoted_host,
+       quoted_location,
+       quoted_solution,
+       user,
+       TICKET_STATUS_OPEN);
 
   g_free (quoted_location);
   g_free (quoted_host);
