@@ -642,8 +642,8 @@ delete_ticket (const char *ticket_id, int ultimate)
 
       trash_ticket = sql_last_insert_id ();
 
-      sql ("INSERT INTO ticket_results_trash (ticket, result)"
-           " SELECT %llu, result FROM ticket_results"
+      sql ("INSERT INTO ticket_results_trash (ticket, result, report)"
+           " SELECT %llu, result, report FROM ticket_results"
            " WHERE ticket = %llu;",
            trash_ticket,
            ticket);
@@ -856,9 +856,11 @@ create_ticket (const char *comment, const char *result_id,
   if (ticket)
     *ticket = new_ticket;
 
-  sql ("INSERT INTO ticket_results (ticket, result) VALUES (%llu, %llu)",
+  sql ("INSERT INTO ticket_results (ticket, result, report)"
+       " VALUES (%llu, %llu, %llu)",
        new_ticket,
-       result_iterator_result (&results));
+       result_iterator_result (&results),
+       result_iterator_report (&results));
 
   cleanup_iterator (&results);
 

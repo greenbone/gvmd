@@ -2435,7 +2435,7 @@ create_tables ()
        "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
        "  comment text,"
        "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-       "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
        "  severity real,"
        "  host text,"
        "  location text,"
@@ -2456,7 +2456,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS ticket_results"
        " (id SERIAL PRIMARY KEY,"
        "  ticket integer REFERENCES tickets (id) ON DELETE RESTRICT,"
-       "  result integer REFERENCES results (id) ON DELETE RESTRICT);");
+       "  result integer,"    // REFERENCES results (id) ON DELETE RESTRICT
+       "  report integer);"); // REFERENCES reports (id) ON DELETE RESTRICT
 
   sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -2486,7 +2487,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
        " (id SERIAL PRIMARY KEY,"
        "  ticket integer REFERENCES tickets_trash (id) ON DELETE RESTRICT,"
-       "  result integer REFERENCES results (id) ON DELETE RESTRICT);");
+       "  result integer,"    // REFERENCES results_trash (id) ON DELETE RESTRICT
+       "  report integer);"); // REFERENCES reports_trash (id) ON DELETE RESTRICT
 
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
