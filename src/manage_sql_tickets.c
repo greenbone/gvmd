@@ -616,13 +616,13 @@ delete_ticket (const char *ticket_id, int ultimate)
       sql ("INSERT INTO tickets_trash"
            " (uuid, owner, name, comment, task, report, severity, host,"
            "  location, solution_type, assigned_to, status, open_time,"
-           "  solved_time, solved_comment, confirmed_time, confirmed_result,"
+           "  solved_time, solved_comment, confirmed_time, confirmed_report,"
            "  closed_time, closed_comment, orphaned_time, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, task, report, severity, host,"
            "        location, solution_type, assigned_to, status, open_time,"
            "        solved_time, solved_comment, confirmed_time,"
-           "        confirmed_result, closed_time, closed_comment,"
+           "        confirmed_report, closed_time, closed_comment,"
            "        orphaned_time, creation_time, modification_time"
            " FROM tickets WHERE id = %llu;",
            ticket);
@@ -703,13 +703,13 @@ restore_ticket (const char *ticket_id)
       sql ("INSERT INTO tickets"
            " (uuid, owner, name, comment, task, report, severity, host,"
            "  location, solution_type, assigned_to, status, open_time,"
-           "  solved_time, solved_comment, confirmed_time, confirmed_result,"
+           "  solved_time, solved_comment, confirmed_time, confirmed_report,"
            "  closed_time, closed_comment, orphaned_time, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, task, report, severity, host,"
            "        location, solution_type, assigned_to, status, open_time,"
            "        solved_time, solved_comment, confirmed_time,"
-           "        confirmed_result, closed_time, closed_comment,"
+           "        confirmed_report, closed_time, closed_comment,"
            "        orphaned_time, creation_time, modification_time"
            " FROM tickets_trash WHERE id = %llu;",
            ticket);
@@ -906,7 +906,7 @@ copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
   ret = copy_resource ("ticket", NULL, comment, ticket_id,
                        "task, report, severity, host, location, solution_type,"
                        " assigned_to, status, open_time, solved_time,"
-                       " solved_comment, confirmed_time, confirmed_result,"
+                       " solved_comment, confirmed_time, confirmed_report,"
                        " closed_time, closed_comment, orphaned_time",
                        1, new_ticket, &old_ticket);
   if (ret)
