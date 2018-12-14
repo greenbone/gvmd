@@ -1156,6 +1156,11 @@ check_tickets (task_t task)
        " WHERE task = %llu"
        " AND (status = %i"
        "      OR status = %i)"
+       /* Only if the same host was scanned. */
+       " AND EXISTS (SELECT * FROM report_hosts"
+       "             WHERE report = %llu"
+       "             AND report_hosts.host = tickets.host)"
+       /* Only if the problem result is gone. */
        " AND NOT EXISTS (SELECT * FROM results"
        "                 WHERE report = %llu"
        "                 AND nvt = (SELECT nvt FROM results"
@@ -1163,6 +1168,7 @@ check_tickets (task_t task)
        "                                        FROM ticket_results"
        "                                        WHERE ticket = tickets.id"
        "                                        LIMIT 1)))"
+       /* Only if there were no login failures. */
        " AND NOT EXISTS (SELECT * FROM results"
        "                 WHERE report = %llu"
        /*                SSH Login Failed For Authenticated Checks. */
@@ -1176,6 +1182,7 @@ check_tickets (task_t task)
        task,
        TICKET_STATUS_OPEN,
        TICKET_STATUS_SOLVED,
+       report,
        report,
        report);
 }
