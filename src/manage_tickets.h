@@ -72,6 +72,9 @@ const char*
 ticket_iterator_confirmed_time (iterator_t*);
 
 const char*
+ticket_iterator_orphaned_time (iterator_t*);
+
+const char*
 ticket_iterator_solved_comment (iterator_t*);
 
 const char*

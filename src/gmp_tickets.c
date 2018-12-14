@@ -228,6 +228,12 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                       (&tickets));
         }
 
+      if (ticket_iterator_orphaned_time (&tickets))
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<orphaned_time>%s</orphaned_time>",
+                                   ticket_iterator_orphaned_time (&tickets));
+        }
+
       if (init_ticket_result_iterator (&results,
                                        get_iterator_uuid (&tickets),
                                        get_tickets_data.get.trash))
