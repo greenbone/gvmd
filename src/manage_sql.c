@@ -65195,6 +65195,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE tasks SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      inherit_tickets (user, inheritor);
+
       sql ("UPDATE groups SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE roles SET owner = %llu WHERE owner = %llu;",

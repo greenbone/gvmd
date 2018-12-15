@@ -46,4 +46,7 @@ tickets_set_orphans (report_t);
 void
 delete_tickets_user (user_t);
 
+void
+inherit_tickets (user_t, user_t);
+
 #endif /* not _GVMD_MANAGE_SQL_TICKETS_H */

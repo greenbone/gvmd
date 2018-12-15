@@ -1258,3 +1258,25 @@ delete_tickets_user (user_t user)
   sql ("UPDATE tickets_trash SET assigned_to = owner WHERE assigned_to = %llu;",
        user);
 }
+
+/**
+ * @brief Change ownership of tickets, for user deletion.
+ *
+ * Also assign tickets that are assigned to the user to the inheritor.
+ *
+ * @param[in]  user       Current owner.
+ * @param[in]  inheritor  New owner.
+ */
+void
+inherit_tickets (user_t user, user_t inheritor)
+{
+  sql ("UPDATE tickets SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
+  sql ("UPDATE tickets SET assigned_to = %llu WHERE assigned_to = %llu;",
+       inheritor, user);
+
+  sql ("UPDATE tickets_trash SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
+  sql ("UPDATE tickets_trash SET assigned_to = %llu WHERE assigned_to = %llu;",
+       inheritor, user);
+}
