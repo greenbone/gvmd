@@ -26,6 +26,8 @@
 #ifndef _GVMD_MANAGE_SQL_TICKETS_H
 #define _GVMD_MANAGE_SQL_TICKETS_H
 
+#include "manage.h"
+
 int
 delete_ticket (const char *, int);
 
@@ -40,5 +42,8 @@ check_tickets ();
 
 void
 tickets_set_orphans (report_t);
+
+void
+delete_tickets_user (user_t);
 
 #endif /* not _GVMD_MANAGE_SQL_TICKETS_H */

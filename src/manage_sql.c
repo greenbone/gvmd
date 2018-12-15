@@ -65253,6 +65253,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        " WHERE tag IN (SELECT id FROM tags_trash WHERE owner = %llu);",
        user);
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
+  delete_tickets_user (user);
 
   /* Delete assets (not directly referenced) */
   // Hosts

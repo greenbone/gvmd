@@ -1230,3 +1230,31 @@ tickets_set_orphans (report_t report)
   sql ("DELETE FROM ticket_results_trash WHERE report = %llu;",
        report);
 }
+
+/**
+ * @brief Delete all tickets owner by a user.
+ *
+ * Also delete trash tickets and assign any tickets that were assigned to
+ * the user back to the owner.
+ *
+ * @param[in]  user  The user.
+ */
+void
+delete_tickets_user (user_t user)
+{
+  sql ("DELETE FROM ticket_results"
+       " WHERE ticket IN (SELECT id FROM tickets WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM tickets WHERE owner = %llu;", user);
+
+  sql ("UPDATE tickets SET assigned_to = owner WHERE assigned_to = %llu;",
+       user);
+
+  sql ("DELETE FROM ticket_results_trash"
+       " WHERE ticket IN (SELECT id FROM tickets_trash WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM tickets_trash WHERE owner = %llu;", user);
+
+  sql ("UPDATE tickets_trash SET assigned_to = owner WHERE assigned_to = %llu;",
+       user);
+}
