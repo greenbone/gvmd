@@ -32987,6 +32987,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
       permissions_set_orphans ("task", task, LOCATION_TRASH);
       tags_remove_resource ("task", task, LOCATION_TRASH);
+      tickets_remove_task (task);
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
@@ -33089,6 +33090,7 @@ delete_task (task_t task, int ultimate)
                             task_in_trash (task)
                               ? LOCATION_TRASH
                               : LOCATION_TABLE);
+      tickets_remove_task (task);
 
       sql ("DELETE FROM results_trash WHERE task = %llu;", task);
       sql ("DELETE FROM results WHERE task = %llu;", task);
@@ -33236,6 +33238,8 @@ delete_trash_tasks ()
           cleanup_iterator (&tasks);
           return -1;
         }
+
+      tickets_remove_task (task);
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
@@ -65298,6 +65302,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql_rollback ();
       return 9;
     }
+  tickets_remove_tasks_user (user);
   sql ("DELETE FROM task_alerts"
        " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
        user);

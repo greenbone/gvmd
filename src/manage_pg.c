@@ -2434,7 +2434,7 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
        "  comment text,"
-       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
        "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
        "  severity real,"
        "  host text,"
@@ -2465,7 +2465,7 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
        "  comment text,"
-       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
        "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
        "  severity real,"
        "  host text,"

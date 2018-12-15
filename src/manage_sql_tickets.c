@@ -1280,3 +1280,31 @@ inherit_tickets (user_t user, user_t inheritor)
   sql ("UPDATE tickets_trash SET assigned_to = %llu WHERE assigned_to = %llu;",
        inheritor, user);
 }
+
+/**
+ * @brief Remove a task from all tickets.
+ *
+ * @param[in]  task  Task.
+ */
+void
+tickets_remove_task (task_t task)
+{
+  sql ("UPDATE tickets SET task = -1 WHERE task = %llu;", task);
+  sql ("UPDATE tickets_trash SET task = -1 WHERE task = %llu;", task);
+}
+
+/**
+ * @brief Remove all of a user's tasks from all tickets.
+ *
+ * @param[in]  user  User.
+ */
+void
+tickets_remove_tasks_user (user_t user)
+{
+  sql ("UPDATE tickets SET task = -1"
+       " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
+       user);
+  sql ("UPDATE tickets_trash SET task = -1"
+       " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
+       user);
+}
