@@ -183,7 +183,6 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                "<user id=\"%s\"/>"
                                "</assigned_to>"
                                "<task id=\"%s\"/>"
-                               "<report id=\"%s\"/>"
                                "<severity>%1.1f</severity>"
                                "<host>%s</host>"
                                "<location>%s</location>"
@@ -192,13 +191,16 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                "<open_time>%s</open_time>",
                                ticket_iterator_user_id (&tickets),
                                ticket_iterator_task_id (&tickets),
-                               ticket_iterator_report_id (&tickets),
                                ticket_iterator_severity (&tickets),
                                ticket_iterator_host (&tickets),
                                ticket_iterator_location (&tickets),
                                ticket_iterator_solution_type (&tickets),
                                ticket_iterator_status (&tickets),
                                ticket_iterator_open_time (&tickets));
+
+      if (ticket_iterator_report_id (&tickets))
+        SENDF_TO_CLIENT_OR_FAIL ("<report id=\"%s\"/>",
+                                 ticket_iterator_report_id (&tickets));
 
       if (ticket_iterator_solved_time (&tickets))
         {
