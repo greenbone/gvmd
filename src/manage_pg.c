@@ -2466,7 +2466,7 @@ create_tables ()
        "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
        "  comment text,"
        "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-       "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
        "  severity real,"
        "  host text,"
        "  location text,"
