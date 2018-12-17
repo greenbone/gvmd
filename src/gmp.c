@@ -625,14 +625,18 @@ check_private_key (const char *key_str)
 {
   gnutls_x509_privkey_t key;
   gnutls_datum_t data;
+  int ret;
 
   assert (key_str);
   if (gnutls_x509_privkey_init (&key))
     return 1;
   data.size = strlen (key_str);
   data.data = (void *) g_strdup (key_str);
-  if (gnutls_x509_privkey_import (key, &data, GNUTLS_X509_FMT_PEM))
+  ret = gnutls_x509_privkey_import (key, &data, GNUTLS_X509_FMT_PEM);
+  if (ret)
     {
+      g_message ("%s: import failed: %s",
+                 __FUNCTION__, gnutls_strerror (ret));
       gnutls_x509_privkey_deinit (key);
       g_free (data.data);
       return 1;
