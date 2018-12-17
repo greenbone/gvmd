@@ -33141,6 +33141,8 @@ delete_task (task_t task, int ultimate)
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            task);
 
+      tickets_trash_task (task);
+
       sql ("DELETE FROM results"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            task);
@@ -60660,6 +60662,8 @@ manage_restore (const char *id)
            " FROM results_trash"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            resource);
+
+      tickets_restore_task (resource);
 
       sql ("DELETE FROM results_trash"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",

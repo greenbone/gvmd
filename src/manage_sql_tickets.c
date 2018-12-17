@@ -438,10 +438,17 @@ init_ticket_result_iterator (iterator_t *iterator, const gchar *ticket_id,
   init_iterator (iterator,
                  "SELECT result,"
                  "       ticket,"
-                 "       (SELECT uuid FROM results WHERE id = result)"
+                 "       (CASE"
+                 "        WHEN result_location = %i"
+                 "        THEN (SELECT uuid FROM results"
+                 "              WHERE id = result)"
+                 "        ELSE (SELECT uuid FROM results_trash"
+                 "              WHERE id = result)"
+                 "        END)"
                  " FROM ticket_results%s"
                  " WHERE ticket = %llu"
                  " ORDER BY id;",
+                 LOCATION_TABLE,
                  trash ? "_trash" : "",
                  ticket);
   return 0;
@@ -484,9 +491,11 @@ init_result_ticket_iterator (iterator_t *iterator, const gchar *result_id)
                  "       IN (SELECT nvt FROM results"
                  "           WHERE id = (SELECT result FROM ticket_results"
                  "                       WHERE ticket = tickets.id"
+                 "                       AND result_location = %i"
                  "                       LIMIT 1))"
                  " ORDER BY id;",
-                 result);
+                 result,
+                 LOCATION_TABLE);
   return 0;
 }
 
@@ -642,8 +651,10 @@ delete_ticket (const char *ticket_id, int ultimate)
 
       trash_ticket = sql_last_insert_id ();
 
-      sql ("INSERT INTO ticket_results_trash (ticket, result, report)"
-           " SELECT %llu, result, report FROM ticket_results"
+      sql ("INSERT INTO ticket_results_trash"
+           " (ticket, result, result_location, result_uuid, report)"
+           " SELECT %llu, result, result_location, result_uuid, report"
+           " FROM ticket_results"
            " WHERE ticket = %llu;",
            trash_ticket,
            ticket);
@@ -763,7 +774,7 @@ create_ticket (const char *comment, const char *result_id,
   iterator_t results;
   get_data_t get;
   gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_location;
-  gchar *quoted_solution;
+  gchar *quoted_solution, *quoted_uuid;
   char *new_ticket_id, *task_id;
   task_t task;
 
@@ -856,12 +867,18 @@ create_ticket (const char *comment, const char *result_id,
   if (ticket)
     *ticket = new_ticket;
 
-  sql ("INSERT INTO ticket_results (ticket, result, report)"
-       " VALUES (%llu, %llu, %llu)",
+  quoted_uuid = sql_quote (get_iterator_uuid (&results));
+
+  sql ("INSERT INTO ticket_results"
+       " (ticket, result, result_location, result_uuid, report)"
+       " VALUES (%llu, %llu, %i, '%s', %llu)",
        new_ticket,
        result_iterator_result (&results),
+       LOCATION_TABLE,
+       quoted_uuid,
        result_iterator_report (&results));
 
+  g_free (quoted_uuid);
   cleanup_iterator (&results);
 
   new_ticket_id = ticket_uuid (new_ticket);
@@ -1182,6 +1199,7 @@ check_tickets (task_t task)
        "                            WHERE id = (SELECT result"
        "                                        FROM ticket_results"
        "                                        WHERE ticket = tickets.id"
+       "                                        AND result_location = %i"
        "                                        LIMIT 1)))"
        /* Only if there were no login failures. */
        " AND NOT EXISTS (SELECT * FROM results"
@@ -1198,6 +1216,7 @@ check_tickets (task_t task)
        TICKET_STATUS_OPEN,
        TICKET_STATUS_SOLVED,
        report,
+       LOCATION_TABLE,
        report,
        report);
 }
@@ -1307,4 +1326,64 @@ tickets_remove_tasks_user (user_t user)
   sql ("UPDATE tickets_trash SET task = -1"
        " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
        user);
+}
+
+/**
+ * @brief Adjust tickets for task being moved to trash.
+ *
+ * This must be called while the old and new results still exist.
+ *
+ * @param[in]  task  Task.
+ */
+void
+tickets_trash_task (task_t task)
+{
+  sql ("UPDATE ticket_results"
+       " SET result_location = %i,"
+       "     result = (SELECT id FROM results_trash"
+       "               WHERE task = %llu"
+       "               AND uuid = ticket_results.result_uuid)"
+       " WHERE result IN (SELECT id FROM results WHERE task = %llu);",
+       LOCATION_TRASH,
+       task,
+       task);
+  sql ("UPDATE ticket_results_trash"
+       " SET result_location = %i,"
+       "     result = (SELECT id FROM results_trash"
+       "               WHERE task = %llu"
+       "               AND uuid = ticket_results_trash.result_uuid)"
+       " WHERE result IN (SELECT id FROM results WHERE task = %llu);",
+       LOCATION_TRASH,
+       task,
+       task);
+}
+
+/**
+ * @brief Adjust tickets for task being restored.
+ *
+ * This must be called while the old and new results still exist.
+ *
+ * @param[in]  task  Task.
+ */
+void
+tickets_restore_task (task_t task)
+{
+  sql ("UPDATE ticket_results"
+       " SET result_location = %i,"
+       "     result = (SELECT id FROM results"
+       "               WHERE task = %llu"
+       "               AND uuid = ticket_results.result_uuid)"
+       " WHERE result IN (SELECT id FROM results_trash WHERE task = %llu);",
+       LOCATION_TABLE,
+       task,
+       task);
+  sql ("UPDATE ticket_results_trash"
+       " SET result_location = %i,"
+       "     result = (SELECT id FROM results"
+       "               WHERE task = %llu"
+       "               AND uuid = ticket_results_trash.result_uuid)"
+       " WHERE result IN (SELECT id FROM results_trash WHERE task = %llu);",
+       LOCATION_TABLE,
+       task,
+       task);
 }

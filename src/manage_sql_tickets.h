@@ -55,4 +55,10 @@ tickets_remove_task (task_t);
 void
 tickets_remove_tasks_user (user_t);
 
+void
+tickets_trash_task (task_t);
+
+void
+tickets_restore_task (task_t);
+
 #endif /* not _GVMD_MANAGE_SQL_TICKETS_H */
