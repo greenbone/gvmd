@@ -410,7 +410,7 @@ DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 19);
  * @return Iterator column value or NULL if iteration is complete.
  */
 DEF_ACCESS (ticket_iterator_confirmed_report_id,
-            GET_ITERATOR_COLUMN_COUNT + 18);
+            GET_ITERATOR_COLUMN_COUNT + 20);
 
 /**
  * @brief Initialise a ticket result iterator.
@@ -1238,6 +1238,10 @@ tickets_set_orphans (report_t report)
        report);
   sql ("DELETE FROM ticket_results WHERE report = %llu;",
        report);
+  sql ("UPDATE tickets"
+       " SET confirmed_report = -1"
+       " WHERE confirmed_report = %llu",
+       report);
 
   sql ("UPDATE tickets_trash"
        " SET report = -1,"
@@ -1247,6 +1251,10 @@ tickets_set_orphans (report_t report)
        TICKET_STATUS_ORPHANED,
        report);
   sql ("DELETE FROM ticket_results_trash WHERE report = %llu;",
+       report);
+  sql ("UPDATE tickets_trash"
+       " SET confirmed_report = -1"
+       " WHERE confirmed_report = %llu",
        report);
 }
 
