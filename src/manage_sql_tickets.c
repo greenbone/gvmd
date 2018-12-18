@@ -160,6 +160,7 @@ ticket_status_name (ticket_status_t status)
      NULL,                                                                    \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
+   { "nvt", NULL, KEYWORD_TYPE_STRING },                                      \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -206,6 +207,7 @@ ticket_status_name (ticket_status_t status)
      NULL,                                                                    \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
+   { "nvt", NULL, KEYWORD_TYPE_STRING },                                      \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -411,6 +413,15 @@ DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 19);
  */
 DEF_ACCESS (ticket_iterator_confirmed_report_id,
             GET_ITERATOR_COLUMN_COUNT + 20);
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 21);
 
 /**
  * @brief Initialise a ticket result iterator.
@@ -636,14 +647,14 @@ delete_ticket (const char *ticket_id, int ultimate)
       ticket_t trash_ticket;
 
       sql ("INSERT INTO tickets_trash"
-           " (uuid, owner, name, comment, task, report, severity, host,"
+           " (uuid, owner, name, comment, nvt, task, report, severity, host,"
            "  location, solution_type, assigned_to, status, open_time,"
            "  solved_time, solved_comment, confirmed_time, confirmed_report,"
            "  closed_time, closed_comment, orphaned_time, creation_time,"
            "  modification_time)"
-           " SELECT uuid, owner, name, comment, task, report, severity, host,"
-           "        location, solution_type, assigned_to, status, open_time,"
-           "        solved_time, solved_comment, confirmed_time,"
+           " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
+           "        host, location, solution_type, assigned_to, status,"
+           "        open_time, solved_time, solved_comment, confirmed_time,"
            "        confirmed_report, closed_time, closed_comment,"
            "        orphaned_time, creation_time, modification_time"
            " FROM tickets WHERE id = %llu;",
@@ -725,14 +736,14 @@ restore_ticket (const char *ticket_id)
         }
 
       sql ("INSERT INTO tickets"
-           " (uuid, owner, name, comment, task, report, severity, host,"
+           " (uuid, owner, name, comment, nvt, task, report, severity, host,"
            "  location, solution_type, assigned_to, status, open_time,"
            "  solved_time, solved_comment, confirmed_time, confirmed_report,"
            "  closed_time, closed_comment, orphaned_time, creation_time,"
            "  modification_time)"
-           " SELECT uuid, owner, name, comment, task, report, severity, host,"
-           "        location, solution_type, assigned_to, status, open_time,"
-           "        solved_time, solved_comment, confirmed_time,"
+           " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
+           "        host, location, solution_type, assigned_to, status,"
+           "        open_time, solved_time, solved_comment, confirmed_time,"
            "        confirmed_report, closed_time, closed_comment,"
            "        orphaned_time, creation_time, modification_time"
            " FROM tickets_trash WHERE id = %llu;",
@@ -773,8 +784,8 @@ create_ticket (const char *comment, const char *result_id,
   user_t user;
   iterator_t results;
   get_data_t get;
-  gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_location;
-  gchar *quoted_solution, *quoted_uuid;
+  gchar *quoted_name, *quoted_comment, *quoted_oid, *quoted_host;
+  gchar *quoted_location, *quoted_solution, *quoted_uuid;
   char *new_ticket_id, *task_id;
   task_t task;
 
@@ -831,6 +842,7 @@ create_ticket (const char *comment, const char *result_id,
     quoted_comment = sql_quote ("");
 
   quoted_name = sql_quote (result_iterator_nvt_name (&results) ?: "");
+  quoted_oid = sql_quote (result_iterator_nvt_oid (&results) ?: "");
   quoted_host = sql_quote (result_iterator_host (&results) ?: "");
   quoted_location = sql_quote (result_iterator_port (&results) ?: "");
   quoted_solution = sql_quote (result_iterator_solution_type (&results) ?: "");
@@ -838,17 +850,18 @@ create_ticket (const char *comment, const char *result_id,
   task = result_iterator_task (&results);
 
   sql ("INSERT INTO tickets"
-       " (uuid, name, owner, comment, task, report, severity, host, location,"
-       "  solution_type, assigned_to, status, open_time, creation_time,"
-       "  modification_time)"
+       " (uuid, name, owner, comment, nvt, task, report, severity, host,"
+       "  location, solution_type, assigned_to, status, open_time,"
+       "  creation_time, modification_time)"
        " VALUES"
        " (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', %llu, %llu, %0.1f, '%s', '%s', '%s',"
+       "  '%s', '%s', %llu, %llu, %0.1f, '%s', '%s', '%s',"
        "  %llu, %i, m_now (), m_now (), m_now ());",
        quoted_name,
        current_credentials.uuid,
        quoted_comment,
+       quoted_oid,
        task,
        result_iterator_report (&results),
        result_iterator_severity_double (&results),
@@ -860,6 +873,7 @@ create_ticket (const char *comment, const char *result_id,
 
   g_free (quoted_location);
   g_free (quoted_host);
+  g_free (quoted_oid);
   g_free (quoted_comment);
   g_free (quoted_name);
 

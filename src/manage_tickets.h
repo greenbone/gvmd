@@ -83,6 +83,9 @@ ticket_iterator_closed_comment (iterator_t*);
 const char*
 ticket_iterator_confirmed_report_id (iterator_t*);
 
+const char*
+ticket_iterator_nvt_oid (iterator_t*);
+
 int
 init_ticket_result_iterator (iterator_t *, const gchar *, int);
 
