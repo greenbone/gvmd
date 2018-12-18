@@ -263,7 +263,8 @@ truncate_private_key (const gchar* private_key)
       else
         return NULL;
     }
-  else
+
+  if (key_start == NULL)
     {
       key_start = strstr (private_key, "-----BEGIN DSA PRIVATE KEY-----");
       if (key_start)
@@ -272,6 +273,20 @@ truncate_private_key (const gchar* private_key)
 
           if (key_end)
             key_end += strlen ("-----END DSA PRIVATE KEY-----");
+          else
+            return NULL;
+        }
+    }
+
+  if (key_start == NULL)
+    {
+      key_start = strstr (private_key, "-----BEGIN EC PRIVATE KEY-----");
+      if (key_start)
+        {
+          key_end = strstr (key_start, "-----END EC PRIVATE KEY-----");
+
+          if (key_end)
+            key_end += strlen ("-----END EC PRIVATE KEY-----");
           else
             return NULL;
         }
