@@ -704,64 +704,59 @@ delete_ticket (const char *ticket_id, int ultimate)
 /**
  * @brief Try restore a ticket.
  *
- * Ends transaction for caller before exiting.
+ * If success, ends transaction for caller before exiting.
  *
  * @param[in]  ticket_id  UUID of resource.
  *
  * @return 0 success, 1 fail because ticket is in use, 2 failed to find ticket,
- *         3 predefined ticket, -1 error.
+ *         -1 error.
  */
 int
 restore_ticket (const char *ticket_id)
 {
-  ticket_t ticket;
+  ticket_t trash_ticket, ticket;
 
-  if (find_trash ("ticket", ticket_id, &ticket))
+  if (find_trash ("ticket", ticket_id, &trash_ticket))
     {
       sql_rollback ();
       return -1;
     }
 
-  if (ticket)
-    {
-      if (sql_int ("SELECT count(*) FROM tickets"
-                   " WHERE name ="
-                   " (SELECT name FROM tickets_trash WHERE id = %llu)"
-                   " AND " ACL_USER_OWNS () ";",
-                   ticket,
-                   current_credentials.uuid))
-        {
-          sql_rollback ();
-          return 3;
-        }
+  if (trash_ticket == 0)
+    return 2;
 
-      sql ("INSERT INTO tickets"
-           " (uuid, owner, name, comment, nvt, task, report, severity, host,"
-           "  location, solution_type, assigned_to, status, open_time,"
-           "  solved_time, solved_comment, confirmed_time, confirmed_report,"
-           "  closed_time, closed_comment, orphaned_time, creation_time,"
-           "  modification_time)"
-           " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
-           "        host, location, solution_type, assigned_to, status,"
-           "        open_time, solved_time, solved_comment, confirmed_time,"
-           "        confirmed_report, closed_time, closed_comment,"
-           "        orphaned_time, creation_time, modification_time"
-           " FROM tickets_trash WHERE id = %llu;",
-           ticket);
+  sql ("INSERT INTO tickets"
+       " (uuid, owner, name, comment, nvt, task, report, severity, host,"
+       "  location, solution_type, assigned_to, status, open_time,"
+       "  solved_time, solved_comment, confirmed_time, confirmed_report,"
+       "  closed_time, closed_comment, orphaned_time, creation_time,"
+       "  modification_time)"
+       " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
+       "        host, location, solution_type, assigned_to, status,"
+       "        open_time, solved_time, solved_comment, confirmed_time,"
+       "        confirmed_report, closed_time, closed_comment,"
+       "        orphaned_time, creation_time, modification_time"
+       " FROM tickets_trash WHERE id = %llu;",
+       trash_ticket);
 
-      permissions_set_locations ("ticket", ticket,
-                                 sql_last_insert_id (),
-                                 LOCATION_TABLE);
-      tags_set_locations ("ticket", ticket,
-                          sql_last_insert_id (),
-                          LOCATION_TABLE);
+  ticket = sql_last_insert_id ();
 
-      sql ("DELETE FROM tickets_trash WHERE id = %llu;", ticket);
-      sql_commit ();
-      return 0;
-    }
+  sql ("INSERT INTO ticket_results"
+       " (ticket, result, result_location, result_uuid, report)"
+       " SELECT %llu, result, result_location, result_uuid, report"
+       " FROM ticket_results_trash"
+       " WHERE ticket = %llu;",
+       ticket,
+       trash_ticket);
 
-  return 2;
+  permissions_set_locations ("ticket", trash_ticket, ticket, LOCATION_TABLE);
+  tags_set_locations ("ticket", trash_ticket, ticket, LOCATION_TABLE);
+
+  sql ("DELETE FROM ticket_results_trash WHERE ticket = %llu;", trash_ticket);
+  sql ("DELETE FROM tickets_trash WHERE id = %llu;", trash_ticket);
+
+  sql_commit ();
+  return 0;
 }
 
 /**
