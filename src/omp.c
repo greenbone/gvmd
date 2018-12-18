@@ -547,23 +547,29 @@ check_certificate (const char *cert_str)
 /**
  * @brief Check that a string represents a valid Private Key.
  *
- * @param[in]  key_str  Private Key string.
+ * @param[in]  key_str      Private Key string.
+ * @param[in]  key_phrase   Private Key passphrase.
  *
  * @return 0 if valid, 1 otherwise.
  */
 static int
-check_private_key (const char *key_str)
+check_private_key (const char *key_str, const char *key_phrase)
 {
   gnutls_x509_privkey_t key;
   gnutls_datum_t data;
+  int ret;
 
   assert (key_str);
   if (gnutls_x509_privkey_init (&key))
     return 1;
   data.size = strlen (key_str);
   data.data = (void *) g_strdup (key_str);
-  if (gnutls_x509_privkey_import (key, &data, GNUTLS_X509_FMT_PEM))
+  ret = gnutls_x509_privkey_import2 (key, &data, GNUTLS_X509_FMT_PEM,
+                                     key_phrase, 0);
+  if (ret)
     {
+      g_message ("%s: import failed: %s",
+                 __FUNCTION__, gnutls_strerror (ret));
       gnutls_x509_privkey_deinit (key);
       g_free (data.data);
       return 1;
@@ -22420,7 +22426,8 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
           else if (create_credential_data->key
                    && create_credential_data->key_private == NULL
-                   && check_private_key (create_credential_data->key_private))
+                   && check_private_key (create_credential_data->key_private,
+                                         create_credential_data->key_phrase))
             {
               SEND_TO_CLIENT_OR_FAIL
               (XML_ERROR_SYNTAX ("create_credential",
