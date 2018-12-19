@@ -21800,10 +21800,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>permissions</e>
           <o><e>user_tags</e></o>
-          <e>result</e>
+          <e>nvt</e>
+          <o><e>result</e></o>
           <e>assigned_to</e>
-          <e>task</e>
-          <e>report</e>
+          <o><e>task</e></o>
+          <o><e>report</e></o>
           <e>severity</e>
           <e>host</e>
           <e>location</e>
@@ -21814,6 +21815,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>solved_comment</e></o>
           <o><e>closed_time</e></o>
           <o><e>closed_comment</e></o>
+          <o><e>confirmed_time</e></o>
+          <o><e>confirmed_report</e></o>
+          <o><e>orphaned_time</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -21924,6 +21928,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
+          <name>nvt</name>
+          <summary>The NVT the ticket refers to</summary>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+              <summary>OID of the NVT</summary>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
           <name>result</name>
           <summary>The ticket's result</summary>
           <pattern>
@@ -22030,6 +22046,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>closed_comment</name>
           <summary>The comment on the Closed status</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>confirmed_time</name>
+          <summary>Date and time the ticket was confirmed</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>confirmed_report</name>
+          <summary>The report that confirmed the ticket</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>orphaned_time</name>
+          <summary>Date and time the ticket was orphaned</summary>
+          <pattern><t>iso_time</t></pattern>
         </ele>
       </ele>
       <ele>
