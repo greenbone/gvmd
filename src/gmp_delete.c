@@ -75,7 +75,7 @@ delete_reset ()
 }
 
 /**
- * @brief Handle end element.
+ * @brief Handle start element.
  *
  * @param[in]  type              Resource type.
  * @param[in]  type_capital      Resource type, capitalised.

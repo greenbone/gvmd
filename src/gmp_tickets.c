@@ -126,6 +126,8 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  /* Setup the iterator. */
+
   ret = init_ticket_iterator (&tickets, &get_tickets_data.get);
   if (ret)
     {
@@ -161,6 +163,8 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  /* Loop through tickets, sending XML. */
+
   SEND_GET_START ("ticket");
   while (1)
     {
@@ -177,7 +181,11 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
           return;
         }
 
+      /* Send generic GET command elements. */
+
       SEND_GET_COMMON (ticket, &get_tickets_data.get, &tickets);
+
+      /* Send ticket info. */
 
       SENDF_TO_CLIENT_OR_FAIL ("<assigned_to>"
                                "<user id=\"%s\"/>"
@@ -205,6 +213,8 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
       if (ticket_iterator_report_id (&tickets))
         SENDF_TO_CLIENT_OR_FAIL ("<report id=\"%s\"/>",
                                  ticket_iterator_report_id (&tickets));
+
+      /* Send timestamps. */
 
       if (ticket_iterator_solved_time (&tickets))
         {
@@ -239,6 +249,8 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
           SENDF_TO_CLIENT_OR_FAIL ("<orphaned_time>%s</orphaned_time>",
                                    ticket_iterator_orphaned_time (&tickets));
         }
+
+      /* Send results that are linked to ticket. */
 
       if (init_ticket_result_iterator (&results,
                                        get_iterator_uuid (&tickets),
@@ -375,6 +387,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   if (copy)
     {
+      /* Copy from an existing ticket and exit. */
+
       comment = entity_child (entity, "comment");
       switch (copy_ticket (comment ? entity_text (comment) : "",
                            entity_text (copy),
@@ -423,6 +437,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  /* Check given info. */
+
   comment = entity_child (entity, "comment");
 
   result = entity_child (entity, "result");
@@ -454,6 +470,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       create_ticket_reset ();
       return;
     }
+
+  /* Create ticket from given info. */
 
   result_id = entity_attribute (result, "id");
   user_id = entity_attribute (user, "id");
@@ -639,6 +657,8 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   ticket_id = entity_attribute (entity, "ticket_id");
 
+  /* Check the given info. */
+
   comment = entity_child (entity, "comment");
   status = entity_child (entity, "status");
   solved_comment = entity_child (entity, "solved_comment");
@@ -672,6 +692,8 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
     }
   else
     user_id = NULL;
+
+  /* Modify the ticket. */
 
   if (ticket_id == NULL)
     SEND_TO_CLIENT_OR_FAIL

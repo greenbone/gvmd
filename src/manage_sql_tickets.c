@@ -593,6 +593,8 @@ delete_ticket (const char *ticket_id, int ultimate)
       return 99;
     }
 
+  /* Search in the regular table. */
+
   if (find_resource_with_permission ("ticket", ticket_id, &ticket,
                                      "delete_ticket", 0))
     {
@@ -602,6 +604,8 @@ delete_ticket (const char *ticket_id, int ultimate)
 
   if (ticket == 0)
     {
+      /* No such ticket, check the trashcan. */
+
       if (find_trash ("ticket", ticket_id, &ticket))
         {
           sql_rollback ();
@@ -642,9 +646,13 @@ delete_ticket (const char *ticket_id, int ultimate)
       return 0;
     }
 
+  /* Ticket was found in regular table. */
+
   if (ultimate == 0)
     {
       ticket_t trash_ticket;
+
+      /* Move to trash. */
 
       sql ("INSERT INTO tickets_trash"
            " (uuid, owner, name, comment, nvt, task, report, severity, host,"
@@ -677,6 +685,8 @@ delete_ticket (const char *ticket_id, int ultimate)
     }
   else
     {
+      /* Delete entirely. */
+
       sql ("DELETE FROM permissions"
            " WHERE resource_type = 'ticket'"
            " AND resource_location = %i"
@@ -725,6 +735,8 @@ restore_ticket (const char *ticket_id)
   if (trash_ticket == 0)
     return 2;
 
+  /* Move the ticket back to the regular table. */
+
   sql ("INSERT INTO tickets"
        " (uuid, owner, name, comment, nvt, task, report, severity, host,"
        "  location, solution_type, assigned_to, status, open_time,"
@@ -749,8 +761,12 @@ restore_ticket (const char *ticket_id)
        ticket,
        trash_ticket);
 
+  /* Adjust references to the ticket. */
+
   permissions_set_locations ("ticket", trash_ticket, ticket, LOCATION_TABLE);
   tags_set_locations ("ticket", trash_ticket, ticket, LOCATION_TABLE);
+
+  /* Clear out the trashcan ticket. */
 
   sql ("DELETE FROM ticket_results_trash WHERE ticket = %llu;", trash_ticket);
   sql ("DELETE FROM tickets_trash WHERE id = %llu;", trash_ticket);
@@ -796,6 +812,8 @@ create_ticket (const char *comment, const char *result_id,
       return 99;
     }
 
+  /* Ensure the current user can access the assigned user and the result. */
+
   if (find_resource_with_permission ("user", user_id, &user, NULL, 0))
     {
       sql_rollback ();
@@ -830,6 +848,8 @@ create_ticket (const char *comment, const char *result_id,
       sql_rollback ();
       return -1;
     }
+
+  /* Create the ticket. */
 
   if (comment)
     quoted_comment = sql_quote (comment);
@@ -876,6 +896,8 @@ create_ticket (const char *comment, const char *result_id,
   if (ticket)
     *ticket = new_ticket;
 
+  /* Link the ticket to the result. */
+
   quoted_uuid = sql_quote (get_iterator_uuid (&results));
 
   sql ("INSERT INTO ticket_results"
@@ -891,6 +913,8 @@ create_ticket (const char *comment, const char *result_id,
   cleanup_iterator (&results);
 
   new_ticket_id = ticket_uuid (new_ticket);
+
+  /* Give assigned user permission to access ticket and ticket's task. */
 
   if (create_permission_internal ("modify_ticket",
                                   "Automatically created for ticket",
@@ -918,6 +942,8 @@ create_ticket (const char *comment, const char *result_id,
       return -1;
     }
   free (task_id);
+
+  /* Cleanup. */
 
   free (new_ticket_id);
 
@@ -999,6 +1025,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
 
   assert (current_credentials.uuid);
 
+  /* Check permissions and get a handle on the ticket. */
+
   if (acl_user_may ("modify_ticket") == 0)
     {
       sql_rollback ();
@@ -1019,6 +1047,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
       return 2;
     }
 
+  /* Update comment if requested. */
+
   if (comment)
     {
       gchar *quoted_comment;
@@ -1033,10 +1063,14 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
       g_free (quoted_comment);
     }
 
+  /* Update status if requested. */
+
   if (status_name)
     {
       ticket_status_t status;
       const gchar *time_column;
+
+      /* Check the status. */
 
       status = ticket_status_integer (status_name);
       switch (status)
@@ -1051,6 +1085,7 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
               time_column = "solved_time";
               if ((solved_comment == NULL) || (strlen (solved_comment) == 0))
                 {
+                  /* Solved status must always be accompanied by a comment. */
                   sql_rollback ();
                   return 5;
                 }
@@ -1069,6 +1104,7 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
               time_column = "closed_time";
               if ((closed_comment == NULL) || (strlen (closed_comment) == 0))
                 {
+                  /* Closed status must always be accompanied by a comment. */
                   sql_rollback ();
                   return 6;
                 }
@@ -1081,9 +1117,12 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
             }
             break;
           default:
+            /* Ticket may only be manually set to Open, Solved or Closed. */
             sql_rollback ();
             return 4;
         }
+
+      /* Update the status. */
 
       sql ("UPDATE tickets SET"
            " status = %i,"
@@ -1094,6 +1133,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            time_column,
            ticket);
     }
+
+  /* Update assigned user if requested. */
 
   if (user_id)
     {
@@ -1118,6 +1159,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            " WHERE id = %llu;",
            user,
            ticket);
+
+      /* Ensure that the user can access the ticket. */
 
       if (create_permission_internal ("modify_ticket",
                                       "Automatically created for ticket",
@@ -1238,6 +1281,8 @@ check_tickets (task_t task)
 void
 tickets_set_orphans (report_t report)
 {
+  /* Regular tickets. */
+
   sql ("UPDATE tickets"
        " SET report = -1,"
        "     status = %i,"
@@ -1251,6 +1296,8 @@ tickets_set_orphans (report_t report)
        " SET confirmed_report = -1"
        " WHERE confirmed_report = %llu",
        report);
+
+  /* Trash tickets. */
 
   sql ("UPDATE tickets_trash"
        " SET report = -1,"
@@ -1278,6 +1325,8 @@ tickets_set_orphans (report_t report)
 void
 delete_tickets_user (user_t user)
 {
+  /* Regular tickets. */
+
   sql ("DELETE FROM ticket_results"
        " WHERE ticket IN (SELECT id FROM tickets WHERE owner = %llu);",
        user);
@@ -1285,6 +1334,8 @@ delete_tickets_user (user_t user)
 
   sql ("UPDATE tickets SET assigned_to = owner WHERE assigned_to = %llu;",
        user);
+
+  /* Trash tickets. */
 
   sql ("DELETE FROM ticket_results_trash"
        " WHERE ticket IN (SELECT id FROM tickets_trash WHERE owner = %llu);",
@@ -1306,10 +1357,14 @@ delete_tickets_user (user_t user)
 void
 inherit_tickets (user_t user, user_t inheritor)
 {
+  /* Regular tickets. */
+
   sql ("UPDATE tickets SET owner = %llu WHERE owner = %llu;",
        inheritor, user);
   sql ("UPDATE tickets SET assigned_to = %llu WHERE assigned_to = %llu;",
        inheritor, user);
+
+  /* Trash tickets. */
 
   sql ("UPDATE tickets_trash SET owner = %llu WHERE owner = %llu;",
        inheritor, user);

@@ -44,7 +44,7 @@
 #define G_LOG_DOMAIN "md    gmp"
 
 /**
- * @brief Reset command data.
+ * @brief Parse attributes for a GET command.
  *
  * @param[in]  data              GET operation data.
  * @param[in]  type              Resource type.
