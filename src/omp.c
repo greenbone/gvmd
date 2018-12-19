@@ -22201,6 +22201,13 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         "Error in SMB file path"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 43:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "SMB file path type must be either"
+                                        " 'full' or 'directory'"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 50:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -25942,6 +25949,13 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
                                     "Error in SMB file path"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
+                break;
+              case 43:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "SMB file path type must be either"
+                                    " 'full' or 'directory'"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 50:
