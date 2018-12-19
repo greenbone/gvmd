@@ -12,6 +12,7 @@ gvmd 8.0+beta3 (work in progress)
 Main changes compared to gvm 8.0+beta2:
 * The new alert method "Alemba vFire" has been added.
 * GMP CREATE_ASSET, its GMP doc and usage by GSA are now more consistent.
+* Remediation support has been added (GMP CREATE_TICKET, GET_TICKETS, etc).
 
 
 gvmd 8.0+beta2 (2018-12-05)
