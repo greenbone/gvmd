@@ -4237,7 +4237,7 @@ stop_task_data_reset (stop_task_data_t *data)
 }
 
 /**
- * @brief Command data for the modify_target command.
+ * @brief Command data for the sync_config command.
  */
 typedef struct
 {
