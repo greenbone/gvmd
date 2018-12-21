@@ -65284,8 +65284,12 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM oss WHERE owner = %llu;", user);
 
   /* Delete report data and tasks (not directly referenced) */
-  // Hosts
+  // Counts
   sql ("DELETE FROM report_counts WHERE \"user\" = %llu", user);
+  sql ("DELETE FROM report_counts"
+       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
+       user);
+  // Hosts
   sql ("DELETE FROM report_host_details"
        " WHERE report_host IN (SELECT id FROM report_hosts"
        "                       WHERE report IN (SELECT id FROM reports"
