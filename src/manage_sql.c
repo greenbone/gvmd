@@ -13094,11 +13094,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           file_path_format
             = sql_string ("SELECT value FROM tags"
                           " WHERE name = 'smb-alert:file_path'"
-                          "   AND EXISTS"
-                          "         (SELECT * FROM tag_resources"
-                          "           WHERE resource_type = 'task'"
-                          "             AND resource = %llu"
-                          "             AND tag = tags.id)"
+                          "   AND resource_type = 'task'"
+                          "   AND resource = %llu"
                           " ORDER BY modification_time LIMIT 1;",
                           task);
 
