@@ -11,6 +11,11 @@ openvas-manager 7.0.4 (work in progress)
 
 Main changes since 7.0.3:
 * The new alert method "Alemba vFire" has been added.
+* The SMB alert will now try to create directories as needed
+* The file path of SMB alerts can now be configured to be used only for the
+  directory, appending the report filename from the user's settings.
+* The tag "smb-alert:file_path" on tasks will override the file path of
+  SMB alerts.
 
 openvas-manager 7.0.3 (2018-03-29)
 
