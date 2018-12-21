@@ -8526,7 +8526,7 @@ trash_alert_writable (alert_t alert)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find alert, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find alert, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -23995,7 +23995,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
  * @param[in]  host        Host to limit results to.
  * @param[in]  extra_order Extra text for ORDER term in SQL.
  *
- * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find result, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 static int
@@ -24239,7 +24239,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
  * @param[in]  host        Host to limit results to.
  * @param[in]  extra_order Extra text for ORDER term in SQL.
  *
- * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find result, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -37337,7 +37337,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
  * @param[in]  iterator  Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find scan config, failed to find filter,
+ * @return 0 success, 1 failed to find scan config, 2 failed to find filter,
  *         -1 error.
  */
 int
@@ -42895,8 +42895,8 @@ init_credential_iterator_one (iterator_t* iterator,
  * @param[in]  iterator  Iterator.
  * @param[in]  get       GET data.
  *
- * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
- *         -1 error.
+ * @return 0 success, 1 failed to find filter, 2 failed to find
+ *         filter (filt_id), -1 error.
  */
 int
 init_credential_iterator (iterator_t* iterator, const get_data_t *get)
@@ -44472,7 +44472,8 @@ get_iterator_owner (iterator_t* iterator)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find agent, failed to find filter, -1 error.
+ * @return 0 success, 1 failed to find agent, 2 failed to find filter,
+ *         -1 error.
  */
 int
 init_agent_iterator (iterator_t* iterator, const get_data_t *get)
@@ -49718,8 +49719,8 @@ schedule_count (const get_data_t *get)
  * @param[in]  iterator  Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
- *         -1 error.
+ * @return 0 success, 1 failed to find filter, 2 failed to find"
+ *         filter (filt_id), -1 error.
  */
 int
 init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
@@ -54411,7 +54412,7 @@ group_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find group, failed to find group (filt_id),
+ * @return 0 success, 1 failed to find group, 2 failed to find group (filt_id),
  *         -1 error.
  */
 int
@@ -58376,7 +58377,7 @@ role_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find role, failed to find role (filt_id),
+ * @return 0 success, 1 failed to find role, 2 failed to find role (filt_id),
  *         -1 error.
  */
 int
@@ -59034,7 +59035,7 @@ filter_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find filter, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -66107,7 +66108,7 @@ user_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find user, failed to find user (filt_id),
+ * @return 0 success, 1 failed to find user, 2 failed to find user (filt_id),
  *         -1 error.
  */
 int
