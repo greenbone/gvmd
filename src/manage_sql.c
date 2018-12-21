@@ -24205,23 +24205,23 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   table_order_if_sort_not_specified = 1;
   ret = init_get_iterator2_with (iterator,
-                                "result",
-                                get,
-                                /* SELECT columns. */
-                                columns,
-                                NULL,
-                                /* Filterable columns not in SELECT columns. */
-                                filterable_columns,
-                                NULL,
-                                filter_columns,
-                                0,
-                                extra_tables,
-                                extra_where,
-                                TRUE,
-                                report ? TRUE : FALSE,
-                                extra_order,
-                                with_clauses,
-                                1);
+                                 "result",
+                                 get,
+                                 /* SELECT columns. */
+                                 columns,
+                                 NULL,
+                                 /* Filterable columns not in SELECT columns. */
+                                 filterable_columns,
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 extra_tables,
+                                 extra_where,
+                                 TRUE,
+                                 report ? TRUE : FALSE,
+                                 extra_order,
+                                 with_clauses,
+                                 1);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
   g_free (with_clauses);
