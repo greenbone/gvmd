@@ -13364,10 +13364,30 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   return -1;
               }
 
+          if (task == 0 && report)
+            {
+              ret = report_task (report, &task);
+              if (ret)
+                return ret;
+            }
+
           credential_id = alert_data (alert, "method", "smb_credential");
           share_path = alert_data (alert, "method", "smb_share_path");
-          file_path_format = alert_data (alert, "method", "smb_file_path");
           file_path_type = alert_data (alert, "method", "smb_file_path_type");
+
+          file_path_format
+            = sql_string ("SELECT value FROM tags"
+                          " WHERE name = 'smb-alert:file_path'"
+                          "   AND EXISTS"
+                          "         (SELECT * FROM tag_resources"
+                          "           WHERE resource_type = 'task'"
+                          "             AND resource = %llu"
+                          "             AND tag = tags.id)"
+                          " ORDER BY modification_time LIMIT 1;",
+                          task);
+
+          if (file_path_format == NULL)
+            file_path_format = alert_data (alert, "method", "smb_file_path");
 
           report_content = NULL;
           extension = NULL;
