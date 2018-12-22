@@ -81,4 +81,4 @@ extern FILE* log_stream;
 #define logf(format, args...)
 #endif
 
-#endif
+#endif /* not _GVMD_LOG_H */
