@@ -5121,7 +5121,7 @@ static stop_task_data_t *stop_task_data
  * @brief Parser callback data for SYNC_CONFIG.
  */
 static sync_config_data_t *sync_config_data
- = (sync_config_data_t*) &(command_data.delete_target);
+ = (sync_config_data_t*) &(command_data.sync_config);
 
 /**
  * @brief Parser callback data for TEST_ALERT.
