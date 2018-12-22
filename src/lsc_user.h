@@ -43,4 +43,4 @@ lsc_user_deb_recreate (const gchar *, const char *, const char *,
 int
 lsc_user_exe_recreate (const gchar *, const gchar *, void **, gsize *);
 
-#endif /* _GVMD_LSC_USER_H */
+#endif /* not _GVMD_LSC_USER_H */

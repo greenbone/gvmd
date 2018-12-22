@@ -30,4 +30,4 @@
 
 typedef unsigned int buffer_size_t;
 
-#endif /* !_GVMD_TYPES_H */
+#endif /* not _GVMD_TYPES_H */
