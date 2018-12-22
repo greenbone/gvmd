@@ -68989,16 +68989,6 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " %d. Corrected preference values: %d",
                                       removed, fixed_values);
     }
-  else if (strcasecmp (name, "remove-open-port-results") == 0)
-    {
-      int changes;
-      sql ("DELETE FROM results WHERE nvt='0';");
-      changes = sql_changes();
-      success_text = g_strdup_printf ("Optimized: remove-open-port-results."
-                                      " Superfluous open port results removed:"
-                                      " %d.",
-                                      changes);
-    }
   else if (strcasecmp (name, "cleanup-port-names") == 0)
     {
       int changes_iana, changes_old_format;
