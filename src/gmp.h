@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef GVMD_GMP_H
-#define GVMD_GMP_H
+#ifndef _GVMD_GMP_H
+#define _GVMD_GMP_H
 
 #include "types.h"
 #include <gvm/util/serverutils.h>
@@ -67,4 +67,4 @@ extern char to_client[];
 extern buffer_size_t to_client_start;
 extern buffer_size_t to_client_end;
 
-#endif
+#endif /* not _GVMD_MANAGE_H */
