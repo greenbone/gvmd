@@ -6913,8 +6913,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             /** @todo If a real GMP command, return STATUS_ERROR_MUST_AUTH. */
             if (send_to_client
                  (XML_ERROR_SYNTAX ("gmp",
-                                    "First command must be AUTHENTICATE,"
-                                    " COMMANDS or GET_VERSION"),
+                                    "Only commands GET_VERSION and COMMANDS are"
+                                    " allowed before AUTHENTICATE"),
                   write_to_client,
                   write_to_client_data))
               {
