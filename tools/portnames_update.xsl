@@ -1,13 +1,7 @@
 <!--
-GVM
-$Id$
-Description: Generate SQL queries to update port names.
+Copyright (C) 2013-2018 Greenbone Networks GmbH
 
-Authors:
-Hani Benhabiles <hani.benhabiles@greenbone.net>
-
-Copyright:
-Copyright (C) 2013 Greenbone Networks GmbH
+SPDX-License-Identifier: GPL-2.0-or-later
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
+
+<!--Generate SQL queries to update port names. -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:iana="http://www.iana.org/assignments" version="1.0">

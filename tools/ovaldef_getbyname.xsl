@@ -1,14 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-GVM
-$Id: cve_getbyname.xsl 11660 2011-09-22 14:22:40Z hdoreau $
-Description: Select a CVE item by name.
+Copyright (C) 2011-2018 Greenbone Networks GmbH
 
-Authors:
-Henri Doreau <henri.doreau@greenbone.net>
-
-Copyright:
-Copyright (C) 2011 Greenbone Networks GmbH
+SPDX-License-Identifier: GPL-2.0-or-later
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,6 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
+
+<!-- Select a CVE item by name. -->
+
 <xsl:stylesheet version="1.0" 
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:ns6="http://scap.nist.gov/schema/scap-core/0.1"
