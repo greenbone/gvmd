@@ -1,12 +1,6 @@
-/* GVM
- * $Id$
- * Description: LSC credentials encryption support
+/* Copyright (C) 2013-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Werner Koch <wk@gnupg.org>
- *
- * Copyright:
- * Copyright (C) 2013 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
