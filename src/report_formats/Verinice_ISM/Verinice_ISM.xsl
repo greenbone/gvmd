@@ -1,24 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-OpenVAS Manager
-$Id$
-Description: Report stylesheet for IT-Grundschutz Verinice interface.
+Copyright (C) 2011-2018 Greenbone Networks GmbH
 
-This stylesheet extracts the tables of IT-Grundschutz
-scans from the given XML scan report using a XSL
-transformation with the tool xsltproc.
-
-Parameters:
-- htmlfilename: should contain the filename of a html report
-- filedate: should contain the reports modification time as seconds since Epoch
-
-Authors:
-Michael Wiegand <michael.wiegand@greenbone.net>
-Andre Heinecke <aheinecke@intevation.de>
-Timo Pollmeier <timo.pollmeier@greenbone.net>
-
-Copyright:
-Copyright (C) 2011, 2012, 2016 Greenbone Networks GmbH
+SPDX-License-Identifier: GPL-2.0-or-later
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -34,6 +18,18 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
+
+<!-- Report stylesheet for IT-Grundschutz Verinice interface.
+
+This stylesheet extracts the tables of IT-Grundschutz
+scans from the given XML scan report using a XSL
+transformation with the tool xsltproc.
+
+Parameters:
+- htmlfilename: should contain the filename of a html report
+- filedate: should contain the reports modification time as seconds since Epoch
+-->
+
 <xsl:stylesheet
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
