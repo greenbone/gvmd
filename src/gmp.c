@@ -4237,7 +4237,7 @@ stop_task_data_reset (stop_task_data_t *data)
 }
 
 /**
- * @brief Command data for the modify_target command.
+ * @brief Command data for the sync_config command.
  */
 typedef struct
 {
@@ -5121,7 +5121,7 @@ static stop_task_data_t *stop_task_data
  * @brief Parser callback data for SYNC_CONFIG.
  */
 static sync_config_data_t *sync_config_data
- = (sync_config_data_t*) &(command_data.delete_target);
+ = (sync_config_data_t*) &(command_data.sync_config);
 
 /**
  * @brief Parser callback data for TEST_ALERT.
@@ -6913,8 +6913,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             /** @todo If a real GMP command, return STATUS_ERROR_MUST_AUTH. */
             if (send_to_client
                  (XML_ERROR_SYNTAX ("gmp",
-                                    "First command must be AUTHENTICATE,"
-                                    " COMMANDS or GET_VERSION"),
+                                    "Only commands GET_VERSION and COMMANDS are"
+                                    " allowed before AUTHENTICATE"),
                   write_to_client,
                   write_to_client_data))
               {

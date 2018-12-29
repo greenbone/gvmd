@@ -8539,7 +8539,7 @@ trash_alert_writable (alert_t alert)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find alert, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find alert, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -24031,7 +24031,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
  * @param[in]  host        Host to limit results to.
  * @param[in]  extra_order Extra text for ORDER term in SQL.
  *
- * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find result, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 static int
@@ -24241,23 +24241,23 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   table_order_if_sort_not_specified = 1;
   ret = init_get_iterator2_with (iterator,
-                                "result",
-                                get,
-                                /* SELECT columns. */
-                                columns,
-                                NULL,
-                                /* Filterable columns not in SELECT columns. */
-                                filterable_columns,
-                                NULL,
-                                filter_columns,
-                                0,
-                                extra_tables,
-                                extra_where,
-                                TRUE,
-                                report ? TRUE : FALSE,
-                                extra_order,
-                                with_clauses,
-                                1);
+                                 "result",
+                                 get,
+                                 /* SELECT columns. */
+                                 columns,
+                                 NULL,
+                                 /* Filterable columns not in SELECT columns. */
+                                 filterable_columns,
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 extra_tables,
+                                 extra_where,
+                                 TRUE,
+                                 report ? TRUE : FALSE,
+                                 extra_order,
+                                 with_clauses,
+                                 1);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
   g_free (with_clauses);
@@ -24275,7 +24275,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
  * @param[in]  host        Host to limit results to.
  * @param[in]  extra_order Extra text for ORDER term in SQL.
  *
- * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find result, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -37373,7 +37373,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
  * @param[in]  iterator  Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find scan config, failed to find filter,
+ * @return 0 success, 1 failed to find scan config, 2 failed to find filter,
  *         -1 error.
  */
 int
@@ -42931,8 +42931,8 @@ init_credential_iterator_one (iterator_t* iterator,
  * @param[in]  iterator  Iterator.
  * @param[in]  get       GET data.
  *
- * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
- *         -1 error.
+ * @return 0 success, 1 failed to find filter, 2 failed to find
+ *         filter (filt_id), -1 error.
  */
 int
 init_credential_iterator (iterator_t* iterator, const get_data_t *get)
@@ -44508,7 +44508,8 @@ get_iterator_owner (iterator_t* iterator)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find agent, failed to find filter, -1 error.
+ * @return 0 success, 1 failed to find agent, 2 failed to find filter,
+ *         -1 error.
  */
 int
 init_agent_iterator (iterator_t* iterator, const get_data_t *get)
@@ -49754,8 +49755,8 @@ schedule_count (const get_data_t *get)
  * @param[in]  iterator  Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
- *         -1 error.
+ * @return 0 success, 1 failed to find filter, 2 failed to find"
+ *         filter (filt_id), -1 error.
  */
 int
 init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
@@ -54447,7 +54448,7 @@ group_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find group, failed to find group (filt_id),
+ * @return 0 success, 1 failed to find group, 2 failed to find group (filt_id),
  *         -1 error.
  */
 int
@@ -58412,7 +58413,7 @@ role_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find role, failed to find role (filt_id),
+ * @return 0 success, 1 failed to find role, 2 failed to find role (filt_id),
  *         -1 error.
  */
 int
@@ -59070,7 +59071,7 @@ filter_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find filter, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -65127,7 +65128,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       g_free (real_inheritor_id);
       g_free (real_inheritor_name);
 
-      /* Transfer owned resources*/
+      /* Transfer owned resources. */
+
       sql ("UPDATE agents SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE agents_trash SET owner = %llu WHERE owner = %llu;",
@@ -65223,7 +65225,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE roles_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
-      /* Delete user */
+      /* Delete user. */
+
       sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
       sql ("DELETE FROM group_users_trash WHERE \"user\" = %llu;", user);
       sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
@@ -65238,9 +65241,11 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       return 0;
     }
 
-  /* Delete settings and miscellaneous resources not referenced directly */
-  // Agents
-  /* skip the "in use" check because it always returns 0
+  /* Delete settings and miscellaneous resources not referenced directly. */
+
+  /* Agents. */
+#if 0
+  /* Skip the "in use" check because it always returns 0. */
   if (user_resources_in_use (user,
                              "agents", agent_in_use,
                              "agents_trash", trash_agent_in_use))
@@ -65248,20 +65253,24 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql_rollback ();
       return 9;
     }
-  */
+#endif
   sql ("DELETE FROM agents WHERE owner = %llu;", user);
   sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
-  // Settings
+
+  /* Settings. */
   sql ("DELETE FROM settings WHERE owner = %llu;", user);
 
   /* Delete data modifiers (not directly referenced) */
-  // Notes
+
+  /* Notes. */
   sql ("DELETE FROM notes WHERE owner = %llu;", user);
   sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
-  // Overrides
+
+  /* Overrides. */
   sql ("DELETE FROM overrides WHERE owner = %llu;", user);
   sql ("DELETE FROM overrides_trash WHERE owner = %llu;", user);
-  // Tags
+
+  /* Tags. */
   sql ("DELETE FROM tag_resources"
        " WHERE tag IN (SELECT id FROM tags WHERE owner = %llu);",
        user);
@@ -65271,8 +65280,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
 
-  /* Delete assets (not directly referenced) */
-  // Hosts
+  /* Delete assets (not directly referenced). */
+
+  /* Hosts. */
   sql ("DELETE FROM host_details WHERE host IN"
        " (SELECT id FROM hosts WHERE owner = %llu);", user);
   sql ("DELETE FROM host_max_severities WHERE host IN"
@@ -65280,16 +65290,19 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM host_identifiers WHERE owner = %llu;", user);
   sql ("DELETE FROM host_oss WHERE owner = %llu;", user);
   sql ("DELETE FROM hosts WHERE owner = %llu;", user);
-  // OSs
+
+  /* OSs. */
   sql ("DELETE FROM oss WHERE owner = %llu;", user);
 
-  /* Delete report data and tasks (not directly referenced) */
-  // Counts
+  /* Delete report data and tasks (not directly referenced). */
+
+  /* Counts. */
   sql ("DELETE FROM report_counts WHERE \"user\" = %llu", user);
   sql ("DELETE FROM report_counts"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
-  // Hosts
+
+  /* Hosts. */
   sql ("DELETE FROM report_host_details"
        " WHERE report_host IN (SELECT id FROM report_hosts"
        "                       WHERE report IN (SELECT id FROM reports"
@@ -65298,17 +65311,20 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM report_hosts"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
-  // Results
+
+  /* Results. */
   sql ("DELETE FROM results"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
-  // Reports
+
+  /* Reports. */
   sql ("DELETE FROM result_nvt_reports"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
   sql ("DELETE FROM reports WHERE owner = %llu;", user);
 
-  /* Delete tasks (not directly referenced) */
+  /* Delete tasks (not directly referenced). */
+
   if (user_resources_in_use (user,
                              "tasks", target_in_use,
                              NULL, NULL))
@@ -65327,8 +65343,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM tasks WHERE owner = %llu;", user);
 
-  /* Delete resources directly used by tasks */
-  // Alerts
+  /* Delete resources directly used by tasks. */
+
+  /* Alerts. */
   if (user_resources_in_use (user,
                              "alerts", alert_in_use,
                              "alerts_trash", trash_alert_in_use))
@@ -65356,7 +65373,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM alerts WHERE owner = %llu;", user);
   sql ("DELETE FROM alerts_trash WHERE owner = %llu;", user);
-  // Configs
+
+  /* Configs. */
   if (user_resources_in_use (user,
                              "configs", config_in_use,
                              "configs_trash", trash_config_in_use))
@@ -65379,7 +65397,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM configs WHERE owner = %llu;", user);
   sql ("DELETE FROM configs_trash WHERE owner = %llu;", user);
-  // Scanners
+
+  /* Scanners. */
   if (user_resources_in_use (user,
                              "scanners", scanner_in_use,
                              "scanners_trash", trash_scanner_in_use))
@@ -65389,7 +65408,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     }
   sql ("DELETE FROM scanners WHERE owner = %llu;", user);
   sql ("DELETE FROM scanners_trash WHERE owner = %llu;", user);
-  // Schedules
+
+  /* Schedules. */
   if (user_resources_in_use (user,
                              "schedules", schedule_in_use,
                              "schedules_trash", trash_schedule_in_use))
@@ -65399,7 +65419,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     }
   sql ("DELETE FROM schedules WHERE owner = %llu;", user);
   sql ("DELETE FROM schedules_trash WHERE owner = %llu;", user);
-  // Targets
+
+  /* Targets. */
   if (user_resources_in_use (user,
                              "targets", target_in_use,
                              "targets_trash", trash_target_in_use))
@@ -65415,7 +65436,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM targets_trash WHERE owner = %llu;", user);
 
   /* Delete resources used indirectly by tasks */
-  // Filters (used by alerts and settings)
+
+  /* Filters (used by alerts and settings). */
   if (user_resources_in_use (user,
                              "filters", filter_in_use,
                              "filters_trash", trash_filter_in_use))
@@ -65425,7 +65447,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     }
   sql ("DELETE FROM filters WHERE owner = %llu;", user);
   sql ("DELETE FROM filters_trash WHERE owner = %llu;", user);
-  // Port lists (used by targets)
+
+  /* Port lists (used by targets). */
   if (user_resources_in_use (user,
                              "port_lists", port_list_in_use,
                              "port_lists_trash", trash_port_list_in_use))
@@ -65442,7 +65465,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM port_lists WHERE owner = %llu;", user);
   sql ("DELETE FROM port_lists_trash WHERE owner = %llu;", user);
-  // Report formats (used by alerts)
+
+  /* Report formats (used by alerts). */
   if (user_resources_in_use (user,
                              "report_formats",
                              report_format_in_use,
@@ -65479,6 +65503,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
 
   /* Delete credentials last because they can be used in various places */
+
   if (user_resources_in_use (user,
                              "credentials", credential_in_use,
                              "credentials_trash", trash_credential_in_use))
@@ -65498,6 +65523,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   /* Make permissions global if they are owned by the user and are related
    * to users/groups/roles that are owned by the user. */
+
   sql ("UPDATE permissions SET owner = NULL"
        " WHERE owner = %llu"
        " AND ((subject_type = 'user' AND subject IN (SELECT id FROM users WHERE owner = %llu))"
@@ -65515,6 +65541,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
 
   /* Make users, roles and groups global if they are owned by the user. */
+
   sql ("UPDATE users SET owner = NULL WHERE owner = %llu;", user);
   sql ("UPDATE roles SET owner = NULL WHERE owner = %llu;", user);
   sql ("UPDATE groups SET owner = NULL WHERE owner = %llu;", user);
@@ -65522,6 +65549,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("UPDATE groups_trash SET owner = NULL WHERE owner = %llu;", user);
 
   /* Remove all other permissions owned by the user or given on the user. */
+
   sql ("DELETE FROM permissions"
        " WHERE owner = %llu"
        " OR subject_type = 'user' AND subject = %llu"
@@ -65531,17 +65559,20 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM permissions_get_tasks WHERE \"user\" = %llu;", user);
 
-  /* Delete permissions granted by the user */
+  /* Delete permissions granted by the user. */
+
   sql ("DELETE FROM permissions WHERE owner = %llu;", user);
   sql ("DELETE FROM permissions_trash WHERE owner = %llu;", user);
 
-  /* Remove user from groups and roles */
+  /* Remove user from groups and roles. */
+
   sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM group_users_trash WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
 
-  /* Delete user */
+  /* Delete user. */
+
   sql ("DELETE FROM users WHERE id = %llu;", user);
 
   sql_commit ();
@@ -66143,7 +66174,7 @@ user_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find user, failed to find user (filt_id),
+ * @return 0 success, 1 failed to find user, 2 failed to find user (filt_id),
  *         -1 error.
  */
 int
@@ -68993,16 +69024,6 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " Duplicate config preferences removed:"
                                       " %d. Corrected preference values: %d",
                                       removed, fixed_values);
-    }
-  else if (strcasecmp (name, "remove-open-port-results") == 0)
-    {
-      int changes;
-      sql ("DELETE FROM results WHERE nvt='0';");
-      changes = sql_changes();
-      success_text = g_strdup_printf ("Optimized: remove-open-port-results."
-                                      " Superfluous open port results removed:"
-                                      " %d.",
-                                      changes);
     }
   else if (strcasecmp (name, "cleanup-port-names") == 0)
     {

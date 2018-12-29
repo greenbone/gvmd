@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef GVMD_GMPD_H
-#define GVMD_GMPD_H
+#ifndef _GVMD_GMPD_H
+#define _GVMD_GMPD_H
 
 #include "types.h"
 #include <gvm/util/serverutils.h>
@@ -66,4 +66,4 @@ init_gmpd_process (const gchar *, gchar **);
 int
 serve_gmp (gvm_connection_t*, const gchar*, gchar**);
 
-#endif
+#endif /* not _GVMD_GMPD_H */
