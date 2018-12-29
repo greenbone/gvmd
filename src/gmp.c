@@ -15669,8 +15669,8 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_info",
-                            "Only one of name and the id attribute"
-                            " may be given."));
+                          "Only one of name and the id attribute"
+                          " may be given."));
       get_info_data_reset (get_info_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -15679,7 +15679,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_info",
-                            "No type specified."));
+                          "No type specified."));
       get_info_data_reset (get_info_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -17274,7 +17274,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("get_reports",
-                                    "Permission denied"));
+                                     "Permission denied"));
                 break;
               default:
                 internal_error_send_to_client (error);
@@ -18906,13 +18906,13 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 1:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_schedule",
-                            "Schedule exists already"));
+                             "Schedule exists already"));
         log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
       case 2:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_schedule",
-                            "Syntax error in BYDAY"));
+                             "Syntax error in BYDAY"));
         log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
       case 3:
@@ -18927,7 +18927,7 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 99:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_schedule",
-                            "Permission denied"));
+                             "Permission denied"));
         log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
       case -1:
@@ -19099,7 +19099,7 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 3:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_schedule",
-                            "Error in type name"));
+                             "Error in type name"));
         log_event_fail ("schedule", "Schedule",
                         modify_schedule_data->schedule_id,
                         "modified");
@@ -19107,7 +19107,7 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 4:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_schedule",
-                            "MODIFY_SCHEDULE requires a schedule_id"));
+                             "MODIFY_SCHEDULE requires a schedule_id"));
         log_event_fail ("schedule", "Schedule",
                         modify_schedule_data->schedule_id,
                         "modified");
@@ -19115,7 +19115,7 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 5:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_schedule",
-                            "Syntax error in BYDAY"));
+                             "Syntax error in BYDAY"));
         log_event_fail ("schedule", "Schedule",
                         modify_schedule_data->schedule_id, "modified");
         break;
@@ -19132,7 +19132,7 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 99:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_schedule",
-                            "Permission denied"));
+                             "Permission denied"));
         log_event_fail ("schedule", "Schedule",
                         modify_schedule_data->schedule_id,
                         "modified");
@@ -19168,7 +19168,7 @@ handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
         (XML_ERROR_SYNTAX ("get_settings",
-                          "Permission denied"));
+                           "Permission denied"));
       get_settings_data_reset (get_settings_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -26759,14 +26759,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 7:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Invalid or unexpected condition data"
-                                    " name"));
+                                     "Invalid or unexpected condition data"
+                                     " name"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 8:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Syntax error in condition data"));
+                                     "Syntax error in condition data"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 9:
@@ -26852,13 +26852,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 32:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Syntax error in event data"));
+                                     "Syntax error in event data"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 40:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Error in SMB credential"));
+                                     "Error in SMB credential"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 41:
@@ -26876,27 +26876,27 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 50:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "Error in TippingPoint credential"));
+                                     "Error in TippingPoint credential"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 51:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "Error in TippingPoint hostname"));
+                                     "Error in TippingPoint hostname"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 52:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "Error in TippingPoint TLS"
-                                    " certificate"));
+                                     "Error in TippingPoint TLS"
+                                     " certificate"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 53:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "TippingPoint TLS workaround must be"
-                                    " set to 0 or 1"));
+                                     "TippingPoint TLS workaround must be"
+                                     " set to 0 or 1"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 60:
@@ -26925,8 +26925,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 71:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "vFire credential must have"
-                                    " type 'up'"));
+                                     "vFire credential must have"
+                                     " type 'up'"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 99:
