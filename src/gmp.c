@@ -28102,7 +28102,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX
                   ("modify_report",
-                   "MODIFY_REPORT requires a COMMENT element"));
+                   "A COMMENT element is required"));
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
