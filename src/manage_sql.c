@@ -7320,7 +7320,7 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
  * @param[in]  data            The data.
  *
  * @return 0 valid, 40 invalid credential, 41 invalid SMB share path,
- *         42 invalid SMB file path, -1 error.
+ *         42 invalid SMB file path, 43 invalid SMB file path type, -1 error.
  */
 static int
 validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
@@ -7372,6 +7372,17 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
               == FALSE)
             {
               return 42;
+            }
+        }
+
+      if (strcmp (name, "smb_file_path_type") == 0)
+        {
+          if (*data
+              && strcmp (*data, "")
+              && strcasecmp (*data, "directory")
+              && strcasecmp (*data, "full"))
+            {
+              return 43;
             }
         }
     }
@@ -7533,6 +7544,7 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         43 invalid SMB file path type,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 60 recipient credential not found, 61 invalid
@@ -7866,6 +7878,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         43 invalid SMB file path type,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 60 recipient credential not found, 61 invalid
@@ -13326,18 +13339,55 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_SMB:
         {
           char *credential_id, *username, *password;
-          char *share_path, *file_path_format;
+          char *share_path, *file_path_format, *file_path_type;
           report_format_t report_format;
-          char *name, *report_id, *format_name;
-          char *creation_time, *modification_time;
           gchar *file_path, *report_content, *extension;
           gsize content_length;
           credential_t credential;
           int ret;
 
+          if (report == 0)
+            switch (sql_int64 (&report,
+                                "SELECT max (id) FROM reports"
+                                " WHERE task = %llu",
+                                task))
+              {
+                case 0:
+                  if (report)
+                    break;
+                case 1:        /* Too few rows in result of query. */
+                case -1:
+                  return -1;
+                  break;
+                default:       /* Programming error. */
+                  assert (0);
+                  return -1;
+              }
+
+          if (task == 0 && report)
+            {
+              ret = report_task (report, &task);
+              if (ret)
+                return ret;
+            }
+
           credential_id = alert_data (alert, "method", "smb_credential");
           share_path = alert_data (alert, "method", "smb_share_path");
-          file_path_format = alert_data (alert, "method", "smb_file_path");
+          file_path_type = alert_data (alert, "method", "smb_file_path_type");
+
+          file_path_format
+            = sql_string ("SELECT value FROM tags"
+                          " WHERE name = 'smb-alert:file_path'"
+                          "   AND EXISTS"
+                          "         (SELECT * FROM tag_resources"
+                          "           WHERE resource_type = 'task'"
+                          "             AND resource = %llu"
+                          "             AND tag = tags.id)"
+                          " ORDER BY modification_time LIMIT 1;",
+                          task);
+
+          if (file_path_format == NULL)
+            file_path_format = alert_data (alert, "method", "smb_file_path");
 
           report_content = NULL;
           extension = NULL;
@@ -13346,6 +13396,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           g_debug ("smb_credential: %s", credential_id);
           g_debug ("smb_share_path: %s", share_path);
           g_debug ("smb_file_path: %s", file_path_format);
+          g_debug ("smb_file_path_type: %s", file_path_type);
 
           ret = report_content_for_alert
                   (alert, report, task, get,
@@ -13364,41 +13415,26 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return ret ? ret : -1;
             }
 
-          name = task_name (task);
-          report_id = report_uuid (report);
+          if (file_path_type
+              && strcasecmp (file_path_type, "directory") == 0)
+            {
+              char *dirname, *filename;
 
-          format_name
-            = sql_string ("SELECT name"
-                          " FROM report_formats"
-                          " WHERE id = %llu",
-                          report_format);
+              dirname = generate_report_filename (report, report_format,
+                                                  file_path_format, FALSE);
+              filename = generate_report_filename (report, report_format,
+                                                   NULL, TRUE);
 
-          creation_time
-            = sql_string ("SELECT iso_time (start_time)"
-                          " FROM reports"
-                          " WHERE id = %llu",
-                          report);
+              file_path = g_strdup_printf ("%s\\%s", dirname, filename);
 
-          modification_time
-            = sql_string ("SELECT iso_time (end_time)"
-                          " FROM reports"
-                          " WHERE id = %llu",
-                          report);
-
-          file_path = gvm_export_file_name (file_path_format,
-                                            current_credentials.username,
-                                            "report",
-                                            report_id,
-                                            creation_time,
-                                            modification_time,
-                                            name,
-                                            format_name);
-
-          free (name);
-          free (report_id);
-          free (format_name);
-          free (creation_time);
-          free (modification_time);
+              free (dirname);
+              free (filename);
+            }
+          else
+            {
+              file_path = generate_report_filename (report, report_format,
+                                                    file_path_format, FALSE);
+            }
 
           credential = 0;
           ret = find_credential_with_permission (credential_id, &credential,
@@ -68988,16 +69024,6 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " Duplicate config preferences removed:"
                                       " %d. Corrected preference values: %d",
                                       removed, fixed_values);
-    }
-  else if (strcasecmp (name, "remove-open-port-results") == 0)
-    {
-      int changes;
-      sql ("DELETE FROM results WHERE nvt='0';");
-      changes = sql_changes();
-      success_text = g_strdup_printf ("Optimized: remove-open-port-results."
-                                      " Superfluous open port results removed:"
-                                      " %d.",
-                                      changes);
     }
   else if (strcasecmp (name, "cleanup-port-names") == 0)
     {

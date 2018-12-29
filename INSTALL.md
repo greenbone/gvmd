@@ -281,12 +281,6 @@ supported values for `<name>` are:
   database must be up to date (if Manager and Scanner are both running, then
   this should happen automatically).
 
-- `remove-open-port-results`
-
-  This option removes results which were used in older versions of GVM to
-  indicate an open port. Since open ports are now part of the host details
-  these results are now obsolete in most cases.
-
 - `cleanup-port-names`
 
   This cleans up the ports of results as stored in the database by removing
