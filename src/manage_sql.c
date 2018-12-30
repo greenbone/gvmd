@@ -558,7 +558,7 @@ static nvtis_t* nvti_cache = NULL;
 /**
  * @brief Name of the database file.
  */
-gchar* task_db_name = NULL;
+gchar* gvmd_db_name = NULL;
 
 /**
  * @brief Whether a transaction has been opened and not committed yet.
@@ -15405,7 +15405,7 @@ void
 reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
-  init_manage_process (0, task_db_name);
+  init_manage_process (0, gvmd_db_name);
 }
 
 /**
@@ -18177,7 +18177,7 @@ init_manage_internal (GSList *log_config,
     update_nvti_cache ();
 
   sql_close ();
-  task_db_name = database ? g_strdup (database) : NULL;
+  gvmd_db_name = database ? g_strdup (database) : NULL;
   if (fork_connection)
     manage_fork_connection = fork_connection;
   return 0;
