@@ -22360,6 +22360,61 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                    &content_type))
               {
                 case 0:
+                  {
+
+                    SENDF_TO_CLIENT_OR_FAIL ("<help_response"
+                                             " status=\"" STATUS_OK "\""
+                                             " status_text=\"" STATUS_OK_TEXT "\">"
+                                             "<schema"
+                                             " format=\"%s\""
+                                             " extension=\"%s\""
+                                             " content_type=\"%s\">",
+                                             help_data->format
+                                              ? help_data->format
+                                              : "XML",
+                                             extension,
+                                             content_type);
+                    g_free (extension);
+                    g_free (content_type);
+
+                    if (output && strlen (output))
+                      {
+                        /* Encode and send the output. */
+
+                        if (help_data->format
+                            && strcasecmp (help_data->format, "XML"))
+                          {
+                            gchar *base64;
+
+                            base64 = g_base64_encode ((guchar*) output, output_len);
+                            if (send_to_client (base64,
+                                                write_to_client,
+                                                write_to_client_data))
+                              {
+                                g_free (output);
+                                g_free (base64);
+                                error_send_to_client (error);
+                                return;
+                              }
+                            g_free (base64);
+                          }
+                        else
+                          {
+                            /* Special case the XML schema, bah. */
+                            if (send_to_client (output,
+                                                write_to_client,
+                                                write_to_client_data))
+                              {
+                                g_free (output);
+                                error_send_to_client (error);
+                                return;
+                              }
+                          }
+                      }
+                    g_free (output);
+                    SEND_TO_CLIENT_OR_FAIL ("</schema>"
+                                            "</help_response>");
+                  }
                   break;
                 case 1:
                   assert (help_data->format);
@@ -22369,78 +22424,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
                   break;
                 case 2:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("help",
                                       "Brief help is only available in XML."));
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("help"));
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
                   break;
               }
-
-            SENDF_TO_CLIENT_OR_FAIL ("<help_response"
-                                     " status=\"" STATUS_OK "\""
-                                     " status_text=\"" STATUS_OK_TEXT "\">"
-                                     "<schema"
-                                     " format=\"%s\""
-                                     " extension=\"%s\""
-                                     " content_type=\"%s\">",
-                                     help_data->format
-                                      ? help_data->format
-                                      : "XML",
-                                     extension,
-                                     content_type);
-            g_free (extension);
-            g_free (content_type);
-
-            if (output && strlen (output))
-              {
-                /* Encode and send the output. */
-
-                if (help_data->format
-                    && strcasecmp (help_data->format, "XML"))
-                  {
-                    gchar *base64;
-
-                    base64 = g_base64_encode ((guchar*) output, output_len);
-                    if (send_to_client (base64,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        g_free (base64);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (base64);
-                  }
-                else
-                  {
-                    /* Special case the XML schema, bah. */
-                    if (send_to_client (output,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        error_send_to_client (error);
-                        return;
-                      }
-                  }
-              }
-            g_free (output);
-            SEND_TO_CLIENT_OR_FAIL ("</schema>"
-                                    "</help_response>");
           }
         help_data_reset (help_data);
         set_client_state (CLIENT_AUTHENTIC);
