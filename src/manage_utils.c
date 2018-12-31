@@ -85,6 +85,14 @@ time_offset (const char *zone, time_t time)
   tzset ();
 
   time_broken = localtime (&time);
+  if (time_broken == NULL)
+    {
+      g_warning ("%s: localtime failed", __FUNCTION__);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
   if (strftime (buf, 100, "%z", time_broken) == 0)
     {
       g_warning ("%s: Failed to format timezone", __FUNCTION__);
@@ -155,6 +163,14 @@ current_offset (const char *zone)
 
   time (&now);
   now_broken = localtime (&now);
+  if (now_broken == NULL)
+    {
+      g_warning ("%s: localtime failed", __FUNCTION__);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
   if (setenv ("TZ", "UTC", 1) == -1)
     {
       g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
@@ -223,8 +239,13 @@ months_between (time_t time1, time_t time2)
 
   assert (time1 <= time2);
 
-  localtime_r (&time1, &broken1);
   broken2 = localtime (&time2);
+  if ((localtime_r (&time1, &broken1) == NULL)
+      || (broken2 == NULL))
+    {
+      g_warning ("%s: localtime failed", __FUNCTION__);
+      return 0;
+    }
 
   same_year = (broken1.tm_year == broken2->tm_year);
   same_month = (broken1.tm_mon == broken2->tm_mon);
@@ -282,6 +303,11 @@ time_t
 add_months (time_t time, int months)
 {
   struct tm *broken = localtime (&time);
+  if (broken == NULL)
+    {
+      g_warning ("%s: localtime failed", __FUNCTION__);
+      return 0;
+    }
   broken->tm_mon += months;
   return mktime (broken);
 }

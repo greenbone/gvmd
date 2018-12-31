@@ -11275,6 +11275,12 @@ alert_subject_print (const gchar *subject, event_t event,
                   else
                     date = cert_check_time ();
                   tm = localtime (&date);
+                  if (tm == NULL)
+                    {
+                      g_warning ("%s: localtime failed, aborting",
+                                 __FUNCTION__);
+                      abort ();
+                    }
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
                   g_string_append (new_subject, time_string);
@@ -11440,6 +11446,12 @@ alert_message_print (const gchar *message, event_t event,
                   else
                     date = cert_check_time ();
                   tm = localtime (&date);
+                  if (tm == NULL)
+                    {
+                      g_warning ("%s: localtime failed, aborting",
+                                 __FUNCTION__);
+                      abort ();
+                    }
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
                   g_string_append (new_message, time_string);

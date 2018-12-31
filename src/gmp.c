@@ -198,18 +198,22 @@ time_from_strings (const char *hour, const char *minute,
 
   time (&now);
   now_broken = localtime (&now);
+  if (now_broken == NULL)
+    ret = -1;
+  else
+    {
+      given_broken.tm_sec = 0;
+      given_broken.tm_min = (minute ? atoi (minute) : now_broken->tm_min);
+      given_broken.tm_hour = (hour ? atoi (hour) : now_broken->tm_hour);
+      given_broken.tm_mday = (day_of_month
+                               ? atoi (day_of_month)
+                               : now_broken->tm_mday);
+      given_broken.tm_mon = (month ? (atoi (month) - 1) : now_broken->tm_mon);
+      given_broken.tm_year = (year ? (atoi (year) - 1900) : now_broken->tm_year);
+      given_broken.tm_isdst = now_broken->tm_isdst;
 
-  given_broken.tm_sec = 0;
-  given_broken.tm_min = (minute ? atoi (minute) : now_broken->tm_min);
-  given_broken.tm_hour = (hour ? atoi (hour) : now_broken->tm_hour);
-  given_broken.tm_mday = (day_of_month
-                           ? atoi (day_of_month)
-                           : now_broken->tm_mday);
-  given_broken.tm_mon = (month ? (atoi (month) - 1) : now_broken->tm_mon);
-  given_broken.tm_year = (year ? (atoi (year) - 1900) : now_broken->tm_year);
-  given_broken.tm_isdst = now_broken->tm_isdst;
-
-  ret = mktime (&given_broken);
+      ret = mktime (&given_broken);
+    }
 
   if (zone)
     {
