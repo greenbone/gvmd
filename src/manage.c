@@ -8774,10 +8774,18 @@ gvm_migrate_secinfo (int feed_type)
     {
       if (errno == EWOULDBLOCK)
         {
+          if (close (lockfile))
+            g_warning ("%s: failed to close lockfile: %s",
+                       __FUNCTION__,
+                       strerror (errno));
           g_free (lockfile_name);
           return 1;
         }
       g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
+      if (close (lockfile))
+        g_warning ("%s: failed to close lockfile: %s",
+                   __FUNCTION__,
+                   strerror (errno));
       g_free (lockfile_name);
       return -1;
     }
