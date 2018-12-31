@@ -27301,10 +27301,12 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
   delta_descr = result_iterator_descr (delta_results);
 
   g_debug ("   delta: %s: descr: %s VS %s (%i)",
-          __FUNCTION__, descr, delta_descr, strcmp (descr, delta_descr));
+          __FUNCTION__,
+          descr ? descr : "NULL",
+          delta_descr ? delta_descr : "NULL",
+          (descr && delta_descr) ? strcmp (descr, delta_descr) : 0);
 
-  ret = strcmp (descr, delta_descr);
-  if (ret)
+  if (descr && delta_descr && strcmp (descr, delta_descr))
     return COMPARE_RESULTS_CHANGED;
 
   return COMPARE_RESULTS_SAME;
