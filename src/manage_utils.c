@@ -812,16 +812,20 @@ icalendar_timezone_from_tzid (const char *tzid)
 {
   icaltimezone *tz;
 
-  // If tzid is not NULL, try to get a libical built-in.
   if (tzid)
     {
+      /* tzid is not NULL, try to get a libical built-in. */
       tz = icaltimezone_get_builtin_timezone_from_tzid (tzid);
       if (tz == NULL)
-        tz = icaltimezone_get_builtin_timezone (tzid);
+        {
+          tz = icaltimezone_get_builtin_timezone (tzid);
+          if (tz == NULL)
+            /* tzid is not a built-in timezone, fall back to UTC. */
+            tz = icaltimezone_get_utc_timezone ();
+        }
     }
-
-  // Fall back to UTC if tzid was null or not a built-in timezone
-  if (tzid == NULL)
+  else
+    /* tzid is NULL, fall back to UTC. */
     tz = icaltimezone_get_utc_timezone ();
 
   return tz;
