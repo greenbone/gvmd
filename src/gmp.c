@@ -113,6 +113,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include <gnutls/x509.h>
 
@@ -15389,6 +15390,10 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
         /* Got the lock, so no sync is in progress. */
         flock (lockfile, LOCK_UN);
     }
+
+  if (close (lockfile))
+    g_warning ("%s: failed to close lock file '%s': %s", __FUNCTION__,
+               lockfile_name, strerror (errno));
 
   g_free (lockfile_name);
   g_free (feed_name);
