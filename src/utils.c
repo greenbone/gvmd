@@ -419,8 +419,7 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
       g_free (lockfile_name);
       if (errno == EWOULDBLOCK)
         return 1;
-       g_warning ("%s: flock: %s", __FUNCTION__, strerror (errno));
-      g_free (lockfile_name);
+      g_warning ("%s: flock: %s", __FUNCTION__, strerror (errno));
       return -1;
     }
 
