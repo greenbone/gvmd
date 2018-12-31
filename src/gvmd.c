@@ -334,7 +334,7 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
 static int
 option_lock (lockfile_t *lockfile_checking)
 {
-  lockfile_t lockfile_helping;
+  static lockfile_t lockfile_helping;
 
   if (lockfile_lock_shared_nb (&lockfile_helping, "gvm-helping"))
     {
