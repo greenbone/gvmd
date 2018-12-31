@@ -449,15 +449,12 @@ next_time (time_t first, int period, int period_months, int byday,
       if (tz)
         {
           if (setenv ("TZ", tz, 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
-              g_free (tz);
-            }
+            g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+
+          g_free (tz);
         }
       else
         unsetenv ("TZ");
-
-      g_free (tz);
 
       return ret;
     }
