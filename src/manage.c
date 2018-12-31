@@ -6145,7 +6145,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   gnutls_session_t session;
   entity_t get, report;
   entities_t reports;
-  int ret = -1;
+  int ret;
 
   if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
     return -1;
