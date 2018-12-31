@@ -6451,7 +6451,7 @@ slave_system_report (const char *name, const char *duration,
   entity_t get, entity;
   entities_t reports;
   gmp_get_system_reports_opts_t opts;
-  int ret = -1;
+  int ret;
 
   if (find_scanner_with_permission (slave_id, &slave, "get_slaves"))
     return -1;
