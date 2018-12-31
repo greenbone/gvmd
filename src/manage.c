@@ -8040,9 +8040,11 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
-  gchar* msg;
+  gchar *msg, *name_text;
 
-  gchar* name_text = g_markup_escape_text (name, strlen (name));
+  name_text = name
+               ? g_markup_escape_text (name, strlen (name))
+               : g_strdup ("");
   if (details)
     {
       int tag_count;
