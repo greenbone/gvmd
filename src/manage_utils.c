@@ -326,6 +326,11 @@ day_of_week (time_t time)
   int sunday_first;
 
   tm = gmtime (&time);
+  if (tm == NULL)
+    {
+      g_warning ("%s: gmtime failed", __FUNCTION__);
+      return 0;
+    }
 
   sunday_first = tm->tm_wday;     /* Sunday 0, Monday 1, ... */
   return 1 << ((sunday_first + 6) % 7);
