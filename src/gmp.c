@@ -11736,89 +11736,93 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
   assert (results);
   assert (buffer);
 
-  if (g_str_has_prefix (oid, "CVE-"))
+  if (oid)
     {
-      gchar *cvss_base;
-      cvss_base = cve_cvss_base (oid);
-      buffer_xml_append_printf (buffer,
-                                "<nvt oid=\"%s\">"
-                                "<type>cve</type>"
-                                "<name>%s</name>"
-                                "<cvss_base>%s</cvss_base>"
-                                "<cpe id='%s'/>"
-                                "<cve>%s</cve>"
-                                "</nvt>",
-                                oid,
-                                oid,
-                                cvss_base,
-                                result_iterator_port (results),
-                                oid);
-      g_free (cvss_base);
-      return;
+      if (g_str_has_prefix (oid, "CVE-"))
+        {
+          gchar *cvss_base;
+          cvss_base = cve_cvss_base (oid);
+          buffer_xml_append_printf (buffer,
+                                    "<nvt oid=\"%s\">"
+                                    "<type>cve</type>"
+                                    "<name>%s</name>"
+                                    "<cvss_base>%s</cvss_base>"
+                                    "<cpe id='%s'/>"
+                                    "<cve>%s</cve>"
+                                    "</nvt>",
+                                    oid,
+                                    oid,
+                                    cvss_base,
+                                    result_iterator_port (results),
+                                    oid);
+          g_free (cvss_base);
+          return;
+        }
+
+      if (g_str_has_prefix (oid, "oval:"))
+        {
+          int ret;
+          char *cves;
+          get_data_t get;
+          iterator_t iterator;
+
+          memset (&get, '\0', sizeof (get));
+          get.id = g_strdup (oid);
+          ret = init_ovaldef_info_iterator (&iterator, &get, NULL);
+          if (ret)
+            assert (0);
+          if (!next (&iterator))
+            abort ();
+          cves = ovaldef_cves (oid);
+          buffer_xml_append_printf (buffer,
+                                    "<nvt oid=\"%s\">"
+                                    "<type>ovaldef</type>"
+                                    "<name>%s</name>"
+                                    "<family/>"
+                                    "<cvss_base>%s</cvss_base>"
+                                    "<cve>%s</cve>"
+                                    "<bid/>"
+                                    "<tags>summary=%s</tags>"
+                                    "<xref/>",
+                                    oid,
+                                    ovaldef_info_iterator_title (&iterator),
+                                    ovaldef_info_iterator_max_cvss (&iterator),
+                                    cves ?: "",
+                                    ovaldef_info_iterator_description (&iterator));
+                                    g_free (cves);
+          g_free (get.id);
+          cleanup_iterator (&iterator);
+        }
+      else
+        {
+          const char *cvss_base = result_iterator_nvt_cvss_base (results);
+
+          if (!cvss_base && !strcmp (oid, "0"))
+            cvss_base = "0.0";
+
+          buffer_xml_append_printf (buffer,
+                                    "<nvt oid=\"%s\">"
+                                    "<type>nvt</type>"
+                                    "<name>%s</name>"
+                                    "<family>%s</family>"
+                                    "<cvss_base>%s</cvss_base>"
+                                    "<cve>%s</cve>"
+                                    "<bid>%s</bid>"
+                                    "<xref>%s</xref>"
+                                    "<tags>%s</tags>",
+                                    oid,
+                                    result_iterator_nvt_name (results) ?: oid,
+                                    result_iterator_nvt_family (results) ?: "",
+                                    cvss_base ?: "",
+                                    result_iterator_nvt_cve (results) ?: "",
+                                    result_iterator_nvt_bid (results) ?: "",
+                                    result_iterator_nvt_xref (results) ?: "",
+                                    result_iterator_nvt_tag (results) ?: "");
+        }
+
+      results_xml_append_cert (buffer, oid);
     }
 
-  if (g_str_has_prefix (oid, "oval:"))
-    {
-      int ret;
-      char *cves;
-      get_data_t get;
-      iterator_t iterator;
-
-      memset (&get, '\0', sizeof (get));
-      get.id = g_strdup (oid);
-      ret = init_ovaldef_info_iterator (&iterator, &get, NULL);
-      if (ret)
-        assert (0);
-      if (!next (&iterator))
-        abort ();
-      cves = ovaldef_cves (oid);
-      buffer_xml_append_printf (buffer,
-                                "<nvt oid=\"%s\">"
-                                "<type>ovaldef</type>"
-                                "<name>%s</name>"
-                                "<family/>"
-                                "<cvss_base>%s</cvss_base>"
-                                "<cve>%s</cve>"
-                                "<bid/>"
-                                "<tags>summary=%s</tags>"
-                                "<xref/>",
-                                oid,
-                                ovaldef_info_iterator_title (&iterator),
-                                ovaldef_info_iterator_max_cvss (&iterator),
-                                cves ?: "",
-                                ovaldef_info_iterator_description (&iterator));
-                                g_free (cves);
-      g_free (get.id);
-      cleanup_iterator (&iterator);
-    }
-  else
-    {
-      const char *cvss_base = result_iterator_nvt_cvss_base (results);
-
-      if (!cvss_base && !strcmp (oid, "0"))
-        cvss_base = "0.0";
-
-      buffer_xml_append_printf (buffer,
-                                "<nvt oid=\"%s\">"
-                                "<type>nvt</type>"
-                                "<name>%s</name>"
-                                "<family>%s</family>"
-                                "<cvss_base>%s</cvss_base>"
-                                "<cve>%s</cve>"
-                                "<bid>%s</bid>"
-                                "<xref>%s</xref>"
-                                "<tags>%s</tags>",
-                                oid,
-                                result_iterator_nvt_name (results) ?: oid,
-                                result_iterator_nvt_family (results) ?: "",
-                                cvss_base ?: "",
-                                result_iterator_nvt_cve (results) ?: "",
-                                result_iterator_nvt_bid (results) ?: "",
-                                result_iterator_nvt_xref (results) ?: "",
-                                result_iterator_nvt_tag (results) ?: "");
-    }
-
-  results_xml_append_cert (buffer, oid);
   buffer_xml_append_printf (buffer, "</nvt>");
 }
 
