@@ -9643,7 +9643,6 @@ alert_script_exec (const char *alert_id, const char *command_args,
 
     /* Change into the script directory. */
 
-    /** @todo NULL arg is glibc extension. */
     previous_dir = getcwd (NULL, 0);
     if (previous_dir == NULL)
       {
@@ -10320,7 +10319,6 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     /* Change into the script directory. */
 
-    /** @todo NULL arg is glibc extension. */
     previous_dir = getcwd (NULL, 0);
     if (previous_dir == NULL)
       {
@@ -10639,7 +10637,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
     /* Change into the script directory. */
 
-    /** @todo NULL arg is glibc extension. */
     previous_dir = getcwd (NULL, 0);
     if (previous_dir == NULL)
       {
@@ -31550,7 +31547,6 @@ run_report_format_script (gchar *report_format_id,
 
   /* Change into the script directory. */
 
-  /** @todo NULL arg is glibc extension. */
   previous_dir = getcwd (NULL, 0);
   if (previous_dir == NULL)
     {
@@ -59361,7 +59357,6 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
       /* Change into the script directory. */
 
-      /** @todo NULL arg is glibc extension. */
       previous_dir = getcwd (NULL, 0);
       if (previous_dir == NULL)
         {
