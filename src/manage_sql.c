@@ -53944,8 +53944,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
             {
               gchar *uuid;
 
-              /** @todo Similar to validate_user in openvas-administrator. */
-              if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
+              if (validate_username (name))
                 {
                   g_list_free (added);
                   g_strfreev (split);
