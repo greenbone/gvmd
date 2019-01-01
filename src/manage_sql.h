@@ -350,7 +350,7 @@ typedef struct
 
 /* Variables */
 
-extern gchar *task_db_name;
+extern gchar *gvmd_db_name;
 
 
 /* Function prototypes */

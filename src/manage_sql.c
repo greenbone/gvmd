@@ -558,7 +558,7 @@ static nvtis_t* nvti_cache = NULL;
 /**
  * @brief Name of the database file.
  */
-gchar* task_db_name = NULL;
+gchar* gvmd_db_name = NULL;
 
 /**
  * @brief Whether a transaction has been opened and not committed yet.
@@ -9643,7 +9643,6 @@ alert_script_exec (const char *alert_id, const char *command_args,
 
     /* Change into the script directory. */
 
-    /** @todo NULL arg is glibc extension. */
     previous_dir = getcwd (NULL, 0);
     if (previous_dir == NULL)
       {
@@ -10320,7 +10319,6 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     /* Change into the script directory. */
 
-    /** @todo NULL arg is glibc extension. */
     previous_dir = getcwd (NULL, 0);
     if (previous_dir == NULL)
       {
@@ -10639,7 +10637,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
     /* Change into the script directory. */
 
-    /** @todo NULL arg is glibc extension. */
     previous_dir = getcwd (NULL, 0);
     if (previous_dir == NULL)
       {
@@ -15417,7 +15414,7 @@ void
 reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
-  init_manage_process (0, task_db_name);
+  init_manage_process (0, gvmd_db_name);
 }
 
 /**
@@ -18189,7 +18186,7 @@ init_manage_internal (GSList *log_config,
     update_nvti_cache ();
 
   sql_close ();
-  task_db_name = database ? g_strdup (database) : NULL;
+  gvmd_db_name = database ? g_strdup (database) : NULL;
   if (fork_connection)
     manage_fork_connection = fork_connection;
   return 0;
@@ -18974,21 +18971,6 @@ task_count (const get_data_t *get)
 
   g_free (extra_tables);
   return ret;
-}
-
-/**
- * @brief Return the identifier of a task.
- *
- * @param[in]  task  Task.
- *
- * @return ID of task.
- */
-static unsigned int
-task_id (task_t task)
-{
-  /** @todo The cast is a hack for compatibility with the old, alternate,
-   *        FS based storage mechanism. */
-  return (unsigned int) task;
 }
 
 /**
@@ -20443,8 +20425,7 @@ set_task_observers (task_t task, const gchar *observers)
         {
           gchar *uuid;
 
-          /** @todo Similar to validate_user in openvas-administrator. */
-          if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
+          if (validate_username (name))
             {
               g_list_free (added);
               g_strfreev (split);
@@ -25877,7 +25858,7 @@ report_timestamp (const char* report_id, gchar** timestamp)
  * @return 0 on success, -1 on error.
  */
 static int
-report_scan_run_status (report_t report, int* status)
+report_scan_run_status (report_t report, task_status_t* status)
 {
   *status = sql_int ("SELECT scan_run_status FROM reports"
                      " WHERE reports.id = %llu;",
@@ -26582,7 +26563,7 @@ delete_report_internal (report_t report)
       case 0:
         if (report)
           {
-            int status;
+            task_status_t status;
             if (report_scan_run_status (report, &status))
               return -1;
             sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
@@ -28912,7 +28893,7 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
 static int
 report_active (report_t report)
 {
-  int run_status;
+  task_status_t run_status;
   report_scan_run_status (report, &run_status);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
@@ -30100,7 +30081,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int total_result_count, filtered_result_count, run_status;
+  int total_result_count, filtered_result_count;
   array_t *result_hosts;
   iterator_t results, delta_results;
   int debugs, holes, infos, logs, warnings, false_positives;
@@ -30116,6 +30097,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable *f_host_ports;
   GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
   GHashTable *f_host_logs, *f_host_false_positives;
+  task_status_t run_status;
 
   /* Init some vars to prevent warnings from older compilers. */
   total_result_count = filtered_result_count = 0;
@@ -31564,7 +31546,6 @@ run_report_format_script (gchar *report_format_id,
 
   /* Change into the script directory. */
 
-  /** @todo NULL arg is glibc extension. */
   previous_dir = getcwd (NULL, 0);
   if (previous_dir == NULL)
     {
@@ -32454,8 +32435,6 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
 /* More task stuff. */
 
-/** @todo Should be on tasks page above. */
-
 /**
  * @brief Return the number of finished reports associated with a task.
  *
@@ -32672,15 +32651,6 @@ task_trend (task_t task, int override, int min_qod)
 }
 
 /**
- * @brief Dummy function.
- */
-void
-free_tasks ()
-{
-  /* Empty. */
-}
-
-/**
  * @brief Make a task.
  *
  * The char* parameters name and comment are used directly and freed
@@ -32753,34 +32723,12 @@ make_task_complete (task_t task)
 }
 
 /**
- * @brief Dummy function.
- *
- * @return 0.
- */
-int
-load_tasks ()
-{
-  return 0;
-}
-
-/**
- * @brief Dummy function.
- *
- * @return 0.
- */
-int
-save_tasks ()
-{
-  return 0;
-}
-
-/**
  * @brief Set the name of a task.
  *
  * @param[in]  task  A task.
  * @param[in]  name  New name.
  */
-static void
+void
 set_task_name (task_t task, const char *name)
 {
   gchar *quoted_name;
@@ -32919,7 +32867,7 @@ request_delete_task (task_t* task_pointer)
   task_t task = *task_pointer;
   int hidden;
 
-  g_debug ("   request delete task %u\n", task_id (task));
+  g_debug ("   request delete task %llu\n", task);
 
   hidden = sql_int ("SELECT hidden from tasks WHERE id = %llu;",
                     *task_pointer);
@@ -33109,9 +33057,7 @@ delete_task (task_t task, int ultimate)
 {
   g_debug ("   delete task %llu\n", task);
 
-  /** @todo Many other places just assert this. */
-  if (current_credentials.uuid == NULL)
-    return -1;
+  assert (current_credentials.uuid);
 
   if (ultimate)
     {
@@ -33234,13 +33180,6 @@ delete_task_lock (task_t task, int ultimate)
       return -1;
     }
 
-  /** @todo Many other places just assert this. */
-  if (current_credentials.uuid == NULL)
-    {
-      sql_rollback ();
-      return -1;
-    }
-
   ret = delete_task (task, ultimate);
   if (ret)
     sql_rollback ();
@@ -33322,19 +33261,6 @@ void
 append_to_task_comment (task_t task, const char* text, /* unused */ int length)
 {
   append_to_task_string (task, "comment", text);
-}
-
-/**
- * @brief Append text to the name associated with a task.
- *
- * @param[in]  task    A pointer to the task.
- * @param[in]  text    The text to append.
- * @param[in]  length  Length of the text.
- */
-void
-append_to_task_name (task_t task, const char* text, /* unused */ int length)
-{
-  append_to_task_string (task, "name", text);
 }
 
 /**
@@ -39538,16 +39464,21 @@ nvt_selector_family_count (const char* quoted_selector, int families_growing)
 static int
 nvt_selector_families_growing (const char* selector)
 {
-  /** @todo Quote selector. */
+  gchar *quoted_selector;
+
   /* The number of families can only grow if there is selector that includes
    * all. */
+
+  quoted_selector = sql_quote (selector);
 #if 0
-  return sql_int ("SELECT COUNT(*) FROM nvt_selectors"
-                  " WHERE name = '%s'"
-                  " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                  " AND exclude = 0"
-                  " LIMIT 1;",
-                  selector);
+  ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
+                 " WHERE name = '%s'"
+                 " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                 " AND exclude = 0"
+                 " LIMIT 1;",
+                 quoted_selector);
+  g_free (quoted_selector);
+  return ret;
 #else
   char *string;
   string = sql_string ("SELECT name FROM nvt_selectors"
@@ -39555,7 +39486,8 @@ nvt_selector_families_growing (const char* selector)
                        " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
                        " AND exclude = 0"
                        " LIMIT 1;",
-                       selector);
+                       quoted_selector);
+  g_free (quoted_selector);
   if (string == NULL) return 0;
   free (string);
   return 1;
@@ -54049,8 +53981,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
             {
               gchar *uuid;
 
-              /** @todo Similar to validate_user in openvas-administrator. */
-              if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
+              if (validate_username (name))
                 {
                   g_list_free (added);
                   g_strfreev (split);
@@ -59441,7 +59372,6 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
       /* Change into the script directory. */
 
-      /** @todo NULL arg is glibc extension. */
       previous_dir = getcwd (NULL, 0);
       if (previous_dir == NULL)
         {
