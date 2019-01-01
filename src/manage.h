@@ -926,6 +926,9 @@ load_tasks ();
 int
 save_tasks ();
 
+void
+set_task_name (task_t, const char *);
+
 gboolean
 find_task_with_permission (const char*, task_t*, const char *);
 

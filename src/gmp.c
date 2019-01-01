@@ -1875,6 +1875,7 @@ typedef struct
   array_t *alerts;      ///< IDs of alerts.
   char *copy;           ///< UUID of resource to copy.
   array_t *groups;      ///< IDs of groups.
+  char *name;           ///< Name of task.
   char *observers;      ///< Space separated names of observer users.
   name_value_t *preference;  ///< Current preference.
   array_t *preferences; ///< Preferences.
@@ -1899,6 +1900,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->copy);
   array_free (data->alerts);
   array_free (data->groups);
+  free (data->name);
   free (data->observers);
   if (data->preferences)
     {
@@ -26101,6 +26103,17 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               goto create_task_fail;
             }
 
+          /* Check and set name. */
+
+          if (create_task_data->name == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_task",
+                                                        "A NAME is required"));
+              goto create_task_fail;
+            }
+          else
+            set_task_name (create_task_data->task, create_task_data->name);
+
           /* Get the task ID. */
 
           if (task_uuid (create_task_data->task, &tsk_uuid))
@@ -31018,9 +31031,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TASK_COPY,
               &create_task_data->copy);
 
-      case CLIENT_CREATE_TASK_NAME:
-        append_to_task_name (create_task_data->task, text, text_len);
-        break;
+      APPEND (CLIENT_CREATE_TASK_NAME,
+              &create_task_data->name);
 
       APPEND (CLIENT_CREATE_TASK_OBSERVERS,
               &create_task_data->observers);

@@ -32766,7 +32766,7 @@ save_tasks ()
  * @param[in]  task  A task.
  * @param[in]  name  New name.
  */
-static void
+void
 set_task_name (task_t task, const char *name)
 {
   gchar *quoted_name;
