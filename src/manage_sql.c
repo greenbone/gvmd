@@ -33042,9 +33042,7 @@ delete_task (task_t task, int ultimate)
 {
   g_debug ("   delete task %llu\n", task);
 
-  /** @todo Many other places just assert this. */
-  if (current_credentials.uuid == NULL)
-    return -1;
+  assert (current_credentials.uuid);
 
   if (ultimate)
     {
@@ -33162,13 +33160,6 @@ delete_task_lock (task_t task, int ultimate)
     }
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  /** @todo Many other places just assert this. */
-  if (current_credentials.uuid == NULL)
     {
       sql_rollback ();
       return -1;
