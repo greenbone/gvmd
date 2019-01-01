@@ -488,7 +488,7 @@ static gchar *
 select_config_nvts (const config_t config, const char* family, int ascending,
                     const char* sort_field)
 {
-  gchar *quoted_selector, *sql;
+  gchar *quoted_selector, *quoted_family, *sql;
   char *selector;
 
   selector = config_nvt_selector (config);
@@ -499,7 +499,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
   quoted_selector = sql_quote (selector);
   free (selector);
 
-  /** @todo Quote family. */
+  quoted_family = sql_quote (family);
 
   if (config_nvts_growing (config))
     {
@@ -522,7 +522,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     " FROM nvts WHERE family = '%s'"
                     " ORDER BY %s %s;",
                     nvt_iterator_columns (),
-                    family,
+                    quoted_family,
                     sort_field ? sort_field : "name",
                     ascending ? "ASC" : "DESC");
           else
@@ -536,7 +536,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                            " AND family_or_nvt = '%s'"
                            ";",
                            quoted_selector,
-                           family))
+                           quoted_family))
                 /* The family is excluded, just iterate the NVT includes. */
                 sql = g_strdup_printf
                        ("SELECT %s"
@@ -551,9 +551,9 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                         " AND nvts.oid = nvt_selectors.family_or_nvt"
                         " ORDER BY %s %s;",
                         nvt_iterator_columns_nvts (),
-                        family,
+                        quoted_family,
                         quoted_selector,
-                        family,
+                        quoted_family,
                         sort_field ? sort_field : "nvts.name",
                         ascending ? "ASC" : "DESC");
               else
@@ -577,11 +577,11 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                         " AND nvts.oid = nvt_selectors.family_or_nvt"
                         " ORDER BY %s %s;",
                         nvt_iterator_columns (),
-                        family,
+                        quoted_family,
                         nvt_iterator_columns_nvts (),
-                        family,
+                        quoted_family,
                         quoted_selector,
-                        family,
+                        quoted_family,
                         // FIX PG "ERROR: missing FROM-clause" using nvts.name.
                         sort_field && strcmp (sort_field, "nvts.name")
                          ? sort_field : "3", /* 3 is nvts.name. */
@@ -600,7 +600,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                          G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                          " AND family_or_nvt = '%s';",
                          quoted_selector,
-                         family);
+                         quoted_family);
 
           if (all)
             /* There is a family include for this family. */
@@ -621,11 +621,11 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     " AND nvts.oid = nvt_selectors.family_or_nvt"
                     " ORDER BY %s %s;",
                     nvt_iterator_columns (),
-                    family,
+                    quoted_family,
                     nvt_iterator_columns_nvts (),
-                    family,
+                    quoted_family,
                     quoted_selector,
-                    family,
+                    quoted_family,
                     // FIX PG "ERROR: missing FROM-clause" using nvts.name.
                     sort_field && strcmp (sort_field, "nvts.name")
                      ? sort_field : "3", /* 3 is nvts.name. */
@@ -644,21 +644,18 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     " AND nvts.oid = nvt_selectors.family_or_nvt"
                     " ORDER BY %s %s;",
                     nvt_iterator_columns_nvts (),
-                    family,
+                    quoted_family,
                     quoted_selector,
-                    family,
+                    quoted_family,
                     sort_field ? sort_field : "nvts.name",
                     ascending ? "ASC" : "DESC");
         }
     }
   else
     {
-      gchar *quoted_family;
-
       /* The number of NVT's is static.  Assume a simple list of NVT
        * includes. */
 
-      quoted_family = sql_quote (family);
       sql = g_strdup_printf
              ("SELECT %s"
               " FROM nvt_selectors, nvts"
@@ -673,10 +670,10 @@ select_config_nvts (const config_t config, const char* family, int ascending,
               quoted_selector,
               sort_field ? sort_field : "nvts.id",
               ascending ? "ASC" : "DESC");
-      g_free (quoted_family);
     }
 
   g_free (quoted_selector);
+  g_free (quoted_family);
 
   return sql;
 }
