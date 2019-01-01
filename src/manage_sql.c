@@ -33311,19 +33311,6 @@ append_to_task_comment (task_t task, const char* text, /* unused */ int length)
 }
 
 /**
- * @brief Append text to the name associated with a task.
- *
- * @param[in]  task    A pointer to the task.
- * @param[in]  text    The text to append.
- * @param[in]  length  Length of the text.
- */
-void
-append_to_task_name (task_t task, const char* text, /* unused */ int length)
-{
-  append_to_task_string (task, "name", text);
-}
-
-/**
  * @brief Set the ports for a particular host in a scan.
  *
  * @param[in]  report   Report associated with scan.
