@@ -198,6 +198,12 @@ typedef struct
 
 /* Functions. */
 
+/** @todo May be better ensure a ROLLBACK when functions like "sql" fail.
+ *
+ * Currently the SQL functions abort on failure.  This a general problem,
+ * not just for migrators, so perhaps the SQL interface should keep
+ * track of the transaction, and rollback before aborting. */
+
 /**
  * @brief Create all tables, using the version 4 schema.
  */
@@ -1196,8 +1202,6 @@ migrate_8_to_9 ()
 
   /* Update the database. */
 
-  /** @todo Does ROLLBACK happen when these fail? */
-
   /* Ensure that all tables that will be modified here exist.  These were
    * all added after version 8 anyway. */
 
@@ -1304,8 +1308,6 @@ migrate_9_to_10 ()
   /* The user table got a unique "uuid" column and lost the
    * uniqueness of its "name" column. */
 
-  /** @todo ROLLBACK on failure. */
-
   sql ("ALTER TABLE users RENAME TO users_9;");
 
   sql ("CREATE TABLE users"
@@ -1377,8 +1379,6 @@ migrate_10_to_11 ()
    *
    * Recreate the table, in order to add INTEGER to the column definitions. */
 
-  /** @todo ROLLBACK on failure. */
-
   sql ("ALTER TABLE tasks RENAME TO tasks_10;");
 
   sql ("CREATE TABLE tasks"
@@ -1431,8 +1431,6 @@ migrate_11_to_12 ()
    * constraint on the name column.
    *
    * Recreate the tables, in order to remove the constraint. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE agents RENAME TO agents_11;");
 
@@ -1515,8 +1513,6 @@ migrate_12_to_13 ()
    * Replace names with UUIDs, ensuring that the 'All' selector gets the
    * predefined UUID. */
 
-  /** @todo ROLLBACK on failure. */
-
   init_iterator (&rows, "SELECT distinct name FROM nvt_selectors;");
   while (next (&rows))
     {
@@ -1591,8 +1587,6 @@ migrate_13_to_14 ()
 
   /* Table results got a UUID column. */
 
-  /** @todo ROLLBACK on failure. */
-
   sql ("ALTER TABLE results ADD COLUMN uuid;");
   sql ("UPDATE results SET uuid = make_uuid();");
 
@@ -1626,8 +1620,6 @@ migrate_14_to_15 ()
   /* Update the database. */
 
   /* Table tasks got columns for scheduling info. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE tasks ADD COLUMN schedule INTEGER;");
   sql ("ALTER TABLE tasks ADD COLUMN schedule_next_time;");
@@ -1663,8 +1655,6 @@ migrate_15_to_16 ()
   /* Update the database. */
 
   /* Table schedules got a period_months column. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
@@ -1710,8 +1700,6 @@ migrate_16_to_17 ()
   /* Update the database. */
 
   /* Table nvts got columns for CVSS base and risk factor. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE nvts ADD COLUMN cvss_base;");
   sql ("ALTER TABLE nvts ADD COLUMN risk_factor;");
@@ -1794,8 +1782,6 @@ migrate_17_to_18 ()
   /* NVT "Ping Host" was added to the predefined configs, with the
    * "Mark unrechable..." preference set to "yes". */
 
-  /** @todo ROLLBACK on failure. */
-
   /* Add "Ping Host" to the "All" NVT selector. */
 
   if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
@@ -1851,8 +1837,6 @@ migrate_18_to_19 ()
    * configs and target got fixed UUIDs.
    *
    * Recreate the tables, in order to add the unique constraint. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE agents RENAME TO agents_18;");
 
@@ -1992,8 +1976,6 @@ migrate_19_to_20 ()
    * moved to installer_64 and the table got a new installer column with the
    * plain installer. */
 
-  /** @todo ROLLBACK on failure. */
-
   sql ("ALTER TABLE agents ADD COLUMN installer_64 TEXT;");
   sql ("ALTER TABLE agents ADD COLUMN installer_signature_64 TEXT;");
   sql ("ALTER TABLE agents ADD COLUMN installer_trust INTEGER;");
@@ -2095,8 +2077,6 @@ migrate_20_to_21 ()
 
   /* The agents table got an installer_filename columns. */
 
-  /** @todo ROLLBACK on failure. */
-
   sql ("ALTER TABLE agents ADD COLUMN installer_filename TEXT;");
 
   /* Set the database version to 21. */
@@ -2132,8 +2112,6 @@ migrate_21_to_22 ()
    *
    * The name of the report format directories on disk changed from the report
    * format name to the report format UUID. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* Ensure that the report_formats table exists. */
 
@@ -2364,8 +2342,6 @@ migrate_22_to_23 ()
   /* Update the report formats.
    *
    * The report_formats table got signature and trust columns. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE report_formats ADD COLUMN signature;");
   sql ("UPDATE report_formats SET signature = '';");
@@ -2880,8 +2856,6 @@ migrate_33_to_34 ()
 
   /* The preference "NTLMSSP" was set to yes in the predefined configs. */
 
-  /** @todo ROLLBACK on failure. */
-
   migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_FAST);
   migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_FAST_ULTIMATE);
   migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP);
@@ -2918,8 +2892,6 @@ migrate_34_to_35 ()
 
   /* The LSC credential element of the target resource was split into two
    * elements, for SSH and SMB. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE targets ADD column smb_lsc_credential;");
   sql ("UPDATE targets SET smb_lsc_credential = lsc_credential;");
@@ -2990,8 +2962,6 @@ migrate_35_to_36 ()
        " WHERE uuid = '343435d6-91b0-11de-9478-ffd71f4c6f29';");
 
   /* Scanner preference "port_range" moved from config into target. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE targets ADD column port_range;");
   sql ("UPDATE targets SET port_range = NULL;");
@@ -3316,8 +3286,6 @@ migrate_39_to_40 ()
   /* The preference "unscanned_closed" was set to yes in the predefined
    * configs. */
 
-  /** @todo ROLLBACK on failure. */
-
   migrate_39_to_40_set_pref (CONFIG_ID_FULL_AND_FAST);
   migrate_39_to_40_set_pref (CONFIG_ID_FULL_AND_FAST_ULTIMATE);
   migrate_39_to_40_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP);
@@ -3355,8 +3323,6 @@ migrate_40_to_41 ()
   /* For report formats, feed signatures were given priority over signatures
    * in imported XML.  This includes only setting the db signature when it is
    * imported.  So remove the db signatures for all predefined reports. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("UPDATE report_formats SET signature = NULL"
        " WHERE uuid = 'a0704abb-2120-489f-959f-251c9f4ffebd';");
@@ -3405,8 +3371,6 @@ migrate_41_to_42 ()
   /* Update the database. */
 
   /* Two task tables got trashcan location fields. */
-
-  /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE tasks ADD column config_location INTEGER;");
   sql ("ALTER TABLE tasks ADD column target_location INTEGER;");
@@ -3458,8 +3422,6 @@ migrate_42_to_43 ()
   /* Update the database. */
 
   /* The targets table got an ssh_port field. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* Ensure that the targets_trash table exists. */
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
@@ -3990,8 +3952,6 @@ migrate_54_to_55 ()
   /* For report formats, feed signatures were given priority over signatures
    * in imported XML.  This includes only setting the db signature when it is
    * imported.  So remove the db signatures for all predefined reports. */
-
-  /** @todo ROLLBACK on failure. */
 
   if (migrate_54_to_55_format ("a0704abb-2120-489f-959f-251c9f4ffebd",
                                "5ceff8ba-1f62-11e1-ab9f-406186ea4fc5"))
@@ -4752,8 +4712,6 @@ migrate_55_to_56 ()
    * refer to a port list.  The targets_trash table got a port_list_location
    * column. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* Add the new column. */
 
   sql ("ALTER TABLE targets_trash ADD COLUMN port_list_location;");
@@ -5029,8 +4987,6 @@ migrate_56_to_57 ()
 
   /* Update the database. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* Ensure the new tables exist for the migrator. */
 
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data"
@@ -5148,8 +5104,6 @@ migrate_57_to_58 ()
 
   /* Update the database. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* Ensure the new tables exist for the migrator. */
 
   sql ("CREATE TABLE IF NOT EXISTS agents_trash"
@@ -5204,8 +5158,6 @@ migrate_58_to_59 ()
     }
 
   /* Update the database. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* Database version 55 introduced new UUIDs for the predefined report formats.
      Update the alert method data to use these new UUIDs. */
@@ -5271,8 +5223,6 @@ migrate_59_to_60 ()
 
   /* Update the database. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* Every task must now have an in_assets task preference. */
 
   sql ("INSERT INTO task_preferences (task, name, value)"
@@ -5306,8 +5256,6 @@ migrate_60_to_61 ()
     }
 
   /* Update the database. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* The alerts and alerts_trash tables got filter columns. */
 
@@ -5348,8 +5296,6 @@ migrate_61_to_62 ()
     }
 
   /* Update the database. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* The reports table got count cache columns. */
 
@@ -5394,8 +5340,6 @@ migrate_62_to_63 ()
     }
 
   /* Update the database. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* Ensure the new tables exist for the migrator. */
 
@@ -5453,8 +5397,6 @@ migrate_63_to_64 ()
 
   /* Update the database. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* The results table got a report column. */
 
   sql ("ALTER TABLE results ADD COLUMN report;");
@@ -5494,8 +5436,6 @@ migrate_64_to_65 ()
 
   /* Update the database. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* The report column on new results was left blank. */
 
   sql ("UPDATE results SET report = (SELECT report FROM report_results"
@@ -5531,8 +5471,6 @@ migrate_65_to_66 ()
     }
 
   /* Update the database. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* Schedules got creation and modification times. */
 
@@ -5573,8 +5511,6 @@ migrate_66_to_67 ()
 
   /* Update the database. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* Tasks got creation and modification times. */
 
   sql ("ALTER TABLE tasks ADD COLUMN creation_time;");
@@ -5609,8 +5545,6 @@ migrate_67_to_68 ()
     }
 
   /* Update the database. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* Ensure the new tables exist for the migrator. */
 
@@ -5656,8 +5590,6 @@ migrate_68_to_69 ()
     }
 
   /* Update the database. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* Ensure the new tables exist for the migrator. */
 
@@ -5706,8 +5638,6 @@ migrate_69_to_70 ()
 
   /* Update the database. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* Add creation and modification times to Port Lists. */
 
   sql ("ALTER TABLE port_lists ADD COLUMN creation_time;");
@@ -5748,8 +5678,6 @@ migrate_70_to_71 ()
 
   /* Update the database. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* Add creation and modification times to alerts. */
 
   sql ("ALTER TABLE alerts ADD COLUMN creation_time;");
@@ -5789,8 +5717,6 @@ migrate_71_to_72 ()
     }
 
   /* Update the database. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* Ensure the new tables exist for the migrator. */
 
@@ -5839,8 +5765,6 @@ migrate_72_to_73 ()
 
   /* Update the database. */
 
-  /** @todo ROLLBACK on failure. */
-
   /* Ensure the new tables exist for the migrator. */
 
   sql ("CREATE TABLE IF NOT EXISTS configs_trash"
@@ -5886,8 +5810,6 @@ migrate_73_to_74 ()
     }
 
   /* Update the database. */
-
-  /** @todo ROLLBACK on failure. */
 
   /* Add creation and modification times to Scan Configs. */
 
@@ -5942,8 +5864,6 @@ migrate_74_to_75 ()
   sql ("CREATE TABLE IF NOT EXISTS task_users"
        " (id INTEGER PRIMARY KEY, task INTEGER, user INTEGER,"
        "  actions INTEGER);");
-
-  /** @todo ROLLBACK on failure. */
 
   /* Task observers are now handled by permissions. */
 
