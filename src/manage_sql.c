@@ -32766,7 +32766,7 @@ save_tasks ()
  * @param[in]  task  A task.
  * @param[in]  name  New name.
  */
-static void
+void
 set_task_name (task_t task, const char *name)
 {
   gchar *quoted_name;
@@ -33308,19 +33308,6 @@ void
 append_to_task_comment (task_t task, const char* text, /* unused */ int length)
 {
   append_to_task_string (task, "comment", text);
-}
-
-/**
- * @brief Append text to the name associated with a task.
- *
- * @param[in]  task    A pointer to the task.
- * @param[in]  text    The text to append.
- * @param[in]  length  Length of the text.
- */
-void
-append_to_task_name (task_t task, const char* text, /* unused */ int length)
-{
-  append_to_task_string (task, "name", text);
 }
 
 /**
