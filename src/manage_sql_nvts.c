@@ -488,13 +488,14 @@ static gchar *
 select_config_nvts (const config_t config, const char* family, int ascending,
                     const char* sort_field)
 {
-  gchar *quoted_selector;
-  char *selector = config_nvt_selector (config);
+  gchar *quoted_selector, *sql;
+  char *selector;
+
+  selector = config_nvt_selector (config);
   if (selector == NULL)
     /* The config should always have a selector. */
     return NULL;
 
-  /** @todo Free. */
   quoted_selector = sql_quote (selector);
   free (selector);
 
@@ -516,72 +517,76 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                        quoted_selector)
               == 1)
             /* There is one selector, it should be the all selector. */
-            return g_strdup_printf
-                    ("SELECT %s"
-                     " FROM nvts WHERE family = '%s'"
-                     " ORDER BY %s %s;",
-                     nvt_iterator_columns (),
-                     family,
-                     sort_field ? sort_field : "name",
-                     ascending ? "ASC" : "DESC");
+            sql = g_strdup_printf
+                   ("SELECT %s"
+                    " FROM nvts WHERE family = '%s'"
+                    " ORDER BY %s %s;",
+                    nvt_iterator_columns (),
+                    family,
+                    sort_field ? sort_field : "name",
+                    ascending ? "ASC" : "DESC");
+          else
+            {
+              /* There are multiple selectors. */
 
-          /* There are multiple selectors. */
-
-          if (sql_int ("SELECT COUNT(*) FROM nvt_selectors"
-                       " WHERE name = '%s' AND exclude = 1"
-                       " AND type = "
-                       G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
-                       " AND family_or_nvt = '%s'"
-                       ";",
-                       quoted_selector,
-                       family))
-            /* The family is excluded, just iterate the NVT includes. */
-            return g_strdup_printf
-                    ("SELECT %s"
-                     " FROM nvts, nvt_selectors"
-                     " WHERE"
-                     " nvts.family = '%s'"
-                     " AND nvt_selectors.name = '%s'"
-                     " AND nvt_selectors.family = '%s'"
-                     " AND nvt_selectors.type = "
-                     G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                     " AND nvt_selectors.exclude = 0"
-                     " AND nvts.oid = nvt_selectors.family_or_nvt"
-                     " ORDER BY %s %s;",
-                     nvt_iterator_columns_nvts (),
-                     family,
-                     quoted_selector,
-                     family,
-                     sort_field ? sort_field : "nvts.name",
-                     ascending ? "ASC" : "DESC");
-
-          /* The family is included.  Iterate all NVT's minus excluded NVT's. */
-          return g_strdup_printf
-                  ("SELECT %s"
-                   " FROM nvts"
-                   " WHERE family = '%s'"
-                   " EXCEPT"
-                   " SELECT %s"
-                   " FROM nvt_selectors, nvts"
-                   " WHERE"
-                   " nvts.family = '%s'"
-                   " AND nvt_selectors.name = '%s'"
-                   " AND nvt_selectors.family = '%s'"
-                   " AND nvt_selectors.type = "
-                   G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                   " AND nvt_selectors.exclude = 1"
-                   " AND nvts.oid = nvt_selectors.family_or_nvt"
-                   " ORDER BY %s %s;",
-                   nvt_iterator_columns (),
-                   family,
-                   nvt_iterator_columns_nvts (),
-                   family,
-                   quoted_selector,
-                   family,
-                   // FIX PG "ERROR: missing FROM-clause" using nvts.name.
-                   sort_field && strcmp (sort_field, "nvts.name")
-                    ? sort_field : "3", /* 3 is nvts.name. */
-                   ascending ? "ASC" : "DESC");
+              if (sql_int ("SELECT COUNT(*) FROM nvt_selectors"
+                           " WHERE name = '%s' AND exclude = 1"
+                           " AND type = "
+                           G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                           " AND family_or_nvt = '%s'"
+                           ";",
+                           quoted_selector,
+                           family))
+                /* The family is excluded, just iterate the NVT includes. */
+                sql = g_strdup_printf
+                       ("SELECT %s"
+                        " FROM nvts, nvt_selectors"
+                        " WHERE"
+                        " nvts.family = '%s'"
+                        " AND nvt_selectors.name = '%s'"
+                        " AND nvt_selectors.family = '%s'"
+                        " AND nvt_selectors.type = "
+                        G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                        " AND nvt_selectors.exclude = 0"
+                        " AND nvts.oid = nvt_selectors.family_or_nvt"
+                        " ORDER BY %s %s;",
+                        nvt_iterator_columns_nvts (),
+                        family,
+                        quoted_selector,
+                        family,
+                        sort_field ? sort_field : "nvts.name",
+                        ascending ? "ASC" : "DESC");
+              else
+                /* The family is included.
+                 *
+                 * Iterate all NVT's minus excluded NVT's. */
+                sql = g_strdup_printf
+                       ("SELECT %s"
+                        " FROM nvts"
+                        " WHERE family = '%s'"
+                        " EXCEPT"
+                        " SELECT %s"
+                        " FROM nvt_selectors, nvts"
+                        " WHERE"
+                        " nvts.family = '%s'"
+                        " AND nvt_selectors.name = '%s'"
+                        " AND nvt_selectors.family = '%s'"
+                        " AND nvt_selectors.type = "
+                        G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                        " AND nvt_selectors.exclude = 1"
+                        " AND nvts.oid = nvt_selectors.family_or_nvt"
+                        " ORDER BY %s %s;",
+                        nvt_iterator_columns (),
+                        family,
+                        nvt_iterator_columns_nvts (),
+                        family,
+                        quoted_selector,
+                        family,
+                        // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                        sort_field && strcmp (sort_field, "nvts.name")
+                         ? sort_field : "3", /* 3 is nvts.name. */
+                        ascending ? "ASC" : "DESC");
+            }
         }
       else
         {
@@ -599,56 +604,56 @@ select_config_nvts (const config_t config, const char* family, int ascending,
 
           if (all)
             /* There is a family include for this family. */
-            return g_strdup_printf
-                    ("SELECT %s"
-                     " FROM nvts"
-                     " WHERE family = '%s'"
-                     " EXCEPT"
-                     " SELECT %s"
-                     " FROM nvt_selectors, nvts"
-                     " WHERE"
-                     " nvts.family = '%s'"
-                     " AND nvt_selectors.name = '%s'"
-                     " AND nvt_selectors.family = '%s'"
-                     " AND nvt_selectors.type = "
-                     G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                     " AND nvt_selectors.exclude = 1"
-                     " AND nvts.oid = nvt_selectors.family_or_nvt"
-                     " ORDER BY %s %s;",
-                     nvt_iterator_columns (),
-                     family,
-                     nvt_iterator_columns_nvts (),
-                     family,
-                     quoted_selector,
-                     family,
-                     // FIX PG "ERROR: missing FROM-clause" using nvts.name.
-                     sort_field && strcmp (sort_field, "nvts.name")
-                      ? sort_field : "3", /* 3 is nvts.name. */
-                     ascending ? "ASC" : "DESC");
-
-          return g_strdup_printf
-                  (" SELECT %s"
-                   " FROM nvt_selectors, nvts"
-                   " WHERE"
-                   " nvts.family = '%s'"
-                   " AND nvt_selectors.name = '%s'"
-                   " AND nvt_selectors.family = '%s'"
-                   " AND nvt_selectors.type = "
-                   G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                   " AND nvt_selectors.exclude = 0"
-                   " AND nvts.oid = nvt_selectors.family_or_nvt"
-                   " ORDER BY %s %s;",
-                   nvt_iterator_columns_nvts (),
-                   family,
-                   quoted_selector,
-                   family,
-                   sort_field ? sort_field : "nvts.name",
-                   ascending ? "ASC" : "DESC");
+            sql = g_strdup_printf
+                   ("SELECT %s"
+                    " FROM nvts"
+                    " WHERE family = '%s'"
+                    " EXCEPT"
+                    " SELECT %s"
+                    " FROM nvt_selectors, nvts"
+                    " WHERE"
+                    " nvts.family = '%s'"
+                    " AND nvt_selectors.name = '%s'"
+                    " AND nvt_selectors.family = '%s'"
+                    " AND nvt_selectors.type = "
+                    G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                    " AND nvt_selectors.exclude = 1"
+                    " AND nvts.oid = nvt_selectors.family_or_nvt"
+                    " ORDER BY %s %s;",
+                    nvt_iterator_columns (),
+                    family,
+                    nvt_iterator_columns_nvts (),
+                    family,
+                    quoted_selector,
+                    family,
+                    // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                    sort_field && strcmp (sort_field, "nvts.name")
+                     ? sort_field : "3", /* 3 is nvts.name. */
+                    ascending ? "ASC" : "DESC");
+          else
+            sql = g_strdup_printf
+                   (" SELECT %s"
+                    " FROM nvt_selectors, nvts"
+                    " WHERE"
+                    " nvts.family = '%s'"
+                    " AND nvt_selectors.name = '%s'"
+                    " AND nvt_selectors.family = '%s'"
+                    " AND nvt_selectors.type = "
+                    G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                    " AND nvt_selectors.exclude = 0"
+                    " AND nvts.oid = nvt_selectors.family_or_nvt"
+                    " ORDER BY %s %s;",
+                    nvt_iterator_columns_nvts (),
+                    family,
+                    quoted_selector,
+                    family,
+                    sort_field ? sort_field : "nvts.name",
+                    ascending ? "ASC" : "DESC");
         }
     }
   else
     {
-      gchar *sql, *quoted_family;
+      gchar *quoted_family;
 
       /* The number of NVT's is static.  Assume a simple list of NVT
        * includes. */
@@ -669,9 +674,11 @@ select_config_nvts (const config_t config, const char* family, int ascending,
               sort_field ? sort_field : "nvts.id",
               ascending ? "ASC" : "DESC");
       g_free (quoted_family);
-
-      return sql;
     }
+
+  g_free (quoted_selector);
+
+  return sql;
 }
 
 /**
