@@ -80,7 +80,7 @@ struct sql_stmt
 /**
  * @brief Handle on the database.
  */
-sqlite3* task_db = NULL;
+sqlite3* gvmd_db = NULL;
 
 
 /* Helpers. */
@@ -170,7 +170,7 @@ sql_regexp_op ()
 int
 sql_is_open ()
 {
-  return task_db ? 1 : 0;
+  return gvmd_db ? 1 : 0;
 }
 
 /**
@@ -265,21 +265,21 @@ sql_open (const char *database)
 #endif
 
   if (sqlite3_open (database ? database : sql_default_database (),
-                    &task_db))
+                    &gvmd_db))
     {
       g_warning ("%s: sqlite3_open failed: %s\n",
                  __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+                 sqlite3_errmsg (gvmd_db));
       return -1;
     }
 
-  sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
+  sqlite3_busy_timeout (gvmd_db, BUSY_TIMEOUT);
 
   g_debug ("   %s: db open, max retry sleep time is %i\n",
            __FUNCTION__,
            GVM_SQLITE_SLEEP_MAX);
 
-  sqlite3_file_control (task_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunk_size);
+  sqlite3_file_control (gvmd_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunk_size);
 
   sql ("PRAGMA journal_mode=WAL;");
   sql ("PRAGMA journal_size_limit=134217728;");  /* 128 MB. */
@@ -293,7 +293,7 @@ sql_open (const char *database)
 void
 sql_close ()
 {
-  if (sqlite3_close (task_db) == SQLITE_BUSY)
+  if (sqlite3_close (gvmd_db) == SQLITE_BUSY)
     /* Richard Hipp on how to find the open statements:
      *
      * There is no published way to do this.  If you run in a debugger,
@@ -303,7 +303,7 @@ sql_close ()
      * notice). */
     g_warning ("%s: attempt to close db with open statement(s)\n",
                __FUNCTION__);
-  task_db = NULL;
+  gvmd_db = NULL;
 }
 
 /**
@@ -312,7 +312,7 @@ sql_close ()
 void
 sql_close_fork ()
 {
-  task_db = NULL;
+  gvmd_db = NULL;
 }
 
 /**
@@ -323,7 +323,7 @@ sql_close_fork ()
 int
 sql_changes ()
 {
-  return sqlite3_changes (task_db);
+  return sqlite3_changes (gvmd_db);
 }
 
 /**
@@ -334,7 +334,7 @@ sql_changes ()
 resource_t
 sql_last_insert_id ()
 {
-  return sqlite3_last_insert_rowid (task_db);
+  return sqlite3_last_insert_rowid (gvmd_db);
 }
 
 /**
@@ -386,14 +386,14 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
     g_debug ("   sql: %s\n", formatted);
 
   if (retry == 0)
-    sqlite3_busy_timeout (task_db, 0);
+    sqlite3_busy_timeout (gvmd_db, 0);
 
   retries = 0;
   *stmt = (sql_stmt_t*) g_malloc0 (sizeof (sql_stmt_t));
   sqlite_stmt = NULL;
   while (1)
     {
-      ret = sqlite3_prepare_v2 (task_db, (char*) formatted, -1, &sqlite_stmt,
+      ret = sqlite3_prepare_v2 (gvmd_db, (char*) formatted, -1, &sqlite_stmt,
                                 &tail);
       if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
         {
@@ -409,7 +409,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
             continue;
           g_free (formatted);
           if (retry == 0)
-            sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
+            sqlite3_busy_timeout (gvmd_db, BUSY_TIMEOUT);
           return 1;
         }
       g_free (formatted);
@@ -420,23 +420,23 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
             {
               g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
                          __FUNCTION__,
-                         sqlite3_errmsg (task_db));
+                         sqlite3_errmsg (gvmd_db));
               if (retry == 0)
-                sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
+                sqlite3_busy_timeout (gvmd_db, BUSY_TIMEOUT);
               return -1;
             }
           break;
         }
       g_warning ("%s: sqlite3_prepare failed: %s\n",
                  __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+                 sqlite3_errmsg (gvmd_db));
       if (retry == 0)
-        sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
+        sqlite3_busy_timeout (gvmd_db, BUSY_TIMEOUT);
       return -1;
     }
 
   if (retry == 0)
-    sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
+    sqlite3_busy_timeout (gvmd_db, BUSY_TIMEOUT);
   return 0;
 }
 
@@ -456,7 +456,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
   unsigned int retries;
 
   if (retry == 0)
-    sqlite3_busy_timeout (task_db, 0);
+    sqlite3_busy_timeout (gvmd_db, 0);
 
   retries = 0;
   while (1)
@@ -478,14 +478,14 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
           return -2;
         }
       if (retry == 0)
-        sqlite3_busy_timeout (task_db, BUSY_TIMEOUT);
+        sqlite3_busy_timeout (gvmd_db, BUSY_TIMEOUT);
       if (ret == SQLITE_DONE)
         return 0;
       if (ret == SQLITE_ROW)
         return 1;
       g_warning ("%s: sqlite3_step failed: %s\n",
                  __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+                 sqlite3_errmsg (gvmd_db));
       return -1;
     }
 }
@@ -685,7 +685,7 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_blob failed: %s\n",
                  __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+                 sqlite3_errmsg (gvmd_db));
       return -1;
     }
   return 0;
@@ -726,7 +726,7 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_text failed: %s\n",
                  __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+                 sqlite3_errmsg (gvmd_db));
       return -1;
     }
   return 0;
@@ -775,7 +775,7 @@ sql_reset (sql_stmt_t *stmt)
         {
           g_warning ("%s: sqlite3_reset failed: %s\n",
                      __FUNCTION__,
-                     sqlite3_errmsg (task_db));
+                     sqlite3_errmsg (gvmd_db));
           return -1;
         }
     }
@@ -846,9 +846,9 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
 int
 sql_cancel_internal ()
 {
-  if (task_db)
+  if (gvmd_db)
     {
-      sqlite3_interrupt (task_db);
+      sqlite3_interrupt (gvmd_db);
       return 0;
     }
   else

@@ -12,6 +12,11 @@ gvmd 8.0+beta3 (work in progress)
 Main changes compared to gvm 8.0+beta2:
 * The new alert method "Alemba vFire" has been added.
 * GMP CREATE_ASSET, its GMP doc and usage by GSA are now more consistent.
+* The SMB alert will now try to create directories as needed
+* The file path of SMB alerts can now be configured to be used only for the
+  directory, appending the report filename from the user's settings.
+* The tag "smb-alert:file_path" on tasks will override the file path of
+  SMB alerts.
 * Remediation support has been added (GMP CREATE_TICKET, GET_TICKETS, etc).
 
 
@@ -123,7 +128,7 @@ migration information, even and especially if you have used OpenVAS Manager
 before.
 
 Many thanks to everyone who has contributed to this release:
-Benoît Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell, Timo Pollmeier,
+BenoÃ®t Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell, Timo Pollmeier,
 Jan-Oliver Wagner and Michael Wiegand.
 
 Main changes compared to the 6.0 series:
@@ -213,7 +218,7 @@ applies the standard powerfilter now also for the report results
 to name just a few of the improvements.
 
 Many thanks to everyone who has contributed to this release:
-Benoît Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell,
+BenoÃ®t Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell,
 Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
 
 Main changes since 6.1+beta2:
@@ -263,7 +268,7 @@ systems, first OSP 1.1 features, started consolidation of Credentials -
 to name just a few of the many improvements.
 
 Many thanks to everyone who has contributed to this release:
-Benoît Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell,
+BenoÃ®t Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell,
 Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
 
 Main changes since 6.1+beta1:
@@ -326,7 +331,7 @@ migration information, even and especially if you have used OpenVAS Manager
 before.
 
 Many thanks to everyone who has contributed to this release:
-Benoît Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+BenoÃ®t Allard, Hani Benhabiles, Sven Haardiek, Matthew Mundell, Timo Pollmeier and Michael Wiegand.
 
 Main changes since 6.0 series:
 * The required minimum version of OpenVAS Libraries has been raised to 8.1.0.
@@ -396,7 +401,7 @@ migration information, even and especially if you have used OpenVAS Manager
 before.
 
 Many thanks to everyone who has contributed to this release:
-Benoît Allard, Michal Ambroz, Hani Benhabiles, Henri Doreau, Michael Meyer,
+BenoÃ®t Allard, Michal Ambroz, Hani Benhabiles, Henri Doreau, Michael Meyer,
 Matthew Mundell, Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
 
 Main changes compared to the 5.0 series:
@@ -622,7 +627,7 @@ backend. It also adds support for a "Super Admin" role and contains a number of
 smaller improvements.
 
 Many thanks to everyone who has contributed to this release:
-Benoît Allard, Michal Ambroz, Hani Benhabiles, Henri Doreau, Michael Meyer,
+BenoÃ®t Allard, Michal Ambroz, Hani Benhabiles, Henri Doreau, Michael Meyer,
 Matthew Mundell, Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
 
 Main changes since 6.0+beta3:
@@ -783,7 +788,7 @@ migration information, even and especially if you have used OpenVAS Manager
 before.
 
 Many thanks to everyone who has contributed to this release:
-Benoît Allard, Hani Benhabiles, Henri Doreau, Rodolfo Gouveia, Andre Heinecke,
+BenoÃ®t Allard, Hani Benhabiles, Henri Doreau, Rodolfo Gouveia, Andre Heinecke,
 Werner Koch, Matthew Mundell, Timo Pollmeier, Stefan Schwarz, Stefan Sperling,
 Jan-Oliver Wagner and Michael Wiegand.
 
@@ -1062,7 +1067,7 @@ scanner and various user clients.
 This release improves the reports to include a new results section.
 
 Many thanks to everyone who has contributed to this release:
-Matthew Mundell, Timo Pollmeier, Michael Wiegand, Benoît Allard, and Jan-Oliver
+Matthew Mundell, Timo Pollmeier, Michael Wiegand, BenoÃ®t Allard, and Jan-Oliver
 Wagner
 
 Main changes since 5.0+beta4:

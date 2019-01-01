@@ -365,37 +365,38 @@ get_certificate_info (const gchar* certificate,
             = gnutls_x509_crt_get_expiration_time (gnutls_cert);
         }
 
-      if (fingerprint) {
-        int i;
-        size_t buffer_size = 16;
-        unsigned char buffer[buffer_size];
-        GString *string;
+      if (fingerprint)
+        {
+          int i;
+          size_t buffer_size = 16;
+          unsigned char buffer[buffer_size];
+          GString *string;
 
-        string = g_string_new ("");
+          string = g_string_new ("");
 
-        gnutls_x509_crt_get_fingerprint(gnutls_cert, GNUTLS_DIG_MD5,
-                                        buffer, &buffer_size);
+          gnutls_x509_crt_get_fingerprint (gnutls_cert, GNUTLS_DIG_MD5,
+                                           buffer, &buffer_size);
 
-        for (i = 0; i < buffer_size; i++)
-          {
-            if (i != 0)
-              {
-                g_string_append_c (string, ':');
-              }
-            g_string_append_printf(string, "%02x", buffer[i]);
-          }
+          for (i = 0; i < buffer_size; i++)
+            {
+              if (i != 0)
+                {
+                  g_string_append_c (string, ':');
+                }
+              g_string_append_printf (string, "%02x", buffer[i]);
+            }
 
-        *fingerprint = string->str;
-        g_string_free (string, FALSE);
-      }
+          *fingerprint = string->str;
+          g_string_free (string, FALSE);
+        }
 
       if (issuer)
         {
           size_t buffer_size;
           gchar *buffer;
-          gnutls_x509_crt_get_issuer_dn(gnutls_cert, NULL, &buffer_size);
-          buffer = g_malloc(buffer_size);
-          gnutls_x509_crt_get_issuer_dn(gnutls_cert, buffer, &buffer_size);
+          gnutls_x509_crt_get_issuer_dn (gnutls_cert, NULL, &buffer_size);
+          buffer = g_malloc (buffer_size);
+          gnutls_x509_crt_get_issuer_dn (gnutls_cert, buffer, &buffer_size);
 
           *issuer = buffer;
         }

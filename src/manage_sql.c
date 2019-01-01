@@ -545,7 +545,7 @@ static nvtis_t* nvti_cache = NULL;
 /**
  * @brief Name of the database file.
  */
-gchar* task_db_name = NULL;
+gchar* gvmd_db_name = NULL;
 
 /**
  * @brief Whether a transaction has been opened and not committed yet.
@@ -7314,7 +7314,7 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
  * @param[in]  data            The data.
  *
  * @return 0 valid, 40 invalid credential, 41 invalid SMB share path,
- *         42 invalid SMB file path, -1 error.
+ *         42 invalid SMB file path, 43 invalid SMB file path type, -1 error.
  */
 static int
 validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
@@ -7366,6 +7366,17 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
               == FALSE)
             {
               return 42;
+            }
+        }
+
+      if (strcmp (name, "smb_file_path_type") == 0)
+        {
+          if (*data
+              && strcmp (*data, "")
+              && strcasecmp (*data, "directory")
+              && strcasecmp (*data, "full"))
+            {
+              return 43;
             }
         }
     }
@@ -7527,6 +7538,7 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         43 invalid SMB file path type,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 60 recipient credential not found, 61 invalid
@@ -7860,6 +7872,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
+ *         43 invalid SMB file path type,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 60 recipient credential not found, 61 invalid
@@ -8520,7 +8533,7 @@ trash_alert_writable (alert_t alert)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find alert, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find alert, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -9624,7 +9637,6 @@ alert_script_exec (const char *alert_id, const char *command_args,
 
     /* Change into the script directory. */
 
-    /** @todo NULL arg is glibc extension. */
     previous_dir = getcwd (NULL, 0);
     if (previous_dir == NULL)
       {
@@ -10301,7 +10313,6 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     /* Change into the script directory. */
 
-    /** @todo NULL arg is glibc extension. */
     previous_dir = getcwd (NULL, 0);
     if (previous_dir == NULL)
       {
@@ -10620,7 +10631,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
     /* Change into the script directory. */
 
-    /** @todo NULL arg is glibc extension. */
     previous_dir = getcwd (NULL, 0);
     if (previous_dir == NULL)
       {
@@ -13320,18 +13330,55 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_SMB:
         {
           char *credential_id, *username, *password;
-          char *share_path, *file_path_format;
+          char *share_path, *file_path_format, *file_path_type;
           report_format_t report_format;
-          char *name, *report_id, *format_name;
-          char *creation_time, *modification_time;
           gchar *file_path, *report_content, *extension;
           gsize content_length;
           credential_t credential;
           int ret;
 
+          if (report == 0)
+            switch (sql_int64 (&report,
+                                "SELECT max (id) FROM reports"
+                                " WHERE task = %llu",
+                                task))
+              {
+                case 0:
+                  if (report)
+                    break;
+                case 1:        /* Too few rows in result of query. */
+                case -1:
+                  return -1;
+                  break;
+                default:       /* Programming error. */
+                  assert (0);
+                  return -1;
+              }
+
+          if (task == 0 && report)
+            {
+              ret = report_task (report, &task);
+              if (ret)
+                return ret;
+            }
+
           credential_id = alert_data (alert, "method", "smb_credential");
           share_path = alert_data (alert, "method", "smb_share_path");
-          file_path_format = alert_data (alert, "method", "smb_file_path");
+          file_path_type = alert_data (alert, "method", "smb_file_path_type");
+
+          file_path_format
+            = sql_string ("SELECT value FROM tags"
+                          " WHERE name = 'smb-alert:file_path'"
+                          "   AND EXISTS"
+                          "         (SELECT * FROM tag_resources"
+                          "           WHERE resource_type = 'task'"
+                          "             AND resource = %llu"
+                          "             AND tag = tags.id)"
+                          " ORDER BY modification_time LIMIT 1;",
+                          task);
+
+          if (file_path_format == NULL)
+            file_path_format = alert_data (alert, "method", "smb_file_path");
 
           report_content = NULL;
           extension = NULL;
@@ -13340,6 +13387,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           g_debug ("smb_credential: %s", credential_id);
           g_debug ("smb_share_path: %s", share_path);
           g_debug ("smb_file_path: %s", file_path_format);
+          g_debug ("smb_file_path_type: %s", file_path_type);
 
           ret = report_content_for_alert
                   (alert, report, task, get,
@@ -13358,41 +13406,26 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return ret ? ret : -1;
             }
 
-          name = task_name (task);
-          report_id = report_uuid (report);
+          if (file_path_type
+              && strcasecmp (file_path_type, "directory") == 0)
+            {
+              char *dirname, *filename;
 
-          format_name
-            = sql_string ("SELECT name"
-                          " FROM report_formats"
-                          " WHERE id = %llu",
-                          report_format);
+              dirname = generate_report_filename (report, report_format,
+                                                  file_path_format, FALSE);
+              filename = generate_report_filename (report, report_format,
+                                                   NULL, TRUE);
 
-          creation_time
-            = sql_string ("SELECT iso_time (start_time)"
-                          " FROM reports"
-                          " WHERE id = %llu",
-                          report);
+              file_path = g_strdup_printf ("%s\\%s", dirname, filename);
 
-          modification_time
-            = sql_string ("SELECT iso_time (end_time)"
-                          " FROM reports"
-                          " WHERE id = %llu",
-                          report);
-
-          file_path = gvm_export_file_name (file_path_format,
-                                            current_credentials.username,
-                                            "report",
-                                            report_id,
-                                            creation_time,
-                                            modification_time,
-                                            name,
-                                            format_name);
-
-          free (name);
-          free (report_id);
-          free (format_name);
-          free (creation_time);
-          free (modification_time);
+              free (dirname);
+              free (filename);
+            }
+          else
+            {
+              file_path = generate_report_filename (report, report_format,
+                                                    file_path_format, FALSE);
+            }
 
           credential = 0;
           ret = find_credential_with_permission (credential_id, &credential,
@@ -15367,7 +15400,7 @@ void
 reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
-  init_manage_process (0, task_db_name);
+  init_manage_process (0, gvmd_db_name);
 }
 
 /**
@@ -18139,7 +18172,7 @@ init_manage_internal (GSList *log_config,
     update_nvti_cache ();
 
   sql_close ();
-  task_db_name = database ? g_strdup (database) : NULL;
+  gvmd_db_name = database ? g_strdup (database) : NULL;
   if (fork_connection)
     manage_fork_connection = fork_connection;
   return 0;
@@ -18924,21 +18957,6 @@ task_count (const get_data_t *get)
 
   g_free (extra_tables);
   return ret;
-}
-
-/**
- * @brief Return the identifier of a task.
- *
- * @param[in]  task  Task.
- *
- * @return ID of task.
- */
-static unsigned int
-task_id (task_t task)
-{
-  /** @todo The cast is a hack for compatibility with the old, alternate,
-   *        FS based storage mechanism. */
-  return (unsigned int) task;
 }
 
 /**
@@ -20393,8 +20411,7 @@ set_task_observers (task_t task, const gchar *observers)
         {
           gchar *uuid;
 
-          /** @todo Similar to validate_user in openvas-administrator. */
-          if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
+          if (validate_username (name))
             {
               g_list_free (added);
               g_strfreev (split);
@@ -23993,7 +24010,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
  * @param[in]  host        Host to limit results to.
  * @param[in]  extra_order Extra text for ORDER term in SQL.
  *
- * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find result, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 static int
@@ -24203,23 +24220,23 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   table_order_if_sort_not_specified = 1;
   ret = init_get_iterator2_with (iterator,
-                                "result",
-                                get,
-                                /* SELECT columns. */
-                                columns,
-                                NULL,
-                                /* Filterable columns not in SELECT columns. */
-                                filterable_columns,
-                                NULL,
-                                filter_columns,
-                                0,
-                                extra_tables,
-                                extra_where,
-                                TRUE,
-                                report ? TRUE : FALSE,
-                                extra_order,
-                                with_clauses,
-                                1);
+                                 "result",
+                                 get,
+                                 /* SELECT columns. */
+                                 columns,
+                                 NULL,
+                                 /* Filterable columns not in SELECT columns. */
+                                 filterable_columns,
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 extra_tables,
+                                 extra_where,
+                                 TRUE,
+                                 report ? TRUE : FALSE,
+                                 extra_order,
+                                 with_clauses,
+                                 1);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
   g_free (with_clauses);
@@ -24237,7 +24254,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
  * @param[in]  host        Host to limit results to.
  * @param[in]  extra_order Extra text for ORDER term in SQL.
  *
- * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find result, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -25837,7 +25854,7 @@ report_timestamp (const char* report_id, gchar** timestamp)
  * @return 0 on success, -1 on error.
  */
 static int
-report_scan_run_status (report_t report, int* status)
+report_scan_run_status (report_t report, task_status_t* status)
 {
   *status = sql_int ("SELECT scan_run_status FROM reports"
                      " WHERE reports.id = %llu;",
@@ -26543,7 +26560,7 @@ delete_report_internal (report_t report)
       case 0:
         if (report)
           {
-            int status;
+            task_status_t status;
             if (report_scan_run_status (report, &status))
               return -1;
             sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
@@ -28875,7 +28892,7 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
 static int
 report_active (report_t report)
 {
-  int run_status;
+  task_status_t run_status;
   report_scan_run_status (report, &run_status);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
@@ -30063,7 +30080,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int total_result_count, filtered_result_count, run_status;
+  int total_result_count, filtered_result_count;
   array_t *result_hosts;
   iterator_t results, delta_results;
   int debugs, holes, infos, logs, warnings, false_positives;
@@ -30079,6 +30096,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable *f_host_ports;
   GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
   GHashTable *f_host_logs, *f_host_false_positives;
+  task_status_t run_status;
 
   /* Init some vars to prevent warnings from older compilers. */
   total_result_count = filtered_result_count = 0;
@@ -31527,7 +31545,6 @@ run_report_format_script (gchar *report_format_id,
 
   /* Change into the script directory. */
 
-  /** @todo NULL arg is glibc extension. */
   previous_dir = getcwd (NULL, 0);
   if (previous_dir == NULL)
     {
@@ -32417,8 +32434,6 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
 /* More task stuff. */
 
-/** @todo Should be on tasks page above. */
-
 /**
  * @brief Return the number of finished reports associated with a task.
  *
@@ -32635,15 +32650,6 @@ task_trend (task_t task, int override, int min_qod)
 }
 
 /**
- * @brief Dummy function.
- */
-void
-free_tasks ()
-{
-  /* Empty. */
-}
-
-/**
  * @brief Make a task.
  *
  * The char* parameters name and comment are used directly and freed
@@ -32716,34 +32722,12 @@ make_task_complete (task_t task)
 }
 
 /**
- * @brief Dummy function.
- *
- * @return 0.
- */
-int
-load_tasks ()
-{
-  return 0;
-}
-
-/**
- * @brief Dummy function.
- *
- * @return 0.
- */
-int
-save_tasks ()
-{
-  return 0;
-}
-
-/**
  * @brief Set the name of a task.
  *
  * @param[in]  task  A task.
  * @param[in]  name  New name.
  */
-static void
+void
 set_task_name (task_t task, const char *name)
 {
   gchar *quoted_name;
@@ -32882,7 +32866,7 @@ request_delete_task (task_t* task_pointer)
   task_t task = *task_pointer;
   int hidden;
 
-  g_debug ("   request delete task %u\n", task_id (task));
+  g_debug ("   request delete task %llu\n", task);
 
   hidden = sql_int ("SELECT hidden from tasks WHERE id = %llu;",
                     *task_pointer);
@@ -33073,9 +33057,7 @@ delete_task (task_t task, int ultimate)
 {
   g_debug ("   delete task %llu\n", task);
 
-  /** @todo Many other places just assert this. */
-  if (current_credentials.uuid == NULL)
-    return -1;
+  assert (current_credentials.uuid);
 
   if (ultimate)
     {
@@ -33201,13 +33183,6 @@ delete_task_lock (task_t task, int ultimate)
       return -1;
     }
 
-  /** @todo Many other places just assert this. */
-  if (current_credentials.uuid == NULL)
-    {
-      sql_rollback ();
-      return -1;
-    }
-
   ret = delete_task (task, ultimate);
   if (ret)
     sql_rollback ();
@@ -33291,19 +33266,6 @@ void
 append_to_task_comment (task_t task, const char* text, /* unused */ int length)
 {
   append_to_task_string (task, "comment", text);
-}
-
-/**
- * @brief Append text to the name associated with a task.
- *
- * @param[in]  task    A pointer to the task.
- * @param[in]  text    The text to append.
- * @param[in]  length  Length of the text.
- */
-void
-append_to_task_name (task_t task, const char* text, /* unused */ int length)
-{
-  append_to_task_string (task, "name", text);
 }
 
 /**
@@ -37356,7 +37318,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
  * @param[in]  iterator  Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find scan config, failed to find filter,
+ * @return 0 success, 1 failed to find scan config, 2 failed to find filter,
  *         -1 error.
  */
 int
@@ -39507,16 +39469,21 @@ nvt_selector_family_count (const char* quoted_selector, int families_growing)
 static int
 nvt_selector_families_growing (const char* selector)
 {
-  /** @todo Quote selector. */
+  gchar *quoted_selector;
+
   /* The number of families can only grow if there is selector that includes
    * all. */
+
+  quoted_selector = sql_quote (selector);
 #if 0
-  return sql_int ("SELECT COUNT(*) FROM nvt_selectors"
-                  " WHERE name = '%s'"
-                  " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                  " AND exclude = 0"
-                  " LIMIT 1;",
-                  selector);
+  ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
+                 " WHERE name = '%s'"
+                 " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                 " AND exclude = 0"
+                 " LIMIT 1;",
+                 quoted_selector);
+  g_free (quoted_selector);
+  return ret;
 #else
   char *string;
   string = sql_string ("SELECT name FROM nvt_selectors"
@@ -39524,7 +39491,8 @@ nvt_selector_families_growing (const char* selector)
                        " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
                        " AND exclude = 0"
                        " LIMIT 1;",
-                       selector);
+                       quoted_selector);
+  g_free (quoted_selector);
   if (string == NULL) return 0;
   free (string);
   return 1;
@@ -42914,8 +42882,8 @@ init_credential_iterator_one (iterator_t* iterator,
  * @param[in]  iterator  Iterator.
  * @param[in]  get       GET data.
  *
- * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
- *         -1 error.
+ * @return 0 success, 1 failed to find filter, 2 failed to find
+ *         filter (filt_id), -1 error.
  */
 int
 init_credential_iterator (iterator_t* iterator, const get_data_t *get)
@@ -44491,7 +44459,8 @@ get_iterator_owner (iterator_t* iterator)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find agent, failed to find filter, -1 error.
+ * @return 0 success, 1 failed to find agent, 2 failed to find filter,
+ *         -1 error.
  */
 int
 init_agent_iterator (iterator_t* iterator, const get_data_t *get)
@@ -49737,8 +49706,8 @@ schedule_count (const get_data_t *get)
  * @param[in]  iterator  Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
- *         -1 error.
+ * @return 0 success, 1 failed to find filter, 2 failed to find"
+ *         filter (filt_id), -1 error.
  */
 int
 init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
@@ -53982,8 +53951,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
             {
               gchar *uuid;
 
-              /** @todo Similar to validate_user in openvas-administrator. */
-              if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
+              if (validate_username (name))
                 {
                   g_list_free (added);
                   g_strfreev (split);
@@ -54430,7 +54398,7 @@ group_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find group, failed to find group (filt_id),
+ * @return 0 success, 1 failed to find group, 2 failed to find group (filt_id),
  *         -1 error.
  */
 int
@@ -58395,7 +58363,7 @@ role_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find role, failed to find role (filt_id),
+ * @return 0 success, 1 failed to find role, 2 failed to find role (filt_id),
  *         -1 error.
  */
 int
@@ -59053,7 +59021,7 @@ filter_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find filter, 2 failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -59374,7 +59342,6 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
       /* Change into the script directory. */
 
-      /** @todo NULL arg is glibc extension. */
       previous_dir = getcwd (NULL, 0);
       if (previous_dir == NULL)
         {
@@ -65118,7 +65085,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       g_free (real_inheritor_id);
       g_free (real_inheritor_name);
 
-      /* Transfer owned resources*/
+      /* Transfer owned resources. */
+
       sql ("UPDATE agents SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE agents_trash SET owner = %llu WHERE owner = %llu;",
@@ -65216,7 +65184,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE roles_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
-      /* Delete user */
+      /* Delete user. */
+
       sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
       sql ("DELETE FROM group_users_trash WHERE \"user\" = %llu;", user);
       sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
@@ -65231,9 +65200,11 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       return 0;
     }
 
-  /* Delete settings and miscellaneous resources not referenced directly */
-  // Agents
-  /* skip the "in use" check because it always returns 0
+  /* Delete settings and miscellaneous resources not referenced directly. */
+
+  /* Agents. */
+#if 0
+  /* Skip the "in use" check because it always returns 0. */
   if (user_resources_in_use (user,
                              "agents", agent_in_use,
                              "agents_trash", trash_agent_in_use))
@@ -65241,20 +65212,24 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql_rollback ();
       return 9;
     }
-  */
+#endif
   sql ("DELETE FROM agents WHERE owner = %llu;", user);
   sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
-  // Settings
+
+  /* Settings. */
   sql ("DELETE FROM settings WHERE owner = %llu;", user);
 
   /* Delete data modifiers (not directly referenced) */
-  // Notes
+
+  /* Notes. */
   sql ("DELETE FROM notes WHERE owner = %llu;", user);
   sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
-  // Overrides
+
+  /* Overrides. */
   sql ("DELETE FROM overrides WHERE owner = %llu;", user);
   sql ("DELETE FROM overrides_trash WHERE owner = %llu;", user);
-  // Tags
+
+  /* Tags. */
   sql ("DELETE FROM tag_resources"
        " WHERE tag IN (SELECT id FROM tags WHERE owner = %llu);",
        user);
@@ -65265,8 +65240,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
   delete_tickets_user (user);
 
-  /* Delete assets (not directly referenced) */
-  // Hosts
+  /* Delete assets (not directly referenced). */
+
+  /* Hosts. */
   sql ("DELETE FROM host_details WHERE host IN"
        " (SELECT id FROM hosts WHERE owner = %llu);", user);
   sql ("DELETE FROM host_max_severities WHERE host IN"
@@ -65274,16 +65250,19 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM host_identifiers WHERE owner = %llu;", user);
   sql ("DELETE FROM host_oss WHERE owner = %llu;", user);
   sql ("DELETE FROM hosts WHERE owner = %llu;", user);
-  // OSs
+
+  /* OSs. */
   sql ("DELETE FROM oss WHERE owner = %llu;", user);
 
-  /* Delete report data and tasks (not directly referenced) */
-  // Counts
+  /* Delete report data and tasks (not directly referenced). */
+
+  /* Counts. */
   sql ("DELETE FROM report_counts WHERE \"user\" = %llu", user);
   sql ("DELETE FROM report_counts"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
-  // Hosts
+
+  /* Hosts. */
   sql ("DELETE FROM report_host_details"
        " WHERE report_host IN (SELECT id FROM report_hosts"
        "                       WHERE report IN (SELECT id FROM reports"
@@ -65292,17 +65271,20 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM report_hosts"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
-  // Results
+
+  /* Results. */
   sql ("DELETE FROM results"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
-  // Reports
+
+  /* Reports. */
   sql ("DELETE FROM result_nvt_reports"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
   sql ("DELETE FROM reports WHERE owner = %llu;", user);
 
-  /* Delete tasks (not directly referenced) */
+  /* Delete tasks (not directly referenced). */
+
   if (user_resources_in_use (user,
                              "tasks", target_in_use,
                              NULL, NULL))
@@ -65322,8 +65304,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM tasks WHERE owner = %llu;", user);
 
-  /* Delete resources directly used by tasks */
-  // Alerts
+  /* Delete resources directly used by tasks. */
+
+  /* Alerts. */
   if (user_resources_in_use (user,
                              "alerts", alert_in_use,
                              "alerts_trash", trash_alert_in_use))
@@ -65351,7 +65334,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM alerts WHERE owner = %llu;", user);
   sql ("DELETE FROM alerts_trash WHERE owner = %llu;", user);
-  // Configs
+
+  /* Configs. */
   if (user_resources_in_use (user,
                              "configs", config_in_use,
                              "configs_trash", trash_config_in_use))
@@ -65374,7 +65358,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM configs WHERE owner = %llu;", user);
   sql ("DELETE FROM configs_trash WHERE owner = %llu;", user);
-  // Scanners
+
+  /* Scanners. */
   if (user_resources_in_use (user,
                              "scanners", scanner_in_use,
                              "scanners_trash", trash_scanner_in_use))
@@ -65384,7 +65369,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     }
   sql ("DELETE FROM scanners WHERE owner = %llu;", user);
   sql ("DELETE FROM scanners_trash WHERE owner = %llu;", user);
-  // Schedules
+
+  /* Schedules. */
   if (user_resources_in_use (user,
                              "schedules", schedule_in_use,
                              "schedules_trash", trash_schedule_in_use))
@@ -65394,7 +65380,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     }
   sql ("DELETE FROM schedules WHERE owner = %llu;", user);
   sql ("DELETE FROM schedules_trash WHERE owner = %llu;", user);
-  // Targets
+
+  /* Targets. */
   if (user_resources_in_use (user,
                              "targets", target_in_use,
                              "targets_trash", trash_target_in_use))
@@ -65410,7 +65397,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM targets_trash WHERE owner = %llu;", user);
 
   /* Delete resources used indirectly by tasks */
-  // Filters (used by alerts and settings)
+
+  /* Filters (used by alerts and settings). */
   if (user_resources_in_use (user,
                              "filters", filter_in_use,
                              "filters_trash", trash_filter_in_use))
@@ -65420,7 +65408,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     }
   sql ("DELETE FROM filters WHERE owner = %llu;", user);
   sql ("DELETE FROM filters_trash WHERE owner = %llu;", user);
-  // Port lists (used by targets)
+
+  /* Port lists (used by targets). */
   if (user_resources_in_use (user,
                              "port_lists", port_list_in_use,
                              "port_lists_trash", trash_port_list_in_use))
@@ -65437,7 +65426,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM port_lists WHERE owner = %llu;", user);
   sql ("DELETE FROM port_lists_trash WHERE owner = %llu;", user);
-  // Report formats (used by alerts)
+
+  /* Report formats (used by alerts). */
   if (user_resources_in_use (user,
                              "report_formats",
                              report_format_in_use,
@@ -65474,6 +65464,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
 
   /* Delete credentials last because they can be used in various places */
+
   if (user_resources_in_use (user,
                              "credentials", credential_in_use,
                              "credentials_trash", trash_credential_in_use))
@@ -65493,6 +65484,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   /* Make permissions global if they are owned by the user and are related
    * to users/groups/roles that are owned by the user. */
+
   sql ("UPDATE permissions SET owner = NULL"
        " WHERE owner = %llu"
        " AND ((subject_type = 'user' AND subject IN (SELECT id FROM users WHERE owner = %llu))"
@@ -65510,6 +65502,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
 
   /* Make users, roles and groups global if they are owned by the user. */
+
   sql ("UPDATE users SET owner = NULL WHERE owner = %llu;", user);
   sql ("UPDATE roles SET owner = NULL WHERE owner = %llu;", user);
   sql ("UPDATE groups SET owner = NULL WHERE owner = %llu;", user);
@@ -65517,6 +65510,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("UPDATE groups_trash SET owner = NULL WHERE owner = %llu;", user);
 
   /* Remove all other permissions owned by the user or given on the user. */
+
   sql ("DELETE FROM permissions"
        " WHERE owner = %llu"
        " OR subject_type = 'user' AND subject = %llu"
@@ -65526,17 +65520,20 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM permissions_get_tasks WHERE \"user\" = %llu;", user);
 
-  /* Delete permissions granted by the user */
+  /* Delete permissions granted by the user. */
+
   sql ("DELETE FROM permissions WHERE owner = %llu;", user);
   sql ("DELETE FROM permissions_trash WHERE owner = %llu;", user);
 
-  /* Remove user from groups and roles */
+  /* Remove user from groups and roles. */
+
   sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM group_users_trash WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
 
-  /* Delete user */
+  /* Delete user. */
+
   sql ("DELETE FROM users WHERE id = %llu;", user);
 
   sql_commit ();
@@ -66138,7 +66135,7 @@ user_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find user, failed to find user (filt_id),
+ * @return 0 success, 1 failed to find user, 2 failed to find user (filt_id),
  *         -1 error.
  */
 int
@@ -68988,16 +68985,6 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " Duplicate config preferences removed:"
                                       " %d. Corrected preference values: %d",
                                       removed, fixed_values);
-    }
-  else if (strcasecmp (name, "remove-open-port-results") == 0)
-    {
-      int changes;
-      sql ("DELETE FROM results WHERE nvt='0';");
-      changes = sql_changes();
-      success_text = g_strdup_printf ("Optimized: remove-open-port-results."
-                                      " Superfluous open port results removed:"
-                                      " %d.",
-                                      changes);
     }
   else if (strcasecmp (name, "cleanup-port-names") == 0)
     {

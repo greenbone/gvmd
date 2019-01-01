@@ -19949,7 +19949,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
-        <name>esxi_credential</name>
+          <name>esxi_credential</name>
           <pattern>
             <attrib>
               <name>id</name>

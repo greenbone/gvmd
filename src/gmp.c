@@ -1564,6 +1564,7 @@ typedef struct
   array_t *alerts;      ///< IDs of alerts.
   char *copy;           ///< UUID of resource to copy.
   array_t *groups;      ///< IDs of groups.
+  char *name;           ///< Name of task.
   char *observers;      ///< Space separated names of observer users.
   name_value_t *preference;  ///< Current preference.
   array_t *preferences; ///< Preferences.
@@ -1588,6 +1589,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->copy);
   array_free (data->alerts);
   array_free (data->groups);
+  free (data->name);
   free (data->observers);
   if (data->preferences)
     {
@@ -3873,7 +3875,7 @@ stop_task_data_reset (stop_task_data_t *data)
 }
 
 /**
- * @brief Command data for the modify_target command.
+ * @brief Command data for the sync_config command.
  */
 typedef struct
 {
@@ -4757,7 +4759,7 @@ static stop_task_data_t *stop_task_data
  * @brief Parser callback data for SYNC_CONFIG.
  */
 static sync_config_data_t *sync_config_data
- = (sync_config_data_t*) &(command_data.delete_target);
+ = (sync_config_data_t*) &(command_data.sync_config);
 
 /**
  * @brief Parser callback data for TEST_ALERT.
@@ -5653,8 +5655,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             /** @todo If a real GMP command, return STATUS_ERROR_MUST_AUTH. */
             if (send_to_client
                  (XML_ERROR_SYNTAX ("gmp",
-                                    "First command must be AUTHENTICATE,"
-                                    " COMMANDS or GET_VERSION"),
+                                    "Only commands GET_VERSION and COMMANDS are"
+                                    " allowed before AUTHENTICATE"),
                   write_to_client,
                   write_to_client_data))
               {
@@ -5684,8 +5686,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
-            if (save_tasks ()) abort ();
-            free_tasks ();
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
           }
@@ -20332,79 +20332,70 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         switch (authenticate (&current_credentials))
           {
             case 0:   /* Authentication succeeded. */
-              if (load_tasks ())
-                {
-                  g_warning ("%s: failed to load tasks\n", __FUNCTION__);
-                  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
-                               "Manager failed to load tasks.");
-                  free_credentials (&current_credentials);
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("authenticate"));
-                  set_client_state (CLIENT_TOP);
-                }
-              else
-                {
-                  const char *zone, *severity;
-                  char *pw_warning;
+              {
+                const char *zone, *severity;
+                char *pw_warning;
 
-                  zone = (current_credentials.timezone
-                          && strlen (current_credentials.timezone))
-                           ? current_credentials.timezone
-                           : "UTC";
+                zone = (current_credentials.timezone
+                        && strlen (current_credentials.timezone))
+                         ? current_credentials.timezone
+                         : "UTC";
 
-                  if (setenv ("TZ", zone, 1) == -1)
-                    {
-                      free_credentials (&current_credentials);
-                      g_warning ("Timezone setting failure for %s",
-                                 current_credentials.username);
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("authenticate"));
-                      set_client_state (CLIENT_TOP);
-                      break;
-                    }
-                  tzset ();
+                if (setenv ("TZ", zone, 1) == -1)
+                  {
+                    free_credentials (&current_credentials);
+                    g_warning ("Timezone setting failure for %s",
+                               current_credentials.username);
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("authenticate"));
+                    set_client_state (CLIENT_TOP);
+                    break;
+                  }
+                tzset ();
 
-                  manage_session_set_timezone (zone);
+                manage_session_set_timezone (zone);
 
-                  severity = setting_severity ();
-                  pw_warning = gvm_validate_password
-                                (current_credentials.password,
-                                 current_credentials.username);
+                severity = setting_severity ();
+                pw_warning = gvm_validate_password
+                              (current_credentials.password,
+                               current_credentials.username);
 
-                  if (pw_warning)
-                    SENDF_TO_CLIENT_OR_FAIL
-                    ("<authenticate_response"
-                      " status=\"" STATUS_OK "\""
-                      " status_text=\"" STATUS_OK_TEXT "\">"
-                      "<role>%s</role>"
-                      "<timezone>%s</timezone>"
-                      "<severity>%s</severity>"
-                      "<password_warning>%s</password_warning>"
-                      "</authenticate_response>",
-                      current_credentials.role
-                        ? current_credentials.role
-                        : "",
-                      zone,
-                      severity,
-                      pw_warning ? pw_warning : "");
-                  else
-                    SENDF_TO_CLIENT_OR_FAIL
-                    ("<authenticate_response"
-                      " status=\"" STATUS_OK "\""
-                      " status_text=\"" STATUS_OK_TEXT "\">"
-                      "<role>%s</role>"
-                      "<timezone>%s</timezone>"
-                      "<severity>%s</severity>"
-                      "</authenticate_response>",
-                      current_credentials.role
-                        ? current_credentials.role
-                        : "",
-                      zone,
-                      severity);
+                if (pw_warning)
+                  SENDF_TO_CLIENT_OR_FAIL
+                  ("<authenticate_response"
+                    " status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<role>%s</role>"
+                    "<timezone>%s</timezone>"
+                    "<severity>%s</severity>"
+                    "<password_warning>%s</password_warning>"
+                    "</authenticate_response>",
+                    current_credentials.role
+                      ? current_credentials.role
+                      : "",
+                    zone,
+                    severity,
+                    pw_warning ? pw_warning : "");
+                else
+                  SENDF_TO_CLIENT_OR_FAIL
+                  ("<authenticate_response"
+                    " status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<role>%s</role>"
+                    "<timezone>%s</timezone>"
+                    "<severity>%s</severity>"
+                    "</authenticate_response>",
+                    current_credentials.role
+                      ? current_credentials.role
+                      : "",
+                    zone,
+                    severity);
 
-                  free (pw_warning);
-                  set_client_state (CLIENT_AUTHENTIC);
-                }
-              break;
+                free (pw_warning);
+                set_client_state (CLIENT_AUTHENTIC);
+
+                break;
+              }
             case 1:   /* Authentication failed. */
               g_warning ("Authentication failure for '%s' from %s",
                          current_credentials.username ?: "", client_address);
@@ -21900,6 +21891,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
                                         "Error in SMB file path"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 43:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "SMB file path type must be either"
+                                        " 'full' or 'directory'"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
                   case 50:
@@ -24786,6 +24784,17 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               goto create_task_fail;
             }
 
+          /* Check and set name. */
+
+          if (create_task_data->name == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_task",
+                                                        "A NAME is required"));
+              goto create_task_fail;
+            }
+          else
+            set_task_name (create_task_data->task, create_task_data->name);
+
           /* Get the task ID. */
 
           if (task_uuid (create_task_data->task, &tsk_uuid))
@@ -24966,21 +24975,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     goto create_task_fail;
                 }
             }
-
-          /* Check for name. */
-
-          {
-            char *name;
-
-            name = task_name (create_task_data->task);
-            if (name == NULL)
-              {
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_task",
-                                    "CREATE_TASK requires a name attribute"));
-                goto create_task_fail;
-              }
-          }
 
           if (find_scanner_with_permission (create_task_data->scanner_id,
                                             &scanner,
@@ -25583,6 +25577,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
                                      "Error in SMB file path"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
+                break;
+              case 43:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "SMB file path type must be either"
+                                    " 'full' or 'directory'"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 50:
@@ -28128,6 +28129,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                           g_free (msg);
                           return;
                         }
+                      g_free (msg);
                     }
                   else
                     {
@@ -29706,9 +29708,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TASK_COPY,
               &create_task_data->copy);
 
-      case CLIENT_CREATE_TASK_NAME:
-        append_to_task_name (create_task_data->task, text, text_len);
-        break;
+      APPEND (CLIENT_CREATE_TASK_NAME,
+              &create_task_data->name);
 
       APPEND (CLIENT_CREATE_TASK_OBSERVERS,
               &create_task_data->observers);

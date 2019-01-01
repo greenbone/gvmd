@@ -69,4 +69,5 @@ reset_scanner_states ();
 
 /** @todo Exported for gmpd.c. */
 extern int scanner_init_offset;
-#endif
+
+#endif /* not _GVMD_OTP_H */

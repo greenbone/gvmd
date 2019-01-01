@@ -50,4 +50,4 @@ const char *lsc_crypt_get_password (lsc_crypt_ctx_t, const char *);
 const char *lsc_crypt_get_private_key (lsc_crypt_ctx_t, const char *);
 
 
-#endif /* _GVMD_LSC_CRYPT_H */
+#endif /* not _GVMD_LSC_CRYPT_H */
