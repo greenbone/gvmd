@@ -1247,8 +1247,6 @@ migrate_8_to_9 ()
 /**
  * @brief Return the UUID of a user from the GVM user UUID file.
  *
- * @todo Untested
- *
  * @param[in]  name   User name.
  *
  * @return UUID of given user if user exists, else NULL.
