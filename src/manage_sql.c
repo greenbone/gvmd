@@ -51709,6 +51709,22 @@ move_report_format_dir (const char *dir, const char *new_dir)
 }
 
 /**
+ * @brief Delete a report format from the db.
+ *
+ * @param[in]  report_format  Report format.
+ */
+static void
+delete_report_format_rows (report_format_t report_format)
+{
+  sql ("DELETE FROM report_format_param_options WHERE report_format_param"
+       " IN (SELECT id from report_format_params WHERE report_format = %llu);",
+       report_format);
+  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
+       report_format);
+  sql ("DELETE FROM report_formats WHERE id = %llu;", report_format);
+}
+
+/**
  * @brief Delete a report format.
  *
  * @param[in]  report_format_id  UUID of Report format.
@@ -51876,11 +51892,15 @@ delete_report_format (const char *report_format_id, int ultimate)
           sql_rollback ();
           return -1;
         }
+
+      /* Remove from "real" tables. */
+
+      delete_report_format_rows (report_format);
     }
   else
     {
       iterator_t params;
-      gchar *trash_dir;
+      gchar *trash_dir, *new_dir, *report_format_string;
 
       /* Check if it's in use by a regular alert. */
 
@@ -51951,22 +51971,12 @@ delete_report_format (const char *report_format_id, int ultimate)
                                  trash_report_format, LOCATION_TRASH);
       tags_set_locations ("report_format", report_format,
                           trash_report_format, LOCATION_TRASH);
-    }
 
-  /* Remove from "real" tables. */
+      /* Remove from "real" tables. */
 
-  sql ("DELETE FROM report_format_param_options WHERE report_format_param"
-       " IN (SELECT id from report_format_params WHERE report_format = %llu);",
-       report_format);
-  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
-       report_format);
-  sql ("DELETE FROM report_formats WHERE id = %llu;", report_format);
+      delete_report_format_rows (report_format);
 
-  /* Move the dir last, in case any SQL rolls back. */
-
-  if (ultimate == 0)
-    {
-      gchar *new_dir, *report_format_string;
+      /* Move the dir last, in case any SQL rolls back. */
 
       report_format_string = g_strdup_printf ("%llu", trash_report_format);
       new_dir = report_format_trash_dir (report_format_string);
@@ -51980,6 +51990,7 @@ delete_report_format (const char *report_format_id, int ultimate)
         }
       g_free (new_dir);
     }
+
   g_free (dir);
 
   sql_commit ();
