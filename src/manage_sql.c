@@ -32420,8 +32420,6 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
 /* More task stuff. */
 
-/** @todo Should be on tasks page above. */
-
 /**
  * @brief Return the number of finished reports associated with a task.
  *
