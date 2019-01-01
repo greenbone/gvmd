@@ -199,7 +199,6 @@ static nvt_t
 make_nvt_from_nvti (const nvti_t *nvti)
 {
   gchar *qod_str, *qod_type;
-  /** @todo Freeing string literals. */
   gchar *quoted_name;
   gchar *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
