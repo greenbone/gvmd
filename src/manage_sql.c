@@ -18962,21 +18962,6 @@ task_count (const get_data_t *get)
 }
 
 /**
- * @brief Return the identifier of a task.
- *
- * @param[in]  task  Task.
- *
- * @return ID of task.
- */
-static unsigned int
-task_id (task_t task)
-{
-  /** @todo The cast is a hack for compatibility with the old, alternate,
-   *        FS based storage mechanism. */
-  return (unsigned int) task;
-}
-
-/**
  * @brief Return the UUID of a task.
  *
  * @param[in]   task  Task.
@@ -32870,7 +32855,7 @@ request_delete_task (task_t* task_pointer)
   task_t task = *task_pointer;
   int hidden;
 
-  g_debug ("   request delete task %u\n", task_id (task));
+  g_debug ("   request delete task %llu\n", task);
 
   hidden = sql_int ("SELECT hidden from tasks WHERE id = %llu;",
                     *task_pointer);
