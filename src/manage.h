@@ -917,6 +917,9 @@ make_task_complete (task_t);
 int
 copy_task (const char*, const char*, const char *, int, task_t*);
 
+void
+set_task_name (task_t, const char *);
+
 gboolean
 find_task_with_permission (const char*, task_t*, const char *);
 
