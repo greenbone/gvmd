@@ -26297,19 +26297,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for name. */
 
-          {
-            char *name;
-
-            name = task_name (create_task_data->task);
-            if (name == NULL)
-              {
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_task",
-                                    "CREATE_TASK requires a name attribute"));
-                goto create_task_fail;
-              }
-          }
-
           if (find_scanner_with_permission (create_task_data->scanner_id,
                                             &scanner,
                                             "get_scanners"))
