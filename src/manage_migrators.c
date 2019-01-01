@@ -3468,12 +3468,12 @@ migrate_43_to_44 ()
 
   /* The file permission got much tighter. */
 
-  if (chmod (task_db_name ? task_db_name : GVM_STATE_DIR "/mgr/tasks.db",
+  if (chmod (gvmd_db_name ? gvmd_db_name : GVM_STATE_DIR "/mgr/tasks.db",
              S_IRUSR | S_IWUSR))
     {
       g_warning ("%s: failed to chmod %s: %s",
                  __FUNCTION__,
-                 task_db_name ? task_db_name
+                 gvmd_db_name ? gvmd_db_name
                               : GVM_STATE_DIR "/mgr/tasks.db",
                  strerror (errno));
       sql_rollback ();

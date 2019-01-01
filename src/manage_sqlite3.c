@@ -84,7 +84,7 @@
 /* Variables */
 
 extern sqlite3 *
-task_db;
+gvmd_db;
 
 
 /* Headers of manage_sql.c functions also used here. */
@@ -2781,7 +2781,7 @@ sql_vuln_results (sqlite3_context *context, int argc,
 int
 manage_create_sql_functions ()
 {
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "t",
                                0,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2795,7 +2795,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "strpos",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2809,7 +2809,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "order_inet",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2823,7 +2823,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "order_message_type",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2837,7 +2837,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "order_port",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2851,7 +2851,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "order_role",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2865,7 +2865,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "order_threat",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2879,7 +2879,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "make_uuid",
                                0,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2893,7 +2893,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "hosts_contains",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2907,7 +2907,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "clean_hosts",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2921,7 +2921,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "iso_time",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2935,7 +2935,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "days_from_now",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2949,7 +2949,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "parse_time",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2963,7 +2963,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "tag",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2977,7 +2977,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "uniquify",
                                4,               /* Number of args. */
                                SQLITE_UTF8,
@@ -2991,7 +2991,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "next_time",
                                4,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3005,7 +3005,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "next_time",
                                5,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3019,7 +3019,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "next_time",
                                6,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3033,7 +3033,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "next_time_ical",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3047,7 +3047,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "next_time_ical",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3061,7 +3061,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "m_now",
                                0,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3075,7 +3075,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "max_hosts",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3089,7 +3089,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "common_cve",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3103,7 +3103,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "cpe_title",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3117,7 +3117,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "credential_value",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3131,7 +3131,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "current_offset",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3145,7 +3145,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "task_trend",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3159,7 +3159,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "task_threat_level",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3173,7 +3173,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "report_progress",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3187,7 +3187,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "report_severity",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3201,7 +3201,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "report_severity_count",
                                4,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3215,7 +3215,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "report_host_count",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3229,7 +3229,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "report_result_host_count",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3243,7 +3243,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "task_severity",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3257,7 +3257,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "task_last_report",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3271,7 +3271,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "severity_matches_ov",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3285,7 +3285,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "severity_to_level",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3299,7 +3299,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "severity_to_level",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3313,7 +3313,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "severity_to_type",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3327,7 +3327,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "run_status_name",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3341,7 +3341,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "resource_exists",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3355,7 +3355,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "regexp",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3369,7 +3369,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "resource_name",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3383,7 +3383,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "severity_in_level",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3397,7 +3397,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "target_credential",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3411,7 +3411,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "trash_target_credential_location",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3425,7 +3425,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "target_login_port",
                                3,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3439,7 +3439,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "user_can_everything",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3453,7 +3453,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "user_has_access_uuid",
                                4,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3467,7 +3467,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "user_owns",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3481,7 +3481,7 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "vuln_results",
                                4,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4622,7 +4622,7 @@ manage_scap_db_exists ()
 int
 manage_update_cert_db_init ()
 {
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_dfn_cert_adv",
                                6,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4636,7 +4636,7 @@ manage_update_cert_db_init ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_bund_adv",
                                6,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4661,7 +4661,7 @@ manage_update_cert_db_init ()
 void
 manage_update_cert_db_cleanup ()
 {
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_dfn_cert_adv",
                                6,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4672,7 +4672,7 @@ manage_update_cert_db_cleanup ()
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_dfn_cert_adv", __FUNCTION__);
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_bund_adv",
                                6,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4692,7 +4692,7 @@ manage_update_cert_db_cleanup ()
 int
 manage_update_scap_db_init ()
 {
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_cpe",
                                7,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4706,7 +4706,7 @@ manage_update_scap_db_init ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_cve",
                                13,              /* Number of args. */
                                SQLITE_UTF8,
@@ -4720,7 +4720,7 @@ manage_update_scap_db_init ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_cpe_name",
                                4,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4734,7 +4734,7 @@ manage_update_scap_db_init ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_affected_product",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4748,7 +4748,7 @@ manage_update_scap_db_init ()
       return -1;
     }
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_ovaldef",
                                13,              /* Number of args. */
                                SQLITE_UTF8,
@@ -4773,7 +4773,7 @@ manage_update_scap_db_init ()
 void
 manage_update_scap_db_cleanup ()
 {
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_cpe",
                                8,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4784,7 +4784,7 @@ manage_update_scap_db_cleanup ()
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_cpe", __FUNCTION__);
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_cve",
                                13,              /* Number of args. */
                                SQLITE_UTF8,
@@ -4795,7 +4795,7 @@ manage_update_scap_db_cleanup ()
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_cve", __FUNCTION__);
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_cpe_name",
                                4,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4806,7 +4806,7 @@ manage_update_scap_db_cleanup ()
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_cpe_name", __FUNCTION__);
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_affected_product",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -4817,7 +4817,7 @@ manage_update_scap_db_cleanup ()
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_affected_product", __FUNCTION__);
 
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "merge_ovaldef",
                                14,              /* Number of args. */
                                SQLITE_UTF8,
@@ -4845,7 +4845,7 @@ static int
 backup_db (const gchar *database, gchar **backup_file_arg)
 {
   gchar *backup_file;
-  sqlite3 *backup_db, *actual_task_db;
+  sqlite3 *backup_db, *actual_gvmd_db;
   sqlite3_backup *backup;
 
   backup_file = g_strdup_printf ("%s.bak", database);
@@ -4854,17 +4854,17 @@ backup_db (const gchar *database, gchar **backup_file_arg)
     {
       g_warning ("%s: sqlite3_open failed: %s\n",
                  __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+                 sqlite3_errmsg (gvmd_db));
       goto fail;
     }
 
   /* Turn off WAL for the backup db. */
-  actual_task_db = task_db;
-  task_db = backup_db;
+  actual_gvmd_db = gvmd_db;
+  gvmd_db = backup_db;
   sql ("PRAGMA journal_mode=DELETE;");
-  task_db = actual_task_db;
+  gvmd_db = actual_gvmd_db;
 
-  backup = sqlite3_backup_init (backup_db, "main", task_db, "main");
+  backup = sqlite3_backup_init (backup_db, "main", gvmd_db, "main");
   if (backup == NULL)
     {
       g_warning ("%s: sqlite3_backup_init failed: %s\n",
@@ -4997,7 +4997,7 @@ migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
 int
 manage_create_migrate_51_to_52_convert ()
 {
-  if (sqlite3_create_function (task_db,
+  if (sqlite3_create_function (gvmd_db,
                                "convert",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
