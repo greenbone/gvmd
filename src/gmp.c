@@ -6944,7 +6944,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
-            if (save_tasks ()) abort ();
             free_tasks ();
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
@@ -21647,79 +21646,70 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         switch (authenticate (&current_credentials))
           {
             case 0:   /* Authentication succeeded. */
-              if (load_tasks ())
-                {
-                  g_warning ("%s: failed to load tasks\n", __FUNCTION__);
-                  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
-                               "Manager failed to load tasks.");
-                  free_credentials (&current_credentials);
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("authenticate"));
-                  set_client_state (CLIENT_TOP);
-                }
-              else
-                {
-                  const char *zone, *severity;
-                  char *pw_warning;
+              {
+                const char *zone, *severity;
+                char *pw_warning;
 
-                  zone = (current_credentials.timezone
-                          && strlen (current_credentials.timezone))
-                           ? current_credentials.timezone
-                           : "UTC";
+                zone = (current_credentials.timezone
+                        && strlen (current_credentials.timezone))
+                         ? current_credentials.timezone
+                         : "UTC";
 
-                  if (setenv ("TZ", zone, 1) == -1)
-                    {
-                      free_credentials (&current_credentials);
-                      g_warning ("Timezone setting failure for %s",
-                                 current_credentials.username);
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("authenticate"));
-                      set_client_state (CLIENT_TOP);
-                      break;
-                    }
-                  tzset ();
+                if (setenv ("TZ", zone, 1) == -1)
+                  {
+                    free_credentials (&current_credentials);
+                    g_warning ("Timezone setting failure for %s",
+                               current_credentials.username);
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("authenticate"));
+                    set_client_state (CLIENT_TOP);
+                    break;
+                  }
+                tzset ();
 
-                  manage_session_set_timezone (zone);
+                manage_session_set_timezone (zone);
 
-                  severity = setting_severity ();
-                  pw_warning = gvm_validate_password
-                                (current_credentials.password,
-                                 current_credentials.username);
+                severity = setting_severity ();
+                pw_warning = gvm_validate_password
+                              (current_credentials.password,
+                               current_credentials.username);
 
-                  if (pw_warning)
-                    SENDF_TO_CLIENT_OR_FAIL
-                    ("<authenticate_response"
-                      " status=\"" STATUS_OK "\""
-                      " status_text=\"" STATUS_OK_TEXT "\">"
-                      "<role>%s</role>"
-                      "<timezone>%s</timezone>"
-                      "<severity>%s</severity>"
-                      "<password_warning>%s</password_warning>"
-                      "</authenticate_response>",
-                      current_credentials.role
-                        ? current_credentials.role
-                        : "",
-                      zone,
-                      severity,
-                      pw_warning ? pw_warning : "");
-                  else
-                    SENDF_TO_CLIENT_OR_FAIL
-                    ("<authenticate_response"
-                      " status=\"" STATUS_OK "\""
-                      " status_text=\"" STATUS_OK_TEXT "\">"
-                      "<role>%s</role>"
-                      "<timezone>%s</timezone>"
-                      "<severity>%s</severity>"
-                      "</authenticate_response>",
-                      current_credentials.role
-                        ? current_credentials.role
-                        : "",
-                      zone,
-                      severity);
+                if (pw_warning)
+                  SENDF_TO_CLIENT_OR_FAIL
+                  ("<authenticate_response"
+                    " status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<role>%s</role>"
+                    "<timezone>%s</timezone>"
+                    "<severity>%s</severity>"
+                    "<password_warning>%s</password_warning>"
+                    "</authenticate_response>",
+                    current_credentials.role
+                      ? current_credentials.role
+                      : "",
+                    zone,
+                    severity,
+                    pw_warning ? pw_warning : "");
+                else
+                  SENDF_TO_CLIENT_OR_FAIL
+                  ("<authenticate_response"
+                    " status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<role>%s</role>"
+                    "<timezone>%s</timezone>"
+                    "<severity>%s</severity>"
+                    "</authenticate_response>",
+                    current_credentials.role
+                      ? current_credentials.role
+                      : "",
+                    zone,
+                    severity);
 
-                  free (pw_warning);
-                  set_client_state (CLIENT_AUTHENTIC);
-                }
-              break;
+                free (pw_warning);
+                set_client_state (CLIENT_AUTHENTIC);
+
+                break;
+              }
             case 1:   /* Authentication failed. */
               g_warning ("Authentication failure for '%s' from %s",
                          current_credentials.username ?: "", client_address);

@@ -920,12 +920,6 @@ make_task_complete (task_t);
 int
 copy_task (const char*, const char*, const char *, int, task_t*);
 
-int
-load_tasks ();
-
-int
-save_tasks ();
-
 gboolean
 find_task_with_permission (const char*, task_t*, const char *);
 

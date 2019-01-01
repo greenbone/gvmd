@@ -32739,28 +32739,6 @@ make_task_complete (task_t task)
 }
 
 /**
- * @brief Dummy function.
- *
- * @return 0.
- */
-int
-load_tasks ()
-{
-  return 0;
-}
-
-/**
- * @brief Dummy function.
- *
- * @return 0.
- */
-int
-save_tasks ()
-{
-  return 0;
-}
-
-/**
  * @brief Set the name of a task.
  *
  * @param[in]  task  A task.
