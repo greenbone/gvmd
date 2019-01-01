@@ -47681,6 +47681,51 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
 }
 
 /**
+ * @brief Insert a scanner for create_scanner.
+ *
+ * @param[in]   name         Name of scanner.
+ * @param[in]   comment      Comment on scanner.
+ * @param[in]   host         Host of scanner.
+ * @param[in]   ca_pub       CA Certificate for scanner.
+ * @param[in]   iport        Port of scanner.
+ * @param[in]   itype        Type of scanner.
+ * @param[out]  new_scanner  The created scanner.
+ */
+static void
+insert_scanner (const char* name, const char *comment, const char *host,
+                const char *ca_pub, int iport, int itype,
+                scanner_t *new_scanner)
+{
+  char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
+
+  assert (current_credentials.uuid);
+
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
+  quoted_host = sql_quote (host ?: "");
+  quoted_ca_pub = sql_quote (ca_pub ?: "");
+
+  sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
+       "                      ca_pub,creation_time, modification_time)"
+       " VALUES (make_uuid (), '%s',"
+       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
+       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now ());",
+       quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
+       iport, itype,
+       ca_pub ? "'" : "",
+       ca_pub ? quoted_ca_pub : "NULL",
+       ca_pub ? "'" : "");
+
+  g_free (quoted_host);
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (quoted_ca_pub);
+
+  if (new_scanner)
+    *new_scanner = sql_last_insert_id ();
+}
+
+/**
  * @brief Create a scanner.
  *
  * @param[in]   name        Name of scanner.
@@ -47701,11 +47746,9 @@ create_scanner (const char* name, const char *comment, const char *host,
                 const char *port, const char *type, scanner_t *new_scanner,
                 const char *ca_pub, const char *credential_id)
 {
-  char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
   int iport, itype, unix_socket = 0;
   credential_t credential;
 
-  assert (current_credentials.uuid);
   assert (name);
 
   sql_begin_immediate ();
@@ -47741,7 +47784,9 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 1;
     }
 
-  if (!unix_socket)
+  if (unix_socket)
+    insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+  else
     {
       if (find_credential_with_permission
            (credential_id, &credential, "get_credentials"))
@@ -47770,35 +47815,14 @@ create_scanner (const char* name, const char *comment, const char *host,
           sql_rollback ();
           return 5;
         }
+
+      insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+
+      sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;", credential,
+           sql_last_insert_id ());
     }
 
-  quoted_name = sql_quote (name ?: "");
-  quoted_comment = sql_quote (comment ?: "");
-  quoted_host = sql_quote (host ?: "");
-  quoted_ca_pub = sql_quote (ca_pub ?: "");
-  sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
-       "                      ca_pub,creation_time, modification_time)"
-       " VALUES (make_uuid (), '%s',"
-       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now ());",
-       quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
-       iport, itype,
-       ca_pub ? "'" : "",
-       ca_pub ? quoted_ca_pub : "NULL",
-       ca_pub ? "'" : "");
-
-  if (new_scanner)
-    *new_scanner = sql_last_insert_id ();
-
-  if (!unix_socket)
-    sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;", credential,
-         sql_last_insert_id ());
-
   sql_commit ();
-  g_free (quoted_host);
-  g_free (quoted_comment);
-  g_free (quoted_name);
-  g_free (quoted_ca_pub);
   return 0;
 }
 
