@@ -29440,6 +29440,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                           g_free (msg);
                           return;
                         }
+                      g_free (msg);
                     }
                   else
                     {
