@@ -32658,15 +32658,6 @@ task_trend (task_t task, int override, int min_qod)
 }
 
 /**
- * @brief Dummy function.
- */
-void
-free_tasks ()
-{
-  /* Empty. */
-}
-
-/**
  * @brief Make a task.
  *
  * The char* parameters name and comment are used directly and freed

@@ -511,7 +511,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                     disable);
 #if 0
   /** @todo Consider free_gmp_data (); on return. */
-  if (tasks) free_tasks ();
   if (current_scanner_preference) free (current_scanner_preference);
   free_credentials (&current_credentials);
   maybe_free_scanner_preferences (); // old

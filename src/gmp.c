@@ -6944,7 +6944,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
-            free_tasks ();
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
           }

@@ -908,9 +908,6 @@ task_warnings_size (task_t);
 int
 task_false_positive_size (task_t);
 
-void
-free_tasks ();
-
 task_t
 make_task (char*, char*, int, int);
 
