@@ -25846,7 +25846,7 @@ report_timestamp (const char* report_id, gchar** timestamp)
  * @return 0 on success, -1 on error.
  */
 static int
-report_scan_run_status (report_t report, int* status)
+report_scan_run_status (report_t report, task_status_t* status)
 {
   *status = sql_int ("SELECT scan_run_status FROM reports"
                      " WHERE reports.id = %llu;",
@@ -26551,7 +26551,7 @@ delete_report_internal (report_t report)
       case 0:
         if (report)
           {
-            int status;
+            task_status_t status;
             if (report_scan_run_status (report, &status))
               return -1;
             sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
@@ -28879,7 +28879,7 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
 static int
 report_active (report_t report)
 {
-  int run_status;
+  task_status_t run_status;
   report_scan_run_status (report, &run_status);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
@@ -30067,7 +30067,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int total_result_count, filtered_result_count, run_status;
+  int total_result_count, filtered_result_count;
   array_t *result_hosts;
   iterator_t results, delta_results;
   int debugs, holes, infos, logs, warnings, false_positives;
@@ -30083,6 +30083,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable *f_host_ports;
   GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
   GHashTable *f_host_logs, *f_host_false_positives;
+  task_status_t run_status;
 
   /* Init some vars to prevent warnings from older compilers. */
   total_result_count = filtered_result_count = 0;
