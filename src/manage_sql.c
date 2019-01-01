@@ -558,7 +558,7 @@ static nvtis_t* nvti_cache = NULL;
 /**
  * @brief Name of the database file.
  */
-gchar* task_db_name = NULL;
+gchar* gvmd_db_name = NULL;
 
 /**
  * @brief Whether a transaction has been opened and not committed yet.
@@ -15405,7 +15405,7 @@ void
 reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
-  init_manage_process (0, task_db_name);
+  init_manage_process (0, gvmd_db_name);
 }
 
 /**
@@ -18177,7 +18177,7 @@ init_manage_internal (GSList *log_config,
     update_nvti_cache ();
 
   sql_close ();
-  task_db_name = database ? g_strdup (database) : NULL;
+  gvmd_db_name = database ? g_strdup (database) : NULL;
   if (fork_connection)
     manage_fork_connection = fork_connection;
   return 0;
@@ -32767,7 +32767,7 @@ save_tasks ()
  * @param[in]  task  A task.
  * @param[in]  name  New name.
  */
-static void
+void
 set_task_name (task_t task, const char *name)
 {
   gchar *quoted_name;
@@ -33309,19 +33309,6 @@ void
 append_to_task_comment (task_t task, const char* text, /* unused */ int length)
 {
   append_to_task_string (task, "comment", text);
-}
-
-/**
- * @brief Append text to the name associated with a task.
- *
- * @param[in]  task    A pointer to the task.
- * @param[in]  text    The text to append.
- * @param[in]  length  Length of the text.
- */
-void
-append_to_task_name (task_t task, const char* text, /* unused */ int length)
-{
-  append_to_task_string (task, "name", text);
 }
 
 /**

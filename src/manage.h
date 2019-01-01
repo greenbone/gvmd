@@ -926,6 +926,9 @@ load_tasks ();
 int
 save_tasks ();
 
+void
+set_task_name (task_t, const char *);
+
 gboolean
 find_task_with_permission (const char*, task_t*, const char *);
 
@@ -959,9 +962,6 @@ delete_task_lock (task_t, int);
 
 void
 append_to_task_comment (task_t, const char*, int);
-
-void
-append_to_task_name (task_t, const char*, int);
 
 void
 add_task_description_line (task_t, const char*, size_t);
