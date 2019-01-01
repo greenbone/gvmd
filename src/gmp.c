@@ -26295,8 +26295,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
             }
 
-          /* Check for name. */
-
           if (find_scanner_with_permission (create_task_data->scanner_id,
                                             &scanner,
                                             "get_scanners"))
