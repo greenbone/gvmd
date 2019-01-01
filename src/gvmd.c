@@ -634,8 +634,6 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
           client_connection.session = client_session;
           client_connection.credentials = client_credentials;
           ret = serve_client (server_socket, &client_connection);
-          /** @todo This should be done through libgmp. */
-          save_tasks ();
           exit (ret);
         }
       case -1:
@@ -794,8 +792,6 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
         client_connection->credentials = client_credentials;
         ret = serve_client (manager_socket, client_connection);
 
-        /** @todo This should be done through libgmp. */
-        save_tasks ();
         exit (ret);
         break;
 

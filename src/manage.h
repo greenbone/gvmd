@@ -908,9 +908,6 @@ task_warnings_size (task_t);
 int
 task_false_positive_size (task_t);
 
-void
-free_tasks ();
-
 task_t
 make_task (char*, char*, int, int);
 
@@ -920,11 +917,8 @@ make_task_complete (task_t);
 int
 copy_task (const char*, const char*, const char *, int, task_t*);
 
-int
-load_tasks ();
-
-int
-save_tasks ();
+void
+set_task_name (task_t, const char *);
 
 gboolean
 find_task_with_permission (const char*, task_t*, const char *);
@@ -959,9 +953,6 @@ delete_task_lock (task_t, int);
 
 void
 append_to_task_comment (task_t, const char*, int);
-
-void
-append_to_task_name (task_t, const char*, int);
 
 void
 add_task_description_line (task_t, const char*, size_t);
