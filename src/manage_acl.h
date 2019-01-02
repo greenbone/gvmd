@@ -18,7 +18,7 @@
  */
 
 /**
- * @file manage_sql.h
+ * @file manage_acl.h
  * @brief Headers for Greenbone Vulnerability Manager: the Manage library.
  */
 
