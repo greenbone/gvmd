@@ -184,9 +184,6 @@ write_string_to_server (char* const string)
               return -1;
             }
         }
-#if LOG
-      if (count) logf ("=> server %.*s\n", (int) count, point);
-#endif
       g_debug ("s> server  (string) %.*s\n", (int) count, point);
       point += count;
       g_debug ("=> server  (string) %zi bytes\n", count);
@@ -249,11 +246,6 @@ write_to_server_buffer ()
               return -1;
             }
         }
-#if LOG
-      if (count) logf ("=> server %.*s\n",
-                       (int) count,
-                       to_server + to_server_start);
-#endif
       g_debug ("s> server  %.*s\n", (int) count, to_server + to_server_start);
       to_server_start += count;
       g_debug ("=> server  %zi bytes\n", count);
