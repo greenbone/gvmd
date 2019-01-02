@@ -46,7 +46,7 @@ typedef long long int resource_t;
 typedef struct sql_stmt sql_stmt_t;
 
 /**
- * @brief A generic SQL iterator.
+ * @brief A generic SQL iterator structure.
  */
 struct iterator
 {
@@ -56,6 +56,9 @@ struct iterator
   lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
 };
 
+/**
+ * @brief A generic SQL iterator type.
+ */
 typedef struct iterator iterator_t;
 
 
