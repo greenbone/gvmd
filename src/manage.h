@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/**
+/*
  * @file manage.h
  * @brief Headers for Greenbone Vulnerability Manager: the Manage library.
  */
@@ -232,12 +232,12 @@ typedef enum
   TASK_STATUS_DELETE_ULTIMATE_WAITING = 17
 } task_status_t;
 
-/*
+/**
  * Minimum value for number of reports to keep on auto_delete
  */
 #define AUTO_DELETE_KEEP_MIN 2
 
-/*
+/**
  * Maximum value for number of reports to keep on auto_delete
  */
 #define AUTO_DELETE_KEEP_MAX 1200

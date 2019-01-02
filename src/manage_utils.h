@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/**
+/*
  * @file manage_utils.h
  * @brief Module for Greenbone Vulnerability Manager: Manage library utilities.
  */

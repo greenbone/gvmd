@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/**
+/*
  * @file lsc_crypt.h
  * @brief LSC credentials encryption support
  */
