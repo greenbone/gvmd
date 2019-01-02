@@ -19470,12 +19470,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>hosts</name>
             <type>text</type>
-            <summary>List of hosts</summary>
+            <summary>Comma-separated list of hosts</summary>
           </column>
           <column>
             <name>exclude_hosts</name>
             <type>text</type>
-            <summary>List of excluded hosts</summary>
+            <summary>Comma-separated list of excluded hosts</summary>
           </column>
           <column>
             <name>ips</name>
@@ -24598,7 +24598,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>Target hosts</summary>
+      <summary>Comma-separated list of target hosts</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -24608,7 +24608,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>exclude_hosts</name>
-      <summary>A list of hosts to exclude</summary>
+      <summary>Comma-separated list of hosts to exclude</summary>
       <pattern>
         text
       </pattern>
