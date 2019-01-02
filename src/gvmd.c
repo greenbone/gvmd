@@ -109,7 +109,6 @@
 #include <gvm/base/proctitle.h>
 #include <gvm/util/serverutils.h>
 
-#include "logf.h"
 #include "manage.h"
 #include "manage_sql_secinfo.h"
 #include "scanner.h"

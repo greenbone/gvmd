@@ -40,7 +40,6 @@
 
 #include "gmpd.h"
 #include "scanner.h"
-#include "logf.h"
 #include "gmp.h"
 /** @todo For scanner_init_state. */
 #include "otp.h"
@@ -303,9 +302,6 @@ write_to_client_tls (gnutls_session_t* client_session)
                      gnutls_strerror ((int) count));
           return -1;
         }
-      logf ("=> client %.*s\n",
-            to_client_end - to_client_start,
-            to_client + to_client_start);
       to_client_start += count;
       g_debug ("=> client  %u bytes\n", (unsigned int) count);
     }
@@ -345,9 +341,6 @@ write_to_client_unix (int client_socket)
                      strerror (errno));
           return -1;
         }
-      logf ("=> client %.*s\n",
-            to_client_end - to_client_start,
-            to_client + to_client_start);
       to_client_start += count;
       g_debug ("=> client  %u bytes\n", (unsigned int) count);
     }
@@ -473,9 +466,6 @@ session_clean (gvm_connection_t *client_connection)
  * with \ref openvas_scanner_write.
  *
  * \endif
- *
- * If compiled with logging (\ref LOG) then log all input and output
- * with \ref logf.
  *
  * If client socket is 0 or less, then update the NVT cache and exit.
  *
@@ -724,9 +714,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
            * error" case. */
           if (from_client_end > initial_start)
             {
-              logf ("<= client %.*s\n",
-                    from_client_end - initial_start,
-                    from_client + initial_start);
               if (g_strstr_len (from_client + initial_start,
                                 from_client_end - initial_start,
                                 "<password>"))
