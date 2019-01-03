@@ -1,12 +1,6 @@
-/* GVM
- * $Id$
- * Description: See below.
+/* Copyright (C) 2009-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2009 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,6 +17,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file comm.h
+ * @brief Protos for communication between gvmd and openvassd.
+ *
+ * This file contains the protos for \ref comm.c
+ */
+
 #ifndef _GVMD_COMM_H
 #define _GVMD_COMM_H
 
@@ -30,13 +31,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-
-/**
- * @file comm.h
- * @brief Protos for communication between gvmd and openvassd.
- *
- * This file contains the protos for \ref comm.c
- */
 
 int
 send_to_server (const char *);

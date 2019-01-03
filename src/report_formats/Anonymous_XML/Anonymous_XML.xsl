@@ -13,15 +13,9 @@
               encoding="UTF-8" />
 
 <!--
-OpenVAS Manager
-$Id$
-Description: Report stylesheet for Anonymous XML format.
+Copyright (C) 2015-2018 Greenbone Networks GmbH
 
-Authors:
-Matthew Mundell <matthew.mundell@greenbone.net>
-
-Copyright:
-Copyright (C) 2015 Greenbone Networks GmbH
+SPDX-License-Identifier: GPL-2.0-or-later
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -37,6 +31,8 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
+
+<!-- Report stylesheet for Anonymous XML format. -->
 
   <xsl:variable name="hosts" select="//host[not (.=preceding::host) and not (. = '')]"/>
 
