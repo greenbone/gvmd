@@ -1,13 +1,6 @@
-/* GVM
- * $Id$
- * Description: Manager Manage library: SQL backend: NVTs.
+/* Copyright (C) 2009-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
- * Timo Pollmeier <timo.pollmeier@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2009-2017 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

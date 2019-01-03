@@ -1,12 +1,6 @@
-/* GVM
- * $Id$
- * Description: Module for Greenbone Vulnerability Manager: Scanner Connection.
+/* Copyright (C) 2014-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Hani Benhabiles <hani.benhabiles@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2014 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -184,9 +178,6 @@ write_string_to_server (char* const string)
               return -1;
             }
         }
-#if LOG
-      if (count) logf ("=> server %.*s\n", (int) count, point);
-#endif
       g_debug ("s> server  (string) %.*s\n", (int) count, point);
       point += count;
       g_debug ("=> server  (string) %zi bytes\n", count);
@@ -249,11 +240,6 @@ write_to_server_buffer ()
               return -1;
             }
         }
-#if LOG
-      if (count) logf ("=> server %.*s\n",
-                       (int) count,
-                       to_server + to_server_start);
-#endif
       g_debug ("s> server  %.*s\n", (int) count, to_server + to_server_start);
       to_server_start += count;
       g_debug ("=> server  %zi bytes\n", count);
