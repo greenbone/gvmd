@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 # coding: utf-8
-#
-# GVM
-# $Id$
-# Description: Escalator method script: TippingPoint SMS upload.
-#
-# Authors:
-# Timo Pollmeier <timo.pollmeier@greenbone.net>
-#
-# Copyright:
 # Copyright (C) 2018 Greenbone Networks GmbH
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# Escalator method script: TippingPoint SMS upload.
 
 from __future__ import print_function
 import lxml.etree as ETree

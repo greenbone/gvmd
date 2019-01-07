@@ -1,13 +1,6 @@
-/* GVM
- * $Id$
- * Description: Manager Manage library: SQL backend.
+/* Copyright (C) 2009-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
- * Timo Pollmeier <timo.pollmeier@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2009-2013 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -47816,9 +47809,6 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   else
     itype = 0;
 
-  if (host && (gvm_get_host_type (host) == -1))
-    return 4;
-
   sql_begin_immediate ();
 
   if (acl_user_may ("modify_scanner") == 0)
@@ -47839,13 +47829,18 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     }
 
   if (host)
-    unix_socket = (*host == '/');
+    {
+      unix_socket = (*host == '/');
+      if ((unix_socket == 0) && (gvm_get_host_type (host) == -1))
+        return 4;
+    }
   else
     {
       char *old_host = scanner_host (scanner);
       unix_socket = (*old_host == '/');
       g_free (old_host);
     }
+
   if (credential_id && !unix_socket)
     {
       if (find_credential_with_permission (credential_id, &credential,

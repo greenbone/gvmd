@@ -1,13 +1,6 @@
-/* GVM
- * $Id$
- * Description: Module for Greenbone Vulnerability Manager: the GMP library.
+/* Copyright (C) 2009-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
- * Timo Pollmeier <timo.pollmeier@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2009-2013 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -12146,8 +12139,8 @@ convert_to_manage_ranges (array_t *ranges)
     else                                                                    \
       SEND_TO_CLIENT_OR_FAIL                                                \
        (XML_ERROR_SYNTAX ("delete_" G_STRINGIFY (type),                     \
-                          "DELETE_" G_STRINGIFY (upper) " requires a "      \
-                          G_STRINGIFY (type) "_id attribute"));             \
+                          "Attribute " G_STRINGIFY (type) "_id is"          \
+                          " required"));                                    \
     delete_ ## type ## _data_reset (delete_ ## type ## _data);              \
     set_client_state (CLIENT_AUTHENTIC);                                    \
     break
@@ -12214,7 +12207,7 @@ handle_get_agents (gmp_parser_t *gmp_parser, GError **error)
   if (format == -1)
     SEND_TO_CLIENT_OR_FAIL
       (XML_ERROR_SYNTAX ("get_agents",
-                         "GET_AGENTS format attribute should"
+                         "Format attribute should"
                          " be 'installer', 'howto_install' or 'howto_use'."));
   else
     {
@@ -12364,7 +12357,7 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("get_aggregates",
-                             "GET_AGGREGATES requires a 'type' attribute"));
+                             "A 'type' attribute is required"));
       return;
     }
 
@@ -13524,8 +13517,8 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   if (format == CREDENTIAL_FORMAT_ERROR)
     SEND_TO_CLIENT_OR_FAIL
       (XML_ERROR_SYNTAX ("get_credentials",
-                         "GET_CREDENTIALS format attribute should"
-                         " be 'key', 'rpm', 'deb', 'exe' or 'pem'."));
+                         "Format attribute should"
+                         " be 'key', 'rpm', 'deb', 'exe' or 'pem'"));
 
   INIT_GET (credential, Credential);
 
@@ -14335,7 +14328,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_info",
-                          "GET_INFO requires the SCAP database."));
+                          "The SCAP database is required"));
       get_info_data_reset (get_info_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -14344,7 +14337,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_info",
-                          "GET_INFO requires the CERT database."));
+                          "The CERT database is required"));
       get_info_data_reset (get_info_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -14354,8 +14347,8 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_info",
-                            "Only one of name and the id attribute"
-                            " may be given."));
+                          "Only one of name and the id attribute"
+                          " may be given."));
       get_info_data_reset (get_info_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -14364,7 +14357,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_info",
-                            "No type specified."));
+                          "No type specified."));
       get_info_data_reset (get_info_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -14972,13 +14965,13 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                 && get_nvts_data->preference_count)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
-                            "GET_NVTS preference_count attribute"
+                            "The preference_count attribute"
                             " requires the details attribute"));
       else if ((get_nvts_data->details == 0)
                 && get_nvts_data->preferences)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
-                            "GET_NVTS preferences attribute"
+                            "The preferences attribute"
                             " requires the details attribute"));
       else if (((get_nvts_data->details == 0)
                 || ((get_nvts_data->config_id == NULL)
@@ -14986,7 +14979,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                 && get_nvts_data->timeout)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
-                            "GET_NVTS timeout attribute"
+                            "The timeout attribute"
                             " requires the details and config_id"
                             " attributes"));
       else if (get_nvts_data->nvt_oid
@@ -15007,7 +15000,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                 && get_nvts_data->preferences_config_id)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
-                            "GET_NVTS config_id and"
+                            "config_id and"
                             " preferences_config_id both given"));
       else if (get_nvts_data->config_id
                 && find_config_with_permission (get_nvts_data->config_id,
@@ -15694,8 +15687,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_reports",
-                          "GET_REPORTS does not support getting trashcan"
-                          " reports"));
+                          "Getting reports from the trashcan"
+                          " is not supported"));
       get_reports_data_reset (get_reports_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -15717,7 +15710,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_reports",
-                          "GET_REPORTS type must be scan or assets"));
+                          "Type must be scan or assets"));
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
@@ -15842,7 +15835,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_reports",
-                          "GET_REPORTS report format must be active"));
+                          "Report format must be active"));
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
@@ -15853,7 +15846,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_reports",
-                          "GET_REPORTS report format must be predefined"
+                          "Report format must be predefined"
                           " or trusted"));
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -15959,7 +15952,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("get_reports",
-                                    "Permission denied"));
+                                     "Permission denied"));
                 break;
               default:
                 internal_error_send_to_client (error);
@@ -16325,7 +16318,7 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
       get_report_formats_data->get.trash)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_report_formats",
-                        "GET_REPORT_FORMATS params given with trash"));
+                        "Params given with trash"));
   else
     {
       iterator_t report_formats;
@@ -16655,8 +16648,8 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_results",
-                          "GET_RESULTS does not support getting trashcan"
-                          " results"));
+                          "Getting results from the trashcan is not"
+                          " supported"));
       get_results_data_reset (get_results_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -17187,7 +17180,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
   if (get_schedules_data->tasks && get_schedules_data->get.trash)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_schedules",
-                        "GET_SCHEDULES tasks given with trash"));
+                        "Attributes tasks and trash both given"));
   else
     {
       iterator_t schedules;
@@ -17466,7 +17459,7 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
         (XML_ERROR_SYNTAX ("create_schedule",
-                          "CREATE_SCHEDULE requires a NAME entity"));
+                           "A NAME entity is required"));
       goto create_schedule_leave;
     }
   else if (create_schedule_data->icalendar
@@ -17591,13 +17584,13 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 1:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_schedule",
-                            "Schedule exists already"));
+                             "Schedule exists already"));
         log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
       case 2:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_schedule",
-                            "Syntax error in BYDAY"));
+                             "Syntax error in BYDAY"));
         log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
       case 3:
@@ -17612,7 +17605,7 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 99:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_schedule",
-                            "Permission denied"));
+                             "Permission denied"));
         log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
       case -1:
@@ -17784,7 +17777,7 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 3:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_schedule",
-                            "Error in type name"));
+                             "Error in type name"));
         log_event_fail ("schedule", "Schedule",
                         modify_schedule_data->schedule_id,
                         "modified");
@@ -17792,7 +17785,7 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 4:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_schedule",
-                            "MODIFY_SCHEDULE requires a schedule_id"));
+                             "MODIFY_SCHEDULE requires a schedule_id"));
         log_event_fail ("schedule", "Schedule",
                         modify_schedule_data->schedule_id,
                         "modified");
@@ -17800,7 +17793,7 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 5:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_schedule",
-                            "Syntax error in BYDAY"));
+                             "Syntax error in BYDAY"));
         log_event_fail ("schedule", "Schedule",
                         modify_schedule_data->schedule_id, "modified");
         break;
@@ -17817,7 +17810,7 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
       case 99:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_schedule",
-                            "Permission denied"));
+                             "Permission denied"));
         log_event_fail ("schedule", "Schedule",
                         modify_schedule_data->schedule_id,
                         "modified");
@@ -17853,7 +17846,7 @@ handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL
         (XML_ERROR_SYNTAX ("get_settings",
-                          "Permission denied"));
+                           "Permission denied"));
       get_settings_data_reset (get_settings_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -19999,7 +19992,7 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
       case 2:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner",
-                            "scanner with new name exists already"));
+                            "Scanner with new name exists already"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
@@ -20081,7 +20074,7 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
       || strlen (modify_config_data->config_id) == 0)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("modify_config",
-                        "MODIFY_CONFIG requires a config_id attribute"));
+                        "A config_id attribute is required"));
   else if ((modify_config_data->nvt_selection_family
             /* This array implies FAMILY_SELECTION. */
             && modify_config_data->families_static_all)
@@ -20092,8 +20085,8 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
                    || modify_config_data->preference_nvt_oid)))
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("modify_config",
-                        "MODIFY_CONFIG requires either a PREFERENCE or"
-                        " an NVT_SELECTION or a FAMILY_SELECTION"));
+                        "Either a PREFERENCE or an NVT_SELECTION"
+                        " or a FAMILY_SELECTION is required"));
   else if (modify_config_data->nvt_selection_family)
     {
       switch (manage_set_config_nvts
@@ -20127,7 +20120,7 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
           case -1:
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_config",
-                                "MODIFY_CONFIG PREFERENCE requires at"
+                                "PREFERENCE requires at"
                                 " least one of the VALUE and NVT elements"));
             goto modify_config_leave;
 
@@ -20177,7 +20170,7 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
           case -1:
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_config",
-                                "MODIFY_CONFIG PREFERENCE requires at"
+                                "PREFERENCE requires at"
                                 " least one of the VALUE and NVT elements"));
             goto modify_config_leave;
 
@@ -20201,12 +20194,12 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
         case 1:
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("modify_config",
-                              "MODIFY_CONFIG name must be unique"));
+                              "Name must be unique"));
           goto modify_config_leave;
         case 2:
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("modify_config",
-                              "MODIFY_CONFIG scanner not found"));
+                              "Scanner not found"));
           goto modify_config_leave;
         case 3:
           SEND_TO_CLIENT_OR_FAIL
@@ -20237,7 +20230,7 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
            || strlen (modify_config_data->preference_name) == 0)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("modify_config",
-                        "MODIFY_CONFIG PREFERENCE requires a NAME element"));
+                        "PREFERENCE requires a NAME element"));
   else switch (manage_set_config_preference
                 (modify_config_data->config_id,
                  modify_config_data->preference_nvt_oid,
@@ -20488,8 +20481,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 4:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_asset",
-                                    "DELETE_ASSET requires an asset_id or a"
-                                    "report_id"));
+                                    "An asset_id or a"
+                                    "report_id is required"));
                 log_event_fail ("asset", "Asset",
                                 delete_asset_data->asset_id,
                                 "deleted");
@@ -20512,7 +20505,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_asset",
-                              "DELETE_ASSET requires an asset_id attribute"));
+                              "An asset_id attribute is required"));
         delete_asset_data_reset (delete_asset_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -20601,7 +20594,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_task",
-                              "DELETE_TASK requires a task_id attribute"));
+                              "A task_id attribute is required"));
         delete_task_data_reset (delete_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -20696,7 +20689,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_user",
-                              "DELETE_USER requires a user_id attribute"));
+                              "A user_id attribute is required"));
         delete_user_data_reset (delete_user_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -21150,19 +21143,19 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_agent_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_agent",
-                                "CREATE_AGENT requires a NAME"));
+                                "A NAME is required"));
           else if (strlen (create_agent_data->name) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_agent",
-                                  "CREATE_AGENT name must be at"
+                                  "Name must be at"
                                   " least one character long"));
             }
           else if (strlen (create_agent_data->installer) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_agent",
-                                  "CREATE_AGENT installer must be at"
+                                  "Installer must be at"
                                   " least one byte long"));
             }
           else switch (create_agent (create_agent_data->name,
@@ -21229,8 +21222,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   || create_asset_data->type == NULL))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_asset",
-                                "CREATE_ASSET requires a report ID or an"
-                                " ASSET with TYPE and NAME"));
+                                "A report ID or an"
+                                " ASSET with TYPE and NAME is required"));
           else if (create_asset_data->report_id)
             switch (create_asset_report (create_asset_data->report_id,
                                          create_asset_data->filter_term))
@@ -21393,7 +21386,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case -2:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
-                                        "CREATE_CONFIG import name must be at"
+                                        "Import name must be at"
                                         " least one character long"));
                     log_event_fail ("config", "Scan config", NULL, "created");
                     break;
@@ -21468,7 +21461,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               log_event_fail ("config", "Scan config", NULL, "created");
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
-                                  "CREATE_CONFIG name and base config to copy"
+                                  "Name and base config to copy"
                                   " must be at least one character long"));
             }
           else if (create_config_data->copy == NULL)
@@ -21476,7 +21469,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               log_event_fail ("config", "Scan config", NULL, "created");
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
-                                  "CREATE_CONFIG requires a COPY element"));
+                                  "A COPY element is required"));
             }
           else switch (copy_config (create_config_data->name,
                                     create_config_data->comment,
@@ -21689,23 +21682,23 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (strlen (create_alert_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_alert",
-                                "CREATE_ALERT requires NAME element which"
-                                " is at least one character long"));
+                                "A NAME element which"
+                                " is at least one character long is required"));
           else if (strlen (create_alert_data->condition) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_alert",
-                                "CREATE_ALERT requires a value in a"
-                                " CONDITION element"));
+                                "A value in a"
+                                " CONDITION element is required"));
           else if (strlen (create_alert_data->event) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_alert",
-                                "CREATE_ALERT requires a value in an"
-                                " EVENT element"));
+                                "A value in an"
+                                " EVENT element is required"));
           else if (strlen (create_alert_data->method) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_alert",
-                                "CREATE_ALERT requires a value in a"
-                                " METHOD element"));
+                                "A value in a"
+                                " METHOD element is required"));
           else if ((condition = alert_condition_from_name
                                  (create_alert_data->condition))
                    == 0)
@@ -22116,7 +22109,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_credential",
-                                  "CREATE_CREDENTIAL name must be at"
+                                  "Name must be at"
                                   " least one character long"));
             }
           else if (create_credential_data->login
@@ -22124,7 +22117,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_credential",
-                                  "CREATE_CREDENTIAL login must be at"
+                                  "Login must be at"
                                   " least one character long"));
             }
           else if (create_credential_data->key
@@ -22133,7 +22126,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_credential",
-                                  "CREATE_CREDENTIAL KEY requires a PRIVATE"
+                                  "KEY requires a PRIVATE"
                                   " or PUBLIC key"));
             }
           else if (create_credential_data->key
@@ -22367,11 +22360,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_filter_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_filter",
-                                "CREATE_FILTER requires a NAME"));
+                                "A NAME is required"));
           else if (strlen (create_filter_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_filter",
-                                "CREATE_FILTER name must be at"
+                                "Name must be at"
                                 " least one character long"));
           else switch (create_filter
                         (create_filter_data->name,
@@ -22488,11 +22481,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_group_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_group",
-                                "CREATE_GROUP requires a NAME"));
+                                "A NAME is required"));
           else if (strlen (create_group_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_group",
-                                "CREATE_GROUP name must be at"
+                                "Name must be at"
                                 " least one character long"));
           else switch (create_group
                         (create_group_data->name,
@@ -22604,11 +22597,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_note_data->nvt_oid == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
-                                "CREATE_NOTE requires an NVT entity"));
+                                "An NVT entity is required"));
           else if (create_note_data->text == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
-                                "CREATE_NOTE requires a TEXT entity"));
+                                "A TEXT entity is required"));
           else if (create_note_data->hosts
                    && ((max = manage_count_hosts (create_note_data->hosts, NULL))
                        == -1))
@@ -22768,11 +22761,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_override_data->nvt_oid == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
-                                "CREATE_OVERRIDE requires an NVT entity"));
+                                "An NVT entity is required"));
           else if (create_override_data->text == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
-                                "CREATE_OVERRIDE requires a TEXT entity"));
+                                "A TEXT entity is required"));
           else if (create_override_data->hosts
                    && ((max = manage_count_hosts (create_override_data->hosts,
                                                   NULL))
@@ -22789,8 +22782,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                    && create_override_data->new_severity == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
-                                "CREATE_OVERRIDE requires a NEW_THREAT"
-                                " or NEW_SEVERITY entity"));
+                                "A NEW_THREAT"
+                                " or NEW_SEVERITY entity is required"));
           else if (create_override_data->task_id
               && find_task_with_permission (create_override_data->task_id,
                                             &task,
@@ -22949,11 +22942,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_permission_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_permission",
-                                "CREATE_PERMISSION requires a NAME"));
+                                "A NAME is required"));
           else if (strlen (create_permission_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_permission",
-                                "CREATE_PERMISSION name must be at"
+                                "Name must be at"
                                 " least one character long"));
           else switch (create_permission
                         (create_permission_data->name,
@@ -23068,32 +23061,27 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               if (create_port_list_data->name == NULL)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_port_list",
-                                    "CREATE_PORT_LIST"
-                                    " GET_PORT_LISTS_RESPONSE requires a"
+                                    "GET_PORT_LISTS_RESPONSE requires a"
                                     " NAME element"));
               else if (strlen (create_port_list_data->name) == 0)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_port_list",
-                                    "CREATE_PORT_LIST"
-                                    " GET_PORT_LISTS_RESPONSE NAME must be"
+                                    "GET_PORT_LISTS_RESPONSE NAME must be"
                                     " at least one character long"));
               else if (create_port_list_data->id == NULL)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_port_list",
-                                    "CREATE_PORT_LIST"
-                                    " GET_PORT_LISTS_RESPONSE requires an"
+                                    "GET_PORT_LISTS_RESPONSE must have an"
                                     " ID attribute"));
               else if (strlen (create_port_list_data->id) == 0)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_port_list",
-                                    "CREATE_PORT_LIST"
-                                    " GET_PORT_LISTS_RESPONSE ID must be"
+                                    "GET_PORT_LISTS_RESPONSE ID must be"
                                     " at least one character long"));
               else if (!is_uuid (create_port_list_data->id))
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_port_list",
-                                    "CREATE_PORT_LIST"
-                                    " GET_PORT_LISTS_RESPONSE ID must be"
+                                    "GET_PORT_LISTS_RESPONSE ID must be"
                                     " a UUID"));
               else if ((manage_ranges = convert_to_manage_ranges
                                          (create_port_list_data->ranges))
@@ -23197,11 +23185,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_port_list_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_port_list",
-                                "CREATE_PORT_LIST requires a NAME"));
+                                "A NAME is required"));
           else if (strlen (create_port_list_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_port_list",
-                                "CREATE_PORT_LIST name must be at"
+                                "Name must be at"
                                 " least one character long"));
           else switch (create_port_list
                         (NULL,
@@ -23289,8 +23277,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               || create_port_range_data->port_list_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_port_range",
-                                "CREATE_PORT_RANGE requires a START, END and"
-                                " PORT_LIST ID"));
+                                "A START, END and"
+                                " PORT_LIST ID are required"));
           else switch (create_port_range
                         (create_port_range_data->port_list_id,
                          create_port_range_data->type,
@@ -23384,12 +23372,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           if (create_report_data->results == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_report",
-                                "CREATE_REPORT requires a REPORT element"));
+                                "A REPORT element is required"));
           else if (create_report_data->type
                    && strcmp (create_report_data->type, "scan"))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_report",
-                                "CREATE_REPORT type must be 'scan'"));
+                                "Type must be 'scan'"));
           else switch (create_report
                         (create_report_data->results,
                          create_report_data->task_id,
@@ -23418,7 +23406,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case -3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report",
-                                    "CREATE_REPORT TASK_NAME is required"));
+                                    "TASK_NAME is required"));
                 log_event_fail ("report", "Report", NULL, "created");
                 break;
               case -4:
@@ -23434,7 +23422,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case -5:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report",
-                                    "CREATE_REPORT TASK must be a container"));
+                                    "TASK must be a container"));
                 log_event_fail ("report", "Report", NULL, "created");
                 break;
               case -6:
@@ -23805,32 +23793,27 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               if (create_report_format_data->name == NULL)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE requires a"
+                                    "GET_REPORT_FORMATS_RESPONSE must have a"
                                     " NAME element"));
               else if (strlen (create_report_format_data->name) == 0)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE NAME must be"
+                                    "GET_REPORT_FORMATS_RESPONSE NAME must be"
                                     " at least one character long"));
               else if (create_report_format_data->id == NULL)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE requires an"
+                                    "GET_REPORT_FORMATS_RESPONSE must have an"
                                     " ID attribute"));
               else if (strlen (create_report_format_data->id) == 0)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE ID must be"
+                                    "GET_REPORT_FORMATS_RESPONSE ID must be"
                                     " at least one character long"));
               else if (!is_uuid (create_report_format_data->id))
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE ID must be"
+                                    "GET_REPORT_FORMATS_RESPONSE ID must be"
                                     " a UUID"));
               else switch (create_report_format
                             (create_report_format_data->id,
@@ -23884,24 +23867,21 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 5:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_report_format",
-                                        "CREATE_REPORT_FORMAT PARAM requires a"
-                                        " DEFAULT element"));
+                                        "PARAM requires a DEFAULT element"));
                     log_event_fail ("report_format", "Report Format", NULL,
                                     "created");
                     break;
                   case 6:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_report_format",
-                                        "CREATE_REPORT_FORMAT PARAM MIN or MAX"
-                                        " out of range"));
+                                        "PARAM MIN or MAX out of range"));
                     log_event_fail ("report_format", "Report Format", NULL,
                                     "created");
                     break;
                   case 7:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_report_format",
-                                        "CREATE_REPORT_FORMAT PARAM requires a"
-                                        " TYPE element"));
+                                        "PARAM requires a TYPE element"));
                     log_event_fail ("report_format", "Report Format", NULL,
                                     "created");
                     break;
@@ -23941,8 +23921,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_report_format",
-                                "CREATE_REPORT_FORMAT requires a"
-                                " GET_REPORT_FORMATS element"));
+                                "A GET_REPORT_FORMATS element is required"));
 
           create_report_format_data_reset (create_report_format_data);
           set_client_state (CLIENT_AUTHENTIC);
@@ -24105,11 +24084,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_role_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_role",
-                                "CREATE_ROLE requires a NAME"));
+                                "A NAME is required"));
           else if (strlen (create_role_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_role",
-                                "CREATE_ROLE name must be at"
+                                "Name must be at"
                                 " least one character long"));
           else switch (create_role
                         (create_role_data->name,
@@ -24257,33 +24236,32 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_tag_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "CREATE_TAG requires"
-                                " a NAME element"));
+                                "A NAME element is required"));
           else if (strlen (create_tag_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "CREATE_TAG name must be"
+                                "Name must be"
                                 " at least one character long"));
           else if (create_tag_data->resource_ids == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "CREATE_TAG requires"
-                                " a RESOURCES element with TYPE elememnt"));
+                                "A RESOURCES element with TYPE element"
+                                " is required"));
           else if (create_tag_data->resource_type == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "RESOURCES in CREATE_TAG requires"
+                                "RESOURCES requires"
                                 " a TYPE element"));
           else if (valid_db_resource_type (create_tag_data->resource_type)
                      == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "TYPE in CREATE_TAG/RESOURCES must be"
+                                "TYPE in RESOURCES must be"
                                 " a valid resource type."));
           else if (strcasecmp (create_tag_data->resource_type, "tag") == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "TYPE type in CREATE_TAG/RESOURCES must not"
+                                "TYPE in RESOURCES must not"
                                 " be 'tag'."));
           else
             {
@@ -24416,23 +24394,23 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else if (create_target_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                "CREATE_TARGET requires a NAME"));
+                                "A NAME is required"));
           else if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                "CREATE_TARGET name must be at"
+                                "Name must be at"
                                 " least one character long"));
           else if (create_target_data->asset_hosts_filter == NULL
                    && create_target_data->hosts == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                " CREATE_TARGET requires a host"));
+                                "A host is required"));
           else if (create_target_data->asset_hosts_filter == NULL
                    && strlen (create_target_data->hosts) == 0)
             /** @todo Legitimate to pass an empty hosts element? */
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                "CREATE_TARGET hosts must be at least one"
+                                "Hosts must be at least one"
                                 " character long"));
           else if (create_target_data->ssh_credential_id
                    && find_credential_with_permission
@@ -24809,7 +24787,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE_TASK requires a target"));
+                                  "A target is required"));
               goto create_task_fail;
             }
 
@@ -24832,7 +24810,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE_TASK requires a config"));
+                                  "A config is required"));
               goto create_task_fail;
             }
 
@@ -24858,7 +24836,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 {
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
-                                      "CREATE_TASK alert must exist"));
+                                      "Alert must exist"));
                   goto create_task_fail;
                 }
               add_task_alert (create_task_data->task, alert);
@@ -24891,7 +24869,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 {
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
-                                      "CREATE_TASK schedule must exist"));
+                                      "Schedule must exist"));
                   goto create_task_fail;
                 }
               /** @todo
@@ -25168,7 +25146,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               || strlen (create_user_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                     ("create_user",
-                                     "CREATE_USER requires a name"));
+                                     "A name is required"));
           else
             switch (create_user
                      (create_user_data->name,
@@ -25334,7 +25312,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_agent",
-                                    "MODIFY_agent requires a agent_id"));
+                                    "An agent_id is required"));
                 log_event_fail ("agent", "Agent", modify_agent_data->agent_id,
                                 "modified");
                 break;
@@ -25432,7 +25410,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
-                                    "MODIFY_alert requires an alert_id"));
+                                    "An alert_id is required"));
                 log_event_fail ("alert", "Alert", modify_alert_data->alert_id,
                                 "modified");
                 break;
@@ -25465,14 +25443,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 7:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Invalid or unexpected condition data"
-                                    " name"));
+                                     "Invalid or unexpected condition data"
+                                     " name"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 8:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Syntax error in condition data"));
+                                     "Syntax error in condition data"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 9:
@@ -25558,13 +25536,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 32:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Syntax error in event data"));
+                                     "Syntax error in event data"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 40:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Error in SMB credential"));
+                                     "Error in SMB credential"));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 41:
@@ -25589,27 +25567,27 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 50:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "Error in TippingPoint credential"));
+                                     "Error in TippingPoint credential"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 51:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "Error in TippingPoint hostname"));
+                                     "Error in TippingPoint hostname"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 52:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "Error in TippingPoint TLS"
-                                    " certificate"));
+                                     "Error in TippingPoint TLS"
+                                     " certificate"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 53:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "TippingPoint TLS workaround must be"
-                                    " set to 0 or 1"));
+                                     "TippingPoint TLS workaround must be"
+                                     " set to 0 or 1"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 60:
@@ -25638,8 +25616,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 71:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_ERROR_SYNTAX ("create_alert",
-                                    "vFire credential must have"
-                                    " type 'up'"));
+                                     "vFire credential must have"
+                                     " type 'up'"));
                 log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 99:
@@ -26092,8 +26070,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "MODIFY_credential requires a"
-                                    " credential_id"));
+                                    "A credential_id is required"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26238,7 +26215,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 4:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_filter",
-                                    "MODIFY_FILTER requires a filter_id"));
+                                    "A filter_id is required"));
                 log_event_fail ("filter", "Filter",
                                 modify_filter_data->filter_id, "modified");
                 break;
@@ -26308,8 +26285,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_group",
-                                    "MODIFY_GROUP requires a group_id"
-                                    " attribute"));
+                                    "A group_id attribute is required"));
                 log_event_fail ("group", "Group",
                                 modify_group_data->group_id, "modified");
                 break;
@@ -26365,11 +26341,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           if (modify_note_data->note_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_note",
-                                "MODIFY_NOTE requires a note_id attribute"));
+                                "A note_id attribute is required"));
           else if (modify_note_data->text == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_note",
-                                "MODIFY_NOTE requires a TEXT entity"));
+                                "A TEXT entity is required"));
           else switch (modify_note (modify_note_data->note_id,
                                     modify_note_data->active,
                                     modify_note_data->nvt_oid,
@@ -26477,11 +26453,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           if (modify_override_data->override_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_override",
-                                "MODIFY_OVERRIDE requires a override_id attribute"));
+                                "An override_id attribute is required"));
           else if (modify_override_data->text == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_override",
-                                "MODIFY_OVERRIDE requires a TEXT entity"));
+                                "A TEXT entity is required"));
           else switch (modify_override (modify_override_data->override_id,
                                         modify_override_data->active,
                                         modify_override_data->nvt_oid,
@@ -26594,7 +26570,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           if (modify_permission_data->permission_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_permission",
-                                "MODIFY_PERMISSION requires a permission_id attribute"));
+                                "A permission_id attribute is required"));
           else switch (modify_permission
                         (modify_permission_data->permission_id,
                          modify_permission_data->name,
@@ -26639,8 +26615,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 4:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_permission",
-                                    "MODIFY_PERMISSION requires a PERMISSION"
-                                    " ID"));
+                                    "A PERMISSION"
+                                    " ID is required"));
                 log_event_fail ("permission", "Permission",
                                 modify_permission_data->permission_id,
                                 "modified");
@@ -26753,7 +26729,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_port_list",
-                                    "modify_port_list requires a port_list_id"));
+                                    "A port_list_id is required"));
                 log_event_fail ("port_list", "Port List",
                                 modify_port_list_data->port_list_id,
                                 "modified");
@@ -26808,7 +26784,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_report",
-                                    "MODIFY_report requires a report_id"));
+                                    "A report_id is required"));
                 log_event_fail ("report", "Report",
                                 modify_report_data->report_id,
                                 "modified");
@@ -26817,7 +26793,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX
                   ("modify_report",
-                   "MODIFY_REPORT requires a COMMENT element"));
+                   "A COMMENT element is required"));
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
@@ -26876,7 +26852,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX
                    ("modify_report_format",
-                    "MODIFY_report_format requires a report_format_id"));
+                    "A report_format_id is required"));
                 log_event_fail ("report_format", "Report Format",
                                 modify_report_format_data->report_format_id,
                                 "modified");
@@ -26964,8 +26940,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_role",
-                                    "MODIFY_ROLE requires a role_id"
-                                    " attribute"));
+                                    "A role_id"
+                                    " attribute is required"));
                 log_event_fail ("role", "Role",
                                 modify_role_data->role_id, "modified");
                 break;
@@ -27049,8 +27025,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               || (modify_setting_data->value == NULL))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_setting",
-                                "MODIFY_SETTING requires a NAME or setting_id"
-                                " and a VALUE"));
+                                "A NAME or setting_id"
+                                " and a VALUE is required"));
           else switch (modify_setting (modify_setting_data->setting_id,
                                        modify_setting_data->name,
                                        modify_setting_data->value,
@@ -27107,24 +27083,24 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           if (modify_tag_data->tag_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "MODIFY_TAG requires a tag_id attribute"));
+                                "A tag_id attribute is required"));
           else if (modify_tag_data->name
                    && strcmp(modify_tag_data->name, "") == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "name in MODIFY_TAG must be at least one"
+                                "name must be at least one"
                                 " character long or omitted completely"));
           else if (modify_tag_data->resource_type &&
                    valid_db_resource_type (modify_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "TYPE in MODIFY_TAG/RESOURCES must be"
+                                "TYPE in RESOURCES must be"
                                 " a valid resource type."));
           else if (modify_tag_data->resource_type
                    && strcasecmp (modify_tag_data->resource_type, "tag") == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "TYPE type in MODIFY_TAG/RESOURCES must not"
+                                "TYPE in RESOURCES must not"
                                 " be 'tag'."));
           else switch (modify_tag (modify_tag_data->tag_id,
                                    modify_tag_data->name,
@@ -27156,7 +27132,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_tag",
-                                    "MODIFY_TAG requires a tag_id"));
+                                    "A tag_id is required"));
                 log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
                                 "modified");
               case 3:
@@ -27225,8 +27201,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           if (modify_target_data->target_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_target",
-                                "MODIFY_TARGET requires a target_id"
-                                " attribute"));
+                                "A target_id"
+                                " attribute is required"));
           else switch (modify_target
                         (modify_target_data->target_id,
                          modify_target_data->name,
@@ -27357,7 +27333,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 11:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
-                                    "MODIFY_TARGET name must be at"
+                                    "Name must be at"
                                     " least one character long"));
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id,
@@ -27366,7 +27342,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 12:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
-                                    "MODIFY_TARGET EXCLUDE_HOSTS requires"
+                                    "EXCLUDE_HOSTS requires"
                                     " a HOSTS"));
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id,
@@ -27375,7 +27351,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 13:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
-                                    "MODIFY_TARGET with a HOSTS requires an"
+                                    "HOSTS requires an"
                                     " EXCLUDE_HOSTS"));
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id,
@@ -27384,7 +27360,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 14:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
-                                    "MODIFY_TARGET HOSTS must be at least one"
+                                    "HOSTS must be at least one"
                                     "character long"));
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id,
@@ -27533,7 +27509,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 if (modify_task_data->file_name == NULL)
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
-                                      "MODIFY_TASK FILE requires a name"
+                                      "FILE requires a name"
                                       " attribute"));
                 else if (strcmp (modify_task_data->action, "update") == 0)
                   {
@@ -27598,7 +27574,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   {
                     SEND_TO_CLIENT_OR_FAIL
                       (XML_ERROR_SYNTAX ("modify_task",
-                                         "MODIFY_TASK action must be"
+                                         "Action must be"
                                          " \"update\" or \"remove\""));
                     log_event_fail ("task", "Task",
                                     modify_task_data->task_id,
@@ -27786,7 +27762,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("modify_task",
-                              "MODIFY_TASK requires a task_id attribute"));
+                              "A task_id attribute is required"));
         modify_task_data_reset (modify_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -27832,7 +27808,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   && (strlen (modify_user_data->user_id) == 0)))
             SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                     ("modify_user",
-                                     "MODIFY_USER requires NAME or user_id"));
+                                     "A NAME or user_id is required"));
           else
             {
               gchar *fail_group_id, *fail_role_id, *errdesc;
@@ -27974,8 +27950,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           {
             SEND_TO_CLIENT_OR_FAIL
               (XML_ERROR_SYNTAX ("move_task",
-                                 "MOVE_TASK requires a non-empty task_id"
-                                 " attribute"));
+                                 "A non-empty task_id"
+                                 " attribute is required"));
             break;
           }
 
@@ -27983,7 +27959,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           {
             SEND_TO_CLIENT_OR_FAIL
               (XML_ERROR_SYNTAX ("move_task",
-                                 "MOVE_TASK requires a slave_id attribute"));
+                                 "A slave_id attribute is required"));
             break;
           }
 
@@ -28148,8 +28124,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("test_alert",
-                              "TEST_ALERT requires an alert_id"
-                              " attribute"));
+                              "An alert_id"
+                              " attribute is required"));
         test_alert_data_reset (test_alert_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -28204,7 +28180,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("restore",
-                              "RESTORE requires an id attribute"));
+                              "An id attribute is required"));
         restore_data_reset (restore_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -28360,8 +28336,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("resume_task",
-                              "RESUME_TASK requires a task_id"
-                              " attribute"));
+                              "A task_id"
+                              " attribute is required"));
         resume_task_data_reset (resume_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -28539,8 +28515,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("run_wizard",
-                                                    "RUN_WIZARD requires a NAME"
-                                                    " element"));
+                                                    "A NAME"
+                                                    " element is required"));
         run_wizard_data_reset (run_wizard_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -28700,7 +28676,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("start_task",
-                              "START_TASK requires a task_id attribute"));
+                              "A task_id attribute is required"));
         start_task_data_reset (start_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -28762,7 +28738,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("stop_task",
-                              "STOP_TASK requires a task_id attribute"));
+                              "A task_id attribute is required"));
         stop_task_data_reset (stop_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -28801,8 +28777,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("verify_agent",
-                              "VERIFY_AGENT requires a agent_id"
-                              " attribute"));
+                              "An agent_id"
+                              " attribute is required"));
         verify_agent_data_reset (verify_agent_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -28840,8 +28816,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("verify_report_format",
-                              "VERIFY_REPORT_FORMAT requires a report_format_id"
-                              " attribute"));
+                              "A report_format_id"
+                              " attribute is required"));
         verify_report_format_data_reset (verify_report_format_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -28889,8 +28865,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("verify_scanner", "VERIFY_SCANNER requires a"
-                              " scanner_id attribute"));
+           (XML_ERROR_SYNTAX ("verify_scanner",
+                              "A scanner_id attribute is required"));
         verify_scanner_data_reset (verify_scanner_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;

@@ -1,16 +1,7 @@
 #!/bin/sh
+# Copyright (C) 2012-2018 Greenbone Networks GmbH
 #
-# OpenVAS
-# $Id: generate 12496 2012-01-18 08:41:55Z hdoreau $
-# Description: Report generator script: ARF
-#
-# This report generates an Asset Reporting Format compliant document.
-#
-# Authors:
-# Henri Doreau <henri.doreau@greenbone.net>
-#
-# Copyright:
-# Copyright (C) 2012 Greenbone Networks GmbH
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -25,5 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# Report generator script: ARF
+#
+# This report generates an Asset Reporting Format compliant document.
 
 xsltproc ./ARF.xsl $1
