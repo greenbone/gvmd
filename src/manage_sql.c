@@ -11839,6 +11839,7 @@ get_delta_report (alert_t alert, task_t task, report_t report)
  * @param[out] report_zone          Actual timezone used in report.
  * @param[out] host_summary         Summary of results per host.
  * @param[out] used_report_format   Report format used.
+ * @param[out] filter               Filter used.
  *
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
  *         find filter.
@@ -11853,11 +11854,11 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                           gchar **extension, gchar **content_type,
                           gchar **term, gchar **report_zone,
                           gchar **host_summary,
-                          report_format_t *used_report_format)
+                          report_format_t *used_report_format,
+                          filter_t *filter)
 {
   report_format_t report_format;
   char *filt_id, *format_uuid;
-  filter_t filter;
   get_data_t *alert_filter_get;
   gchar *report_content;
 
@@ -11865,17 +11866,17 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
 
   // Get filter
   filt_id = alert_filter_id (alert);
-  filter = 0;
+  *filter = 0;
   if (filt_id)
     {
-      if (find_filter_with_permission (filt_id, &filter,
+      if (find_filter_with_permission (filt_id, filter,
                                        "get_filters"))
         return -1;
-      if (filter == 0)
+      if (*filter == 0)
         return -3;
     }
 
-  if (filter)
+  if (*filter)
     {
       alert_filter_get = g_malloc0 (sizeof (get_data_t));
       alert_filter_get->details = get->details;
@@ -12455,10 +12456,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               int ret;
               gchar *body, *subject;
-              char *name, *notice, *from_address, *filt_id;
+              char *name, *notice, *from_address;
               gchar *base64, *type, *extension;
               filter_t filter;
-              get_data_t *alert_filter_get;
 
               base64 = NULL;
               type = NULL;
@@ -12478,127 +12478,32 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 }
 
               notice = alert_data (alert, "method", "notice");
-              filt_id = alert_filter_id (alert);
-              filter = 0;
-              if (filt_id)
-                {
-                  if (find_filter_with_permission (filt_id, &filter,
-                                                   "get_filters"))
-                    return -1;
-                  if (filter == 0)
-                    return -3;
-                }
-
-              if (filter)
-                {
-                  alert_filter_get = g_malloc0 (sizeof (get_data_t));
-                  alert_filter_get->details = get->details;
-                  alert_filter_get->ignore_pagination = get->ignore_pagination;
-                  alert_filter_get->ignore_max_rows_per_page
-                    = get->ignore_max_rows_per_page;
-                  alert_filter_get->filt_id = g_strdup (filt_id);
-                  alert_filter_get->filter = filter_term (filt_id);
-                }
-              else
-                alert_filter_get = NULL;
-
               name = task_name (task);
+
               if (notice && strcmp (notice, "0") == 0)
                 {
                   gchar *event_desc, *condition_desc, *report_content;
                   gchar *alert_subject, *message;
                   gchar *term, *report_zone, *host_summary;
-                  char *format_uuid;
                   report_format_t report_format = 0;
                   gsize content_length;
 
                   /* Message with inlined report. */
 
-                  if (report == 0)
-                    switch (sql_int64 (&report,
-                                       "SELECT max (id) FROM reports"
-                                       " WHERE task = %llu",
-                                       task))
-                      {
-                        case 0:
-                          if (report)
-                            break;
-                        case 1:        /* Too few rows in result of query. */
-                        case -1:
-                          free (notice);
-                          free (name);
-                          free (to_address);
-                          free (from_address);
-                          if (alert_filter_get)
-                            {
-                              get_data_reset (alert_filter_get);
-                              g_free (alert_filter_get);
-                            }
-                          return -1;
-                          break;
-                        default:       /* Programming error. */
-                          assert (0);
-                          return -1;
-                      }
-
-                  format_uuid = alert_data (alert,
-                                            "method",
-                                            "notice_report_format");
-                  if (((format_uuid == NULL)
-                       || find_report_format_with_permission
-                           (format_uuid, &report_format, "get_report_formats")
-                       || (report_format == 0))
-                      /* Fallback to TXT. */
-                      && (find_report_format_with_permission
-                           ("a3810a62-1f62-11e1-9219-406186ea4fc5",
-                            &report_format,
-                            "get_report_formats")
-                          || (report_format == 0)))
-                    {
-                      g_free (format_uuid);
-                      free (filt_id);
-                      free (notice);
-                      free (name);
-                      free (to_address);
-                      free (from_address);
-                      if (alert_filter_get)
-                        {
-                          get_data_reset (alert_filter_get);
-                          g_free (alert_filter_get);
-                        }
-                      return -2;
-                    }
-                  g_free (format_uuid);
-
-                  delta_report = get_delta_report (alert, task, report);
-
-                  event_desc = event_description (event, event_data, NULL);
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
-                  report_content = manage_report (report,
-                                                  delta_report,
-                                                  alert_filter_get
-                                                    ? alert_filter_get : get,
-                                                  report_format,
-                                                  notes_details,
-                                                  overrides_details,
-                                                  NULL, /* Type. */
-                                                  &content_length,
-                                                  NULL,    /* Extension. */
-                                                  NULL,   /* Content type. */
-                                                  &term,
-                                                  &report_zone,
-                                                  &host_summary);
-                  if (alert_filter_get)
+                  ret = report_content_for_alert
+                          (alert, 0, task, get,
+                           "notice_report_format",
+                           /* TXT fallback */
+                           "a3810a62-1f62-11e1-9219-406186ea4fc5",
+                           notes_details, overrides_details,
+                           &report_content, &content_length, &extension,
+                           NULL, &term, &report_zone, &host_summary,
+                           &report_format, &filter);
+                  if (ret || report_content == NULL)
                     {
-                      get_data_reset (alert_filter_get);
-                      g_free (alert_filter_get);
-                    }
-                  if (report_content == NULL)
-                    {
-                      free (event_desc);
-                      free (filt_id);
                       free (notice);
                       free (name);
                       free (to_address);
@@ -12611,9 +12516,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   format_name = report_format_name (report_format);
                   condition_desc = alert_condition_description (condition,
                                                                 alert);
+                  event_desc = event_description (event, event_data, NULL);
                   subject = g_strdup_printf ("[GVM] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
+                  g_free (event_desc);
+
                   alert_subject = alert_data (alert, "method", "subject");
                   if (alert_subject && strlen (alert_subject))
                     {
@@ -12642,7 +12550,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                               max_content_length);
                   g_free (message);
                   g_free (report_content);
-                  g_free (event_desc);
                   g_free (condition_desc);
                   g_free (term);
                   g_free (report_zone);
@@ -12651,7 +12558,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               else if (notice && strcmp (notice, "2") == 0)
                 {
                   gchar *event_desc, *condition_desc, *report_content;
-                  char *format_uuid;
                   report_format_t report_format = 0;
                   gsize content_length;
                   gchar *alert_subject, *message;
@@ -12659,104 +12565,38 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
                   /* Message with attached report. */
 
-                  if (report == 0)
-                    switch (sql_int64 (&report,
-                                       "SELECT max (id) FROM reports"
-                                       " WHERE task = %llu",
-                                       task))
-                      {
-                        case 0:
-                          if (report)
-                            break;
-                        case 1:        /* Too few rows in result of query. */
-                        case -1:
-                          free (notice);
-                          free (name);
-                          free (to_address);
-                          free (from_address);
-                          if (alert_filter_get)
-                            {
-                              get_data_reset (alert_filter_get);
-                              g_free (alert_filter_get);
-                            }
-                          return -1;
-                          break;
-                        default:       /* Programming error. */
-                          assert (0);
-                          return -1;
-                      }
-
-                  format_uuid = alert_data (alert,
-                                            "method",
-                                            "notice_attach_format");
-                  if (((format_uuid == NULL)
-                       || find_report_format_with_permission
-                           (format_uuid, &report_format, "get_report_formats")
-                       || (report_format == 0))
-                      /* Fallback to TXT. */
-                      && (find_report_format_with_permission
-                           ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
-                            &report_format,
-                            "get_report_formats")
-                          || (report_format == 0)))
-                    {
-                      g_free (format_uuid);
-                      free (filt_id);
-                      free (notice);
-                      free (name);
-                      free (to_address);
-                      free (from_address);
-                      if (alert_filter_get)
-                        {
-                          get_data_reset (alert_filter_get);
-                          g_free (alert_filter_get);
-                        }
-                      return -2;
-                    }
-                  g_free (format_uuid);
-
-                  delta_report = get_delta_report (alert, task, report);
-
-                  event_desc = event_description (event, event_data, NULL);
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
-                  report_content = manage_report (report,
-                                                  delta_report,
-                                                  alert_filter_get
-                                                    ? alert_filter_get
-                                                    : get,
-                                                  report_format,
-                                                  notes_details,
-                                                  overrides_details,
-                                                  NULL, /* Type. */
-                                                  &content_length,
-                                                  &extension,
-                                                  &type,
-                                                  &term,
-                                                  &report_zone,
-                                                  &host_summary);
-                  if (alert_filter_get)
+                  ret = report_content_for_alert
+                          (alert, 0, task, get,
+                           "notice_attach_format",
+                           /* TXT fallback */
+                           "a3810a62-1f62-11e1-9219-406186ea4fc5",
+                           notes_details, overrides_details,
+                           &report_content, &content_length, &extension,
+                           NULL, &term, &report_zone, &host_summary,
+                           &report_format, &filter);
+                  if (ret || report_content == NULL)
                     {
-                      get_data_reset (alert_filter_get);
-                      g_free (alert_filter_get);
-                    }
-                  if (report_content == NULL)
-                    {
-                      g_free (event_desc);
-                      free (filt_id);
                       free (notice);
                       free (name);
                       free (to_address);
                       free (from_address);
+                      g_free (term);
+                      g_free (report_zone);
+                      g_free (host_summary);
                       return -1;
                     }
                   format_name = report_format_name (report_format);
                   condition_desc = alert_condition_description (condition,
                                                                     alert);
+                  event_desc = event_description (event, event_data, NULL);
                   subject = g_strdup_printf ("[GVM] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
+                  g_free (event_desc);
+
                   alert_subject = alert_data (alert, "method", "subject");
                   if (alert_subject && strlen (alert_subject))
                     {
@@ -12786,7 +12626,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                               0,
                                               max_attach_length);
                   g_free (message);
-                  g_free (event_desc);
                   g_free (condition_desc);
                   g_free (term);
                   g_free (report_zone);
@@ -12798,6 +12637,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   gchar *alert_subject, *message;
 
                   /* Simple notice message. */
+
                   format_name = NULL;
                   event_desc = event_description (event, event_data, name);
                   generic_desc = event_description (event, event_data, NULL);
@@ -12833,13 +12673,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (event_desc);
                   g_free (generic_desc);
                   g_free (condition_desc);
-                  if (alert_filter_get)
-                    {
-                      get_data_reset (alert_filter_get);
-                      g_free (alert_filter_get);
-                    }
                 }
-              free (filt_id);
               free (notice);
 
               gchar *fname_format, *file_name;
@@ -13394,7 +13228,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
-                   NULL, NULL, NULL, NULL, &report_format);
+                   NULL, NULL, NULL, NULL, &report_format, NULL);
           if (ret || report_content == NULL)
             {
               free (credential_id);
@@ -13706,7 +13540,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
-                   NULL, NULL, NULL, NULL, &report_format);
+                   NULL, NULL, NULL, NULL, &report_format, NULL);
           g_free (extension);
           if (ret)
             {
