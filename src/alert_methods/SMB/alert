@@ -136,6 +136,13 @@ def main():
     dest_parts = dest_path.split('\\')
     dest_subpaths = []
     make_dest = ''
+    for i in range(0, len(dest_parts)):
+        if dest_parts[i].endswith('.'):
+            print("File or subdirectory names must not be '.', '..' or"
+                  " end with a dot",
+                  file=sys.stderr)
+            sys.exit(1)
+
     if len(dest_parts) >= 2:
         for i in range(0, len(dest_parts) - 1):
             if dest_parts[i]:
