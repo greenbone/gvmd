@@ -11839,7 +11839,7 @@ get_delta_report (alert_t alert, task_t task, report_t report)
  * @param[out] report_zone          Actual timezone used in report.
  * @param[out] host_summary         Summary of results per host.
  * @param[out] used_report_format   Report format used.
- * @param[out] filter               Filter used.
+ * @param[out] filter_return        Filter used.
  *
  * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
  *         find filter.
@@ -11855,29 +11855,33 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                           gchar **term, gchar **report_zone,
                           gchar **host_summary,
                           report_format_t *used_report_format,
-                          filter_t *filter)
+                          filter_t *filter_return)
 {
   report_format_t report_format;
   char *filt_id, *format_uuid;
   get_data_t *alert_filter_get;
   gchar *report_content;
+  filter_t filter;
 
   assert (content);
 
   // Get filter
 
   filt_id = alert_filter_id (alert);
-  *filter = 0;
+  filter = 0;
   if (filt_id)
     {
-      if (find_filter_with_permission (filt_id, filter,
+      if (find_filter_with_permission (filt_id, &filter,
                                        "get_filters"))
         return -1;
-      if (*filter == 0)
+      if (filter == 0)
         return -3;
     }
 
-  if (*filter)
+  if (filter_return)
+    *filter_return = filter;
+
+  if (filter)
     {
       alert_filter_get = g_malloc0 (sizeof (get_data_t));
       alert_filter_get->details = get->details;
@@ -11898,7 +11902,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
   // We simply use these fields to adjust the filter.  In the future we'll
   // remove the filter terms and extend the way we get the report.
 
-  if (*filter)
+  if (filter)
     {
       gchar *include_notes, *include_overrides;
 
