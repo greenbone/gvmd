@@ -11865,6 +11865,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
   assert (content);
 
   // Get filter
+
   filt_id = alert_filter_id (alert);
   *filter = 0;
   if (filt_id)
@@ -11889,7 +11890,49 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
   else
     alert_filter_get = NULL;
 
+  // Adjust filter for report composer.
+  //
+  // As a first step towards a full composer we have two fields stored
+  // on the alert for controlling visibility of notes and overrides.
+  //
+  // We simply use these fields to adjust the filter.  In the future we'll
+  // remove the filter terms and extend the way we get the report.
+
+  if (*filter)
+    {
+      gchar *include_notes, *include_overrides;
+
+      include_notes = alert_data (alert, "method",
+                                  "composer_include_notes");
+      if (include_notes)
+        {
+          gchar *new_filter;
+
+          new_filter = g_strdup_printf ("notes=%i %s",
+                                        atoi (include_notes),
+                                        alert_filter_get->filter);
+          g_free (alert_filter_get->filter);
+          alert_filter_get->filter = new_filter;
+          alert_filter_get->filt_id = NULL;
+        }
+
+      include_overrides = alert_data (alert, "method",
+                                      "composer_include_overrides");
+      if (include_overrides)
+        {
+          gchar *new_filter;
+
+          new_filter = g_strdup_printf ("overrides=%i %s",
+                                        atoi (include_overrides),
+                                        alert_filter_get->filter);
+          g_free (alert_filter_get->filter);
+          alert_filter_get->filter = new_filter;
+          alert_filter_get->filt_id = NULL;
+        }
+    }
+
   // Get last report from task if no report is given
+
   if (report == 0)
     switch (sql_int64 (&report,
                         "SELECT max (id) FROM reports"
@@ -11909,6 +11952,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
       }
 
   // Get report format or use fallback
+
   if (report_format_data_name)
     format_uuid = alert_data (alert,
                               "method",
@@ -11948,6 +11992,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
     }
 
   // Generate report content
+
   report_content = manage_report (report,
                                   get_delta_report (alert, task, report),
                                   alert_filter_get ? alert_filter_get : get,
