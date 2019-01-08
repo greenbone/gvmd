@@ -12978,13 +12978,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_SEND:
         {
-          char *host, *port, *filt_id;
-          gchar *report_content, *format_uuid;
+          char *host, *port;
+          gchar *report_content;
           gsize content_length;
           report_format_t report_format;
           int ret;
-          filter_t filter;
-          get_data_t *alert_filter_get;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -13007,101 +13005,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return ret;
             }
 
-          format_uuid = alert_data (alert,
-                                    "method",
-                                    "send_report_format");
-          if (format_uuid && strlen (format_uuid))
-            {
-              if (find_report_format_with_permission (format_uuid,
-                                                      &report_format,
-                                                      "get_report_formats")
-                  || (report_format == 0))
-                {
-                  g_warning ("%s: Could not find Send RFP '%s'", __FUNCTION__,
-                             format_uuid);
-                  g_free (format_uuid);
-                  return -2;
-                }
-              g_free (format_uuid);
-            }
-          else
-            {
-              g_free (format_uuid);
-              if (find_report_format_with_permission
-                   ("a994b278-1f62-11e1-96ac-406186ea4fc5",
-                    &report_format,
-                    "get_report_formats")
-                  || (report_format == 0))
-                {
-                  g_warning ("%s: Could not find XML RFP for Send",
-                             __FUNCTION__);
-                  return -2;
-                }
-            }
-
-          if (report == 0)
-            switch (sql_int64 (&report,
-                               "SELECT max (id) FROM reports"
-                               " WHERE task = %llu",
-                               task))
-              {
-                case 0:
-                  if (report)
-                    break;
-                case 1:        /* Too few rows in result of query. */
-                case -1:
-                  return -1;
-                  break;
-                default:       /* Programming error. */
-                  assert (0);
-                  return -1;
-              }
-
-          filt_id = alert_filter_id (alert);
-          filter = 0;
-          if (filt_id)
-            {
-              if (find_filter_with_permission (filt_id, &filter, "get_filters"))
-                return -1;
-              if (filter == 0)
-                return -3;
-            }
-
-          if (filter)
-            {
-              alert_filter_get = g_malloc0 (sizeof (get_data_t));
-              alert_filter_get->details = get->details;
-              alert_filter_get->ignore_pagination = get->ignore_pagination;
-              alert_filter_get->ignore_max_rows_per_page
-                = get->ignore_max_rows_per_page;
-              alert_filter_get->filt_id = g_strdup (filt_id);
-              alert_filter_get->filter = filter_term (filt_id);
-            }
-          else
-            alert_filter_get = NULL;
-
-          delta_report = get_delta_report (alert, task, report);
-
-          report_content = manage_report (report,
-                                          delta_report,
-                                          alert_filter_get ? alert_filter_get
-                                                           : get,
-                                          report_format,
-                                          notes_details, overrides_details,
-                                          NULL, /* Type. */
-                                          &content_length,
-                                          NULL,    /* Extension. */
-                                          NULL,    /* Content type. */
-                                          NULL,
-                                          NULL,
-                                          NULL);
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          free (filt_id);
-          if (report_content == NULL)
+          ret = report_content_for_alert
+                  (alert, 0, task, get,
+                   "send_report_format",
+                   /* XML fallback. */
+                   "a994b278-1f62-11e1-96ac-406186ea4fc5",
+                   notes_details, overrides_details,
+                   &report_content, &content_length, NULL,
+                   NULL, NULL, NULL, NULL,
+                   &report_format, NULL);
+          if (ret || report_content == NULL)
             {
               g_warning ("%s: Empty Report", __FUNCTION__);
               return -1;
