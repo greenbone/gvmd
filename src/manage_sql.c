@@ -11821,6 +11821,106 @@ get_delta_report (alert_t alert, task_t task, report_t report)
 }
 
 /**
+ * @brief  Generates report results get data for an alert.
+ *
+ * @param[in]  alert              The alert to try to get the filter data from.
+ * @param[in]  base_get_data      The get data for fallback and other data.
+ * @param[out] alert_filter_get   Pointer to the newly allocated get_data.
+ * @param[out] filter_return      Pointer to the filter.
+ *
+ * @return  0 success, -1 error, -3 filter not found.
+ */
+static int
+generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
+                           get_data_t **alert_filter_get,
+                           filter_t *filter_return)
+{
+  char *filt_id;
+  filter_t filter;
+
+  if (alert_filter_get == NULL)
+    return -1;
+
+  filt_id = alert_filter_id (alert);
+  filter = 0;
+  if (filt_id)
+    {
+      if (find_filter_with_permission (filt_id, &filter,
+                                       "get_filters"))
+        {
+          free (filt_id);
+          return -1;
+        }
+      if (filter == 0)
+        {
+          free (filt_id);
+          return -3;
+        }
+    }
+
+  if (filter_return)
+    *filter_return = filter;
+
+  if (filter)
+    {
+      (*alert_filter_get) = g_malloc0 (sizeof (get_data_t));
+      (*alert_filter_get)->details = base_get_data->details;
+      (*alert_filter_get)->ignore_pagination = base_get_data->ignore_pagination;
+      (*alert_filter_get)->ignore_max_rows_per_page
+        = base_get_data->ignore_max_rows_per_page;
+      (*alert_filter_get)->filt_id = g_strdup (filt_id);
+      (*alert_filter_get)->filter = filter_term (filt_id);
+    }
+  else
+    (*alert_filter_get) = NULL;
+
+  /* Adjust filter for report composer.
+   *
+   * As a first step towards a full composer we have two fields stored
+   * on the alert for controlling visibility of notes and overrides.
+   *
+   * We simply use these fields to adjust the filter.  In the future we'll
+   * remove the filter terms and extend the way we get the report. */
+
+  if (filter)
+    {
+      gchar *include_notes, *include_overrides;
+
+      include_notes = alert_data (alert, "method",
+                                  "composer_include_notes");
+      if (include_notes)
+        {
+          gchar *new_filter;
+
+          new_filter = g_strdup_printf ("notes=%i %s",
+                                        atoi (include_notes),
+                                        (*alert_filter_get)->filter);
+          g_free ((*alert_filter_get)->filter);
+          (*alert_filter_get)->filter = new_filter;
+          (*alert_filter_get)->filt_id = NULL;
+          g_free (include_notes);
+        }
+
+      include_overrides = alert_data (alert, "method",
+                                      "composer_include_overrides");
+      if (include_overrides)
+        {
+          gchar *new_filter;
+
+          new_filter = g_strdup_printf ("overrides=%i %s",
+                                        atoi (include_overrides),
+                                        (*alert_filter_get)->filter);
+          g_free ((*alert_filter_get)->filter);
+          (*alert_filter_get)->filter = new_filter;
+          (*alert_filter_get)->filt_id = NULL;
+          g_free (include_overrides);
+        }
+    }
+
+  return 0;
+}
+
+/**
  * @brief Generate report content for alert
  *
  * @param[in]  alert  The alert the report is generated for.
@@ -12139,106 +12239,6 @@ generate_report_filename (report_t report, report_format_t report_format,
   g_free (filename_base);
 
   return filename;
-}
-
-/**
- * @brief  Generates report results get data for an alert.
- *
- * @param[in]  alert              The alert to try to get the filter data from.
- * @param[in]  base_get_data      The get data for fallback and other data.
- * @param[out] alert_filter_get   Pointer to the newly allocated get_data.
- * @param[out] filter_return      Pointer to the filter.
- *
- * @return  0 success, -1 error, -3 filter not found.
- */
-static int
-generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
-                           get_data_t **alert_filter_get,
-                           filter_t *filter_return)
-{
-  char *filt_id;
-  filter_t filter;
-
-  if (alert_filter_get == NULL)
-    return -1;
-
-  filt_id = alert_filter_id (alert);
-  filter = 0;
-  if (filt_id)
-    {
-      if (find_filter_with_permission (filt_id, &filter,
-                                       "get_filters"))
-        {
-          free (filt_id);
-          return -1;
-        }
-      if (filter == 0)
-        {
-          free (filt_id);
-          return -3;
-        }
-    }
-
-  if (filter_return)
-    *filter_return = filter;
-
-  if (filter)
-    {
-      (*alert_filter_get) = g_malloc0 (sizeof (get_data_t));
-      (*alert_filter_get)->details = base_get_data->details;
-      (*alert_filter_get)->ignore_pagination = base_get_data->ignore_pagination;
-      (*alert_filter_get)->ignore_max_rows_per_page
-        = base_get_data->ignore_max_rows_per_page;
-      (*alert_filter_get)->filt_id = g_strdup (filt_id);
-      (*alert_filter_get)->filter = filter_term (filt_id);
-    }
-  else
-    (*alert_filter_get) = NULL;
-
-  /* Adjust filter for report composer.
-   *
-   * As a first step towards a full composer we have two fields stored
-   * on the alert for controlling visibility of notes and overrides.
-   *
-   * We simply use these fields to adjust the filter.  In the future we'll
-   * remove the filter terms and extend the way we get the report. */
-
-  if (filter)
-    {
-      gchar *include_notes, *include_overrides;
-
-      include_notes = alert_data (alert, "method",
-                                  "composer_include_notes");
-      if (include_notes)
-        {
-          gchar *new_filter;
-
-          new_filter = g_strdup_printf ("notes=%i %s",
-                                        atoi (include_notes),
-                                        (*alert_filter_get)->filter);
-          g_free ((*alert_filter_get)->filter);
-          (*alert_filter_get)->filter = new_filter;
-          (*alert_filter_get)->filt_id = NULL;
-          g_free (include_notes);
-        }
-
-      include_overrides = alert_data (alert, "method",
-                                      "composer_include_overrides");
-      if (include_overrides)
-        {
-          gchar *new_filter;
-
-          new_filter = g_strdup_printf ("overrides=%i %s",
-                                        atoi (include_overrides),
-                                        (*alert_filter_get)->filter);
-          g_free ((*alert_filter_get)->filter);
-          (*alert_filter_get)->filter = new_filter;
-          (*alert_filter_get)->filt_id = NULL;
-          g_free (include_overrides);
-        }
-    }
-
-  return 0;
 }
 
 /**
