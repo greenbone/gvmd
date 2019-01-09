@@ -12322,6 +12322,16 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
                                           is_first_report
                                             ? &host_summary
                                             : NULL);
+          if (report_content == NULL)
+            {
+              g_warning ("%s: Failed to generate report", __FUNCTION__);
+
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+              alert_report_data_free (alert_report_item);
+              g_strfreev (report_formats);
+              return -1;
+            }
 
           alert_report_item->report_format_name
             = report_format_name (report_format);
