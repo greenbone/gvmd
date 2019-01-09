@@ -1,17 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-OpenVAS Manager
-$Id$
-Description: Helper templates to classify Hosts for Verinice.
+Copyright (C) 2012-2018 Greenbone Networks GmbH
 
-This stylesheet contains helper templates used for
-a classification of Hosts that is used by Verinice
-
-Authors:
-Andre Heinecke <aheinecke@intevation.de>
-
-Copyright:
-Copyright (C) 2012 Greenbone Networks GmbH
+SPDX-License-Identifier: GPL-2.0-or-later
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,6 +18,13 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
+
+<!-- Helper templates to classify Hosts for Verinice.
+
+This stylesheet contains helper templates used for
+a classification of Hosts that is used by Verinice
+-->
+
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:str="http://exslt.org/strings" version="1.0" extension-element-prefixes="str">
   <!--
     Notice:

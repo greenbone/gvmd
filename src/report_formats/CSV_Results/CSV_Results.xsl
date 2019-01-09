@@ -1,14 +1,8 @@
 <?xml version="1.0"?>
 <!--
-$Id$
-Description: CSV Results Export Stylesheet
+Copyright (C) 2010-2018 Greenbone Networks GmbH
 
-Authors:
-Felix Wolfsteller <felix.wolfsteller@greenbone.net>
-Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
-
-Copyright:
-Copyright (C) 2010 Greenbone Networks GmbH
+SPDX-License-Identifier: GPL-2.0-or-later
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,6 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
+
+<!-- CSV Results Export Stylesheet -->
 
 <xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
