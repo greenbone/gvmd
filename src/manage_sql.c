@@ -12195,6 +12195,49 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
   else
     (*alert_filter_get) = NULL;
 
+  /* Adjust filter for report composer.
+   *
+   * As a first step towards a full composer we have two fields stored
+   * on the alert for controlling visibility of notes and overrides.
+   *
+   * We simply use these fields to adjust the filter.  In the future we'll
+   * remove the filter terms and extend the way we get the report. */
+
+  if (filter)
+    {
+      gchar *include_notes, *include_overrides;
+
+      include_notes = alert_data (alert, "method",
+                                  "composer_include_notes");
+      if (include_notes)
+        {
+          gchar *new_filter;
+
+          new_filter = g_strdup_printf ("notes=%i %s",
+                                        atoi (include_notes),
+                                        (*alert_filter_get)->filter);
+          g_free ((*alert_filter_get)->filter);
+          (*alert_filter_get)->filter = new_filter;
+          (*alert_filter_get)->filt_id = NULL;
+          g_free (include_notes);
+        }
+
+      include_overrides = alert_data (alert, "method",
+                                      "composer_include_overrides");
+      if (include_overrides)
+        {
+          gchar *new_filter;
+
+          new_filter = g_strdup_printf ("overrides=%i %s",
+                                        atoi (include_overrides),
+                                        (*alert_filter_get)->filter);
+          g_free ((*alert_filter_get)->filter);
+          (*alert_filter_get)->filter = new_filter;
+          (*alert_filter_get)->filt_id = NULL;
+          g_free (include_overrides);
+        }
+    }
+
   return 0;
 }
 
