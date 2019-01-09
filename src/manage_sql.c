@@ -11926,6 +11926,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           g_free (alert_filter_get->filter);
           alert_filter_get->filter = new_filter;
           alert_filter_get->filt_id = NULL;
+          g_free (include_notes);
         }
 
       include_overrides = alert_data (alert, "method",
@@ -11940,6 +11941,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           g_free (alert_filter_get->filter);
           alert_filter_get->filter = new_filter;
           alert_filter_get->filt_id = NULL;
+          g_free (include_overrides);
         }
     }
 
