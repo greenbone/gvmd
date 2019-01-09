@@ -11965,8 +11965,8 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                           report_format_t *used_report_format,
                           filter_t *filter_return)
 {
+  int ret;
   report_format_t report_format;
-  char *filt_id;
   get_data_t *alert_filter_get;
   gchar *report_content;
   filter_t filter;
@@ -11975,75 +11975,9 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
 
   // Get filter
 
-  filt_id = alert_filter_id (alert);
-  filter = 0;
-  if (filt_id)
-    {
-      if (find_filter_with_permission (filt_id, &filter,
-                                       "get_filters"))
-        return -1;
-      if (filter == 0)
-        return -3;
-    }
-
-  if (filter_return)
-    *filter_return = filter;
-
-  if (filter)
-    {
-      alert_filter_get = g_malloc0 (sizeof (get_data_t));
-      alert_filter_get->details = get->details;
-      alert_filter_get->ignore_pagination = get->ignore_pagination;
-      alert_filter_get->ignore_max_rows_per_page
-        = get->ignore_max_rows_per_page;
-      alert_filter_get->filt_id = g_strdup (filt_id);
-      alert_filter_get->filter = filter_term (filt_id);
-    }
-  else
-    alert_filter_get = NULL;
-
-  // Adjust filter for report composer.
-  //
-  // As a first step towards a full composer we have two fields stored
-  // on the alert for controlling visibility of notes and overrides.
-  //
-  // We simply use these fields to adjust the filter.  In the future we'll
-  // remove the filter terms and extend the way we get the report.
-
-  if (filter)
-    {
-      gchar *include_notes, *include_overrides;
-
-      include_notes = alert_data (alert, "method",
-                                  "composer_include_notes");
-      if (include_notes)
-        {
-          gchar *new_filter;
-
-          new_filter = g_strdup_printf ("notes=%i %s",
-                                        atoi (include_notes),
-                                        alert_filter_get->filter);
-          g_free (alert_filter_get->filter);
-          alert_filter_get->filter = new_filter;
-          alert_filter_get->filt_id = NULL;
-          g_free (include_notes);
-        }
-
-      include_overrides = alert_data (alert, "method",
-                                      "composer_include_overrides");
-      if (include_overrides)
-        {
-          gchar *new_filter;
-
-          new_filter = g_strdup_printf ("overrides=%i %s",
-                                        atoi (include_overrides),
-                                        alert_filter_get->filter);
-          g_free (alert_filter_get->filter);
-          alert_filter_get->filter = new_filter;
-          alert_filter_get->filt_id = NULL;
-          g_free (include_overrides);
-        }
-    }
+  ret = generate_alert_filter_get (alert, get, &alert_filter_get, &filter);
+  if (ret)
+    return ret;
 
   // Get last report from task if no report is given
 
