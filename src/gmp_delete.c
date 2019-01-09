@@ -158,8 +158,7 @@ delete_run (gmp_parser_t *gmp_parser, GError **error)
       case 3:
         SENDF_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("%s",
-                            "Attempt to delete a predefined"
-                            "resource"),
+                            "Attempt to delete a predefined resource"),
           delete.command);
         break;
       case 99:
