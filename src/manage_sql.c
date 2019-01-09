@@ -11830,13 +11830,12 @@ get_delta_report (alert_t alert, task_t task, report_t report)
  * @param[in]  report_format_data_name  Name of alert data with report format,
  *                                      or NULL if not configurable.
  * @param[in]  report_format_lookup     Name of report format to lookup if
- *                                      lookup is required, else NULL.
- *                                      Not used if report_format_data_name
- *                                      is given.
+ *                                      lookup by name, or NULL if not required.
+ *                                      Used if report_format_data_name is
+ *                                      NULL or fails.
  * @param[in]  fallback_format_id       UUID of fallback report format.  Used
- *                                      if report_format_data_name is given and
- *                                      fails, or if report_format_data_name
- *                                      and report_format_lookup are both NULL.
+ *                                      if both report_format_data_name and
+ *                                      report_format_lookup are NULL or fail.
  * @param[in]  notes_details     Whether to include details of notes in report.
  * @param[in]  overrides_details Whether to include override details in report.
  * @param[out] content              Report content location.
@@ -11871,7 +11870,6 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
   get_data_t *alert_filter_get;
   gchar *report_content;
   filter_t filter;
-  int fallback;
 
   assert (content);
 
@@ -11967,7 +11965,8 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
 
   // Get report format or use fallback.
 
-  fallback = 0;
+  report_format = 0;
+
   if (report_format_data_name)
     {
       gchar *format_uuid;
@@ -11991,10 +11990,9 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
             }
           g_free (format_uuid);
         }
-      else
-        fallback = 1;
     }
-  else if (report_format_lookup)
+
+  if (report_format_lookup && (report_format == 0))
     {
       if (lookup_report_format (report_format_lookup, &report_format)
           || (report_format == 0))
@@ -12005,10 +12003,8 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           return -2;
         }
     }
-  else
-    fallback = 1;
 
-  if (fallback)
+  if (report_format == 0)
     {
       if (fallback_format_id == NULL)
         {
@@ -12500,8 +12496,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             const get_data_t *get, int notes_details, int overrides_details,
             gchar **script_message)
 {
-  report_t delta_report;
-
   if (script_message)
     *script_message = NULL;
 
@@ -13427,13 +13421,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_VERINICE:
         {
           credential_t credential;
-          char *url, *username, *password, *filt_id;
-          gchar *credential_id, *report_content, *format_uuid;
+          char *url, *username, *password;
+          gchar *credential_id, *report_content;
           gsize content_length;
           report_format_t report_format;
           int ret;
-          filter_t filter;
-          get_data_t *alert_filter_get;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -13444,93 +13436,17 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return -1;
             }
 
-          format_uuid = alert_data (alert,
-                                    "method",
-                                    "verinice_server_report_format");
-          if (format_uuid && strlen (format_uuid))
+          ret = report_content_for_alert
+                  (alert, report, task, get,
+                   "verinice_server_report_format",
+                   "Verinice ISM",
+                   NULL,
+                   notes_details, overrides_details,
+                   &report_content, &content_length, NULL,
+                   NULL, NULL, NULL, NULL, &report_format, NULL);
+          if (ret || report_content == NULL)
             {
-              if (find_report_format_with_permission (format_uuid,
-                                                      &report_format,
-                                                      "get_report_formats")
-                  || (report_format == 0))
-                {
-                  g_warning ("Could not find Verinice RFP '%s'", format_uuid);
-                  g_free (format_uuid);
-                  return -2;
-                }
-              g_free (format_uuid);
-            }
-          else if (lookup_report_format ("Verinice ISM", &report_format)
-                   || (report_format == 0))
-            {
-              g_warning ("Could not find default verinice RFP");
-              return -2;
-            }
-
-          if (report == 0)
-            switch (sql_int64 (&report,
-                               "SELECT max (id) FROM reports"
-                               " WHERE task = %llu",
-                               task))
-              {
-                case 0:
-                  if (report)
-                    break;
-                case 1:        /* Too few rows in result of query. */
-                case -1:
-                  return -1;
-                  break;
-                default:       /* Programming error. */
-                  assert (0);
-                  return -1;
-              }
-
-          filt_id = alert_filter_id (alert);
-          filter = 0;
-          if (filt_id)
-            {
-              if (find_filter_with_permission (filt_id, &filter, "get_filters"))
-                return -1;
-              if (filter == 0)
-                return -3;
-            }
-
-          if (filter)
-            {
-              alert_filter_get = g_malloc0 (sizeof (get_data_t));
-              alert_filter_get->details = get->details;
-              alert_filter_get->ignore_pagination = get->ignore_pagination;
-              alert_filter_get->ignore_max_rows_per_page
-                = get->ignore_max_rows_per_page;
-              alert_filter_get->filt_id = g_strdup (filt_id);
-              alert_filter_get->filter = filter_term (filt_id);
-            }
-          else
-            alert_filter_get = NULL;
-
-          delta_report = get_delta_report (alert, task, report);
-
-          report_content = manage_report (report,
-                                          delta_report,
-                                          alert_filter_get ? alert_filter_get
-                                                           : get,
-                                          report_format,
-                                          notes_details, overrides_details,
-                                          NULL, /* Type. */
-                                          &content_length,
-                                          NULL,    /* Extension. */
-                                          NULL,    /* Content type. */
-                                          NULL,
-                                          NULL,
-                                          NULL);
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          if (report_content == NULL)
-            {
-              g_warning ("Empty Report");
+              g_warning ("%s: Empty Report", __FUNCTION__);
               return -1;
             }
 
@@ -13541,14 +13457,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (find_credential_with_permission (credential_id, &credential,
                                                "get_credentials"))
             {
-              free (filt_id);
               free (url);
               g_free (report_content);
               return -1;
             }
           else if (credential == 0)
             {
-              free (filt_id);
               free (url);
               g_free (report_content);
               return -4;
@@ -13564,7 +13478,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               ret = send_to_verinice (url, username, password, report_content,
                                       content_length);
 
-              free (filt_id);
               free (url);
               g_free (username);
               g_free (password);
