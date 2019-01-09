@@ -11827,8 +11827,15 @@ get_delta_report (alert_t alert, task_t task, report_t report)
  * @param[in]  report Report or NULL to get last report of task.
  * @param[in]  task   Task the report belongs to.
  * @param[in]  get    GET data for the report.
- * @param[in]  report_format_data_name  Name of alert data with report format.
- * @param[in]  fallback_format_id       UUID of fallback report format.
+ * @param[in]  report_format_data_name  Name of alert data with report format,
+ *                                      or NULL if not configurable.
+ * @param[in]  report_format_lookup     Name of report format to lookup if
+ *                                      lookup is required, else NULL.
+ *                                      Not used if report_format_data_name
+ *                                      is given.
+ * @param[in]  fallback_format_id       UUID of fallback report format.  Used
+ *                                      if above two are given and fail, or if
+ *                                      are both NULL.
  * @param[in]  notes_details     Whether to include details of notes in report.
  * @param[in]  overrides_details Whether to include override details in report.
  * @param[out] content              Report content location.
@@ -11848,6 +11855,7 @@ static int
 report_content_for_alert (alert_t alert, report_t report, task_t task,
                           const get_data_t *get,
                           const char *report_format_data_name,
+                          const char *report_format_lookup,
                           const char *fallback_format_id,
                           int notes_details, int overrides_details,
                           gchar **content, gsize *content_length,
@@ -11858,10 +11866,11 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                           filter_t *filter_return)
 {
   report_format_t report_format;
-  char *filt_id, *format_uuid;
+  char *filt_id;
   get_data_t *alert_filter_get;
   gchar *report_content;
   filter_t filter;
+  int fallback;
 
   assert (content);
 
@@ -11955,33 +11964,59 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           return -1;
       }
 
-  // Get report format or use fallback
+  // Get report format or use fallback.
 
+  fallback = 0;
   if (report_format_data_name)
-    format_uuid = alert_data (alert,
-                              "method",
-                              report_format_data_name);
-  else
-    format_uuid = NULL;
-
-  if (format_uuid && strlen (format_uuid))
     {
-      if (find_report_format_with_permission (format_uuid,
-                                              &report_format,
-                                              "get_report_formats")
+      gchar *format_uuid;
+
+      format_uuid = alert_data (alert,
+                                "method",
+                                report_format_data_name);
+
+      if (format_uuid && strlen (format_uuid))
+        {
+          if (find_report_format_with_permission (format_uuid,
+                                                  &report_format,
+                                                  "get_report_formats")
+              || (report_format == 0))
+            {
+              g_warning ("%s: Could not find report format '%s' for %s",
+                         __FUNCTION__, format_uuid,
+                         alert_method_name (alert_method (alert)));
+              g_free (format_uuid);
+              return -2;
+            }
+          g_free (format_uuid);
+        }
+      else
+        fallback = 1;
+    }
+  else if (report_format_lookup)
+    {
+      if (lookup_report_format (report_format_lookup, &report_format)
           || (report_format == 0))
         {
-          g_warning ("%s: Could not find RFP '%s' for %s",
-                     __FUNCTION__, format_uuid,
+          g_warning ("%s: Could not find report format '%s' for %s",
+                     __FUNCTION__, report_format_lookup,
                      alert_method_name (alert_method (alert)));
-          g_free (format_uuid);
           return -2;
         }
-      g_free (format_uuid);
     }
   else
+    fallback = 1;
+
+  if (fallback)
     {
-      g_free (format_uuid);
+      if (fallback_format_id == NULL)
+        {
+          g_warning ("%s: No fallback report format for %s",
+                     __FUNCTION__,
+                     alert_method_name (alert_method (alert)));
+          return -1;
+        }
+
       if (find_report_format_with_permission
             (fallback_format_id,
              &report_format,
@@ -12545,6 +12580,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   ret = report_content_for_alert
                           (alert, 0, task, get,
                            "notice_report_format",
+                           NULL,
                            /* TXT fallback */
                            "a3810a62-1f62-11e1-9219-406186ea4fc5",
                            notes_details, overrides_details,
@@ -12620,6 +12656,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   ret = report_content_for_alert
                           (alert, 0, task, get,
                            "notice_attach_format",
+                           NULL,
                            /* TXT fallback */
                            "a3810a62-1f62-11e1-9219-406186ea4fc5",
                            notes_details, overrides_details,
@@ -12926,6 +12963,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           ret = report_content_for_alert
                   (alert, 0, task, get,
                    "scp_report_format",
+                   NULL,
                    /* XML fallback. */
                    "a994b278-1f62-11e1-96ac-406186ea4fc5",
                    notes_details, overrides_details,
@@ -13008,6 +13046,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           ret = report_content_for_alert
                   (alert, 0, task, get,
                    "send_report_format",
+                   NULL,
                    /* XML fallback. */
                    "a994b278-1f62-11e1-96ac-406186ea4fc5",
                    notes_details, overrides_details,
@@ -13100,6 +13139,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           ret = report_content_for_alert
                   (alert, report, task, get,
                    "smb_report_format",
+                   NULL,
                    "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
@@ -13412,6 +13452,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           ret = report_content_for_alert
                   (alert, report, task, get,
                    NULL, /* Report format not configurable */
+                   NULL,
                    "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
