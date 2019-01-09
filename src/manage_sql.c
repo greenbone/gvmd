@@ -11834,8 +11834,9 @@ get_delta_report (alert_t alert, task_t task, report_t report)
  *                                      Not used if report_format_data_name
  *                                      is given.
  * @param[in]  fallback_format_id       UUID of fallback report format.  Used
- *                                      if above two are given and fail, or if
- *                                      are both NULL.
+ *                                      if report_format_data_name is given and
+ *                                      fails, or if report_format_data_name
+ *                                      and report_format_lookup are both NULL.
  * @param[in]  notes_details     Whether to include details of notes in report.
  * @param[in]  overrides_details Whether to include override details in report.
  * @param[out] content              Report content location.
@@ -13265,13 +13266,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_SOURCEFIRE:
         {
-          char *ip, *port, *pkcs12, *filt_id;
+          char *ip, *port, *pkcs12;
           gchar *report_content;
           gsize content_length;
           report_format_t report_format;
           int ret;
-          filter_t filter;
-          get_data_t *alert_filter_get;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -13282,73 +13281,19 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return -1;
             }
 
-          if (lookup_report_format ("Sourcefire", &report_format)
-              || (report_format == 0))
-            return -2;
-
-          if (report == 0)
-            switch (sql_int64 (&report,
-                               "SELECT max (id) FROM reports"
-                               " WHERE task = %llu",
-                               task))
-              {
-                case 0:
-                  if (report)
-                    break;
-                case 1:        /* Too few rows in result of query. */
-                case -1:
-                  return -1;
-                  break;
-                default:       /* Programming error. */
-                  assert (0);
-                  return -1;
-              }
-
-          filt_id = alert_filter_id (alert);
-          filter = 0;
-          if (filt_id)
+          ret = report_content_for_alert
+                  (alert, report, task, get,
+                   NULL,
+                   "Sourcefire",
+                   NULL,
+                   notes_details, overrides_details,
+                   &report_content, &content_length, NULL,
+                   NULL, NULL, NULL, NULL, &report_format, NULL);
+          if (ret || report_content == NULL)
             {
-              if (find_filter_with_permission (filt_id, &filter, "get_filters"))
-                return -1;
-              if (filter == 0)
-                return -3;
+              g_warning ("%s: Empty Report", __FUNCTION__);
+              return -1;
             }
-
-          if (filter)
-            {
-              alert_filter_get = g_malloc0 (sizeof (get_data_t));
-              alert_filter_get->details = get->details;
-              alert_filter_get->ignore_pagination = get->ignore_pagination;
-              alert_filter_get->ignore_max_rows_per_page
-                = get->ignore_max_rows_per_page;
-              alert_filter_get->filt_id = g_strdup (filt_id);
-              alert_filter_get->filter = filter_term (filt_id);
-            }
-          else
-            alert_filter_get = NULL;
-
-          delta_report = get_delta_report (alert, task, report);
-
-          report_content = manage_report (report,
-                                          delta_report,
-                                          alert_filter_get ? alert_filter_get
-                                                           : get,
-                                          report_format,
-                                          notes_details, overrides_details,
-                                          NULL, /* Type. */
-                                          &content_length,
-                                          NULL,    /* Extension. */
-                                          NULL,    /* Content type. */
-                                          NULL,
-                                          NULL,
-                                          NULL);
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          if (report_content == NULL)
-            return -1;
 
           ip = alert_data (alert, "method", "defense_center_ip");
           port = alert_data (alert, "method", "defense_center_port");
@@ -13362,7 +13307,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           ret = send_to_sourcefire (ip, port, pkcs12, report_content);
 
-          free (filt_id);
           free (ip);
           g_free (port);
           free (pkcs12);
