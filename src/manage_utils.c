@@ -84,6 +84,14 @@ time_offset (const char *zone, time_t time)
   tzset ();
 
   time_broken = localtime (&time);
+  if (time_broken == NULL)
+    {
+      g_warning ("%s: localtime failed", __FUNCTION__);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
   if (strftime (buf, 100, "%z", time_broken) == 0)
     {
       g_warning ("%s: Failed to format timezone", __FUNCTION__);
@@ -154,6 +162,14 @@ current_offset (const char *zone)
 
   time (&now);
   now_broken = localtime (&now);
+  if (now_broken == NULL)
+    {
+      g_warning ("%s: localtime failed", __FUNCTION__);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
   if (setenv ("TZ", "UTC", 1) == -1)
     {
       g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
@@ -222,8 +238,13 @@ months_between (time_t time1, time_t time2)
 
   assert (time1 <= time2);
 
-  localtime_r (&time1, &broken1);
   broken2 = localtime (&time2);
+  if ((localtime_r (&time1, &broken1) == NULL)
+      || (broken2 == NULL))
+    {
+      g_warning ("%s: localtime failed", __FUNCTION__);
+      return 0;
+    }
 
   same_year = (broken1.tm_year == broken2->tm_year);
   same_month = (broken1.tm_mon == broken2->tm_mon);
@@ -281,6 +302,11 @@ time_t
 add_months (time_t time, int months)
 {
   struct tm *broken = localtime (&time);
+  if (broken == NULL)
+    {
+      g_warning ("%s: localtime failed", __FUNCTION__);
+      return 0;
+    }
   broken->tm_mon += months;
   return mktime (broken);
 }
@@ -299,6 +325,11 @@ day_of_week (time_t time)
   int sunday_first;
 
   tm = gmtime (&time);
+  if (tm == NULL)
+    {
+      g_warning ("%s: gmtime failed", __FUNCTION__);
+      return 0;
+    }
 
   sunday_first = tm->tm_wday;     /* Sunday 0, Monday 1, ... */
   return 1 << ((sunday_first + 6) % 7);
@@ -448,15 +479,12 @@ next_time (time_t first, int period, int period_months, int byday,
       if (tz)
         {
           if (setenv ("TZ", tz, 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
-              g_free (tz);
-            }
+            g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+
+          g_free (tz);
         }
       else
         unsetenv ("TZ");
-
-      g_free (tz);
 
       return ret;
     }
@@ -784,16 +812,20 @@ icalendar_timezone_from_tzid (const char *tzid)
 {
   icaltimezone *tz;
 
-  // If tzid is not NULL, try to get a libical built-in.
   if (tzid)
     {
+      /* tzid is not NULL, try to get a libical built-in. */
       tz = icaltimezone_get_builtin_timezone_from_tzid (tzid);
       if (tz == NULL)
-        tz = icaltimezone_get_builtin_timezone (tzid);
+        {
+          tz = icaltimezone_get_builtin_timezone (tzid);
+          if (tz == NULL)
+            /* tzid is not a built-in timezone, fall back to UTC. */
+            tz = icaltimezone_get_utc_timezone ();
+        }
     }
-
-  // Fall back to UTC if tzid was null or not a built-in timezone
-  if (tzid == NULL)
+  else
+    /* tzid is NULL, fall back to UTC. */
     tz = icaltimezone_get_utc_timezone ();
 
   return tz;

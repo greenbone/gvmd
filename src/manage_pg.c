@@ -981,17 +981,17 @@ manage_create_sql_functions ()
        " DECLARE"
        "   diff interval;"
        " BEGIN"
-       "   diff := age ( to_timestamp( seconds ), now() );"
+       "   diff := age (to_timestamp (seconds), now ());"
        "   RETURN CASE"
        "          WHEN seconds = 0"
        "          THEN -2"
        "          WHEN diff < interval '0 seconds'"
        "          THEN -1"
-       "          ELSE date_part( 'day', diff )"
+       "          ELSE date_part ('day', diff)"
        "          END;"
        " END;"
        "$$ LANGUAGE plpgsql"
-       " IMMUTABLE;");
+       " STABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION uniquify (type text, proposed_name text,"
        "                                     owner integer, suffix text)"
@@ -1871,7 +1871,7 @@ manage_create_sql_functions ()
              /* Calculate the threat level of a task. */
              "  SELECT severity_to_level (task_severity ($1, $2, $3), 0);"
              "$$ LANGUAGE SQL"
-             " IMMUTABLE;");
+             " STABLE;");
     }
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"

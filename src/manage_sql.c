@@ -11236,6 +11236,12 @@ alert_subject_print (const gchar *subject, event_t event,
                   else
                     date = cert_check_time ();
                   tm = localtime (&date);
+                  if (tm == NULL)
+                    {
+                      g_warning ("%s: localtime failed, aborting",
+                                 __FUNCTION__);
+                      abort ();
+                    }
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
                   g_string_append (new_subject, time_string);
@@ -11401,6 +11407,12 @@ alert_message_print (const gchar *message, event_t event,
                   else
                     date = cert_check_time ();
                   tm = localtime (&date);
+                  if (tm == NULL)
+                    {
+                      g_warning ("%s: localtime failed, aborting",
+                                 __FUNCTION__);
+                      abort ();
+                    }
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
                   g_string_append (new_message, time_string);
@@ -14152,11 +14164,6 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   result = make_result (task, "127.0.0.1", "localhost", "telnet (23/tcp)",
                         "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
                         "A telnet server seems to be running on this port.");
-  if (result == 0)
-    {
-      ret = -1;
-      goto exit;
-    }
   now = time (NULL);
   now_string = ctime (&now);
   if (strlen (now_string) == 0)
@@ -14170,7 +14177,8 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   set_task_start_time_otp (task, g_strdup (clean));
   set_scan_start_time_otp (report, g_strdup (clean));
   set_scan_host_start_time_otp (report, "127.0.0.1", clean);
-  report_add_result (report, result);
+  if (result)
+    report_add_result (report, result);
   set_scan_host_end_time_otp (report, "127.0.0.1", clean);
   set_scan_end_time_otp (report, clean);
   g_free (clean);
@@ -21146,7 +21154,10 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   severity = nvt_severity (nvt, type);
   if (!severity)
-    return 0;
+    {
+      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
+      return 0;
+    }
 
   if (!strcmp (severity, ""))
     {
@@ -27253,10 +27264,12 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
   delta_descr = result_iterator_descr (delta_results);
 
   g_debug ("   delta: %s: descr: %s VS %s (%i)",
-          __FUNCTION__, descr, delta_descr, strcmp (descr, delta_descr));
+          __FUNCTION__,
+          descr ? descr : "NULL",
+          delta_descr ? delta_descr : "NULL",
+          (descr && delta_descr) ? strcmp (descr, delta_descr) : 0);
 
-  ret = strcmp (descr, delta_descr);
-  if (ret)
+  if (descr && delta_descr && strcmp (descr, delta_descr))
     return COMPARE_RESULTS_CHANGED;
 
   return COMPARE_RESULTS_SAME;
@@ -35405,6 +35418,9 @@ init_target_iterator_one (iterator_t* iterator, target_t target)
   get.id = target_uuid (target);
   get.filter = "owner=any permission=get_targets";
 
+  /* We could pass the return up to the caller, but we don't pass in
+   * a filter id and the callers are all in situations where the
+   * target cannot disappear, so it's safe to ignore the return. */
   init_target_iterator (iterator, &get);
 }
 
@@ -42843,6 +42859,9 @@ init_credential_iterator_one (iterator_t* iterator,
   get.id = credential_uuid (credential);
   get.filter = "owner=any permission=get_credentials";
 
+  /* We could pass the return up to the caller, but we don't pass in
+   * a filter id and the callers are all in situations where the
+   * credential cannot disappear, so it's safe to ignore the return. */
   init_credential_iterator (iterator, &get);
 }
 
@@ -47588,6 +47607,51 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
 }
 
 /**
+ * @brief Insert a scanner for create_scanner.
+ *
+ * @param[in]   name         Name of scanner.
+ * @param[in]   comment      Comment on scanner.
+ * @param[in]   host         Host of scanner.
+ * @param[in]   ca_pub       CA Certificate for scanner.
+ * @param[in]   iport        Port of scanner.
+ * @param[in]   itype        Type of scanner.
+ * @param[out]  new_scanner  The created scanner.
+ */
+static void
+insert_scanner (const char* name, const char *comment, const char *host,
+                const char *ca_pub, int iport, int itype,
+                scanner_t *new_scanner)
+{
+  char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
+
+  assert (current_credentials.uuid);
+
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
+  quoted_host = sql_quote (host ?: "");
+  quoted_ca_pub = sql_quote (ca_pub ?: "");
+
+  sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
+       "                      ca_pub,creation_time, modification_time)"
+       " VALUES (make_uuid (), '%s',"
+       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
+       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now ());",
+       quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
+       iport, itype,
+       ca_pub ? "'" : "",
+       ca_pub ? quoted_ca_pub : "NULL",
+       ca_pub ? "'" : "");
+
+  g_free (quoted_host);
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (quoted_ca_pub);
+
+  if (new_scanner)
+    *new_scanner = sql_last_insert_id ();
+}
+
+/**
  * @brief Create a scanner.
  *
  * @param[in]   name        Name of scanner.
@@ -47608,11 +47672,9 @@ create_scanner (const char* name, const char *comment, const char *host,
                 const char *port, const char *type, scanner_t *new_scanner,
                 const char *ca_pub, const char *credential_id)
 {
-  char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
   int iport, itype, unix_socket = 0;
   credential_t credential;
 
-  assert (current_credentials.uuid);
   assert (name);
 
   sql_begin_immediate ();
@@ -47648,7 +47710,9 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 1;
     }
 
-  if (!unix_socket)
+  if (unix_socket)
+    insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+  else
     {
       if (find_credential_with_permission
            (credential_id, &credential, "get_credentials"))
@@ -47677,35 +47741,14 @@ create_scanner (const char* name, const char *comment, const char *host,
           sql_rollback ();
           return 5;
         }
+
+      insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+
+      sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;", credential,
+           sql_last_insert_id ());
     }
 
-  quoted_name = sql_quote (name ?: "");
-  quoted_comment = sql_quote (comment ?: "");
-  quoted_host = sql_quote (host ?: "");
-  quoted_ca_pub = sql_quote (ca_pub ?: "");
-  sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
-       "                      ca_pub,creation_time, modification_time)"
-       " VALUES (make_uuid (), '%s',"
-       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now ());",
-       quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
-       iport, itype,
-       ca_pub ? "'" : "",
-       ca_pub ? quoted_ca_pub : "NULL",
-       ca_pub ? "'" : "");
-
-  if (new_scanner)
-    *new_scanner = sql_last_insert_id ();
-
-  if (!unix_socket)
-    sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;", credential,
-         sql_last_insert_id ());
-
   sql_commit ();
-  g_free (quoted_host);
-  g_free (quoted_comment);
-  g_free (quoted_name);
-  g_free (quoted_ca_pub);
   return 0;
 }
 
@@ -51594,6 +51637,22 @@ move_report_format_dir (const char *dir, const char *new_dir)
 }
 
 /**
+ * @brief Delete a report format from the db.
+ *
+ * @param[in]  report_format  Report format.
+ */
+static void
+delete_report_format_rows (report_format_t report_format)
+{
+  sql ("DELETE FROM report_format_param_options WHERE report_format_param"
+       " IN (SELECT id from report_format_params WHERE report_format = %llu);",
+       report_format);
+  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
+       report_format);
+  sql ("DELETE FROM report_formats WHERE id = %llu;", report_format);
+}
+
+/**
  * @brief Delete a report format.
  *
  * @param[in]  report_format_id  UUID of Report format.
@@ -51761,11 +51820,15 @@ delete_report_format (const char *report_format_id, int ultimate)
           sql_rollback ();
           return -1;
         }
+
+      /* Remove from "real" tables. */
+
+      delete_report_format_rows (report_format);
     }
   else
     {
       iterator_t params;
-      gchar *trash_dir;
+      gchar *trash_dir, *new_dir, *report_format_string;
 
       /* Check if it's in use by a regular alert. */
 
@@ -51836,22 +51899,12 @@ delete_report_format (const char *report_format_id, int ultimate)
                                  trash_report_format, LOCATION_TRASH);
       tags_set_locations ("report_format", report_format,
                           trash_report_format, LOCATION_TRASH);
-    }
 
-  /* Remove from "real" tables. */
+      /* Remove from "real" tables. */
 
-  sql ("DELETE FROM report_format_param_options WHERE report_format_param"
-       " IN (SELECT id from report_format_params WHERE report_format = %llu);",
-       report_format);
-  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
-       report_format);
-  sql ("DELETE FROM report_formats WHERE id = %llu;", report_format);
+      delete_report_format_rows (report_format);
 
-  /* Move the dir last, in case any SQL rolls back. */
-
-  if (ultimate == 0)
-    {
-      gchar *new_dir, *report_format_string;
+      /* Move the dir last, in case any SQL rolls back. */
 
       report_format_string = g_strdup_printf ("%llu", trash_report_format);
       new_dir = report_format_trash_dir (report_format_string);
@@ -51865,6 +51918,7 @@ delete_report_format (const char *report_format_id, int ultimate)
         }
       g_free (new_dir);
     }
+
   g_free (dir);
 
   sql_commit ();
