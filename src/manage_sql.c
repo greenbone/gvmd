@@ -35409,6 +35409,9 @@ init_target_iterator_one (iterator_t* iterator, target_t target)
   get.id = target_uuid (target);
   get.filter = "owner=any permission=get_targets";
 
+  /* We could pass the return up to the caller, but we don't pass in
+   * a filter id and the callers are all in situations where the
+   * target cannot disappear, so it's safe to ignore the return. */
   init_target_iterator (iterator, &get);
 }
 
@@ -42847,6 +42850,9 @@ init_credential_iterator_one (iterator_t* iterator,
   get.id = credential_uuid (credential);
   get.filter = "owner=any permission=get_credentials";
 
+  /* We could pass the return up to the caller, but we don't pass in
+   * a filter id and the callers are all in situations where the
+   * credential cannot disappear, so it's safe to ignore the return. */
   init_credential_iterator (iterator, &get);
 }
 
