@@ -14181,11 +14181,6 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   result = make_result (task, "127.0.0.1", "localhost", "telnet (23/tcp)",
                         "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
                         "A telnet server seems to be running on this port.");
-  if (result == 0)
-    {
-      ret = -1;
-      goto exit;
-    }
   now = time (NULL);
   now_string = ctime (&now);
   if (strlen (now_string) == 0)
@@ -14199,7 +14194,8 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   set_task_start_time_otp (task, g_strdup (clean));
   set_scan_start_time_otp (report, g_strdup (clean));
   set_scan_host_start_time_otp (report, "127.0.0.1", clean);
-  report_add_result (report, result);
+  if (result)
+    report_add_result (report, result);
   set_scan_host_end_time_otp (report, "127.0.0.1", clean);
   set_scan_end_time_otp (report, clean);
   g_free (clean);
