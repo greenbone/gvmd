@@ -975,7 +975,7 @@ copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
                        " assigned_to, status, open_time, solved_time,"
                        " solved_comment, confirmed_time, confirmed_report,"
                        " closed_time, closed_comment, orphaned_time",
-                       1, new_ticket, &old_ticket);
+                       0, new_ticket, &old_ticket);
   if (ret)
     return ret;
 
