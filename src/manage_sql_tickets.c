@@ -980,6 +980,14 @@ copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
   if (ret)
     return ret;
 
+  sql ("INSERT INTO ticket_results"
+       " (ticket, result, result_location, result_uuid, report)"
+       " SELECT %llu, result, result_location, result_uuid, report"
+       " FROM ticket_results"
+       " WHERE ticket = %llu",
+       *new_ticket,
+       old_ticket);
+
   return 0;
 }
 
