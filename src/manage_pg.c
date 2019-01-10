@@ -981,17 +981,17 @@ manage_create_sql_functions ()
        " DECLARE"
        "   diff interval;"
        " BEGIN"
-       "   diff := age ( to_timestamp( seconds ), now() );"
+       "   diff := age (to_timestamp (seconds), now ());"
        "   RETURN CASE"
        "          WHEN seconds = 0"
        "          THEN -2"
        "          WHEN diff < interval '0 seconds'"
        "          THEN -1"
-       "          ELSE date_part( 'day', diff )"
+       "          ELSE date_part ('day', diff)"
        "          END;"
        " END;"
        "$$ LANGUAGE plpgsql"
-       " IMMUTABLE;");
+       " STABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION uniquify (type text, proposed_name text,"
        "                                     owner integer, suffix text)"
@@ -1871,7 +1871,7 @@ manage_create_sql_functions ()
              /* Calculate the threat level of a task. */
              "  SELECT severity_to_level (task_severity ($1, $2, $3), 0);"
              "$$ LANGUAGE SQL"
-             " IMMUTABLE;");
+             " STABLE;");
     }
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
@@ -2422,6 +2422,74 @@ create_tables ()
        "  port INTEGER,"
        "  credential_location INTEGER);");
 
+  sql ("CREATE TABLE IF NOT EXISTS tickets"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
+       "  comment text,"
+       "  nvt text,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  severity real,"
+       "  host text,"
+       "  location text,"
+       "  solution_type text,"
+       "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  status integer,"
+       "  open_time integer,"
+       "  solved_time integer,"
+       "  solved_comment text,"
+       "  confirmed_time integer,"
+       "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  closed_time integer,"
+       "  closed_comment text,"
+       "  orphaned_time integer,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS ticket_results"
+       " (id SERIAL PRIMARY KEY,"
+       "  ticket integer REFERENCES tickets (id) ON DELETE RESTRICT,"
+       "  result integer,"    // REFERENCES results (id) ON DELETE RESTRICT
+       "  result_location integer,"
+       "  result_uuid text,"
+       "  report integer);"); // REFERENCES reports (id) ON DELETE RESTRICT
+
+  sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
+       "  comment text,"
+       "  nvt text,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  severity real,"
+       "  host text,"
+       "  location text,"
+       "  solution_type text,"
+       "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  status integer,"
+       "  open_time integer,"
+       "  solved_time integer,"
+       "  solved_comment text,"
+       "  confirmed_time integer,"
+       "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  closed_time integer,"
+       "  closed_comment text,"
+       "  orphaned_time integer,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  ticket integer REFERENCES tickets_trash (id) ON DELETE RESTRICT,"
+       "  result integer,"    // REFERENCES results_trash (id) ON DELETE RESTRICT
+       "  result_location integer,"
+       "  result_uuid text,"
+       "  report integer);"); // REFERENCES reports_trash (id) ON DELETE RESTRICT
+
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2667,6 +2735,11 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  nvt text UNIQUE NOT NULL);");
 
+  /* A record of all the reports that contain each result_nvt.  In other words,
+   * all the reports that contain each NVT.
+   *
+   * This is used when counting the results of a report, to reduce the number
+   * of overrides that are considered for each result. */
   sql ("CREATE TABLE IF NOT EXISTS result_nvt_reports"
        " (result_nvt INTEGER,"
        "  report INTEGER);");
