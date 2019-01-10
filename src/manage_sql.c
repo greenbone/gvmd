@@ -5253,34 +5253,12 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    owned_clause,
                    order ? order : "",
                    order ? (extra_order ? extra_order : "") : "");
-  else if (distinct == 0)
-    init_iterator (iterator,
-                   "%sSELECT %s"
-                   " FROM %ss %s"
-                   " WHERE %s"
-                   " %s%s%s%s%s%s"
-                   " LIMIT %s OFFSET %i;",
-                   with_clause ? with_clause : "",
-                   columns,
-                   type,
-                   extra_tables ? extra_tables : "",
-                   owned_clause,
-                   clause ? " AND (" : "",
-                   clause ? clause : "",
-                   clause ? ")" : "",
-                   extra_where ? extra_where : "",
-                   order ? order : "",
-                   order ? (extra_order ? extra_order : "") : "",
-                   sql_select_limit (max),
-                   first);
   else
-    {
-      init_iterator (iterator,
+    init_iterator (iterator,
                    "%s%sSELECT %s"
                    " FROM %ss %s"
                    " WHERE"
-                   " %s"
-                   "%s%s%s%s%s%s"
+                   " %s%s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i%s;",
                    with_clause ? with_clause : "",
                    distinct ? "SELECT DISTINCT * FROM (" : "",
@@ -5297,7 +5275,6 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    sql_select_limit (max),
                    first,
                    distinct ? ") AS subquery_for_distinct" : "");
-    }
 
   g_free (columns);
   g_free (with_clause);
