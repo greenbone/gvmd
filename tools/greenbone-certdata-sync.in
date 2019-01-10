@@ -366,6 +366,8 @@ do_sync_community_feed () {
 }
 
 sync_certdata(){
+  # Sleep for ten seconds to prevent IP blocking.
+  sleep 10
   if [ -e $ACCESSKEY ]
   then
     log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
@@ -413,7 +415,7 @@ sync_certdata(){
     log_notice "Synchronization with the Greenbone CERT data Repository successful."
     echo
   else
-    log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
     do_sync_community_feed
   fi
 
