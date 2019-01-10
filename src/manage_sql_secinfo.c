@@ -3457,8 +3457,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
               g_free (oval_dir);
               g_error_free (error);
             }
-
-          if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+          else
             {
               g_warning ("g_dir_open (%s) failed - %s\n", oval_dir,
                          error->message);

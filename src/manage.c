@@ -938,7 +938,7 @@ get_data_t*
 report_results_get_data (int first, int rows,
                          int apply_overrides, int autofp, int min_qod)
 {
-  get_data_t* get = malloc (sizeof (get_data_t));
+  get_data_t* get = g_malloc (sizeof (get_data_t));
   memset (get, 0, sizeof (get_data_t));
   get->type = g_strdup ("result");
   get->filter = report_results_filter_term (first, rows,
@@ -6140,7 +6140,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   gnutls_session_t session;
   entity_t get, report;
   entities_t reports;
-  int ret = -1;
+  int ret;
 
   if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
     return -1;
@@ -6446,7 +6446,7 @@ slave_system_report (const char *name, const char *duration,
   entity_t get, entity;
   entities_t reports;
   gmp_get_system_reports_opts_t opts;
-  int ret = -1;
+  int ret;
 
   if (find_scanner_with_permission (slave_id, &slave, "get_slaves"))
     return -1;
@@ -8035,9 +8035,11 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
-  gchar* msg;
+  gchar *msg, *name_text;
 
-  gchar* name_text = g_markup_escape_text (name, strlen (name));
+  name_text = name
+               ? g_markup_escape_text (name, strlen (name))
+               : g_strdup ("");
   if (details)
     {
       int tag_count;
@@ -8767,10 +8769,18 @@ gvm_migrate_secinfo (int feed_type)
     {
       if (errno == EWOULDBLOCK)
         {
+          if (close (lockfile))
+            g_warning ("%s: failed to close lockfile: %s",
+                       __FUNCTION__,
+                       strerror (errno));
           g_free (lockfile_name);
           return 1;
         }
       g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
+      if (close (lockfile))
+        g_warning ("%s: failed to close lockfile: %s",
+                   __FUNCTION__,
+                   strerror (errno));
       g_free (lockfile_name);
       return -1;
     }
