@@ -2667,6 +2667,11 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  nvt text UNIQUE NOT NULL);");
 
+  /* A record of all the reports that contain each result_nvt.  In other words,
+   * all the reports that contain each NVT.
+   *
+   * This is used when counting the results of a report, to reduce the number
+   * of overrides that are considered for each result. */
   sql ("CREATE TABLE IF NOT EXISTS result_nvt_reports"
        " (result_nvt INTEGER,"
        "  report INTEGER);");
