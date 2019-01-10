@@ -21171,7 +21171,10 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   severity = nvt_severity (nvt, type);
   if (!severity)
-    return 0;
+    {
+      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
+      return 0;
+    }
 
   if (!strcmp (severity, ""))
     {
