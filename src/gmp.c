@@ -20831,104 +20831,135 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
       case CLIENT_GET_AGENTS:
-        return handle_get_agents (gmp_parser, error);
+        handle_get_agents (gmp_parser, error);
+        break;
 
       case CLIENT_GET_AGGREGATES:
-        return handle_get_aggregates (gmp_parser, error);
+        handle_get_aggregates (gmp_parser, error);
+        break;
 
       CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
       CLOSE (CLIENT_GET_AGGREGATES, SORT);
       CLOSE (CLIENT_GET_AGGREGATES, TEXT_COLUMN);
 
       case CLIENT_GET_ALERTS:
-        return handle_get_alerts (gmp_parser, error);
+        handle_get_alerts (gmp_parser, error);
+        break;
 
       case CLIENT_GET_ASSETS:
-        return handle_get_assets (gmp_parser, error);
+        handle_get_assets (gmp_parser, error);
+        break;
 
       case CLIENT_GET_CONFIGS:
-        return handle_get_configs (gmp_parser, error);
+        handle_get_configs (gmp_parser, error);
+        break;
 
       case CLIENT_GET_CREDENTIALS:
-        return handle_get_credentials (gmp_parser, error);
+        handle_get_credentials (gmp_parser, error);
+        break;
 
       case CLIENT_GET_FEEDS:
-        return handle_get_feeds (gmp_parser, error);
+        handle_get_feeds (gmp_parser, error);
+        break;
 
       case CLIENT_GET_FILTERS:
-        return handle_get_filters (gmp_parser, error);
+        handle_get_filters (gmp_parser, error);
+        break;
 
       case CLIENT_GET_GROUPS:
-        return handle_get_groups (gmp_parser, error);
+        handle_get_groups (gmp_parser, error);
+        break;
 
       case CLIENT_GET_INFO:
-        return handle_get_info (gmp_parser, error);
+        handle_get_info (gmp_parser, error);
+        break;
 
       case CLIENT_GET_NOTES:
-        return handle_get_notes (gmp_parser, error);
+        handle_get_notes (gmp_parser, error);
+        break;
 
       case CLIENT_GET_NVTS:
-        return handle_get_nvts (gmp_parser, error);
+        handle_get_nvts (gmp_parser, error);
+        break;
 
       case CLIENT_GET_NVT_FAMILIES:
-        return handle_get_nvt_families (gmp_parser, error);
+        handle_get_nvt_families (gmp_parser, error);
+        break;
 
       case CLIENT_GET_OVERRIDES:
-        return handle_get_overrides (gmp_parser, error);
+        handle_get_overrides (gmp_parser, error);
+        break;
 
       case CLIENT_GET_PERMISSIONS:
-        return handle_get_permissions (gmp_parser, error);
+        handle_get_permissions (gmp_parser, error);
+        break;
 
       case CLIENT_GET_PORT_LISTS:
-        return handle_get_port_lists (gmp_parser, error);
+        handle_get_port_lists (gmp_parser, error);
+        break;
 
       case CLIENT_GET_PREFERENCES:
-        return handle_get_preferences (gmp_parser, error);
+        handle_get_preferences (gmp_parser, error);
+        break;
 
       case CLIENT_GET_REPORTS:
-        return handle_get_reports (gmp_parser, error);
+        handle_get_reports (gmp_parser, error);
+        break;
 
       case CLIENT_GET_REPORT_FORMATS:
-        return handle_get_report_formats (gmp_parser, error);
+        handle_get_report_formats (gmp_parser, error);
+        break;
 
       case CLIENT_GET_RESULTS:
-        return handle_get_results (gmp_parser, error);
+        handle_get_results (gmp_parser, error);
+        break;
 
       case CLIENT_GET_ROLES:
-        return handle_get_roles (gmp_parser, error);
+        handle_get_roles (gmp_parser, error);
+        break;
 
       case CLIENT_GET_SCANNERS:
-        return handle_get_scanners (gmp_parser, error);
+        handle_get_scanners (gmp_parser, error);
+        break;
 
       case CLIENT_GET_SCHEDULES:
-        return handle_get_schedules (gmp_parser, error);
+        handle_get_schedules (gmp_parser, error);
+        break;
 
       case CLIENT_GET_SETTINGS:
-        return handle_get_settings (gmp_parser, error);
+        handle_get_settings (gmp_parser, error);
+        break;
 
       case CLIENT_GET_SYSTEM_REPORTS:
-        return handle_get_system_reports (gmp_parser, error);
+        handle_get_system_reports (gmp_parser, error);
+        break;
 
       case CLIENT_GET_TAGS:
-        return handle_get_tags (gmp_parser, error);
+        handle_get_tags (gmp_parser, error);
+        break;
 
       case CLIENT_GET_TARGETS:
-        return handle_get_targets (gmp_parser, error);
+        handle_get_targets (gmp_parser, error);
+        break;
 
       case CLIENT_GET_TASKS:
-        return handle_get_tasks (gmp_parser, error);
+        handle_get_tasks (gmp_parser, error);
+        break;
 
       CASE_GET_END (TICKETS, tickets);
 
       case CLIENT_GET_USERS:
-        return handle_get_users (gmp_parser, error);
+        handle_get_users (gmp_parser, error);
+        break;
 
       case CLIENT_GET_VERSION:
       case CLIENT_GET_VERSION_AUTHENTIC:
-        return handle_get_version (gmp_parser, error);
+        handle_get_version (gmp_parser, error);
+        break;
 
       case CLIENT_GET_VULNS:
-        return handle_get_vulns (gmp_parser, error);
+        handle_get_vulns (gmp_parser, error);
+        break;
 
       case CLIENT_HELP:
         if (acl_user_may ("help") == 0)
@@ -21005,6 +21036,61 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                    &content_type))
               {
                 case 0:
+                  {
+
+                    SENDF_TO_CLIENT_OR_FAIL ("<help_response"
+                                             " status=\"" STATUS_OK "\""
+                                             " status_text=\"" STATUS_OK_TEXT "\">"
+                                             "<schema"
+                                             " format=\"%s\""
+                                             " extension=\"%s\""
+                                             " content_type=\"%s\">",
+                                             help_data->format
+                                              ? help_data->format
+                                              : "XML",
+                                             extension,
+                                             content_type);
+                    g_free (extension);
+                    g_free (content_type);
+
+                    if (output && strlen (output))
+                      {
+                        /* Encode and send the output. */
+
+                        if (help_data->format
+                            && strcasecmp (help_data->format, "XML"))
+                          {
+                            gchar *base64;
+
+                            base64 = g_base64_encode ((guchar*) output, output_len);
+                            if (send_to_client (base64,
+                                                write_to_client,
+                                                write_to_client_data))
+                              {
+                                g_free (output);
+                                g_free (base64);
+                                error_send_to_client (error);
+                                return;
+                              }
+                            g_free (base64);
+                          }
+                        else
+                          {
+                            /* Special case the XML schema, bah. */
+                            if (send_to_client (output,
+                                                write_to_client,
+                                                write_to_client_data))
+                              {
+                                g_free (output);
+                                error_send_to_client (error);
+                                return;
+                              }
+                          }
+                      }
+                    g_free (output);
+                    SEND_TO_CLIENT_OR_FAIL ("</schema>"
+                                            "</help_response>");
+                  }
                   break;
                 case 1:
                   assert (help_data->format);
@@ -21014,78 +21100,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
                   break;
                 case 2:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("help",
                                       "Brief help is only available in XML."));
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("help"));
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
                   break;
               }
-
-            SENDF_TO_CLIENT_OR_FAIL ("<help_response"
-                                     " status=\"" STATUS_OK "\""
-                                     " status_text=\"" STATUS_OK_TEXT "\">"
-                                     "<schema"
-                                     " format=\"%s\""
-                                     " extension=\"%s\""
-                                     " content_type=\"%s\">",
-                                     help_data->format
-                                      ? help_data->format
-                                      : "XML",
-                                     extension,
-                                     content_type);
-            g_free (extension);
-            g_free (content_type);
-
-            if (output && strlen (output))
-              {
-                /* Encode and send the output. */
-
-                if (help_data->format
-                    && strcasecmp (help_data->format, "XML"))
-                  {
-                    gchar *base64;
-
-                    base64 = g_base64_encode ((guchar*) output, output_len);
-                    if (send_to_client (base64,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        g_free (base64);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (base64);
-                  }
-                else
-                  {
-                    /* Special case the XML schema, bah. */
-                    if (send_to_client (output,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        error_send_to_client (error);
-                        return;
-                      }
-                  }
-              }
-            g_free (output);
-            SEND_TO_CLIENT_OR_FAIL ("</schema>"
-                                    "</help_response>");
           }
         help_data_reset (help_data);
         set_client_state (CLIENT_AUTHENTIC);
@@ -24146,7 +24170,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ROLE, USERS);
 
       case CLIENT_CREATE_SCANNER:
-        return handle_create_scanner (gmp_parser, error);
+        handle_create_scanner (gmp_parser, error);
+        break;
       CLOSE (CLIENT_CREATE_SCANNER, COMMENT);
       CLOSE (CLIENT_CREATE_SCANNER, COPY);
       CLOSE (CLIENT_CREATE_SCANNER, NAME);
@@ -25916,7 +25941,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING, VALUE);
 
       case CLIENT_MODIFY_CONFIG:
-        return handle_modify_config (gmp_parser, error);
+        handle_modify_config (gmp_parser, error);
+        break;
       CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
       CLOSE (CLIENT_MODIFY_CONFIG, SCANNER);
 
@@ -26983,7 +27009,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_ROLE, USERS);
 
       case CLIENT_MODIFY_SCANNER:
-        return handle_modify_scanner (gmp_parser, error);
+        handle_modify_scanner (gmp_parser, error);
+        break;
       CLOSE (CLIENT_MODIFY_SCANNER, TYPE);
       CLOSE (CLIENT_MODIFY_SCANNER, PORT);
       CLOSE (CLIENT_MODIFY_SCANNER, HOST);
@@ -28744,7 +28771,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_SYNC_CONFIG:
-        return handle_sync_config (gmp_parser, error);
+        handle_sync_config (gmp_parser, error);
+        break;
 
       case CLIENT_VERIFY_AGENT:
         if (verify_agent_data->agent_id)
