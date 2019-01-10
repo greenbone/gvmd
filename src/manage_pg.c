@@ -991,7 +991,7 @@ manage_create_sql_functions ()
        "          END;"
        " END;"
        "$$ LANGUAGE plpgsql"
-       " IMMUTABLE;");
+       " STABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION uniquify (type text, proposed_name text,"
        "                                     owner integer, suffix text)"
