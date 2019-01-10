@@ -33,11 +33,15 @@
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
+#include "manage_sql_tickets.h"
 #include "manage_acl.h"
 #include "lsc_user.h"
 #include "sql.h"
 #include "scanner.h"
 #include "utils.h"
+/* TODO This is for buffer_get_filter_xml, for print_report_xml_start.  We
+ *      should not be generating XML in here, that should be done in gmp_*.c. */
+#include "gmp_get.h"
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -275,12 +279,6 @@ static int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
 
 static void
-permissions_set_locations (const char *, resource_t, resource_t, int);
-
-static void
-permissions_set_orphans (const char *, resource_t, int);
-
-static void
 permissions_set_subjects (const char *, resource_t, resource_t, int);
 
 static resource_t
@@ -292,22 +290,11 @@ permission_subject (permission_t);
 static char *
 permission_subject_type (permission_t);
 
-static void
-tags_remove_resource (const char *, resource_t, int);
-
-static void
-tags_set_locations (const char *, resource_t, resource_t, int);
-
 static int
 role_is_predefined (role_t);
 
 static int
 role_is_predefined_id (const char *);
-
-static int
-create_permission_internal (const char *, const char *, const char *,
-                            const char *, const char *, const char *,
-                            permission_t *);
 
 static int
 task_second_last_report (task_t, report_t *);
@@ -592,6 +579,7 @@ command_t gmp_commands[]
     {"CREATE_TAG", "Create a tag."},
     {"CREATE_TARGET", "Create a target."},
     {"CREATE_TASK", "Create a task."},
+    {"CREATE_TICKET", "Create a ticket."},
     {"CREATE_USER", "Create a new user."},
     {"DELETE_AGENT", "Delete an agent."},
     {"DELETE_ALERT", "Delete an alert."},
@@ -613,6 +601,7 @@ command_t gmp_commands[]
     {"DELETE_TAG", "Delete a tag."},
     {"DELETE_TARGET", "Delete a target."},
     {"DELETE_TASK", "Delete a task."},
+    {"DELETE_TICKET", "Delete a ticket."},
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
@@ -644,6 +633,7 @@ command_t gmp_commands[]
     {"GET_TAGS", "Get all tags."},
     {"GET_TARGETS", "Get all targets."},
     {"GET_TASKS", "Get all tasks."},
+    {"GET_TICKETS", "Get all tickets."},
     {"GET_USERS", "Get all users."},
     {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
@@ -669,6 +659,7 @@ command_t gmp_commands[]
     {"MODIFY_TAG", "Modify an existing tag."},
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
+    {"MODIFY_TICKET", "Modify an existing ticket."},
     {"MODIFY_USER", "Modify a user."},
     {"MOVE_TASK", "Assign task to another slave scanner, even while running."},
     {"RESTORE", "Restore a resource."},
@@ -767,7 +758,7 @@ gmp_command_takes_resource (const char* name)
  *
  * @return Whether resource with name exists.
  */
-static gboolean
+gboolean
 resource_with_name_exists (const char *name, const char *type,
                            resource_t resource)
 {
@@ -880,7 +871,7 @@ array_add_new_string (array_t *array, const gchar *string)
  * @return FALSE on success (including if failed to find resource), TRUE on
  *         error.
  */
-static gboolean
+gboolean
 find_trash (const char *type, const char *uuid, resource_t *resource)
 {
   gchar *quoted_uuid;
@@ -4279,6 +4270,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "tag") == 0)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
+         || (strcasecmp (type, "ticket") == 0)
          || (strcasecmp (type, "user") == 0)
          || (strcasecmp (type, "vuln") == 0);
 }
@@ -4337,6 +4329,8 @@ type_db_name (const char* type)
     return "target";
   if (strcasecmp (type, "Task") == 0)
     return "task";
+  if (strcasecmp (type, "Ticket") == 0)
+    return "ticket";
   if (strcasecmp (type, "SecInfo") == 0)
     return "info";
   return NULL;
@@ -4851,7 +4845,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
  * @return 0 success, 1 resource exists already, 2 failed to find existing
  *         resource, 99 permission denied, -1 error.
  */
-static int
+int
 copy_resource (const char *type, const char *name, const char *comment,
                const char *resource_id, const char *columns,
                int make_name_unique, resource_t* new_resource,
@@ -5259,34 +5253,12 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    owned_clause,
                    order ? order : "",
                    order ? (extra_order ? extra_order : "") : "");
-  else if (distinct == 0)
-    init_iterator (iterator,
-                   "%sSELECT %s"
-                   " FROM %ss %s"
-                   " WHERE %s"
-                   " %s%s%s%s%s%s"
-                   " LIMIT %s OFFSET %i;",
-                   with_clause ? with_clause : "",
-                   columns,
-                   type,
-                   extra_tables ? extra_tables : "",
-                   owned_clause,
-                   clause ? " AND (" : "",
-                   clause ? clause : "",
-                   clause ? ")" : "",
-                   extra_where ? extra_where : "",
-                   order ? order : "",
-                   order ? (extra_order ? extra_order : "") : "",
-                   sql_select_limit (max),
-                   first);
   else
-    {
-      init_iterator (iterator,
+    init_iterator (iterator,
                    "%s%sSELECT %s"
                    " FROM %ss %s"
                    " WHERE"
-                   " %s"
-                   "%s%s%s%s%s%s"
+                   " %s%s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i%s;",
                    with_clause ? with_clause : "",
                    distinct ? "SELECT DISTINCT * FROM (" : "",
@@ -5303,7 +5275,6 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    sql_select_limit (max),
                    first,
                    distinct ? ") AS subquery_for_distinct" : "");
-    }
 
   g_free (columns);
   g_free (with_clause);
@@ -11265,6 +11236,12 @@ alert_subject_print (const gchar *subject, event_t event,
                   else
                     date = cert_check_time ();
                   tm = localtime (&date);
+                  if (tm == NULL)
+                    {
+                      g_warning ("%s: localtime failed, aborting",
+                                 __FUNCTION__);
+                      abort ();
+                    }
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
                   g_string_append (new_subject, time_string);
@@ -11430,6 +11407,12 @@ alert_message_print (const gchar *message, event_t event,
                   else
                     date = cert_check_time ();
                   tm = localtime (&date);
+                  if (tm == NULL)
+                    {
+                      g_warning ("%s: localtime failed, aborting",
+                                 __FUNCTION__);
+                      abort ();
+                    }
                   if (strftime (time_string, 98, "%F", tm) == 0)
                     break;
                   g_string_append (new_message, time_string);
@@ -13777,11 +13760,6 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   result = make_result (task, "127.0.0.1", "localhost", "telnet (23/tcp)",
                         "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
                         "A telnet server seems to be running on this port.");
-  if (result == 0)
-    {
-      ret = -1;
-      goto exit;
-    }
   now = time (NULL);
   now_string = ctime (&now);
   if (strlen (now_string) == 0)
@@ -13795,7 +13773,8 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   set_task_start_time_otp (task, g_strdup (clean));
   set_scan_start_time_otp (report, g_strdup (clean));
   set_scan_host_start_time_otp (report, "127.0.0.1", clean);
-  report_add_result (report, result);
+  if (result)
+    report_add_result (report, result);
   set_scan_host_end_time_otp (report, "127.0.0.1", clean);
   set_scan_end_time_otp (report, clean);
   g_free (clean);
@@ -14180,6 +14159,10 @@ event (task_t task, report_t report, event_t event, void* event_data)
   g_debug ("   EVENT %i on task %llu", event, task);
 
   alerts_triggered = g_array_new (TRUE, TRUE, sizeof (alert_t));
+
+  if ((event == EVENT_TASK_RUN_STATUS_CHANGED)
+      && (((task_status_t) event_data) == TASK_STATUS_DONE))
+    check_tickets (task);
 
   init_task_alert_iterator (&alerts, task, event);
   while (next (&alerts))
@@ -20767,7 +20750,10 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   severity = nvt_severity (nvt, type);
   if (!severity)
-    return 0;
+    {
+      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
+      return 0;
+    }
 
   if (!strcmp (severity, ""))
     {
@@ -24356,6 +24342,16 @@ result_iterator_level (iterator_t *iterator)
 }
 
 /**
+ * @brief Get the solution type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution type of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 16);
+
+/**
  * @brief Get the qod from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -26128,6 +26124,7 @@ delete_report_internal (report_t report)
 
   /* Adjust permissions. */
 
+  tickets_set_orphans (report);
   permissions_set_orphans ("report", report, LOCATION_TABLE);
   tags_remove_resource ("report", report, LOCATION_TABLE);
 
@@ -26373,6 +26370,8 @@ trim_report (report_t report)
        "  WHERE results.report = %llu);",
        report);
 
+  tickets_set_orphans (report);
+
   /* Remove all hosts and host details. */
 
   sql ("DELETE FROM report_host_details WHERE report_host IN"
@@ -26407,6 +26406,8 @@ trim_partial_report (report_t report)
        "  AND report_hosts.end_time = 0);",
        report,
        report);
+
+  tickets_set_orphans (report);
 
   /* Remove partial hosts and host details. */
 
@@ -26859,10 +26860,12 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
   delta_descr = result_iterator_descr (delta_results);
 
   g_debug ("   delta: %s: descr: %s VS %s (%i)",
-          __FUNCTION__, descr, delta_descr, strcmp (descr, delta_descr));
+          __FUNCTION__,
+          descr ? descr : "NULL",
+          delta_descr ? delta_descr : "NULL",
+          (descr && delta_descr) ? strcmp (descr, delta_descr) : 0);
 
-  ret = strcmp (descr, delta_descr);
-  if (ret)
+  if (descr && delta_descr && strcmp (descr, delta_descr))
     return COMPARE_RESULTS_CHANGED;
 
   return COMPARE_RESULTS_SAME;
@@ -32547,6 +32550,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
       permissions_set_orphans ("task", task, LOCATION_TRASH);
       tags_remove_resource ("task", task, LOCATION_TRASH);
+      tickets_remove_task (task);
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
@@ -32647,6 +32651,7 @@ delete_task (task_t task, int ultimate)
                             task_in_trash (task)
                               ? LOCATION_TRASH
                               : LOCATION_TABLE);
+      tickets_remove_task (task);
 
       sql ("DELETE FROM results_trash WHERE task = %llu;", task);
       sql ("DELETE FROM results WHERE task = %llu;", task);
@@ -32696,6 +32701,8 @@ delete_task (task_t task, int ultimate)
            " FROM results"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            task);
+
+      tickets_trash_task (task);
 
       sql ("DELETE FROM results"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
@@ -32787,6 +32794,8 @@ delete_trash_tasks ()
           cleanup_iterator (&tasks);
           return -1;
         }
+
+      tickets_remove_task (task);
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
@@ -35005,6 +35014,9 @@ init_target_iterator_one (iterator_t* iterator, target_t target)
   get.id = target_uuid (target);
   get.filter = "owner=any permission=get_targets";
 
+  /* We could pass the return up to the caller, but we don't pass in
+   * a filter id and the callers are all in situations where the
+   * target cannot disappear, so it's safe to ignore the return. */
   init_target_iterator (iterator, &get);
 }
 
@@ -42443,6 +42455,9 @@ init_credential_iterator_one (iterator_t* iterator,
   get.id = credential_uuid (credential);
   get.filter = "owner=any permission=get_credentials";
 
+  /* We could pass the return up to the caller, but we don't pass in
+   * a filter id and the callers are all in situations where the
+   * credential cannot disappear, so it's safe to ignore the return. */
   init_credential_iterator (iterator, &get);
 }
 
@@ -47188,6 +47203,51 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
 }
 
 /**
+ * @brief Insert a scanner for create_scanner.
+ *
+ * @param[in]   name         Name of scanner.
+ * @param[in]   comment      Comment on scanner.
+ * @param[in]   host         Host of scanner.
+ * @param[in]   ca_pub       CA Certificate for scanner.
+ * @param[in]   iport        Port of scanner.
+ * @param[in]   itype        Type of scanner.
+ * @param[out]  new_scanner  The created scanner.
+ */
+static void
+insert_scanner (const char* name, const char *comment, const char *host,
+                const char *ca_pub, int iport, int itype,
+                scanner_t *new_scanner)
+{
+  char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
+
+  assert (current_credentials.uuid);
+
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
+  quoted_host = sql_quote (host ?: "");
+  quoted_ca_pub = sql_quote (ca_pub ?: "");
+
+  sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
+       "                      ca_pub,creation_time, modification_time)"
+       " VALUES (make_uuid (), '%s',"
+       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
+       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now ());",
+       quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
+       iport, itype,
+       ca_pub ? "'" : "",
+       ca_pub ? quoted_ca_pub : "NULL",
+       ca_pub ? "'" : "");
+
+  g_free (quoted_host);
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (quoted_ca_pub);
+
+  if (new_scanner)
+    *new_scanner = sql_last_insert_id ();
+}
+
+/**
  * @brief Create a scanner.
  *
  * @param[in]   name        Name of scanner.
@@ -47208,11 +47268,9 @@ create_scanner (const char* name, const char *comment, const char *host,
                 const char *port, const char *type, scanner_t *new_scanner,
                 const char *ca_pub, const char *credential_id)
 {
-  char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
   int iport, itype, unix_socket = 0;
   credential_t credential;
 
-  assert (current_credentials.uuid);
   assert (name);
 
   sql_begin_immediate ();
@@ -47248,7 +47306,9 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 1;
     }
 
-  if (!unix_socket)
+  if (unix_socket)
+    insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+  else
     {
       if (find_credential_with_permission
            (credential_id, &credential, "get_credentials"))
@@ -47277,35 +47337,14 @@ create_scanner (const char* name, const char *comment, const char *host,
           sql_rollback ();
           return 5;
         }
+
+      insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+
+      sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;", credential,
+           sql_last_insert_id ());
     }
 
-  quoted_name = sql_quote (name ?: "");
-  quoted_comment = sql_quote (comment ?: "");
-  quoted_host = sql_quote (host ?: "");
-  quoted_ca_pub = sql_quote (ca_pub ?: "");
-  sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
-       "                      ca_pub,creation_time, modification_time)"
-       " VALUES (make_uuid (), '%s',"
-       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now ());",
-       quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
-       iport, itype,
-       ca_pub ? "'" : "",
-       ca_pub ? quoted_ca_pub : "NULL",
-       ca_pub ? "'" : "");
-
-  if (new_scanner)
-    *new_scanner = sql_last_insert_id ();
-
-  if (!unix_socket)
-    sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;", credential,
-         sql_last_insert_id ());
-
   sql_commit ();
-  g_free (quoted_host);
-  g_free (quoted_comment);
-  g_free (quoted_name);
-  g_free (quoted_ca_pub);
   return 0;
 }
 
@@ -51194,6 +51233,22 @@ move_report_format_dir (const char *dir, const char *new_dir)
 }
 
 /**
+ * @brief Delete a report format from the db.
+ *
+ * @param[in]  report_format  Report format.
+ */
+static void
+delete_report_format_rows (report_format_t report_format)
+{
+  sql ("DELETE FROM report_format_param_options WHERE report_format_param"
+       " IN (SELECT id from report_format_params WHERE report_format = %llu);",
+       report_format);
+  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
+       report_format);
+  sql ("DELETE FROM report_formats WHERE id = %llu;", report_format);
+}
+
+/**
  * @brief Delete a report format.
  *
  * @param[in]  report_format_id  UUID of Report format.
@@ -51361,11 +51416,15 @@ delete_report_format (const char *report_format_id, int ultimate)
           sql_rollback ();
           return -1;
         }
+
+      /* Remove from "real" tables. */
+
+      delete_report_format_rows (report_format);
     }
   else
     {
       iterator_t params;
-      gchar *trash_dir;
+      gchar *trash_dir, *new_dir, *report_format_string;
 
       /* Check if it's in use by a regular alert. */
 
@@ -51436,22 +51495,12 @@ delete_report_format (const char *report_format_id, int ultimate)
                                  trash_report_format, LOCATION_TRASH);
       tags_set_locations ("report_format", report_format,
                           trash_report_format, LOCATION_TRASH);
-    }
 
-  /* Remove from "real" tables. */
+      /* Remove from "real" tables. */
 
-  sql ("DELETE FROM report_format_param_options WHERE report_format_param"
-       " IN (SELECT id from report_format_params WHERE report_format = %llu);",
-       report_format);
-  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
-       report_format);
-  sql ("DELETE FROM report_formats WHERE id = %llu;", report_format);
+      delete_report_format_rows (report_format);
 
-  /* Move the dir last, in case any SQL rolls back. */
-
-  if (ultimate == 0)
-    {
-      gchar *new_dir, *report_format_string;
+      /* Move the dir last, in case any SQL rolls back. */
 
       report_format_string = g_strdup_printf ("%llu", trash_report_format);
       new_dir = report_format_trash_dir (report_format_string);
@@ -51465,6 +51514,7 @@ delete_report_format (const char *report_format_id, int ultimate)
         }
       g_free (new_dir);
     }
+
   g_free (dir);
 
   sql_commit ();
@@ -54138,7 +54188,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
  * @param[in]   new   Resource ID in new table.
  * @param[in]   to    Destination, trash or table.
  */
-static void
+void
 permissions_set_locations (const char *type, resource_t old, resource_t new,
                            int to)
 {
@@ -54167,7 +54217,7 @@ permissions_set_locations (const char *type, resource_t old, resource_t new,
  * @param[in]  resource  Resource ID.
  * @param[in]  location  Location: table or trash.
  */
-static void
+void
 permissions_set_orphans (const char *type, resource_t resource, int location)
 {
   sql ("UPDATE permissions SET resource = -1"
@@ -54520,7 +54570,7 @@ subject_where_clause (const char* subject_type, resource_t subject)
  *         8 permission on permission, 9 permission does not accept resource,
  *         99 permission denied, -1 internal error.
  */
-static int
+int
 create_permission_internal (const char *name_arg, const char *comment,
                             const char *resource_type_arg,
                             const char *resource_id_arg,
@@ -59050,6 +59100,7 @@ int
 manage_restore (const char *id)
 {
   resource_t resource = 0;
+  int ret;
 
   assert (current_credentials.uuid);
 
@@ -59060,6 +59111,10 @@ manage_restore (const char *id)
       sql_rollback ();
       return 99;
     }
+
+  ret = restore_ticket (id);
+  if (ret != 2)
+    return ret;
 
   /* Agent. */
 
@@ -60197,6 +60252,8 @@ manage_restore (const char *id)
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            resource);
 
+      tickets_restore_task (resource);
+
       sql ("DELETE FROM results_trash"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            resource);
@@ -60259,6 +60316,7 @@ manage_empty_trashcan ()
        "                                 WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM configs_trash" WHERE_OWNER);
+  empty_trashcan_tickets ();
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'group'"
        " AND subject IN (SELECT id from groups_trash"
@@ -64735,6 +64793,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE tasks SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      inherit_tickets (user, inheritor);
+
       sql ("UPDATE groups SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE roles SET owner = %llu WHERE owner = %llu;",
@@ -64800,6 +64860,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        " WHERE tag IN (SELECT id FROM tags_trash WHERE owner = %llu);",
        user);
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
+  delete_tickets_user (user);
 
   /* Delete assets (not directly referenced). */
 
@@ -64853,6 +64914,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql_rollback ();
       return 9;
     }
+  tickets_remove_tasks_user (user);
   sql ("DELETE FROM task_alerts"
        " WHERE task IN (SELECT id FROM tasks WHERE owner = %llu);",
        user);
@@ -68170,7 +68232,7 @@ type_build_select (const char *type, const char *columns_str,
  * @param[in]  resource  Resource.
  * @param[in]  location  Location: table or trash.
  */
-static void
+void
 tags_remove_resource (const char *type, resource_t resource, int location)
 {
   sql ("DELETE FROM tag_resources"
@@ -68189,7 +68251,7 @@ tags_remove_resource (const char *type, resource_t resource, int location)
  * @param[in]   new   Resource ID in new table.
  * @param[in]   to    Destination, trash or table.
  */
-static void
+void
 tags_set_locations (const char *type, resource_t old, resource_t new,
                     int to)
 {

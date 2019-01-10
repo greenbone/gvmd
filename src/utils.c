@@ -264,6 +264,8 @@ iso_time_internal (time_t *epoch_time, const char **abbrev)
   static char time_string[100];
 
   tm = localtime (epoch_time);
+  if (tm == NULL)
+    return NULL;
 #ifdef __FreeBSD__
   if (tm->tm_gmtoff == 0)
 #else
@@ -401,21 +403,26 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
       return -1;
     }
 
-  lockfile->fd = fd;
-
   /* Lock the lockfile. */
 
   if (flock (fd, operation))  /* Blocks, unless operation includes LOCK_NB. */
     {
+      int flock_errno;
+
+      flock_errno = errno;
       lockfile->name = NULL;
       g_free (lockfile_name);
-      if (errno == EWOULDBLOCK)
+      if (close (fd))
+        g_warning ("%s: failed to close lock file fd: %s",
+                   __FUNCTION__,
+                   strerror (errno));
+      if (flock_errno == EWOULDBLOCK)
         return 1;
-       g_warning ("%s: flock: %s", __FUNCTION__, strerror (errno));
-      g_free (lockfile_name);
+      g_warning ("%s: flock: %s", __FUNCTION__, strerror (flock_errno));
       return -1;
     }
 
+  lockfile->fd = fd;
   lockfile->name = lockfile_name;
 
   return 0;

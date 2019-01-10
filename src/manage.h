@@ -284,6 +284,7 @@ typedef long long int host_t;
 typedef long long int tag_t;
 typedef long long int target_t;
 typedef long long int task_t;
+typedef long long int ticket_t;
 typedef long long int result_t;
 typedef long long int report_t;
 typedef long long int report_host_t;
@@ -389,6 +390,9 @@ type_name (const char*);
 
 int
 type_is_scap (const char*);
+
+int
+delete_resource (const char *, const char *, int);
 
 
 /* Events and Alerts. */
@@ -1410,6 +1414,9 @@ result_iterator_original_level (iterator_t*);
 
 const char*
 result_iterator_level (iterator_t*);
+
+const char*
+result_iterator_solution_type (iterator_t*);
 
 const char*
 result_iterator_qod (iterator_t*);
@@ -3410,10 +3417,6 @@ split_filter (const gchar*);
 
 
 /* Filters. */
-
-int
-buffer_get_filter_xml (GString *, const char*, const get_data_t*, const char*,
-                       const char*);
 
 gboolean
 find_filter (const char*, filter_t*);

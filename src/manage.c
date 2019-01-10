@@ -50,6 +50,7 @@
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
+#include "manage_sql_tickets.h"
 #include "comm.h"
 #include "utils.h"
 
@@ -937,7 +938,7 @@ get_data_t*
 report_results_get_data (int first, int rows,
                          int apply_overrides, int autofp, int min_qod)
 {
-  get_data_t* get = malloc (sizeof (get_data_t));
+  get_data_t* get = g_malloc (sizeof (get_data_t));
   memset (get, 0, sizeof (get_data_t));
   get->type = g_strdup ("result");
   get->filter = report_results_filter_term (first, rows,
@@ -6139,7 +6140,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   gnutls_session_t session;
   entity_t get, report;
   entities_t reports;
-  int ret = -1;
+  int ret;
 
   if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
     return -1;
@@ -6445,7 +6446,7 @@ slave_system_report (const char *name, const char *duration,
   entity_t get, entity;
   entities_t reports;
   gmp_get_system_reports_opts_t opts;
-  int ret = -1;
+  int ret;
 
   if (find_scanner_with_permission (slave_id, &slave, "get_slaves"))
     return -1;
@@ -8034,9 +8035,11 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
-  gchar* msg;
+  gchar *msg, *name_text;
 
-  gchar* name_text = g_markup_escape_text (name, strlen (name));
+  name_text = name
+               ? g_markup_escape_text (name, strlen (name))
+               : g_strdup ("");
   if (details)
     {
       int tag_count;
@@ -8766,10 +8769,18 @@ gvm_migrate_secinfo (int feed_type)
     {
       if (errno == EWOULDBLOCK)
         {
+          if (close (lockfile))
+            g_warning ("%s: failed to close lockfile: %s",
+                       __FUNCTION__,
+                       strerror (errno));
           g_free (lockfile_name);
           return 1;
         }
       g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
+      if (close (lockfile))
+        g_warning ("%s: failed to close lockfile: %s",
+                   __FUNCTION__,
+                   strerror (errno));
       g_free (lockfile_name);
       return -1;
     }
@@ -9454,4 +9465,26 @@ int
 get_termination_signal ()
 {
   return termination_signal;
+}
+
+
+/* Resources. */
+
+/**
+ * @brief Delete a resource.
+ *
+ * @param[in]  type         Type of resource.
+ * @param[in]  resource_id  UUID of resource.
+ * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 resource in use, 2 failed to find resource,
+ *         3 predefined resource, 99 permission denied, -1 error.
+ */
+int
+delete_resource (const char *type, const char *resource_id, int ultimate)
+{
+  if (strcasecmp (type, "ticket") == 0)
+    return delete_ticket (resource_id, ultimate);
+  assert (0);
+  return -1;
 }
