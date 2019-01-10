@@ -5253,34 +5253,12 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    owned_clause,
                    order ? order : "",
                    order ? (extra_order ? extra_order : "") : "");
-  else if (distinct == 0)
-    init_iterator (iterator,
-                   "%sSELECT %s"
-                   " FROM %ss %s"
-                   " WHERE %s"
-                   " %s%s%s%s%s%s"
-                   " LIMIT %s OFFSET %i;",
-                   with_clause ? with_clause : "",
-                   columns,
-                   type,
-                   extra_tables ? extra_tables : "",
-                   owned_clause,
-                   clause ? " AND (" : "",
-                   clause ? clause : "",
-                   clause ? ")" : "",
-                   extra_where ? extra_where : "",
-                   order ? order : "",
-                   order ? (extra_order ? extra_order : "") : "",
-                   sql_select_limit (max),
-                   first);
   else
-    {
-      init_iterator (iterator,
+    init_iterator (iterator,
                    "%s%sSELECT %s"
                    " FROM %ss %s"
                    " WHERE"
-                   " %s"
-                   "%s%s%s%s%s%s"
+                   " %s%s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i%s;",
                    with_clause ? with_clause : "",
                    distinct ? "SELECT DISTINCT * FROM (" : "",
@@ -5297,7 +5275,6 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    sql_select_limit (max),
                    first,
                    distinct ? ") AS subquery_for_distinct" : "");
-    }
 
   g_free (columns);
   g_free (with_clause);
@@ -14187,11 +14164,6 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   result = make_result (task, "127.0.0.1", "localhost", "telnet (23/tcp)",
                         "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
                         "A telnet server seems to be running on this port.");
-  if (result == 0)
-    {
-      ret = -1;
-      goto exit;
-    }
   now = time (NULL);
   now_string = ctime (&now);
   if (strlen (now_string) == 0)
@@ -14205,7 +14177,8 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   set_task_start_time_otp (task, g_strdup (clean));
   set_scan_start_time_otp (report, g_strdup (clean));
   set_scan_host_start_time_otp (report, "127.0.0.1", clean);
-  report_add_result (report, result);
+  if (result)
+    report_add_result (report, result);
   set_scan_host_end_time_otp (report, "127.0.0.1", clean);
   set_scan_end_time_otp (report, clean);
   g_free (clean);
@@ -21181,7 +21154,10 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   severity = nvt_severity (nvt, type);
   if (!severity)
-    return 0;
+    {
+      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
+      return 0;
+    }
 
   if (!strcmp (severity, ""))
     {
@@ -35442,6 +35418,9 @@ init_target_iterator_one (iterator_t* iterator, target_t target)
   get.id = target_uuid (target);
   get.filter = "owner=any permission=get_targets";
 
+  /* We could pass the return up to the caller, but we don't pass in
+   * a filter id and the callers are all in situations where the
+   * target cannot disappear, so it's safe to ignore the return. */
   init_target_iterator (iterator, &get);
 }
 
@@ -42880,6 +42859,9 @@ init_credential_iterator_one (iterator_t* iterator,
   get.id = credential_uuid (credential);
   get.filter = "owner=any permission=get_credentials";
 
+  /* We could pass the return up to the caller, but we don't pass in
+   * a filter id and the callers are all in situations where the
+   * credential cannot disappear, so it's safe to ignore the return. */
   init_credential_iterator (iterator, &get);
 }
 

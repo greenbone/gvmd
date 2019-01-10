@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/*
+/**
  * @file gmpd.h
  * @brief Headers for the GMP daemon.
  */
@@ -42,17 +42,6 @@
  * @brief Size of \ref from_client and \ref from_scanner data buffers, in bytes.
  */
 #define FROM_BUFFER_SIZE 1048576
-
-extern buffer_size_t from_buffer_size;
-
-extern char from_client[];
-extern buffer_size_t from_client_start;
-extern buffer_size_t from_client_end;
-extern char *from_scanner;
-extern buffer_size_t from_scanner_start;
-extern buffer_size_t from_scanner_end;
-
-extern struct sockaddr_in scanner_address;
 
 int
 init_gmpd (GSList*, int, const gchar*, int, int, int, int,
