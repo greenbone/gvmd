@@ -1871,7 +1871,7 @@ manage_create_sql_functions ()
              /* Calculate the threat level of a task. */
              "  SELECT severity_to_level (task_severity ($1, $2, $3), 0);"
              "$$ LANGUAGE SQL"
-             " IMMUTABLE;");
+             " STABLE;");
     }
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
