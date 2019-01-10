@@ -971,10 +971,11 @@ copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
   assert (new_ticket);
 
   ret = copy_resource ("ticket", NULL, comment, ticket_id,
-                       "task, report, severity, host, location, solution_type,"
-                       " assigned_to, status, open_time, solved_time,"
-                       " solved_comment, confirmed_time, confirmed_report,"
-                       " closed_time, closed_comment, orphaned_time",
+                       "nvt, task, report, severity, host, location,"
+                       " solution_type, assigned_to, status, open_time,"
+                       " solved_time, solved_comment, confirmed_time,"
+                       " confirmed_report, closed_time, closed_comment,"
+                       " orphaned_time",
                        0, new_ticket, &old_ticket);
   if (ret)
     return ret;
