@@ -85,6 +85,10 @@
  */
 
 #include "gmp.h"
+#include "gmp_base.h"
+#include "gmp_delete.h"
+#include "gmp_get.h"
+#include "gmp_tickets.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "utils.h"
@@ -130,9 +134,6 @@
 void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
                     int, int, const char *, iterator_t *, int);
-
-static void
-buffer_xml_append_printf (GString*, const char*, ...);
 
 
 /* Helper functions. */
@@ -313,61 +314,6 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
 }
 
 /**
- * @brief Find an attribute in a parser callback list of attributes.
- *
- * @param[in]   attribute_names   List of names.
- * @param[in]   attribute_values  List of values.
- * @param[in]   attribute_name    Name of sought attribute.
- * @param[out]  attribute_value   Attribute value return.
- *
- * @return 1 if found, else 0.
- */
-static int
-find_attribute (const gchar **attribute_names,
-                const gchar **attribute_values,
-                const char *attribute_name,
-                const gchar **attribute_value)
-{
-  while (*attribute_names && *attribute_values)
-    if (strcmp (*attribute_names, attribute_name))
-      attribute_names++, attribute_values++;
-    else
-      {
-        *attribute_value = *attribute_values;
-        return 1;
-      }
-  return 0;
-}
-
-/**
- * @brief Find an attribute in a parser callback list of attributes and append
- * @brief it to a string using gvm_append_string.
- *
- * @param[in]   attribute_names   List of names.
- * @param[in]   attribute_values  List of values.
- * @param[in]   attribute_name    Name of sought attribute.
- * @param[out]  string            String to append attribute value to, if
- *                                found.
- *
- * @return 1 if found and appended, else 0.
- */
-static int
-append_attribute (const gchar **attribute_names,
-                  const gchar **attribute_values,
-                  const char *attribute_name,
-                  gchar **string)
-{
-  const gchar* attribute;
-  if (find_attribute (attribute_names, attribute_values, attribute_name,
-                      &attribute))
-    {
-      gvm_append_string (string, attribute);
-      return 1;
-    }
-  return 0;
-}
-
-/**
  * @brief A simple key/value-pair.
  */
 typedef struct
@@ -375,127 +321,6 @@ typedef struct
   gchar *key;                   ///< The key.
   gchar *value;                 ///< The value.
 } auth_conf_setting_t;
-
-/**
- * @brief Init for a GET handler.
- *
- * @param[in]  command       GMP command name.
- * @param[in]  get           GET data.
- * @param[in]  setting_name  Type name for setting.
- * @param[out] first         First result, from filter.
- *
- * @return 0 success, -1 error.
- */
-static int
-init_get (gchar *command, get_data_t * get, const gchar *setting_name,
-          int *first)
-{
-  gchar *filter, *replacement;
-
-  if (acl_user_may (command) == 0)
-    return 99;
-
-  /* Get any replacement out of get->filter, before it changes.  Used to add
-   * task_id to the filter for GET_REPORTS. */
-
-  if (get->filter_replace && strlen (get->filter_replace) && get->filter)
-    replacement = filter_term_value (get->filter, get->filter_replace);
-  else
-    replacement = NULL;
-
-  /* Switch to the default filter from the setting, if required. */
-
-  if (get->filt_id && strcmp (get->filt_id, FILT_ID_USER_SETTING) == 0)
-    {
-      char *user_filter = setting_filter (setting_name);
-
-      if (user_filter && strlen (user_filter))
-        {
-          get->filt_id = user_filter;
-          get->filter = filter_term (user_filter);
-        }
-      else
-        {
-          free (user_filter);
-          get->filt_id = g_strdup ("0");
-        }
-    }
-
-  /* Get the actual filter string. */
-
-  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
-    {
-      filter = filter_term (get->filt_id);
-      if (filter == NULL)
-        {
-          char *user_filter;
-
-          /* Probably the user deleted the filter, switch to default. */
-
-          g_free (get->filt_id);
-
-          user_filter = setting_filter (setting_name);
-          if (user_filter && strlen (user_filter))
-            {
-              get->filt_id = user_filter;
-              get->filter = filter_term (user_filter);
-              filter = filter_term (get->filt_id);
-            }
-          else
-            get->filt_id = g_strdup ("0");
-        }
-    }
-  else
-    filter = NULL;
-
-  if (replacement)
-    {
-      const gchar *term;
-
-      /* Replace the term in filter.  Used to add task_id to the filter
-       * for GET_REPORTS. */
-
-      term = filter ? filter : get->filter;
-
-      if (term)
-        {
-          gchar *new_filter, *clean;
-
-          clean = manage_clean_filter_remove (term, get->filter_replace);
-          new_filter = g_strdup_printf
-                        ("%s=%s %s",
-                         get->filter_replace,
-                         replacement,
-                         clean);
-          g_free (clean);
-          if (get->filter)
-            {
-              g_free (get->filter);
-              get->filter = new_filter;
-            }
-          else
-            {
-              g_free (filter);
-              filter = new_filter;
-            }
-          get->filter_replacement = g_strdup (new_filter);
-        }
-
-      g_free (replacement);
-    }
-
-  /* Get the value of "first" from the filter string.
-   *
-   * This is used by get_next when the result set is empty, to determine if
-   * the query should be rerun with first 1.
-   */
-  manage_filter_controls (filter ? filter : get->filter, first, NULL, NULL,
-                          NULL);
-
-  g_free (filter);
-
-  return 0;
-}
 
 /**
  * @brief Check that a string represents a valid x509 Certificate.
@@ -656,143 +481,7 @@ check_public_key (const char *key_str)
 }
 
 
-/* Status codes. */
-
-/* HTTP status codes used:
- *
- *     200 OK
- *     201 Created
- *     202 Accepted
- *     400 Bad request
- *     401 Must auth
- *     404 Missing
- */
-
-/**
- * @brief Response code for a syntax error.
- */
-#define STATUS_ERROR_SYNTAX            "400"
-
-/**
- * @brief Response code when authorisation is required.
- */
-#define STATUS_ERROR_MUST_AUTH         "401"
-
-/**
- * @brief Response code when authorisation is required.
- */
-#define STATUS_ERROR_MUST_AUTH_TEXT    "Authenticate first"
-
-/**
- * @brief Response code for forbidden access.
- */
-#define STATUS_ERROR_ACCESS            "403"
-
-/**
- * @brief Response code text for forbidden access.
- */
-#define STATUS_ERROR_ACCESS_TEXT       "Access to resource forbidden"
-
-/**
- * @brief Response code for a missing resource.
- */
-#define STATUS_ERROR_MISSING           "404"
-
-/**
- * @brief Response code text for a missing resource.
- */
-#define STATUS_ERROR_MISSING_TEXT      "Resource missing"
-
-/**
- * @brief Response code for a busy resource.
- */
-#define STATUS_ERROR_BUSY              "409"
-
-/**
- * @brief Response code text for a busy resource.
- */
-#define STATUS_ERROR_BUSY_TEXT         "Resource busy"
-
-/**
- * @brief Response code when authorisation failed.
- */
-#define STATUS_ERROR_AUTH_FAILED       "400"
-
-/**
- * @brief Response code text when authorisation failed.
- */
-#define STATUS_ERROR_AUTH_FAILED_TEXT  "Authentication failed"
-
-/**
- * @brief Response code on success.
- */
-#define STATUS_OK                      "200"
-
-/**
- * @brief Response code text on success.
- */
-#define STATUS_OK_TEXT                 "OK"
-
-/**
- * @brief Response code on success, when a resource is created.
- */
-#define STATUS_OK_CREATED              "201"
-
-/**
- * @brief Response code on success, when a resource is created.
- */
-#define STATUS_OK_CREATED_TEXT         "OK, resource created"
-
-/**
- * @brief Response code on success, when the operation will finish later.
- */
-#define STATUS_OK_REQUESTED            "202"
-
-/**
- * @brief Response code text on success, when the operation will finish later.
- */
-#define STATUS_OK_REQUESTED_TEXT       "OK, request submitted"
-
-/**
- * @brief Response code for an internal error.
- */
-#define STATUS_INTERNAL_ERROR          "500"
-
-/**
- * @brief Response code text for an internal error.
- */
-#define STATUS_INTERNAL_ERROR_TEXT     "Internal error"
-
-/**
- * @brief Response code when a service is unavailable.
- */
-#define STATUS_SERVICE_UNAVAILABLE     "503"
-
-/**
- * @brief Response code when a service is down.
- */
-#define STATUS_SERVICE_DOWN            "503"
-
-/**
- * @brief Response code text when a service is down.
- */
-#define STATUS_SERVICE_DOWN_TEXT       "Service temporarily down"
-
-
 /* GMP parser. */
-
-/**
- * @brief A handle on a GMP parser.
- */
-typedef struct
-{
-  int (*client_writer) (const char*, void*);  ///< Writes to the client.
-  void* client_writer_data;       ///< Argument to client_writer.
-  int importing;                  ///< Whether the current op is importing.
-  int read_over;                  ///< Read over any child elements.
-  int parent_state;               ///< Parent state when reading over.
-  gchar **disabled_commands;      ///< Disabled commands.
-} gmp_parser_t;
 
 static int
 process_gmp (gmp_parser_t *, const gchar *, gchar **);
@@ -2471,59 +2160,6 @@ get_data_reset (get_data_t *data)
   free (data->type);
 
   memset (data, 0, sizeof (get_data_t));
-}
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data              GET operation data.
- * @param[in]  type              Resource type.
- * @param[in]  attribute_names   XML attribute names.
- * @param[in]  attribute_values  XML attribute values.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_data_parse_attributes (get_data_t *data, const gchar *type,
-                           const gchar **attribute_names,
-                           const gchar **attribute_values)
-{
-  gchar *name;
-  const gchar *attribute;
-
-  data->type = g_strdup (type);
-
-  append_attribute (attribute_names, attribute_values, "filter",
-                    &data->filter);
-
-  name = g_strdup_printf ("%s_id", type);
-  append_attribute (attribute_names, attribute_values, name,
-                    &data->id);
-  g_free (name);
-
-  append_attribute (attribute_names, attribute_values, "filt_id",
-                    &data->filt_id);
-
-  if (find_attribute (attribute_names, attribute_values,
-                      "trash", &attribute))
-    data->trash = strcmp (attribute, "0");
-  else
-    data->trash = 0;
-
-  if (find_attribute (attribute_names, attribute_values,
-                      "details", &attribute))
-    data->details = strcmp (attribute, "0");
-  else
-    data->details = 0;
-
-  if (find_attribute (attribute_names, attribute_values,
-                      "ignore_pagination", &attribute))
-    data->ignore_pagination = strcmp (attribute, "0");
-  else
-    data->ignore_pagination = 0;
-
-  append_attribute (attribute_names, attribute_values, "filter_replace",
-                    &data->filter_replace);
 }
 
 /**
@@ -5542,6 +5178,7 @@ typedef enum
   CLIENT_CREATE_TASK_SCHEDULE,
   CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
   CLIENT_CREATE_TASK_TARGET,
+  CLIENT_CREATE_TICKET,
   CLIENT_CREATE_USER,
   CLIENT_CREATE_USER_COMMENT,
   CLIENT_CREATE_USER_COPY,
@@ -5574,6 +5211,7 @@ typedef enum
   CLIENT_DELETE_TAG,
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_TASK,
+  CLIENT_DELETE_TICKET,
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
@@ -5608,6 +5246,7 @@ typedef enum
   CLIENT_GET_TAGS,
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
+  CLIENT_GET_TICKETS,
   CLIENT_GET_USERS,
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
@@ -5795,6 +5434,7 @@ typedef enum
   CLIENT_MODIFY_TASK_TARGET,
   CLIENT_MODIFY_TASK_HOSTS_ORDERING,
   CLIENT_MODIFY_TASK_SCANNER,
+  CLIENT_MODIFY_TICKET,
   CLIENT_MODIFY_USER,
   CLIENT_MODIFY_USER_COMMENT,
   CLIENT_MODIFY_USER_GROUPS,
@@ -5844,126 +5484,12 @@ set_client_state (client_state_t state)
 }
 
 
-/* Communication. */
-
-/**
- * @brief Send a response message to the client.
- *
- * @param[in]  msg                       The message, a string.
- * @param[in]  user_send_to_client       Function to send to client.
- * @param[in]  user_send_to_client_data  Argument to \p user_send_to_client.
- *
- * @return TRUE if send to client failed, else FALSE.
- */
-static gboolean
-send_to_client (const char* msg,
-                int (*user_send_to_client) (const char*, void*),
-                void* user_send_to_client_data)
-{
-  if (user_send_to_client && msg)
-    return user_send_to_client (msg, user_send_to_client_data);
-  return FALSE;
-}
-
-/**
- * @brief Send an XML element error response message to the client.
- *
- * @param[in]  command  Command name.
- * @param[in]  element  Element name.
- * @param[in]  write_to_client       Function to write to client.
- * @param[in]  write_to_client_data  Argument to \p write_to_client.
- *
- * @return TRUE if out of space in to_client, else FALSE.
- */
-static gboolean
-send_element_error_to_client (const char* command, const char* element,
-                              int (*write_to_client) (const char*, void*),
-                              void* write_to_client_data)
-{
-  gchar *msg;
-  gboolean ret;
-
-  /** @todo Set gerror so parsing terminates. */
-  msg = g_strdup_printf ("<%s_response status=\""
-                         STATUS_ERROR_SYNTAX
-                         "\" status_text=\"Bogus element: %s\"/>",
-                         command,
-                         element);
-  ret = send_to_client (msg, write_to_client, write_to_client_data);
-  g_free (msg);
-  return ret;
-}
-
-/**
- * @brief Send an XML find error response message to the client.
- *
- * @param[in]  command      Command name.
- * @param[in]  type         Resource type.
- * @param[in]  id           Resource ID.
- * @param[in]  gmp_parser   GMP Parser.
- *
- * @return TRUE if out of space in to_client, else FALSE.
- */
-static gboolean
-send_find_error_to_client (const char* command, const char* type,
-                           const char* id, gmp_parser_t *gmp_parser)
-{
-  gchar *msg;
-  gboolean ret;
-
-  msg = g_strdup_printf ("<%s_response status=\""
-                         STATUS_ERROR_MISSING
-                         "\" status_text=\"Failed to find %s '%s'\"/>",
-                         command, type, id);
-  ret = send_to_client (msg, gmp_parser->client_writer,
-                        gmp_parser->client_writer_data);
-  g_free (msg);
-  return ret;
-}
-
-/**
- * @brief Set an out of space parse error on a GError.
- *
- * @param [out]  error  The error.
- */
-static void
-error_send_to_client (GError** error)
-{
-  g_debug ("   send_to_client out of space in to_client\n");
-  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
-               "Manager out of space for reply to client.");
-}
-
-/**
- * @brief Set an internal error on a GError.
- *
- * @param [out]  error  The error.
- */
-static void
-internal_error_send_to_client (GError** error)
-{
-  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
-               "Internal Error.");
-}
-
-
 /* XML parser handlers. */
 
 /**
  * @brief Expand to XML for a STATUS_ERROR_SYNTAX response.
  *
- * @param  tag   Name of the command generating the response.
- * @param  text  Text for the status_text attribute of the response.
- */
-#define XML_ERROR_SYNTAX(tag, text)                      \
- "<" tag "_response"                                     \
- " status=\"" STATUS_ERROR_SYNTAX "\""                   \
- " status_text=\"" text "\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_ERROR_SYNTAX response.
- *
- * This is a variant of the \ref XML_ERROR_SYNTAX macro to allow for a
+ * This is a variant of the XML_ERROR_SYNTAX macro to allow for a
  * runtime defined syntax_text attribute value.
  *
  * @param  tag   Name of the command generating the response.
@@ -5986,722 +5512,21 @@ make_xml_error_syntax (const char *tag, const char *text)
   return ret;
 }
 
-
 /**
- * @brief Expand to XML for a STATUS_ERROR_ACCESS response.
+ * @brief Insert else clause for GET command in gmp_xml_handle_start_element.
  *
- * @param  tag  Name of the command generating the response.
+ * @param[in]  lower  What to get, in lowercase.
+ * @param[in]  upper  What to get, in uppercase.
  */
-#define XML_ERROR_ACCESS(tag)                            \
- "<" tag "_response"                                     \
- " status=\"" STATUS_ERROR_ACCESS "\""                   \
- " status_text=\"" STATUS_ERROR_ACCESS_TEXT "\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_SERVICE_UNAVAILABLE response.
- *
- * @param  tag   Name of the command generating the response.
- * @param  text  Status text.
- */
-#define XML_ERROR_UNAVAILABLE(tag, text)                  \
- "<" tag "_response"                                      \
- " status=\"" STATUS_SERVICE_UNAVAILABLE "\""             \
- " status_text=\"" text "\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_ERROR_MISSING response.
- *
- * @param  tag  Name of the command generating the response.
- */
-#define XML_ERROR_MISSING(tag)                           \
- "<" tag "_response"                                     \
- " status=\"" STATUS_ERROR_MISSING "\""                  \
- " status_text=\"" STATUS_ERROR_MISSING_TEXT "\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_ERROR_AUTH_FAILED response.
- *
- * @param  tag  Name of the command generating the response.
- */
-#define XML_ERROR_AUTH_FAILED(tag)                       \
- "<" tag "_response"                                     \
- " status=\"" STATUS_ERROR_AUTH_FAILED "\""              \
- " status_text=\"" STATUS_ERROR_AUTH_FAILED_TEXT "\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_ERROR_BUSY response.
- *
- * @param  tag  Name of the command generating the response.
- */
-#define XML_ERROR_BUSY(tag)                              \
- "<" tag "_response"                                     \
- " status=\"" STATUS_ERROR_BUSY "\""                     \
- " status_text=\"" STATUS_ERROR_BUSY_TEXT "\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_OK response.
- *
- * @param  tag  Name of the command generating the response.
- */
-#define XML_OK(tag)                                      \
- "<" tag "_response"                                     \
- " status=\"" STATUS_OK "\""                             \
- " status_text=\"" STATUS_OK_TEXT "\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_OK_CREATED response.
- *
- * @param  tag  Name of the command generating the response.
- */
-#define XML_OK_CREATED(tag)                              \
- "<" tag "_response"                                     \
- " status=\"" STATUS_OK_CREATED "\""                     \
- " status_text=\"" STATUS_OK_CREATED_TEXT "\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_OK_CREATED response with %s for ID.
- *
- * @param  tag  Name of the command generating the response.
- */
-#define XML_OK_CREATED_ID(tag)                           \
- "<" tag "_response"                                     \
- " status=\"" STATUS_OK_CREATED "\""                     \
- " status_text=\"" STATUS_OK_CREATED_TEXT "\""           \
- " id=\"%s\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_OK_REQUESTED response.
- *
- * @param  tag  Name of the command generating the response.
- */
-#define XML_OK_REQUESTED(tag)                            \
- "<" tag "_response"                                     \
- " status=\"" STATUS_OK_REQUESTED "\""                   \
- " status_text=\"" STATUS_OK_REQUESTED_TEXT "\"/>"
-
-/**
- * @brief Expand to XML for a STATUS_INTERNAL_ERROR response.
- *
- * @param  tag  Name of the command generating the response.
- */
-#define XML_INTERNAL_ERROR(tag)                          \
- "<" tag "_response"                                     \
- " status=\"" STATUS_INTERNAL_ERROR "\""                 \
- " status_text=\"" STATUS_INTERNAL_ERROR_TEXT "\"/>"
-
-/**
- * @brief Sends XML for a STATUS_SERVICE_DOWN response.
- *
- * @param  tag  Name of the command generating the response.
- */
-#define SEND_XML_SERVICE_DOWN(tag)                                            \
-  do {                                                                        \
-    char *str;                                                                \
-    if (scanner_current_loading && scanner_total_loading)                     \
-      str = g_strdup_printf ("<%s_response status='%s' "                      \
-                             "status_text='Scanner loading nvts (%d/%d)'/>",  \
-                             tag, STATUS_SERVICE_DOWN,                        \
-                             scanner_current_loading, scanner_total_loading); \
-    else                                                                      \
-      str = g_strdup_printf ("<%s_response status='%s' status_text='%s'/>",   \
-                             tag, STATUS_SERVICE_DOWN,                        \
-                             STATUS_SERVICE_DOWN_TEXT);                       \
-    SEND_TO_CLIENT_OR_FAIL(str);                                              \
-    g_free (str);                                                             \
-  } while (0);
-
-/** @cond STATIC */
-
-/**
- * @brief Send start of GET response.
- *
- * @param[in]  type                  Type.
- * @param[in]  write_to_client       Function that sends to clients.
- * @param[in]  write_to_client_data  Data for write_to_client.
- */
-static int
-send_get_start (const char *type, int (*write_to_client) (const char*, void*),
-                void* write_to_client_data)
-{
-  gchar *msg;
-
-  if (strcmp (type, "info"))
-    msg = g_markup_printf_escaped ("<get_%ss_response"
-                                   " status=\"" STATUS_OK "\""
-                                   " status_text=\"" STATUS_OK_TEXT "\">",
-                                   type);
-  else
-    msg = g_markup_printf_escaped ("<get_%s_response"
-                                   " status=\"" STATUS_OK "\""
-                                   " status_text=\"" STATUS_OK_TEXT "\">",
-                                   type);
-
-
-  if (send_to_client (msg, write_to_client, write_to_client_data))
-    {
-      g_free (msg);
-      return 1;
-    }
-  g_free (msg);
-  return 0;
-}
-
-/**
- * @brief Send common part of GET response for a single resource.
- *
- * @param[in]  type                  Type.
- * @param[in]  get                   GET data.
- * @param[in]  iterator              Iterator.
- * @param[in]  write_to_client       Function that sends to clients.
- * @param[in]  write_to_client_data  Data for write_to_client.
- * @param[in]  writable              Whether the resource is writable.
- * @param[in]  in_use                Whether the resource is in use.
- *
- * @return 0 success, 1 send error.
- */
-static int
-send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
-                 int (*write_to_client) (const char *, void*),
-                 void* write_to_client_data, int writable, int in_use)
-{
-  GString *buffer;
-  const char *tag_type;
-  iterator_t tags;
-  int tag_count;
-
-  buffer = g_string_new ("");
-
-  buffer_xml_append_printf (buffer,
-                            "<%s id=\"%s\">"
-                            "<owner><name>%s</name></owner>"
-                            "<name>%s</name>"
-                            "<comment>%s</comment>"
-                            "<creation_time>%s</creation_time>"
-                            "<modification_time>%s</modification_time>"
-                            "<writable>%i</writable>"
-                            "<in_use>%i</in_use>"
-                            "<permissions>",
-                            type,
-                            get_iterator_uuid (iterator)
-                            ? get_iterator_uuid (iterator)
-                            : "",
-                            get_iterator_owner_name (iterator)
-                            ? get_iterator_owner_name (iterator)
-                            : "",
-                            get_iterator_name (iterator)
-                            ? get_iterator_name (iterator)
-                            : "",
-                            get_iterator_comment (iterator)
-                            ? get_iterator_comment (iterator)
-                            : "",
-                            get_iterator_creation_time (iterator)
-                            ? get_iterator_creation_time (iterator)
-                            : "",
-                            get_iterator_modification_time (iterator)
-                            ? get_iterator_modification_time (iterator)
-                            : "",
-                            writable,
-                            in_use);
-
-  if (/* The user is the owner. */
-      (current_credentials.username
-       && get_iterator_owner_name (iterator)
-       && (strcmp (get_iterator_owner_name (iterator),
-                   current_credentials.username)
-           == 0))
-      /* Or the user is effectively the owner. */
-      || acl_user_has_super (current_credentials.uuid,
-                             get_iterator_owner (iterator))
-      /* Or the user has Admin rights and the resource is a permission or a
-       * report format... */
-      || (current_credentials.uuid
-          && (((strcmp (type, "permission") == 0)
-               || (strcmp (type, "report_format") == 0))
-              && get_iterator_uuid (iterator)
-              /* ... but not the special Admin permission. */
-              && permission_is_admin (get_iterator_uuid (iterator)))
-          && acl_user_can_everything (current_credentials.uuid)))
-    {
-      buffer_xml_append_printf (buffer,
-                                "<permission>"
-                                "<name>Everything</name>"
-                                "</permission>"
-                                "</permissions>");
-    }
-  else if (current_credentials.uuid
-           && ((strcmp (type, "user") == 0)
-               || (strcmp (type, "role") == 0)
-               || (strcmp (type, "group") == 0))
-           && (get_iterator_owner (iterator) == 0)
-           && acl_user_can_everything (current_credentials.uuid))
-    {
-      if ((strcmp (type, "user") == 0)
-          && acl_user_can_super_everyone (get_iterator_uuid (iterator))
-          && strcmp (get_iterator_uuid (iterator), current_credentials.uuid))
-        {
-          /* Resource is the Super Admin. */
-          buffer_xml_append_printf (buffer,
-                                    "<permission><name>get_users</name></permission>"
-                                    "</permissions>");
-        }
-      else
-        /* The user has admin rights and it's a global user/role/group.
-         *
-         * These are left over from before users/roles/groups had owners. */
-        buffer_xml_append_printf (buffer,
-                                  "<permission>"
-                                  "<name>Everything</name>"
-                                  "</permission>"
-                                  "</permissions>");
-    }
-  else
-    {
-      iterator_t perms;
-      get_data_t perms_get;
-
-      memset (&perms_get, '\0', sizeof (perms_get));
-      perms_get.filter = g_strdup_printf ("resource_uuid=%s"
-                                          " owner=any"
-                                          " permission=any",
-                                          get_iterator_uuid (iterator));
-      init_permission_iterator (&perms, &perms_get);
-      g_free (perms_get.filter);
-      while (next (&perms))
-        buffer_xml_append_printf (buffer,
-                                  "<permission><name>%s</name></permission>",
-                                  get_iterator_name (&perms));
-      cleanup_iterator (&perms);
-
-      buffer_xml_append_printf (buffer, "</permissions>");
+#define ELSE_GET_START(lower, upper)                                    \
+  else if (strcasecmp ("GET_" G_STRINGIFY (upper), element_name) == 0)  \
+    {                                                                   \
+      get_ ## lower ## _start (attribute_names, attribute_values);      \
+      set_client_state (CLIENT_GET_ ## upper);                          \
     }
 
-  tag_type = get->subtype ? get->subtype : get->type;
-  tag_count = resource_tag_count (tag_type,
-                                  get_iterator_resource (iterator),
-                                  1);
-
-  if (tag_count)
-    {
-      if (get->details || get->id)
-        {
-          buffer_xml_append_printf (buffer,
-                                    "<user_tags>"
-                                    "<count>%i</count>",
-                                    tag_count);
-
-          init_resource_tag_iterator (&tags, tag_type,
-                                      get_iterator_resource (iterator),
-                                      1, NULL, 1);
-
-          while (next (&tags))
-            {
-              buffer_xml_append_printf (buffer,
-                                        "<tag id=\"%s\">"
-                                        "<name>%s</name>"
-                                        "<value>%s</value>"
-                                        "<comment>%s</comment>"
-                                        "</tag>",
-                                        resource_tag_iterator_uuid (&tags),
-                                        resource_tag_iterator_name (&tags),
-                                        resource_tag_iterator_value (&tags),
-                                        resource_tag_iterator_comment (&tags));
-            }
-
-          cleanup_iterator (&tags);
-
-          buffer_xml_append_printf (buffer,
-                                    "</user_tags>");
-        }
-      else
-        {
-          buffer_xml_append_printf (buffer,
-                                    "<user_tags>"
-                                    "<count>%i</count>"
-                                    "</user_tags>",
-                                    tag_count);
-        }
-    }
-
-  if (send_to_client (buffer->str, write_to_client, write_to_client_data))
-    {
-      g_string_free (buffer, TRUE);
-      return 1;
-    }
-  g_string_free (buffer, TRUE);
-  return 0;
-}
-
 /**
- * @brief Write data of a GET command filter to a string buffer as XML.
- *
- * @param[in] msg          The string buffer to write to.
- * @param[in] type         The filtered type.
- * @param[in] get          GET data.
- * @param[in] filter_term  Filter term.
- */
-int
-buffer_get_filter_xml (GString *msg, const char* type,
-                       const get_data_t *get, const char* filter_term,
-                       const char *extra_xml)
-{
-  keyword_t **point;
-  array_t *split;
-  filter_t filter;
-
-  buffer_xml_append_printf (msg,
-                            "<filters id=\"%s\">"
-                            "<term>%s</term>",
-                            get->filt_id ? get->filt_id : "",
-                            filter_term);
-
-  if (get->filt_id
-      && strcmp (get->filt_id, "")
-      && (find_filter_with_permission (get->filt_id, &filter, "get_filters")
-          == 0)
-      && filter != 0)
-    buffer_xml_append_printf (msg,
-                              "<name>%s</name>",
-                              filter_name (filter));
-
-  if (extra_xml)
-    g_string_append (msg, extra_xml);
-
-  buffer_xml_append_printf (msg,
-                            "<keywords>");
-
-  split = split_filter (filter_term);
-  point = (keyword_t**) split->pdata;
-  while (*point)
-    {
-      keyword_t *keyword;
-      keyword = *point;
-      buffer_xml_append_printf (msg,
-                                "<keyword>"
-                                "<column>%s</column>"
-                                "<relation>%s</relation>"
-                                "<value>%s%s%s</value>"
-                                "</keyword>",
-                                keyword->column ? keyword->column : "",
-                                keyword->equal
-                                  ? "="
-                                  : (keyword_special (keyword)
-                                       ? ""
-                                       : keyword_relation_symbol (keyword->relation)),
-                                keyword->quoted ? "\"" : "",
-                                keyword->string ? keyword->string : "",
-                                keyword->quoted ? "\"" : "");
-      point++;
-    }
-  filter_free (split);
-
-  buffer_xml_append_printf (msg,
-                            "</keywords>"
-                            "</filters>");
-  return 0;
-}
-
-/**
- * @brief Send end of GET response.
- *
- * @param[in]  type                  Type.
- * @param[in]  get                   GET data.
- * @param[in]  get_counts            Include counts.
- * @param[in]  count                 Page count.
- * @param[in]  filtered              Filtered count.
- * @param[in]  full                  Full count.
- * @param[in]  write_to_client       Function that sends to clients.
- * @param[in]  write_to_client_data  Data for write_to_client.
- */
-static int
-send_get_end_internal (const char *type, get_data_t *get, int get_counts,
-                       int count, int filtered, int full,
-                       int (*write_to_client) (const char *, void*),
-                       void* write_to_client_data)
-{
-  gchar *sort_field, *filter;
-  int first, max, sort_order;
-  GString *type_many, *msg;
-
-  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
-    {
-      if (get->filter_replacement)
-        filter = g_strdup (get->filter_replacement);
-      else
-        filter = filter_term (get->filt_id);
-      if (filter == NULL)
-        return 2;
-    }
-  else
-    filter = NULL;
-
-  manage_filter_controls (filter ? filter : get->filter,
-                          &first, &max, &sort_field, &sort_order);
-
-  if (get->ignore_pagination
-      && (strcmp (type, "task") == 0))
-    {
-      first = 1;
-      max = -1;
-    }
-
-  max = manage_max_rows (max);
-
-  if (filter || get->filter)
-    {
-      gchar *new_filter;
-      new_filter = manage_clean_filter (filter ? filter : get->filter);
-      g_free (filter);
-      if ((strcmp (type, "task") == 0)
-          || (strcmp (type, "report") == 0)
-          || (strcmp (type, "result") == 0))
-        {
-          gchar *value;
-
-          value = filter_term_value (new_filter, "min_qod");
-          if (value == NULL)
-            {
-              filter = new_filter;
-              new_filter = g_strdup_printf ("min_qod=%i %s",
-                                            MIN_QOD_DEFAULT,
-                                            filter);
-              g_free (filter);
-            }
-          g_free (value);
-
-          value = filter_term_value (new_filter, "apply_overrides");
-          if (value == NULL)
-            {
-              filter = new_filter;
-              new_filter = g_strdup_printf ("apply_overrides=%i %s",
-                                            APPLY_OVERRIDES_DEFAULT,
-                                            filter);
-              g_free (filter);
-            }
-          g_free (value);
-        }
-      filter = new_filter;
-    }
-  else
-    {
-      if ((strcmp (type, "task") == 0)
-          || (strcmp (type, "report") == 0)
-          || (strcmp (type, "result") == 0))
-        filter = manage_clean_filter("apply_overrides="
-                                     G_STRINGIFY (APPLY_OVERRIDES_DEFAULT)
-                                     " min_qod="
-                                     G_STRINGIFY (MIN_QOD_DEFAULT));
-      else
-        filter = manage_clean_filter ("");
-    }
-
-  type_many = g_string_new (type);
-
-  if (strcmp (type, "info") != 0)
-    g_string_append (type_many, "s");
-
-  msg = g_string_new ("");
-
-  buffer_get_filter_xml (msg, type, get, filter, NULL);
-
-  buffer_xml_append_printf (msg,
-                            "<sort>"
-                            "<field>%s<order>%s</order></field>"
-                            "</sort>"
-                            "<%s start=\"%i\" max=\"%i\"/>",
-                            sort_field,
-                            sort_order ? "ascending" : "descending",
-                            type_many->str,
-                            first,
-                            max);
-  if (get_counts)
-    buffer_xml_append_printf (msg,
-                              "<%s_count>"
-                              "%i"
-                              "<filtered>%i</filtered>"
-                              "<page>%i</page>"
-                              "</%s_count>",
-                              type,
-                              full,
-                              filtered,
-                              count,
-                              type);
-  buffer_xml_append_printf (msg,
-                            "</get_%s_response>",
-                            type_many->str);
-  g_string_free (type_many, TRUE);
-  g_free (sort_field);
-  g_free (filter);
-
-  if (send_to_client (msg->str, write_to_client, write_to_client_data))
-    {
-      g_string_free (msg, TRUE);
-      return 1;
-    }
-  g_string_free (msg, TRUE);
-  return 0;
-}
-
-/**
- * @brief Send end of GET response.
- *
- * @param[in]  type                  Type.
- * @param[in]  get                   GET data.
- * @param[in]  count                 Page count.
- * @param[in]  filtered              Filtered count.
- * @param[in]  full                  Full count.
- * @param[in]  write_to_client       Function that sends to clients.
- * @param[in]  write_to_client_data  Data for write_to_client.
- */
-static int
-send_get_end (const char *type, get_data_t *get, int count, int filtered,
-              int full, int (*write_to_client) (const char *, void*),
-              void* write_to_client_data)
-{
-  return send_get_end_internal (type, get, 1, count, filtered, full,
-                                write_to_client, write_to_client_data);
-}
-
-/**
- * @brief Send end of GET response, skipping result counts.
- *
- * @param[in]  type                  Type.
- * @param[in]  get                   GET data.
- * @param[in]  count                 Page count.
- * @param[in]  filtered              Filtered count.
- * @param[in]  full                  Full count.
- * @param[in]  write_to_client       Function that sends to clients.
- * @param[in]  write_to_client_data  Data for write_to_client.
- */
-static int
-send_get_end_no_counts (const char *type, get_data_t *get,
-                        int (*write_to_client) (const char *, void*),
-                        void* write_to_client_data)
-{
-  return send_get_end_internal (type, get, 0, 0, 0, 0, write_to_client,
-                                write_to_client_data);
-}
-
-/**
- * @brief Send start of GET response to client, returning on fail.
- *
- * @param[in]  type  Type of resource.
- * @param[in]  get   GET data.
- */
-#define SEND_GET_START(type)                                                 \
-  do                                                                         \
-    {                                                                        \
-      if (send_get_start (type, gmp_parser->client_writer,                   \
-                          gmp_parser->client_writer_data))                   \
-        {                                                                    \
-          error_send_to_client (error);                                      \
-          return;                                                            \
-        }                                                                    \
-    }                                                                        \
-  while (0)
-
-/**
- * @brief Send common part of GET response to client, returning on fail.
- *
- * @param[in]  type      Type of resource.
- * @param[in]  get       GET data.
- * @param[in]  iterator  Iterator.
- */
-#define SEND_GET_COMMON(type, get, iterator)                                   \
-  do                                                                           \
-    {                                                                          \
-      if (send_get_common (G_STRINGIFY (type), get, iterator,                  \
-                           gmp_parser->client_writer,                          \
-                           gmp_parser->client_writer_data,                     \
-                           (get)->trash                                        \
-                            ? trash_ ## type ## _writable                      \
-                               (get_iterator_resource                          \
-                                 (iterator))                                   \
-                            : type ## _writable                                \
-                               (get_iterator_resource                          \
-                                 (iterator)),                                  \
-                           (get)->trash                                        \
-                            ? trash_ ## type ## _in_use                        \
-                               (get_iterator_resource                          \
-                                 (iterator))                                   \
-                            : type ## _in_use                                  \
-                               (get_iterator_resource                          \
-                                 (iterator))))                                 \
-        {                                                                      \
-          error_send_to_client (error);                                        \
-          return;                                                              \
-        }                                                                      \
-    }                                                                          \
-  while (0)
-
-/**
- * @brief Send end of GET response to client, returning on fail.
- *
- * @param[in]  type  Type of resource.
- * @param[in]  get   GET data.
- */
-#define SEND_GET_END(type, get, count, filtered)                             \
-  do                                                                         \
-    {                                                                        \
-      if (send_get_end (type, get, count, filtered,                          \
-                        resource_count (type, get),                          \
-                        gmp_parser->client_writer,                           \
-                        gmp_parser->client_writer_data))                     \
-        {                                                                    \
-          error_send_to_client (error);                                      \
-          return;                                                            \
-        }                                                                    \
-    }                                                                        \
-  while (0)
-
-/**
- * @brief Send response message to client, returning on fail.
- *
- * Queue a message in \ref to_client with \ref send_to_client.  On failure
- * call \ref error_send_to_client on a GError* called "error" and do a return.
- *
- * @param[in]   msg    The message, a string.
- */
-#define SEND_TO_CLIENT_OR_FAIL(msg)                                          \
-  do                                                                         \
-    {                                                                        \
-      if (send_to_client (msg, gmp_parser->client_writer,                    \
-                          gmp_parser->client_writer_data))                   \
-        {                                                                    \
-          error_send_to_client (error);                                      \
-          return;                                                            \
-        }                                                                    \
-    }                                                                        \
-  while (0)
-
-/**
- * @brief Send response message to client, returning on fail.
- *
- * Queue a message in \ref to_client with \ref send_to_client.  On failure
- * call \ref error_send_to_client on a GError* called "error" and do a return.
- *
- * @param[in]   format    Format string for message.
- * @param[in]   args      Arguments for format string.
- */
-#define SENDF_TO_CLIENT_OR_FAIL(format, args...)                             \
-  do                                                                         \
-    {                                                                        \
-      gchar* msg = g_markup_printf_escaped (format , ## args);               \
-      if (send_to_client (msg, gmp_parser->client_writer,                    \
-                          gmp_parser->client_writer_data))                   \
-        {                                                                    \
-          g_free (msg);                                                      \
-          error_send_to_client (error);                                      \
-          return;                                                            \
-        }                                                                    \
-      g_free (msg);                                                          \
-    }                                                                        \
-  while (0)
-
-/** @endcond */
-
-
-/**
- * @brief Insert else clause for gmp_xml_handle_start_element.
+ * @brief Insert else clause for error in gmp_xml_handle_start_element.
  *
  * @param[in]  op  Operation.
  */
@@ -6761,91 +5586,6 @@ send_get_end_no_counts (const char *type, get_data_t *get,
                    "Error");                                         \
     }                                                                \
   break
-
-/**
- * @brief Creates a log event entry for a resource action.
- *
- * @param[in]   type        Resource type.
- * @param[in]   type_name   Resource type name.
- * @param[in]   id          Resource id.
- * @param[in]   action      Action done.
- * @param[in]   fail        Whether it is a fail event.
- */
-static void
-log_event_internal (const char *type, const char *type_name, const char *id,
-                    const char *action, int fail)
-{
-  gchar *domain;
-
-  domain = g_strdup_printf ("event %s", type);
-
-  if (id)
-    {
-      char *name;
-
-      if (manage_resource_name (type, id, &name))
-        name = NULL;
-      else if ((name == NULL)
-               && manage_trash_resource_name (type, id, &name))
-        name = NULL;
-
-      if (name)
-        g_log (domain, G_LOG_LEVEL_MESSAGE,
-               "%s %s (%s) %s %s by %s",
-               type_name, name, id,
-               fail ? "could not be" : "has been",
-               action,
-               current_credentials.username);
-      else
-        g_log (domain, G_LOG_LEVEL_MESSAGE,
-               "%s %s %s %s by %s",
-               type_name, id,
-               fail ? "could not be" : "has been",
-               action,
-               current_credentials.username);
-
-      free (name);
-    }
-  else
-    g_log (domain, G_LOG_LEVEL_MESSAGE,
-           "%s %s %s by %s",
-           type_name,
-           fail ? "could not be" : "has been",
-           action,
-           current_credentials.username);
-
-  g_free (domain);
-}
-
-/**
- * @brief Creates a log event entry for a resource action.
- *
- * @param[in]   type        Resource type.
- * @param[in]   type_name   Resource type name.
- * @param[in]   id          Resource id.
- * @param[in]   action      Action done.
- */
-static void
-log_event (const char *type, const char *type_name, const char *id,
-           const char *action)
-{
-  log_event_internal (type, type_name, id, action, 0);
-}
-
-/**
- * @brief Creates a log event failure entry for a resource action.
- *
- * @param[in]   type        Resource type.
- * @param[in]   type_name   Resource type name.
- * @param[in]   id          Resource id.
- * @param[in]   action      Action done.
- */
-static void
-log_event_fail (const char *type, const char *type_name, const char *id,
-                const char *action)
-{
-  log_event_internal (type, type_name, id, action, 1);
-}
 
 /** @todo Free globals when tags open, in case of duplicate tags. */
 /**
@@ -7042,6 +5782,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_task_data->alerts = make_array ();
             create_task_data->groups = make_array ();
             set_client_state (CLIENT_CREATE_TASK);
+          }
+        else if (strcasecmp ("CREATE_TICKET", element_name) == 0)
+          {
+            create_ticket_start (gmp_parser, attribute_names,
+                                 attribute_values);
+            set_client_state (CLIENT_CREATE_TICKET);
           }
         else if (strcasecmp ("CREATE_USER", element_name) == 0)
           {
@@ -7279,6 +6025,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               delete_task_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_TASK);
+          }
+        else if (strcasecmp ("DELETE_TICKET", element_name) == 0)
+          {
+            delete_start ("ticket", "Ticket",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_TICKET);
           }
         else if (strcasecmp ("DELETE_USER", element_name) == 0)
           {
@@ -7924,6 +6676,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_tasks_data->schedules_only = 0;
             set_client_state (CLIENT_GET_TASKS);
           }
+        ELSE_GET_START (tickets, TICKETS)
         else if (strcasecmp ("GET_USERS", element_name) == 0)
           {
             get_data_parse_attributes (&get_users_data->get, "user",
@@ -8104,6 +6857,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             modify_task_data->alerts = make_array ();
             modify_task_data->groups = make_array ();
             set_client_state (CLIENT_MODIFY_TASK);
+          }
+        else if (strcasecmp ("MODIFY_TICKET", element_name) == 0)
+          {
+            modify_ticket_start (gmp_parser, attribute_names,
+                                 attribute_values);
+            set_client_state (CLIENT_MODIFY_TICKET);
           }
         else if (strcasecmp ("MODIFY_USER", element_name) == 0)
           {
@@ -9056,6 +7815,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE);
         ELSE_ERROR ("modify_task");
+
+      case CLIENT_MODIFY_TICKET:
+        modify_ticket_element_start (gmp_parser, element_name,
+                                     attribute_names,
+                                     attribute_values);
+        break;
 
       case CLIENT_MODIFY_USER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -10453,6 +9218,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE);
         ELSE_ERROR_CREATE_TASK ();
 
+      case CLIENT_CREATE_TICKET:
+        create_ticket_element_start (gmp_parser, element_name,
+                                     attribute_names,
+                                     attribute_values);
+        break;
+
       case CLIENT_CREATE_USER:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_USER_COMMENT);
@@ -10762,25 +9533,6 @@ convert_to_newlines (const char *text)
   *nptr = '\0';
 
   return new;
-}
-
-/**
- * @brief Format XML into a buffer.
- *
- * @param[in]  buffer  Buffer.
- * @param[in]  format  Format string for XML.
- * @param[in]  ...     Arguments for format string.
- */
-static void
-buffer_xml_append_printf (GString *buffer, const char *format, ...)
-{
-  va_list args;
-  gchar *msg;
-  va_start (args, format);
-  msg = g_markup_vprintf_escaped (format, args);
-  va_end (args);
-  g_string_append (buffer, msg);
-  g_free (msg);
 }
 
 /**
@@ -12109,6 +10861,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       g_free (nl_descr_escaped);
     }
 
+  buffer_result_tickets_xml (buffer, get_iterator_uuid (results));
+
   g_string_append (buffer, "</result>");
 }
 
@@ -13310,55 +12064,16 @@ convert_to_manage_ranges (array_t *ranges)
     break
 
 /**
- * @brief Iterate a GET iterator.
+ * @brief Insert GET case for gmp_xml_handle_end_element.
  *
- * If the user requested to start at an offset from the first result, but
- * the result set was empty, then reset the iterator to start from the
- * first result.
- *
- * @param[in]  resources  Resource iterator.
- * @param[in]  get        GET command data.
- * @param[out] first      First.  Number of first item to get.
- * @param[out] count      Count.
- * @param[in]  init       Init function, to reset the iterator.
- *
- * @return What to do next: 0 continue, 1 end, -1 fail.
+ * @param[in]  upper    What to GET, in uppercase.
+ * @param[in]  lower    What to GET, in lowercase.
  */
-static int
-get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
-          int (*init) (iterator_t*, const get_data_t *))
-{
-  if (next (resources) == FALSE)
-   {
-     gchar *new_filter;
-
-     if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
-       /* If filtering by a named filter, then just end, because changing
-        * the filter term would probably surprise the user. */
-       return 1;
-
-     if (*first == 0)
-       return 1;
-
-     if (*first == 1 || *count > 0)
-       /* Some results were found or first was 1, so stop iterating. */
-       return 1;
-
-     /* Reset the iterator with first 1, and start again. */
-     cleanup_iterator (resources);
-     new_filter = g_strdup_printf ("first=1 %s", get->filter);
-     g_free (get->filter);
-     get->filter = new_filter;
-     if (init (resources, get))
-       return -1;
-     *count = 0;
-     *first = 1;
-     if (next (resources) == FALSE)
-       return 1;
-   }
- return 0;
-}
-
+#define CASE_GET_END(upper, lower)              \
+  case CLIENT_GET_ ## upper:                    \
+    get_ ## lower ## _run (gmp_parser, error);  \
+    set_client_state (CLIENT_AUTHENTIC);        \
+    break;
 
 /**
  * @brief Insert DELETE case for gmp_xml_handle_end_element.
@@ -13429,36 +12144,6 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
     delete_ ## type ## _data_reset (delete_ ## type ## _data);              \
     set_client_state (CLIENT_AUTHENTIC);                                    \
     break
-
-/**
- * @brief Call init_get for a GET end handler.
- *
- * @param[in]  type     Resource type.
- * @param[in]  capital  Resource type, capitalised.
- */
-#define INIT_GET(type, capital)                                          \
-  count = 0;                                                             \
-  ret = init_get ("get_" G_STRINGIFY (type) "s",                         \
-                  &get_ ## type ## s_data->get,                          \
-                  G_STRINGIFY (capital) "s",                             \
-                  &first);                                               \
-  if (ret)                                                               \
-    {                                                                    \
-      switch (ret)                                                       \
-        {                                                                \
-          case 99:                                                       \
-            SEND_TO_CLIENT_OR_FAIL                                       \
-             (XML_ERROR_SYNTAX ("get_" G_STRINGIFY (type) "s",           \
-                                "Permission denied"));                   \
-            break;                                                       \
-          default:                                                       \
-            internal_error_send_to_client (error);                       \
-            return;                                                      \
-        }                                                                \
-      get_ ## type ## s_data_reset (get_ ## type ## s_data);             \
-      set_client_state (CLIENT_AUTHENTIC);                               \
-      return;                                                            \
-    }
 
 /**
  * @brief Get list of ovaldi definitions files from the SCAP ovaldefs table.
@@ -21914,6 +20599,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_DELETE_TICKET:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_DELETE_USER:
         if (delete_user_data->user_id || delete_user_data->name)
           switch (delete_user (delete_user_data->user_id,
@@ -22141,102 +20831,135 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
       case CLIENT_GET_AGENTS:
-        return handle_get_agents (gmp_parser, error);
+        handle_get_agents (gmp_parser, error);
+        break;
 
       case CLIENT_GET_AGGREGATES:
-        return handle_get_aggregates (gmp_parser, error);
+        handle_get_aggregates (gmp_parser, error);
+        break;
 
       CLOSE (CLIENT_GET_AGGREGATES, DATA_COLUMN);
       CLOSE (CLIENT_GET_AGGREGATES, SORT);
       CLOSE (CLIENT_GET_AGGREGATES, TEXT_COLUMN);
 
       case CLIENT_GET_ALERTS:
-        return handle_get_alerts (gmp_parser, error);
+        handle_get_alerts (gmp_parser, error);
+        break;
 
       case CLIENT_GET_ASSETS:
-        return handle_get_assets (gmp_parser, error);
+        handle_get_assets (gmp_parser, error);
+        break;
 
       case CLIENT_GET_CONFIGS:
-        return handle_get_configs (gmp_parser, error);
+        handle_get_configs (gmp_parser, error);
+        break;
 
       case CLIENT_GET_CREDENTIALS:
-        return handle_get_credentials (gmp_parser, error);
+        handle_get_credentials (gmp_parser, error);
+        break;
 
       case CLIENT_GET_FEEDS:
-        return handle_get_feeds (gmp_parser, error);
+        handle_get_feeds (gmp_parser, error);
+        break;
 
       case CLIENT_GET_FILTERS:
-        return handle_get_filters (gmp_parser, error);
+        handle_get_filters (gmp_parser, error);
+        break;
 
       case CLIENT_GET_GROUPS:
-        return handle_get_groups (gmp_parser, error);
+        handle_get_groups (gmp_parser, error);
+        break;
 
       case CLIENT_GET_INFO:
-        return handle_get_info (gmp_parser, error);
+        handle_get_info (gmp_parser, error);
+        break;
 
       case CLIENT_GET_NOTES:
-        return handle_get_notes (gmp_parser, error);
+        handle_get_notes (gmp_parser, error);
+        break;
 
       case CLIENT_GET_NVTS:
-        return handle_get_nvts (gmp_parser, error);
+        handle_get_nvts (gmp_parser, error);
+        break;
 
       case CLIENT_GET_NVT_FAMILIES:
-        return handle_get_nvt_families (gmp_parser, error);
+        handle_get_nvt_families (gmp_parser, error);
+        break;
 
       case CLIENT_GET_OVERRIDES:
-        return handle_get_overrides (gmp_parser, error);
+        handle_get_overrides (gmp_parser, error);
+        break;
 
       case CLIENT_GET_PERMISSIONS:
-        return handle_get_permissions (gmp_parser, error);
+        handle_get_permissions (gmp_parser, error);
+        break;
 
       case CLIENT_GET_PORT_LISTS:
-        return handle_get_port_lists (gmp_parser, error);
+        handle_get_port_lists (gmp_parser, error);
+        break;
 
       case CLIENT_GET_PREFERENCES:
-        return handle_get_preferences (gmp_parser, error);
+        handle_get_preferences (gmp_parser, error);
+        break;
 
       case CLIENT_GET_REPORTS:
-        return handle_get_reports (gmp_parser, error);
+        handle_get_reports (gmp_parser, error);
+        break;
 
       case CLIENT_GET_REPORT_FORMATS:
-        return handle_get_report_formats (gmp_parser, error);
+        handle_get_report_formats (gmp_parser, error);
+        break;
 
       case CLIENT_GET_RESULTS:
-        return handle_get_results (gmp_parser, error);
+        handle_get_results (gmp_parser, error);
+        break;
 
       case CLIENT_GET_ROLES:
-        return handle_get_roles (gmp_parser, error);
+        handle_get_roles (gmp_parser, error);
+        break;
 
       case CLIENT_GET_SCANNERS:
-        return handle_get_scanners (gmp_parser, error);
+        handle_get_scanners (gmp_parser, error);
+        break;
 
       case CLIENT_GET_SCHEDULES:
-        return handle_get_schedules (gmp_parser, error);
+        handle_get_schedules (gmp_parser, error);
+        break;
 
       case CLIENT_GET_SETTINGS:
-        return handle_get_settings (gmp_parser, error);
+        handle_get_settings (gmp_parser, error);
+        break;
 
       case CLIENT_GET_SYSTEM_REPORTS:
-        return handle_get_system_reports (gmp_parser, error);
+        handle_get_system_reports (gmp_parser, error);
+        break;
 
       case CLIENT_GET_TAGS:
-        return handle_get_tags (gmp_parser, error);
+        handle_get_tags (gmp_parser, error);
+        break;
 
       case CLIENT_GET_TARGETS:
-        return handle_get_targets (gmp_parser, error);
+        handle_get_targets (gmp_parser, error);
+        break;
 
       case CLIENT_GET_TASKS:
-        return handle_get_tasks (gmp_parser, error);
+        handle_get_tasks (gmp_parser, error);
+        break;
+
+      CASE_GET_END (TICKETS, tickets);
 
       case CLIENT_GET_USERS:
-        return handle_get_users (gmp_parser, error);
+        handle_get_users (gmp_parser, error);
+        break;
 
       case CLIENT_GET_VERSION:
       case CLIENT_GET_VERSION_AUTHENTIC:
-        return handle_get_version (gmp_parser, error);
+        handle_get_version (gmp_parser, error);
+        break;
 
       case CLIENT_GET_VULNS:
-        return handle_get_vulns (gmp_parser, error);
+        handle_get_vulns (gmp_parser, error);
+        break;
 
       case CLIENT_HELP:
         if (acl_user_may ("help") == 0)
@@ -22313,6 +21036,61 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                    &content_type))
               {
                 case 0:
+                  {
+
+                    SENDF_TO_CLIENT_OR_FAIL ("<help_response"
+                                             " status=\"" STATUS_OK "\""
+                                             " status_text=\"" STATUS_OK_TEXT "\">"
+                                             "<schema"
+                                             " format=\"%s\""
+                                             " extension=\"%s\""
+                                             " content_type=\"%s\">",
+                                             help_data->format
+                                              ? help_data->format
+                                              : "XML",
+                                             extension,
+                                             content_type);
+                    g_free (extension);
+                    g_free (content_type);
+
+                    if (output && strlen (output))
+                      {
+                        /* Encode and send the output. */
+
+                        if (help_data->format
+                            && strcasecmp (help_data->format, "XML"))
+                          {
+                            gchar *base64;
+
+                            base64 = g_base64_encode ((guchar*) output, output_len);
+                            if (send_to_client (base64,
+                                                write_to_client,
+                                                write_to_client_data))
+                              {
+                                g_free (output);
+                                g_free (base64);
+                                error_send_to_client (error);
+                                return;
+                              }
+                            g_free (base64);
+                          }
+                        else
+                          {
+                            /* Special case the XML schema, bah. */
+                            if (send_to_client (output,
+                                                write_to_client,
+                                                write_to_client_data))
+                              {
+                                g_free (output);
+                                error_send_to_client (error);
+                                return;
+                              }
+                          }
+                      }
+                    g_free (output);
+                    SEND_TO_CLIENT_OR_FAIL ("</schema>"
+                                            "</help_response>");
+                  }
                   break;
                 case 1:
                   assert (help_data->format);
@@ -22322,78 +21100,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
                   break;
                 case 2:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("help",
                                       "Brief help is only available in XML."));
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("help"));
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
                   break;
               }
-
-            SENDF_TO_CLIENT_OR_FAIL ("<help_response"
-                                     " status=\"" STATUS_OK "\""
-                                     " status_text=\"" STATUS_OK_TEXT "\">"
-                                     "<schema"
-                                     " format=\"%s\""
-                                     " extension=\"%s\""
-                                     " content_type=\"%s\">",
-                                     help_data->format
-                                      ? help_data->format
-                                      : "XML",
-                                     extension,
-                                     content_type);
-            g_free (extension);
-            g_free (content_type);
-
-            if (output && strlen (output))
-              {
-                /* Encode and send the output. */
-
-                if (help_data->format
-                    && strcasecmp (help_data->format, "XML"))
-                  {
-                    gchar *base64;
-
-                    base64 = g_base64_encode ((guchar*) output, output_len);
-                    if (send_to_client (base64,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        g_free (base64);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (base64);
-                  }
-                else
-                  {
-                    /* Special case the XML schema, bah. */
-                    if (send_to_client (output,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        error_send_to_client (error);
-                        return;
-                      }
-                  }
-              }
-            g_free (output);
-            SEND_TO_CLIENT_OR_FAIL ("</schema>"
-                                    "</help_response>");
           }
         help_data_reset (help_data);
         set_client_state (CLIENT_AUTHENTIC);
@@ -25454,7 +24170,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ROLE, USERS);
 
       case CLIENT_CREATE_SCANNER:
-        return handle_create_scanner (gmp_parser, error);
+        handle_create_scanner (gmp_parser, error);
+        break;
       CLOSE (CLIENT_CREATE_SCANNER, COMMENT);
       CLOSE (CLIENT_CREATE_SCANNER, COPY);
       CLOSE (CLIENT_CREATE_SCANNER, NAME);
@@ -26393,6 +25110,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE, VALUE);
 
+      case CLIENT_CREATE_TICKET:
+        if (create_ticket_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_CREATE_USER:
         {
           gchar *errdesc;
@@ -27219,7 +25941,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING, VALUE);
 
       case CLIENT_MODIFY_CONFIG:
-        return handle_modify_config (gmp_parser, error);
+        handle_modify_config (gmp_parser, error);
+        break;
       CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
       CLOSE (CLIENT_MODIFY_CONFIG, SCANNER);
 
@@ -28286,7 +27009,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_ROLE, USERS);
 
       case CLIENT_MODIFY_SCANNER:
-        return handle_modify_scanner (gmp_parser, error);
+        handle_modify_scanner (gmp_parser, error);
+        break;
       CLOSE (CLIENT_MODIFY_SCANNER, TYPE);
       CLOSE (CLIENT_MODIFY_SCANNER, PORT);
       CLOSE (CLIENT_MODIFY_SCANNER, HOST);
@@ -29095,6 +27819,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
         break;
       CLOSE (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE, VALUE);
+
+      case CLIENT_MODIFY_TICKET:
+        if (modify_ticket_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
 
       case CLIENT_MODIFY_USER:
         {
@@ -30042,7 +28771,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_SYNC_CONFIG:
-        return handle_sync_config (gmp_parser, error);
+        handle_sync_config (gmp_parser, error);
+        break;
 
       case CLIENT_VERIFY_AGENT:
         if (verify_agent_data->agent_id)
@@ -30998,6 +29728,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &create_task_data->schedule_periods);
 
 
+      case CLIENT_CREATE_TICKET:
+        create_ticket_element_text (text, text_len);
+        break;
+
+
       APPEND (CLIENT_CREATE_USER_COMMENT,
               &create_user_data->comment);
 
@@ -31298,6 +30033,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
               &modify_target_data->ssh_lsc_port);
+
+
+      case CLIENT_MODIFY_TICKET:
+        modify_ticket_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_RUN_WIZARD_MODE,

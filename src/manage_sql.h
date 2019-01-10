@@ -512,4 +512,30 @@ update_all_config_caches ();
 void
 event (task_t, report_t, event_t, void *);
 
+gboolean
+find_trash (const char *, const char *, resource_t *);
+
+void
+tags_remove_resource (const char *, resource_t, int);
+
+void
+tags_set_locations (const char *, resource_t, resource_t, int);
+
+void
+permissions_set_locations (const char *, resource_t, resource_t, int);
+
+void
+permissions_set_orphans (const char *, resource_t, int);
+
+int
+copy_resource (const char *, const char *, const char *, const char *,
+               const char *, int, resource_t *, resource_t *);
+
+gboolean
+resource_with_name_exists (const char *, const char *, resource_t);
+
+int
+create_permission_internal (const char *, const char *, const char *, const char *,
+                            const char *, const char *, permission_t *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */
