@@ -385,6 +385,8 @@ do_sync_community_feed () {
 }
 
 sync_scapdata(){
+  # Sleep for ten seconds to prevent IP blocking.
+  sleep 10
   if [ -e $ACCESSKEY ]
   then
     log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone SCAP data Repository ..."
@@ -432,7 +434,7 @@ sync_scapdata(){
     done
     log_notice "Synchronization with the Greenbone SCAP data Repository successful."
   else
-    log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
     do_sync_community_feed
   fi
 
