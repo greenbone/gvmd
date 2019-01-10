@@ -1,13 +1,6 @@
-/* GVM
- * $Id$
- * Description: Headers for Greenbone Vulnerability Manager: the Manage library.
+/* Copyright (C) 2009-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
- * Timo Pollmeier <timo.pollmeier@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2009-2013 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,6 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+/*
+ * @file manage.h
+ * @brief Headers for Greenbone Vulnerability Manager: the Manage library.
  */
 
 #ifndef _GVMD_MANAGE_H
@@ -234,12 +232,12 @@ typedef enum
   TASK_STATUS_DELETE_ULTIMATE_WAITING = 17
 } task_status_t;
 
-/*
+/**
  * Minimum value for number of reports to keep on auto_delete
  */
 #define AUTO_DELETE_KEEP_MIN 2
 
-/*
+/**
  * Maximum value for number of reports to keep on auto_delete
  */
 #define AUTO_DELETE_KEEP_MAX 1200
@@ -286,6 +284,7 @@ typedef long long int host_t;
 typedef long long int tag_t;
 typedef long long int target_t;
 typedef long long int task_t;
+typedef long long int ticket_t;
 typedef long long int result_t;
 typedef long long int report_t;
 typedef long long int report_host_t;
@@ -391,6 +390,9 @@ type_name (const char*);
 
 int
 type_is_scap (const char*);
+
+int
+delete_resource (const char *, const char *, int);
 
 
 /* Events and Alerts. */
@@ -1412,6 +1414,9 @@ result_iterator_original_level (iterator_t*);
 
 const char*
 result_iterator_level (iterator_t*);
+
+const char*
+result_iterator_solution_type (iterator_t*);
 
 const char*
 result_iterator_qod (iterator_t*);
@@ -3412,10 +3417,6 @@ split_filter (const gchar*);
 
 
 /* Filters. */
-
-int
-buffer_get_filter_xml (GString *, const char*, const get_data_t*, const char*,
-                       const char*);
 
 gboolean
 find_filter (const char*, filter_t*);

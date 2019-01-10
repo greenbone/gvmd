@@ -1,13 +1,6 @@
-/* GVM
- * $Id$
- * Description: Module for Greenbone Vulnerability Manager: the Manage library.
+/* Copyright (C) 2009-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
- * Timo Pollmeier <timo.pollmeier@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2009-2013 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -57,6 +50,7 @@
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
+#include "manage_sql_tickets.h"
 #include "comm.h"
 #include "utils.h"
 
@@ -9461,4 +9455,26 @@ int
 get_termination_signal ()
 {
   return termination_signal;
+}
+
+
+/* Resources. */
+
+/**
+ * @brief Delete a resource.
+ *
+ * @param[in]  type         Type of resource.
+ * @param[in]  resource_id  UUID of resource.
+ * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 resource in use, 2 failed to find resource,
+ *         3 predefined resource, 99 permission denied, -1 error.
+ */
+int
+delete_resource (const char *type, const char *resource_id, int ultimate)
+{
+  if (strcasecmp (type, "ticket") == 0)
+    return delete_ticket (resource_id, ultimate);
+  assert (0);
+  return -1;
 }

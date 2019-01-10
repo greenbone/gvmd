@@ -1,13 +1,6 @@
-# GVM
-# $Id$
-# Description: CMakefile for the Greenbone Vulnerability Manager program
-#
-# Authors:
-# Matthew Mundell <matthew.mundell@greenbone.net>
-# Timo Pollmeier <timo.pollmeier@greenbone.net>
-#
-# Copyright:
 # Copyright (C) 2009-2018 Greenbone Networks GmbH
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -106,10 +99,12 @@ add_executable (${BINARY_NAME}
                 manage_acl.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_tickets.c
                 manage_migrators.c scanner.c
                 ${BACKEND_FILES}
                 lsc_user.c lsc_crypt.c utils.c comm.c
-				otp.c gmp.c)
+                otp.c
+                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c)
 
 if (BACKEND STREQUAL SQLITE3)
   target_link_libraries (${BINARY_NAME} m
@@ -276,8 +271,14 @@ add_dependencies (check cppcheck)
 ## Tag files
 
 set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c" "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/otp.c" "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_base.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tickets.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/otp.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/scanner.c"
@@ -292,12 +293,15 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/comm.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c" "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/sql_sqlite3.c" "${CMAKE_CURRENT_SOURCE_DIR}/utils.c")
+  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/sql_sqlite3.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/utils.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."

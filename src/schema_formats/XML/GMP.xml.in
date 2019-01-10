@@ -1,13 +1,7 @@
 <!--
-OpenVAS Manager
-$Id$
-Description: GMP schema with embedded documentation, in GMP.
+Copyright (C) 2010-2018 Greenbone Networks GmbH
 
-Authors:
-Matthew Mundell <matthew.mundell@greenbone.net>
-
-Copyright:
-Copyright (C) 2010-2017 Greenbone Networks GmbH
+SPDX-License-Identifier: GPL-2.0-or-later
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
+
+<!-- GMP schema with embedded documentation, in GMP. -->
 
 <protocol>
   <name>Greenbone Management Protocol</name>
@@ -157,6 +153,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>The trend of results for a task</summary>
     <pattern>
       xsd:token { pattern = "up|down|more|less|same" }
+    </pattern>
+  </type>
+  <type>
+    <name>ticket_status</name>
+    <summary>A ticket status</summary>
+    <pattern>
+      xsd:token { pattern = "Open|Solved|Confirmed|Closed|Orphaned" }
     </pattern>
   </type>
   <type>
@@ -1238,6 +1241,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>detection</e></o>
       <o><e>notes</e></o>
       <o><e>overrides</e></o>
+      <o><e>tickets</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -1618,7 +1622,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>overrides</name>
-      <name>overrides</name>
       <summary>List of overrides on the result</summary>
       <pattern>
         <any><e>override</e></any>
@@ -1626,6 +1629,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>override</name>
         <type>override</type>
+      </ele>
+    </ele>
+    <ele>
+      <name>tickets</name>
+      <summary>List of tickets on the result</summary>
+      <pattern>
+        <any><e>ticket</e></any>
+      </pattern>
+      <ele>
+        <name>ticket</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
       </ele>
     </ele>
   </element>
@@ -3102,6 +3122,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_tag</c>
           <c>create_target</c>
           <c>create_task</c>
+          <c>create_ticket</c>
           <c>create_user</c>
           <c>delete_agent</c>
           <c>delete_alert</c>
@@ -3123,6 +3144,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_tag</c>
           <c>delete_target</c>
           <c>delete_task</c>
+          <c>delete_ticket</c>
           <c>delete_user</c>
           <c>describe_auth</c>
           <c>empty_trashcan</c>
@@ -3153,6 +3175,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_tags</c>
           <c>get_targets</c>
           <c>get_tasks</c>
+          <c>get_tickets</c>
           <c>get_users</c>
           <c>get_version</c>
           <c>get_vulns</c>
@@ -3178,6 +3201,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_tag</c>
           <c>modify_target</c>
           <c>modify_task</c>
+          <c>modify_ticket</c>
           <c>modify_user</c>
           <c>restore</c>
           <c>resume_task</c>
@@ -3226,6 +3250,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_tag</r>
             <r>create_target</r>
             <r>create_task</r>
+            <r>create_ticket</r>
             <r>create_user</r>
             <r>delete_agent</r>
             <r>delete_alert</r>
@@ -3247,6 +3272,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_tag</r>
             <r>delete_target</r>
             <r>delete_task</r>
+            <r>delete_ticket</r>
             <r>delete_user</r>
             <r>describe_auth</r>
             <r>empty_trashcan</r>
@@ -3277,6 +3303,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_tags</r>
             <r>get_targets</r>
             <r>get_tasks</r>
+            <r>get_tickets</r>
             <r>get_users</r>
             <r>get_version</r>
             <r>get_vulns</r>
@@ -3301,6 +3328,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_setting</r>
             <r>modify_tag</r>
             <r>modify_target</r>
+            <r>modify_ticket</r>
             <r>modify_task</r>
             <r>modify_user</r>
             <r>restore</r>
@@ -5949,6 +5977,99 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>create_ticket</name>
+    <summary>Create a ticket</summary>
+    <description>
+      <p>
+        The client uses the create_ticket command to create a new ticket.
+      </p>
+    </description>
+    <pattern>
+      <o><e>comment</e></o>
+      <o><e>copy</e></o>
+      <e>result</e>
+      <e>assigned_to</e>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the ticket</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing ticket</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>result</name>
+      <summary>The result the ticket applies to</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>assigned_to</name>
+      <pattern>
+        <e>user</e>
+      </pattern>
+      <ele>
+        <name>user</name>
+        <summary>The user the ticket is assigned to</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a ticket</summary>
+      <request>
+        <create_ticket>
+          <result id="138c1216-4acb-4ded-bef3-7fab80eac8c7"/>
+          <assigned_to>
+            <user id="33e92d3e-a379-4c46-a4cf-88c8201ab710"/>
+          </assigned_to>
+        </create_ticket>
+      </request>
+      <response>
+        <create_ticket_response status="201"
+                                status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_ticket_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>create_user</name>
     <summary>Create a user</summary>
     <description>
@@ -7076,6 +7197,57 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <delete_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_ticket</name>
+    <summary>Delete a ticket</summary>
+    <description>
+      <p>
+        The client uses the delete_ticket command to delete an existing ticket.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>ticket_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a ticket</summary>
+      <request>
+        <delete_ticket ticket_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_ticket>
+      </request>
+      <response>
+        <delete_ticket_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -19470,12 +19642,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>hosts</name>
             <type>text</type>
-            <summary>List of hosts</summary>
+            <summary>Comma-separated list of hosts</summary>
           </column>
           <column>
             <name>exclude_hosts</name>
             <type>text</type>
-            <summary>List of excluded hosts</summary>
+            <summary>Comma-separated list of excluded hosts</summary>
           </column>
           <column>
             <name>ips</name>
@@ -21490,6 +21662,598 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_tickets</name>
+    <summary>Get one or many tickets</summary>
+    <description>
+      The client uses the get_tickets command to get ticket information.
+    </description>
+    <pattern>
+      <attrib>
+        <name>ticket_id</name>
+        <summary>ID of single ticket to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of the ticket result</summary>
+          </column>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>Host of the ticket result</summary>
+          </column>
+          <column>
+            <name>location</name>
+            <type>text</type>
+            <summary>Location of the ticket result</summary>
+          </column>
+          <column>
+            <name>solution_type</name>
+            <type>text</type>
+            <summary>Solution type of the ticket result</summary>
+          </column>
+          <column>
+            <name>status</name>
+            <type>ticket_status</type>
+            <summary>Ticket status</summary>
+          </column>
+          <column>
+            <name>opened</name>
+            <type>iso_time</type>
+            <summary>Time ticket was opened</summary>
+          </column>
+          <column>
+            <name>solved</name>
+            <type>iso_time</type>
+            <summary>Time ticket was solved</summary>
+          </column>
+          <column>
+            <name>closed</name>
+            <type>iso_time</type>
+            <summary>Time ticket was closed</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan tickets instead</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>ticket</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>tickets</e>
+        <e>ticket_count</e>
+      </pattern>
+      <ele>
+        <name>ticket</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <o><e>user_tags</e></o>
+          <e>nvt</e>
+          <o><e>result</e></o>
+          <e>assigned_to</e>
+          <o><e>task</e></o>
+          <o><e>report</e></o>
+          <e>severity</e>
+          <e>host</e>
+          <e>location</e>
+          <e>solution_type</e>
+          <e>status</e>
+          <e>open_time</e>
+          <o><e>solved_time</e></o>
+          <o><e>solved_comment</e></o>
+          <o><e>closed_time</e></o>
+          <o><e>closed_comment</e></o>
+          <o><e>confirmed_time</e></o>
+          <o><e>confirmed_report</e></o>
+          <o><e>orphaned_time</e></o>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the ticket</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of ticket result's NVT</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the ticket</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the ticket was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the ticket was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the ticket is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether the ticket is in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the ticket
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the ticket</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>nvt</name>
+          <summary>The NVT the ticket refers to</summary>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+              <summary>OID of the NVT</summary>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>result</name>
+          <summary>The ticket's result</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>assigned_to</name>
+          <pattern>
+            <e>user</e>
+          </pattern>
+          <ele>
+            <name>user</name>
+            <summary>The user the ticket is assigned to</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>task</name>
+          <summary>The ticket's task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report</name>
+          <summary>The ticket's report</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>severity</name>
+          <summary>The ticket result's severity</summary>
+          <pattern>
+            <t>severity</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>host</name>
+          <summary>The ticket result's host</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>location</name>
+          <summary>The ticket result's location</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>solution_type</name>
+          <summary>The ticket result's solution_type</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>status</name>
+          <summary>The ticket's status</summary>
+          <pattern><t>ticket_status</t></pattern>
+        </ele>
+        <ele>
+          <name>open_time</name>
+          <summary>Date and time the ticket was opened</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>solved_time</name>
+          <summary>Date and time the ticket was solved</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>solved_comment</name>
+          <summary>The comment on the Solved status</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>closed_time</name>
+          <summary>Date and time the ticket was closed</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>closed_comment</name>
+          <summary>The comment on the Closed status</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>confirmed_time</name>
+          <summary>Date and time the ticket was confirmed</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>confirmed_report</name>
+          <summary>The report that confirmed the ticket</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>orphaned_time</name>
+          <summary>Date and time the ticket was orphaned</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>tickets</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First ticket</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of tickets</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>ticket_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of tickets after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of tickets on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all tickets</summary>
+      <request>
+        <get_tickets></get_tickets>
+      </request>
+      <response>
+        <get_tickets_response status_text="OK" status="200">
+          <ticket id="93cd2f71-48c3-4cf2-b542-5b256f59cae0">
+            <owner>
+              <name>joe</name>
+            </owner>
+            <name>OpenSSH Denial of Service Vulnerability - Jan16</name>
+            <comment></comment>
+            <creation_time>2018-11-29T16:18:56Z</creation_time>
+            <modification_time>2018-11-29T16:18:56Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <assigned_to>
+              <user id="33e92d3e-a379-4c46-a4cf-88c8201ab710"></user>
+            </assigned_to>
+            <task id="6f559abf-23ca-4dc8-a90a-3acba021f4ff"></task>
+            <report id="f0f063cd-07e4-470a-8c66-b5d095d190cd"></report>
+            <severity>5.0</severity>
+            <host>127.0.0.1</host>
+            <location>1111/tcp</location>
+            <solution_type>VendorFix</solution_type>
+            <status>Open</status>
+            <open_time>2018-11-29T16:18:56Z</open_time>
+            <result id="138c1216-4acb-4ded-bef3-7fab80eac8c7"></result>
+          </ticket>
+          <filters id="">
+            <term>first=1 rows=1000 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>1000</value>
+              </keyword>
+              <keyword>
+                <column>sort</column>
+                <relation>=</relation>
+                <value>name</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name
+              <order>ascending</order>
+            </field>
+          </sort>
+          <tickets max="1000" start="1"></tickets>
+          <ticket_count>2
+            <filtered>2</filtered>
+            <page>2</page>
+          </ticket_count>
+        </get_tickets_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_users</name>
     <summary>Get one or many users</summary>
     <description>
@@ -22528,116 +23292,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <help_response status="200" status_text="OK">
-            AUTHENTICATE           Authenticate with the manager.
-            COMMANDS               Run a list of commands.
-            CREATE_AGENT           Create an agent.
-            CREATE_ALERT           Create an alert.
-            CREATE_ASSET           Create an asset.
-            CREATE_CONFIG          Create a config.
-            CREATE_CREDENTIAL      Create a credential.
-            CREATE_FILTER          Create a filter.
-            CREATE_GROUP           Create a group.
-            CREATE_NOTE            Create a note.
-            CREATE_OVERRIDE        Create an override.
-            CREATE_PERMISSION      Create a permission.
-            CREATE_PORT_LIST       Create a port list.
-            CREATE_PORT_RANGE      Create a port range in a port list.
-            CREATE_REPORT          Create a report.
-            CREATE_REPORT_FORMAT   Create a report format.
-            CREATE_ROLE            Create a role.
-            CREATE_SCANNER         Create a scanner.
-            CREATE_SCHEDULE        Create a schedule.
-            CREATE_TAG             Create a tag.
-            CREATE_TARGET          Create a target.
-            CREATE_TASK            Create a task.
-            CREATE_USER            Create a new user.
-            DELETE_AGENT           Delete an agent.
-            DELETE_ALERT           Delete an alert.
-            DELETE_ASSET           Delete an asset.
-            DELETE_CONFIG          Delete a config.
-            DELETE_CREDENTIAL      Delete a credential.
-            DELETE_FILTER          Delete a filter.
-            DELETE_GROUP           Delete a group.
-            DELETE_NOTE            Delete a note.
-            DELETE_OVERRIDE        Delete an override.
-            DELETE_PERMISSION      Delete a permission.
-            DELETE_PORT_LIST       Delete a port list.
-            DELETE_PORT_RANGE      Delete a port range.
-            DELETE_REPORT          Delete a report.
-            DELETE_REPORT_FORMAT   Delete a report format.
-            DELETE_ROLE            Delete a role.
-            DELETE_SCANNER         Delete a scanner.
-            DELETE_SCHEDULE        Delete a schedule.
-            DELETE_TAG             Delete a tag.
-            DELETE_TARGET          Delete a target.
-            DELETE_TASK            Delete a task.
-            DELETE_USER            Delete an existing user.
-            DESCRIBE_AUTH          Get details about the used authentication methods.
-            EMPTY_TRASHCAN         Empty the trashcan.
-            GET_AGENTS             Get all agents.
-            GET_AGGREGATES         Get aggregates of resources.
-            GET_ALERTS             Get all alerts.
-            GET_ASSETS             Get all assets.
-            GET_CONFIGS            Get all configs.
-            GET_CREDENTIALS        Get all credentials.
-            GET_FEEDS              Get details of one or all feeds this Manager uses.
-            GET_FILTERS            Get all filters.
-            GET_GROUPS             Get all groups.
-            GET_INFO               Get raw information for a given item.
-            GET_NOTES              Get all notes.
-            GET_NVTS               Get one or all available NVTs.
-            GET_NVT_FAMILIES       Get a list of all NVT families.
-            GET_OVERRIDES          Get all overrides.
-            GET_PERMISSIONS        Get all permissions.
-            GET_PORT_LISTS         Get all port lists.
-            GET_PREFERENCES        Get preferences for all available NVTs.
-            GET_REPORTS            Get all reports.
-            GET_REPORT_FORMATS     Get all report formats.
-            GET_RESULTS            Get results.
-            GET_ROLES              Get all roles.
-            GET_SCANNERS           Get all scanners.
-            GET_SCHEDULES          Get all schedules.
-            GET_SETTINGS           Get all settings.
-            GET_SYSTEM_REPORTS     Get all system reports.
-            GET_TAGS               Get all tags.
-            GET_TARGETS            Get all targets.
-            GET_TASKS              Get all tasks.
-            GET_USERS              Get all users.
-            GET_VERSION            Get the OpenVAS Manager Protocol version.
-            HELP                   Get this help text.
-            MODIFY_AGENT           Modify an existing agent.
-            MODIFY_ALERT           Modify an existing alert.
-            MODIFY_ASSET           Modify an existing asset.
-            MODIFY_AUTH            Modify the authentication methods.
-            MODIFY_CONFIG          Update an existing config.
-            MODIFY_CREDENTIAL      Modify an existing credential.
-            MODIFY_FILTER          Modify an existing filter.
-            MODIFY_GROUP           Modify an existing group.
-            MODIFY_NOTE            Modify an existing note.
-            MODIFY_OVERRIDE        Modify an existing override.
-            MODIFY_PERMISSION      Modify an existing permission.
-            MODIFY_PORT_LIST       Modify an existing port list.
-            MODIFY_REPORT          Modify an existing report.
-            MODIFY_REPORT_FORMAT   Modify an existing report format.
-            MODIFY_ROLE            Modify an existing role.
-            MODIFY_SCANNER         Modify an existing scanner.
-            MODIFY_SCHEDULE        Modify an existing schedule.
-            MODIFY_SETTING         Modify an existing setting.
-            MODIFY_TAG             Modify an existing tag.
-            MODIFY_TARGET          Modify an existing target.
-            MODIFY_TASK            Update an existing task.
-            MODIFY_USER            Modify a user.
-            MOVE_TASK              Assign task to another slave scanner, even while running.
-            RESTORE                Restore a resource.
-            RESUME_TASK            Resume a stopped task.
-            RUN_WIZARD             Run a wizard.
-            START_TASK             Manually start an existing task.
-            STOP_TASK              Stop a running task.
-            SYNC_CONFIG            Synchronize a config with a scanner.
-            TEST_ALERT             Run an alert.
-            VERIFY_AGENT           Verify an agent.
-            VERIFY_REPORT_FORMAT   Verify a report format.
-            VERIFY_SCANNER         Verify a scanner.
+    AUTHENTICATE           Authenticate with the manager.
+    COMMANDS               Run a list of commands.
+    CREATE_AGENT           Create an agent.
+    ...
+    VERIFY_SCANNER         Verify a scanner.
         </help_response>
       </response>
     </example>
@@ -24598,7 +25257,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>hosts</name>
-      <summary>Target hosts</summary>
+      <summary>Comma-separated list of target hosts</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -24608,7 +25267,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>exclude_hosts</name>
-      <summary>A list of hosts to exclude</summary>
+      <summary>Comma-separated list of hosts to exclude</summary>
       <pattern>
         text
       </pattern>
@@ -25014,6 +25673,92 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_task_response status="200" status_text="OK">
         </modify_task_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_ticket</name>
+    <summary>Modify an existing ticket</summary>
+    <description>
+      <p>
+        The client uses the modify_ticket command to change an existing ticket.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>ticket_id</name>
+        <summary>ID of ticket to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+      <o><e>status</e></o>
+      <o><e>solved_comment</e></o>
+      <o><e>closed_comment</e></o>
+      <o><e>assigned_to</e></o>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on ticket</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>status</name>
+      <summary>Ticket status</summary>
+      <pattern><t>ticket_status</t></pattern>
+    </ele>
+    <ele>
+      <name>solved_comment</name>
+      <summary>Comment, required when status is Solved</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>closed_comment</name>
+      <summary>Comment, required when status is Closed</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>assigned_to</name>
+      <pattern>
+        <e>user</e>
+      </pattern>
+      <ele>
+        <name>user</name>
+        <summary>The user the ticket is assigned to</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the name of a ticket</summary>
+      <request>
+        <modify_ticket ticket_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <status>Closed</status>
+          <closed_comment>Resolved with January update</closed_comment>
+        </modify_ticket>
+      </request>
+      <response>
+        <modify_ticket_response status="200" status_text="OK">
+        </modify_ticket_response>
       </response>
     </example>
   </command>

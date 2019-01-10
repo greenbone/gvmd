@@ -1,13 +1,6 @@
-/* GVM
- * $Id$
- * Description: Manager Manage library: SQL backend headers.
+/* Copyright (C) 2010-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
- * Timo Pollmeier <timo.pollmeier@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2010-2013 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,6 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+/*
+ * @file manage_sql.h
+ * @brief Manager Manage library: SQL backend headers.
  */
 
 #ifndef _GVMD_MANAGE_SQL_H
@@ -513,5 +511,31 @@ update_all_config_caches ();
 
 void
 event (task_t, report_t, event_t, void *);
+
+gboolean
+find_trash (const char *, const char *, resource_t *);
+
+void
+tags_remove_resource (const char *, resource_t, int);
+
+void
+tags_set_locations (const char *, resource_t, resource_t, int);
+
+void
+permissions_set_locations (const char *, resource_t, resource_t, int);
+
+void
+permissions_set_orphans (const char *, resource_t, int);
+
+int
+copy_resource (const char *, const char *, const char *, const char *,
+               const char *, int, resource_t *, resource_t *);
+
+gboolean
+resource_with_name_exists (const char *, const char *, resource_t);
+
+int
+create_permission_internal (const char *, const char *, const char *, const char *,
+                            const char *, const char *, permission_t *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */

@@ -1,15 +1,6 @@
-/* GVM
- * $Id$
- * Description: Headers for Greenbone Vulnerability Manager: Iterators.
+/* Copyright (C) 2016-2018 Greenbone Networks GmbH
  *
- * The interface here is for "external" use.  The SQL parts of the interface
- * are in sql.h.  Both are defined in sql.c.
- *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2016 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,6 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+/**
+ * @file iterator.h
+ * @brief Headers for Iterators.
+ *
+ * The interface here is for "external" use.  The SQL parts of the interface
+ * are in sql.h.  Both are defined in sql.c.
  */
 
 #ifndef _GVMD_ITERATOR_H
@@ -47,7 +46,7 @@ typedef long long int resource_t;
 typedef struct sql_stmt sql_stmt_t;
 
 /**
- * @brief A generic SQL iterator.
+ * @brief A generic SQL iterator structure.
  */
 struct iterator
 {
@@ -57,6 +56,9 @@ struct iterator
   lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
 };
 
+/**
+ * @brief A generic SQL iterator type.
+ */
 typedef struct iterator iterator_t;
 
 

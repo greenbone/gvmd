@@ -1,12 +1,6 @@
-/* GVM
- * $Id$
- * Description: Manager Manage library: PostgreSQL specific Manage facilities.
+/* Copyright (C) 2014-2018 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2014 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -2427,6 +2421,74 @@ create_tables ()
        "  credential INTEGER,"//REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  port INTEGER,"
        "  credential_location INTEGER);");
+
+  sql ("CREATE TABLE IF NOT EXISTS tickets"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
+       "  comment text,"
+       "  nvt text,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  severity real,"
+       "  host text,"
+       "  location text,"
+       "  solution_type text,"
+       "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  status integer,"
+       "  open_time integer,"
+       "  solved_time integer,"
+       "  solved_comment text,"
+       "  confirmed_time integer,"
+       "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  closed_time integer,"
+       "  closed_comment text,"
+       "  orphaned_time integer,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS ticket_results"
+       " (id SERIAL PRIMARY KEY,"
+       "  ticket integer REFERENCES tickets (id) ON DELETE RESTRICT,"
+       "  result integer,"    // REFERENCES results (id) ON DELETE RESTRICT
+       "  result_location integer,"
+       "  result_uuid text,"
+       "  report integer);"); // REFERENCES reports (id) ON DELETE RESTRICT
+
+  sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
+       "  comment text,"
+       "  nvt text,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  severity real,"
+       "  host text,"
+       "  location text,"
+       "  solution_type text,"
+       "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  status integer,"
+       "  open_time integer,"
+       "  solved_time integer,"
+       "  solved_comment text,"
+       "  confirmed_time integer,"
+       "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  closed_time integer,"
+       "  closed_comment text,"
+       "  orphaned_time integer,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  ticket integer REFERENCES tickets_trash (id) ON DELETE RESTRICT,"
+       "  result integer,"    // REFERENCES results_trash (id) ON DELETE RESTRICT
+       "  result_location integer,"
+       "  result_uuid text,"
+       "  report integer);"); // REFERENCES reports_trash (id) ON DELETE RESTRICT
 
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"

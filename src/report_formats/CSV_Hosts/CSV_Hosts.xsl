@@ -11,15 +11,9 @@
     indent = "no" />
 
 <!--
-OpenVAS Manager
-$Id$
-Description:
+Copyright (C) 2011-2018 Greenbone Networks GmbH
 
-Authors:
-Henri Doreau <henri.doreau@greenbone.net>
-
-Copyright:
-Copyright (C) 2011 Greenbone Networks GmbH
+SPDX-License-Identifier: GPL-2.0-or-later
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
