@@ -21114,11 +21114,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       return;
                     }
                   break;
-                case 2:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("help",
-                                      "Brief help is only available in XML."));
-                  break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("help"));
                   break;
