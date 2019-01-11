@@ -3799,6 +3799,24 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, role INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS role_users_trash"
        " (id INTEGER PRIMARY KEY, role INTEGER, user INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS tickets"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+       "  comment, nvt, task, report, severity, host, location,"
+       "  solution_type, assigned_to, status, open_time, solved_time,"
+       "  solved_comment, confirmed_time, confirmed_report, closed_time,"
+       "  closed_comment, orphaned_time, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS ticket_results"
+       " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
+       "  result_uuid, report);");
+  sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+       "  comment, nvt, task, report, severity, host, location,"
+       "  solution_type, assigned_to, status, open_time, solved_time,"
+       "  solved_comment, confirmed_time, confirmed_report, closed_time,"
+       "  closed_comment, orphaned_time, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
+       " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
+       "  result_uuid, report);");
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  host, port, type, ca_pub, credential INTEGER,"
