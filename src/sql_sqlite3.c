@@ -127,7 +127,7 @@ sql_select_limit (int max)
     return "-1";
   if (snprintf (string, 19, "%i", max) < 0)
     {
-      g_warning ("%s: snprintf failed\n", __FUNCTION__);
+      g_warning ("%s: snprintf failed", __FUNCTION__);
       abort ();
     }
   string[19] = '\0';
@@ -218,7 +218,7 @@ sql_open (const char *database)
   ret = g_mkdir_with_parents (GVMD_STATE_DIR, 0755 /* "rwxr-xr-x" */);
   if (ret == -1)
     {
-      g_warning ("%s: failed to create database directory %s: %s\n",
+      g_warning ("%s: failed to create database directory %s: %s",
                  __FUNCTION__,
                  GVMD_STATE_DIR,
                  strerror (errno));
@@ -233,19 +233,19 @@ sql_open (const char *database)
         case ENOENT:
           break;
         default:
-          g_warning ("%s: failed to stat database: %s\n",
+          g_warning ("%s: failed to stat database: %s",
                      __FUNCTION__,
                      strerror (errno));
           abort ();
       }
   else if (state.st_mode & (S_IXUSR | S_IRWXG | S_IRWXO))
     {
-      g_warning ("%s: database permissions are too loose, repairing\n",
+      g_warning ("%s: database permissions are too loose, repairing",
                  __FUNCTION__);
       if (chmod (database ? database : sql_default_database (),
                  S_IRUSR | S_IWUSR))
         {
-          g_warning ("%s: chmod failed: %s\n",
+          g_warning ("%s: chmod failed: %s",
                      __FUNCTION__,
                      strerror (errno));
           abort ();
@@ -261,7 +261,7 @@ sql_open (const char *database)
   if (sqlite3_open (database ? database : sql_default_database (),
                     &gvmd_db))
     {
-      g_warning ("%s: sqlite3_open failed: %s\n",
+      g_warning ("%s: sqlite3_open failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (gvmd_db));
       return -1;
@@ -269,7 +269,7 @@ sql_open (const char *database)
 
   sqlite3_busy_timeout (gvmd_db, BUSY_TIMEOUT);
 
-  g_debug ("   %s: db open, max retry sleep time is %i\n",
+  g_debug ("   %s: db open, max retry sleep time is %i",
            __FUNCTION__,
            GVM_SQLITE_SLEEP_MAX);
 
@@ -295,7 +295,7 @@ sql_close ()
      * sqlite3.pVdbe points to.  This is the list of open statements
      * in the current implementation (and subject to change without
      * notice). */
-    g_warning ("%s: attempt to close db with open statement(s)\n",
+    g_warning ("%s: attempt to close db with open statement(s)",
                __FUNCTION__);
   gvmd_db = NULL;
 }
@@ -377,7 +377,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
   formatted = g_strdup_vprintf (sql, args);
 
   if (log)
-    g_debug ("   sql: %s\n", formatted);
+    g_debug ("   sql: %s", formatted);
 
   if (retry == 0)
     sqlite3_busy_timeout (gvmd_db, 0);
@@ -412,7 +412,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
         {
           if (sqlite_stmt == NULL)
             {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s",
                          __FUNCTION__,
                          sqlite3_errmsg (gvmd_db));
               if (retry == 0)
@@ -421,7 +421,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
             }
           break;
         }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
+      g_warning ("%s: sqlite3_prepare failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (gvmd_db));
       if (retry == 0)
@@ -477,7 +477,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
         return 0;
       if (ret == SQLITE_ROW)
         return 1;
-      g_warning ("%s: sqlite3_step failed: %s\n",
+      g_warning ("%s: sqlite3_step failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (gvmd_db));
       return -1;
@@ -677,7 +677,7 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
           continue;
         }
       if (ret == SQLITE_OK) break;
-      g_warning ("%s: sqlite3_bind_blob failed: %s\n",
+      g_warning ("%s: sqlite3_bind_blob failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (gvmd_db));
       return -1;
@@ -718,7 +718,7 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
           continue;
         }
       if (ret == SQLITE_OK) break;
-      g_warning ("%s: sqlite3_bind_text failed: %s\n",
+      g_warning ("%s: sqlite3_bind_text failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (gvmd_db));
       return -1;
@@ -767,7 +767,7 @@ sql_reset (sql_stmt_t *stmt)
       if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
-          g_warning ("%s: sqlite3_reset failed: %s\n",
+          g_warning ("%s: sqlite3_reset failed: %s",
                      __FUNCTION__,
                      sqlite3_errmsg (gvmd_db));
           return -1;

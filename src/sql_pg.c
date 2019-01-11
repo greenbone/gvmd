@@ -135,7 +135,7 @@ sql_select_limit (int max)
     return "ALL";
   if (snprintf (string, 19, "%i", max) < 0)
     {
-      g_warning ("%s: snprintf failed\n", __FUNCTION__);
+      g_warning ("%s: snprintf failed", __FUNCTION__);
       abort ();
     }
   string[19] = '\0';
@@ -277,13 +277,13 @@ sql_open (const char *database)
   g_free (conn_info);
   if (conn == NULL)
     {
-      g_warning ("%s: PQconnectStart failed to allocate conn\n",
+      g_warning ("%s: PQconnectStart failed to allocate conn",
                  __FUNCTION__);
       return -1;
     }
   if (PQstatus (conn) == CONNECTION_BAD)
     {
-      g_warning ("%s: PQconnectStart to '%s' failed: %s\n",
+      g_warning ("%s: PQconnectStart to '%s' failed: %s",
                  __FUNCTION__,
                  database ? database : sql_default_database (),
                  PQerrorMessage (conn));
@@ -293,13 +293,13 @@ sql_open (const char *database)
   socket = PQsocket (conn);
   if (socket == 0)
     {
-      g_warning ("%s: PQsocket 0\n", __FUNCTION__);
+      g_warning ("%s: PQsocket 0", __FUNCTION__);
       goto fail;
     }
 
   poll_status = PGRES_POLLING_WRITING;
 
-  g_debug ("%s: polling\n", __FUNCTION__);
+  g_debug ("%s: polling", __FUNCTION__);
 
   while (1)
     {
@@ -316,7 +316,7 @@ sql_open (const char *database)
             continue;
           if (ret < 0)
             {
-              g_warning ("%s: write select failed: %s\n",
+              g_warning ("%s: write select failed: %s",
                          __FUNCTION__, strerror (errno));
               goto fail;
             }
@@ -335,7 +335,7 @@ sql_open (const char *database)
             continue;
           if (ret < 0)
             {
-              g_warning ("%s: read select failed: %s\n",
+              g_warning ("%s: read select failed: %s",
                          __FUNCTION__, strerror (errno));
               goto fail;
             }
@@ -343,7 +343,7 @@ sql_open (const char *database)
         }
       else if (poll_status == PGRES_POLLING_FAILED)
         {
-          g_warning ("%s: PQconnectPoll failed\n",
+          g_warning ("%s: PQconnectPoll failed",
                      __FUNCTION__);
           g_warning ("%s: PQerrorMessage (conn): %s", __FUNCTION__,
                      PQerrorMessage (conn));
@@ -358,12 +358,12 @@ sql_open (const char *database)
 
   PQsetNoticeProcessor (conn, log_notice, NULL);
 
-  g_debug ("%s:   db: %s\n", __FUNCTION__, PQdb (conn));
-  g_debug ("%s: user: %s\n", __FUNCTION__, PQuser (conn));
-  g_debug ("%s: host: %s\n", __FUNCTION__, PQhost (conn));
-  g_debug ("%s: port: %s\n", __FUNCTION__, PQport (conn));
-  g_debug ("%s: socket: %i\n", __FUNCTION__, PQsocket (conn));
-  g_debug ("%s: postgres version: %i\n", __FUNCTION__, PQserverVersion (conn));
+  g_debug ("%s:   db: %s", __FUNCTION__, PQdb (conn));
+  g_debug ("%s: user: %s", __FUNCTION__, PQuser (conn));
+  g_debug ("%s: host: %s", __FUNCTION__, PQhost (conn));
+  g_debug ("%s: port: %s", __FUNCTION__, PQport (conn));
+  g_debug ("%s: socket: %i", __FUNCTION__, PQsocket (conn));
+  g_debug ("%s: postgres version: %i", __FUNCTION__, PQserverVersion (conn));
 
   return 0;
 
@@ -484,7 +484,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
   (*stmt)->sql = g_strdup_vprintf (sql, args);
 
   if (log)
-    g_debug ("   sql: %s\n", (*stmt)->sql);
+    g_debug ("   sql: %s", (*stmt)->sql);
 
   return 0;
 }
@@ -523,11 +523,11 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
           char *sqlstate;
 
           sqlstate = PQresultErrorField (result, PG_DIAG_SQLSTATE);
-          g_debug ("%s: sqlstate: %s\n", __FUNCTION__, sqlstate);
+          g_debug ("%s: sqlstate: %s", __FUNCTION__, sqlstate);
           if (sqlstate && (strcmp (sqlstate, "57014") == 0)) /* query_canceled */
             {
               log_errors = 0;
-              g_debug ("%s: canceled SQL: %s\n", __FUNCTION__, stmt->sql);
+              g_debug ("%s: canceled SQL: %s", __FUNCTION__, stmt->sql);
             }
           else if (sqlstate && (strcmp (sqlstate, "55P03") == 0))
             {
@@ -539,11 +539,11 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
 
           if (log_errors)
             {
-              g_warning ("%s: PQexec failed: %s (%i)\n",
+              g_warning ("%s: PQexec failed: %s (%i)",
                          __FUNCTION__,
                          PQresultErrorMessage (result),
                          PQresultStatus (result));
-              g_warning ("%s: SQL: %s\n", __FUNCTION__, stmt->sql);
+              g_warning ("%s: SQL: %s", __FUNCTION__, stmt->sql);
             }
 #if 0
           // FIX ?

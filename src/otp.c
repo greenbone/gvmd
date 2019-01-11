@@ -285,7 +285,7 @@ append_log_message (task_t task, message_t* message)
       if (manage_report_host_detail (global_current_report,
                                      message->host,
                                      message->description))
-        g_warning ("%s: Failed to add report detail for host '%s': %s\n",
+        g_warning ("%s: Failed to add report detail for host '%s': %s",
                    __FUNCTION__,
                    message->host,
                    message->description);
@@ -395,7 +395,7 @@ static void
 set_scanner_state (scanner_state_t state)
 {
   scanner_state = state;
-  g_debug ("   scanner state set: %i\n", scanner_state);
+  g_debug ("   scanner state set: %i", scanner_state);
 }
 
 /**
@@ -427,7 +427,7 @@ void
 set_scanner_init_state (scanner_init_state_t state)
 {
   scanner_init_state = state;
-  g_debug ("   scanner init state set: %i\n", scanner_init_state);
+  g_debug ("   scanner init state set: %i", scanner_init_state);
 }
 
 /**
@@ -465,7 +465,7 @@ sync_buffer ()
   if (from_scanner_start > 0 && from_scanner_start == from_scanner_end)
     {
       from_scanner_start = from_scanner_end = 0;
-      g_debug ("   scanner start caught end\n");
+      g_debug ("   scanner start caught end");
     }
   else if (from_scanner_start == 0)
     {
@@ -485,9 +485,9 @@ sync_buffer ()
       memmove (from_scanner, start, from_scanner_end);
       from_scanner_start = 0;
       from_scanner[from_scanner_end] = '\0';
-      g_debug ("   new from_scanner_start: %" BUFFER_SIZE_T_FORMAT "\n",
+      g_debug ("   new from_scanner_start: %" BUFFER_SIZE_T_FORMAT,
                from_scanner_start);
-      g_debug ("   new from_scanner_end: %" BUFFER_SIZE_T_FORMAT "\n",
+      g_debug ("   new from_scanner_end: %" BUFFER_SIZE_T_FORMAT,
                from_scanner_end);
     }
   return 0;
@@ -512,7 +512,7 @@ parse_scanner_done (char** messages)
     return -2;
   if (strncasecmp ("SERVER", *messages, 6))
     {
-      g_debug ("   scanner fail: expected final \"SERVER\"\n");
+      g_debug ("   scanner fail: expected final \"SERVER\"");
       return -1;
     }
   set_scanner_state (SCANNER_TOP);
@@ -542,7 +542,7 @@ parse_scanner_bad_login (char** messages)
       /** @todo Are there 19 characters available? */
       if (strncasecmp ("Bad login attempt !", *messages, 19) == 0)
         {
-          g_debug ("match bad login\n");
+          g_debug ("match bad login");
           from_scanner_start += match + 1 - *messages;
           *messages = match + 1;
           set_scanner_init_state (SCANNER_INIT_TOP);
@@ -816,11 +816,11 @@ process_otp_scanner_input ()
             parse_scanner_loading (messages);
             if (scanner_current_loading && scanner_total_loading)
               g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
-                     "Waiting for scanner to load NVTs: %d / %d.\n",
+                     "Waiting for scanner to load NVTs: %d / %d",
                      scanner_current_loading, scanner_total_loading);
             else
               g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
-                     "Waiting for scanner to load: No information provided. (Message: %s)\n", messages);
+                     "Waiting for scanner to load: No information provided. (Message: %s)", messages);
             return 3;
           }
         /* If message is empty we assume the scanner is still loading. */
@@ -837,7 +837,7 @@ process_otp_scanner_input ()
         if (strncasecmp (ver_str, messages, ver_len))
           {
             g_debug ("   scanner fail: expected \"%s\""
-                     "   got \"%.12s\"\n\n", ver_str, messages);
+                     "   got \"%.12s\"", ver_str, messages);
             return -1;
           }
         from_scanner_start += ver_len;
@@ -947,8 +947,8 @@ process_otp_scanner_input ()
           field = gvm_strip_space (message, match);
           blank_control_chars (field);
 
-          g_debug ("   scanner old state %i\n", scanner_state);
-          g_debug ("   scanner field: %s\n", field);
+          g_debug ("   scanner old state %i", scanner_state);
+          g_debug ("   scanner field: %s", field);
           switch (scanner_state)
             {
               case SCANNER_BYE:
@@ -1012,7 +1012,7 @@ process_otp_scanner_input ()
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  g_debug ("   scanner got debug port, number: %i, protocol: %s\n",
+                  g_debug ("   scanner got debug port, number: %i, protocol: %s",
                            number, protocol);
 
                   set_message_port_number (current_message, number);
@@ -1091,7 +1091,7 @@ process_otp_scanner_input ()
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  g_debug ("   scanner got alarm port, number: %i, protocol: %s\n",
+                  g_debug ("   scanner got alarm port, number: %i, protocol: %s",
                            number, protocol);
 
                   set_message_port_number (current_message, number);
@@ -1170,7 +1170,7 @@ process_otp_scanner_input ()
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  g_debug ("   scanner got log port, number: %i, protocol: %s\n",
+                  g_debug ("   scanner got log port, number: %i, protocol: %s",
                            number, protocol);
 
                   set_message_port_number (current_message, number);
@@ -1288,7 +1288,7 @@ process_otp_scanner_input ()
                   char *feed_version, *db_feed_version;
 
                   feed_version = g_strdup (field);
-                  g_debug ("   scanner got nvti_info: %s\n", feed_version);
+                  g_debug ("   scanner got nvti_info: %s", feed_version);
                   if (plugins_feed_version)
                     g_free (plugins_feed_version);
                   plugins_feed_version = feed_version;
@@ -1297,7 +1297,7 @@ process_otp_scanner_input ()
                       && (strcmp (plugins_feed_version, db_feed_version) == 0))
                     /* NVTs are at this version already. */
                     return 4;
-                  g_info ("   Updating NVT cache.\n");
+                  g_info ("   Updating NVT cache");
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
@@ -1414,7 +1414,7 @@ process_otp_scanner_input ()
                   }
                 else
                   {
-                    g_debug ("New scanner command to implement: %s\n",
+                    g_debug ("New scanner command to implement: %s",
                              field);
                     goto return_error;
                   }
@@ -1433,7 +1433,7 @@ process_otp_scanner_input ()
                   if (global_current_report && current_host)
                     {
                       unsigned int current, max;
-                      g_debug ("   scanner got ports: %s\n", field);
+                      g_debug ("   scanner got ports: %s", field);
                       if (sscanf (field, "%u/%u", &current, &max) == 2)
                         set_scan_ports (global_current_report,
                                         current_host,
@@ -1639,8 +1639,8 @@ process_otp_scanner_input ()
                 }
               case SCANNER_TOP:
               default:
-                g_debug ("   switch t\n");
-                g_debug ("   cmp %i\n", strcasecmp ("SERVER", field));
+                g_debug ("   switch t");
+                g_debug ("   cmp %i", strcasecmp ("SERVER", field));
                 if (strcasecmp ("SERVER", field))
                   goto return_error;
                 set_scanner_state (SCANNER_SERVER);
@@ -1659,7 +1659,7 @@ process_otp_scanner_input ()
                 break;
             }
 
-          g_debug ("   scanner new state: %i\n", scanner_state);
+          g_debug ("   scanner new state: %i", scanner_state);
 
           continue;
 

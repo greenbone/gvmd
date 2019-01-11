@@ -387,7 +387,7 @@ try_gpgme_import (const char *key_str, gpgme_data_type_t key_type,
 
   if (mkdtemp (gpg_temp_dir) == NULL)
     {
-      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+      g_warning ("%s: mkdtemp failed", __FUNCTION__);
       return -1;
     }
 
@@ -5485,7 +5485,7 @@ static void
 set_client_state (client_state_t state)
 {
   client_state = state;
-  g_debug ("   client state set: %i\n", client_state);
+  g_debug ("   client state set: %i", client_state);
 }
 
 
@@ -5623,7 +5623,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
     = (int (*) (const char *, void*)) gmp_parser->client_writer;
   void* write_to_client_data = (void*) gmp_parser->client_writer_data;
 
-  g_debug ("   XML  start: %s (%i)\n", element_name, client_state);
+  g_debug ("   XML  start: %s (%i)", element_name, client_state);
 
   if (gmp_parser->read_over)
     gmp_parser->read_over++;
@@ -10251,14 +10251,14 @@ strdiff (const gchar *one, const gchar *two)
   old_lc_all = getenv ("LC_ALL") ? g_strdup (getenv ("LC_ALL")) : NULL;
   if (setenv ("LC_ALL", "C", 1) == -1)
     {
-      g_warning ("%s: failed to set LC_ALL\n", __FUNCTION__);
+      g_warning ("%s: failed to set LC_ALL", __FUNCTION__);
       return NULL;
     }
 
   old_language = getenv ("LANGUAGE") ? g_strdup (getenv ("LANGUAGE")) : NULL;
   if (setenv ("LANGUAGE", "C", 1) == -1)
     {
-      g_warning ("%s: failed to set LANGUAGE\n", __FUNCTION__);
+      g_warning ("%s: failed to set LANGUAGE", __FUNCTION__);
       return NULL;
     }
 
@@ -10269,7 +10269,7 @@ strdiff (const gchar *one, const gchar *two)
   cmd[2] = g_strdup ("Report 1");
   cmd[3] = g_strdup ("Report 2");
   cmd[4] = NULL;
-  g_debug ("%s: Spawning in %s: %s \"%s\" \"%s\"\n",
+  g_debug ("%s: Spawning in %s: %s \"%s\" \"%s\"",
            __FUNCTION__, dir,
            cmd[0], cmd[1], cmd[2]);
   if ((g_spawn_sync (dir,
@@ -10294,8 +10294,8 @@ strdiff (const gchar *one, const gchar *two)
                    exit_status,
                    WIFEXITED (exit_status),
                    WEXITSTATUS (exit_status));
-          g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-          g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+          g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
+          g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
           ret = NULL;
           g_free (standard_out);
         }
@@ -10305,12 +10305,12 @@ strdiff (const gchar *one, const gchar *two)
 
   if (old_lc_all && (setenv ("LC_ALL", old_lc_all, 1) == -1))
     {
-      g_warning ("%s: failed to reset LC_ALL\n", __FUNCTION__);
+      g_warning ("%s: failed to reset LC_ALL", __FUNCTION__);
       ret = NULL;
     }
   else if (old_language && (setenv ("LANGUAGE", old_language, 1) == -1))
     {
-      g_warning ("%s: failed to reset LANGUAGE\n", __FUNCTION__);
+      g_warning ("%s: failed to reset LANGUAGE", __FUNCTION__);
       ret = NULL;
     }
 
@@ -13875,7 +13875,7 @@ get_feed_info_parse (entity_t entity, const gchar *config_path,
   child = entity_child (entity, "name");
   if (child == NULL)
     {
-      g_warning ("%s: Missing name in '%s'\n", __FUNCTION__, config_path);
+      g_warning ("%s: Missing name in '%s'", __FUNCTION__, config_path);
       return -1;
     }
   *name = entity_text (child);
@@ -13883,7 +13883,7 @@ get_feed_info_parse (entity_t entity, const gchar *config_path,
   child = entity_child (entity, "description");
   if (child == NULL)
     {
-      g_warning ("%s: Missing description in '%s'\n",
+      g_warning ("%s: Missing description in '%s'",
                  __FUNCTION__, config_path);
       return -1;
     }
@@ -13892,7 +13892,7 @@ get_feed_info_parse (entity_t entity, const gchar *config_path,
   child = entity_child (entity, "version");
   if (child == NULL)
     {
-      g_warning ("%s: Missing version in '%s'\n", __FUNCTION__, config_path);
+      g_warning ("%s: Missing version in '%s'", __FUNCTION__, config_path);
       return -1;
     }
   *version = entity_text (child);
@@ -13934,7 +13934,7 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
   g_file_get_contents (config_path, &xml, &xml_len, &error);
   if (error)
     {
-      g_warning ("%s: Failed to read '%s': %s\n",
+      g_warning ("%s: Failed to read '%s': %s",
                   __FUNCTION__,
                  config_path,
                  error->message);
@@ -13947,7 +13947,7 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
 
   if (parse_entity (xml, &entity))
     {
-      g_warning ("%s: Failed to parse '%s'\n", __FUNCTION__, config_path);
+      g_warning ("%s: Failed to parse '%s'", __FUNCTION__, config_path);
       g_free (config_path);
       return -1;
     }
@@ -20316,7 +20316,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
     = (int (*) (const char *, void*)) gmp_parser->client_writer;
   void* write_to_client_data = (void*) gmp_parser->client_writer_data;
 
-  g_debug ("   XML    end: %s\n", element_name);
+  g_debug ("   XML    end: %s", element_name);
 
   if (gmp_parser->read_over > 1)
     {
@@ -20586,7 +20586,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   /** @todo Or some other error occurred. */
                   /** @todo Consider reverting parsing for retry. */
                   /** @todo process_gmp_client_input must return -2. */
-                  g_debug ("delete_task failed\n");
+                  g_debug ("delete_task failed");
                   abort ();
                   break;
                 case -5:
@@ -28008,7 +28008,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               /* Forked task process: success. */
               forked = 1;
               current_error = 2;
-              g_debug ("   %s: move_task fork success\n", __FUNCTION__);
+              g_debug ("   %s: move_task fork success", __FUNCTION__);
               g_set_error (error,
                             G_MARKUP_ERROR,
                             G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28279,7 +28279,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case 2:
                       /* Forked task process: success. */
                       current_error = 2;
-                      g_debug ("   %s: resume_task fork success\n", __FUNCTION__);
+                      g_debug ("   %s: resume_task fork success", __FUNCTION__);
                       g_set_error (error,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28313,7 +28313,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case -10:
                       /* Forked task process: error. */
                       current_error = -10;
-                      g_debug ("   %s: resume_task fork error\n", __FUNCTION__);
+                      g_debug ("   %s: resume_task fork error", __FUNCTION__);
                       g_set_error (error,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28450,7 +28450,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   {
                     /* Process forked to run a task. */
                     current_error = 2;
-                    g_debug ("   %s: run_wizard fork success\n", __FUNCTION__);
+                    g_debug ("   %s: run_wizard fork success", __FUNCTION__);
                     g_set_error (error,
                                  G_MARKUP_ERROR,
                                  G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28539,7 +28539,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   {
                     /* Process forked to run a task.  Task start failed. */
                     current_error = -10;
-                    g_debug ("   %s: run_wizard fork error\n", __FUNCTION__);
+                    g_debug ("   %s: run_wizard fork error", __FUNCTION__);
                     g_set_error (error,
                                  G_MARKUP_ERROR,
                                  G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28619,7 +28619,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case 2:
                       /* Forked task process: success. */
                       current_error = 2;
-                      g_debug ("   %s: start_task fork success\n", __FUNCTION__);
+                      g_debug ("   %s: start_task fork success", __FUNCTION__);
                       g_set_error (error,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28692,7 +28692,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     case -10:
                       /* Forked task process: error. */
                       current_error = -10;
-                      g_debug ("   %s: start_task fork error\n", __FUNCTION__);
+                      g_debug ("   %s: start_task fork error", __FUNCTION__);
                       g_set_error (error,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
@@ -28946,7 +28946,7 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
                      /* unused */ GError **error)
 {
   if (text_len == 0) return;
-  g_debug ("   XML   text: %s\n", text);
+  g_debug ("   XML   text: %s", text);
   switch (client_state)
     {
       case CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME:
@@ -30081,7 +30081,7 @@ gmp_xml_handle_error (/* unused */ GMarkupParseContext* context,
                       GError *error,
                       /* unused */ gpointer user_data)
 {
-  g_debug ("   XML ERROR %s\n", error->message);
+  g_debug ("   XML ERROR %s", error->message);
 }
 
 
@@ -30220,7 +30220,7 @@ process_gmp_client_input ()
           if (g_error_matches (error,
                                G_MARKUP_ERROR,
                                G_MARKUP_ERROR_UNKNOWN_ELEMENT))
-            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
+            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT");
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_INVALID_CONTENT))
@@ -30232,15 +30232,15 @@ process_gmp_client_input ()
                   g_error_free (error);
                   return current_error;
                 }
-              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
+              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
             }
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
-            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
+            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE");
           else
             err = -1;
-          g_info ("   Failed to parse client XML: %s\n", error->message);
+          g_info ("   Failed to parse client XML: %s", error->message);
           g_error_free (error);
         }
       else
@@ -30267,7 +30267,7 @@ process_gmp_client_input ()
 static int
 process_gmp_write (const char* msg, void* buffer)
 {
-  g_debug ("-> client internal: %s\n", msg);
+  g_debug ("-> client internal: %s", msg);
   g_string_append ((GString*) buffer, msg);
   return FALSE;
 }
@@ -30348,7 +30348,7 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
           if (g_error_matches (error,
                                G_MARKUP_ERROR,
                                G_MARKUP_ERROR_UNKNOWN_ELEMENT))
-            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
+            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT");
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_INVALID_CONTENT))
@@ -30360,15 +30360,15 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
                   g_error_free (error);
                   return current_error;
                 }
-              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
+              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
             }
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
-            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
+            g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE");
           else
             err = -1;
-          g_info ("   Failed to parse client XML: %s\n", error->message);
+          g_info ("   Failed to parse client XML: %s", error->message);
           g_error_free (error);
         }
       else

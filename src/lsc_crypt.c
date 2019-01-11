@@ -269,7 +269,7 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
       g_free (path);
       if (!ctx->encctx)
         {
-          g_critical ("%s: can't continue w/o a gpgme context\n", G_STRFUNC);
+          g_critical ("%s: can't continue w/o a gpgme context", G_STRFUNC);
           exit (EXIT_FAILURE);
         }
     }
@@ -489,7 +489,7 @@ lsc_crypt_new ()
   g_free (path);
   if (!ctx->encctx)
     {
-      g_critical ("%s: can't continue w/o a gpgme context\n", G_STRFUNC);
+      g_critical ("%s: can't continue w/o a gpgme context", G_STRFUNC);
       exit (EXIT_FAILURE);
     }
 
