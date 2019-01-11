@@ -151,7 +151,7 @@ write_string_to_server (char* const string)
                 continue;
               else
                 {
-                  g_warning ("%s: Failed to write to scanner: %s\n", __FUNCTION__,
+                  g_warning ("%s: Failed to write to scanner: %s", __FUNCTION__,
                              strerror (errno));
                   return -1;
                 }
@@ -172,17 +172,17 @@ write_string_to_server (char* const string)
               if (count == GNUTLS_E_REHANDSHAKE)
                 /** @todo Rehandshake. */
                 continue;
-              g_warning ("%s: failed to write to server: %s\n",
+              g_warning ("%s: failed to write to server: %s",
                          __FUNCTION__,
                          gnutls_strerror ((int) count));
               return -1;
             }
         }
-      g_debug ("s> server  (string) %.*s\n", (int) count, point);
+      g_debug ("s> server  (string) %.*s", (int) count, point);
       point += count;
-      g_debug ("=> server  (string) %zi bytes\n", count);
+      g_debug ("=> server  (string) %zi bytes", count);
     }
-  g_debug ("=> server  (string) done\n");
+  g_debug ("=> server  (string) done");
   /* Wrote everything. */
   return 0;
 }
@@ -212,7 +212,7 @@ write_to_server_buffer ()
                 return -3;
               else
                 {
-                  g_warning ("%s: Failed to write to scanner: %s\n", __FUNCTION__,
+                  g_warning ("%s: Failed to write to scanner: %s", __FUNCTION__,
                              strerror (errno));
                   return -1;
                 }
@@ -234,17 +234,17 @@ write_to_server_buffer ()
               if (count == GNUTLS_E_REHANDSHAKE)
                 /** @todo Rehandshake. */
                 continue;
-              g_warning ("%s: failed to write to server: %s\n",
+              g_warning ("%s: failed to write to server: %s",
                          __FUNCTION__,
                          gnutls_strerror ((int) count));
               return -1;
             }
         }
-      g_debug ("s> server  %.*s\n", (int) count, to_server + to_server_start);
+      g_debug ("s> server  %.*s", (int) count, to_server + to_server_start);
       to_server_start += count;
-      g_debug ("=> server  %zi bytes\n", count);
+      g_debug ("=> server  %zi bytes", count);
     }
-  g_debug ("=> server  done\n");
+  g_debug ("=> server  done");
   to_server_start = to_server_end = 0;
   /* Wrote everything. */
   return 0;
@@ -279,7 +279,7 @@ openvas_scanner_read ()
                 return 0;
               else
                 {
-                  g_warning ("%s: Failed to read from scanner: %s\n", __FUNCTION__,
+                  g_warning ("%s: Failed to read from scanner: %s", __FUNCTION__,
                              strerror (errno));
                   return -1;
                 }
@@ -301,7 +301,7 @@ openvas_scanner_read ()
               if (count == GNUTLS_E_REHANDSHAKE)
                 {
                   /** @todo Rehandshake. */
-                  g_debug ("   should rehandshake\n");
+                  g_debug ("   should rehandshake");
                   continue;
                 }
               if (gnutls_error_is_fatal (count) == 0
@@ -310,10 +310,10 @@ openvas_scanner_read ()
                 {
                   int alert = gnutls_alert_get (openvas_scanner_session);
                   const char* alert_name = gnutls_alert_get_name (alert);
-                  g_warning ("%s: TLS Alert %d: %s\n", __FUNCTION__, alert,
+                  g_warning ("%s: TLS Alert %d: %s", __FUNCTION__, alert,
                              alert_name);
                 }
-              g_warning ("%s: failed to read from server: %s\n", __FUNCTION__,
+              g_warning ("%s: failed to read from server: %s", __FUNCTION__,
                          gnutls_strerror (count));
               return -1;
             }
@@ -381,7 +381,7 @@ openvas_scanner_write (int nvt_cache_mode)
              * error" removes the data between `select' and `read'. */
             if (fcntl (openvas_scanner_socket, F_SETFL, O_NONBLOCK) == -1)
               {
-                g_warning ("%s: failed to set scanner socket flag: %s\n",
+                g_warning ("%s: failed to set scanner socket flag: %s",
                            __FUNCTION__, strerror (errno));
                 return -1;
               }
@@ -503,7 +503,7 @@ openvas_scanner_wait ()
         {
           if (errno == EINTR)
             continue;
-          g_warning ("%s: select failed (connect): %s\n", __FUNCTION__,
+          g_warning ("%s: select failed (connect): %s", __FUNCTION__,
                      strerror (errno));
           return -1;
         }
@@ -532,7 +532,7 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
     {
       if (errno != ENOENT)
         {
-          g_warning ("%s: failed to open " CA_DIR ": %s\n", __FUNCTION__,
+          g_warning ("%s: failed to open " CA_DIR ": %s", __FUNCTION__,
                      strerror (errno));
           return -1;
         }
@@ -551,7 +551,7 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
           && (gnutls_certificate_set_x509_trust_file
                (*scanner_credentials, name, GNUTLS_X509_FMT_PEM) < 0))
         {
-          g_warning ("%s: gnutls_certificate_set_x509_trust_file failed: %s\n",
+          g_warning ("%s: gnutls_certificate_set_x509_trust_file failed: %s",
                      __FUNCTION__, name);
           g_free (name);
           closedir (dir);
@@ -620,7 +620,7 @@ openvas_scanner_connect_unix ()
   openvas_scanner_socket = socket (AF_UNIX, SOCK_STREAM, 0);
   if (openvas_scanner_socket == -1)
     {
-      g_warning ("%s: failed to create scanner socket: %s\n", __FUNCTION__,
+      g_warning ("%s: failed to create scanner socket: %s", __FUNCTION__,
                  strerror (errno));
       return -1;
     }
@@ -630,7 +630,7 @@ openvas_scanner_connect_unix ()
   len = strlen (addr.sun_path) + sizeof (addr.sun_family);
   if (connect (openvas_scanner_socket, (struct sockaddr *) &addr, len) == -1)
     {
-      g_warning ("%s: Failed to connect to scanner (%s): %s\n", __FUNCTION__,
+      g_warning ("%s: Failed to connect to scanner (%s): %s", __FUNCTION__,
                  openvas_scanner_unix_path, strerror (errno));
       return -1;
     }
@@ -653,7 +653,7 @@ openvas_scanner_connect ()
   openvas_scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
   if (openvas_scanner_socket == -1)
     {
-      g_warning ("%s: failed to create scanner socket: %s\n", __FUNCTION__,
+      g_warning ("%s: failed to create scanner socket: %s", __FUNCTION__,
                  strerror (errno));
       return -1;
     }

@@ -157,7 +157,7 @@ read_from_client_unix (int client_socket)
           if (errno == EINTR)
             /* Interrupted, try read again. */
             continue;
-          g_warning ("%s: failed to read from client: %s\n",
+          g_warning ("%s: failed to read from client: %s",
                      __FUNCTION__, strerror (errno));
           return -1;
         }
@@ -210,7 +210,7 @@ read_from_client_tls (gnutls_session_t* client_session)
           if (count == GNUTLS_E_REHANDSHAKE)
             {
               /** @todo Rehandshake. */
-              g_debug ("   should rehandshake\n");
+              g_debug ("   should rehandshake");
               continue;
             }
           if (gnutls_error_is_fatal ((int) count) == 0
@@ -219,10 +219,10 @@ read_from_client_tls (gnutls_session_t* client_session)
             {
               int alert = gnutls_alert_get (*client_session);
               const char* alert_name = gnutls_alert_get_name (alert);
-              g_warning ("%s: TLS Alert %d: %s\n",
+              g_warning ("%s: TLS Alert %d: %s",
                          __FUNCTION__, alert, alert_name);
             }
-          g_warning ("%s: failed to read from client: %s\n",
+          g_warning ("%s: failed to read from client: %s",
                      __FUNCTION__, gnutls_strerror ((int) count));
           return -1;
         }
@@ -291,15 +291,15 @@ write_to_client_tls (gnutls_session_t* client_session)
           if (count == GNUTLS_E_REHANDSHAKE)
             /** @todo Rehandshake. */
             continue;
-          g_warning ("%s: failed to write to client: %s\n",
+          g_warning ("%s: failed to write to client: %s",
                      __FUNCTION__,
                      gnutls_strerror ((int) count));
           return -1;
         }
       to_client_start += count;
-      g_debug ("=> client  %u bytes\n", (unsigned int) count);
+      g_debug ("=> client  %u bytes", (unsigned int) count);
     }
-  g_debug ("=> client  done\n");
+  g_debug ("=> client  done");
   to_client_start = to_client_end = 0;
 
   /* Wrote everything. */
@@ -330,15 +330,15 @@ write_to_client_unix (int client_socket)
           if (errno == EINTR)
             /* Interrupted, try write again. */
             continue;
-          g_warning ("%s: failed to write to client: %s\n",
+          g_warning ("%s: failed to write to client: %s",
                      __FUNCTION__,
                      strerror (errno));
           return -1;
         }
       to_client_start += count;
-      g_debug ("=> client  %u bytes\n", (unsigned int) count);
+      g_debug ("=> client  %u bytes", (unsigned int) count);
     }
-  g_debug ("=> client  done\n");
+  g_debug ("=> client  done");
   to_client_start = to_client_end = 0;
 
   /* Wrote everything. */
@@ -388,7 +388,7 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
           case  0:      /* Wrote everything in to_client. */
             break;
           case -1:      /* Error. */
-            g_debug ("   %s full (%i < %zu); client write failed\n",
+            g_debug ("   %s full (%i < %zu); client write failed",
                     __FUNCTION__,
                     ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
                     strlen (msg));
@@ -405,7 +405,7 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
         break;
 
       memmove (to_client + to_client_end, msg, length);
-      g_debug ("-> client: %.*s\n", (int) length, msg);
+      g_debug ("-> client: %.*s", (int) length, msg);
       to_client_end += length;
       msg += length;
     }
@@ -415,7 +415,7 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
       assert (strlen (msg)
               <= (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end));
       memmove (to_client + to_client_end, msg, strlen (msg));
-      g_debug ("-> client: %s\n", msg);
+      g_debug ("-> client: %s", msg);
       to_client_end += strlen (msg);
     }
 
@@ -485,7 +485,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
     gmpd_nvt_cache_mode = client_connection->socket;
 
   if (gmpd_nvt_cache_mode == 0)
-    g_debug ("   Serving GMP.\n");
+    g_debug ("   Serving GMP");
 
   /* Initialise the XML parser and the manage library. */
   init_gmp_process (gmpd_nvt_cache_mode,
@@ -669,7 +669,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
         }
       else if (ret < 0)
         {
-          g_warning ("%s: child select failed: %s\n", __FUNCTION__,
+          g_warning ("%s: child select failed: %s", __FUNCTION__,
                      strerror (errno));
           rc = -1;
           goto client_free;
@@ -692,7 +692,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                 /* There may be more to read. */
                 break;
               case -3:       /* End of file. */
-                g_debug ("   EOF reading from client.\n");
+                g_debug ("   EOF reading from client");
                 if (client_connection->socket > 0
                     && FD_ISSET (client_connection->socket, &writefds))
                   /* Write rest of to_client to client, so that the client gets
@@ -711,9 +711,9 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               if (g_strstr_len (from_client + initial_start,
                                 from_client_end - initial_start,
                                 "<password>"))
-                g_debug ("<= client  Input may contain password, suppressed.\n");
+                g_debug ("<= client  Input may contain password, suppressed");
               else
-                g_debug ("<= client  \"%.*s\"\n",
+                g_debug ("<= client  \"%.*s\"",
                         from_client_end - initial_start,
                         from_client + initial_start);
             }
@@ -773,14 +773,14 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           else if (ret == -2)
             {
               /* to_scanner buffer full. */
-              g_debug ("   client input stalled 1\n");
+              g_debug ("   client input stalled 1");
               client_input_stalled = 1;
               /* Carry on to write to_scanner. */
             }
           else if (ret == -3)
             {
               /* to_client buffer full. */
-              g_debug ("   client input stalled 2\n");
+              g_debug ("   client input stalled 2");
               client_input_stalled = 2;
               /* Carry on to write to_client. */
             }
@@ -925,13 +925,13 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           else if (ret == -2)
             {
               /* to_scanner buffer full. */
-              g_debug ("   client input still stalled (1)\n");
+              g_debug ("   client input still stalled (1)");
               client_input_stalled = 1;
             }
           else if (ret == -3)
             {
               /* to_client buffer full. */
-              g_debug ("   client input still stalled (2)\n");
+              g_debug ("   client input still stalled (2)");
               client_input_stalled = 2;
             }
           else
@@ -989,7 +989,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
             }
           else if (ret == -3)
             /* to_scanner buffer still full. */
-            g_debug ("   scanner input stalled\n");
+            g_debug ("   scanner input stalled");
           else
             {
               /* Programming error. */

@@ -172,7 +172,7 @@ sqlv (int retry, char* sql, va_list args)
       ret = sql_prepare_internal (retry, 1, sql, args_copy, &stmt);
       va_end (args_copy);
       if (ret == -1)
-        g_warning ("%s: sql_prepare_internal failed\n", __FUNCTION__);
+        g_warning ("%s: sql_prepare_internal failed", __FUNCTION__);
       if (ret)
         return ret;
 
@@ -180,7 +180,7 @@ sqlv (int retry, char* sql, va_list args)
 
       while ((ret = sql_exec_internal (retry, stmt)) == 1);
       if ((ret == -1) && log_errors)
-        g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+        g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
       sql_finalize (stmt);
       if (ret == 2)
         continue;
@@ -298,7 +298,7 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
 
       if (ret)
         {
-          g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+          g_warning ("%s: sql_prepare failed", __FUNCTION__);
           return -1;
         }
 
@@ -308,7 +308,7 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
       if (ret == -1)
         {
           if (log_errors)
-            g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+            g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
           return -1;
         }
       if (ret == 0)
@@ -324,7 +324,7 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
     }
   assert (ret == 1);
   if (log)
-    g_debug ("   sql_x end (%s)\n", sql);
+    g_debug ("   sql_x end (%s)", sql);
   return 0;
 }
 
@@ -522,7 +522,7 @@ init_prepared_iterator (iterator_t* iterator, sql_stmt_t* stmt)
   iterator->stmt = stmt;
   iterator->prepared = 1;
   iterator->crypt_ctx = NULL;
-  g_debug ("   sql: init prepared %p\n", stmt);
+  g_debug ("   sql: init prepared %p", stmt);
 }
 
 /**
@@ -547,7 +547,7 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
   va_end (args);
   if (ret)
     {
-      g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+      g_warning ("%s: sql_prepare failed", __FUNCTION__);
       abort ();
     }
   iterator->stmt = stmt;
@@ -623,7 +623,7 @@ cleanup_iterator (iterator_t* iterator)
 {
   if (iterator == NULL)
     {
-      g_warning ("%s: null iterator pointer.\n", __FUNCTION__);
+      g_warning ("%s: null iterator pointer", __FUNCTION__);
       return;
     }
 
@@ -663,7 +663,7 @@ next (iterator_t* iterator)
       if (ret == -1)
         {
           if (log_errors)
-            g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+            g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
           abort ();
         }
       if (ret == -3 || ret == -2)
@@ -672,7 +672,7 @@ next (iterator_t* iterator)
            * we used to do in sql_exec_internal.  We're not supposed to do this
            * for SQLite, but it would mean quite a bit of reworking in the
            * callers to be able to handle this case. */
-          g_warning ("%s: stepping after reset\n", __FUNCTION__);
+          g_warning ("%s: stepping after reset", __FUNCTION__);
           continue;
         }
       if (ret == 2)
@@ -688,7 +688,7 @@ next (iterator_t* iterator)
                      "  This is possibly due to running VACUUM while Manager\n"
                      "  is running.  Restart Manager.  In future use\n"
                      "  --optimize=vacuum instead of running VACUUM"
-                     "  directly.\n",
+                     "  directly.",
                      __FUNCTION__);
           abort ();
         }

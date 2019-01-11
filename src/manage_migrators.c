@@ -1085,7 +1085,7 @@ migrate_5_to_6 ()
   else
     {
       g_warning ("%s: a predefined config has moved from the standard location,"
-                 " giving up\n",
+                 " giving up",
                  __FUNCTION__);
       sql_rollback ();
       return -1;
@@ -1999,7 +1999,7 @@ migrate_19_to_20 ()
 
       if (stmt == NULL)
         {
-          g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+          g_warning ("%s: sql_prepare failed", __FUNCTION__);
           cleanup_iterator (&rows);
           sql_rollback ();
           return -1;
@@ -2017,7 +2017,7 @@ migrate_19_to_20 ()
 
       if (sql_bind_text (stmt, 1, installer, installer_size))
         {
-          g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+          g_warning ("%s: sql_bind_text failed", __FUNCTION__);
           cleanup_iterator (&rows);
           sql_rollback ();
           g_free (installer);
@@ -2030,7 +2030,7 @@ migrate_19_to_20 ()
       while ((ret = sql_exec (stmt)) > 0);
       if (ret < 0)
         {
-          g_warning ("%s: sql_exec failed\n", __FUNCTION__);
+          g_warning ("%s: sql_exec failed", __FUNCTION__);
           cleanup_iterator (&rows);
           sql_rollback ();
           return -1;
@@ -2257,7 +2257,7 @@ migrate_21_to_22 ()
                                    iterator_int64 (&rows, 2));
           if (owner_uuid == NULL)
             {
-              g_warning ("%s: owner missing from users table\n", __FUNCTION__);
+              g_warning ("%s: owner missing from users table", __FUNCTION__);
               cleanup_iterator (&rows);
               sql_rollback ();
               return -1;
@@ -2281,7 +2281,7 @@ migrate_21_to_22 ()
         {
           if (g_file_test (old_dir, G_FILE_TEST_EXISTS)
               && gvm_file_remove_recurse (old_dir))
-            g_warning ("%s: failed to remove %s\n",
+            g_warning ("%s: failed to remove %s",
                        __FUNCTION__,
                        old_dir);
         }
@@ -2291,7 +2291,7 @@ migrate_21_to_22 ()
                 || user_format)
                && rename (old_dir, new_dir))
         {
-          g_warning ("%s: renaming %s to %s failed: %s\n",
+          g_warning ("%s: renaming %s to %s failed: %s",
                      __FUNCTION__,
                      old_dir,
                      new_dir,
@@ -3143,7 +3143,7 @@ migrate_37_to_38 ()
     cmd[1] = old_dir;
     cmd[2] = new_dir;
     cmd[3] = NULL;
-    g_debug ("%s: Spawning in .: %s %s %s\n",
+    g_debug ("%s: Spawning in .: %s %s %s",
              __FUNCTION__, cmd[0], cmd[1], cmd[2]);
     if ((g_spawn_sync (".",
                        cmd,
@@ -3164,8 +3164,8 @@ migrate_37_to_38 ()
                    exit_status,
                    WIFEXITED (exit_status),
                  WEXITSTATUS (exit_status));
-        g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-        g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+        g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
+        g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
         g_free (old_dir);
         g_free (new_dir);
         g_free (cmd[0]);
@@ -6419,7 +6419,7 @@ migrate_79_to_80 ()
   count = scandir (GVM_STATE_DIR "/users", &names, NULL, alphasort);
   if (count < 0)
     {
-      g_warning ("%s: failed to open dir %s/users: %s\n",
+      g_warning ("%s: failed to open dir %s/users: %s",
                  __FUNCTION__,
                  GVM_STATE_DIR,
                  strerror (errno));
@@ -6471,10 +6471,10 @@ migrate_79_to_80 ()
                                            "methods",
                                            "ldap_connect",
                                            NULL);
-      g_debug ("          user: %s\n", names[index]->d_name);
-      g_debug ("    remote dir: %s\n", remote_dir);
-      g_debug ("   classic dir: %s\n", classic_dir);
-      g_debug ("     flag file: %s\n", remote_flag_file);
+      g_debug ("          user: %s", names[index]->d_name);
+      g_debug ("    remote dir: %s", remote_dir);
+      g_debug ("   classic dir: %s", classic_dir);
+      g_debug ("     flag file: %s", remote_flag_file);
       if (g_file_test (remote_dir, G_FILE_TEST_IS_DIR)
           && g_file_test (remote_flag_file, G_FILE_TEST_EXISTS))
         method = AUTHENTICATION_METHOD_LDAP_CONNECT;
@@ -6503,7 +6503,7 @@ migrate_79_to_80 ()
                            &error);
       if (error)
         {
-          g_warning ("%s: Failed to read %s: %s\n",
+          g_warning ("%s: Failed to read %s: %s",
                      __FUNCTION__,
                      uuid_file,
                      error->message);
@@ -6520,7 +6520,7 @@ migrate_79_to_80 ()
 
       if (uuid == NULL || strlen (g_strchomp (uuid)) != 36)
         {
-          g_warning ("%s: Error in UUID: %s\n",
+          g_warning ("%s: Error in UUID: %s",
                      __FUNCTION__,
                      uuid);
           g_free (classic_dir);
@@ -6529,7 +6529,7 @@ migrate_79_to_80 ()
           sql_rollback ();
           return -1;
         }
-      g_debug ("          uuid: %s\n", uuid);
+      g_debug ("          uuid: %s", uuid);
 
       /* Get role. */
 
@@ -6569,7 +6569,7 @@ migrate_79_to_80 ()
           default:       /* Programming error. */
             assert (0);
           case -1:
-            g_warning ("%s: Error finding user %s\n",
+            g_warning ("%s: Error finding user %s",
                        __FUNCTION__,
                        uuid);
             g_free (uuid);
@@ -6593,7 +6593,7 @@ migrate_79_to_80 ()
                                &error);
           if (error)
             {
-              g_warning ("%s: Failed to read %s: %s\n",
+              g_warning ("%s: Failed to read %s: %s",
                          __FUNCTION__,
                          file,
                          error->message);
@@ -6618,7 +6618,7 @@ migrate_79_to_80 ()
       hosts_allow = 2;
       if (migrate_79_to_80_user_access (classic_dir, &hosts, &hosts_allow))
         {
-          g_warning ("%s: Failed to get user rules from %s\n",
+          g_warning ("%s: Failed to get user rules from %s",
                      __FUNCTION__,
                      classic_dir);
           g_free (classic_dir);
@@ -6690,7 +6690,7 @@ migrate_79_to_80 ()
   if (g_lstat (dir, &state))
     {
       if (errno != ENOENT)
-        g_warning ("%s: g_lstat (%s) failed: %s\n",
+        g_warning ("%s: g_lstat (%s) failed: %s",
                    __FUNCTION__, dir, g_strerror (errno));
     }
   else
@@ -9218,20 +9218,20 @@ migrate_129_to_130 ()
   /* Fetch default certificates content. */
   if (!g_file_get_contents (CACERT, &ca_pub, NULL, &error))
     {
-      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_warning ("%s: %s", __FUNCTION__, error->message);
       g_error_free (error);
       return -1;
     }
   if (!g_file_get_contents (CLIENTCERT, &key_pub, NULL, &error))
     {
-      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_warning ("%s: %s", __FUNCTION__, error->message);
       g_error_free (error);
       g_free (ca_pub);
       return -1;
     }
   if (!g_file_get_contents (CLIENTKEY, &key_priv, NULL, &error))
     {
-      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_warning ("%s: %s", __FUNCTION__, error->message);
       g_error_free (error);
       g_free (ca_pub);
       g_free (key_pub);
@@ -12785,12 +12785,12 @@ migrate_170_to_171 ()
        * directory. */
 
       if (errno != ENOENT)
-        g_warning ("%s: g_lstat (%s) failed: %s\n",
+        g_warning ("%s: g_lstat (%s) failed: %s",
                    __FUNCTION__, old_dir, g_strerror (errno));
       else
-        g_warning ("%s: trash report formats directory missing (%s)\n",
+        g_warning ("%s: trash report formats directory missing (%s)",
                    __FUNCTION__, old_dir);
-      g_warning ("%s: any trash report formats will be removed on startup\n",
+      g_warning ("%s: any trash report formats will be removed on startup",
                  __FUNCTION__);
     }
   else
@@ -12809,7 +12809,7 @@ migrate_170_to_171 ()
       cmd[1] = old_dir;
       cmd[2] = new_dir;
       cmd[3] = NULL;
-      g_debug ("%s: Spawning in .: %s %s %s\n",
+      g_debug ("%s: Spawning in .: %s %s %s",
                __FUNCTION__, cmd[0], cmd[1], cmd[2]);
       if ((g_spawn_sync (".",
                          cmd,
@@ -12830,8 +12830,8 @@ migrate_170_to_171 ()
                      exit_status,
                      WIFEXITED (exit_status),
                    WEXITSTATUS (exit_status));
-          g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-          g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+          g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
+          g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
           g_free (old_dir);
           g_free (new_dir);
           g_free (cmd[0]);
@@ -12905,10 +12905,10 @@ migrate_171_to_172 ()
        * to move anyway, and the Manager install should have put the actual
        * files in the right place. */
       if (errno != ENOENT)
-        g_warning ("%s: g_lstat (%s) failed: %s\n",
+        g_warning ("%s: g_lstat (%s) failed: %s",
                    __FUNCTION__, old_dir_path, g_strerror (errno));
       else
-        g_info ("%s: old global report formats directory missing (%s)\n",
+        g_info ("%s: old global report formats directory missing (%s)",
                 __FUNCTION__, old_dir_path);
     }
   else
@@ -12961,7 +12961,7 @@ migrate_171_to_172 ()
               cmd[1] = old_subdir_path;
               cmd[2] = new_subdir_path;
               cmd[3] = NULL;
-              g_debug ("%s: Spawning in .: %s %s %s\n",
+              g_debug ("%s: Spawning in .: %s %s %s",
                       __FUNCTION__, cmd[0], cmd[1], cmd[2]);
               if ((g_spawn_sync (".",
                                 cmd,
@@ -12982,8 +12982,8 @@ migrate_171_to_172 ()
                             exit_status,
                             WIFEXITED (exit_status),
                           WEXITSTATUS (exit_status));
-                  g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-                  g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+                  g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
+                  g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
                   move_failed = 1;
                 }
               g_free (cmd[0]);
@@ -13226,7 +13226,7 @@ migrate_174_to_175 ()
           cmd[1] = old_subdir_path;
           cmd[2] = new_subdir_path;
           cmd[3] = NULL;
-          g_debug ("%s: Spawning in .: %s %s %s\n",
+          g_debug ("%s: Spawning in .: %s %s %s",
                   __FUNCTION__, cmd[0], cmd[1], cmd[2]);
           if ((g_spawn_sync (".",
                             cmd,
@@ -13247,8 +13247,8 @@ migrate_174_to_175 ()
                         exit_status,
                         WIFEXITED (exit_status),
                       WEXITSTATUS (exit_status));
-              g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-              g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+              g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
+              g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
               move_failed = 1;
             }
           g_free (cmd[0]);
@@ -13755,7 +13755,7 @@ migrate_181_to_182_move (const char *dest)
       cmd[1] = old_asc_path;
       cmd[2] = new_asc_path;
       cmd[3] = NULL;
-      g_debug ("%s: Spawning in .: %s %s %s\n",
+      g_debug ("%s: Spawning in .: %s %s %s",
               __FUNCTION__, cmd[0], cmd[1], cmd[2]);
       if ((g_spawn_sync (".",
                         cmd,
@@ -13776,8 +13776,8 @@ migrate_181_to_182_move (const char *dest)
                     exit_status,
                     WIFEXITED (exit_status),
                   WEXITSTATUS (exit_status));
-          g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-          g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+          g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
+          g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
           move_failed = 1;
         }
       g_free (cmd[0]);
@@ -15264,7 +15264,7 @@ manage_migrate (GSList *log_config, const gchar *database)
 
   if (old_version == -2)
     {
-      g_warning ("%s: no task tables yet, so no need to migrate them\n",
+      g_warning ("%s: no task tables yet, so no need to migrate them",
                  __FUNCTION__);
       version_current = 1;
     }

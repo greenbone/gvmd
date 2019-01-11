@@ -1514,7 +1514,7 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   assert (argc == 2);
 
-  g_debug ("   %s: top\n", __FUNCTION__);
+  g_debug ("   %s: top", __FUNCTION__);
 
   cve1 = sqlite3_value_text (argv[0]);
   if (cve1 == NULL)
@@ -1538,7 +1538,7 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
     {
       while (*point_2)
         {
-          g_debug ("   %s: %s vs %s\n", __FUNCTION__, g_strstrip (*point_1), g_strstrip (*point_2));
+          g_debug ("   %s: %s vs %s", __FUNCTION__, g_strstrip (*point_1), g_strstrip (*point_2));
           if (strcmp (g_strstrip (*point_1), g_strstrip (*point_2)) == 0)
             {
               g_strfreev (split_1);
@@ -1723,7 +1723,7 @@ clear_cache (void *cache_arg)
   sql_severity_t *cache;
 
   cache = (sql_severity_t*) cache_arg;
-  g_debug ("   %s: %llu, %llu\n", __FUNCTION__, cache->task, cache->overrides_task);
+  g_debug ("   %s: %llu, %llu", __FUNCTION__, cache->task, cache->overrides_task);
   cache->task = 0;
   cache->overrides_task = 0;
   free (cache->severity);
@@ -1844,7 +1844,7 @@ sql_task_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
   else
     threat = severity_to_level (severity_dbl, 0);
 
-  g_debug ("   %s: %llu: %s\n", __FUNCTION__, task, threat);
+  g_debug ("   %s: %llu: %s", __FUNCTION__, task, threat);
   if (threat)
     {
       sqlite3_result_text (context, threat, -1, SQLITE_TRANSIENT);
@@ -2134,7 +2134,7 @@ sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   severity = cached_task_severity (context, task, overrides, min_qod);
   severity_double = severity ? g_strtod (severity, 0) : 0.0;
-  g_debug ("   %s: %llu: %s\n", __FUNCTION__, task, severity);
+  g_debug ("   %s: %llu: %s", __FUNCTION__, task, severity);
   if (severity)
     {
       sqlite3_result_double (context, severity_double);
@@ -4071,7 +4071,7 @@ manage_attach_databases ()
         case ENOENT:
           break;
         default:
-          g_warning ("%s: failed to stat SCAP database: %s\n",
+          g_warning ("%s: failed to stat SCAP database: %s",
                      __FUNCTION__,
                      strerror (errno));
           break;
@@ -4088,7 +4088,7 @@ manage_attach_databases ()
         case ENOENT:
           break;
         default:
-          g_warning ("%s: failed to stat CERT database: %s\n",
+          g_warning ("%s: failed to stat CERT database: %s",
                      __FUNCTION__,
                      strerror (errno));
           break;
@@ -4131,7 +4131,7 @@ manage_db_init (const gchar *name)
       if (access (CERT_DB_FILE, R_OK)
           && errno != ENOENT)
         {
-          g_warning ("%s: failed to stat CERT database: %s\n",
+          g_warning ("%s: failed to stat CERT database: %s",
                      __FUNCTION__,
                      strerror (errno));
           return -1;
@@ -4143,7 +4143,7 @@ manage_db_init (const gchar *name)
           if (g_mkdir_with_parents (CERT_DB_DIR, 0755 /* "rwxr-xr-x" */)
               == -1)
             {
-              g_warning ("%s: failed to create CERT directory: %s\n",
+              g_warning ("%s: failed to create CERT directory: %s",
                          __FUNCTION__,
                          strerror (errno));
               abort ();
@@ -4240,7 +4240,7 @@ manage_db_init (const gchar *name)
       if (access (SCAP_DB_FILE, R_OK)
           && errno != ENOENT)
         {
-          g_warning ("%s: failed to stat SCAP database: %s\n",
+          g_warning ("%s: failed to stat SCAP database: %s",
                      __FUNCTION__,
                      strerror (errno));
           return -1;
@@ -4252,7 +4252,7 @@ manage_db_init (const gchar *name)
           if (g_mkdir_with_parents (SCAP_DB_DIR, 0755 /* "rwxr-xr-x" */)
               == -1)
             {
-              g_warning ("%s: failed to create SCAP directory: %s\n",
+              g_warning ("%s: failed to create SCAP directory: %s",
                          __FUNCTION__,
                          strerror (errno));
               abort ();
@@ -4451,7 +4451,7 @@ manage_db_check (const gchar *name)
           if (errno == ENOENT)
             return 0;
 
-          g_warning ("%s: failed to stat CERT database: %s\n",
+          g_warning ("%s: failed to stat CERT database: %s",
                      __FUNCTION__,
                      strerror (errno));
           return -1;
@@ -4474,7 +4474,7 @@ manage_db_check (const gchar *name)
           if (errno == ENOENT)
             return 0;
 
-          g_warning ("%s: failed to stat SCAP database: %s\n",
+          g_warning ("%s: failed to stat SCAP database: %s",
                      __FUNCTION__,
                      strerror (errno));
           return -1;
@@ -4510,7 +4510,7 @@ manage_cert_loaded ()
           return 0;
           break;
         default:
-          g_warning ("%s: failed to stat CERT database: %s\n",
+          g_warning ("%s: failed to stat CERT database: %s",
                      __FUNCTION__,
                      strerror (errno));
           return 0;
@@ -4546,7 +4546,7 @@ manage_scap_loaded ()
           return 0;
           break;
         default:
-          g_warning ("%s: failed to stat SCAP database: %s\n",
+          g_warning ("%s: failed to stat SCAP database: %s",
                      __FUNCTION__,
                      strerror (errno));
           return 0;
@@ -4577,7 +4577,7 @@ manage_cert_db_exists ()
           return 0;
           break;
         default:
-          g_warning ("%s: failed to stat CERT database: %s\n",
+          g_warning ("%s: failed to stat CERT database: %s",
                      __FUNCTION__,
                      strerror (errno));
           return 1;
@@ -4600,7 +4600,7 @@ manage_scap_db_exists ()
           return 0;
           break;
         default:
-          g_warning ("%s: failed to stat SCAP database: %s\n",
+          g_warning ("%s: failed to stat SCAP database: %s",
                      __FUNCTION__,
                      strerror (errno));
           return 1;
@@ -4846,7 +4846,7 @@ backup_db (const gchar *database, gchar **backup_file_arg)
 
   if (sqlite3_open (backup_file, &backup_db) != SQLITE_OK)
     {
-      g_warning ("%s: sqlite3_open failed: %s\n",
+      g_warning ("%s: sqlite3_open failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (gvmd_db));
       goto fail;
@@ -4861,7 +4861,7 @@ backup_db (const gchar *database, gchar **backup_file_arg)
   backup = sqlite3_backup_init (backup_db, "main", gvmd_db, "main");
   if (backup == NULL)
     {
-      g_warning ("%s: sqlite3_backup_init failed: %s\n",
+      g_warning ("%s: sqlite3_backup_init failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (backup_db));
       goto fail;
@@ -4881,7 +4881,7 @@ backup_db (const gchar *database, gchar **backup_file_arg)
           sqlite3_sleep (250);
           continue;
         }
-      g_warning ("%s: sqlite3_backup_step failed: %s\n",
+      g_warning ("%s: sqlite3_backup_step failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (backup_db));
       sqlite3_backup_finish (backup);
