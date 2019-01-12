@@ -520,6 +520,20 @@ init_result_ticket_iterator (iterator_t *iterator, const gchar *result_id)
 DEF_ACCESS (result_ticket_iterator_ticket_id, 1);
 
 /**
+ * @brief Return user that ticket is assigned to.
+ *
+ * @param[in]  ticket  Ticket.
+ *
+ * @return User
+ */
+user_t
+ticket_assigned_to (ticket_t ticket)
+{
+  return sql_int64_0 ("SELECT assigned_to FROM tickets WHERE id = %llu;",
+                      ticket);
+}
+
+/**
  * @brief Return whether a ticket is in use.
  *
  * @param[in]  ticket  Ticket.

@@ -8309,6 +8309,20 @@ alert_name (alert_t alert)
 }
 
 /**
+ * @brief Return the owner of an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return Owner.
+ */
+static user_t
+alert_owner (alert_t alert)
+{
+  return sql_int64_0 ("SELECT owner FROM alerts WHERE id = %llu;",
+                      alert);
+}
+
+/**
  * @brief Return the UUID of the owner of an alert.
  *
  * @param[in]  alert  Alert.
@@ -13891,16 +13905,16 @@ manage_test_alert (const char *alert_id, gchar **script_message)
 /**
  * @brief Return whether an event applies to a task and an alert.
  *
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  task        Task.
- * @param[in]  alert       Alert.
+ * @param[in]  event           Event.
+ * @param[in]  event_data      Event data.
+ * @param[in]  event_resource  Event resource.
+ * @param[in]  alert           Alert.
  *
  * @return 1 if event applies, else 0.
  */
 static int
-event_applies (event_t event, const void *event_data, task_t task,
-               alert_t alert)
+event_applies (event_t event, const void *event_data,
+               resource_t event_resource, alert_t alert)
 {
   switch (event)
     {
@@ -13909,13 +13923,13 @@ event_applies (event_t event, const void *event_data, task_t task,
           int ret;
           char *alert_event_data;
 
-          if (alert_applies_to_task (alert, task) == 0)
+          if (alert_applies_to_task (alert, event_resource) == 0)
             return 0;
 
           alert_event_data = alert_data (alert, "event", "status");
           if (alert_event_data == NULL)
             return 0;
-          ret = (task_run_status (task) == (task_status_t) event_data)
+          ret = (task_run_status (event_resource) == (task_status_t) event_data)
                 && (strcmp (alert_event_data,
                             run_status_name_internal ((task_status_t)
                                                       event_data))
@@ -13936,7 +13950,7 @@ event_applies (event_t event, const void *event_data, task_t task,
           return 0;
         }
       case EVENT_TICKET_RECEIVED:
-        return 1;
+        return ticket_assigned_to (event_resource) == alert_owner (alert);
       default:
         return 0;
     }
