@@ -8789,18 +8789,37 @@ alert_data (alert_t alert, const char *type, const char *name)
 }
 
 /**
+ * @brief Check whether an alert applies to a task.
+ *
+ * @param[in]  alert  Alert.
+ * @param[in]  task   Task.
+ *
+ * @return 1 if applies, else 0.
+ */
+static int
+alert_applies_to_task (alert_t alert, task_t task)
+{
+  return sql_int ("SELECT EXISTS (SELECT * FROM task_alerts"
+                  "               WHERE task = %llu"
+                  "               AND alert = %llu);",
+                  task,
+                  alert);
+}
+
+/**
  * @brief Initialise a task alert iterator.
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  task      Task.
- * @param[in]  event     Event.
  */
 void
-init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
+init_task_alert_iterator (iterator_t* iterator, task_t task)
 {
   gchar *owned_clause, *with_clause;
   get_data_t get;
   array_t *permissions;
+
+  assert (task);
 
   get.trash = 0;
   permissions = make_array ();
@@ -8809,64 +8828,19 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
                                   &with_clause);
   array_free (permissions);
 
-  if (task && event)
-    init_iterator (iterator,
-                   "%s"
-                   " SELECT alerts.id, alerts.uuid, alerts.name, alerts.active"
-                   " FROM alerts, task_alerts"
-                   " WHERE task_alerts.task = %llu AND alerts.event = %i"
-                   " AND task_alerts.alert = alerts.id"
-                   " AND %s;",
-                   with_clause ? with_clause : "",
-                   task,
-                   event,
-                   owned_clause);
-  else if (task)
-    init_iterator (iterator,
-                   "%s"
-                   " SELECT alerts.id, alerts.uuid, alerts.name, alerts.active"
-                   " FROM alerts, task_alerts"
-                   " WHERE task_alerts.task = %llu"
-                   " AND task_alerts.alert = alerts.id"
-                   " AND %s;",
-                   with_clause ? with_clause : "",
-                   task,
-                   owned_clause);
-  else if (event)
-    init_iterator (iterator,
-                   "%s"
-                   " SELECT alerts.id, alerts.uuid, alerts.name, alerts.active"
-                   " FROM alerts"
-                   " WHERE event = %i"
-                   " AND %s;",
-                   with_clause ? with_clause : "",
-                   event,
-                   owned_clause);
-  else
-    init_iterator (iterator,
-                   "%s"
-                   " SELECT alerts.id, alerts.uuid, alerts.name, alerts.active"
-                   " FROM alerts"
-                   " WHERE %s;",
-                   with_clause ? with_clause : "",
-                   owned_clause);
+  init_iterator (iterator,
+                 "%s"
+                 " SELECT alerts.id, alerts.uuid, alerts.name"
+                 " FROM alerts, task_alerts"
+                 " WHERE task_alerts.task = %llu"
+                 " AND task_alerts.alert = alerts.id"
+                 " AND %s;",
+                 with_clause ? with_clause : "",
+                 task,
+                 owned_clause);
 
   g_free (with_clause);
   g_free (owned_clause);
-}
-
-/**
- * @brief Get the alert from a task alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return alert.
- */
-static alert_t
-task_alert_iterator_alert (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, 0);
 }
 
 /**
@@ -8890,18 +8864,68 @@ DEF_ACCESS (task_alert_iterator_uuid, 1);
 DEF_ACCESS (task_alert_iterator_name, 2);
 
 /**
- * @brief Get the active state from a task alert iterator.
+ * @brief Initialise an event alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  event     Event.
+ */
+static void
+init_event_alert_iterator (iterator_t* iterator, event_t event)
+{
+  gchar *owned_clause, *with_clause;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (event);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_alerts"));
+  owned_clause = acl_where_owned ("alert", &get, 0, "any", 0, permissions,
+                                  &with_clause);
+  array_free (permissions);
+
+  init_iterator (iterator,
+                 "%s"
+                 " SELECT alerts.id, alerts.active"
+                 " FROM alerts"
+                 " WHERE event = %i"
+                 " AND %s;",
+                 with_clause ? with_clause : "",
+                 event,
+                 owned_clause);
+
+  g_free (with_clause);
+  g_free (owned_clause);
+}
+
+/**
+ * @brief Get the alert from a event alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return alert.
+ */
+static alert_t
+event_alert_iterator_alert (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (task_t) iterator_int64 (iterator, 0);
+}
+
+/**
+ * @brief Get the active state from an event alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Active state.
  */
 static int
-task_alert_iterator_active (iterator_t* iterator)
+event_alert_iterator_active (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = iterator_int (iterator, 3);
+  ret = iterator_int (iterator, 1);
   return ret;
 }
 
@@ -13813,6 +13837,9 @@ event_applies (event_t event, const void *event_data, task_t task,
           int ret;
           char *alert_event_data;
 
+          if (alert_applies_to_task (alert, task) == 0)
+            return 0;
+
           alert_event_data = alert_data (alert, "event", "status");
           if (alert_event_data == NULL)
             return 0;
@@ -14164,11 +14191,11 @@ event (task_t task, report_t report, event_t event, void* event_data)
       && (((task_status_t) event_data) == TASK_STATUS_DONE))
     check_tickets (task);
 
-  init_task_alert_iterator (&alerts, task, event);
+  init_event_alert_iterator (&alerts, event);
   while (next (&alerts))
     {
-      alert_t alert = task_alert_iterator_alert (&alerts);
-      if (task_alert_iterator_active (&alerts)
+      alert_t alert = event_alert_iterator_alert (&alerts);
+      if (event_alert_iterator_active (&alerts)
           && event_applies (event, event_data, task, alert))
         {
           alert_condition_t condition;

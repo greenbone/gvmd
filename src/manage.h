@@ -678,7 +678,7 @@ int
 alert_task_iterator_readable (iterator_t*);
 
 void
-init_task_alert_iterator (iterator_t*, task_t, event_t event);
+init_task_alert_iterator (iterator_t*, task_t);
 
 const char*
 task_alert_iterator_uuid (iterator_t*);
