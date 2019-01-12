@@ -11655,6 +11655,72 @@ scp_alert_path_print (const gchar *message, task_t task)
 }
 
 /**
+ * @brief Build and send email for Ticket Received alert.
+ *
+ * @param[in]  alert       Alert.
+ * @param[in]  ticket      Ticket.
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event data.
+ * @param[in]  method      Method from alert.
+ * @param[in]  condition   Condition from alert, which was met by event.
+ * @param[in]  to_address    To address.
+ * @param[in]  from_address  From address.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+email_ticket_received (alert_t alert, task_t task, event_t event,
+                       const void* event_data, alert_method_t method,
+                       alert_condition_t condition, const gchar *to_address,
+                       const gchar *from_address)
+{
+  gchar *subject, *body;
+  char *recipient_credential_id;
+  credential_t recipient_credential;
+  int ret;
+
+  /* Setup subject. */
+
+  subject = g_strdup ("[GVM] Ticket received");
+
+  /* Setup body. */
+
+  {
+    gchar *event_desc, *condition_desc;
+
+    event_desc = event_description (event, event_data, NULL);
+    condition_desc = alert_condition_description
+                      (condition, alert);
+    body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
+                            event_desc,
+                            event_desc,
+                            condition_desc);
+    free (event_desc);
+    free (condition_desc);
+  }
+
+  /* Get credential */
+  recipient_credential_id = alert_data (alert, "method",
+                                        "recipient_credential");
+  recipient_credential = 0;
+  if (recipient_credential_id)
+    {
+      find_credential_with_permission (recipient_credential_id,
+                                       &recipient_credential, NULL);
+    }
+
+  /* Send email. */
+
+  ret = email (to_address, from_address, subject,
+               body, NULL, NULL, NULL, NULL,
+               recipient_credential);
+  g_free (body);
+  g_free (subject);
+  free (recipient_credential_id);
+  return ret;
+}
+
+/**
  * @brief Build and send email for SecInfo alert.
  *
  * @param[in]  alert       Alert.
@@ -12496,22 +12562,18 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
     *script_message = NULL;
 
   {
-    char *name_alert, *name_task;
+    char *name_alert;
     gchar *event_desc, *alert_desc;
 
     name_alert = alert_name (alert);
-    name_task = task_name (task);
     event_desc = event_description (event, event_data, NULL);
     alert_desc = alert_condition_description (condition, alert);
     g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-           "The alert %s%s%s was triggered "
+           "The alert %s was triggered "
            "(Event: %s, Condition: %s)",
            name_alert,
-           name_task ? " for task " : "",
-           name_task ? name_task : "",
            event_desc,
            alert_desc);
-    free (name_task);
     free (name_alert);
     free (event_desc);
     free (alert_desc);
@@ -12547,6 +12609,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 {
                   ret = email_secinfo (alert, task, event, event_data, method,
                                        condition, to_address, from_address);
+                  free (to_address);
+                  free (from_address);
+                  return ret;
+                }
+
+              if (event == EVENT_TICKET_RECEIVED)
+                {
+                  ret = email_ticket_received (alert, task, event, event_data,
+                                               method, condition, to_address,
+                                               from_address);
                   free (to_address);
                   free (from_address);
                   return ret;
@@ -13863,6 +13935,8 @@ event_applies (event_t event, const void *event_data, task_t task,
             return 1;
           return 0;
         }
+      case EVENT_TICKET_RECEIVED:
+        return 1;
       default:
         return 0;
     }

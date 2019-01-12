@@ -943,6 +943,8 @@ create_ticket (const char *comment, const char *result_id,
     }
   free (task_id);
 
+  event (EVENT_TICKET_RECEIVED, NULL, new_ticket, 0);
+
   /* Cleanup. */
 
   free (new_ticket_id);
