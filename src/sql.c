@@ -491,7 +491,6 @@ sql_int64 (long long int* ret, char* sql, ...)
  *
  * Return 0 on error.
  *
- * @param[in]  ret    Return value.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *

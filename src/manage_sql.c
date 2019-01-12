@@ -11672,8 +11672,8 @@ scp_alert_path_print (const gchar *message, task_t task)
  * @brief Build and send email for Ticket Received alert.
  *
  * @param[in]  alert       Alert.
- * @param[in]  ticket      Ticket.
  * @param[in]  event       Event.
+ * @param[in]  ticket      Ticket.
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from alert.
  * @param[in]  condition   Condition from alert, which was met by event.
@@ -11683,7 +11683,7 @@ scp_alert_path_print (const gchar *message, task_t task)
  * @return 0 success, -1 error.
  */
 static int
-email_ticket_received (alert_t alert, task_t task, event_t event,
+email_ticket_received (alert_t alert, ticket_t ticket, event_t event,
                        const void* event_data, alert_method_t method,
                        alert_condition_t condition, const gchar *to_address,
                        const gchar *from_address)
