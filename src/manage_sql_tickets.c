@@ -1043,12 +1043,14 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
                const gchar *closed_comment, const gchar *user_id)
 {
   ticket_t ticket;
+  int updated;
 
   assert (ticket_id);
+  assert (current_credentials.uuid);
 
   sql_begin_immediate ();
 
-  assert (current_credentials.uuid);
+  updated = 0;
 
   /* Check permissions and get a handle on the ticket. */
 
@@ -1086,6 +1088,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            quoted_comment,
            ticket);
       g_free (quoted_comment);
+
+      updated = 1;
     }
 
   /* Update status if requested. */
@@ -1157,6 +1161,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            status,
            time_column,
            ticket);
+
+       updated = 1;
     }
 
   /* Update assigned user if requested. */
@@ -1185,6 +1191,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            user,
            ticket);
 
+       updated = 1;
+
       /* Ensure that the user can access the ticket. */
 
       if (create_permission_internal ("modify_ticket",
@@ -1200,6 +1208,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
         }
     }
 
+  if (updated)
+    event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
 
   sql_commit ();
 

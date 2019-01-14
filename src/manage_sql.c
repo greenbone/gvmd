@@ -11669,33 +11669,30 @@ scp_alert_path_print (const gchar *message, task_t task)
 }
 
 /**
- * @brief Build and send email for Ticket Received alert.
+ * @brief Build and send email for a ticket alert.
  *
  * @param[in]  alert       Alert.
- * @param[in]  event       Event.
  * @param[in]  ticket      Ticket.
+ * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from alert.
  * @param[in]  condition   Condition from alert, which was met by event.
  * @param[in]  to_address    To address.
  * @param[in]  from_address  From address.
+ * @param[in]  subject       Subject.
  *
  * @return 0 success, -1 error.
  */
 static int
-email_ticket_received (alert_t alert, ticket_t ticket, event_t event,
-                       const void* event_data, alert_method_t method,
-                       alert_condition_t condition, const gchar *to_address,
-                       const gchar *from_address)
+email_ticket (alert_t alert, ticket_t ticket, event_t event,
+              const void* event_data, alert_method_t method,
+              alert_condition_t condition, const gchar *to_address,
+              const gchar *from_address, const gchar *subject)
 {
-  gchar *subject, *body;
+  gchar *body;
   char *recipient_credential_id;
   credential_t recipient_credential;
   int ret;
-
-  /* Setup subject. */
-
-  subject = g_strdup ("[GVM] Ticket received");
 
   /* Setup body. */
 
@@ -11729,7 +11726,6 @@ email_ticket_received (alert_t alert, ticket_t ticket, event_t event,
                body, NULL, NULL, NULL, NULL,
                recipient_credential);
   g_free (body);
-  g_free (subject);
   free (recipient_credential_id);
   return ret;
 }
@@ -12630,9 +12626,19 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
               if (event == EVENT_TICKET_RECEIVED)
                 {
-                  ret = email_ticket_received (alert, task, event, event_data,
-                                               method, condition, to_address,
-                                               from_address);
+                  ret = email_ticket (alert, task, event, event_data, method,
+                                      condition, to_address, from_address,
+                                      "Ticket received");
+                  free (to_address);
+                  free (from_address);
+                  return ret;
+                }
+
+              if (event == EVENT_ASSIGNED_TICKET_CHANGED)
+                {
+                  ret = email_ticket (alert, task, event, event_data, method,
+                                      condition, to_address, from_address,
+                                      "Assigned ticket changed");
                   free (to_address);
                   free (from_address);
                   return ret;
@@ -13950,6 +13956,7 @@ event_applies (event_t event, const void *event_data,
           return 0;
         }
       case EVENT_TICKET_RECEIVED:
+      case EVENT_ASSIGNED_TICKET_CHANGED:
         return ticket_assigned_to (event_resource) == alert_owner (alert);
       default:
         return 0;
