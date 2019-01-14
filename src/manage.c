@@ -2949,26 +2949,46 @@ slave_setup (openvas_connection_t *connection, const char *name, task_t task,
               privacy_algorithm
                 = credential_iterator_privacy_algorithm (&credentials);
 
-              if (community == NULL || user == NULL || password == NULL
-                  || auth_algorithm == NULL || privacy_password == NULL
-                  || privacy_algorithm == NULL)
+              if (password && strcmp (password, "")
+                  && (auth_algorithm == NULL || strcmp (auth_algorithm, "")))
                 {
                   cleanup_iterator (&credentials);
                   slave_esxi_credential_uuid = NULL;
                   g_warning ("Could not create slave SNMP credential"
-                             " (missing community, login, password,"
-                             " auth_algorithm, privacy_password"
-                             " or privacy_algorithm)."
+                             " (auth_algorithm must be set if password is"
+                             " given)."
+                             " Continuing without credential.");
+                }
+              if (((privacy_password && strcmp (privacy_password, ""))
+                    || (privacy_algorithm && strcmp (privacy_algorithm, "")))
+                  && (password == NULL
+                      || auth_algorithm == NULL
+                      || privacy_password == NULL
+                      || privacy_algorithm == NULL))
+                {
+                  cleanup_iterator (&credentials);
+                  slave_esxi_credential_uuid = NULL;
+                  g_warning ("Could not create slave SNMP credential"
+                             " (password, auth_algorithm, privacy_password"
+                             " and privacy_algorithm are mandatory if"
+                             " privacy_password or privacy_algorithm are"
+                             " given)."
                              " Continuing without credential.");
                 }
               else
                 {
-                  community_copy = g_strdup (community);
-                  user_copy = g_strdup (user);
-                  password_copy = g_strdup (password);
-                  auth_algorithm_copy = g_strdup (auth_algorithm);
-                  privacy_password_copy = g_strdup (privacy_password);
-                  privacy_algorithm_copy = g_strdup (privacy_algorithm);
+                  community_copy
+                      = g_strdup (community ? community : "");
+                  user_copy
+                      = g_strdup (user ? user : "");
+                  password_copy
+                      = g_strdup (password ? password : "");
+                  auth_algorithm_copy
+                      = g_strdup (auth_algorithm ? auth_algorithm : "");
+                  privacy_password_copy
+                      = g_strdup (privacy_password ? privacy_password : "");
+                  privacy_algorithm_copy
+                      = g_strdup (privacy_algorithm ? privacy_algorithm : "");
 
                   opts = omp_create_lsc_credential_opts_defaults;
                   snmp_name = g_strdup_printf ("%ssnmp", name);
