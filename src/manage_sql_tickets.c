@@ -1057,6 +1057,7 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
                const gchar *closed_comment, const gchar *user_id)
 {
   ticket_t ticket;
+  user_t assigned_to;
   int updated;
 
   assert (ticket_id);
@@ -1179,6 +1180,10 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
        updated = 1;
     }
 
+  /* Get assignee for update check, before updating assignee. */
+
+  assigned_to = ticket_assigned_to (ticket);
+
   /* Update assigned user if requested. */
 
   if (user_id)
@@ -1224,7 +1229,13 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
 
   if (updated)
     {
-      event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
+      /* An Assigned Ticket Changed event is not generated if the ticket
+       * assignee modifies the ticket. */
+      if (sql_int ("SELECT id != %llu FROM users WHERE uuid = '%s';",
+                   assigned_to,
+                   current_credentials.uuid))
+        event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
+
       /* An Owned Ticket Changed event is not generated if the ticket owner
        * modifies the ticket. */
       if (sql_int ("SELECT owner != (SELECT id FROM users WHERE uuid = '%s')"
