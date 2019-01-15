@@ -1225,6 +1225,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
           sql_rollback ();
           return -1;
         }
+
+      event (EVENT_TICKET_RECEIVED, NULL, ticket, 0);
     }
 
   if (updated)
