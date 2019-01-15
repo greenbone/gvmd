@@ -2995,7 +2995,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                       || privacy_algorithm == NULL))
                 {
                   cleanup_iterator (&credentials);
-                  slave_esxi_credential_uuid = NULL;
+                  global_slave_esxi_credential_uuid = NULL;
                   g_warning ("Could not create slave SNMP credential"
                              " (password, auth_algorithm, privacy_password"
                              " and privacy_algorithm are mandatory if"
