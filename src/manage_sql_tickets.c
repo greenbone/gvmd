@@ -1203,30 +1203,33 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
           return 3;
         }
 
-      sql ("UPDATE tickets SET"
-           " assigned_to = %llu,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           user,
-           ticket);
-
-       updated = 1;
-
-      /* Ensure that the user can access the ticket. */
-
-      if (create_permission_internal ("modify_ticket",
-                                      "Automatically created for ticket",
-                                      NULL,
-                                      ticket_id,
-                                      "user",
-                                      user_id,
-                                      &permission))
+      if (assigned_to != user)
         {
-          sql_rollback ();
-          return -1;
-        }
+          sql ("UPDATE tickets SET"
+               " assigned_to = %llu,"
+               " modification_time = m_now ()"
+               " WHERE id = %llu;",
+               user,
+               ticket);
 
-      event (EVENT_TICKET_RECEIVED, NULL, ticket, 0);
+          updated = 1;
+
+          /* Ensure that the user can access the ticket. */
+
+          if (create_permission_internal ("modify_ticket",
+                                          "Automatically created for ticket",
+                                          NULL,
+                                          ticket_id,
+                                          "user",
+                                          user_id,
+                                          &permission))
+            {
+              sql_rollback ();
+              return -1;
+            }
+
+          event (EVENT_TICKET_RECEIVED, NULL, ticket, 0);
+        }
     }
 
   if (updated)
