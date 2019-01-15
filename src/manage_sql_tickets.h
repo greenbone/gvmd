@@ -29,6 +29,9 @@
 #include "manage.h"
 
 user_t
+ticket_owner (ticket_t);
+
+user_t
 ticket_assigned_to (ticket_t);
 
 int

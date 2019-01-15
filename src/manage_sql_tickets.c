@@ -520,11 +520,25 @@ init_result_ticket_iterator (iterator_t *iterator, const gchar *result_id)
 DEF_ACCESS (result_ticket_iterator_ticket_id, 1);
 
 /**
+ * @brief Return owner of ticket.
+ *
+ * @param[in]  ticket  Ticket.
+ *
+ * @return Owner.
+ */
+user_t
+ticket_owner (ticket_t ticket)
+{
+  return sql_int64_0 ("SELECT owner FROM tickets WHERE id = %llu;",
+                      ticket);
+}
+
+/**
  * @brief Return user that ticket is assigned to.
  *
  * @param[in]  ticket  Ticket.
  *
- * @return User
+ * @return User.
  */
 user_t
 ticket_assigned_to (ticket_t ticket)
@@ -1209,7 +1223,17 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
     }
 
   if (updated)
-    event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
+    {
+      event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
+      /* An Owned Ticket Changed event is not generated if the ticket owner
+       * modifies the ticket. */
+      if (sql_int ("SELECT owner != (SELECT id FROM users WHERE uuid = '%s')"
+                   " FROM tickets"
+                   " WHERE id = %llu;",
+                   current_credentials.uuid,
+                   ticket))
+        event (EVENT_OWNED_TICKET_CHANGED, NULL, ticket, 0);
+    }
 
   sql_commit ();
 

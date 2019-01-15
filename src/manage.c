@@ -1257,6 +1257,7 @@ event_name (event_t event)
       case EVENT_UPDATED_SECINFO:         return "Updated SecInfo arrived";
       case EVENT_TICKET_RECEIVED:         return "Ticket received";
       case EVENT_ASSIGNED_TICKET_CHANGED: return "Assigned ticket changed";
+      case EVENT_OWNED_TICKET_CHANGED:    return "Owned ticket changed";
       default:                            return "Internal Error";
     }
 }
@@ -1345,6 +1346,9 @@ event_description (event_t event, const void *event_data, const char *task_name)
         break;
       case EVENT_ASSIGNED_TICKET_CHANGED:
         return g_strdup_printf ("Assigned ticket changed");
+        break;
+      case EVENT_OWNED_TICKET_CHANGED:
+        return g_strdup_printf ("Owned ticket changed");
         break;
       default:
         return g_strdup ("Internal Error");

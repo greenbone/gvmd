@@ -12644,6 +12644,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   return ret;
                 }
 
+              if (event == EVENT_OWNED_TICKET_CHANGED)
+                {
+                  ret = email_ticket (alert, task, event, event_data, method,
+                                      condition, to_address, from_address,
+                                      "Owned ticket changed");
+                  free (to_address);
+                  free (from_address);
+                  return ret;
+                }
+
               notice = alert_data (alert, "method", "notice");
               name = task_name (task);
 
@@ -13958,6 +13968,8 @@ event_applies (event_t event, const void *event_data,
       case EVENT_TICKET_RECEIVED:
       case EVENT_ASSIGNED_TICKET_CHANGED:
         return ticket_assigned_to (event_resource) == alert_owner (alert);
+      case EVENT_OWNED_TICKET_CHANGED:
+        return ticket_owner (event_resource) == alert_owner (alert);
       default:
         return 0;
     }
