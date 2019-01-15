@@ -1298,6 +1298,7 @@ void
 check_tickets (task_t task)
 {
   report_t report;
+  iterator_t tickets;
 
   if (task_last_report (task, &report))
     {
@@ -1308,44 +1309,59 @@ check_tickets (task_t task)
       return;
     }
 
-  sql ("UPDATE tickets"
-       " SET status = %i,"
-       "     confirmed_time = m_now (),"
-       "     confirmed_report = %llu"
-       " WHERE task = %llu"
-       " AND (status = %i"
-       "      OR status = %i)"
-       /* Only if the same host was scanned. */
-       " AND EXISTS (SELECT * FROM report_hosts"
-       "             WHERE report = %llu"
-       "             AND report_hosts.host = tickets.host)"
-       /* Only if the problem result is gone. */
-       " AND NOT EXISTS (SELECT * FROM results"
-       "                 WHERE report = %llu"
-       "                 AND nvt = (SELECT nvt FROM results"
-       "                            WHERE id = (SELECT result"
-       "                                        FROM ticket_results"
-       "                                        WHERE ticket = tickets.id"
-       "                                        AND result_location = %i"
-       "                                        LIMIT 1)))"
-       /* Only if there were no login failures. */
-       " AND NOT EXISTS (SELECT * FROM results"
-       "                 WHERE report = %llu"
-       /*                SSH Login Failed For Authenticated Checks. */
-       "                 AND nvt = '1.3.6.1.4.1.25623.1.0.105936')"
-       " AND NOT EXISTS (SELECT * FROM results"
-       "                 WHERE report = %llu"
-       /*                SMG Login Failed For Authenticated Checks. */
-       "                 AND nvt = '1.3.6.1.4.1.25623.1.0.106091');",
-       TICKET_STATUS_CONFIRMED,
-       report,
-       task,
-       TICKET_STATUS_OPEN,
-       TICKET_STATUS_SOLVED,
-       report,
-       LOCATION_TABLE,
-       report,
-       report);
+  init_iterator (&tickets,
+                 "SELECT id FROM tickets"
+                 " WHERE task = %llu"
+                 " AND (status = %i"
+                 "      OR status = %i)"
+                 /* Only if the same host was scanned. */
+                 " AND EXISTS (SELECT * FROM report_hosts"
+                 "             WHERE report = %llu"
+                 "             AND report_hosts.host = tickets.host)"
+                 /* Only if the problem result is gone. */
+                 " AND NOT EXISTS (SELECT * FROM results"
+                 "                 WHERE report = %llu"
+                 "                 AND nvt = (SELECT nvt FROM results"
+                 "                            WHERE id = (SELECT result"
+                 "                                        FROM ticket_results"
+                 "                                        WHERE ticket = tickets.id"
+                 "                                        AND result_location = %i"
+                 "                                        LIMIT 1)))"
+                 /* Only if there were no login failures. */
+                 " AND NOT EXISTS (SELECT * FROM results"
+                 "                 WHERE report = %llu"
+                 /*                SSH Login Failed For Authenticated Checks. */
+                 "                 AND nvt = '1.3.6.1.4.1.25623.1.0.105936')"
+                 " AND NOT EXISTS (SELECT * FROM results"
+                 "                 WHERE report = %llu"
+                 /*                SMG Login Failed For Authenticated Checks. */
+                 "                 AND nvt = '1.3.6.1.4.1.25623.1.0.106091');",
+                 task,
+                 TICKET_STATUS_OPEN,
+                 TICKET_STATUS_SOLVED,
+                 report,
+                 LOCATION_TABLE,
+                 report,
+                 report);
+  while (next (&tickets))
+    {
+      ticket_t ticket;
+
+      ticket = iterator_int64 (&tickets, 0);
+
+      sql ("UPDATE tickets"
+           " SET status = %i,"
+           "     confirmed_time = m_now (),"
+           "     confirmed_report = %llu"
+           " WHERE id = %llu;",
+           TICKET_STATUS_CONFIRMED,
+           report,
+           ticket);
+
+      event (EVENT_OWNED_TICKET_CHANGED, NULL, ticket, 0);
+      event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
+    }
+  cleanup_iterator (&tickets);
 }
 
 /**
