@@ -33,6 +33,7 @@
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
+#include "manage_tickets.h"
 #include "manage_sql_tickets.h"
 #include "manage_acl.h"
 #include "lsc_user.h"
@@ -11689,10 +11690,19 @@ email_ticket (alert_t alert, ticket_t ticket, event_t event,
               alert_condition_t condition, const gchar *to_address,
               const gchar *from_address, const gchar *subject)
 {
-  gchar *body;
+  gchar *full_subject, *body;
   char *recipient_credential_id;
   credential_t recipient_credential;
   int ret;
+
+  /* Setup subject. */
+
+  full_subject = g_strdup_printf ("%s: %s (UUID: %s)",
+                                  subject,
+                                  ticket_nvt_name (ticket)
+                                   ? ticket_nvt_name (ticket)
+                                   : "[Orphan]",
+                                  ticket_uuid (ticket));
 
   /* Setup body. */
 
@@ -11722,10 +11732,11 @@ email_ticket (alert_t alert, ticket_t ticket, event_t event,
 
   /* Send email. */
 
-  ret = email (to_address, from_address, subject,
+  ret = email (to_address, from_address, full_subject,
                body, NULL, NULL, NULL, NULL,
                recipient_credential);
   g_free (body);
+  g_free (full_subject);
   free (recipient_credential_id);
   return ret;
 }

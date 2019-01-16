@@ -34,6 +34,9 @@ ticket_owner (ticket_t);
 user_t
 ticket_assigned_to (ticket_t);
 
+gchar *
+ticket_nvt_name (ticket_t);
+
 int
 delete_ticket (const char *, int);
 

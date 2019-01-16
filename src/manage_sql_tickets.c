@@ -548,6 +548,20 @@ ticket_assigned_to (ticket_t ticket)
 }
 
 /**
+ * @brief Return NVT name of ticket.
+ *
+ * @param[in]  ticket  Ticket.
+ *
+ * @return NVT name.
+ */
+gchar *
+ticket_nvt_name (ticket_t ticket)
+{
+  return sql_string ("SELECT name FROM tickets WHERE id = %llu;",
+                     ticket);
+}
+
+/**
  * @brief Return whether a ticket is in use.
  *
  * @param[in]  ticket  Ticket.
