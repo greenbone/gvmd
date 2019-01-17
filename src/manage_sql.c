@@ -12313,6 +12313,16 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
   char *description_template;
   int name_offset;
 
+  if ((event == EVENT_TICKET_RECEIVED)
+      || (event == EVENT_ASSIGNED_TICKET_CHANGED)
+      || (event == EVENT_OWNED_TICKET_CHANGED))
+    {
+      g_warning ("%s: Ticket events with method"
+                 " \"Alemba vFire\" not support",
+                 __FUNCTION__);
+      return -1;
+    }
+
   // Get report
   if (report == 0)
     switch (sql_int64 (&report,
@@ -12937,6 +12947,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         {
           char *url;
 
+          if ((event == EVENT_TICKET_RECEIVED)
+              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
+              || (event == EVENT_OWNED_TICKET_CHANGED))
+            {
+              g_warning ("%s: Ticket events with method"
+                         " \"HTTP Get\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
+
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
               g_warning ("%s: Event \"%s NVTs arrived\" with method"
@@ -13018,6 +13038,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           gsize content_length;
           report_format_t report_format;
           int ret;
+
+          if ((event == EVENT_TICKET_RECEIVED)
+              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
+              || (event == EVENT_OWNED_TICKET_CHANGED))
+            {
+              g_warning ("%s: Ticket events with method"
+                         " \"SCP\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -13126,6 +13156,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           report_format_t report_format;
           int ret;
 
+          if ((event == EVENT_TICKET_RECEIVED)
+              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
+              || (event == EVENT_OWNED_TICKET_CHANGED))
+            {
+              g_warning ("%s: Ticket events with method"
+                         " \"Send\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
+
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
               gchar *message;
@@ -13187,6 +13227,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           gsize content_length;
           credential_t credential;
           int ret;
+
+          if ((event == EVENT_TICKET_RECEIVED)
+              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
+              || (event == EVENT_OWNED_TICKET_CHANGED))
+            {
+              g_warning ("%s: Ticket events with method"
+                         " \"SMP\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
 
           if (report == 0)
             switch (sql_int64 (&report,
@@ -13319,6 +13369,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           int ret;
           gchar *message;
 
+          if ((event == EVENT_TICKET_RECEIVED)
+              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
+              || (event == EVENT_OWNED_TICKET_CHANGED))
+            {
+              g_warning ("%s: Ticket events with method"
+                         " \"SNMP\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
+
           community = alert_data (alert, "method", "snmp_community");
           agent = alert_data (alert, "method", "snmp_agent");
           snmp_message = alert_data (alert, "method", "snmp_message");
@@ -13374,6 +13434,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           gsize content_length;
           report_format_t report_format;
           int ret;
+
+          if ((event == EVENT_TICKET_RECEIVED)
+              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
+              || (event == EVENT_OWNED_TICKET_CHANGED))
+            {
+              g_warning ("%s: Ticket events with method"
+                         " \"Sourcefire\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
@@ -13450,6 +13520,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           credential_t credential;
           char *tls_cert_workaround_str;
           int tls_cert_workaround;
+
+          if ((event == EVENT_TICKET_RECEIVED)
+              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
+              || (event == EVENT_OWNED_TICKET_CHANGED))
+            {
+              g_warning ("%s: Ticket events with method"
+                         " \"TippingPoint SMS\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
 
           /* TLS certificate subject workaround setting */
           tls_cert_workaround_str 
@@ -13535,6 +13615,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           gsize content_length;
           report_format_t report_format;
           int ret;
+
+          if ((event == EVENT_TICKET_RECEIVED)
+              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
+              || (event == EVENT_OWNED_TICKET_CHANGED))
+            {
+              g_warning ("%s: Ticket events with method"
+                         " \"Verinice\" not support",
+                         __FUNCTION__);
+              return -1;
+            }
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
             {
