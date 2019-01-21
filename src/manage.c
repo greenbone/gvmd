@@ -2806,40 +2806,41 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                   || (private_key == NULL && password == NULL))
                 {
                   cleanup_iterator (&credentials);
-                  goto fail;
-                }
-
-              user_copy = g_strdup (user);
-              password_copy = g_strdup (password);
-
-              opts = gmp_create_lsc_credential_opts_defaults;
-              opts.name = name;
-              opts.login = user_copy;
-              opts.passphrase = password_copy;
-              if (private_key)
-                {
-                  private_key_copy = g_strdup (private_key);
-                  opts.private_key = private_key_copy;
+                  global_slave_ssh_credential_uuid = NULL;
+                  g_warning ("Could not create slave SSH credential"
+                             " (needs login and password or private key)."
+                             " Continuing without credential.");
                 }
               else
-                private_key_copy = NULL;
-              opts.comment = "Slave SSH credential created by Master";
-
-              cleanup_iterator (&credentials);
-
-              ret = gmp_create_lsc_credential_ext
-                     (&connection->session,
-                      opts,
-                      &global_slave_ssh_credential_uuid);
-              g_free (user_copy);
-              g_free (password_copy);
-              g_free (private_key_copy);
-
-              if (ret)
                 {
-                  if (ret == -1)
-                    goto fail;
+                  user_copy = g_strdup (user);
+                  password_copy = g_strdup (password);
+
+                  opts = gmp_create_lsc_credential_opts_defaults;
+                  opts.name = name;
+                  opts.login = user_copy;
+                  opts.passphrase = password_copy;
+                  if (private_key)
+                    {
+                      private_key_copy = g_strdup (private_key);
+                      opts.private_key = private_key_copy;
+                    }
                   else
+                    private_key_copy = NULL;
+                  opts.comment = "Slave SSH credential created by Master";
+
+                  cleanup_iterator (&credentials);
+
+                  ret = gmp_create_lsc_credential_ext
+                         (&connection->session,
+                          opts,
+                          &global_slave_ssh_credential_uuid);
+
+                  g_free (user_copy);
+                  g_free (password_copy);
+                  g_free (private_key_copy);
+
+                  if (ret)
                     {
                       g_warning ("Could not create slave SSH credential"
                                  " (status %d)."
@@ -2868,33 +2869,35 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               if (user == NULL || password == NULL)
                 {
                   cleanup_iterator (&credentials);
-                  goto fail_ssh_credential;
+                  global_slave_smb_credential_uuid = NULL;
+                  g_warning ("Could not create slave SMB credential"
+                             " (missing login or password)."
+                             " Continuing without credential.");
                 }
-
-              user_copy = g_strdup (user);
-              password_copy = g_strdup (password);
-
-              opts = gmp_create_lsc_credential_opts_defaults;
-              smb_name = g_strdup_printf ("%ssmb", name);
-              opts.name = smb_name;
-              opts.login = user_copy;
-              opts.passphrase = password_copy;
-              opts.comment = "Slave SMB credential created by Master";
-
-              cleanup_iterator (&credentials);
-
-              ret = gmp_create_lsc_credential_ext
-                     (&connection->session,
-                      opts,
-                      &global_slave_smb_credential_uuid);
-              g_free (smb_name);
-              g_free (user_copy);
-              g_free (password_copy);
-              if (ret)
+              else
                 {
-                  if (ret == -1)
-                    goto fail_ssh_credential;
-                  else
+                  user_copy = g_strdup (user);
+                  password_copy = g_strdup (password);
+
+                  opts = gmp_create_lsc_credential_opts_defaults;
+                  smb_name = g_strdup_printf ("%ssmb", name);
+                  opts.name = smb_name;
+                  opts.login = user_copy;
+                  opts.passphrase = password_copy;
+                  opts.comment = "Slave SMB credential created by Master";
+
+                  cleanup_iterator (&credentials);
+
+                  ret = gmp_create_lsc_credential_ext
+                           (&connection->session,
+                            opts,
+                            &global_slave_smb_credential_uuid);
+
+                  g_free (smb_name);
+                  g_free (user_copy);
+                  g_free (password_copy);
+
+                  if (ret)
                     {
                       g_warning ("Could not create slave SMB credential"
                                  " (status %d)."
@@ -2923,33 +2926,34 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               if (user == NULL || password == NULL)
                 {
                   cleanup_iterator (&credentials);
-                  goto fail_smb_credential;
+                  global_slave_esxi_credential_uuid = NULL;
+                  g_warning ("Could not create slave ESXi credential"
+                             " (missing login or password)."
+                             " Continuing without credential.");
                 }
-
-              user_copy = g_strdup (user);
-              password_copy = g_strdup (password);
-
-              opts = gmp_create_lsc_credential_opts_defaults;
-              esxi_name = g_strdup_printf ("%sesxi", name);
-              opts.name = esxi_name;
-              opts.login = user_copy;
-              opts.passphrase = password_copy;
-              opts.comment = "Slave ESXi credential created by Master";
-
-              cleanup_iterator (&credentials);
-
-              ret = gmp_create_lsc_credential_ext
-                     (&connection->session,
-                      opts,
-                      &global_slave_esxi_credential_uuid);
-              g_free (esxi_name);
-              g_free (user_copy);
-              g_free (password_copy);
-              if (ret)
+              else
                 {
-                  if (ret == -1)
-                    goto fail_smb_credential;
-                  else
+                  user_copy = g_strdup (user);
+                  password_copy = g_strdup (password);
+
+                  opts = gmp_create_lsc_credential_opts_defaults;
+                  esxi_name = g_strdup_printf ("%sesxi", name);
+                  opts.name = esxi_name;
+                  opts.login = user_copy;
+                  opts.passphrase = password_copy;
+                  opts.comment = "Slave ESXi credential created by Master";
+
+                  cleanup_iterator (&credentials);
+
+                  ret = gmp_create_lsc_credential_ext
+                           (&connection->session,
+                            opts,
+                            &global_slave_esxi_credential_uuid);
+
+                  g_free (esxi_name);
+                  g_free (user_copy);
+                  g_free (password_copy);
+                  if (ret)
                     {
                       g_warning ("Could not create slave ESXi credential"
                                  " (status %d)."
@@ -2985,50 +2989,74 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
               privacy_algorithm
                 = credential_iterator_privacy_algorithm (&credentials);
 
-              if (community == NULL || user == NULL || password == NULL
-                  || auth_algorithm == NULL || privacy_password == NULL
-                  || privacy_algorithm == NULL)
+              if (password && strcmp (password, "")
+                  && (auth_algorithm == NULL || strcmp (auth_algorithm, "")))
                 {
                   cleanup_iterator (&credentials);
-                  goto fail_esxi_credential;
+                  global_slave_snmp_credential_uuid = NULL;
+                  g_warning ("Could not create slave SNMP credential"
+                             " (auth_algorithm must be set if password is"
+                             " given)."
+                             " Continuing without credential.");
                 }
-
-              community_copy = g_strdup (community);
-              user_copy = g_strdup (user);
-              password_copy = g_strdup (password);
-              auth_algorithm_copy = g_strdup (auth_algorithm);
-              privacy_password_copy = g_strdup (privacy_password);
-              privacy_algorithm_copy = g_strdup (privacy_algorithm);
-
-              opts = gmp_create_lsc_credential_opts_defaults;
-              snmp_name = g_strdup_printf ("%ssnmp", name);
-              opts.name = snmp_name;
-              opts.community = community_copy;
-              opts.login = user_copy;
-              opts.passphrase = password_copy;
-              opts.auth_algorithm = auth_algorithm_copy;
-              opts.privacy_password = privacy_password_copy;
-              opts.privacy_algorithm = privacy_algorithm_copy;
-              opts.comment = "Slave SNMP credential created by Master";
-
-              cleanup_iterator (&credentials);
-
-              ret = gmp_create_lsc_credential_ext
-                     (&connection->session,
-                      opts,
-                      &global_slave_snmp_credential_uuid);
-              g_free (snmp_name);
-              g_free (community_copy);
-              g_free (user_copy);
-              g_free (password_copy);
-              g_free (auth_algorithm_copy);
-              g_free (privacy_password_copy);
-              g_free (privacy_algorithm_copy);
-              if (ret)
+              else if (((privacy_password && strcmp (privacy_password, ""))
+                        || (privacy_algorithm
+                            && strcmp (privacy_algorithm, "")))
+                       && (password == NULL
+                           || auth_algorithm == NULL
+                           || privacy_password == NULL
+                           || privacy_algorithm == NULL))
                 {
-                  if (ret == -1)
-                    goto fail_esxi_credential;
-                  else
+                  cleanup_iterator (&credentials);
+                  global_slave_snmp_credential_uuid = NULL;
+                  g_warning ("Could not create slave SNMP credential"
+                             " (password, auth_algorithm, privacy_password"
+                             " and privacy_algorithm are mandatory if"
+                             " privacy_password or privacy_algorithm are"
+                             " given)."
+                             " Continuing without credential.");
+                }
+              else
+                {
+                  community_copy
+                      = g_strdup (community ? community : "");
+                  user_copy
+                      = g_strdup (user ? user : "");
+                  password_copy
+                      = g_strdup (password ? password : "");
+                  auth_algorithm_copy
+                      = g_strdup (auth_algorithm ? auth_algorithm : "");
+                  privacy_password_copy
+                      = g_strdup (privacy_password ? privacy_password : "");
+                  privacy_algorithm_copy
+                      = g_strdup (privacy_algorithm ? privacy_algorithm : "");
+
+                  opts = gmp_create_lsc_credential_opts_defaults;
+                  snmp_name = g_strdup_printf ("%ssnmp", name);
+                  opts.name = snmp_name;
+                  opts.community = community_copy;
+                  opts.login = user_copy;
+                  opts.passphrase = password_copy;
+                  opts.auth_algorithm = auth_algorithm_copy;
+                  opts.privacy_password = privacy_password_copy;
+                  opts.privacy_algorithm = privacy_algorithm_copy;
+                  opts.comment = "Slave SNMP credential created by Master";
+
+                  cleanup_iterator (&credentials);
+
+                  ret = gmp_create_lsc_credential_ext
+                           (&connection->session,
+                            opts,
+                            &global_slave_snmp_credential_uuid);
+
+                  g_free (snmp_name);
+                  g_free (community_copy);
+                  g_free (user_copy);
+                  g_free (password_copy);
+                  g_free (auth_algorithm_copy);
+                  g_free (privacy_password_copy);
+                  g_free (privacy_algorithm_copy);
+                  if (ret)
                     {
                       g_warning ("Could not create slave SNMP credential"
                                  " (status %d)."
@@ -3077,7 +3105,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           if (hosts == NULL)
             {
               cleanup_iterator (&targets);
-              goto fail_snmp_credential;
+              goto fail_credentials;
             }
 
           port = target_iterator_ssh_port (&targets);
@@ -3116,14 +3144,14 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           g_free (alive_tests_copy);
           g_free (port_range);
           if (ret == -2)
-            goto fail_snmp_credential;
+            goto fail_credentials;
           if (ret)
             {
               set_task_interrupted (task,
                                     "Failed to create target on slave."
                                     "  Interrupting scan.");
               ret_fail = ret_giveup;
-              goto fail_snmp_credential;
+              goto fail_credentials;
             }
 
           if (gmp_get_targets (&connection->session, global_slave_target_uuid,
@@ -3153,7 +3181,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
       else
         {
           cleanup_iterator (&targets);
-          goto fail_esxi_credential;
+          goto fail_credentials;
         }
 
       g_debug ("   %s: slave target uuid: %s",
@@ -3641,25 +3669,22 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                             global_slave_port_list_uuid,
                             del_opts);
   free (global_slave_port_list_uuid);
- fail_snmp_credential:
+ fail_credentials:
   if (global_slave_snmp_credential_uuid)
     gmp_delete_lsc_credential_ext (&connection->session,
                                    global_slave_snmp_credential_uuid,
                                    del_opts);
   free (global_slave_snmp_credential_uuid);
- fail_esxi_credential:
   if (global_slave_esxi_credential_uuid)
     gmp_delete_lsc_credential_ext (&connection->session,
                                    global_slave_esxi_credential_uuid,
                                    del_opts);
   free (global_slave_esxi_credential_uuid);
- fail_smb_credential:
   if (global_slave_smb_credential_uuid)
     gmp_delete_lsc_credential_ext (&connection->session,
                                    global_slave_smb_credential_uuid,
                                    del_opts);
   free (global_slave_smb_credential_uuid);
- fail_ssh_credential:
   if (global_slave_ssh_credential_uuid)
     gmp_delete_lsc_credential_ext (&connection->session,
                                    global_slave_ssh_credential_uuid,
