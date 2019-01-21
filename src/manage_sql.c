@@ -17900,6 +17900,7 @@ manage_reset_currents ()
 {
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
+  free_credentials (&current_credentials);
 }
 
 /**
