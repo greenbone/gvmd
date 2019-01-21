@@ -18,6 +18,8 @@ Main changes compared to gvm 8.0+beta2:
 * The tag "smb-alert:file_path" on tasks will override the file path of
   SMB alerts.
 * Remediation support has been added (GMP CREATE_TICKET, GET_TICKETS, etc).
+* Missing data in credentials no longer prevents slave tasks from starting.
+  Instead the scan will start without the credential.
 
 
 gvmd 8.0+beta2 (2018-12-05)
@@ -79,7 +81,7 @@ Nicola, Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
 Main changes compared to the 7.0 series:
 * The central service component "OpenVAS-Manager" has been  renamed to
   "Greenbone Vulnerability Manager". Subsequently, the central binary has been
-  renamed from "openvasmd" to "gvmd". Also any other occurence of "OpenVAS
+  renamed from "openvasmd" to "gvmd". Also any other occurrence of "OpenVAS
   Manager" or related terms has been renamed accordingly, including the API from
   "OMP" to "GMP".
 * The new GMP command GET_VULNS allows for a view on found vulnerabilities with
@@ -373,7 +375,7 @@ Main changes compared to 6.0.0:
   by other users, for example.
 * Bugfix to enable autoamtic update of CERT-Bund.
 * Bugfix to re-add the cvss base vector of NVTs.
-* Bugfixes/improvements about object managment for objects
+* Bugfixes/improvements about object management for objects
   with dependencies dependencies (for example: target has
   credentials).
 * Always set trust as "yes" for predefined report formats.
@@ -728,7 +730,7 @@ Many thanks to everyone who has contributed to this release:
 Hani Benhabiles, Matthew Mundell, Timo Pollmeier, Michael Wiegand
 
 Main changes since 5.0 series:
-* Added first steps for Scanner Management. This includes the configration part
+* Added first steps for Scanner Management. This includes the configuration part
   for scanners accompanied with a new set of OMP commands (create_scanner,
   get_scanners, modify_scanner, delete_scanner and verity_scanner). Next,
   it covers the extensions of tasks with the selected scanner type and the
@@ -806,7 +808,7 @@ Main changes since 4.0.x:
 * Removed: Support for obsolete scanner preferences.
 * Improved: Support for the new host management offered by Scanner has been added.
 * Improved: Schedule handling during long running operations.
-* Changed: Simplified host access conrol replaces old rules-based concept.
+* Changed: Simplified host access control replaces old rules-based concept.
 * New: Support for Alterable Tasks.
 * New: Support for Source Interface access control has been added.
 * New: Alive Test property to Targets, which can override the scan config
@@ -1029,7 +1031,7 @@ Matthew Mundell, Timo Pollmeier and Hani Benhabiles.
 Main changes since 5.0+beta6:
 * Update documentation about the alive tests property.
 * Increase the OMP version to 5.0.
-* Prevent targets curently used to be modified.
+* Prevent targets currently used to be modified.
 * Remove need for all elements to be given in MODIFY_TARGET.
 * Large number of small fixes and improvements.
 
@@ -1479,7 +1481,7 @@ Main changes since 3.0+beta8:
 
 openvas-manager 3.0+beta8 (2011-12-02)
 
-This is the eigth beta version of the upcoming 3.0 release of the OpenVAS
+This is the eighth beta version of the upcoming 3.0 release of the OpenVAS
 Manager. It is the central management service between the actual security
 scanner and various user clients.
 
@@ -2098,7 +2100,7 @@ Main changes since 1.0.0.rc1:
 * A number of build issues has been addressed.
 * The code documentation has been updated.
 * Code cleanup: Internal error handling has been made more consistent.
-* A potential ressource leak identified by static analysis has been fixed.
+* A potential resource leak identified by static analysis has been fixed.
 * A bug which caused NVT preferences to be displayed incorrectly has been
   fixed.
 
@@ -2396,7 +2398,7 @@ Main changes since 0.9.2:
 
 openvas-manager 0.9.2 (2009-10-26)
 
-This is the eigth development release of the openvas-manager module
+This is the eighth development release of the openvas-manager module
 for the Open Vulnerability Assessment System (OpenVAS).
 
 Many thanks to everyone who has contributed to this release:

@@ -205,7 +205,7 @@ send_find_error_to_client (const char* command, const char* type,
 void
 error_send_to_client (GError** error)
 {
-  g_debug ("   send_to_client out of space in to_client\n");
+  g_debug ("   send_to_client out of space in to_client");
   g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
                "Manager out of space for reply to client.");
 }

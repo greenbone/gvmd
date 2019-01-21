@@ -98,14 +98,14 @@ sendn_to_server (const void * msg, size_t n)
 {
   if (TO_SERVER_BUFFER_SIZE - to_server_end < n)
     {
-      g_debug ("   sendn_to_server: available space (%i) < n (%zu)\n",
+      g_debug ("   sendn_to_server: available space (%i) < n (%zu)",
                TO_SERVER_BUFFER_SIZE - to_server_end, n);
       return 1;
     }
 
   memmove (to_server + to_server_end, msg, n);
-  g_debug ("s> server  (string) %.*s\n", (int) n, to_server + to_server_end);
-  g_debug ("-> server  %zu bytes\n", n);
+  g_debug ("s> server  (string) %.*s", (int) n, to_server + to_server_end);
+  g_debug ("-> server  %zu bytes", n);
   to_server_end += n;
 
   return 0;

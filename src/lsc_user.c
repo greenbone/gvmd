@@ -73,12 +73,12 @@ create_ssh_key (const char *comment, const char *passphrase,
 
   if (!comment || comment[0] == '\0')
     {
-      g_debug ("%s: comment must be set", __FUNCTION__);
+      g_warning ("%s: comment must be set", __FUNCTION__);
       return -1;
     }
   if (!passphrase || strlen (passphrase) < 5)
     {
-      g_debug ("%s: password must be longer than 4 characters", __FUNCTION__);
+      g_warning ("%s: password must be longer than 4 characters", __FUNCTION__);
       return -1;
     }
 
@@ -87,7 +87,7 @@ create_ssh_key (const char *comment, const char *passphrase,
   dir = g_path_get_dirname (privpath);
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */ ))
     {
-      g_debug ("%s: failed to access %s", __FUNCTION__, dir);
+      g_warning ("%s: failed to access %s", __FUNCTION__, dir);
       g_free (dir);
       return -1;
     }
@@ -107,12 +107,12 @@ create_ssh_key (const char *comment, const char *passphrase,
     {
       if (err)
         {
-          g_debug ("%s: failed to create private key: %s\n",
-                   __FUNCTION__, err->message);
+          g_warning ("%s: failed to create private key: %s",
+                     __FUNCTION__, err->message);
           g_error_free (err);
         }
       else
-        g_debug ("%s: failed to create private key\n", __FUNCTION__);
+        g_warning ("%s: failed to create private key", __FUNCTION__);
       g_debug ("%s: key-gen failed with %d (WIF %i, WEX %i).\n",
                __FUNCTION__, exit_status, WIFEXITED (exit_status),
                WEXITSTATUS (exit_status));
@@ -204,18 +204,18 @@ lsc_user_rpm_create (const gchar *username,
   g_debug ("%s: create temporary directory", __FUNCTION__);
   if (mkdtemp (tmpdir) == NULL)
     return FALSE;
-  g_debug ("%s: temporary directory: %s\n", __FUNCTION__, tmpdir);
+  g_debug ("%s: temporary directory: %s", __FUNCTION__, tmpdir);
 
   /* Copy the public key into the temporary directory. */
 
-  g_debug ("%s: copy key to temporary directory\n", __FUNCTION__);
+  g_debug ("%s: copy key to temporary directory", __FUNCTION__);
   pubkey_basename = g_strdup_printf ("%s.pub", username);
   new_pubkey_filename = g_build_filename (tmpdir, pubkey_basename, NULL);
   if (gvm_file_copy (public_key_path, new_pubkey_filename)
       == FALSE)
     {
-      g_debug ("%s: failed to copy key file %s to %s",
-               __FUNCTION__, public_key_path, new_pubkey_filename);
+      g_warning ("%s: failed to copy key file %s to %s",
+                 __FUNCTION__, public_key_path, new_pubkey_filename);
       g_free (pubkey_basename);
       g_free (new_pubkey_filename);
       return FALSE;
@@ -224,7 +224,7 @@ lsc_user_rpm_create (const gchar *username,
   /* Execute create-rpm script with the temporary directory as the
    * target and the public key in the temporary directory as the key. */
 
-  g_debug ("%s: Attempting RPM build\n", __FUNCTION__);
+  g_debug ("%s: Attempting RPM build", __FUNCTION__);
   cmd = (gchar **) g_malloc (6 * sizeof (gchar *));
   cmd[0] = g_build_filename (GVM_DATA_DIR,
                              "gvm-lsc-rpm-creator.sh",
@@ -234,7 +234,7 @@ lsc_user_rpm_create (const gchar *username,
   cmd[3] = g_strdup (tmpdir);
   cmd[4] = g_strdup (to_filename);
   cmd[5] = NULL;
-  g_debug ("%s: Spawning in %s: %s %s %s %s %s\n",
+  g_debug ("%s: Spawning in %s: %s %s %s %s %s",
            __FUNCTION__, tmpdir, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]);
   if ((g_spawn_sync (tmpdir,
                      cmd,
@@ -250,13 +250,13 @@ lsc_user_rpm_create (const gchar *username,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: failed to create the rpm: %d (WIF %i, WEX %i)",
-               __FUNCTION__,
-               exit_status,
-               WIFEXITED (exit_status),
-               WEXITSTATUS (exit_status));
-      g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-      g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+      g_warning ("%s: failed to create the rpm: %d (WIF %i, WEX %i)",
+                 __FUNCTION__,
+                 exit_status,
+                 WIFEXITED (exit_status),
+                 WEXITSTATUS (exit_status));
+      g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
+      g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
       success = FALSE;
     }
 
@@ -275,8 +275,8 @@ lsc_user_rpm_create (const gchar *username,
 
   if (gvm_file_remove_recurse (tmpdir) != 0 && success == TRUE)
     {
-      g_debug ("%s: failed to remove temporary directory %s",
-               __FUNCTION__, tmpdir);
+      g_warning ("%s: failed to remove temporary directory %s",
+                 __FUNCTION__, tmpdir);
       success = FALSE;
     }
 
@@ -391,18 +391,18 @@ lsc_user_deb_create (const gchar *username,
   g_debug ("%s: create temporary directory", __FUNCTION__);
   if (mkdtemp (tmpdir) == NULL)
     return FALSE;
-  g_debug ("%s: temporary directory: %s\n", __FUNCTION__, tmpdir);
+  g_debug ("%s: temporary directory: %s", __FUNCTION__, tmpdir);
 
   /* Copy the public key into the temporary directory. */
 
-  g_debug ("%s: copy key to temporary directory\n", __FUNCTION__);
+  g_debug ("%s: copy key to temporary directory", __FUNCTION__);
   pubkey_basename = g_strdup_printf ("%s.pub", username);
   new_pubkey_filename = g_build_filename (tmpdir, pubkey_basename, NULL);
   if (gvm_file_copy (public_key_path, new_pubkey_filename)
       == FALSE)
     {
-      g_debug ("%s: failed to copy key file %s to %s",
-               __FUNCTION__, public_key_path, new_pubkey_filename);
+      g_warning ("%s: failed to copy key file %s to %s",
+                 __FUNCTION__, public_key_path, new_pubkey_filename);
       g_free (pubkey_basename);
       g_free (new_pubkey_filename);
       return FALSE;
@@ -411,7 +411,7 @@ lsc_user_deb_create (const gchar *username,
   /* Execute create-deb script with the temporary directory as the
    * target and the public key in the temporary directory as the key. */
 
-  g_debug ("%s: Attempting DEB build\n", __FUNCTION__);
+  g_debug ("%s: Attempting DEB build", __FUNCTION__);
   cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
   cmd[0] = g_build_filename (GVM_DATA_DIR,
                              "gvm-lsc-deb-creator.sh",
@@ -422,7 +422,7 @@ lsc_user_deb_create (const gchar *username,
   cmd[4] = g_strdup (to_filename);
   cmd[5] = g_strdup (maintainer);
   cmd[6] = NULL;
-  g_debug ("%s: Spawning in %s: %s %s %s %s %s %s\n",
+  g_debug ("%s: Spawning in %s: %s %s %s %s %s %s",
            __FUNCTION__, tmpdir,
            cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5]);
   if ((g_spawn_sync (tmpdir,
@@ -439,13 +439,13 @@ lsc_user_deb_create (const gchar *username,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: failed to create the deb: %d (WIF %i, WEX %i)",
-               __FUNCTION__,
-               exit_status,
-               WIFEXITED (exit_status),
-               WEXITSTATUS (exit_status));
-      g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-      g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+      g_warning ("%s: failed to create the deb: %d (WIF %i, WEX %i)",
+                 __FUNCTION__,
+                 exit_status,
+                 WIFEXITED (exit_status),
+                 WEXITSTATUS (exit_status));
+      g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
+      g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
       success = FALSE;
     }
 
@@ -465,8 +465,8 @@ lsc_user_deb_create (const gchar *username,
 
   if (gvm_file_remove_recurse (tmpdir) != 0 && success == TRUE)
     {
-      g_debug ("%s: failed to remove temporary directory %s",
-               __FUNCTION__, tmpdir);
+      g_warning ("%s: failed to remove temporary directory %s",
+                 __FUNCTION__, tmpdir);
       success = FALSE;
     }
 
@@ -683,8 +683,8 @@ execute_makensis (const gchar *nsis_script)
   cmd[0] = g_strdup ("makensis");
   cmd[1] = g_strdup (nsis_script);
   cmd[2] = NULL;
-  g_debug ("--- executing makensis.\n");
-  g_debug ("%s: Spawning in %s: %s %s\n",
+  g_debug ("--- executing makensis");
+  g_debug ("%s: Spawning in %s: %s %s",
            __FUNCTION__,
            dirname, cmd[0], cmd[1]);
   if ((g_spawn_sync (dirname,
@@ -700,13 +700,13 @@ execute_makensis (const gchar *nsis_script)
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: failed to create the exe: %d (WIF %i, WEX %i)",
-               __FUNCTION__,
-               exit_status,
-               WIFEXITED (exit_status),
-               WEXITSTATUS (exit_status));
-      g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-      g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+      g_warning ("%s: failed to create the exe: %d (WIF %i, WEX %i)",
+                 __FUNCTION__,
+                 exit_status,
+                 WIFEXITED (exit_status),
+                 WEXITSTATUS (exit_status));
+      g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
+      g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
       ret = -1;
     }
 
@@ -740,14 +740,14 @@ lsc_user_exe_create (const gchar *user_name, const gchar *password,
 
   if (create_nsis_script (nsis_script, to_filename, user_name, password))
     {
-      g_warning ("%s: Failed to create NSIS script\n", __FUNCTION__);
+      g_warning ("%s: Failed to create NSIS script", __FUNCTION__);
       g_free (nsis_script);
       return -1;
     }
 
   if (execute_makensis (nsis_script))
     {
-      g_warning ("%s: Failed to execute makensis\n", __FUNCTION__);
+      g_warning ("%s: Failed to execute makensis", __FUNCTION__);
       g_free (nsis_script);
       return -1;
     }
