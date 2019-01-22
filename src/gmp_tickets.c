@@ -210,8 +210,12 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                ticket_iterator_nvt_oid (&tickets));
 
       if (ticket_iterator_task_id (&tickets))
-        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\"/>",
-                                 ticket_iterator_task_id (&tickets));
+        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                 "<trash>%i</trash>"
+                                 "</task>",
+                                 ticket_iterator_task_id (&tickets),
+                                 task_in_trash_id (ticket_iterator_task_id
+                                                    (&tickets)));
 
       if (ticket_iterator_report_id (&tickets))
         {
