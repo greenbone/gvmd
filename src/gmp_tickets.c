@@ -188,7 +188,9 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
       /* Send ticket info. */
 
       SENDF_TO_CLIENT_OR_FAIL ("<assigned_to>"
-                               "<user id=\"%s\"/>"
+                               "<user id=\"%s\">"
+                               "<name>%s</name>"
+                               "</user>"
                                "</assigned_to>"
                                "<severity>%1.1f</severity>"
                                "<host>%s</host>"
@@ -198,6 +200,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                "<open_time>%s</open_time>"
                                "<nvt oid=\"%s\"/>",
                                ticket_iterator_user_id (&tickets),
+                               ticket_iterator_user_name (&tickets),
                                ticket_iterator_severity (&tickets),
                                ticket_iterator_host (&tickets),
                                ticket_iterator_location (&tickets),
