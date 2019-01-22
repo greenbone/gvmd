@@ -908,9 +908,6 @@ cleanup ()
   g_debug ("   Exiting");
   if (log_config) log_config_free ();
 
-  /* Tear down authentication system conf, if any. */
-  gvm_auth_tear_down ();
-
   /* Delete pidfile if this process is the parent. */
   if (is_parent == 1) pidfile_remove ("gvmd");
 }
@@ -1256,7 +1253,6 @@ fork_update_nvt_cache ()
         cleanup_manage_process (FALSE);
         if (manager_socket > -1) close (manager_socket);
         if (manager_socket_2 > -1) close (manager_socket_2);
-        gvm_auth_tear_down ();
 
         /* Update the cache. */
 
