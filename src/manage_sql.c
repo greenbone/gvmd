@@ -149,7 +149,7 @@ manage_attach_databases ();
  *
  * 1 if set via scheduler, 2 if set via event, else 0.
  */
-static int authenticate_allow_all;
+extern int authenticate_allow_all;
 
 const char *threat_message_type (const char *);
 
@@ -17900,6 +17900,7 @@ manage_reset_currents ()
 {
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
+  free_credentials (&current_credentials);
 }
 
 /**
