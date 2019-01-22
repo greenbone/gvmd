@@ -25,6 +25,7 @@
 #ifndef _GVMD_GMP_H
 #define _GVMD_GMP_H
 
+#include "manage.h"
 #include "types.h"
 #include <gvm/util/serverutils.h>
 #include <glib.h>
@@ -48,8 +49,7 @@
 
 int
 init_gmp (GSList*, int, const gchar*, int, int, int, int,
-          int (*) (gvm_connection_t *, gchar*),
-          int);
+          manage_connection_forker_t, int);
 
 void
 init_gmp_process (int, const gchar*, int (*) (const char*, void*), void*,

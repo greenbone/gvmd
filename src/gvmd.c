@@ -656,8 +656,8 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
-                          int scheduler)
+fork_connection_internal (gvm_connection_t *client_connection,
+                          const char* uuid, int scheduler)
 {
   int pid, parent_client_socket, ret;
   int sockets[2];
@@ -848,7 +848,8 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_scheduler (gvm_connection_t *client_connection, gchar* uuid)
+fork_connection_for_scheduler (gvm_connection_t *client_connection,
+                               const char* uuid)
 {
   return fork_connection_internal (client_connection, uuid, 1);
 }
@@ -862,7 +863,8 @@ fork_connection_for_scheduler (gvm_connection_t *client_connection, gchar* uuid)
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_event (gvm_connection_t *client_connection, gchar* uuid)
+fork_connection_for_event (gvm_connection_t *client_connection,
+                           const char* uuid)
 {
   return fork_connection_internal (client_connection, uuid, 0);
 }

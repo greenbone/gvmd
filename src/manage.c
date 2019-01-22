@@ -6756,7 +6756,7 @@ manage_auth_allow_all (int scheduled)
  *
  * @return UUID of user that scheduled the current task.
  */
-gchar*
+const char*
 get_scheduled_user_uuid ()
 {
   return schedule_user_uuid;
@@ -6764,13 +6764,16 @@ get_scheduled_user_uuid ()
 
 /**
  * @brief Set UUID of user that scheduled the current task.
+ * The previous value is freed and a copy of the UUID is created.
  *
  * @param user_uuid UUID of user that scheduled the current task.
  */
 void
-set_scheduled_user_uuid (gchar* user_uuid)
+set_scheduled_user_uuid (const char* user_uuid)
 {
-  schedule_user_uuid = user_uuid;
+  gchar *user_uuid_copy = user_uuid ? g_strdup (user_uuid) : NULL;
+  g_free (schedule_user_uuid);
+  schedule_user_uuid = user_uuid_copy;
 }
 
 /**
@@ -6833,7 +6836,7 @@ scheduled_task_free (scheduled_task_t *scheduled_task)
  */
 static int
 scheduled_task_start (scheduled_task_t *scheduled_task,
-                      int (*fork_connection) (gvm_connection_t *, gchar *),
+                      manage_connection_forker_t fork_connection,
                       sigset_t *sigmask_current)
 {
   char title[128];
@@ -7040,7 +7043,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
  */
 static int
 scheduled_task_stop (scheduled_task_t *scheduled_task,
-                     int (*fork_connection) (gvm_connection_t *, gchar *),
+                     manage_connection_forker_t fork_connection,
                      sigset_t *sigmask_current)
 {
   char title[128];
@@ -7127,7 +7130,7 @@ manage_sync (sigset_t *sigmask_current,
  * @return 0 success, 1 failed to get lock, -1 error.
  */
 int
-manage_schedule (int (*fork_connection) (gvm_connection_t *, gchar *),
+manage_schedule (manage_connection_forker_t fork_connection,
                  gboolean run_tasks,
                  sigset_t *sigmask_current)
 {
