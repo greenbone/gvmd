@@ -18566,6 +18566,23 @@ task_in_trash (task_t task)
 }
 
 /**
+ * @brief Return whether a task is in the trashcan.
+ *
+ * Assume the UUID is properly formatted.
+ *
+ * @param[in]  task_id  Task UUID.
+ *
+ * @return 1 if in trashcan, else 0.
+ */
+int
+task_in_trash_id (const gchar *task_id)
+{
+  return sql_int ("SELECT hidden = 2"
+                  " FROM tasks WHERE uuid = '%s';",
+                  task_id);
+}
+
+/**
  * @brief Return the name of the owner of a task.
  *
  * @param[in]  task  Task.

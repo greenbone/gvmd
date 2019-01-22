@@ -161,6 +161,16 @@ ticket_status_name (ticket_status_t status)
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    { "nvt", NULL, KEYWORD_TYPE_STRING },                                      \
+   {                                                                          \
+     "(SELECT name FROM users WHERE id = assigned_to)",                       \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT name FROM tasks WHERE id = task)",                              \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -208,6 +218,16 @@ ticket_status_name (ticket_status_t status)
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    { "nvt", NULL, KEYWORD_TYPE_STRING },                                      \
+   {                                                                          \
+     "(SELECT name FROM users WHERE id = assigned_to)",                       \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT name FROM tasks WHERE id = task)",                              \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -422,6 +442,24 @@ DEF_ACCESS (ticket_iterator_confirmed_report_id,
  * @return Iterator column value or NULL if iteration is complete.
  */
 DEF_ACCESS (ticket_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 21);
+
+/**
+ * @brief Get a column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_user_name, GET_ITERATOR_COLUMN_COUNT + 22);
+
+/**
+ * @brief Get a column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_task_name, GET_ITERATOR_COLUMN_COUNT + 23);
 
 /**
  * @brief Initialise a ticket result iterator.

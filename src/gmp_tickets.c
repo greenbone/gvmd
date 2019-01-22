@@ -188,7 +188,9 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
       /* Send ticket info. */
 
       SENDF_TO_CLIENT_OR_FAIL ("<assigned_to>"
-                               "<user id=\"%s\"/>"
+                               "<user id=\"%s\">"
+                               "<name>%s</name>"
+                               "</user>"
                                "</assigned_to>"
                                "<severity>%1.1f</severity>"
                                "<host>%s</host>"
@@ -198,6 +200,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                "<open_time>%s</open_time>"
                                "<nvt oid=\"%s\"/>",
                                ticket_iterator_user_id (&tickets),
+                               ticket_iterator_user_name (&tickets),
                                ticket_iterator_severity (&tickets),
                                ticket_iterator_host (&tickets),
                                ticket_iterator_location (&tickets),
@@ -207,12 +210,30 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                ticket_iterator_nvt_oid (&tickets));
 
       if (ticket_iterator_task_id (&tickets))
-        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\"/>",
-                                 ticket_iterator_task_id (&tickets));
+        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "<trash>%i</trash>"
+                                 "</task>",
+                                 ticket_iterator_task_id (&tickets),
+                                 ticket_iterator_task_name (&tickets),
+                                 task_in_trash_id (ticket_iterator_task_id
+                                                    (&tickets)));
 
       if (ticket_iterator_report_id (&tickets))
-        SENDF_TO_CLIENT_OR_FAIL ("<report id=\"%s\"/>",
-                                 ticket_iterator_report_id (&tickets));
+        {
+          gchar *timestamp;
+
+          if (report_timestamp (ticket_iterator_report_id (&tickets),
+                                &timestamp))
+            g_error ("%s: error getting timestamp of report, aborting",
+                     __FUNCTION__);
+
+          SENDF_TO_CLIENT_OR_FAIL ("<report id=\"%s\">"
+                                   "<timestamp>%s</timestamp>"
+                                   "</report>",
+                                   ticket_iterator_report_id (&tickets),
+                                   timestamp);
+        }
 
       /* Send timestamps. */
 
@@ -237,11 +258,25 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
           SENDF_TO_CLIENT_OR_FAIL ("<confirmed_time>%s</confirmed_time>",
                                    ticket_iterator_confirmed_time (&tickets));
           if (ticket_iterator_confirmed_report_id (&tickets))
-            SENDF_TO_CLIENT_OR_FAIL ("<confirmed_report>"
-                                     "<report id=\"%s\"/>"
-                                     "</confirmed_report>",
-                                     ticket_iterator_confirmed_report_id
-                                      (&tickets));
+            {
+              gchar *timestamp;
+
+              if (report_timestamp (ticket_iterator_confirmed_report_id
+                                     (&tickets),
+                                    &timestamp))
+                g_error ("%s: error getting timestamp of confirmed report,"
+                         " aborting",
+                         __FUNCTION__);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<confirmed_report>"
+                                       "<report id=\"%s\">"
+                                       "<timestamp>%s</timestamp>"
+                                       "</report>"
+                                       "</confirmed_report>",
+                                       ticket_iterator_confirmed_report_id
+                                        (&tickets),
+                                       timestamp);
+            }
         }
 
       if (ticket_iterator_orphaned_time (&tickets))
