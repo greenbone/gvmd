@@ -742,6 +742,9 @@ int
 task_in_trash (task_t);
 
 int
+task_in_trash_id (const gchar *);
+
+int
 task_in_use (task_t);
 
 int

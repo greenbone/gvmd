@@ -150,7 +150,7 @@ manage_attach_databases ();
  *
  * 1 if set via scheduler, 2 if set via event, else 0.
  */
-static int authenticate_allow_all;
+extern int authenticate_allow_all;
 
 const char *threat_message_type (const char *);
 
@@ -18137,6 +18137,7 @@ manage_reset_currents ()
 {
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
+  free_credentials (&current_credentials);
 }
 
 /**
@@ -18799,6 +18800,23 @@ task_in_trash (task_t task)
   return sql_int ("SELECT hidden = 2"
                   " FROM tasks WHERE id = %llu;",
                   task);
+}
+
+/**
+ * @brief Return whether a task is in the trashcan.
+ *
+ * Assume the UUID is properly formatted.
+ *
+ * @param[in]  task_id  Task UUID.
+ *
+ * @return 1 if in trashcan, else 0.
+ */
+int
+task_in_trash_id (const gchar *task_id)
+{
+  return sql_int ("SELECT hidden = 2"
+                  " FROM tasks WHERE uuid = '%s';",
+                  task_id);
 }
 
 /**
