@@ -211,9 +211,11 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
       if (ticket_iterator_task_id (&tickets))
         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                 "<name>%s</name>"
                                  "<trash>%i</trash>"
                                  "</task>",
                                  ticket_iterator_task_id (&tickets),
+                                 ticket_iterator_task_name (&tickets),
                                  task_in_trash_id (ticket_iterator_task_id
                                                     (&tickets)));
 

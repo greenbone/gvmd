@@ -45,6 +45,9 @@ const char*
 ticket_iterator_task_id (iterator_t*);
 
 const char*
+ticket_iterator_task_name (iterator_t*);
+
+const char*
 ticket_iterator_report_id (iterator_t*);
 
 double
