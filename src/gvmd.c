@@ -656,8 +656,8 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
-                          int scheduler)
+fork_connection_internal (gvm_connection_t *client_connection,
+                          const gchar* uuid, int scheduler)
 {
   int pid, parent_client_socket, ret;
   int sockets[2];
@@ -848,7 +848,8 @@ fork_connection_internal (gvm_connection_t *client_connection, gchar* uuid,
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_scheduler (gvm_connection_t *client_connection, gchar* uuid)
+fork_connection_for_scheduler (gvm_connection_t *client_connection,
+                               const gchar* uuid)
 {
   return fork_connection_internal (client_connection, uuid, 1);
 }
@@ -862,7 +863,8 @@ fork_connection_for_scheduler (gvm_connection_t *client_connection, gchar* uuid)
  * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
-fork_connection_for_event (gvm_connection_t *client_connection, gchar* uuid)
+fork_connection_for_event (gvm_connection_t *client_connection,
+                           const gchar* uuid)
 {
   return fork_connection_internal (client_connection, uuid, 0);
 }
@@ -905,9 +907,6 @@ cleanup ()
 #endif /* LOG */
   g_debug ("   Exiting");
   if (log_config) log_config_free ();
-
-  /* Tear down authentication system conf, if any. */
-  gvm_auth_tear_down ();
 
   /* Delete pidfile if this process is the parent. */
   if (is_parent == 1) pidfile_remove ("gvmd");
@@ -1254,7 +1253,6 @@ fork_update_nvt_cache ()
         cleanup_manage_process (FALSE);
         if (manager_socket > -1) close (manager_socket);
         if (manager_socket_2 > -1) close (manager_socket_2);
-        gvm_auth_tear_down ();
 
         /* Update the cache. */
 

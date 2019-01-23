@@ -65,10 +65,15 @@ typedef struct
   gchar *value;   ///< Param value.
 } name_value_t;
 
+/**
+ * @brief Fork helper function type.
+ */
+typedef int (*manage_connection_forker_t) (gvm_connection_t * conn,
+                                           const gchar* uuid);
+
 int
 init_manage (GSList*, int, const gchar *, int, int, int, int,
-             int (*) (gvm_connection_t *, gchar *),
-             int);
+             manage_connection_forker_t, int);
 
 int
 init_manage_helper (GSList *, const gchar *, int);
@@ -737,6 +742,9 @@ task_uuid (task_t, char **);
 
 int
 task_in_trash (task_t);
+
+int
+task_in_trash_id (const gchar *);
 
 int
 task_in_use (task_t);
@@ -2784,17 +2792,17 @@ delete_schedule (const char*, int);
 void
 manage_auth_allow_all (int);
 
-gchar*
+const gchar*
 get_scheduled_user_uuid ();
 
 void
-set_scheduled_user_uuid (gchar* uuid);
+set_scheduled_user_uuid (const gchar* uuid);
 
 void
 manage_sync (sigset_t *, int (*fork_update_nvt_cache) ());
 
 int
-manage_schedule (int (*) (gvm_connection_t *, gchar *),
+manage_schedule (manage_connection_forker_t,
                  gboolean,
                  sigset_t *);
 

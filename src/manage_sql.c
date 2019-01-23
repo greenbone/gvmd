@@ -149,7 +149,7 @@ manage_attach_databases ();
  *
  * 1 if set via scheduler, 2 if set via event, else 0.
  */
-static int authenticate_allow_all;
+extern int authenticate_allow_all;
 
 const char *threat_message_type (const char *);
 
@@ -487,7 +487,7 @@ type_build_select (const char *, const char *, const get_data_t *,
 /**
  * @brief Function to fork a connection that will accept GMP requests.
  */
-static int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
+static manage_connection_forker_t manage_fork_connection;
 
 /**
  * @brief Max number of hosts per target.
@@ -17631,8 +17631,7 @@ init_manage_internal (GSList *log_config,
                       int max_email_include_size,
                       int max_email_message_size,
                       int stop_tasks,
-                      int (*fork_connection)
-                             (gvm_connection_t *, gchar *),
+                      manage_connection_forker_t fork_connection,
                       int skip_db_check,
                       int check_encryption_key)
 {
@@ -17772,7 +17771,7 @@ int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, int max_email_attachment_size,
              int max_email_include_size, int max_email_message_size,
-             int (*fork_connection) (gvm_connection_t*, gchar*),
+             manage_connection_forker_t fork_connection,
              int skip_db_check)
 {
   return init_manage_internal (log_config,
@@ -17891,6 +17890,7 @@ manage_reset_currents ()
 {
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
+  free_credentials (&current_credentials);
 }
 
 /**
@@ -18362,7 +18362,7 @@ authenticate (credentials_t* credentials)
            * scheduled tasks and alerts.  Take the stored uuid
            * to be able to tell apart locally authenticated vs remotely
            * authenticated users (in order to fetch the correct rules). */
-          credentials->uuid = get_scheduled_user_uuid ();
+          credentials->uuid = g_strdup (get_scheduled_user_uuid ());
           if (*credentials->uuid)
             {
               if (credentials_setup (credentials))
@@ -18553,6 +18553,23 @@ task_in_trash (task_t task)
   return sql_int ("SELECT hidden = 2"
                   " FROM tasks WHERE id = %llu;",
                   task);
+}
+
+/**
+ * @brief Return whether a task is in the trashcan.
+ *
+ * Assume the UUID is properly formatted.
+ *
+ * @param[in]  task_id  Task UUID.
+ *
+ * @return 1 if in trashcan, else 0.
+ */
+int
+task_in_trash_id (const gchar *task_id)
+{
+  return sql_int ("SELECT hidden = 2"
+                  " FROM tasks WHERE uuid = '%s';",
+                  task_id);
 }
 
 /**
@@ -63459,6 +63476,14 @@ modify_setting (const gchar *uuid, const gchar *name,
       /* All SecInfo */
       else if (strcmp (uuid, "4c7b1ea7-b7e6-4d12-9791-eb9f72b6f864") == 0)
         setting_name = g_strdup ("All SecInfo Top Dashboard Configuration");
+
+      /*
+       * Remediation dashboards
+       */
+
+      /* Tickets */
+      else if (strcmp (uuid, "70b0626f-a835-478e-8194-e09f97887a15") == 0)
+        setting_name = g_strdup ("Tickets Top Dashboard Configuration");
     }
 
   if (setting_name)

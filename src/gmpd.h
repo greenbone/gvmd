@@ -25,6 +25,7 @@
 #ifndef _GVMD_GMPD_H
 #define _GVMD_GMPD_H
 
+#include "manage.h"
 #include "types.h"
 #include <gvm/util/serverutils.h>
 #include <glib.h>
@@ -45,8 +46,7 @@
 
 int
 init_gmpd (GSList*, int, const gchar*, int, int, int, int,
-           int (*) (gvm_connection_t *, gchar *),
-           int);
+           manage_connection_forker_t, int);
 
 void
 init_gmpd_process (const gchar *, gchar **);
