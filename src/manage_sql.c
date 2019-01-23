@@ -149,7 +149,7 @@ manage_attach_databases ();
  *
  * 1 if set via scheduler, 2 if set via event, else 0.
  */
-static int authenticate_allow_all;
+extern int authenticate_allow_all;
 
 const char *threat_message_type (const char *);
 
@@ -17899,6 +17899,7 @@ manage_reset_currents ()
 {
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
+  free_credentials (&current_credentials);
 }
 
 /**
@@ -18561,6 +18562,23 @@ task_in_trash (task_t task)
   return sql_int ("SELECT hidden = 2"
                   " FROM tasks WHERE id = %llu;",
                   task);
+}
+
+/**
+ * @brief Return whether a task is in the trashcan.
+ *
+ * Assume the UUID is properly formatted.
+ *
+ * @param[in]  task_id  Task UUID.
+ *
+ * @return 1 if in trashcan, else 0.
+ */
+int
+task_in_trash_id (const gchar *task_id)
+{
+  return sql_int ("SELECT hidden = 2"
+                  " FROM tasks WHERE uuid = '%s';",
+                  task_id);
 }
 
 /**
@@ -63467,6 +63485,14 @@ modify_setting (const gchar *uuid, const gchar *name,
       /* All SecInfo */
       else if (strcmp (uuid, "4c7b1ea7-b7e6-4d12-9791-eb9f72b6f864") == 0)
         setting_name = g_strdup ("All SecInfo Top Dashboard Configuration");
+
+      /*
+       * Remediation dashboards
+       */
+
+      /* Tickets */
+      else if (strcmp (uuid, "70b0626f-a835-478e-8194-e09f97887a15") == 0)
+        setting_name = g_strdup ("Tickets Top Dashboard Configuration");
     }
 
   if (setting_name)
