@@ -386,30 +386,14 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                                 "</permissions>");
     }
   else if (current_credentials.uuid
-           && ((strcmp (type, "user") == 0)
-               || (strcmp (type, "role") == 0)
-               || (strcmp (type, "group") == 0))
-           && (get_iterator_owner (iterator) == 0)
-           && acl_user_can_everything (current_credentials.uuid))
+           && (strcmp (type, "user") == 0)
+           && acl_user_can_super_everyone (get_iterator_uuid (iterator))
+           && strcmp (get_iterator_uuid (iterator), current_credentials.uuid))
     {
-      if ((strcmp (type, "user") == 0)
-          && acl_user_can_super_everyone (get_iterator_uuid (iterator))
-          && strcmp (get_iterator_uuid (iterator), current_credentials.uuid))
-        {
-          /* Resource is the Super Admin. */
-          buffer_xml_append_printf (buffer,
-                                    "<permission><name>get_users</name></permission>"
-                                    "</permissions>");
-        }
-      else
-        /* The user has admin rights and it's a global user/role/group.
-         *
-         * These are left over from before users/roles/groups had owners. */
-        buffer_xml_append_printf (buffer,
-                                  "<permission>"
-                                  "<name>Everything</name>"
-                                  "</permission>"
-                                  "</permissions>");
+      /* Resource is the Super Admin. */
+      buffer_xml_append_printf (buffer,
+                                "<permission><name>get_users</name></permission>"
+                                "</permissions>");
     }
   else
     {
