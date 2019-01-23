@@ -17,6 +17,8 @@ Main changes since 7.0.3:
 * The file extension from the report format will now be added by SMB alerts.
 * The tag "smb-alert:file_path" on tasks will override the file path of
   SMB alerts.
+* Missing data in credentials no longer prevents slave tasks from starting.
+  Instead the scan will start without the credential.
 
 openvas-manager 7.0.3 (2018-03-29)
 
