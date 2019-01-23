@@ -487,7 +487,7 @@ type_build_select (const char *, const char *, const get_data_t *,
 /**
  * @brief Function to fork a connection that will accept GMP requests.
  */
-static int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
+static manage_connection_forker_t manage_fork_connection;
 
 /**
  * @brief Max number of hosts per target.
@@ -17640,8 +17640,7 @@ init_manage_internal (GSList *log_config,
                       int max_email_include_size,
                       int max_email_message_size,
                       int stop_tasks,
-                      int (*fork_connection)
-                             (gvm_connection_t *, gchar *),
+                      manage_connection_forker_t fork_connection,
                       int skip_db_check,
                       int check_encryption_key)
 {
@@ -17781,7 +17780,7 @@ int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, int max_email_attachment_size,
              int max_email_include_size, int max_email_message_size,
-             int (*fork_connection) (gvm_connection_t*, gchar*),
+             manage_connection_forker_t fork_connection,
              int skip_db_check)
 {
   return init_manage_internal (log_config,
@@ -18372,7 +18371,7 @@ authenticate (credentials_t* credentials)
            * scheduled tasks and alerts.  Take the stored uuid
            * to be able to tell apart locally authenticated vs remotely
            * authenticated users (in order to fetch the correct rules). */
-          credentials->uuid = get_scheduled_user_uuid ();
+          credentials->uuid = g_strdup (get_scheduled_user_uuid ());
           if (*credentials->uuid)
             {
               if (credentials_setup (credentials))
