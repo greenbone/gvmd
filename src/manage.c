@@ -6781,7 +6781,7 @@ manage_auth_allow_all (int scheduled)
  *
  * @return UUID of user that scheduled the current task.
  */
-const char*
+const gchar*
 get_scheduled_user_uuid ()
 {
   return schedule_user_uuid;
@@ -6794,7 +6794,7 @@ get_scheduled_user_uuid ()
  * @param user_uuid UUID of user that scheduled the current task.
  */
 void
-set_scheduled_user_uuid (const char* user_uuid)
+set_scheduled_user_uuid (const gchar* user_uuid)
 {
   gchar *user_uuid_copy = user_uuid ? g_strdup (user_uuid) : NULL;
   g_free (schedule_user_uuid);

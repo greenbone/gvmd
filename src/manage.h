@@ -69,7 +69,7 @@ typedef struct
  * @brief Fork helper function type.
  */
 typedef int (*manage_connection_forker_t) (gvm_connection_t * conn,
-                                           const char* uuid);
+                                           const gchar* uuid);
 
 int
 init_manage (GSList*, int, const gchar *, int, int, int, int,
@@ -2792,11 +2792,11 @@ delete_schedule (const char*, int);
 void
 manage_auth_allow_all (int);
 
-const char*
+const gchar*
 get_scheduled_user_uuid ();
 
 void
-set_scheduled_user_uuid (const char* uuid);
+set_scheduled_user_uuid (const gchar* uuid);
 
 void
 manage_sync (sigset_t *, int (*fork_update_nvt_cache) ());

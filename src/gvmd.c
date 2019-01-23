@@ -657,7 +657,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
  */
 static int
 fork_connection_internal (gvm_connection_t *client_connection,
-                          const char* uuid, int scheduler)
+                          const gchar* uuid, int scheduler)
 {
   int pid, parent_client_socket, ret;
   int sockets[2];
@@ -849,7 +849,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
  */
 static int
 fork_connection_for_scheduler (gvm_connection_t *client_connection,
-                               const char* uuid)
+                               const gchar* uuid)
 {
   return fork_connection_internal (client_connection, uuid, 1);
 }
@@ -864,7 +864,7 @@ fork_connection_for_scheduler (gvm_connection_t *client_connection,
  */
 static int
 fork_connection_for_event (gvm_connection_t *client_connection,
-                           const char* uuid)
+                           const gchar* uuid)
 {
   return fork_connection_internal (client_connection, uuid, 0);
 }
