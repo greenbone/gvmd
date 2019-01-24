@@ -883,6 +883,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </td>
       </tr>
     </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SNMP-Success']">
+      <tr>
+        <td>
+          <xsl:value-of select="$host"/>
+          <xsl:choose>
+            <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+              <xsl:text> (</xsl:text>
+              <xsl:value-of select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+              <xsl:text>)</xsl:text>
+            </xsl:when>
+          </xsl:choose>
+        </td>
+        <td>
+          <xsl:text>SNMP</xsl:text>
+        </td>
+        <td>
+          <xsl:text>Success</xsl:text>
+        </td>
+        <td>
+          <xsl:value-of select="value/text()"/>
+        </td>
+      </tr>
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SNMP-Failure']">
+      <tr>
+        <td>
+          <xsl:value-of select="$host"/>
+          <xsl:choose>
+            <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+              <xsl:text> (</xsl:text>
+              <xsl:value-of select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+              <xsl:text>)</xsl:text>
+            </xsl:when>
+          </xsl:choose>
+        </td>
+        <td>
+          <xsl:text>SNMP</xsl:text>
+        </td>
+        <td>
+          <xsl:text>Failure</xsl:text>
+        </td>
+        <td>
+          <xsl:value-of select="value/text()"/>
+        </td>
+      </tr>
+    </xsl:for-each>
   </xsl:template>
 
   <xsl:template match="report">
