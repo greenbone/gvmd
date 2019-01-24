@@ -697,6 +697,40 @@ advice given in each description, in order to rectify the issue.
       <xsl:text> &amp; </xsl:text>
       <xsl:value-of select="value/text()"/>\\ \hline
     </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SNMP-Success']">
+      <xsl:value-of select="$host"/>
+      <xsl:choose>
+        <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+          <xsl:text> - </xsl:text>
+          <xsl:call-template name="escape_text">
+            <xsl:with-param name="string" select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+          </xsl:call-template>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>SNMP</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>Success</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:value-of select="value/text()"/>\\ \hline
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SNMP-Failure']">
+      <xsl:value-of select="$host"/>
+      <xsl:choose>
+        <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+          <xsl:text> - </xsl:text>
+          <xsl:call-template name="escape_text">
+            <xsl:with-param name="string" select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+          </xsl:call-template>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>SNMP</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>Failure</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:value-of select="value/text()"/>\\ \hline
+    </xsl:for-each>
   </xsl:template>
 
   <!-- The Results Overview section. -->
