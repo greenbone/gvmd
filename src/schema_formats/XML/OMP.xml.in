@@ -4050,6 +4050,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <t>
           <alts>
             <alt>cc</alt>
+            <alt>pw</alt>
             <alt>snmp</alt>
             <alt>up</alt>
             <alt>usk</alt>
@@ -10583,6 +10584,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <t>
               <alts>
+                <alt>cc</alt>
+                <alt>pgp</alt>
+                <alt>pw</alt>
+                <alt>smime</alt>
+                <alt>snmp</alt>
                 <alt>up</alt>
                 <alt>usk</alt>
               </alts>
