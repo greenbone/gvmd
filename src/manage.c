@@ -1422,6 +1422,12 @@ event_from_name (const char* name)
     return EVENT_NEW_SECINFO;
   if (strcasecmp (name, "Updated SecInfo arrived") == 0)
     return EVENT_UPDATED_SECINFO;
+  if (strcasecmp (name, "Ticket received") == 0)
+    return EVENT_TICKET_RECEIVED;
+  if (strcasecmp (name, "Assigned ticket changed") == 0)
+    return EVENT_ASSIGNED_TICKET_CHANGED;
+  if (strcasecmp (name, "Owned ticket changed") == 0)
+    return EVENT_OWNED_TICKET_CHANGED;
   return EVENT_ERROR;
 }
 
