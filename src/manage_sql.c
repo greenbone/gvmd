@@ -7515,6 +7515,46 @@ validate_vfire_data (alert_method_t method, const gchar *name,
 }
 
 /**
+ * @brief Validate method data for the Sourcefire method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ *
+ * @return 0 valid, 80 credential not found, 81 invalid credential type
+ */
+static int
+validate_sourcefire_data (alert_method_t method, const gchar *name,
+                          gchar **data)
+{
+  if (method == ALERT_METHOD_SOURCEFIRE)
+    {
+      if (strcmp (name, "pkcs12_credential") == 0)
+        {
+          credential_t credential;
+          if (find_credential_with_permission (*data, &credential,
+                                               "get_credentials"))
+            return -1;
+          else if (credential == 0)
+            return 80;
+          else
+            {
+              char *sourcefire_credential_type;
+              sourcefire_credential_type = credential_type (credential);
+              if (strcmp (sourcefire_credential_type, "up"))
+                {
+                  free (sourcefire_credential_type);
+                  return 81;
+                }
+              free (sourcefire_credential_type);
+            }
+        }
+    }
+
+  return 0;
+}
+
+/**
  * @brief Check alert params.
  *
  * @param[in]  event           Type of event.
@@ -7802,6 +7842,15 @@ create_alert (const char* name, const char* comment, const char* filter_id,
         }
 
       ret = validate_smb_data (method, name, &data);
+      if (ret)
+        {
+          g_free (name);
+          g_free (data);
+          sql_rollback ();
+          return ret;
+        }
+
+      ret = validate_sourcefire_data (method, name, &data);
       if (ret)
         {
           g_free (name);
@@ -9975,19 +10024,20 @@ smb_send_to_host (const char *password, const char *username,
 /**
  * @brief Send a report to a Sourcefire Defense Center.
  *
- * @param[in]  ip         IP of center.
- * @param[in]  port       Port of center.
- * @param[in]  pkcs12_64  PKCS12 content in base64.
- * @param[in]  report     Report in "Sourcefire" format.
+ * @param[in]  ip               IP of center.
+ * @param[in]  port             Port of center.
+ * @param[in]  pkcs12_64        PKCS12 content in base64.
+ * @param[in]  pkcs12_password  Password for encrypted PKCS12.
+ * @param[in]  report           Report in "Sourcefire" format.
  *
  * @return 0 success, -1 error.
  */
 static int
 send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
-                    const char *report)
+                    const char *pkcs12_password, const char *report)
 {
   gchar *script, *script_dir;
-  gchar *report_file, *pkcs12_file, *pkcs12;
+  gchar *report_file, *pkcs12_file, *pkcs12, *clean_password;
   gchar *clean_ip, *clean_port;
   char report_dir[] = "/tmp/openvasmd_escalate_XXXXXX";
   GError *error;
@@ -10040,6 +10090,8 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
       return -1;
     }
 
+  clean_password = g_shell_quote (pkcs12_password ? pkcs12_password : "");
+
   /* Setup file names. */
 
   script_dir = g_build_filename (OPENVAS_DATA_DIR,
@@ -10054,6 +10106,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
     {
       g_free (report_file);
       g_free (pkcs12_file);
+      g_free (clean_password);
       g_free (script);
       g_free (script_dir);
       return -1;
@@ -10075,6 +10128,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                    strerror (errno));
         g_free (report_file);
         g_free (pkcs12_file);
+        g_free (clean_password);
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
@@ -10088,6 +10142,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                    strerror (errno));
         g_free (report_file);
         g_free (pkcs12_file);
+        g_free (clean_password);
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
@@ -10100,16 +10155,18 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
     clean_ip = g_shell_quote (ip);
     clean_port = g_shell_quote (port);
 
-    command = g_strdup_printf ("%s %s %s %s %s > /dev/null"
+    command = g_strdup_printf ("%s %s %s %s %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
                                clean_ip,
                                clean_port,
                                pkcs12_file,
-                               report_file);
+                               report_file,
+                               clean_password);
     g_free (script);
     g_free (clean_ip);
     g_free (clean_port);
+    g_free (clean_password);
 
     g_debug ("   command: %s\n", command);
 
@@ -13230,8 +13287,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_SOURCEFIRE:
         {
-          char *ip, *port, *pkcs12, *filt_id;
-          gchar *report_content;
+          char *ip, *port, *pkcs12, *pkcs12_credential_id, *filt_id;
+          credential_t pkcs12_credential;
+          gchar *pkcs12_password, *report_content;
           gsize content_length;
           report_format_t report_format;
           int ret;
@@ -13320,18 +13378,52 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (port == NULL)
             port = g_strdup ("8307");
           pkcs12 = alert_data (alert, "method", "pkcs12");
+          pkcs12_credential_id = alert_data (alert, "method",
+                                             "pkcs12_credential");
+
+          if (pkcs12_credential_id == NULL
+              || strcmp (pkcs12_credential_id, "") == 0)
+            {
+              pkcs12_password = g_strdup ("");
+            }
+          else if (find_credential_with_permission (pkcs12_credential_id,
+                                               &pkcs12_credential,
+                                               "get_credentials"))
+            {
+              g_free (ip);
+              g_free (port);
+              g_free (pkcs12);
+              g_free (pkcs12_credential_id);
+              return -1;
+            }
+          else if (pkcs12_credential == 0)
+            {
+              g_free (ip);
+              g_free (port);
+              g_free (pkcs12);
+              g_free (pkcs12_credential_id);
+              return -4;
+            }
+          else
+            {
+              g_free (pkcs12_credential_id);
+              pkcs12_password = credential_encrypted_value (pkcs12_credential,
+                                                            "password");
+            }
 
           g_debug ("  sourcefire   ip: %s", ip);
           g_debug ("  sourcefire port: %s", port);
           g_debug ("sourcefire pkcs12: %s", pkcs12);
 
-          ret = send_to_sourcefire (ip, port, pkcs12, report_content);
+          ret = send_to_sourcefire (ip, port, pkcs12, pkcs12_password,
+                                    report_content);
 
           free (filt_id);
           free (ip);
           g_free (port);
           free (pkcs12);
           g_free (report_content);
+          g_free (pkcs12_password);
 
           return ret;
         }
