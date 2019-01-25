@@ -7541,7 +7541,8 @@ validate_sourcefire_data (alert_method_t method, const gchar *name,
             {
               char *sourcefire_credential_type;
               sourcefire_credential_type = credential_type (credential);
-              if (strcmp (sourcefire_credential_type, "up"))
+              if (strcmp (sourcefire_credential_type, "up")
+                  && strcmp (sourcefire_credential_type, "pw"))
                 {
                   free (sourcefire_credential_type);
                   return 81;
@@ -42575,6 +42576,7 @@ create_credential (const char* name, const char* comment, const char* login,
   if (given_type && strcmp (given_type, ""))
     {
       if (strcmp (given_type, "cc")
+          && strcmp (given_type, "pw")
           && strcmp (given_type, "snmp")
           && strcmp (given_type, "up")
           && strcmp (given_type, "usk"))
@@ -42615,11 +42617,13 @@ create_credential (const char* name, const char* comment, const char* login,
 
   if (login == NULL
       && strcmp (quoted_type, "cc")
+      && strcmp (quoted_type, "pw")
       && strcmp (quoted_type, "snmp"))
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
-           && strcmp (quoted_type, "up") == 0)
-      // username password requires a password
+           && (strcmp (quoted_type, "up") == 0
+               || strcmp (quoted_type, "pw") == 0))
+      // (username) password requires a password
     ret = 6;
   else if (key_private == NULL && auto_generate == 0
            && (strcmp (quoted_type, "cc") == 0
@@ -43207,7 +43211,8 @@ modify_credential (const char *credential_id,
                                         key_private_to_use,
                                         NULL);
         }
-      else if (strcmp (type, "up") == 0)
+      else if (strcmp (type, "up") == 0
+               || strcmp (type, "pw") == 0)
         {
           if (password)
             set_credential_password (credential, password);
