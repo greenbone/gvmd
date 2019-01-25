@@ -21,6 +21,8 @@ Main changes compared to gvm 8.0+beta2:
 * Remediation support has been added (GMP CREATE_TICKET, GET_TICKETS, etc).
 * Missing data in credentials no longer prevents slave tasks from starting.
   Instead the scan will start without the credential.
+* Handling of failed/successful SNMP Authentication has been added to the
+  HTML and LaTeX report formats.
 
 
 gvmd 8.0+beta2 (2018-12-05)
