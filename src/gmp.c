@@ -21997,7 +21997,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
                                         "Sourcefire credential must have"
-                                        " type 'up'"));
+                                        " type 'pw' or 'up'"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
                   case 99:
