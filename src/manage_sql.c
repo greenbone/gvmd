@@ -488,7 +488,7 @@ type_build_select (const char *, const char *, const get_data_t *,
 /**
  * @brief Function to fork a connection that will accept GMP requests.
  */
-static int (*manage_fork_connection) (gvm_connection_t *, gchar*) = NULL;
+static manage_connection_forker_t manage_fork_connection;
 
 /**
  * @brief Max number of hosts per target.
@@ -7340,16 +7340,6 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
             }
         }
 
-      if (strcmp (name, "smb_file_path_type") == 0)
-        {
-          if (*data
-              && strcmp (*data, "")
-              && strcasecmp (*data, "directory")
-              && strcasecmp (*data, "full"))
-            {
-              return 43;
-            }
-        }
     }
 
   return 0;
@@ -13221,7 +13211,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_SMB:
         {
           char *credential_id, *username, *password;
-          char *share_path, *file_path_format, *file_path_type;
+          char *share_path, *file_path_format;
+          gboolean file_path_is_dir;
           report_format_t report_format;
           gchar *file_path, *report_content, *extension;
           gsize content_length;
@@ -13265,7 +13256,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           credential_id = alert_data (alert, "method", "smb_credential");
           share_path = alert_data (alert, "method", "smb_share_path");
-          file_path_type = alert_data (alert, "method", "smb_file_path_type");
 
           file_path_format
             = sql_string ("SELECT value FROM tags"
@@ -13281,14 +13271,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (file_path_format == NULL)
             file_path_format = alert_data (alert, "method", "smb_file_path");
 
+          file_path_is_dir = g_str_has_suffix (file_path_format, "\\");
+
           report_content = NULL;
           extension = NULL;
           report_format = 0;
 
           g_debug ("smb_credential: %s", credential_id);
           g_debug ("smb_share_path: %s", share_path);
-          g_debug ("smb_file_path: %s", file_path_format);
-          g_debug ("smb_file_path_type: %s", file_path_type);
+          g_debug ("smb_file_path: %s (%s)",
+                   file_path_format, file_path_is_dir ? "dir" : "file");
 
           ret = report_content_for_alert
                   (alert, report, task, get,
@@ -13308,8 +13300,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return ret ? ret : -1;
             }
 
-          if (file_path_type
-              && strcasecmp (file_path_type, "directory") == 0)
+          if (file_path_is_dir)
             {
               char *dirname, *filename;
 
@@ -13326,7 +13317,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           else
             {
               file_path = generate_report_filename (report, report_format,
-                                                    file_path_format, FALSE);
+                                                    file_path_format, TRUE);
             }
 
           credential = 0;
@@ -17877,8 +17868,7 @@ init_manage_internal (GSList *log_config,
                       int max_email_include_size,
                       int max_email_message_size,
                       int stop_tasks,
-                      int (*fork_connection)
-                             (gvm_connection_t *, gchar *),
+                      manage_connection_forker_t fork_connection,
                       int skip_db_check,
                       int check_encryption_key)
 {
@@ -18018,7 +18008,7 @@ int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, int max_email_attachment_size,
              int max_email_include_size, int max_email_message_size,
-             int (*fork_connection) (gvm_connection_t*, gchar*),
+             manage_connection_forker_t fork_connection,
              int skip_db_check)
 {
   return init_manage_internal (log_config,
@@ -18609,7 +18599,7 @@ authenticate (credentials_t* credentials)
            * scheduled tasks and alerts.  Take the stored uuid
            * to be able to tell apart locally authenticated vs remotely
            * authenticated users (in order to fetch the correct rules). */
-          credentials->uuid = get_scheduled_user_uuid ();
+          credentials->uuid = g_strdup (get_scheduled_user_uuid ());
           if (*credentials->uuid)
             {
               if (credentials_setup (credentials))
@@ -63725,6 +63715,14 @@ modify_setting (const gchar *uuid, const gchar *name,
       /* All SecInfo */
       else if (strcmp (uuid, "4c7b1ea7-b7e6-4d12-9791-eb9f72b6f864") == 0)
         setting_name = g_strdup ("All SecInfo Top Dashboard Configuration");
+
+      /*
+       * Remediation dashboards
+       */
+
+      /* Tickets */
+      else if (strcmp (uuid, "70b0626f-a835-478e-8194-e09f97887a15") == 0)
+        setting_name = g_strdup ("Tickets Top Dashboard Configuration");
     }
 
   if (setting_name)
