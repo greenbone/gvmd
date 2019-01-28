@@ -42159,7 +42159,8 @@ credential_in_use (credential_t credential)
                        "        OR name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
                        "        OR name = 'tp_sms_credential'"
-                       "        OR name = 'verinice_server_credential')"
+                       "        OR name = 'verinice_server_credential'"
+                       "        OR name = 'pkcs12_credential')"
                        " AND data = '%s'",
                        uuid));
 
@@ -42195,7 +42196,8 @@ trash_credential_in_use (credential_t credential)
                        "        OR name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
                        "        OR name = 'tp_sms_credential'"
-                       "        OR name = 'verinice_server_credential')"
+                       "        OR name = 'verinice_server_credential'"
+                       "        OR name = 'pkcs12_credential')"
                        " AND data = '%s'",
                        uuid));
 
