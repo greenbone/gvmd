@@ -21983,6 +21983,23 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         " type 'up'"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 80:
+                    {
+                      SEND_TO_CLIENT_OR_FAIL
+                        ("<create_alert_response"
+                         " status=\"" STATUS_ERROR_MISSING "\""
+                         " status_text=\"Credential for Sourcefire"
+                         " PKCS12 password not found\"/>");
+                      log_event_fail ("alert", "Alert", NULL, "created");
+                    }
+                    break;
+                  case 81:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Sourcefire credential must have"
+                                        " type 'pw' or 'up'"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -25652,6 +25669,23 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                      "vFire credential must have"
                                      " type 'up'"));
                 log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 80:
+                {
+                  SEND_TO_CLIENT_OR_FAIL
+                     ("<create_alert_response"
+                      " status=\"" STATUS_ERROR_MISSING "\""
+                      " status_text=\"Credential for Sourcefire"
+                      " PKCS12 password not found\"/>");
+                  log_event_fail ("alert", "Alert", NULL, "modified");
+                }
+                break;
+              case 81:
+                SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_alert",
+                                      "Sourcefire credential must have"
+                                      " type 'up'"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL

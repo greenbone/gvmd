@@ -23,6 +23,8 @@ Main changes compared to gvm 8.0+beta2:
   Instead the scan will start without the credential.
 * Handling of failed/successful SNMP Authentication has been added to the
   HTML and LaTeX report formats.
+* A new password-only credential type has been added
+* The Sourcefire alert now accepts a password credential for PKCS12 decryption.
 
 
 gvmd 8.0+beta2 (2018-12-05)
