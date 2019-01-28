@@ -1021,7 +1021,7 @@ check_for_new_nvts ()
   if (sql_int ("SELECT EXISTS"
                " (SELECT * FROM nvts"
                "  WHERE oid NOT IN (SELECT oid FROM old_nvts));"))
-    event (0, 0, EVENT_NEW_SECINFO, "nvt");
+    event (EVENT_NEW_SECINFO, "nvt", 0, 0);
 }
 
 /**
@@ -1035,7 +1035,7 @@ check_for_updated_nvts ()
                "  WHERE modification_time > (SELECT modification_time"
                "                             FROM old_nvts"
                "                             WHERE old_nvts.oid = nvts.oid));"))
-    event (0, 0, EVENT_UPDATED_SECINFO, "nvt");
+    event (EVENT_UPDATED_SECINFO, "nvt", 0, 0);
 }
 
 /**
