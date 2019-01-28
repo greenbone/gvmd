@@ -10585,7 +10585,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <t>
               <alts>
                 <alt>cc</alt>
-                <alt>pgp</alt>
                 <alt>pw</alt>
                 <alt>smime</alt>
                 <alt>snmp</alt>
