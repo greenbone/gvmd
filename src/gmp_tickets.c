@@ -169,6 +169,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
   while (1)
     {
       iterator_t results;
+      int orphan;
 
       ret = get_next (&tickets, &get_tickets_data.get, &first,
                       &count, init_ticket_iterator);
@@ -295,12 +296,18 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
           get_tickets_reset ();
           return;
         }
+      orphan = 1;
       while (next (&results))
-        SENDF_TO_CLIENT_OR_FAIL ("<result id=\"%s\"/>",
-                                 ticket_result_iterator_result_id (&results));
+        {
+          orphan = 0;
+          SENDF_TO_CLIENT_OR_FAIL ("<result id=\"%s\"/>",
+                                   ticket_result_iterator_result_id (&results));
+        }
       cleanup_iterator (&results);
 
-      SEND_TO_CLIENT_OR_FAIL ("</ticket>");
+      SENDF_TO_CLIENT_OR_FAIL ("<orphan>%i</orphan>"
+                               "</ticket>",
+                               orphan);
       count++;
     }
   cleanup_iterator (&tickets);
