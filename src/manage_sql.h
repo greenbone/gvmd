@@ -510,7 +510,7 @@ void
 update_all_config_caches ();
 
 void
-event (task_t, report_t, event_t, void *);
+event (event_t, void *, resource_t, resource_t);
 
 gboolean
 find_trash (const char *, const char *, resource_t *);
