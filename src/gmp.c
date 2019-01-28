@@ -19350,7 +19350,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
           SENDF_TO_CLIENT_OR_FAIL ("</observers>");
 
-          init_task_alert_iterator (&alerts, index, 0);
+          init_task_alert_iterator (&alerts, index);
           while (next (&alerts))
             {
               alert_t found;

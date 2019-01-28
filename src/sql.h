@@ -113,6 +113,9 @@ sql_string (char *, ...);
 int
 sql_int64 (long long int * ret, char *, ...);
 
+long long int
+sql_int64_0 (char* sql, ...);
+
 void
 sql_rename_column (const char *, const char *, const char *, const char *);
 
