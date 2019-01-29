@@ -14956,6 +14956,40 @@ migrate_200_to_201 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 201 to version 202.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_201_to_202 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 201. */
+
+  if (manage_db_version () != 201)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ticket orphan state was removed. */
+
+  sql ("UPDATE tickets SET status = 3 WHERE status = 4;");
+  sql ("UPDATE tickets_trash SET status = 3 WHERE status = 4;");
+
+  /* Set the database version to 202. */
+
+  set_db_version (202);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15176,6 +15210,7 @@ static migrator_t database_migrators[]
     {199, migrate_198_to_199},
     {200, migrate_199_to_200},
     {201, migrate_200_to_201},
+    {202, migrate_201_to_202},
     /* End marker. */
     {-1, NULL}};
 
