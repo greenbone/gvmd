@@ -280,12 +280,6 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
             }
         }
 
-      if (ticket_iterator_orphaned_time (&tickets))
-        {
-          SENDF_TO_CLIENT_OR_FAIL ("<orphaned_time>%s</orphaned_time>",
-                                   ticket_iterator_orphaned_time (&tickets));
-        }
-
       /* Send results that are linked to ticket. */
 
       if (init_ticket_result_iterator (&results,
