@@ -558,6 +558,48 @@ init_result_ticket_iterator (iterator_t *iterator, const gchar *result_id)
 DEF_ACCESS (result_ticket_iterator_ticket_id, 1);
 
 /**
+ * @brief Return owner of ticket.
+ *
+ * @param[in]  ticket  Ticket.
+ *
+ * @return Owner.
+ */
+user_t
+ticket_owner (ticket_t ticket)
+{
+  return sql_int64_0 ("SELECT owner FROM tickets WHERE id = %llu;",
+                      ticket);
+}
+
+/**
+ * @brief Return user that ticket is assigned to.
+ *
+ * @param[in]  ticket  Ticket.
+ *
+ * @return User.
+ */
+user_t
+ticket_assigned_to (ticket_t ticket)
+{
+  return sql_int64_0 ("SELECT assigned_to FROM tickets WHERE id = %llu;",
+                      ticket);
+}
+
+/**
+ * @brief Return NVT name of ticket.
+ *
+ * @param[in]  ticket  Ticket.
+ *
+ * @return NVT name.
+ */
+gchar *
+ticket_nvt_name (ticket_t ticket)
+{
+  return sql_string ("SELECT name FROM tickets WHERE id = %llu;",
+                     ticket);
+}
+
+/**
  * @brief Return whether a ticket is in use.
  *
  * @param[in]  ticket  Ticket.
@@ -981,6 +1023,8 @@ create_ticket (const char *comment, const char *result_id,
     }
   free (task_id);
 
+  event (EVENT_TICKET_RECEIVED, NULL, new_ticket, 0);
+
   /* Cleanup. */
 
   free (new_ticket_id);
@@ -1065,12 +1109,15 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
                const gchar *closed_comment, const gchar *user_id)
 {
   ticket_t ticket;
+  user_t assigned_to;
+  int updated;
 
   assert (ticket_id);
+  assert (current_credentials.uuid);
 
   sql_begin_immediate ();
 
-  assert (current_credentials.uuid);
+  updated = 0;
 
   /* Check permissions and get a handle on the ticket. */
 
@@ -1108,6 +1155,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            quoted_comment,
            ticket);
       g_free (quoted_comment);
+
+      updated = 1;
     }
 
   /* Update status if requested. */
@@ -1179,7 +1228,13 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            status,
            time_column,
            ticket);
+
+       updated = 1;
     }
+
+  /* Get assignee for update check, before updating assignee. */
+
+  assigned_to = ticket_assigned_to (ticket);
 
   /* Update assigned user if requested. */
 
@@ -1200,28 +1255,53 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
           return 3;
         }
 
-      sql ("UPDATE tickets SET"
-           " assigned_to = %llu,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           user,
-           ticket);
-
-      /* Ensure that the user can access the ticket. */
-
-      if (create_permission_internal ("modify_ticket",
-                                      "Automatically created for ticket",
-                                      NULL,
-                                      ticket_id,
-                                      "user",
-                                      user_id,
-                                      &permission))
+      if (assigned_to != user)
         {
-          sql_rollback ();
-          return -1;
+          sql ("UPDATE tickets SET"
+               " assigned_to = %llu,"
+               " modification_time = m_now ()"
+               " WHERE id = %llu;",
+               user,
+               ticket);
+
+          updated = 1;
+
+          /* Ensure that the user can access the ticket. */
+
+          if (create_permission_internal ("modify_ticket",
+                                          "Automatically created for ticket",
+                                          NULL,
+                                          ticket_id,
+                                          "user",
+                                          user_id,
+                                          &permission))
+            {
+              sql_rollback ();
+              return -1;
+            }
+
+          event (EVENT_TICKET_RECEIVED, NULL, ticket, 0);
         }
     }
 
+  if (updated)
+    {
+      /* An Assigned Ticket Changed event is not generated if the ticket
+       * assignee modifies the ticket. */
+      if (sql_int ("SELECT id != %llu FROM users WHERE uuid = '%s';",
+                   assigned_to,
+                   current_credentials.uuid))
+        event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
+
+      /* An Owned Ticket Changed event is not generated if the ticket owner
+       * modifies the ticket. */
+      if (sql_int ("SELECT owner != (SELECT id FROM users WHERE uuid = '%s')"
+                   " FROM tickets"
+                   " WHERE id = %llu;",
+                   current_credentials.uuid,
+                   ticket))
+        event (EVENT_OWNED_TICKET_CHANGED, NULL, ticket, 0);
+    }
 
   sql_commit ();
 
@@ -1270,6 +1350,7 @@ void
 check_tickets (task_t task)
 {
   report_t report;
+  iterator_t tickets;
 
   if (task_last_report (task, &report))
     {
@@ -1280,44 +1361,59 @@ check_tickets (task_t task)
       return;
     }
 
-  sql ("UPDATE tickets"
-       " SET status = %i,"
-       "     confirmed_time = m_now (),"
-       "     confirmed_report = %llu"
-       " WHERE task = %llu"
-       " AND (status = %i"
-       "      OR status = %i)"
-       /* Only if the same host was scanned. */
-       " AND EXISTS (SELECT * FROM report_hosts"
-       "             WHERE report = %llu"
-       "             AND report_hosts.host = tickets.host)"
-       /* Only if the problem result is gone. */
-       " AND NOT EXISTS (SELECT * FROM results"
-       "                 WHERE report = %llu"
-       "                 AND nvt = (SELECT nvt FROM results"
-       "                            WHERE id = (SELECT result"
-       "                                        FROM ticket_results"
-       "                                        WHERE ticket = tickets.id"
-       "                                        AND result_location = %i"
-       "                                        LIMIT 1)))"
-       /* Only if there were no login failures. */
-       " AND NOT EXISTS (SELECT * FROM results"
-       "                 WHERE report = %llu"
-       /*                SSH Login Failed For Authenticated Checks. */
-       "                 AND nvt = '1.3.6.1.4.1.25623.1.0.105936')"
-       " AND NOT EXISTS (SELECT * FROM results"
-       "                 WHERE report = %llu"
-       /*                SMG Login Failed For Authenticated Checks. */
-       "                 AND nvt = '1.3.6.1.4.1.25623.1.0.106091');",
-       TICKET_STATUS_CONFIRMED,
-       report,
-       task,
-       TICKET_STATUS_OPEN,
-       TICKET_STATUS_SOLVED,
-       report,
-       LOCATION_TABLE,
-       report,
-       report);
+  init_iterator (&tickets,
+                 "SELECT id FROM tickets"
+                 " WHERE task = %llu"
+                 " AND (status = %i"
+                 "      OR status = %i)"
+                 /* Only if the same host was scanned. */
+                 " AND EXISTS (SELECT * FROM report_hosts"
+                 "             WHERE report = %llu"
+                 "             AND report_hosts.host = tickets.host)"
+                 /* Only if the problem result is gone. */
+                 " AND NOT EXISTS (SELECT * FROM results"
+                 "                 WHERE report = %llu"
+                 "                 AND nvt = (SELECT nvt FROM results"
+                 "                            WHERE id = (SELECT result"
+                 "                                        FROM ticket_results"
+                 "                                        WHERE ticket = tickets.id"
+                 "                                        AND result_location = %i"
+                 "                                        LIMIT 1)))"
+                 /* Only if there were no login failures. */
+                 " AND NOT EXISTS (SELECT * FROM results"
+                 "                 WHERE report = %llu"
+                 /*                SSH Login Failed For Authenticated Checks. */
+                 "                 AND nvt = '1.3.6.1.4.1.25623.1.0.105936')"
+                 " AND NOT EXISTS (SELECT * FROM results"
+                 "                 WHERE report = %llu"
+                 /*                SMG Login Failed For Authenticated Checks. */
+                 "                 AND nvt = '1.3.6.1.4.1.25623.1.0.106091');",
+                 task,
+                 TICKET_STATUS_OPEN,
+                 TICKET_STATUS_SOLVED,
+                 report,
+                 LOCATION_TABLE,
+                 report,
+                 report);
+  while (next (&tickets))
+    {
+      ticket_t ticket;
+
+      ticket = iterator_int64 (&tickets, 0);
+
+      sql ("UPDATE tickets"
+           " SET status = %i,"
+           "     confirmed_time = m_now (),"
+           "     confirmed_report = %llu"
+           " WHERE id = %llu;",
+           TICKET_STATUS_CONFIRMED,
+           report,
+           ticket);
+
+      event (EVENT_OWNED_TICKET_CHANGED, NULL, ticket, 0);
+      event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
+    }
+  cleanup_iterator (&tickets);
 }
 
 /**

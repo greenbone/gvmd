@@ -6735,6 +6735,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
           {
             modify_alert_data->event_data = make_array ();
+
+            gvm_append_string (&modify_alert_data->part_data, "");
+            gvm_append_string (&modify_alert_data->part_name, "");
             gvm_append_string (&modify_alert_data->event, "");
             modify_alert_data->condition_data = make_array ();
             gvm_append_string (&modify_alert_data->condition, "");
@@ -19350,7 +19353,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
           SENDF_TO_CLIENT_OR_FAIL ("</observers>");
 
-          init_task_alert_iterator (&alerts, index, 0);
+          init_task_alert_iterator (&alerts, index);
           while (next (&alerts))
             {
               alert_t found;
