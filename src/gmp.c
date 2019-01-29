@@ -21924,8 +21924,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 43:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
-                                        "SMB file path type must be either"
-                                        " 'full' or 'directory'"));
+                                        "SMB file path must not contain"
+                                        " any file or subdirectory ending in"
+                                        " a dot (.)."));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
                   case 50:
@@ -25613,8 +25614,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 43:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
-                                    "SMB file path type must be either"
-                                    " 'full' or 'directory'"));
+                                    "SMB file path must not contain"
+                                    " any file or subdirectory ending in"
+                                    " a dot (.)."));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 50:
