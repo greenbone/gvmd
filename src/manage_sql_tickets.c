@@ -131,7 +131,7 @@ ticket_status_name (ticket_status_t status)
    {                                                        \
      "(SELECT uuid FROM reports WHERE id = report)",        \
      NULL,                                                  \
-    KEYWORD_TYPE_STRING                                     \
+     KEYWORD_TYPE_STRING                                    \
    },                                                       \
    { "severity", NULL, KEYWORD_TYPE_DOUBLE },               \
    { "host", NULL, KEYWORD_TYPE_STRING },                   \
