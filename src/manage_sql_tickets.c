@@ -109,7 +109,7 @@ ticket_status_name (ticket_status_t status)
  */
 #define TICKET_ITERATOR_FILTER_COLUMNS                                         \
  { GET_ITERATOR_FILTER_COLUMNS, "severity", "host", "location",                \
-   "solution_type", "status", "opened", "solved", "closed", "orphaned",        \
+   "solution_type", "status", "opened", "solved", "closed", "orphan",          \
    NULL }
 
 /**
@@ -153,7 +153,7 @@ ticket_status_name (ticket_status_t status)
      " THEN 0"                                                                \
      " ELSE 1"                                                                \
      " END)",                                                                 \
-     "orphaned",                                                              \
+     "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    { "solved_comment", NULL, KEYWORD_TYPE_STRING },                           \
@@ -218,7 +218,7 @@ ticket_status_name (ticket_status_t status)
      " THEN 0"                                                                \
      " ELSE 1"                                                                \
      " END)",                                                                 \
-     "orphaned",                                                              \
+     "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    { "solved_comment", NULL, KEYWORD_TYPE_STRING },                           \
