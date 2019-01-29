@@ -75,7 +75,7 @@ const char*
 ticket_iterator_closed_time (iterator_t*);
 
 const char*
-ticket_iterator_confirmed_time (iterator_t*);
+ticket_iterator_fix_verified_time (iterator_t*);
 
 const char*
 ticket_iterator_fixed_comment (iterator_t*);
@@ -84,7 +84,7 @@ const char*
 ticket_iterator_closed_comment (iterator_t*);
 
 const char*
-ticket_iterator_confirmed_report_id (iterator_t*);
+ticket_iterator_fix_verified_report_id (iterator_t*);
 
 const char*
 ticket_iterator_nvt_oid (iterator_t*);

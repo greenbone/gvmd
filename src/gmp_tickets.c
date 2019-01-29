@@ -254,27 +254,27 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                    ticket_iterator_closed_comment (&tickets));
         }
 
-      if (ticket_iterator_confirmed_time (&tickets))
+      if (ticket_iterator_fix_verified_time (&tickets))
         {
-          SENDF_TO_CLIENT_OR_FAIL ("<confirmed_time>%s</confirmed_time>",
-                                   ticket_iterator_confirmed_time (&tickets));
-          if (ticket_iterator_confirmed_report_id (&tickets))
+          SENDF_TO_CLIENT_OR_FAIL ("<fix_verified_time>%s</fix_verified_time>",
+                                   ticket_iterator_fix_verified_time (&tickets));
+          if (ticket_iterator_fix_verified_report_id (&tickets))
             {
               gchar *timestamp;
 
-              if (report_timestamp (ticket_iterator_confirmed_report_id
+              if (report_timestamp (ticket_iterator_fix_verified_report_id
                                      (&tickets),
                                     &timestamp))
-                g_error ("%s: error getting timestamp of confirmed report,"
+                g_error ("%s: error getting timestamp of verified report,"
                          " aborting",
                          __FUNCTION__);
 
-              SENDF_TO_CLIENT_OR_FAIL ("<confirmed_report>"
+              SENDF_TO_CLIENT_OR_FAIL ("<fix_verified_report>"
                                        "<report id=\"%s\">"
                                        "<timestamp>%s</timestamp>"
                                        "</report>"
-                                       "</confirmed_report>",
-                                       ticket_iterator_confirmed_report_id
+                                       "</fix_verified_report>",
+                                       ticket_iterator_fix_verified_report_id
                                         (&tickets),
                                        timestamp);
             }
