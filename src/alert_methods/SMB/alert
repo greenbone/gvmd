@@ -132,6 +132,10 @@ def main():
 
     create_dirs = True
 
+    # replace forward slashes with backslashes in destination file path
+    #  so they are always handled as path separator.
+    dest_path = dest_path.replace('/', '\\')
+
     # get list of subdirectory paths
     dest_parts = dest_path.split('\\')
     dest_subpaths = []

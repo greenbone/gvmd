@@ -7344,7 +7344,7 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
             }
           /* Check if a file or directory name ends with a dot,
            *  e.g. "../a", "abc/../xyz" or "abc/..". */
-          else if (g_regex_match_simple ("^(?:.*\\.)(?:\\\\.*)*$",
+          else if (g_regex_match_simple ("^(?:.*\\.)(?:[\\/\\\\].*)*$",
                                          *data, 0, 0))
             {
               return 43;
