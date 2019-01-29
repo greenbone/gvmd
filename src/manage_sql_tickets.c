@@ -107,43 +107,43 @@ ticket_status_name (ticket_status_t status)
 /**
  * @brief Filter columns for ticket iterator.
  */
-#define TICKET_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "severity", "host", "location",                \
-   "solution_type", "status", "opened", "fixed", "closed", "orphan",           \
+#define TICKET_ITERATOR_FILTER_COLUMNS                                        \
+ { GET_ITERATOR_FILTER_COLUMNS, "severity", "host", "location",               \
+   "solution_type", "status", "opened", "fixed", "closed", "orphan",          \
    NULL }
 
 /**
  * @brief Ticket iterator columns.
  */
-#define TICKET_ITERATOR_COLUMNS                             \
- {                                                          \
-   GET_ITERATOR_COLUMNS (tickets),                          \
-   {                                                        \
-     "(SELECT uuid FROM users WHERE id = assigned_to)",     \
-     NULL,                                                  \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   {                                                        \
-     "(SELECT uuid FROM tasks WHERE id = task)",            \
-     NULL,                                                  \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   {                                                        \
-     "(SELECT uuid FROM reports WHERE id = report)",        \
-     NULL,                                                  \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   { "severity", NULL, KEYWORD_TYPE_DOUBLE },               \
-   { "host", NULL, KEYWORD_TYPE_STRING },                   \
-   { "location", NULL, KEYWORD_TYPE_STRING },               \
-   { "solution_type", NULL, KEYWORD_TYPE_STRING },          \
-   { "status", NULL, KEYWORD_TYPE_STRING },                 \
-   { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },   \
-   { "open_time", "opened", KEYWORD_TYPE_INTEGER },         \
-   { "iso_time (fixed_time)", NULL, KEYWORD_TYPE_STRING }, \
-   { "fixed_time", "fixed", KEYWORD_TYPE_INTEGER },       \
-   { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING }, \
-   { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
+#define TICKET_ITERATOR_COLUMNS                                               \
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (tickets),                                            \
+   {                                                                          \
+     "(SELECT uuid FROM users WHERE id = assigned_to)",                       \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT uuid FROM tasks WHERE id = task)",                              \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT uuid FROM reports WHERE id = report)",                          \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                                 \
+   { "host", NULL, KEYWORD_TYPE_STRING },                                     \
+   { "location", NULL, KEYWORD_TYPE_STRING },                                 \
+   { "solution_type", NULL, KEYWORD_TYPE_STRING },                            \
+   { "status", NULL, KEYWORD_TYPE_STRING },                                   \
+   { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },                     \
+   { "open_time", "opened", KEYWORD_TYPE_INTEGER },                           \
+   { "iso_time (fixed_time)", NULL, KEYWORD_TYPE_STRING },                    \
+   { "fixed_time", "fixed", KEYWORD_TYPE_INTEGER },                           \
+   { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING },                   \
+   { "closed_time", "closed", KEYWORD_TYPE_INTEGER },                         \
    { "iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING },             \
    { "fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER },             \
    {                                                                          \
@@ -156,7 +156,7 @@ ticket_status_name (ticket_status_t status)
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
-   { "fixed_comment", NULL, KEYWORD_TYPE_STRING },                           \
+   { "fixed_comment", NULL, KEYWORD_TYPE_STRING },                            \
    { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                          \
      "(SELECT uuid FROM reports WHERE id = fix_verified_report)",             \
@@ -180,35 +180,35 @@ ticket_status_name (ticket_status_t status)
 /**
  * @brief Ticket iterator columns for trash case.
  */
-#define TICKET_ITERATOR_TRASH_COLUMNS                       \
- {                                                          \
-   GET_ITERATOR_COLUMNS (tickets_trash),                    \
-   {                                                        \
-     "(SELECT uuid FROM users WHERE id = assigned_to)",     \
-     NULL,                                                  \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   {                                                        \
-     "(SELECT uuid FROM tasks WHERE id = task)",            \
-     NULL,                                                  \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   {                                                        \
-     "(SELECT uuid FROM reports WHERE id = report)",        \
-     NULL,                                                  \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   { "severity", NULL, KEYWORD_TYPE_DOUBLE },               \
-   { "host", NULL, KEYWORD_TYPE_STRING },                   \
-   { "location", NULL, KEYWORD_TYPE_STRING },               \
-   { "solution_type", NULL, KEYWORD_TYPE_STRING },          \
-   { "status", NULL, KEYWORD_TYPE_STRING },                 \
-   { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },   \
-   { "open_time", "opened", KEYWORD_TYPE_INTEGER },         \
-   { "iso_time (fixed_time)", NULL, KEYWORD_TYPE_STRING }, \
-   { "fixed_time", "fixed", KEYWORD_TYPE_INTEGER },       \
-   { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING }, \
-   { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
+#define TICKET_ITERATOR_TRASH_COLUMNS                                         \
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (tickets_trash),                                      \
+   {                                                                          \
+     "(SELECT uuid FROM users WHERE id = assigned_to)",                       \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT uuid FROM tasks WHERE id = task)",                              \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT uuid FROM reports WHERE id = report)",                          \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                                 \
+   { "host", NULL, KEYWORD_TYPE_STRING },                                     \
+   { "location", NULL, KEYWORD_TYPE_STRING },                                 \
+   { "solution_type", NULL, KEYWORD_TYPE_STRING },                            \
+   { "status", NULL, KEYWORD_TYPE_STRING },                                   \
+   { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },                     \
+   { "open_time", "opened", KEYWORD_TYPE_INTEGER },                           \
+   { "iso_time (fixed_time)", NULL, KEYWORD_TYPE_STRING },                    \
+   { "fixed_time", "fixed", KEYWORD_TYPE_INTEGER },                           \
+   { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING },                   \
+   { "closed_time", "closed", KEYWORD_TYPE_INTEGER },                         \
    { "iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING },             \
    { "fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER },             \
    {                                                                          \
@@ -221,7 +221,7 @@ ticket_status_name (ticket_status_t status)
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
-   { "fixed_comment", NULL, KEYWORD_TYPE_STRING },                           \
+   { "fixed_comment", NULL, KEYWORD_TYPE_STRING },                            \
    { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                          \
      "(SELECT uuid FROM reports WHERE id = fix_verified_report)",             \
