@@ -1387,7 +1387,7 @@ check_tickets (task_t task)
                  "                 AND nvt = '1.3.6.1.4.1.25623.1.0.105936')"
                  " AND NOT EXISTS (SELECT * FROM results"
                  "                 WHERE report = %llu"
-                 /*                SMG Login Failed For Authenticated Checks. */
+                 /*                SMB Login Failed For Authenticated Checks. */
                  "                 AND nvt = '1.3.6.1.4.1.25623.1.0.106091');",
                  task,
                  TICKET_STATUS_OPEN,
