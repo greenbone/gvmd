@@ -146,7 +146,16 @@ ticket_status_name (ticket_status_t status)
    { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
    { "iso_time (confirmed_time)", NULL, KEYWORD_TYPE_STRING },                \
    { "confirmed_time", "confirmed", KEYWORD_TYPE_INTEGER },                   \
-   { "orphaned_time", "orphaned", KEYWORD_TYPE_INTEGER },                     \
+   {                                                                          \
+     "(CASE"                                                                  \
+     " WHEN (SELECT EXISTS (SELECT * FROM ticket_results"                     \
+     "                      WHERE ticket = tickets.id))"                      \
+     " THEN 0"                                                                \
+     " ELSE 1"                                                                \
+     " END)",                                                                 \
+     "orphaned",                                                              \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
    { "solved_comment", NULL, KEYWORD_TYPE_STRING },                           \
    { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                          \
@@ -202,7 +211,16 @@ ticket_status_name (ticket_status_t status)
    { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
    { "iso_time (confirmed_time)", NULL, KEYWORD_TYPE_STRING },                \
    { "confirmed_time", "confirmed", KEYWORD_TYPE_INTEGER },                   \
-   { "orphaned_time", "orphaned", KEYWORD_TYPE_INTEGER },                     \
+   {                                                                          \
+     "(CASE"                                                                  \
+     " WHEN (SELECT EXISTS (SELECT * FROM ticket_results_trash"               \
+     "                      WHERE ticket = tickets_trash.id))"                \
+     " THEN 0"                                                                \
+     " ELSE 1"                                                                \
+     " END)",                                                                 \
+     "orphaned",                                                              \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
    { "solved_comment", NULL, KEYWORD_TYPE_STRING },                           \
    { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                          \
