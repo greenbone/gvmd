@@ -20,8 +20,10 @@ with the Open Scanner Protocol (OSP).
 
 This module can be configured, built and installed with following commands:
 
-    cmake .
-    make install
+```sh
+cmake .
+make install
+```
 
 For detailed installation requirements and instructions, please see the file
 [INSTALL.md](INSTALL.md). The file also contains instructions for setting up
@@ -32,13 +34,13 @@ In case everything was installed using the defaults, then starting the manager
 daemon can be done with this simple command:
 
 ```sh
-    gvmd
+gvmd
 ```
 
 To see all available command line options of gvmd enter this command:
 
 ```sh
-    gvmd --help
+gvmd --help
 ```
 
 If you are not familiar or comfortable building from source code, we recommend
