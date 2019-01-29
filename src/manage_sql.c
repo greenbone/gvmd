@@ -13161,7 +13161,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (file_path_format == NULL)
             file_path_format = alert_data (alert, "method", "smb_file_path");
 
-          file_path_is_dir = g_str_has_suffix (file_path_format, "\\");
+          file_path_is_dir = (g_str_has_suffix (file_path_format, "\\")
+                              || g_str_has_suffix (file_path_format, "/"));
 
           report_content = NULL;
           extension = NULL;
