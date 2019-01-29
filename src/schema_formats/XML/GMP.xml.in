@@ -159,7 +159,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <name>ticket_status</name>
     <summary>A ticket status</summary>
     <pattern>
-      xsd:token { pattern = "Open|Solved|Confirmed|Closed|Orphaned" }
+      xsd:token { pattern = "Open|Solved|Confirmed|Closed" }
     </pattern>
   </type>
   <type>
@@ -21819,7 +21819,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>closed_comment</e></o>
           <o><e>confirmed_time</e></o>
           <o><e>confirmed_report</e></o>
-          <o><e>orphaned_time</e></o>
+          <e>orphan</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -22066,9 +22066,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
         </ele>
         <ele>
-          <name>orphaned_time</name>
-          <summary>Date and time the ticket was orphaned</summary>
-          <pattern><t>iso_time</t></pattern>
+          <name>orphan</name>
+          <summary>Whether the ticket is an orphan</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
       <ele>
