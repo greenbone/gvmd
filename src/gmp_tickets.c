@@ -238,12 +238,12 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Send timestamps. */
 
-      if (ticket_iterator_solved_time (&tickets))
+      if (ticket_iterator_fixed_time (&tickets))
         {
-          SENDF_TO_CLIENT_OR_FAIL ("<solved_time>%s</solved_time>",
-                                   ticket_iterator_solved_time (&tickets));
-          SENDF_TO_CLIENT_OR_FAIL ("<solved_comment>%s</solved_comment>",
-                                   ticket_iterator_solved_comment (&tickets));
+          SENDF_TO_CLIENT_OR_FAIL ("<fixed_time>%s</fixed_time>",
+                                   ticket_iterator_fixed_time (&tickets));
+          SENDF_TO_CLIENT_OR_FAIL ("<fixed_comment>%s</fixed_comment>",
+                                   ticket_iterator_fixed_comment (&tickets));
         }
 
       if (ticket_iterator_closed_time (&tickets))
@@ -685,7 +685,7 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, comment, status, solved_comment, closed_comment;
+  entity_t entity, comment, status, fixed_comment, closed_comment;
   entity_t assigned_to;
   const char *ticket_id, *user_id;
 
@@ -697,7 +697,7 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (entity, "comment");
   status = entity_child (entity, "status");
-  solved_comment = entity_child (entity, "solved_comment");
+  fixed_comment = entity_child (entity, "fixed_comment");
   closed_comment = entity_child (entity, "closed_comment");
 
   assigned_to = entity_child (entity, "assigned_to");
@@ -740,7 +740,7 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
                 (ticket_id,
                  comment ? entity_text (comment) : NULL,
                  status ? entity_text (status) : NULL,
-                 solved_comment ? entity_text (solved_comment) : NULL,
+                 fixed_comment ? entity_text (fixed_comment) : NULL,
                  closed_comment ? entity_text (closed_comment) : NULL,
                  user_id))
     {
@@ -781,7 +781,7 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       case 5:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_ticket",
-                            "Solved STATUS requires a SOLVED_COMMENT"));
+                            "Fixed STATUS requires a FIXED_COMMENT"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case 6:

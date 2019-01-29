@@ -51,7 +51,7 @@
 typedef enum
 {
   TICKET_STATUS_OPEN = 0,
-  TICKET_STATUS_SOLVED = 1,
+  TICKET_STATUS_FIXED = 1,
   TICKET_STATUS_CONFIRMED = 2,
   TICKET_STATUS_CLOSED = 3,
   TICKET_STATUS_MAX,
@@ -70,8 +70,8 @@ ticket_status_integer (const char *status)
 {
   if (strcasecmp (status, "open") == 0)
     return TICKET_STATUS_OPEN;
-  if (strcasecmp (status, "solved") == 0)
-    return TICKET_STATUS_SOLVED;
+  if (strcasecmp (status, "fixed") == 0)
+    return TICKET_STATUS_FIXED;
   if (strcasecmp (status, "confirmed") == 0)
     return TICKET_STATUS_CONFIRMED;
   if (strcasecmp (status, "closed") == 0)
@@ -93,8 +93,8 @@ ticket_status_name (ticket_status_t status)
     {
       case TICKET_STATUS_OPEN:
         return "Open";
-      case TICKET_STATUS_SOLVED:
-        return "Solved";
+      case TICKET_STATUS_FIXED:
+        return "Fixed";
       case TICKET_STATUS_CONFIRMED:
         return "Confirmed";
       case TICKET_STATUS_CLOSED:
@@ -109,7 +109,7 @@ ticket_status_name (ticket_status_t status)
  */
 #define TICKET_ITERATOR_FILTER_COLUMNS                                         \
  { GET_ITERATOR_FILTER_COLUMNS, "severity", "host", "location",                \
-   "solution_type", "status", "opened", "solved", "closed", "orphan",          \
+   "solution_type", "status", "opened", "fixed", "closed", "orphan",          \
    NULL }
 
 /**
@@ -140,8 +140,8 @@ ticket_status_name (ticket_status_t status)
    { "status", NULL, KEYWORD_TYPE_STRING },                 \
    { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },   \
    { "open_time", "opened", KEYWORD_TYPE_INTEGER },         \
-   { "iso_time (solved_time)", NULL, KEYWORD_TYPE_STRING }, \
-   { "solved_time", "solved", KEYWORD_TYPE_INTEGER },       \
+   { "iso_time (fixed_time)", NULL, KEYWORD_TYPE_STRING }, \
+   { "fixed_time", "fixed", KEYWORD_TYPE_INTEGER },       \
    { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING }, \
    { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
    { "iso_time (confirmed_time)", NULL, KEYWORD_TYPE_STRING },                \
@@ -156,7 +156,7 @@ ticket_status_name (ticket_status_t status)
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
-   { "solved_comment", NULL, KEYWORD_TYPE_STRING },                           \
+   { "fixed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                          \
      "(SELECT uuid FROM reports WHERE id = confirmed_report)",                \
@@ -205,8 +205,8 @@ ticket_status_name (ticket_status_t status)
    { "status", NULL, KEYWORD_TYPE_STRING },                 \
    { "iso_time (open_time)", NULL, KEYWORD_TYPE_STRING },   \
    { "open_time", "opened", KEYWORD_TYPE_INTEGER },         \
-   { "iso_time (solved_time)", NULL, KEYWORD_TYPE_STRING }, \
-   { "solved_time", "solved", KEYWORD_TYPE_INTEGER },       \
+   { "iso_time (fixed_time)", NULL, KEYWORD_TYPE_STRING }, \
+   { "fixed_time", "fixed", KEYWORD_TYPE_INTEGER },       \
    { "iso_time (closed_time)", NULL, KEYWORD_TYPE_STRING }, \
    { "closed_time", "closed", KEYWORD_TYPE_INTEGER },       \
    { "iso_time (confirmed_time)", NULL, KEYWORD_TYPE_STRING },                \
@@ -221,7 +221,7 @@ ticket_status_name (ticket_status_t status)
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
-   { "solved_comment", NULL, KEYWORD_TYPE_STRING },                           \
+   { "fixed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                          \
      "(SELECT uuid FROM reports WHERE id = confirmed_report)",                \
@@ -388,7 +388,7 @@ DEF_ACCESS (ticket_iterator_open_time, GET_ITERATOR_COLUMN_COUNT + 8);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_solved_time, GET_ITERATOR_COLUMN_COUNT + 10);
+DEF_ACCESS (ticket_iterator_fixed_time, GET_ITERATOR_COLUMN_COUNT + 10);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -415,7 +415,7 @@ DEF_ACCESS (ticket_iterator_confirmed_time, GET_ITERATOR_COLUMN_COUNT + 14);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_solved_comment, GET_ITERATOR_COLUMN_COUNT + 17);
+DEF_ACCESS (ticket_iterator_fixed_comment, GET_ITERATOR_COLUMN_COUNT + 17);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -739,12 +739,12 @@ delete_ticket (const char *ticket_id, int ultimate)
       sql ("INSERT INTO tickets_trash"
            " (uuid, owner, name, comment, nvt, task, report, severity, host,"
            "  location, solution_type, assigned_to, status, open_time,"
-           "  solved_time, solved_comment, confirmed_time, confirmed_report,"
+           "  fixed_time, fixed_comment, confirmed_time, confirmed_report,"
            "  closed_time, closed_comment, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
            "        host, location, solution_type, assigned_to, status,"
-           "        open_time, solved_time, solved_comment, confirmed_time,"
+           "        open_time, fixed_time, fixed_comment, confirmed_time,"
            "        confirmed_report, closed_time, closed_comment,"
            "        creation_time, modification_time"
            " FROM tickets WHERE id = %llu;",
@@ -822,12 +822,12 @@ restore_ticket (const char *ticket_id)
   sql ("INSERT INTO tickets"
        " (uuid, owner, name, comment, nvt, task, report, severity, host,"
        "  location, solution_type, assigned_to, status, open_time,"
-       "  solved_time, solved_comment, confirmed_time, confirmed_report,"
+       "  fixed_time, fixed_comment, confirmed_time, confirmed_report,"
        "  closed_time, closed_comment, creation_time,"
        "  modification_time)"
        " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
        "        host, location, solution_type, assigned_to, status,"
-       "        open_time, solved_time, solved_comment, confirmed_time,"
+       "        open_time, fixed_time, fixed_comment, confirmed_time,"
        "        confirmed_report, closed_time, closed_comment,"
        "        creation_time, modification_time"
        " FROM tickets_trash WHERE id = %llu;",
@@ -1057,7 +1057,7 @@ copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
   ret = copy_resource ("ticket", NULL, comment, ticket_id,
                        "nvt, task, report, severity, host, location,"
                        " solution_type, assigned_to, status, open_time,"
-                       " solved_time, solved_comment, confirmed_time,"
+                       " fixed_time, fixed_comment, confirmed_time,"
                        " confirmed_report, closed_time, closed_comment",
                        0, new_ticket, &old_ticket);
   if (ret)
@@ -1094,19 +1094,19 @@ ticket_uuid (ticket_t ticket)
  * @param[in]   ticket_id       UUID of ticket.
  * @param[in]   comment         Comment on ticket.
  * @param[in]   status_name     Status of ticket.
- * @param[in]   solved_comment  Comment if status is 'Solved'.
+ * @param[in]   fixed_comment   Comment if status is 'Fixed'.
  * @param[in]   closed_comment  Comment if status is 'Closed'.
  * @param[in]   user_id         UUID of user that ticket is assigned to.
  *
  * @return 0 success, 1 ticket exists already, 2 failed to find ticket,
  *         3 failed to find user, 4 error in status,
- *         5 Solved status requires a solved_comment,
+ *         5 Fixed status requires a fixed_comment,
  *         6 Closed status requires a closed_comment,
  *         99 permission denied, -1 error.
  */
 int
 modify_ticket (const gchar *ticket_id, const gchar *comment,
-               const gchar *status_name, const gchar *solved_comment,
+               const gchar *status_name, const gchar *fixed_comment,
                const gchar *closed_comment, const gchar *user_id)
 {
   ticket_t ticket;
@@ -1175,19 +1175,19 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
           case TICKET_STATUS_OPEN:
             time_column = "open_time";
             break;
-          case TICKET_STATUS_SOLVED:
+          case TICKET_STATUS_FIXED:
             {
               gchar *quoted_comment;
 
-              time_column = "solved_time";
-              if ((solved_comment == NULL) || (strlen (solved_comment) == 0))
+              time_column = "fixed_time";
+              if ((fixed_comment == NULL) || (strlen (fixed_comment) == 0))
                 {
-                  /* Solved status must always be accompanied by a comment. */
+                  /* Fixed status must always be accompanied by a comment. */
                   sql_rollback ();
                   return 5;
                 }
-              quoted_comment = sql_quote (solved_comment);
-              sql ("UPDATE tickets SET solved_comment = '%s'"
+              quoted_comment = sql_quote (fixed_comment);
+              sql ("UPDATE tickets SET fixed_comment = '%s'"
                    " WHERE id = %llu;",
                    quoted_comment,
                    ticket);
@@ -1214,7 +1214,7 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
             }
             break;
           default:
-            /* Ticket may only be manually set to Open, Solved or Closed. */
+            /* Ticket may only be manually set to Open, Fixed or Closed. */
             sql_rollback ();
             return 4;
         }
@@ -1391,7 +1391,7 @@ check_tickets (task_t task)
                  "                 AND nvt = '1.3.6.1.4.1.25623.1.0.106091');",
                  task,
                  TICKET_STATUS_OPEN,
-                 TICKET_STATUS_SOLVED,
+                 TICKET_STATUS_FIXED,
                  report,
                  LOCATION_TABLE,
                  report,
