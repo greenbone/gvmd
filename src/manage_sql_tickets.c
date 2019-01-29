@@ -740,13 +740,13 @@ delete_ticket (const char *ticket_id, int ultimate)
            " (uuid, owner, name, comment, nvt, task, report, severity, host,"
            "  location, solution_type, assigned_to, status, open_time,"
            "  solved_time, solved_comment, confirmed_time, confirmed_report,"
-           "  closed_time, closed_comment, orphaned_time, creation_time,"
+           "  closed_time, closed_comment, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
            "        host, location, solution_type, assigned_to, status,"
            "        open_time, solved_time, solved_comment, confirmed_time,"
            "        confirmed_report, closed_time, closed_comment,"
-           "        orphaned_time, creation_time, modification_time"
+           "        creation_time, modification_time"
            " FROM tickets WHERE id = %llu;",
            ticket);
 
@@ -823,13 +823,13 @@ restore_ticket (const char *ticket_id)
        " (uuid, owner, name, comment, nvt, task, report, severity, host,"
        "  location, solution_type, assigned_to, status, open_time,"
        "  solved_time, solved_comment, confirmed_time, confirmed_report,"
-       "  closed_time, closed_comment, orphaned_time, creation_time,"
+       "  closed_time, closed_comment, creation_time,"
        "  modification_time)"
        " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
        "        host, location, solution_type, assigned_to, status,"
        "        open_time, solved_time, solved_comment, confirmed_time,"
        "        confirmed_report, closed_time, closed_comment,"
-       "        orphaned_time, creation_time, modification_time"
+       "        creation_time, modification_time"
        " FROM tickets_trash WHERE id = %llu;",
        trash_ticket);
 
@@ -1058,8 +1058,7 @@ copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
                        "nvt, task, report, severity, host, location,"
                        " solution_type, assigned_to, status, open_time,"
                        " solved_time, solved_comment, confirmed_time,"
-                       " confirmed_report, closed_time, closed_comment,"
-                       " orphaned_time",
+                       " confirmed_report, closed_time, closed_comment",
                        0, new_ticket, &old_ticket);
   if (ret)
     return ret;
