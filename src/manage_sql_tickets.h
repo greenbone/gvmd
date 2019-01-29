@@ -50,9 +50,6 @@ void
 check_tickets ();
 
 void
-tickets_set_orphans (report_t);
-
-void
 delete_tickets_user (user_t);
 
 void
