@@ -7356,7 +7356,7 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
  * @param[in]  data            The data.
  *
  * @return 0 valid, 40 invalid credential, 41 invalid SMB share path,
- *         42 invalid SMB file path, 43 invalid SMB file path type, -1 error.
+ *         42 invalid SMB file path, 43 SMB file path contains dot, -1 error.
  */
 int
 validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
@@ -7394,6 +7394,8 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
 
       if (strcmp (name, "smb_share_path") == 0)
         {
+          /* Check if share path has the correct format
+           *  "\\<host>\<share>" */
           if (g_regex_match_simple ("^(?>\\\\\\\\|\\/\\/)[^:?<>|]+"
                                     "(?>\\\\|\\/)[^:?<>|]+$", *data, 0, 0)
               == FALSE)
@@ -7404,10 +7406,19 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
 
       if (strcmp (name, "smb_file_path") == 0)
         {
+          /* Check if file path contains invalid characters:
+           *  ":", "?", "<", ">", "|" */
           if (g_regex_match_simple ("^[^:?<>|]+$", *data, 0, 0)
               == FALSE)
             {
               return 42;
+            }
+          /* Check if a file or directory name ends with a dot,
+           *  e.g. "../a", "abc/../xyz" or "abc/..". */
+          else if (g_regex_match_simple ("^(?:.*\\.)(?:[\\/\\\\].*)*$",
+                                         *data, 0, 0))
+            {
+              return 43;
             }
         }
 
@@ -7610,7 +7621,7 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
- *         43 invalid SMB file path type,
+ *         43 SMB file path contains dot,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting. 70 vFire credential not found,
@@ -7979,7 +7990,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
- *         43 invalid SMB file path type,
+ *         43 SMB file path contains dot,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 70 vFire credential not found, 71 invalid vFire
