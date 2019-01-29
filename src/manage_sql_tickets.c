@@ -54,7 +54,6 @@ typedef enum
   TICKET_STATUS_SOLVED = 1,
   TICKET_STATUS_CONFIRMED = 2,
   TICKET_STATUS_CLOSED = 3,
-  TICKET_STATUS_ORPHANED = 4,
   TICKET_STATUS_MAX,
   TICKET_STATUS_ERROR = 100
 } ticket_status_t;
@@ -77,8 +76,6 @@ ticket_status_integer (const char *status)
     return TICKET_STATUS_CONFIRMED;
   if (strcasecmp (status, "closed") == 0)
     return TICKET_STATUS_CLOSED;
-  if (strcasecmp (status, "orphaned") == 0)
-    return TICKET_STATUS_ORPHANED;
   return TICKET_STATUS_ERROR;
 }
 
@@ -102,8 +99,6 @@ ticket_status_name (ticket_status_t status)
         return "Confirmed";
       case TICKET_STATUS_CLOSED:
         return "Closed";
-      case TICKET_STATUS_ORPHANED:
-        return "Orphaned";
       default:
         return "Error";
     }
