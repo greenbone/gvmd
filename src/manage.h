@@ -528,7 +528,10 @@ typedef enum
   EVENT_ERROR,
   EVENT_TASK_RUN_STATUS_CHANGED,
   EVENT_NEW_SECINFO,
-  EVENT_UPDATED_SECINFO
+  EVENT_UPDATED_SECINFO,
+  EVENT_TICKET_RECEIVED,
+  EVENT_ASSIGNED_TICKET_CHANGED,
+  EVENT_OWNED_TICKET_CHANGED
 } event_t;
 
 /**
@@ -683,7 +686,7 @@ int
 alert_task_iterator_readable (iterator_t*);
 
 void
-init_task_alert_iterator (iterator_t*, task_t, event_t event);
+init_task_alert_iterator (iterator_t*, task_t);
 
 const char*
 task_alert_iterator_uuid (iterator_t*);

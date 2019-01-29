@@ -487,6 +487,37 @@ sql_int64 (long long int* ret, char* sql, ...)
 }
 
 /**
+ * @brief Get a first column of first row from a SQL query, as an int64.
+ *
+ * Return 0 on error.
+ *
+ * @param[in]  sql    Format string for SQL query.
+ * @param[in]  ...    Arguments for format string.
+ *
+ * @return 0 success, 1 too few rows, -1 error.
+ */
+long long int
+sql_int64_0 (char* sql, ...)
+{
+  sql_stmt_t* stmt;
+  int sql_x_ret;
+  long long int ret;
+  va_list args;
+
+  va_start (args, sql);
+  sql_x_ret = sql_x (sql, args, &stmt);
+  va_end (args);
+  if (sql_x_ret)
+    {
+      sql_finalize (stmt);
+      return 0;
+    }
+  ret = sql_column_int64 (stmt, 0);
+  sql_finalize (stmt);
+  return ret;
+}
+
+/**
  * @brief Write debug messages with the query plan for an SQL query to the log.
  *
  * @param[in] sql   Format string for the SQL query.
