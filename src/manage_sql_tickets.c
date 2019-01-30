@@ -758,9 +758,9 @@ delete_ticket (const char *ticket_id, int ultimate)
            "  modification_time)"
            " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
            "        host, location, solution_type, assigned_to, status,"
-           "        open_time, fixed_time, fixed_comment, fix_verified_time,"
-           "        fix_verified_report, closed_time, closed_comment,"
-           "        creation_time, modification_time"
+           "        open_time, open_comment, fixed_time, fixed_comment,"
+           "        fix_verified_time, fix_verified_report, closed_time,"
+           "        closed_comment, creation_time, modification_time"
            " FROM tickets WHERE id = %llu;",
            ticket);
 
