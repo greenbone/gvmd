@@ -8145,6 +8145,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
               return ret;
             }
 
+          ret = validate_sourcefire_data (method, data_name, &data);
+          if (ret)
+            {
+              g_free (data_name);
+              g_free (data);
+              sql_rollback ();
+              return ret;
+            }
+
           ret = validate_tippingpoint_data (method, data_name, &data);
           if (ret)
             {
