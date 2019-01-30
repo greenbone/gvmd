@@ -15095,6 +15095,9 @@ migrate_203_to_204 ()
     {
       sql ("ALTER TABLE tickets ADD COLUMN open_comment text;");
       sql ("UPDATE tickets SET open_comment = 'No comment for migration.';");
+
+      sql ("ALTER TABLE tickets_trash ADD COLUMN open_comment text;");
+      sql ("UPDATE tickets_trash SET open_comment = 'No comment for migration.';");
     }
 
   /* Set the database version to 204. */
