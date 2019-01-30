@@ -604,9 +604,9 @@ ticket_nvt_name (ticket_t ticket)
 /**
  * @brief Return task of ticket.
  *
- * @param[in]  task  Task.
+ * @param[in]  ticket  Ticket.
  *
- * @return Task if ther is one, else 0.
+ * @return Task if there is one, else 0.
  */
 static task_t
 ticket_task (ticket_t ticket)
