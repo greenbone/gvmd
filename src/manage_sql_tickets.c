@@ -156,6 +156,7 @@ ticket_status_name (ticket_status_t status)
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
+   { "open_comment", NULL, KEYWORD_TYPE_STRING },                             \
    { "fixed_comment", NULL, KEYWORD_TYPE_STRING },                            \
    { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                          \
@@ -221,6 +222,7 @@ ticket_status_name (ticket_status_t status)
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
+   { "open_comment", NULL, KEYWORD_TYPE_STRING },                             \
    { "fixed_comment", NULL, KEYWORD_TYPE_STRING },                            \
    { "closed_comment", NULL, KEYWORD_TYPE_STRING },                           \
    {                                                                          \
@@ -415,7 +417,7 @@ DEF_ACCESS (ticket_iterator_fix_verified_time, GET_ITERATOR_COLUMN_COUNT + 14);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_fixed_comment, GET_ITERATOR_COLUMN_COUNT + 17);
+DEF_ACCESS (ticket_iterator_open_comment, GET_ITERATOR_COLUMN_COUNT + 17);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -424,7 +426,16 @@ DEF_ACCESS (ticket_iterator_fixed_comment, GET_ITERATOR_COLUMN_COUNT + 17);
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 18);
+DEF_ACCESS (ticket_iterator_fixed_comment, GET_ITERATOR_COLUMN_COUNT + 18);
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Iterator column value or NULL if iteration is complete.
+ */
+DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 19);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -434,7 +445,7 @@ DEF_ACCESS (ticket_iterator_closed_comment, GET_ITERATOR_COLUMN_COUNT + 18);
  * @return Iterator column value or NULL if iteration is complete.
  */
 DEF_ACCESS (ticket_iterator_fix_verified_report_id,
-            GET_ITERATOR_COLUMN_COUNT + 19);
+            GET_ITERATOR_COLUMN_COUNT + 20);
 
 /**
  * @brief Get column value from a ticket iterator.
@@ -443,7 +454,7 @@ DEF_ACCESS (ticket_iterator_fix_verified_report_id,
  *
  * @return Iterator column value or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 20);
+DEF_ACCESS (ticket_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 21);
 
 /**
  * @brief Get a column value from a ticket iterator.
@@ -452,7 +463,7 @@ DEF_ACCESS (ticket_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 20);
  *
  * @return Value of the column or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_user_name, GET_ITERATOR_COLUMN_COUNT + 21);
+DEF_ACCESS (ticket_iterator_user_name, GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Get a column value from a ticket iterator.
@@ -461,7 +472,7 @@ DEF_ACCESS (ticket_iterator_user_name, GET_ITERATOR_COLUMN_COUNT + 21);
  *
  * @return Value of the column or NULL if iteration is complete.
  */
-DEF_ACCESS (ticket_iterator_task_name, GET_ITERATOR_COLUMN_COUNT + 22);
+DEF_ACCESS (ticket_iterator_task_name, GET_ITERATOR_COLUMN_COUNT + 23);
 
 /**
  * @brief Initialise a ticket result iterator.

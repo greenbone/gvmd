@@ -199,6 +199,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                "<solution_type>%s</solution_type>"
                                "<status>%s</status>"
                                "<open_time>%s</open_time>"
+                               "<open_comment>%s</open_comment>"
                                "<nvt oid=\"%s\"/>",
                                ticket_iterator_user_id (&tickets),
                                ticket_iterator_user_name (&tickets),
@@ -208,6 +209,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                ticket_iterator_solution_type (&tickets),
                                ticket_iterator_status (&tickets),
                                ticket_iterator_open_time (&tickets),
+                               ticket_iterator_open_comment (&tickets),
                                ticket_iterator_nvt_oid (&tickets));
 
       if (ticket_iterator_task_id (&tickets))

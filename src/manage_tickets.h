@@ -78,6 +78,9 @@ const char*
 ticket_iterator_fix_verified_time (iterator_t*);
 
 const char*
+ticket_iterator_open_comment (iterator_t*);
+
+const char*
 ticket_iterator_fixed_comment (iterator_t*);
 
 const char*
