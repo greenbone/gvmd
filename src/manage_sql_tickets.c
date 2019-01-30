@@ -1187,8 +1187,20 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
       switch (status)
         {
           case TICKET_STATUS_OPEN:
-            time_column = "open_time";
-            break;
+            {
+              time_column = "open_time";
+
+              sql ("UPDATE tickets"
+                   " SET fixed_time = NULL,"
+                   "     fixed_comment = NULL,"
+                   "     fix_verified_time = NULL,"
+                   "     fix_verified_report = 0,"
+                   "     closed_time = NULL,"
+                   "     closed_comment = NULL"
+                   " WHERE id = %llu;",
+                   ticket);
+              break;
+            }
           case TICKET_STATUS_FIXED:
             {
               gchar *quoted_comment;
