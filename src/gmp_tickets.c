@@ -316,28 +316,6 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
 /* CREATE_TICKET. */
 
-#if 0
-/**
- * @brief Command layout.
- */
-typedef struct
-{
-  gchar *name,
-  spec_t elements[]
-} spec_t;
-
-spec_t spec = {
-                "create_ticket",
-                [
-                  { "name", [] },
-                  { "comment", [] },
-                  { "copy", [] },
-                  { "result", [] },
-                  { NULL, [] }
-                ]
-              };
-#endif
-
 /**
  * @brief The create_ticket command.
  */
@@ -399,7 +377,6 @@ create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
-  //element_start (&spec, create_ticket_data.context...);
   xml_handle_start_element (create_ticket_data.context, name, attribute_names,
                             attribute_values);
 }
@@ -584,7 +561,6 @@ int
 create_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name)
 {
-  //element_end (&spec, create_ticket_data.context...);
   xml_handle_end_element (create_ticket_data.context, name);
   if (create_ticket_data.context->done)
     {
@@ -603,7 +579,6 @@ create_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
 void
 create_ticket_element_text (const gchar *text, gsize text_len)
 {
-  //element_text (&spec, create_ticket_data.context...);
   xml_handle_text (create_ticket_data.context, text, text_len);
 }
 
@@ -671,7 +646,6 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
-  //element_start (&spec, modify_ticket_data.context...);
   xml_handle_start_element (modify_ticket_data.context, name, attribute_names,
                             attribute_values);
 }
@@ -820,7 +794,6 @@ int
 modify_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name)
 {
-  //element_end (&spec, modify_ticket_data.context...);
   xml_handle_end_element (modify_ticket_data.context, name);
   if (modify_ticket_data.context->done)
     {
@@ -839,7 +812,6 @@ modify_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
 void
 modify_ticket_element_text (const gchar *text, gsize text_len)
 {
-  //element_text (&spec, modify_ticket_data.context...);
   xml_handle_text (modify_ticket_data.context, text, text_len);
 }
 
