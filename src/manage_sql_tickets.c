@@ -1248,7 +1248,12 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
                   return 5;
                 }
               quoted_comment = sql_quote (fixed_comment);
-              sql ("UPDATE tickets SET fixed_comment = '%s'"
+              sql ("UPDATE tickets"
+                   " SET fix_verified_time = NULL,"
+                   "     fix_verified_report = 0,"
+                   "     closed_time = NULL,"
+                   "     closed_comment = NULL,"
+                   "     fixed_comment = '%s'"
                    " WHERE id = %llu;",
                    quoted_comment,
                    ticket);
