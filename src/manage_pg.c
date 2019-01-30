@@ -2445,7 +2445,6 @@ create_tables ()
        "  fix_verified_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
        "  closed_time integer,"
        "  closed_comment text,"
-       "  orphaned_time integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -2480,7 +2479,6 @@ create_tables ()
        "  fix_verified_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
        "  closed_time integer,"
        "  closed_comment text,"
-       "  orphaned_time integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 

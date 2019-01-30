@@ -3804,8 +3804,7 @@ create_tables ()
        "  comment, nvt, task, report, severity, host, location,"
        "  solution_type, assigned_to, status, open_time, open_comment,"
        "  fixed_time, fixed_comment, fix_verified_time, fix_verified_report,"
-       "  closed_time, closed_comment, orphaned_time, creation_time,"
-       "  modification_time);");
+       "  closed_time, closed_comment, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS ticket_results"
        " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
        "  result_uuid, report);");
@@ -3814,8 +3813,7 @@ create_tables ()
        "  comment, nvt, task, report, severity, host, location,"
        "  solution_type, assigned_to, status, open_time, open_comment,"
        "  fixed_time, fixed_comment, fix_verified_time, fix_verified_report,"
-       "  closed_time, closed_comment, orphaned_time, creation_time,"
-       "  modification_time);");
+       "  closed_time, closed_comment, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
        " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
        "  result_uuid, report);");
