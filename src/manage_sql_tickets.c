@@ -753,8 +753,8 @@ delete_ticket (const char *ticket_id, int ultimate)
       sql ("INSERT INTO tickets_trash"
            " (uuid, owner, name, comment, nvt, task, report, severity, host,"
            "  location, solution_type, assigned_to, status, open_time,"
-           "  fixed_time, fixed_comment, fix_verified_time, fix_verified_report,"
-           "  closed_time, closed_comment, creation_time,"
+           "  open_comment, fixed_time, fixed_comment, fix_verified_time,"
+           "  fix_verified_report, closed_time, closed_comment, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
            "        host, location, solution_type, assigned_to, status,"
@@ -836,14 +836,14 @@ restore_ticket (const char *ticket_id)
   sql ("INSERT INTO tickets"
        " (uuid, owner, name, comment, nvt, task, report, severity, host,"
        "  location, solution_type, assigned_to, status, open_time,"
-       "  fixed_time, fixed_comment, fix_verified_time, fix_verified_report,"
-       "  closed_time, closed_comment, creation_time,"
+       "  open_comment, fixed_time, fixed_comment, fix_verified_time,"
+       "  fix_verified_report, closed_time, closed_comment, creation_time,"
        "  modification_time)"
        " SELECT uuid, owner, name, comment, nvt, task, report, severity,"
        "        host, location, solution_type, assigned_to, status,"
-       "        open_time, fixed_time, fixed_comment, fix_verified_time,"
-       "        fix_verified_report, closed_time, closed_comment,"
-       "        creation_time, modification_time"
+       "        open_time, open_comment, fixed_time, fixed_comment,"
+       "        fix_verified_time, fix_verified_report, closed_time,"
+       "        closed_comment, creation_time, modification_time"
        " FROM tickets_trash WHERE id = %llu;",
        trash_ticket);
 
@@ -1077,8 +1077,9 @@ copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
   ret = copy_resource ("ticket", NULL, comment, ticket_id,
                        "nvt, task, report, severity, host, location,"
                        " solution_type, assigned_to, status, open_time,"
-                       " fixed_time, fixed_comment, fix_verified_time,"
-                       " fix_verified_report, closed_time, closed_comment",
+                       " open_comment, fixed_time, fixed_comment,"
+                       " fix_verified_time, fix_verified_report, closed_time,"
+                       " closed_comment",
                        0, new_ticket, &old_ticket);
   if (ret)
     return ret;
