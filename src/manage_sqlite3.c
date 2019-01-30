@@ -3802,8 +3802,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS tickets"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
        "  comment, nvt, task, report, severity, host, location,"
-       "  solution_type, assigned_to, status, open_time, solved_time,"
-       "  solved_comment, confirmed_time, confirmed_report, closed_time,"
+       "  solution_type, assigned_to, status, open_time, fixed_time,"
+       "  fixed_comment, fix_verified_time, fix_verified_report, closed_time,"
        "  closed_comment, orphaned_time, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS ticket_results"
        " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
@@ -3811,8 +3811,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
        "  comment, nvt, task, report, severity, host, location,"
-       "  solution_type, assigned_to, status, open_time, solved_time,"
-       "  solved_comment, confirmed_time, confirmed_report, closed_time,"
+       "  solution_type, assigned_to, status, open_time, fixed_time,"
+       "  fixed_comment, fix_verified_time, fix_verified_report, closed_time,"
        "  closed_comment, orphaned_time, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
        " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
