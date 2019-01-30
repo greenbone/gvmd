@@ -877,6 +877,7 @@ restore_ticket (const char *ticket_id)
  * @param[in]   comment         Comment on ticket.
  * @param[in]   result_id       Result that the ticket is on.
  * @param[in]   user_id         User the ticket is assigned to.
+ * @param[in]   open_comment    Comment on open status.
  * @param[out]  ticket          Created ticket.
  *
  * @return 0 success, 1 failed to find user, 2 failed to find result,
@@ -884,7 +885,8 @@ restore_ticket (const char *ticket_id)
  */
 int
 create_ticket (const char *comment, const char *result_id,
-               const char *user_id, ticket_t *ticket)
+               const char *user_id, const char *open_comment,
+               ticket_t *ticket)
 {
   ticket_t new_ticket;
   permission_t permission;
@@ -892,7 +894,7 @@ create_ticket (const char *comment, const char *result_id,
   iterator_t results;
   get_data_t get;
   gchar *quoted_name, *quoted_comment, *quoted_oid, *quoted_host;
-  gchar *quoted_location, *quoted_solution, *quoted_uuid;
+  gchar *quoted_location, *quoted_solution, *quoted_uuid, *quoted_open_comment;
   char *new_ticket_id, *task_id;
   task_t task;
 
@@ -958,17 +960,19 @@ create_ticket (const char *comment, const char *result_id,
   quoted_location = sql_quote (result_iterator_port (&results) ?: "");
   quoted_solution = sql_quote (result_iterator_solution_type (&results) ?: "");
 
+  quoted_open_comment = sql_quote (open_comment ? open_comment : "");
+
   task = result_iterator_task (&results);
 
   sql ("INSERT INTO tickets"
        " (uuid, name, owner, comment, nvt, task, report, severity, host,"
        "  location, solution_type, assigned_to, status, open_time,"
-       "  creation_time, modification_time)"
+       "  open_comment, creation_time, modification_time)"
        " VALUES"
        " (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
        "  '%s', '%s', %llu, %llu, %0.1f, '%s', '%s', '%s',"
-       "  %llu, %i, m_now (), m_now (), m_now ());",
+       "  %llu, %i, m_now (), '%s', m_now (), m_now ());",
        quoted_name,
        current_credentials.uuid,
        quoted_comment,
@@ -980,8 +984,10 @@ create_ticket (const char *comment, const char *result_id,
        quoted_location,
        quoted_solution,
        user,
-       TICKET_STATUS_OPEN);
+       TICKET_STATUS_OPEN,
+       quoted_open_comment);
 
+  g_free (quoted_open_comment);
   g_free (quoted_location);
   g_free (quoted_host);
   g_free (quoted_oid);

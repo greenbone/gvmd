@@ -114,8 +114,8 @@ int
 trash_ticket_writable (ticket_t);
 
 int
-create_ticket (const char *, const char *, const char *, ticket_t *)
-;
+create_ticket (const char *, const char *, const char *, const char *, ticket_t *);
+
 int
 copy_ticket (const char *, const char *, ticket_t *);
 

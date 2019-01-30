@@ -390,7 +390,7 @@ create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, copy, comment, result, assigned_to, user;
+  entity_t entity, copy, comment, result, assigned_to, user, open_comment;
   ticket_t new_ticket;
   const char *result_id, *user_id;
 
@@ -454,6 +454,16 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (entity, "comment");
 
+  open_comment = entity_child (entity, "open_comment");
+  if (open_comment == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_ticket",
+                          "CREATE_TICKET requires an OPEN_COMMENT"));
+      create_ticket_reset ();
+      return;
+    }
+
   result = entity_child (entity, "result");
   if (result == NULL)
     {
@@ -499,10 +509,15 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
      (XML_ERROR_SYNTAX ("create_ticket",
                         "CREATE_TICKET USER must have an id"
                         " attribute"));
+  else if (strlen (entity_text (open_comment)) == 0)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("create_ticket",
+                        "CREATE_TICKET OPEN_COMMENT is empty"));
   else switch (create_ticket
                 (comment ? entity_text (comment) : "",
                  result_id,
                  user_id,
+                 entity_text (open_comment),
                  &new_ticket))
     {
       case 0:
