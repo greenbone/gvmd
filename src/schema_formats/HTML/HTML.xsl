@@ -780,7 +780,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   </li>
                   <li>
                     <a href="#deprecations">
-                      Deprecation warning for Version
+                      Deprecation Warnings for Version
                       <xsl:value-of select="/protocol/version"/>
                     </a>
                   </li>
