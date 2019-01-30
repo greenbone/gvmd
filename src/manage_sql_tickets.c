@@ -602,6 +602,20 @@ ticket_nvt_name (ticket_t ticket)
 }
 
 /**
+ * @brief Return task of ticket.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Task if ther is one, else 0.
+ */
+static task_t
+ticket_task (ticket_t ticket)
+{
+  return sql_int64_0 ("SELECT task FROM tickets WHERE id = %llu;",
+                      ticket);
+}
+
+/**
  * @brief Return whether a ticket is in use.
  *
  * @param[in]  ticket  Ticket.
@@ -1258,6 +1272,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
 
       if (assigned_to != user)
         {
+          task_t task;
+
           sql ("UPDATE tickets SET"
                " assigned_to = %llu,"
                " modification_time = m_now ()"
@@ -1267,7 +1283,7 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
 
           updated = 1;
 
-          /* Ensure that the user can access the ticket. */
+          /* Ensure that the user can access the ticket and task. */
 
           if (create_permission_internal ("modify_ticket",
                                           "Automatically created for ticket",
@@ -1279,6 +1295,28 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
             {
               sql_rollback ();
               return -1;
+            }
+
+          task = ticket_task (ticket);
+          if (task)
+            {
+              char *task_id;
+
+              task_uuid (task, &task_id);
+              if (create_permission_internal ("get_tasks",
+                                              "Automatically created for"
+                                              " ticket",
+                                              NULL,
+                                              task_id,
+                                              "user",
+                                              user_id,
+                                              &permission))
+                {
+                  free (task_id);
+                  sql_rollback ();
+                  return -1;
+                }
+              free (task_id);
             }
 
           event (EVENT_TICKET_RECEIVED, NULL, ticket, 0);
