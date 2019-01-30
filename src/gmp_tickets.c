@@ -674,7 +674,7 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, comment, status, fixed_comment, closed_comment;
+  entity_t entity, comment, status, open_comment, fixed_comment, closed_comment;
   entity_t assigned_to;
   const char *ticket_id, *user_id;
 
@@ -686,6 +686,7 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (entity, "comment");
   status = entity_child (entity, "status");
+  open_comment = entity_child (entity, "open_comment");
   fixed_comment = entity_child (entity, "fixed_comment");
   closed_comment = entity_child (entity, "closed_comment");
 
@@ -729,6 +730,7 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
                 (ticket_id,
                  comment ? entity_text (comment) : NULL,
                  status ? entity_text (status) : NULL,
+                 open_comment ? entity_text (open_comment) : NULL,
                  fixed_comment ? entity_text (fixed_comment) : NULL,
                  closed_comment ? entity_text (closed_comment) : NULL,
                  user_id))
@@ -777,6 +779,12 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_ticket",
                             "Closed STATUS requires a CLOSED_COMMENT"));
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        break;
+      case 7:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_ticket",
+                            "Open STATUS requires an OPEN_COMMENT"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case 99:

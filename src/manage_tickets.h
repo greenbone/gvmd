@@ -124,6 +124,7 @@ ticket_uuid (ticket_t);
 
 int
 modify_ticket (const gchar *, const gchar *, const gchar *,
-               const gchar *, const gchar *, const gchar *);
+               const gchar *, const gchar *, const gchar *,
+               const gchar *);
 
 #endif /* not _GVMD_MANAGE_TICKETS_H */

@@ -1115,6 +1115,7 @@ ticket_uuid (ticket_t ticket)
  * @param[in]   ticket_id       UUID of ticket.
  * @param[in]   comment         Comment on ticket.
  * @param[in]   status_name     Status of ticket.
+ * @param[in]   open_comment    Comment if status is 'Open'.
  * @param[in]   fixed_comment   Comment if status is 'Fixed'.
  * @param[in]   closed_comment  Comment if status is 'Closed'.
  * @param[in]   user_id         UUID of user that ticket is assigned to.
@@ -1123,12 +1124,14 @@ ticket_uuid (ticket_t ticket)
  *         3 failed to find user, 4 error in status,
  *         5 Fixed status requires a fixed_comment,
  *         6 Closed status requires a closed_comment,
+ *         7 Open status requires an open_comment,
  *         99 permission denied, -1 error.
  */
 int
 modify_ticket (const gchar *ticket_id, const gchar *comment,
-               const gchar *status_name, const gchar *fixed_comment,
-               const gchar *closed_comment, const gchar *user_id)
+               const gchar *status_name, const gchar *open_comment,
+               const gchar *fixed_comment, const gchar *closed_comment,
+               const gchar *user_id)
 {
   ticket_t ticket;
   user_t assigned_to;
@@ -1195,7 +1198,17 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
         {
           case TICKET_STATUS_OPEN:
             {
+              gchar *quoted_comment;
+
+              if ((open_comment == NULL) || (strlen (open_comment) == 0))
+                {
+                  /* Open status must always be accompanied by a comment. */
+                  sql_rollback ();
+                  return 7;
+                }
+
               time_column = "open_time";
+              quoted_comment = sql_quote (open_comment);
 
               sql ("UPDATE tickets"
                    " SET fixed_time = NULL,"
@@ -1203,9 +1216,13 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
                    "     fix_verified_time = NULL,"
                    "     fix_verified_report = 0,"
                    "     closed_time = NULL,"
-                   "     closed_comment = NULL"
+                   "     closed_comment = NULL,"
+                   "     open_comment = '%s'"
                    " WHERE id = %llu;",
+                   quoted_comment,
                    ticket);
+
+              g_free (quoted_comment);
               break;
             }
           case TICKET_STATUS_FIXED:
