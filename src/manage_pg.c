@@ -2438,13 +2438,13 @@ create_tables ()
        "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  status integer,"
        "  open_time integer,"
-       "  open_comment text,"
+       "  open_note text,"
        "  fixed_time integer,"
-       "  fixed_comment text,"
+       "  fixed_note text,"
        "  fix_verified_time integer,"
        "  fix_verified_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
        "  closed_time integer,"
-       "  closed_comment text,"
+       "  closed_note text,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -2472,13 +2472,13 @@ create_tables ()
        "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  status integer,"
        "  open_time integer,"
-       "  open_comment text,"
+       "  open_note text,"
        "  fixed_time integer,"
-       "  fixed_comment text,"
+       "  fixed_note text,"
        "  fix_verified_time integer,"
        "  fix_verified_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
        "  closed_time integer,"
-       "  closed_comment text,"
+       "  closed_note text,"
        "  creation_time integer,"
        "  modification_time integer);");
 
