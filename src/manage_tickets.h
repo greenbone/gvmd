@@ -69,25 +69,25 @@ const char*
 ticket_iterator_open_time (iterator_t*);
 
 const char*
-ticket_iterator_solved_time (iterator_t*);
+ticket_iterator_fixed_time (iterator_t*);
 
 const char*
 ticket_iterator_closed_time (iterator_t*);
 
 const char*
-ticket_iterator_confirmed_time (iterator_t*);
+ticket_iterator_fix_verified_time (iterator_t*);
 
 const char*
-ticket_iterator_orphaned_time (iterator_t*);
+ticket_iterator_open_note (iterator_t*);
 
 const char*
-ticket_iterator_solved_comment (iterator_t*);
+ticket_iterator_fixed_note (iterator_t*);
 
 const char*
-ticket_iterator_closed_comment (iterator_t*);
+ticket_iterator_closed_note (iterator_t*);
 
 const char*
-ticket_iterator_confirmed_report_id (iterator_t*);
+ticket_iterator_fix_verified_report_id (iterator_t*);
 
 const char*
 ticket_iterator_nvt_oid (iterator_t*);
@@ -117,8 +117,8 @@ int
 trash_ticket_writable (ticket_t);
 
 int
-create_ticket (const char *, const char *, const char *, ticket_t *)
-;
+create_ticket (const char *, const char *, const char *, const char *, ticket_t *);
+
 int
 copy_ticket (const char *, const char *, ticket_t *);
 
@@ -127,6 +127,7 @@ ticket_uuid (ticket_t);
 
 int
 modify_ticket (const gchar *, const gchar *, const gchar *,
-               const gchar *, const gchar *, const gchar *);
+               const gchar *, const gchar *, const gchar *,
+               const gchar *);
 
 #endif /* not _GVMD_MANAGE_TICKETS_H */

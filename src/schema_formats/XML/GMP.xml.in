@@ -159,7 +159,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <name>ticket_status</name>
     <summary>A ticket status</summary>
     <pattern>
-      xsd:token { pattern = "Open|Solved|Confirmed|Closed|Orphaned" }
+      xsd:token { pattern = "Open|Fixed|Fix Verified|Closed" }
     </pattern>
   </type>
   <type>
@@ -5990,6 +5990,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>copy</e></o>
       <e>result</e>
       <e>assigned_to</e>
+      <e>open_note</e>
     </pattern>
     <ele>
       <name>comment</name>
@@ -6033,6 +6034,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </pattern>
       </ele>
     </ele>
+    <ele>
+      <name>open_note</name>
+      <summary>A note about opening the ticket</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
     <response>
       <pattern>
         <attrib>
@@ -6060,6 +6068,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <assigned_to>
             <user id="33e92d3e-a379-4c46-a4cf-88c8201ab710"/>
           </assigned_to>
+	      <open_note>Please fix today.</open_note>
         </create_ticket>
       </request>
       <response>
@@ -21744,9 +21753,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Time ticket was opened</summary>
           </column>
           <column>
-            <name>solved</name>
+            <name>fixed</name>
             <type>iso_time</type>
-            <summary>Time ticket was solved</summary>
+            <summary>Time ticket was fixed</summary>
           </column>
           <column>
             <name>closed</name>
@@ -21812,13 +21821,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>solution_type</e>
           <e>status</e>
           <e>open_time</e>
-          <o><e>solved_time</e></o>
-          <o><e>solved_comment</e></o>
+          <e>open_note</e>
+          <o><e>fixed_time</e></o>
+          <o><e>fixed_note</e></o>
           <o><e>closed_time</e></o>
-          <o><e>closed_comment</e></o>
-          <o><e>confirmed_time</e></o>
-          <o><e>confirmed_report</e></o>
-          <o><e>orphaned_time</e></o>
+          <o><e>closed_note</e></o>
+          <o><e>fix_verified_time</e></o>
+          <o><e>fix_verified_report</e></o>
+          <e>orphan</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -22029,13 +22039,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
-          <name>solved_time</name>
-          <summary>Date and time the ticket was solved</summary>
+          <name>open_note</name>
+          <summary>A note on the Closed status</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>fixed_time</name>
+          <summary>Date and time the ticket was set to fixed</summary>
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
-          <name>solved_comment</name>
-          <summary>The comment on the Solved status</summary>
+          <name>fixed_note</name>
+          <summary>The note on the Fixed status</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -22044,18 +22059,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
-          <name>closed_comment</name>
-          <summary>The comment on the Closed status</summary>
+          <name>closed_note</name>
+          <summary>The note on the Closed status</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
-          <name>confirmed_time</name>
-          <summary>Date and time the ticket was confirmed</summary>
+          <name>fix_verified_time</name>
+          <summary>Date and time the ticket was verified</summary>
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
-          <name>confirmed_report</name>
-          <summary>The report that confirmed the ticket</summary>
+          <name>fix_verified_report</name>
+          <summary>The report that verified the ticket</summary>
           <pattern>
             <attrib>
               <name>id</name>
@@ -22065,9 +22080,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
         </ele>
         <ele>
-          <name>orphaned_time</name>
-          <summary>Date and time the ticket was orphaned</summary>
-          <pattern><t>iso_time</t></pattern>
+          <name>orphan</name>
+          <summary>Whether the ticket is an orphan</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -22222,6 +22237,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <solution_type>VendorFix</solution_type>
             <status>Open</status>
             <open_time>2018-11-29T16:18:56Z</open_time>
+            <open_note>Probably the new version fixes this</open_note>
             <result id="138c1216-4acb-4ded-bef3-7fab80eac8c7"></result>
           </ticket>
           <filters id="">
@@ -25698,8 +25714,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <o><e>comment</e></o>
       <o><e>status</e></o>
-      <o><e>solved_comment</e></o>
-      <o><e>closed_comment</e></o>
+      <o><e>open_note</e></o>
+      <o><e>fixed_note</e></o>
+      <o><e>closed_note</e></o>
       <o><e>assigned_to</e></o>
     </pattern>
     <ele>
@@ -25713,13 +25730,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern><t>ticket_status</t></pattern>
     </ele>
     <ele>
-      <name>solved_comment</name>
-      <summary>Comment, required when status is Solved</summary>
+      <name>open_note</name>
+      <summary>Note, required when status is Open</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
-      <name>closed_comment</name>
-      <summary>Comment, required when status is Closed</summary>
+      <name>fixed_note</name>
+      <summary>Note, required when status is Fixed</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>closed_note</name>
+      <summary>Note, required when status is Closed</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -25754,11 +25776,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Modify the name of a ticket</summary>
+      <summary>Modify the status of a ticket</summary>
       <request>
         <modify_ticket ticket_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
           <status>Closed</status>
-          <closed_comment>Resolved with January update</closed_comment>
+          <closed_note>Resolved with January update</closed_note>
         </modify_ticket>
       </request>
       <response>

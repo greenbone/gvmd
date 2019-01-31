@@ -169,6 +169,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
   while (1)
     {
       iterator_t results;
+      int orphan;
 
       ret = get_next (&tickets, &get_tickets_data.get, &first,
                       &count, init_ticket_iterator);
@@ -198,6 +199,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                "<solution_type>%s</solution_type>"
                                "<status>%s</status>"
                                "<open_time>%s</open_time>"
+                               "<open_note>%s</open_note>"
                                "<nvt oid=\"%s\"/>",
                                ticket_iterator_user_id (&tickets),
                                ticket_iterator_user_name (&tickets),
@@ -207,6 +209,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                ticket_iterator_solution_type (&tickets),
                                ticket_iterator_status (&tickets),
                                ticket_iterator_open_time (&tickets),
+                               ticket_iterator_open_note (&tickets),
                                ticket_iterator_nvt_oid (&tickets));
 
       if (ticket_iterator_task_id (&tickets))
@@ -237,52 +240,46 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Send timestamps. */
 
-      if (ticket_iterator_solved_time (&tickets))
+      if (ticket_iterator_fixed_time (&tickets))
         {
-          SENDF_TO_CLIENT_OR_FAIL ("<solved_time>%s</solved_time>",
-                                   ticket_iterator_solved_time (&tickets));
-          SENDF_TO_CLIENT_OR_FAIL ("<solved_comment>%s</solved_comment>",
-                                   ticket_iterator_solved_comment (&tickets));
+          SENDF_TO_CLIENT_OR_FAIL ("<fixed_time>%s</fixed_time>",
+                                   ticket_iterator_fixed_time (&tickets));
+          SENDF_TO_CLIENT_OR_FAIL ("<fixed_note>%s</fixed_note>",
+                                   ticket_iterator_fixed_note (&tickets));
         }
 
       if (ticket_iterator_closed_time (&tickets))
         {
           SENDF_TO_CLIENT_OR_FAIL ("<closed_time>%s</closed_time>",
                                    ticket_iterator_closed_time (&tickets));
-          SENDF_TO_CLIENT_OR_FAIL ("<closed_comment>%s</closed_comment>",
-                                   ticket_iterator_closed_comment (&tickets));
+          SENDF_TO_CLIENT_OR_FAIL ("<closed_note>%s</closed_note>",
+                                   ticket_iterator_closed_note (&tickets));
         }
 
-      if (ticket_iterator_confirmed_time (&tickets))
+      if (ticket_iterator_fix_verified_time (&tickets))
         {
-          SENDF_TO_CLIENT_OR_FAIL ("<confirmed_time>%s</confirmed_time>",
-                                   ticket_iterator_confirmed_time (&tickets));
-          if (ticket_iterator_confirmed_report_id (&tickets))
+          SENDF_TO_CLIENT_OR_FAIL ("<fix_verified_time>%s</fix_verified_time>",
+                                   ticket_iterator_fix_verified_time (&tickets));
+          if (ticket_iterator_fix_verified_report_id (&tickets))
             {
               gchar *timestamp;
 
-              if (report_timestamp (ticket_iterator_confirmed_report_id
+              if (report_timestamp (ticket_iterator_fix_verified_report_id
                                      (&tickets),
                                     &timestamp))
-                g_error ("%s: error getting timestamp of confirmed report,"
+                g_error ("%s: error getting timestamp of verified report,"
                          " aborting",
                          __FUNCTION__);
 
-              SENDF_TO_CLIENT_OR_FAIL ("<confirmed_report>"
+              SENDF_TO_CLIENT_OR_FAIL ("<fix_verified_report>"
                                        "<report id=\"%s\">"
                                        "<timestamp>%s</timestamp>"
                                        "</report>"
-                                       "</confirmed_report>",
-                                       ticket_iterator_confirmed_report_id
+                                       "</fix_verified_report>",
+                                       ticket_iterator_fix_verified_report_id
                                         (&tickets),
                                        timestamp);
             }
-        }
-
-      if (ticket_iterator_orphaned_time (&tickets))
-        {
-          SENDF_TO_CLIENT_OR_FAIL ("<orphaned_time>%s</orphaned_time>",
-                                   ticket_iterator_orphaned_time (&tickets));
         }
 
       /* Send results that are linked to ticket. */
@@ -295,12 +292,18 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
           get_tickets_reset ();
           return;
         }
+      orphan = 1;
       while (next (&results))
-        SENDF_TO_CLIENT_OR_FAIL ("<result id=\"%s\"/>",
-                                 ticket_result_iterator_result_id (&results));
+        {
+          orphan = 0;
+          SENDF_TO_CLIENT_OR_FAIL ("<result id=\"%s\"/>",
+                                   ticket_result_iterator_result_id (&results));
+        }
       cleanup_iterator (&results);
 
-      SEND_TO_CLIENT_OR_FAIL ("</ticket>");
+      SENDF_TO_CLIENT_OR_FAIL ("<orphan>%i</orphan>"
+                               "</ticket>",
+                               orphan);
       count++;
     }
   cleanup_iterator (&tickets);
@@ -314,28 +317,6 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
 
 /* CREATE_TICKET. */
-
-#if 0
-/**
- * @brief Command layout.
- */
-typedef struct
-{
-  gchar *name,
-  spec_t elements[]
-} spec_t;
-
-spec_t spec = {
-                "create_ticket",
-                [
-                  { "name", [] },
-                  { "comment", [] },
-                  { "copy", [] },
-                  { "result", [] },
-                  { NULL, [] }
-                ]
-              };
-#endif
 
 /**
  * @brief The create_ticket command.
@@ -398,7 +379,6 @@ create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
-  //element_start (&spec, create_ticket_data.context...);
   xml_handle_start_element (create_ticket_data.context, name, attribute_names,
                             attribute_values);
 }
@@ -412,7 +392,7 @@ create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, copy, comment, result, assigned_to, user;
+  entity_t entity, copy, comment, result, assigned_to, user, open_note;
   ticket_t new_ticket;
   const char *result_id, *user_id;
 
@@ -476,6 +456,16 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (entity, "comment");
 
+  open_note = entity_child (entity, "open_note");
+  if (open_note == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_ticket",
+                          "CREATE_TICKET requires an OPEN_NOTE"));
+      create_ticket_reset ();
+      return;
+    }
+
   result = entity_child (entity, "result");
   if (result == NULL)
     {
@@ -521,10 +511,15 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
      (XML_ERROR_SYNTAX ("create_ticket",
                         "CREATE_TICKET USER must have an id"
                         " attribute"));
+  else if (strlen (entity_text (open_note)) == 0)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("create_ticket",
+                        "CREATE_TICKET OPEN_NOTE is empty"));
   else switch (create_ticket
                 (comment ? entity_text (comment) : "",
                  result_id,
                  user_id,
+                 entity_text (open_note),
                  &new_ticket))
     {
       case 0:
@@ -583,7 +578,6 @@ int
 create_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name)
 {
-  //element_end (&spec, create_ticket_data.context...);
   xml_handle_end_element (create_ticket_data.context, name);
   if (create_ticket_data.context->done)
     {
@@ -602,7 +596,6 @@ create_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
 void
 create_ticket_element_text (const gchar *text, gsize text_len)
 {
-  //element_text (&spec, create_ticket_data.context...);
   xml_handle_text (create_ticket_data.context, text, text_len);
 }
 
@@ -670,7 +663,6 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
-  //element_start (&spec, modify_ticket_data.context...);
   xml_handle_start_element (modify_ticket_data.context, name, attribute_names,
                             attribute_values);
 }
@@ -684,7 +676,7 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, comment, status, solved_comment, closed_comment;
+  entity_t entity, comment, status, open_note, fixed_note, closed_note;
   entity_t assigned_to;
   const char *ticket_id, *user_id;
 
@@ -696,8 +688,9 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (entity, "comment");
   status = entity_child (entity, "status");
-  solved_comment = entity_child (entity, "solved_comment");
-  closed_comment = entity_child (entity, "closed_comment");
+  open_note = entity_child (entity, "open_note");
+  fixed_note = entity_child (entity, "fixed_note");
+  closed_note = entity_child (entity, "closed_note");
 
   assigned_to = entity_child (entity, "assigned_to");
   if (assigned_to)
@@ -739,8 +732,9 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
                 (ticket_id,
                  comment ? entity_text (comment) : NULL,
                  status ? entity_text (status) : NULL,
-                 solved_comment ? entity_text (solved_comment) : NULL,
-                 closed_comment ? entity_text (closed_comment) : NULL,
+                 open_note ? entity_text (open_note) : NULL,
+                 fixed_note ? entity_text (fixed_note) : NULL,
+                 closed_note ? entity_text (closed_note) : NULL,
                  user_id))
     {
       case 0:
@@ -780,13 +774,19 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       case 5:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_ticket",
-                            "Solved STATUS requires a SOLVED_COMMENT"));
+                            "Fixed STATUS requires a FIXED_NOTE"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case 6:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_ticket",
-                            "Closed STATUS requires a CLOSED_COMMENT"));
+                            "Closed STATUS requires a CLOSED_NOTE"));
+        log_event_fail ("ticket", "Ticket", ticket_id, "modified");
+        break;
+      case 7:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_ticket",
+                            "Open STATUS requires an OPEN_NOTE"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case 99:
@@ -819,7 +819,6 @@ int
 modify_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name)
 {
-  //element_end (&spec, modify_ticket_data.context...);
   xml_handle_end_element (modify_ticket_data.context, name);
   if (modify_ticket_data.context->done)
     {
@@ -838,7 +837,6 @@ modify_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
 void
 modify_ticket_element_text (const gchar *text, gsize text_len)
 {
-  //element_text (&spec, modify_ticket_data.context...);
   xml_handle_text (modify_ticket_data.context, text, text_len);
 }
 

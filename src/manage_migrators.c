@@ -14956,6 +14956,211 @@ migrate_200_to_201 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 201 to version 202.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_201_to_202 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 201. */
+
+  if (manage_db_version () != 201)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ticket orphan state was removed. */
+
+  sql ("UPDATE tickets SET status = 3 WHERE status = 4;");
+  sql ("UPDATE tickets_trash SET status = 3 WHERE status = 4;");
+
+  /* Set the database version to 202. */
+
+  set_db_version (202);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Rename a column.
+ *
+ * @param[in]  table  Table
+ * @param[in]  old    Old column.
+ * @param[in]  new    New column.
+ */
+static void
+move (const gchar *table, const gchar *old, const gchar *new)
+{
+  sql ("ALTER TABLE %s RENAME COLUMN %s TO %s;", table, old, new);
+}
+
+/**
+ * @brief Migrate the database from version 202 to version 203.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_202_to_203 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 202. */
+
+  if (manage_db_version () != 202)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ticket columns were renamed to match the state names. */
+
+  if (sql_is_sqlite3 ())
+    {
+      /* This is a lot easier that migrating.  No real user
+       * should have been using the ticket implementation yet
+       * so it is safe. */
+      sql ("DROP TABLE IF EXISTS ticket_results;");
+      sql ("DROP TABLE IF EXISTS tickets;");
+      sql ("DROP TABLE IF EXISTS ticket_results_trash;");
+      sql ("DROP TABLE IF EXISTS tickets_trash;");
+    }
+  else
+    {
+      sql ("ALTER TABLE tickets DROP COLUMN orphaned_time;");
+
+      move ("tickets", "solved_comment", "fixed_comment");
+      move ("tickets", "solved_time", "fixed_time");
+      move ("tickets", "confirmed_report", "fix_verified_report");
+      move ("tickets", "confirmed_time", "fix_verified_time");
+
+      move ("tickets_trash", "solved_comment", "fixed_comment");
+      move ("tickets_trash", "solved_time", "fixed_time");
+      move ("tickets_trash", "confirmed_report", "fix_verified_report");
+      move ("tickets_trash", "confirmed_time", "fix_verified_time");
+    }
+
+  /* Set the database version to 203. */
+
+  set_db_version (203);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 203 to version 204.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_203_to_204 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 203. */
+
+  if (manage_db_version () != 203)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ticket open_comment was added. */
+
+  if (sql_is_sqlite3 ())
+    {
+      /* This is a lot easier that migrating.  No real user
+       * should have been using the ticket implementation yet
+       * so it is safe. */
+      sql ("DROP TABLE IF EXISTS ticket_results;");
+      sql ("DROP TABLE IF EXISTS tickets;");
+      sql ("DROP TABLE IF EXISTS ticket_results_trash;");
+      sql ("DROP TABLE IF EXISTS tickets_trash;");
+    }
+  else
+    {
+      sql ("ALTER TABLE tickets ADD COLUMN open_comment text;");
+      sql ("UPDATE tickets SET open_comment = 'No comment for migration.';");
+
+      sql ("ALTER TABLE tickets_trash ADD COLUMN open_comment text;");
+      sql ("UPDATE tickets_trash SET open_comment = 'No comment for migration.';");
+    }
+
+  /* Set the database version to 204. */
+
+  set_db_version (204);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 204 to version 205.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_204_to_205 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 204. */
+
+  if (manage_db_version () != 204)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ticket "comment" column suffix was changed to "note". */
+
+  if (sql_is_sqlite3 ())
+    {
+      /* This is a lot easier that migrating.  No real user
+       * should have been using the ticket implementation yet
+       * so it is safe. */
+      sql ("DROP TABLE IF EXISTS ticket_results;");
+      sql ("DROP TABLE IF EXISTS tickets;");
+      sql ("DROP TABLE IF EXISTS ticket_results_trash;");
+      sql ("DROP TABLE IF EXISTS tickets_trash;");
+    }
+  else
+    {
+      move ("tickets", "open_comment", "open_note");
+      move ("tickets", "fixed_comment", "fixed_note");
+      move ("tickets", "closed_comment", "closed_note");
+
+      move ("tickets_trash", "open_comment", "open_note");
+      move ("tickets_trash", "fixed_comment", "fixed_note");
+      move ("tickets_trash", "closed_comment", "closed_note");
+    }
+
+  /* Set the database version to 205. */
+
+  set_db_version (205);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15176,6 +15381,10 @@ static migrator_t database_migrators[]
     {199, migrate_198_to_199},
     {200, migrate_199_to_200},
     {201, migrate_200_to_201},
+    {202, migrate_201_to_202},
+    {203, migrate_202_to_203},
+    {204, migrate_203_to_204},
+    {205, migrate_204_to_205},
     /* End marker. */
     {-1, NULL}};
 
