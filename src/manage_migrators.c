@@ -15109,6 +15109,58 @@ migrate_203_to_204 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 204 to version 205.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_204_to_205 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 204. */
+
+  if (manage_db_version () != 204)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ticket "comment" column suffix was changed to "note". */
+
+  if (sql_is_sqlite3 ())
+    {
+      /* This is a lot easier that migrating.  No real user
+       * should have been using the ticket implementation yet
+       * so it is safe. */
+      sql ("DROP TABLE ticket_results;");
+      sql ("DROP TABLE tickets;");
+      sql ("DROP TABLE ticket_results_trash;");
+      sql ("DROP TABLE tickets_trash;");
+    }
+  else
+    {
+      move ("tickets", "open_comment", "open_note");
+      move ("tickets", "fixed_comment", "fixed_note");
+      move ("tickets", "closed_comment", "closed_note");
+
+      move ("tickets_trash", "open_comment", "open_note");
+      move ("tickets_trash", "fixed_comment", "fixed_note");
+      move ("tickets_trash", "closed_comment", "closed_note");
+    }
+
+  /* Set the database version to 205. */
+
+  set_db_version (205);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15332,6 +15384,7 @@ static migrator_t database_migrators[]
     {202, migrate_201_to_202},
     {203, migrate_202_to_203},
     {204, migrate_203_to_204},
+    {205, migrate_204_to_205},
     /* End marker. */
     {-1, NULL}};
 
