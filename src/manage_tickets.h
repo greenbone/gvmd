@@ -78,13 +78,13 @@ const char*
 ticket_iterator_fix_verified_time (iterator_t*);
 
 const char*
-ticket_iterator_open_comment (iterator_t*);
+ticket_iterator_open_note (iterator_t*);
 
 const char*
-ticket_iterator_fixed_comment (iterator_t*);
+ticket_iterator_fixed_note (iterator_t*);
 
 const char*
-ticket_iterator_closed_comment (iterator_t*);
+ticket_iterator_closed_note (iterator_t*);
 
 const char*
 ticket_iterator_fix_verified_report_id (iterator_t*);

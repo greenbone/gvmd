@@ -199,7 +199,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                "<solution_type>%s</solution_type>"
                                "<status>%s</status>"
                                "<open_time>%s</open_time>"
-                               "<open_comment>%s</open_comment>"
+                               "<open_note>%s</open_note>"
                                "<nvt oid=\"%s\"/>",
                                ticket_iterator_user_id (&tickets),
                                ticket_iterator_user_name (&tickets),
@@ -209,7 +209,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                ticket_iterator_solution_type (&tickets),
                                ticket_iterator_status (&tickets),
                                ticket_iterator_open_time (&tickets),
-                               ticket_iterator_open_comment (&tickets),
+                               ticket_iterator_open_note (&tickets),
                                ticket_iterator_nvt_oid (&tickets));
 
       if (ticket_iterator_task_id (&tickets))
@@ -244,16 +244,16 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
         {
           SENDF_TO_CLIENT_OR_FAIL ("<fixed_time>%s</fixed_time>",
                                    ticket_iterator_fixed_time (&tickets));
-          SENDF_TO_CLIENT_OR_FAIL ("<fixed_comment>%s</fixed_comment>",
-                                   ticket_iterator_fixed_comment (&tickets));
+          SENDF_TO_CLIENT_OR_FAIL ("<fixed_note>%s</fixed_note>",
+                                   ticket_iterator_fixed_note (&tickets));
         }
 
       if (ticket_iterator_closed_time (&tickets))
         {
           SENDF_TO_CLIENT_OR_FAIL ("<closed_time>%s</closed_time>",
                                    ticket_iterator_closed_time (&tickets));
-          SENDF_TO_CLIENT_OR_FAIL ("<closed_comment>%s</closed_comment>",
-                                   ticket_iterator_closed_comment (&tickets));
+          SENDF_TO_CLIENT_OR_FAIL ("<closed_note>%s</closed_note>",
+                                   ticket_iterator_closed_note (&tickets));
         }
 
       if (ticket_iterator_fix_verified_time (&tickets))
@@ -392,7 +392,7 @@ create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, copy, comment, result, assigned_to, user, open_comment;
+  entity_t entity, copy, comment, result, assigned_to, user, open_note;
   ticket_t new_ticket;
   const char *result_id, *user_id;
 
@@ -456,12 +456,12 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (entity, "comment");
 
-  open_comment = entity_child (entity, "open_comment");
-  if (open_comment == NULL)
+  open_note = entity_child (entity, "open_note");
+  if (open_note == NULL)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_ticket",
-                          "CREATE_TICKET requires an OPEN_COMMENT"));
+                          "CREATE_TICKET requires an OPEN_NOTE"));
       create_ticket_reset ();
       return;
     }
@@ -511,15 +511,15 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
      (XML_ERROR_SYNTAX ("create_ticket",
                         "CREATE_TICKET USER must have an id"
                         " attribute"));
-  else if (strlen (entity_text (open_comment)) == 0)
+  else if (strlen (entity_text (open_note)) == 0)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("create_ticket",
-                        "CREATE_TICKET OPEN_COMMENT is empty"));
+                        "CREATE_TICKET OPEN_NOTE is empty"));
   else switch (create_ticket
                 (comment ? entity_text (comment) : "",
                  result_id,
                  user_id,
-                 entity_text (open_comment),
+                 entity_text (open_note),
                  &new_ticket))
     {
       case 0:
@@ -676,7 +676,7 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 void
 modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, comment, status, open_comment, fixed_comment, closed_comment;
+  entity_t entity, comment, status, open_note, fixed_note, closed_note;
   entity_t assigned_to;
   const char *ticket_id, *user_id;
 
@@ -688,9 +688,9 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (entity, "comment");
   status = entity_child (entity, "status");
-  open_comment = entity_child (entity, "open_comment");
-  fixed_comment = entity_child (entity, "fixed_comment");
-  closed_comment = entity_child (entity, "closed_comment");
+  open_note = entity_child (entity, "open_note");
+  fixed_note = entity_child (entity, "fixed_note");
+  closed_note = entity_child (entity, "closed_note");
 
   assigned_to = entity_child (entity, "assigned_to");
   if (assigned_to)
@@ -732,9 +732,9 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
                 (ticket_id,
                  comment ? entity_text (comment) : NULL,
                  status ? entity_text (status) : NULL,
-                 open_comment ? entity_text (open_comment) : NULL,
-                 fixed_comment ? entity_text (fixed_comment) : NULL,
-                 closed_comment ? entity_text (closed_comment) : NULL,
+                 open_note ? entity_text (open_note) : NULL,
+                 fixed_note ? entity_text (fixed_note) : NULL,
+                 closed_note ? entity_text (closed_note) : NULL,
                  user_id))
     {
       case 0:
@@ -774,19 +774,19 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       case 5:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_ticket",
-                            "Fixed STATUS requires a FIXED_COMMENT"));
+                            "Fixed STATUS requires a FIXED_NOTE"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case 6:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_ticket",
-                            "Closed STATUS requires a CLOSED_COMMENT"));
+                            "Closed STATUS requires a CLOSED_NOTE"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case 7:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_ticket",
-                            "Open STATUS requires an OPEN_COMMENT"));
+                            "Open STATUS requires an OPEN_NOTE"));
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         break;
       case 99:
