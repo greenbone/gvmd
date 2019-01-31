@@ -34297,7 +34297,6 @@ trash_target_login_port (target_t target, const char* type)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
- * @param[in]   make_name_unique  Whether to make name unique.
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -34316,7 +34315,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                credential_t esxi_credential, credential_t snmp_credential,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
-               int make_name_unique, target_t* target)
+               target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
   gchar *port_list_comment, *quoted_ssh_port, *clean, *chosen_hosts;
@@ -34344,30 +34343,12 @@ create_target (const char* name, const char* asset_hosts_filter,
       return 99;
     }
 
-  if (make_name_unique)
+  if (resource_with_name_exists (name, "target", 0))
     {
-      int suffix;
-      /* Ensure the name is unique. */
-      quoted_name = sql_quote (name);
-      suffix = 1;
-      while (resource_with_name_exists (quoted_name, "target", 0))
-        {
-          gchar *new_name;
-          g_free (quoted_name);
-          new_name = g_strdup_printf ("%s %i", name, suffix++);
-          quoted_name = sql_quote (new_name);
-          g_free (new_name);
-        }
+      sql_rollback ();
+      return 1;
     }
-  else
-    {
-      if (resource_with_name_exists (name, "target", 0))
-        {
-          sql_rollback ();
-          return 1;
-        }
-    }
-  quoted_name = sql_quote (name);
+  quoted_name = sql_quote (name ?: "");
 
   if (asset_hosts_filter)
     {
@@ -58588,7 +58569,6 @@ filter_term_min_qod (const char *term)
  * @param[in]   comment         Comment on filter.
  * @param[in]   type            Type of resource.
  * @param[in]   term            Filter term.
- * @param[in]   make_name_unique  Whether to make name unique.
  * @param[out]  filter          Created filter.
  *
  * @return 0 success, 1 filter exists already, 2 error in type, 99 permission
@@ -58596,7 +58576,7 @@ filter_term_min_qod (const char *term)
  */
 int
 create_filter (const char *name, const char *comment, const char *type,
-               const char *term, int make_name_unique, filter_t* filter)
+               const char *term, filter_t* filter)
 {
   gchar *quoted_name, *quoted_comment, *quoted_term, *clean_term;
 
@@ -58617,31 +58597,12 @@ create_filter (const char *name, const char *comment, const char *type,
       return 99;
     }
 
-  if (make_name_unique)
+  if (resource_with_name_exists (name, "filter", 0))
     {
-      int suffix;
-      /* Ensure the name is unique. */
-      quoted_name = sql_quote (name);
-      suffix = 1;
-      while (resource_with_name_exists (quoted_name, "filter", 0))
-        {
-          gchar *new_name;
-          g_free (quoted_name);
-          new_name = g_strdup_printf ("%s %i", name, suffix++);
-          quoted_name = sql_quote (new_name);
-          g_free (new_name);
-        }
+      sql_rollback ();
+      return 1;
     }
-  else
-    {
-      quoted_name = sql_quote (name ?: "");
-      if (resource_with_name_exists (name, "filter", 0))
-        {
-          g_free (quoted_name);
-          sql_rollback ();
-          return 1;
-        }
-    }
+  quoted_name = sql_quote (name ?: "");
 
   clean_term = manage_clean_filter (term ? term : "");
   quoted_term = sql_quote (clean_term);

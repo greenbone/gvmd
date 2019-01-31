@@ -1553,7 +1553,7 @@ int
 create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, const char*, credential_t, const char*,
                credential_t, credential_t, credential_t, const char *,
-               const char *, const char *, int, target_t*);
+               const char *, const char *, target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);
@@ -3457,8 +3457,7 @@ int
 filter_term_min_qod (const char *);
 
 int
-create_filter (const char*, const char*, const char*, const char*, int,
-               filter_t*);
+create_filter (const char*, const char*, const char*, const char*, filter_t*);
 
 int
 copy_filter (const char*, const char*, const char*, filter_t*);

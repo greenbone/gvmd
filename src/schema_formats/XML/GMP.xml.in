@@ -4163,15 +4163,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A name for the filter</summary>
       <pattern>
         <t>name</t>
-        <e>make_unique</e>
       </pattern>
-      <ele>
-        <name>make_unique</name>
-        <summary>
-          Whether to append a unique suffix if the name already exists
-        </summary>
-        <pattern>boolean</pattern>
-      </ele>
     </ele>
     <ele>
       <name>comment</name>
@@ -5586,15 +5578,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A name for the target</summary>
       <pattern>
         <t>name</t>
-        <e>make_unique</e>
       </pattern>
-      <ele>
-        <name>make_unique</name>
-        <summary>
-          Whether to append a unique suffix if the name already exists
-        </summary>
-        <pattern>boolean</pattern>
-      </ele>
     </ele>
     <ele>
       <name>comment</name>
@@ -26464,6 +26448,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>CREATE_FILTER, CREATE_TARGET</command>
+    <summary>NAME MAKE_UNIQUE removed</summary>
+    <description>
+      <p>
+        The MAKE_UNIQUE subelement of the NAME given in the command is removed.
+        The client should instead check if the creation fails because of a
+        duplicate name and retry with a different one.
+      </p>
+      <p>
+        This does, however, have no effect on the automatic naming when
+        copying a resource without giving a name.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
   <change>
     <command>CREATE_ASSET</command>
     <summary>ASSET TYPE now mandatory</summary>

@@ -102,13 +102,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <command>
       <xsl:stylesheet
           version="1.0"
-          xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+          xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+          xmlns:date="http://exslt.org/dates-and-times"
+          extension-element-prefixes="date">
         <xsl:output
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
+          <xsl:variable
+            name="timestamp"
+            select="concat (substring (date:date(), 1, 10), ' ', substring (date:time(), 1, 8))"/>
           <create_target>
-            <name><make_unique>1</make_unique>Target for immediate scan of IP <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
+            <name>
+              <xsl:text>Target for immediate scan of IP </xsl:text>
+              <xsl:value-of select="/wizard/params/param[name='hosts']/value"/>
+              <xsl:text> - </xsl:text>
+              <xsl:value-of select="$timestamp"/>
+            </name>
             <hosts><xsl:value-of select="/wizard/params/param[name='hosts']/value"/></hosts>
 
             <xsl:if test="/wizard/params/param[name='port_list_id']/value != ''">
