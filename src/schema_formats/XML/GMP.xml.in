@@ -21814,9 +21814,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>status</e>
           <e>open_time</e>
           <o><e>fixed_time</e></o>
-          <o><e>fixed_comment</e></o>
+          <o><e>fixed_note</e></o>
           <o><e>closed_time</e></o>
-          <o><e>closed_comment</e></o>
+          <o><e>closed_note</e></o>
           <o><e>fix_verified_time</e></o>
           <o><e>fix_verified_report</e></o>
           <e>orphan</e>
@@ -22035,8 +22035,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
-          <name>fixed_comment</name>
-          <summary>The comment on the Fixed status</summary>
+          <name>fixed_note</name>
+          <summary>The note on the Fixed status</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -22045,8 +22045,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
-          <name>closed_comment</name>
-          <summary>The comment on the Closed status</summary>
+          <name>closed_note</name>
+          <summary>The note on the Closed status</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -25699,8 +25699,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <o><e>comment</e></o>
       <o><e>status</e></o>
-      <o><e>fixed_comment</e></o>
-      <o><e>closed_comment</e></o>
+      <o><e>fixed_note</e></o>
+      <o><e>closed_note</e></o>
       <o><e>assigned_to</e></o>
     </pattern>
     <ele>
@@ -25714,13 +25714,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern><t>ticket_status</t></pattern>
     </ele>
     <ele>
-      <name>fixed_comment</name>
-      <summary>Comment, required when status is Fixed</summary>
+      <name>fixed_note</name>
+      <summary>Note, required when status is Fixed</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
-      <name>closed_comment</name>
-      <summary>Comment, required when status is Closed</summary>
+      <name>closed_note</name>
+      <summary>Note, required when status is Closed</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -25759,7 +25759,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <modify_ticket ticket_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
           <status>Closed</status>
-          <closed_comment>Resolved with January update</closed_comment>
+          <closed_note>Resolved with January update</closed_note>
         </modify_ticket>
       </request>
       <response>
