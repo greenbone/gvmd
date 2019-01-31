@@ -67902,11 +67902,11 @@ tag_iterator_active (iterator_t* iterator)
 DEF_ACCESS (tag_iterator_value, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
- * @brief Get if a tag is orphaned from a Tag iterator.
+ * @brief Get number of resources linked to tag.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Whether a tag is orphaned.
+ * @return Count of resources linked to tag.
  */
 int
 tag_iterator_resources (iterator_t* iterator)
