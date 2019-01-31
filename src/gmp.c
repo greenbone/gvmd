@@ -869,7 +869,6 @@ typedef struct
 {
   char *comment;                 ///< Comment.
   char *copy;                    ///< UUID of resource to copy.
-  char *make_name_unique;        ///< Boolean.  Whether to make name unique.
   char *name;                    ///< Name of new filter.
   char *term;                    ///< Filter term.
   char *type;                    ///< Type of new filter.
@@ -885,7 +884,6 @@ create_filter_data_reset (create_filter_data_t *data)
 {
   free (data->comment);
   free (data->copy);
-  free (data->make_name_unique);
   free (data->name);
   free (data->term);
   free (data->type);
@@ -1479,7 +1477,6 @@ typedef struct
   char *esxi_credential_id;      ///< ESXi credential for new target.
   char *esxi_lsc_credential_id;  ///< ESXi credential (deprecated).
   char *snmp_credential_id;      ///< SNMP credential for new target.
-  char *make_name_unique;        ///< Boolean.  Whether to make name unique.
   char *name;                    ///< Name of new target.
 } create_target_data_t;
 
@@ -1510,7 +1507,6 @@ create_target_data_reset (create_target_data_t *data)
   free (data->esxi_credential_id);
   free (data->esxi_lsc_credential_id);
   free (data->snmp_credential_id);
-  free (data->make_name_unique);
   free (data->name);
 
   memset (data, 0, sizeof (create_target_data_t));
@@ -4928,7 +4924,6 @@ typedef enum
   CLIENT_CREATE_FILTER_COMMENT,
   CLIENT_CREATE_FILTER_COPY,
   CLIENT_CREATE_FILTER_NAME,
-  CLIENT_CREATE_FILTER_NAME_MAKE_UNIQUE,
   CLIENT_CREATE_FILTER_TERM,
   CLIENT_CREATE_FILTER_TYPE,
   CLIENT_CREATE_GROUP,
@@ -5155,7 +5150,6 @@ typedef enum
   CLIENT_CREATE_TARGET_ESXI_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_HOSTS,
   CLIENT_CREATE_TARGET_NAME,
-  CLIENT_CREATE_TARGET_NAME_MAKE_UNIQUE,
   CLIENT_CREATE_TARGET_PORT_LIST,
   CLIENT_CREATE_TARGET_PORT_RANGE,
   CLIENT_CREATE_TARGET_SMB_CREDENTIAL,
@@ -8230,11 +8224,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_FILTER_TYPE);
         ELSE_ERROR ("create_filter");
 
-      case CLIENT_CREATE_FILTER_NAME:
-        if (strcasecmp ("MAKE_UNIQUE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_FILTER_NAME_MAKE_UNIQUE);
-        ELSE_ERROR ("create_filter");
-
       case CLIENT_CREATE_GROUP:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_GROUP_COMMENT);
@@ -9126,11 +9115,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&create_target_data->name, "");
             set_client_state (CLIENT_CREATE_TARGET_NAME);
           }
-        ELSE_ERROR ("create_target");
-
-      case CLIENT_CREATE_TARGET_NAME:
-        if (strcasecmp ("MAKE_UNIQUE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_NAME_MAKE_UNIQUE);
         ELSE_ERROR ("create_target");
 
       case CLIENT_CREATE_TARGET_SSH_CREDENTIAL:
@@ -22365,7 +22349,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           assert (create_filter_data->term != NULL);
 
           if (create_filter_data->copy)
-            /* TODO make_unique (same for targets). */
             switch (copy_filter (create_filter_data->name,
                                  create_filter_data->comment,
                                  create_filter_data->copy,
@@ -22424,8 +22407,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_filter_data->comment,
                          create_filter_data->type,
                          create_filter_data->term,
-                         create_filter_data->make_name_unique
-                          && strcmp (create_filter_data->make_name_unique, "0"),
                          &new_filter))
             {
               case 0:
@@ -22471,8 +22452,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_FILTER, NAME);
       CLOSE (CLIENT_CREATE_FILTER, TERM);
       CLOSE (CLIENT_CREATE_FILTER, TYPE);
-
-      CLOSE (CLIENT_CREATE_FILTER_NAME, MAKE_UNIQUE);
 
       case CLIENT_CREATE_GROUP:
         {
@@ -24587,9 +24566,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
-                         (create_target_data->make_name_unique
-                          && strcmp (create_target_data->make_name_unique, "0"))
-                           ? 1 : 0,
                          &new_target))
             {
               case 1:
@@ -24710,8 +24686,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, SMB_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SMB_LSC_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SNMP_CREDENTIAL);
-
-      CLOSE (CLIENT_CREATE_TARGET_NAME, MAKE_UNIQUE);
 
       CLOSE (CLIENT_CREATE_TARGET_SSH_CREDENTIAL, PORT);
 
@@ -29335,9 +29309,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_FILTER_NAME,
               &create_filter_data->name);
 
-      APPEND (CLIENT_CREATE_FILTER_NAME_MAKE_UNIQUE,
-              &create_filter_data->make_name_unique);
-
       APPEND (CLIENT_CREATE_FILTER_TERM,
               &create_filter_data->term);
 
@@ -29732,9 +29703,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TARGET_NAME,
               &create_target_data->name);
-
-      APPEND (CLIENT_CREATE_TARGET_NAME_MAKE_UNIQUE,
-              &create_target_data->make_name_unique);
 
       APPEND (CLIENT_CREATE_TARGET_PORT_RANGE,
               &create_target_data->port_range);

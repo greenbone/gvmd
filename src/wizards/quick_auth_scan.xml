@@ -84,23 +84,37 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <step>
     <command>
-      <xsl:stylesheet
+        <xsl:stylesheet 
           version="1.0"
-          xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+          xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+          xmlns:date="http://exslt.org/dates-and-times"
+          extension-element-prefixes="date">
         <xsl:output
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
+          <xsl:variable
+            name="timestamp"
+            select="concat (substring (date:date(), 1, 10), ' ', substring (date:time(), 1, 8))"/>
           <create_target>
             <xsl:choose>
               <xsl:when test="/wizard/params/param[name='target_name']/value">
-                <name><make_unique>1</make_unique><xsl:value-of select="/wizard/params/param[name='target_name']/value"/></name>
+                <name><xsl:value-of select="/wizard/params/param[name='target_name']/value"/></name>
               </xsl:when>
               <xsl:when test="/wizard/params/param[name='hosts']/value != ''">
-                <name><make_unique>1</make_unique>Target for immediate scan of <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
+                <name>
+                  <xsl:text>Target for immediate scan of </xsl:text>
+                  <xsl:value-of select="/wizard/params/param[name='hosts']/value"/>
+                  <xsl:text> - </xsl:text>
+                  <xsl:value-of select="$timestamp"/>
+                </name>
               </xsl:when>
               <xsl:otherwise>
-                <name><make_unique>1</make_unique>Target for immediate scan of localhost</name>
+                <name>
+                  <xsl:text>Target for immediate scan of </xsl:text>
+                  <xsl:value-of select="/wizard/params/param[name='hosts']/value"/>
+                  <xsl:text> - localhost</xsl:text>
+                </name>
               </xsl:otherwise>
             </xsl:choose>
             <xsl:if test="/wizard/previous/response/commands_response/create_credential_response/@id != ''">
