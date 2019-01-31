@@ -1121,6 +1121,36 @@ ticket_uuid (ticket_t ticket)
 }
 
 /**
+ * @brief Set a note on a ticket.
+ *
+ * @param[in]  ticket  Ticket.
+ * @param[in]  name    Name of note column.
+ * @param[in]  note    Note text.
+ *
+ * @return 1 if ticket modified, else 0.
+ */
+static int
+set_note (ticket_t ticket, const gchar *name, const gchar *note)
+{
+  if (note && strlen (note))
+    {
+      gchar *quoted_note;
+
+      quoted_note = sql_quote (note);
+      sql ("UPDATE tickets SET %s = '%s'"
+           " WHERE id = %llu;",
+           name,
+           quoted_note,
+           ticket);
+      g_free (quoted_note);
+
+      return 1;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Modify a ticket.
  *
  * @param[in]   ticket_id       UUID of ticket.
@@ -1209,8 +1239,6 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
         {
           case TICKET_STATUS_OPEN:
             {
-              gchar *quoted_note;
-
               if ((open_note == NULL) || (strlen (open_note) == 0))
                 {
                   /* Open status must always be accompanied by a note. */
@@ -1219,7 +1247,6 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
                 }
 
               time_column = "open_time";
-              quoted_note = sql_quote (open_note);
 
               sql ("UPDATE tickets"
                    " SET fixed_time = NULL,"
@@ -1227,56 +1254,43 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
                    "     fix_verified_time = NULL,"
                    "     fix_verified_report = 0,"
                    "     closed_time = NULL,"
-                   "     closed_note = NULL,"
-                   "     open_note = '%s'"
+                   "     closed_note = NULL"
                    " WHERE id = %llu;",
-                   quoted_note,
                    ticket);
 
-              g_free (quoted_note);
               break;
             }
           case TICKET_STATUS_FIXED:
             {
-              gchar *quoted_note;
-
-              time_column = "fixed_time";
               if ((fixed_note == NULL) || (strlen (fixed_note) == 0))
                 {
                   /* Fixed status must always be accompanied by a note. */
                   sql_rollback ();
                   return 5;
                 }
-              quoted_note = sql_quote (fixed_note);
+
+              time_column = "fixed_time";
+
               sql ("UPDATE tickets"
                    " SET fix_verified_time = NULL,"
                    "     fix_verified_report = 0,"
                    "     closed_time = NULL,"
-                   "     closed_note = NULL,"
-                   "     fixed_note = '%s'"
+                   "     closed_note = NULL"
                    " WHERE id = %llu;",
-                   quoted_note,
                    ticket);
-              g_free (quoted_note);
+
+              break;
             }
-            break;
           case TICKET_STATUS_CLOSED:
             {
-              gchar *quoted_note;
-
-              time_column = "closed_time";
               if ((closed_note == NULL) || (strlen (closed_note) == 0))
                 {
                   /* Closed status must always be accompanied by a note. */
                   sql_rollback ();
                   return 6;
                 }
-              quoted_note = sql_quote (closed_note);
-              sql ("UPDATE tickets SET closed_note = '%s'"
-                   " WHERE id = %llu;",
-                   quoted_note,
-                   ticket);
-              g_free (quoted_note);
+
+              time_column = "closed_time";
             }
             break;
           default:
@@ -1296,8 +1310,17 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            time_column,
            ticket);
 
-       updated = 1;
+      updated = 1;
     }
+
+  if (set_note (ticket, "open_note", open_note))
+    updated = 1;
+
+  if (set_note (ticket, "fixed_note", fixed_note))
+    updated = 1;
+
+  if (set_note (ticket, "closed_note", closed_note))
+    updated = 1;
 
   /* Get assignee for update check, before updating assignee. */
 
