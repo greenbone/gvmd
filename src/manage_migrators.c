@@ -15030,10 +15030,10 @@ migrate_202_to_203 ()
       /* This is a lot easier that migrating.  No real user
        * should have been using the ticket implementation yet
        * so it is safe. */
-      sql ("DROP TABLE ticket_results;");
-      sql ("DROP TABLE tickets;");
-      sql ("DROP TABLE ticket_results_trash;");
-      sql ("DROP TABLE tickets_trash;");
+      sql ("DROP TABLE IF EXISTS ticket_results;");
+      sql ("DROP TABLE IF EXISTS tickets;");
+      sql ("DROP TABLE IF EXISTS ticket_results_trash;");
+      sql ("DROP TABLE IF EXISTS tickets_trash;");
     }
   else
     {
@@ -15086,10 +15086,10 @@ migrate_203_to_204 ()
       /* This is a lot easier that migrating.  No real user
        * should have been using the ticket implementation yet
        * so it is safe. */
-      sql ("DROP TABLE ticket_results;");
-      sql ("DROP TABLE tickets;");
-      sql ("DROP TABLE ticket_results_trash;");
-      sql ("DROP TABLE tickets_trash;");
+      sql ("DROP TABLE IF EXISTS ticket_results;");
+      sql ("DROP TABLE IF EXISTS tickets;");
+      sql ("DROP TABLE IF EXISTS ticket_results_trash;");
+      sql ("DROP TABLE IF EXISTS tickets_trash;");
     }
   else
     {
@@ -15136,10 +15136,10 @@ migrate_204_to_205 ()
       /* This is a lot easier that migrating.  No real user
        * should have been using the ticket implementation yet
        * so it is safe. */
-      sql ("DROP TABLE ticket_results;");
-      sql ("DROP TABLE tickets;");
-      sql ("DROP TABLE ticket_results_trash;");
-      sql ("DROP TABLE tickets_trash;");
+      sql ("DROP TABLE IF EXISTS ticket_results;");
+      sql ("DROP TABLE IF EXISTS tickets;");
+      sql ("DROP TABLE IF EXISTS ticket_results_trash;");
+      sql ("DROP TABLE IF EXISTS tickets_trash;");
     }
   else
     {
