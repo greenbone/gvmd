@@ -5990,6 +5990,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>copy</e></o>
       <e>result</e>
       <e>assigned_to</e>
+      <e>open_note</e>
     </pattern>
     <ele>
       <name>comment</name>
@@ -6033,6 +6034,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </pattern>
       </ele>
     </ele>
+    <ele>
+      <name>open_note</name>
+      <summary>A note about opening the ticket</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
     <response>
       <pattern>
         <attrib>
@@ -6060,6 +6068,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <assigned_to>
             <user id="33e92d3e-a379-4c46-a4cf-88c8201ab710"/>
           </assigned_to>
+	      <open_note>Please fix today.</open_note>
         </create_ticket>
       </request>
       <response>
@@ -21813,6 +21822,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>solution_type</e>
           <e>status</e>
           <e>open_time</e>
+          <e>open_note</e>
           <o><e>fixed_time</e></o>
           <o><e>fixed_note</e></o>
           <o><e>closed_time</e></o>
@@ -22030,6 +22040,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
+          <name>open_note</name>
+          <summary>A note on the Closed status</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
           <name>fixed_time</name>
           <summary>Date and time the ticket was set to fixed</summary>
           <pattern><t>iso_time</t></pattern>
@@ -22223,6 +22238,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <solution_type>VendorFix</solution_type>
             <status>Open</status>
             <open_time>2018-11-29T16:18:56Z</open_time>
+            <open_note>Probably the new version fixes this</open_note>
             <result id="138c1216-4acb-4ded-bef3-7fab80eac8c7"></result>
           </ticket>
           <filters id="">
@@ -25699,6 +25715,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <o><e>comment</e></o>
       <o><e>status</e></o>
+      <o><e>open_note</e></o>
       <o><e>fixed_note</e></o>
       <o><e>closed_note</e></o>
       <o><e>assigned_to</e></o>
@@ -25712,6 +25729,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>status</name>
       <summary>Ticket status</summary>
       <pattern><t>ticket_status</t></pattern>
+    </ele>
+    <ele>
+      <name>open_note</name>
+      <summary>Note, required when status is Open</summary>
+      <pattern>text</pattern>
     </ele>
     <ele>
       <name>fixed_note</name>
