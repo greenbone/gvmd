@@ -7262,7 +7262,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         Since this is a destructive command, the client is advised to ask
         for confirmation from the user before sending this command to the
-        Administrator.
+        Manager.
       </p>
     </description>
     <pattern>
@@ -19591,7 +19591,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </resource>
             <value>52.2788</value>
             <active>1</active>
-            <orphaned>0</orphaned>
           </tag>
           <truncated>...</truncated>
         </get_tags_response>
