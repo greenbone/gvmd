@@ -133,7 +133,27 @@ ticket_status_name (ticket_status_t status)
      NULL,                                                                    \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
-   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                                 \
+   {                                                                          \
+     "(CASE"                                                                  \
+     " WHEN (SELECT EXISTS (SELECT * FROM ticket_results"                     \
+     "                      WHERE ticket = tickets.id))"                      \
+     " THEN (SELECT new_severity FROM result_new_severities"                  \
+     "       WHERE result_new_severities.result"                              \
+     "             = (SELECT result FROM ticket_results"                      \
+     "                WHERE ticket = tickets.id"                              \
+     "                LIMIT 1)"                                               \
+     "       AND result_new_severities.user"                                  \
+     "           = (SELECT users.id"                                          \
+     "              FROM current_credentials, users"                          \
+     "              WHERE current_credentials.uuid = users.uuid)"             \
+     "       AND result_new_severities.override = 1"                          \
+     "       AND result_new_severities.dynamic = 0"                           \
+     "       LIMIT 1)"                                                        \
+     " ELSE severity"                                                         \
+     " END)",                                                                 \
+     "severity",                                                              \
+     KEYWORD_TYPE_DOUBLE                                                      \
+   },                                                                         \
    { "host", NULL, KEYWORD_TYPE_STRING },                                     \
    { "location", NULL, KEYWORD_TYPE_STRING },                                 \
    { "solution_type", NULL, KEYWORD_TYPE_STRING },                            \
