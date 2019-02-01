@@ -565,12 +565,9 @@ init_result_ticket_iterator (iterator_t *iterator, const gchar *result_id)
   init_iterator (iterator,
                  "SELECT id, uuid"
                  " FROM tickets"
-                 " WHERE (SELECT nvt FROM results WHERE id = %llu)"
-                 "       IN (SELECT nvt FROM results"
-                 "           WHERE id = (SELECT result FROM ticket_results"
-                 "                       WHERE ticket = tickets.id"
-                 "                       AND result_location = %i"
-                 "                       LIMIT 1))"
+                 " WHERE id IN (SELECT ticket FROM ticket_results"
+                 "              WHERE result = %llu"
+                 "              AND result_location = %i)"
                  " ORDER BY id;",
                  result,
                  LOCATION_TABLE);
