@@ -105,6 +105,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>xsd:token { pattern = "[0-9]{1,5}" }</pattern>
   </type>
   <type>
+    <name>port_ranges</name>
+    <summary>A comma separated list of port ranges, prefixed with "T:" for TCP and "U:" for UDP, allowing whitespace</summary>
+    <pattern>xsd:token { pattern = "[TU]:[0-9]{1,5}(-[0-9]{1,5})?(,\s*[TU]:[0-9]{1,5}(-[0-9]{1,5})?)*" }</pattern>
+  </type>
+  <type>
     <name>user_list</name>
     <summary>A space separated list of users</summary>
     <pattern>text</pattern>
@@ -4806,10 +4811,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>port_range</name>
       <summary>
-        Comma or newline separated list of ranges
+        Comma separated list of port ranges (allowing whitespace)
       </summary>
       <pattern>
-        text
+        <t>port_ranges</t>
       </pattern>
     </ele>
     <response>
@@ -5758,8 +5763,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>port_range</name>
-      <summary>Port range for the target</summary>
-      <pattern>text</pattern>
+      <summary>
+        Comma separated list of port ranges for the target
+        (allowing whitespace)
+      </summary>
+      <pattern>
+        <t>port_ranges</t>
+      </pattern>
     </ele>
     <ele>
       <name>port_list</name>
