@@ -3765,7 +3765,9 @@ filter_clause (const char* type, const char* filter,
               && (strlen (keyword->column) > 3)
               && (strcmp (keyword->column + strlen (keyword->column) - 3, "_id")
                   == 0)
-              && strcasecmp (keyword->column, "nvt_id"))
+              && strcasecmp (keyword->column, "nvt_id")
+              /* Tickets have a custom result_id column. */
+              && strcasecmp (keyword->column, "result_id"))
             {
               gchar *type_term;
 
