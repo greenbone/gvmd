@@ -3816,6 +3816,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           config with this name, then a number is attached to the name to
           make it unique.
         </li>
+        <li>
+          With a scanner element referencing an OSP scanner.
+          The config is then created by retrieving the expected preferences
+          from the given scanner via OSP.
+        </li>
       </l>
     </description>
     <pattern>
@@ -3823,6 +3828,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <or>
         <e>copy</e>
         <r>get_configs</r>
+        <e>scanner</e>
       </or>
       <e>name</e>
     </pattern>
@@ -3837,6 +3843,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>copy</name>
       <!-- TODO UUIDs are normally in attributes. -->
       <summary>The UUID of an existing config</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>scanner</name>
+      <!-- TODO UUIDs are normally in attributes. -->
+      <summary>The UUID of an OSP scanner to get config data from</summary>
       <pattern>
         <t>uuid</t>
       </pattern>
@@ -3889,6 +3903,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <truncated>...</truncated>
             </config>
           </get_configs_response>
+        </create_config>
+      </request>
+      <response>
+        <create_config_response status="201" status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_config_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create an OSP config from a scanner</summary>
+      <request>
+        <create_config>
+          <name>Full</name>
+          <scanner>daba56c8-73ec-11df-a475-002264764cea</scanner>
         </create_config>
       </request>
       <response>
