@@ -7273,20 +7273,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
       </or>
-      <or>
-        <attrib>
-          <name>inheritor_id</name>
-          <summary>The ID of the inheriting user or "self".  Overrides inheritor_name</summary>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>inheritor_name</name>
-          <summary>The name of the inheriting user</summary>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </or>
+      <o>
+        <or>
+          <attrib>
+            <name>inheritor_id</name>
+            <summary>The ID of the inheriting user or "self".  Overrides inheritor_name</summary>
+            <type>text</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>inheritor_name</name>
+            <summary>The name of the inheriting user</summary>
+            <type>text</type>
+            <required>1</required>
+          </attrib>
+        </or>
+      </o>
     </pattern>
     <response>
       <pattern>
