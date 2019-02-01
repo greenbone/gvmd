@@ -110,7 +110,7 @@ ticket_status_name (ticket_status_t status)
 #define TICKET_ITERATOR_FILTER_COLUMNS                                        \
  { GET_ITERATOR_FILTER_COLUMNS, "severity", "host", "location",               \
    "solution_type", "status", "opened", "fixed", "closed", "orphan",          \
-   NULL }
+   "result_id", NULL }
 
 /**
  * @brief Ticket iterator columns.
@@ -173,6 +173,14 @@ ticket_status_name (ticket_status_t status)
    {                                                                          \
      "(SELECT name FROM tasks WHERE id = task)",                              \
      NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT result_uuid FROM ticket_results"                                \
+     " WHERE ticket = tickets.id"                                             \
+     " AND result_location = " G_STRINGIFY (LOCATION_TABLE)                   \
+     " LIMIT 1)",                                                             \
+     "result_id",                                                             \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
@@ -239,6 +247,14 @@ ticket_status_name (ticket_status_t status)
    {                                                                          \
      "(SELECT name FROM tasks WHERE id = task)",                              \
      NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT result_uuid FROM ticket_results"                                \
+     " WHERE ticket = tickets.id"                                             \
+     " AND result_location = " G_STRINGIFY (LOCATION_TABLE)                   \
+     " LIMIT 1)",                                                             \
+     "result_id",                                                             \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
@@ -549,12 +565,9 @@ init_result_ticket_iterator (iterator_t *iterator, const gchar *result_id)
   init_iterator (iterator,
                  "SELECT id, uuid"
                  " FROM tickets"
-                 " WHERE (SELECT nvt FROM results WHERE id = %llu)"
-                 "       IN (SELECT nvt FROM results"
-                 "           WHERE id = (SELECT result FROM ticket_results"
-                 "                       WHERE ticket = tickets.id"
-                 "                       AND result_location = %i"
-                 "                       LIMIT 1))"
+                 " WHERE id IN (SELECT ticket FROM ticket_results"
+                 "              WHERE result = %llu"
+                 "              AND result_location = %i)"
                  " ORDER BY id;",
                  result,
                  LOCATION_TABLE);
