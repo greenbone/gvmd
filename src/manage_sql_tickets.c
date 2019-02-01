@@ -250,8 +250,8 @@ ticket_status_name (ticket_status_t status)
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
-     "(SELECT result_uuid FROM ticket_results"                                \
-     " WHERE ticket = tickets.id"                                             \
+     "(SELECT result_uuid FROM ticket_results_trash"                          \
+     " WHERE ticket = tickets_trash.id"                                       \
      " AND result_location = " G_STRINGIFY (LOCATION_TABLE)                   \
      " LIMIT 1)",                                                             \
      "result_id",                                                             \
