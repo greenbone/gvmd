@@ -574,6 +574,8 @@ DEF_ACCESS (ticket_result_iterator_result_id, 2);
 int
 init_result_ticket_iterator (iterator_t *iterator, const gchar *result_id)
 {
+  get_data_t get;
+  gchar *owned_clause, *with_clause;
   result_t result;
 
   if (find_resource_with_permission ("result", result_id, &result, NULL, 0))
@@ -582,15 +584,26 @@ init_result_ticket_iterator (iterator_t *iterator, const gchar *result_id)
   if (result == 0)
     return 1;
 
+  memset (&get, 0, sizeof (get));
+  owned_clause = acl_where_owned ("ticket", &get, 1, "any", 0, NULL,
+                                  &with_clause);
+
   init_iterator (iterator,
+                 "%s"
                  "SELECT id, uuid"
                  " FROM tickets"
                  " WHERE id IN (SELECT ticket FROM ticket_results"
                  "              WHERE result = %llu"
                  "              AND result_location = %i)"
+                 " AND %s"
                  " ORDER BY id;",
+                 with_clause ? with_clause : "",
                  result,
-                 LOCATION_TABLE);
+                 LOCATION_TABLE,
+                 owned_clause);
+
+  g_free (with_clause);
+  g_free (owned_clause);
   return 0;
 }
 
