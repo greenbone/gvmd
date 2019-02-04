@@ -3846,7 +3846,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>copy</name>
-      <!-- TODO UUIDs are normally in attributes. -->
       <summary>The UUID of an existing config</summary>
       <pattern>
         <t>uuid</t>
@@ -3854,7 +3853,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>scanner</name>
-      <!-- TODO UUIDs are normally in attributes. -->
       <summary>The UUID of an OSP scanner to get config data from</summary>
       <pattern>
         <t>uuid</t>
