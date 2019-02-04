@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2010-2018 Greenbone Networks GmbH
+Copyright (C) 2010-2019 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -27242,5 +27242,67 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         CREATE_TARGET,GET_TARGETS  + SSH,SMB_LSC_CREDENTIAL, - LSC_CREDENTIAL
      GET_TASKS  - RESULT_COUNT
   -->
+
+  <!-- Deprecation warnings. -->
+
+  <deprecation>
+    <command>COMMANDS</command>
+    <summary>The command COMMANDS will be removed.</summary>
+    <description>
+      <p>
+        The command COMMANDS was used to send multiple commands in one request.
+        This was meant to avoid multiple server-roundtrips. Since the rountrips
+        are not expensive anymore, GMP clients should send each command in
+        a separate request.
+      </p>
+    </description>
+    <version>8.0</version>
+  </deprecation>
+
+  <deprecation>
+    <command>GET_TASKS</command>
+    <summary>Drop the elements FIRST_REPORT and SECOND_LAST_REPORT.</summary>
+    <description>
+      <p>
+        In the current version, the response of a GET_TASKS included the elements
+        FIRST_REPORT and SECOND_LAST_REPORT which were both used in early versions
+        of web-ui clients. Meanwhile, a GET_REPORTS call should be used to get
+        whatever report is wanted, applying a suitable filter.
+      </p>
+    </description>
+    <version>8.0</version>
+  </deprecation>
+
+  <deprecation>
+    <command>CREATE_REPORT</command>
+    <summary>Task creation will be removed.</summary>
+    <description>
+      <p>
+        The command CREATE_REPORT used to offer elements TASK/NAME and TASK/COMMENT
+        in order to automatically let create a new task for the imported report.
+        This functionality is going to be removed. Instead use the direct command CREATE_TASK
+        prior to CREATE_REPORT.
+      </p>
+    </description>
+    <version>8.0</version>
+  </deprecation>
+
+  <deprecation>
+    <command>GET_REPORTS</command>
+    <summary>Drop the attributes TYPE, HOST, HOST_FIRST_RESULT, HOST_MAX_RESULTS, HOST_LEVELS, HOST_SEARCH_PHRASE and POS.</summary>
+    <description>
+      <p>
+        In the current version, TYPE can be either SCAN or ASSETS and it defaults to SCAN.
+        ASSETS will be removed, because GET_ASSETS should be used instead.
+        If you are using TYPE with SCAN, simply remove the TYPE attribute, because the
+        type is always SCAN.
+      </p>
+      <p>
+        The other removed attributes only had a meaning in conjunction
+        where TYPE was ASSETS.
+      </p>
+    </description>
+    <version>8.0</version>
+  </deprecation>
 
 </protocol>

@@ -12,7 +12,7 @@
   <xsl:strip-space elements="pretty"/>
 
 <!--
-Copyright (C) 2010-2018 Greenbone Networks GmbH
+Copyright (C) 2010-2019 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -698,6 +698,32 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:apply-templates select="change[version=/protocol/version]"/>
   </xsl:template>
 
+  <!-- Deprecation Warnings. -->
+
+  <xsl:template match="deprecation">
+    <xsl:param name="index">9.<xsl:value-of select="position()"/></xsl:param>
+    <div>
+      <div>
+        <h3>
+          <xsl:value-of select="$index"/>
+          Deprecation warning for <tt><xsl:value-of select="command"/></tt>
+        </h3>
+      </div>
+
+      <p>In short: <xsl:value-of select="normalize-space(summary)"/>.</p>
+
+      <xsl:apply-templates select="description"/>
+    </div>
+  </xsl:template>
+
+  <xsl:template name="deprecations">
+    <h2 id="deprecations">
+      9 Deprecation Warnings for Version
+      <xsl:value-of select="/protocol/version"/>
+    </h2>
+    <xsl:apply-templates select="deprecation[version=/protocol/version]"/>
+  </xsl:template>
+
   <!-- Root. -->
 
   <xsl:template match="protocol">
@@ -752,6 +778,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                       <xsl:value-of select="/protocol/version"/>
                     </a>
                   </li>
+                  <li>
+                    <a href="#deprecations">
+                      Deprecation Warnings for Version
+                      <xsl:value-of select="/protocol/version"/>
+                    </a>
+                  </li>
                 </ol>
 
                 <xsl:call-template name="type-summary"/>
@@ -762,6 +794,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <xsl:call-template name="element-details"/>
                 <xsl:call-template name="command-details"/>
                 <xsl:call-template name="changes"/>
+                <xsl:call-template name="deprecations"/>
 
                 <div style="text-align: center; padding: 5px;">
                   This file was automatically generated.
