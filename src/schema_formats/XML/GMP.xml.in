@@ -27260,6 +27260,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </deprecation>
 
   <deprecation>
+    <command>GET_TASKS</command>
+    <summary>Drop the elements FIRST_REPORT and SECOND_LAST_REPORT.</summary>
+    <description>
+      <p>
+        In the current version, the response of a GET_TASKS included the elements
+        FIRST_REPORT and SECOND_LAST_REPORT which were both used in early versions
+        of web-ui clients. Meanwhile, a GET_REPORTS call should be used to get
+        whatever report is wanted, applying a suitable filter.
+      </p>
+    </description>
+    <version>8.0</version>
+  </deprecation>
+
+  <deprecation>
     <command>CREATE_REPORT</command>
     <summary>Task creation will be removed.</summary>
     <description>
