@@ -27264,8 +27264,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>Task creation will be removed.</summary>
     <description>
       <p>
-        The command CREATE_REPORT used to offer element TASK/NAME and TASK/COMMENT
-        in order to automactically let create a new task for the imported report.
+        The command CREATE_REPORT used to offer elements TASK/NAME and TASK/COMMENT
+        in order to automatically let create a new task for the imported report.
         This functionality is going to be removed. Instead use the direct command CREATE_TASK
         prior to CREATE_REPORT.
       </p>
@@ -27280,8 +27280,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         In the current version, TYPE can be either SCAN or ASSETS and it defaults to SCAN.
         ASSETS will be removed, because GET_ASSETS should be used instead.
-        If you are using TYPE with SCAN, simply remove this part, because of the
-        equavalent default.
+        If you are using TYPE with SCAN, simply remove the TYPE attribute, because the
+        type is always SCAN.
       </p>
       <p>
         The other removed attributes only had a meaning in conjunction
