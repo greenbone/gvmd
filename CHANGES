@@ -14,17 +14,30 @@ Main changes compared to gvm 8.0+beta2:
 * GMP CREATE_ASSET, its GMP doc and usage by GSA are now more consistent.
 * The SMB alert will now try to create directories as needed.
 * The file path of SMB alerts can now be set to a directory, using the default
-  report filename from the user's settings. 
+  report filename from the user's settings.
 * The file extension from the report format will now be added by SMB alerts.
 * The tag "smb-alert:file_path" on tasks will override the file path of
   SMB alerts.
+* Handling of SSH private keys has been improved, allowing use of EC keys.
+* An issue with deleting users has been fixed.
+* The option `--optimize remove-open-port-results` has been removed.
+* CREATE_TASK now requires a name.
+* The compile-time LOG option has been removed.
+* The `--modify-scanner` option now also accepts UNIX sockets.
+* Support for report content composition has been added.
+* TEST_ALERT now also works if NVTs are missing.
+* LSC errors are now logged as warnings.
 * Remediation support has been added (GMP CREATE_TICKET, GET_TICKETS, etc).
 * Missing data in credentials no longer prevents slave tasks from starting.
   Instead the scan will start without the credential.
+* An issue preventing "Start Task" alerts to run has been fixed.
 * Handling of failed/successful SNMP Authentication has been added to the
-  HTML and LaTeX report formats.
+  HTML, LaTeX and PDF report formats.
 * A new password-only credential type has been added
 * The Sourcefire alert now accepts a password credential for PKCS12 decryption.
+* The source code and GMP documentation have been cleaned up.
+* A seciton about deprecated GMP elements has been added to the documentation.
+* Various other code cleanups and improvements.
 
 
 gvmd 8.0+beta2 (2018-12-05)
