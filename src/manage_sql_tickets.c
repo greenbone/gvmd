@@ -1178,7 +1178,7 @@ ticket_uuid (ticket_t ticket)
 static int
 set_note (ticket_t ticket, const gchar *name, const gchar *note)
 {
-  if (note && strlen (note))
+  if (note)
     {
       gchar *quoted_note;
 
