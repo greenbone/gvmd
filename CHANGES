@@ -30,13 +30,13 @@ Main changes compared to gvm 8.0+beta2:
 * Remediation support has been added (GMP CREATE_TICKET, GET_TICKETS, etc).
 * Missing data in credentials no longer prevents slave tasks from starting.
   Instead the scan will start without the credential.
-* An issue preventing "Start Task" alerts to run has been fixed.
+* An issue preventing "Start Task" alerts from running has been fixed.
 * Handling of failed/successful SNMP Authentication has been added to the
   HTML, LaTeX and PDF report formats.
 * A new password-only credential type has been added
 * The Sourcefire alert now accepts a password credential for PKCS12 decryption.
 * The source code and GMP documentation have been cleaned up.
-* A seciton about deprecated GMP elements has been added to the documentation.
+* A section about deprecated GMP elements has been added to the documentation.
 * Various other code cleanups and improvements.
 
 
