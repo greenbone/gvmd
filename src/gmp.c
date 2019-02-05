@@ -1615,7 +1615,6 @@ create_task_data_reset (create_task_data_t *data)
 typedef struct
 {
   char *copy;             ///< UUID of resource to copy.
-  int sort_order;         ///< Sort order.
   array_t *groups;        ///< IDs of groups.
   char *hosts;            ///< Hosts.
   int hosts_allow;        ///< Whether hosts are allowed.
@@ -3720,7 +3719,6 @@ modify_override_data_reset (modify_override_data_t *data)
 typedef struct
 {
   array_t *groups;           ///< IDs of groups.
-  int sort_order;            ///< Sort order.
   gchar *hosts;              ///< Hosts.
   int hosts_allow;           ///< Whether hosts are allowed.
   char *ifaces;              ///< Interfaces.
