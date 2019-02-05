@@ -1294,16 +1294,6 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
 
               time_column = "open_time";
 
-              sql ("UPDATE tickets"
-                   " SET fixed_time = NULL,"
-                   "     fixed_note = NULL,"
-                   "     fix_verified_time = NULL,"
-                   "     fix_verified_report = 0,"
-                   "     closed_time = NULL,"
-                   "     closed_note = NULL"
-                   " WHERE id = %llu;",
-                   ticket);
-
               break;
             }
           case TICKET_STATUS_FIXED:
@@ -1316,14 +1306,6 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
                 }
 
               time_column = "fixed_time";
-
-              sql ("UPDATE tickets"
-                   " SET fix_verified_time = NULL,"
-                   "     fix_verified_report = 0,"
-                   "     closed_time = NULL,"
-                   "     closed_note = NULL"
-                   " WHERE id = %llu;",
-                   ticket);
 
               break;
             }
