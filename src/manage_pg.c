@@ -952,7 +952,7 @@ manage_create_sql_functions ()
        "     user_offset = 0;"
        "   END;"
        "   RETURN CASE"
-       "          WHEN $1 = 0"
+       "          WHEN $1 IS NULL OR $1 = 0"
        "          THEN ''"
        "          WHEN user_zone IS NULL"
        "            OR EXTRACT (EPOCH FROM user_offset) = 0"

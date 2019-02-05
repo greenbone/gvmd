@@ -240,23 +240,26 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Send timestamps. */
 
-      if (ticket_iterator_fixed_time (&tickets))
-        {
-          SENDF_TO_CLIENT_OR_FAIL ("<fixed_time>%s</fixed_time>",
-                                   ticket_iterator_fixed_time (&tickets));
-          SENDF_TO_CLIENT_OR_FAIL ("<fixed_note>%s</fixed_note>",
-                                   ticket_iterator_fixed_note (&tickets));
-        }
+      if (ticket_iterator_fixed_time (&tickets)
+          && strlen (ticket_iterator_fixed_time (&tickets)))
+        SENDF_TO_CLIENT_OR_FAIL ("<fixed_time>%s</fixed_time>",
+                                 ticket_iterator_fixed_time (&tickets));
 
-      if (ticket_iterator_closed_time (&tickets))
-        {
-          SENDF_TO_CLIENT_OR_FAIL ("<closed_time>%s</closed_time>",
-                                   ticket_iterator_closed_time (&tickets));
-          SENDF_TO_CLIENT_OR_FAIL ("<closed_note>%s</closed_note>",
-                                   ticket_iterator_closed_note (&tickets));
-        }
+      if (ticket_iterator_fixed_note (&tickets))
+        SENDF_TO_CLIENT_OR_FAIL ("<fixed_note>%s</fixed_note>",
+                                  ticket_iterator_fixed_note (&tickets));
 
-      if (ticket_iterator_fix_verified_time (&tickets))
+      if (ticket_iterator_closed_time (&tickets)
+          && strlen (ticket_iterator_closed_time (&tickets)))
+        SENDF_TO_CLIENT_OR_FAIL ("<closed_time>%s</closed_time>",
+                                 ticket_iterator_closed_time (&tickets));
+
+      if (ticket_iterator_closed_note (&tickets))
+        SENDF_TO_CLIENT_OR_FAIL ("<closed_note>%s</closed_note>",
+                                 ticket_iterator_closed_note (&tickets));
+
+      if (ticket_iterator_fix_verified_time (&tickets)
+          && strlen (ticket_iterator_fix_verified_time (&tickets)))
         {
           SENDF_TO_CLIENT_OR_FAIL ("<fix_verified_time>%s</fix_verified_time>",
                                    ticket_iterator_fix_verified_time (&tickets));
