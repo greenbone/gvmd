@@ -21,7 +21,7 @@ cmake_minimum_required (VERSION 3.0)
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
 project (gvm
-  VERSION 8.0.0
+  VERSION 9.0.0
   LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -57,7 +57,7 @@ endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
 # Set beta version if this is a beta release series,
 # unset if this is a stable release series.
-set (PROJECT_BETA_RELEASE 3)
+set (PROJECT_BETA_RELEASE 1)
 
 if (GIT_REVISION)
   set (PROJECT_VERSION_GIT "${GIT_REVISION}")
@@ -112,7 +112,7 @@ set (GVMD_SCAP_DATABASE_VERSION 15)
 
 set (GVMD_CERT_DATABASE_VERSION 6)
 
-set (GMP_VERSION "8.0")
+set (GMP_VERSION "9.0")
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
