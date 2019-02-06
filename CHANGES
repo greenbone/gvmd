@@ -7,7 +7,12 @@ or get the entire source code repository and view log history:
 $ git clone https://github.com/greenbone/gvmd.git
 $ cd gvmd && git log
 
-gvmd 8.0+beta3 (work in progress)
+gvmd 8.0+beta3 (2019-02-06)
+
+This is the third beta release of the gvmd module 8.0 for the Greenbone
+Vulnerability Management (GVM) framework.
+
+Many thanks to everyone who has contributed to this release.
 
 Main changes compared to gvm 8.0+beta2:
 * The new alert method "Alemba vFire" has been added.
