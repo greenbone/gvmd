@@ -348,7 +348,7 @@ create_ticket_reset ()
       g_slist_free_1 (create_ticket_data.context->first);
     }
   g_free (create_ticket_data.context);
-  memset (&create_ticket_data, 0, sizeof (get_tickets_t));
+  memset (&create_ticket_data, 0, sizeof (create_ticket_t));
 }
 
 /**
@@ -363,7 +363,7 @@ create_ticket_start (gmp_parser_t *gmp_parser,
                      const gchar **attribute_names,
                      const gchar **attribute_values)
 {
-  memset (&create_ticket_data, 0, sizeof (get_tickets_t));
+  memset (&create_ticket_data, 0, sizeof (create_ticket_t));
   create_ticket_data.context = g_malloc0 (sizeof (context_data_t));
   create_ticket_element_start (gmp_parser, "create_ticket", attribute_names,
                                attribute_values);
@@ -632,7 +632,7 @@ modify_ticket_reset ()
       g_slist_free_1 (modify_ticket_data.context->first);
     }
   g_free (modify_ticket_data.context);
-  memset (&modify_ticket_data, 0, sizeof (get_tickets_t));
+  memset (&modify_ticket_data, 0, sizeof (modify_ticket_t));
 }
 
 /**
@@ -647,7 +647,7 @@ modify_ticket_start (gmp_parser_t *gmp_parser,
                      const gchar **attribute_names,
                      const gchar **attribute_values)
 {
-  memset (&modify_ticket_data, 0, sizeof (get_tickets_t));
+  memset (&modify_ticket_data, 0, sizeof (modify_ticket_t));
   modify_ticket_data.context = g_malloc0 (sizeof (context_data_t));
   modify_ticket_element_start (gmp_parser, "modify_ticket", attribute_names,
                                attribute_values);
