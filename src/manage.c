@@ -2066,7 +2066,16 @@ send_alive_test_preferences (target_t target)
 
   if (sendf_to_server ("Ping Host[checkbox]:TCP ping tries also TCP-SYN ping"
                        " <|> %s\n",
-                       (alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
+                       ((alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
+                        && (alive_test & ALIVE_TEST_TCP_ACK_SERVICE))
+                        ? "yes"
+                        : "no"))
+    return -1;
+
+  if (sendf_to_server ("Ping Host[checkbox]:TCP ping tries only TCP-SYN ping"
+                       " <|> %s\n",
+                       ((alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
+                        && !(alive_test & ALIVE_TEST_TCP_ACK_SERVICE))
                         ? "yes"
                         : "no"))
     return -1;
