@@ -21201,6 +21201,7 @@ result_uuid (result_t result, char ** id)
  *        detection result.
  *
  * @param[in]   result      Vulnerability detection result.
+ * @param[in]   report      Report of result.
  * @param[out]  ref         Detection result UUID.
  * @param[out]  product     Product name.
  * @param[out]  location    Product location.
@@ -21210,10 +21211,11 @@ result_uuid (result_t result, char ** id)
  * @return -1 on error, 0 on success.
  */
 int
-result_detection_reference (result_t result, char **ref, char **product,
-                            char **location, char **oid, char **name)
+result_detection_reference (result_t result, report_t report, char **ref,
+                            char **product, char **location, char **oid,
+                            char **name)
 {
-  char *report, *host = NULL;
+  char *host = NULL;
   gchar *quoted_location = NULL;
 
   if ((ref == NULL) || (product == NULL) || (location == NULL) || (oid == NULL)
@@ -21221,10 +21223,6 @@ result_detection_reference (result_t result, char **ref, char **product,
     return -1;
 
   *ref = *product = *location = *oid = *name = NULL;
-  report = sql_string ("SELECT report FROM results WHERE id = %llu;",
-                       result);
-  if (report == NULL)
-    goto detect_cleanup;
 
   host = sql_string ("SELECT host FROM results where id = %llu;",
                      result);
@@ -21235,7 +21233,7 @@ result_detection_reference (result_t result, char **ref, char **product,
                      " FROM report_host_details"
                      " WHERE report_host = (SELECT id"
                      "                      FROM report_hosts"
-                     "                      WHERE report = %s"
+                     "                      WHERE report = %llu"
                      "                      AND host = '%s')"
                      " AND name = 'detected_by'"
                      " AND source_name = (SELECT nvt FROM results"
@@ -21248,7 +21246,7 @@ result_detection_reference (result_t result, char **ref, char **product,
                           " FROM report_host_details"
                           " WHERE report_host = (SELECT id"
                           "                      FROM report_hosts"
-                          "                      WHERE report = %s"
+                          "                      WHERE report = %llu"
                           "                      AND host = '%s')"
                           " AND name = 'detected_at'"
                           " AND source_name = (SELECT nvt"
@@ -21263,7 +21261,7 @@ result_detection_reference (result_t result, char **ref, char **product,
                          " FROM report_host_details"
                          " WHERE report_host = (SELECT id"
                          "                      FROM report_hosts"
-                         "                      WHERE report = %s"
+                         "                      WHERE report = %llu"
                          "                      AND host = '%s')"
                          " AND source_name = '%s'"
                          " AND name != 'detected_at'"
@@ -21284,7 +21282,7 @@ result_detection_reference (result_t result, char **ref, char **product,
    * location in order for this to work. */
   *ref = sql_string ("SELECT uuid"
                      " FROM results"
-                     " WHERE report = %s"
+                     " WHERE report = %llu"
                      " AND host = '%s'"
                      " AND nvt = '%s'"
                      " AND (description LIKE '%%%s%%'"
@@ -21293,14 +21291,12 @@ result_detection_reference (result_t result, char **ref, char **product,
   if (*ref == NULL)
     goto detect_cleanup;
 
-  g_free (report);
   g_free (host);
   g_free (quoted_location);
 
   return 0;
 
 detect_cleanup:
-  g_free (report);
   g_free (host);
   g_free (quoted_location);
 
