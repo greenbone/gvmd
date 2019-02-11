@@ -10670,9 +10670,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   if (include_tags)
     {
-      int tag_count = resource_tag_count ("result", result, 1);
-
-      if (tag_count)
+      if (resource_tag_exists ("result", result, 1))
         {
           buffer_xml_append_printf (buffer,
                                     "<user_tags>"
