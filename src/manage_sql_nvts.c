@@ -30,8 +30,10 @@
 #define _GNU_SOURCE
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "manage_sql.h"
 #include "manage_sql_nvts.h"
@@ -1158,6 +1160,117 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
 
   count = sql_int ("SELECT count (*) FROM nvts;");
   g_info ("Updating NVT cache... done (%i NVTs).", count);
+}
+
+/**
+ * @brief Update NVTs from VTs XML.
+ */
+static void
+update_nvts_from_vts (entity_t *get_vts_response)
+{
+  entity_t vts, vt;
+  entities_t children;
+
+  g_warning ("%s", __FUNCTION__);
+
+  vts = entity_child (*get_vts_response, "vts");
+  if (vts == NULL)
+    {
+      g_warning ("%s: VTS missing", __FUNCTION__);
+      return;
+    }
+
+  children = vts->entities;
+  while ((vt = first_entity (children)))
+    {
+      const char *id;
+
+      id = entity_attribute (vt, "id");
+      if (id == NULL)
+        {
+          g_warning ("%s: VT missing id attribute", __FUNCTION__);
+          return;
+        }
+
+      g_warning ("%s: id: %s", __FUNCTION__, id);
+
+      children = next_entities (children);
+    }
+}
+
+/**
+ * @brief Update VTs via OSP.
+ *
+ * Expect to be called in the child after a fork.
+ *
+ * @return 0 success, -1 error, 2 scanner still loading.
+ */
+int
+manage_update_nvt_cache_osp ()
+{
+  osp_connection_t *connection;
+  gchar *db_feed_version, *scanner_feed_version;
+  gchar *host, *ca_pub, *key_pub, *key_priv;
+  int port;
+
+  g_warning ("%s", __FUNCTION__);
+
+  /* Re-open DB after fork. */
+
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+
+  /* Try update VTs. */
+
+  if (get_openvas_osp_scanner (&host, &port, &ca_pub, &key_pub, &key_priv))
+    {
+      g_warning ("%s: No OSP OpenVAS scanner", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+
+  db_feed_version = nvts_feed_version ();
+  g_warning ("%s: db_feed_version: %s", __FUNCTION__, db_feed_version);
+
+  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  if (!connection)
+    {
+      g_warning ("%s: failed to connect to %s:%d", __FUNCTION__, host, port);
+      return -1;
+    }
+
+  if (osp_get_vts_version (connection, &scanner_feed_version))
+    {
+      g_warning ("%s: failed to get scanner_version", __FUNCTION__);
+      return -1;
+    }
+  g_warning ("%s: scanner_feed_version: %s", __FUNCTION__, scanner_feed_version);
+
+  osp_connection_close (connection);
+
+  if (strcmp (scanner_feed_version, db_feed_version))
+    {
+      entity_t vts;
+
+      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+      if (!connection)
+        {
+          g_warning ("%s: failed to connect to %s:%d (2)", __FUNCTION__, host, port);
+          return -1;
+        }
+
+      if (osp_get_vts (connection, &vts))
+        {
+          g_warning ("%s: failed to get VTs", __FUNCTION__);
+          return -1;
+        }
+
+      update_nvts_from_vts (&vts);
+      free_entity (vts);
+
+      osp_connection_close (connection);
+    }
+
+  return 0;
 }
 
 /**

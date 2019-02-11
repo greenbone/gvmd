@@ -538,4 +538,7 @@ int
 create_permission_internal (const char *, const char *, const char *, const char *,
                             const char *, const char *, permission_t *);
 
+gchar *
+get_openvas_osp_scanner ();
+
 #endif /* not _GVMD_MANAGE_SQL_H */

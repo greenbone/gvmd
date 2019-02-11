@@ -8852,6 +8852,17 @@ gvm_migrate_secinfo (int feed_type)
   return ret;
 }
 
+/**
+ * @brief Update NVT cache using OSP.
+ *
+ * @return 0 success, -1 error, 2 scanner still loading.
+ */
+int
+manage_update_nvts_osp ()
+{
+  return manage_update_nvt_cache_osp ();
+}
+
 
 /* Wizards. */
 

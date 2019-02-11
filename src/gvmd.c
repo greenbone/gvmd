@@ -299,6 +299,11 @@ static int update_in_progress = 0;
  */
 GSList *log_config = NULL;
 
+/**
+ * @brief Whether to update NVTs using OSP.
+ */
+static gboolean update_nvts_using_osp = 1;
+
 
 /* Helpers. */
 
@@ -1167,6 +1172,19 @@ update_nvt_cache (int register_cleanup)
 }
 
 /**
+ * @brief Update the NVT Cache using OSP.
+ *
+ * @return 0 success.
+ */
+static int
+update_nvt_cache_osp ()
+{
+  proctitle_set ("gvmd: OSP: Updating NVT cache");
+
+  return manage_update_nvts_osp ();
+}
+
+/**
  * @brief Update NVT cache in forked child, retrying if scanner loading.
  *
  * Forks a child process to rebuild the nvt cache, retrying again if the
@@ -1197,9 +1215,10 @@ update_nvt_cache_retry ()
       else if (child_pid == 0)
         {
           /* Child: Try reload. */
-          int ret = update_nvt_cache (0);
-
-          exit (ret);
+          if (update_nvts_using_osp)
+            exit (update_nvt_cache_osp ());
+          else
+            exit (update_nvt_cache (0));
         }
     }
 }
