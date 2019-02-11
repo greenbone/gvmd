@@ -26965,6 +26965,11 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
                          int, int, int, const char *, iterator_t *, int);
 
+/** @todo Defined in gmp.c! */
+void buffer_results_xml_cert (GString *, iterator_t *, task_t, int, int, int,
+                              int, int, int, int, const char *, iterator_t *,
+                              int, int);
+
 /**
  * @brief Comparison returns.
  */
@@ -30819,24 +30824,29 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else if (get->details)
     {
+      int cert_loaded;
+
+      cert_loaded = manage_cert_loaded ();
       while (next (&results))
         {
           const char* level;
           GHashTable *f_host_result_counts;
           GString *buffer = g_string_new ("");
-          buffer_results_xml (buffer,
-                              &results,
-                              task,
-                              notes,
-                              notes_details,
-                              overrides,
-                              overrides_details,
-                              1,
-                              1,
-                              0,
-                              NULL,
-                              NULL,
-                              0);
+
+          buffer_results_xml_cert (buffer,
+                                   &results,
+                                   task,
+                                   notes,
+                                   notes_details,
+                                   overrides,
+                                   overrides_details,
+                                   1,
+                                   1,
+                                   0,
+                                   NULL,
+                                   NULL,
+                                   0,
+                                   cert_loaded);
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)
