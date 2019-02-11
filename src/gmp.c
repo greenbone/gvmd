@@ -10673,7 +10673,7 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
       free (result_task_name);
     }
 
-  if (0) //include_tags)
+  if (include_tags)
     {
       if (resource_tag_exists ("result", result, 1))
         {
