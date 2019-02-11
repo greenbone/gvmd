@@ -27,6 +27,7 @@
 #define _GVMD_GMP_TICKETS_H
 
 #include "gmp_base.h"
+#include "manage.h"
 
 void
 get_tickets_start (const gchar **, const gchar **);
@@ -61,6 +62,6 @@ void
 modify_ticket_element_text (const gchar *, gsize);
 
 int
-buffer_result_tickets_xml (GString *, const gchar *);
+buffer_result_tickets_xml (GString *, result_t);
 
 #endif /* not _GVMD_GMP_TICKETS_H */
