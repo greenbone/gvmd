@@ -10709,6 +10709,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   detect_ref = detect_cpe = detect_loc = detect_oid = detect_name = NULL;
   if (result_detection_reference (result, result_iterator_report (results),
+                                  result_iterator_host (results),
                                   &detect_ref, &detect_cpe, &detect_loc,
                                   &detect_oid, &detect_name)
       == 0)
