@@ -21211,23 +21211,23 @@ result_uuid (result_t result, char ** id)
  * @return -1 on error, 0 on success.
  */
 int
-result_detection_reference (result_t result, report_t report, char **ref,
-                            char **product, char **location, char **oid,
-                            char **name)
+result_detection_reference (result_t result, report_t report, const gchar *host,
+                            char **ref, char **product, char **location,
+                            char **oid, char **name)
 {
-  char *host = NULL;
-  gchar *quoted_location = NULL;
+  gchar *quoted_location, *quoted_host;
 
   if ((ref == NULL) || (product == NULL) || (location == NULL) || (oid == NULL)
       || (name == NULL))
     return -1;
 
+  if ((report == 0) || (host == NULL))
+    return -1;
+
+  quoted_location = NULL;
   *ref = *product = *location = *oid = *name = NULL;
 
-  host = sql_string ("SELECT host FROM results where id = %llu;",
-                     result);
-  if (host == NULL)
-    goto detect_cleanup;
+  quoted_host = sql_quote (host);
 
   *oid = sql_string ("SELECT value"
                      " FROM report_host_details"
@@ -21238,7 +21238,7 @@ result_detection_reference (result_t result, report_t report, char **ref,
                      " AND name = 'detected_by'"
                      " AND source_name = (SELECT nvt FROM results"
                      "                    WHERE id = %llu);",
-                     report, host, result);
+                     report, quoted_host, result);
   if (*oid == NULL)
     goto detect_cleanup;
 
@@ -21252,7 +21252,7 @@ result_detection_reference (result_t result, report_t report, char **ref,
                           " AND source_name = (SELECT nvt"
                           "                    FROM results"
                           "                    WHERE id = %llu);",
-                          report, host, result);
+                          report, quoted_host, result);
   if (*location == NULL)
     goto detect_cleanup;
   quoted_location = sql_quote (*location);
@@ -21266,7 +21266,7 @@ result_detection_reference (result_t result, report_t report, char **ref,
                          " AND source_name = '%s'"
                          " AND name != 'detected_at'"
                          " AND value = '%s';",
-                         report, host, *oid, quoted_location);
+                         report, quoted_host, *oid, quoted_location);
   if (*product == NULL)
     goto detect_cleanup;
 
@@ -21287,17 +21287,18 @@ result_detection_reference (result_t result, report_t report, char **ref,
                      " AND nvt = '%s'"
                      " AND (description LIKE '%%%s%%'"
                      "      OR port LIKE '%%%s%%');",
-                     report, host, *oid, quoted_location, quoted_location);
+                     report, quoted_host, *oid, quoted_location,
+                     quoted_location);
   if (*ref == NULL)
     goto detect_cleanup;
 
-  g_free (host);
+  g_free (quoted_host);
   g_free (quoted_location);
 
   return 0;
 
 detect_cleanup:
-  g_free (host);
+  g_free (quoted_host);
   g_free (quoted_location);
 
   return -1;
