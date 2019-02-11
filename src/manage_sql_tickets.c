@@ -567,7 +567,7 @@ DEF_ACCESS (ticket_result_iterator_result_id, 2);
  * Will iterate over all the tickets that apply to the result's NVT.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  result_id   UUID of result.
+ * @param[in]  result      Result.
  *
  * @return 0 success, -1 error.
  */

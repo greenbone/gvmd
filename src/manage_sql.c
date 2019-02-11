@@ -21202,6 +21202,7 @@ result_uuid (result_t result, char ** id)
  *
  * @param[in]   result      Vulnerability detection result.
  * @param[in]   report      Report of result.
+ * @param[in]   host        Host of result.
  * @param[out]  ref         Detection result UUID.
  * @param[out]  product     Product name.
  * @param[out]  location    Product location.
