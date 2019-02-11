@@ -10593,7 +10593,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *qod = result_iterator_qod (results);
   const char *qod_type = result_iterator_qod_type (results);
   result_t result = result_iterator_result (results);
-  char *uuid;
   char *detect_ref, *detect_cpe, *detect_loc, *detect_oid, *detect_name;
   task_t selected_task;
 
@@ -10610,9 +10609,9 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       nl_descr_escaped = NULL;
     }
 
-  result_uuid (result, &uuid);
-
-  buffer_xml_append_printf (buffer, "<result id=\"%s\">", uuid);
+  buffer_xml_append_printf (buffer,
+                            "<result id=\"%s\">",
+                            get_iterator_uuid (results));
 
   selected_task = task;
 
@@ -10779,8 +10778,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               "<original_severity>%s</original_severity>",
                               result_iterator_original_level (results),
                               result_iterator_original_severity (results));
-
-  free (uuid);
 
   if (include_notes)
     buffer_result_notes_xml (buffer, result,
