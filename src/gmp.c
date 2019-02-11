@@ -10418,16 +10418,17 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
 /**
  * @brief Append a CERT element to an XML buffer.
  *
- * @param[in]  buffer  Buffer.
- * @param[in]  oid     OID.
+ * @param[in]  buffer       Buffer.
+ * @param[in]  oid          OID.
+ * @param[in]  cert_loaded  Whether CERT db is loaded.
  */
 static void
-results_xml_append_cert (GString *buffer, const char *oid)
+results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded)
 {
   iterator_t cert_refs_iterator;
 
   buffer_xml_append_printf (buffer, "<cert>");
-  if (manage_cert_loaded ())
+  if (cert_loaded)
     {
       init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
       while (next (&cert_refs_iterator))
@@ -10458,9 +10459,10 @@ results_xml_append_cert (GString *buffer, const char *oid)
  *
  * @param[in]  results  Results.
  * @param[in]  buffer   Buffer.
+ * @param[in]  cert_loaded  Whether CERT db is loaded.
  */
 static void
-results_xml_append_nvt (iterator_t *results, GString *buffer)
+results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 {
   const char *oid = result_iterator_nvt_oid (results);
 
@@ -10551,7 +10553,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
                                     result_iterator_nvt_tag (results) ?: "");
         }
 
-      results_xml_append_cert (buffer, oid);
+      results_xml_append_cert (buffer, oid, cert_loaded);
     }
 
   buffer_xml_append_printf (buffer, "</nvt>");
@@ -10560,6 +10562,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
 /** @todo Exported for manage_sql.c. */
 /**
  * @brief Buffer XML for some results.
+ *
+ * Includes cert_loaded arg.
  *
  * @param[in]  buffer                 Buffer into which to buffer results.
  * @param[in]  results                Result iterator.
@@ -10577,15 +10581,16 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
  * @param[in]  delta_results          Iterator for delta result to include, or
  *                                    NULL.
  * @param[in]  changed                Whether the result is a "changed" delta.
+ * @param[in]  cert_loaded            Whether the CERT db is loaded.
  */
 void
-buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
-                    int include_notes, int include_notes_details,
-                    int include_overrides, int include_overrides_details,
-                    int include_tags, int include_tags_details,
-                    int include_details,
-                    const char *delta_state, iterator_t *delta_results,
-                    int changed)
+buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
+                         int include_notes, int include_notes_details,
+                         int include_overrides, int include_overrides_details,
+                         int include_tags, int include_tags_details,
+                         int include_details,
+                         const char *delta_state, iterator_t *delta_results,
+                         int changed, int cert_loaded)
 {
   const char *descr = result_iterator_descr (results);
   const char *name, *owner_name, *comment, *creation_time, *modification_time;
@@ -10668,7 +10673,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       free (result_task_name);
     }
 
-  if (include_tags)
+  if (0) //include_tags)
     {
       if (resource_tag_exists ("result", result, 1))
         {
@@ -10755,7 +10760,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                             "<port>%s</port>",
                             result_iterator_port (results));
 
-  results_xml_append_nvt (results, buffer);
+  results_xml_append_nvt (results, buffer, cert_loaded);
 
   buffer_xml_append_printf
    (buffer,
@@ -10856,6 +10861,44 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   buffer_result_tickets_xml (buffer, result);
 
   g_string_append (buffer, "</result>");
+}
+
+/** @todo Exported for manage_sql.c. */
+/**
+ * @brief Buffer XML for some results.
+ *
+ * @param[in]  buffer                 Buffer into which to buffer results.
+ * @param[in]  results                Result iterator.
+ * @param[in]  task                   Task associated with results.  Only
+ *                                    needed with include_notes or
+ *                                    include_overrides.
+ * @param[in]  include_notes          Whether to include notes.
+ * @param[in]  include_notes_details  Whether to include details of notes.
+ * @param[in]  include_overrides          Whether to include overrides.
+ * @param[in]  include_overrides_details  Whether to include details of overrides.
+ * @param[in]  include_tags           Whether to include user tag count.
+ * @param[in]  include_tags_details   Whether to include details of tags.
+ * @param[in]  include_details        Whether to include details of the result.
+ * @param[in]  delta_state            Delta state of result, or NULL.
+ * @param[in]  delta_results          Iterator for delta result to include, or
+ *                                    NULL.
+ * @param[in]  changed                Whether the result is a "changed" delta.
+ */
+void
+buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
+                    int include_notes, int include_notes_details,
+                    int include_overrides, int include_overrides_details,
+                    int include_tags, int include_tags_details,
+                    int include_details,
+                    const char *delta_state, iterator_t *delta_results,
+                    int changed)
+{
+  return buffer_results_xml_cert (buffer, results, task, include_notes,
+                                  include_notes_details, include_overrides,
+                                  include_overrides_details, include_tags,
+                                  include_tags_details, include_details,
+                                  delta_state, delta_results, changed,
+                                  manage_cert_loaded ());
 }
 
 #undef ADD_DETAIL
