@@ -10796,7 +10796,8 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
     buffer_result_notes_xml (buffer, result,
                              selected_task, include_notes_details);
 
-  if (include_overrides)
+  if (include_overrides
+      && result_iterator_may_have_overrides (results))
     buffer_result_overrides_xml (buffer, result,
                                  selected_task, include_overrides_details);
 
