@@ -24850,7 +24850,7 @@ int
 result_iterator_may_have_notes (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (result_t) iterator_int (iterator, 24);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 24);
 }
 
 /**
@@ -24864,7 +24864,7 @@ int
 result_iterator_may_have_overrides (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (result_t) iterator_int (iterator, 25);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
 }
 
 /**
