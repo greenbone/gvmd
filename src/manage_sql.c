@@ -23738,6 +23738,16 @@ where_qod (int min_qod)
       "             END)",                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM notes"                              \
+      "                     WHERE (result = results.id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = results.task))"           \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23851,6 +23861,16 @@ where_qod (int min_qod)
       "             END)",                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM notes"                              \
+      "                     WHERE (result = results.id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = results.task))"           \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -24797,7 +24817,21 @@ DEF_ACCESS (result_iterator_detected_by_oid, GET_ITERATOR_COLUMN_COUNT + 22);
  * @return The ID of the asset host.  Caller must only use before
  *         calling cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_asset_host_id, GET_ITERATOR_COLUMN_COUNT + 22);
+DEF_ACCESS (result_iterator_asset_host_id, GET_ITERATOR_COLUMN_COUNT + 23);
+
+/**
+ * @brief Get whether notes may exist from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if notes may exist, else 0.
+ */
+int
+result_iterator_may_have_notes (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (result_t) iterator_int (iterator, 24);
+}
 
 /**
  * @brief Initialise a host iterator.
