@@ -10594,8 +10594,8 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
 {
   const char *descr = result_iterator_descr (results);
   const char *name, *owner_name, *comment, *creation_time, *modification_time;
-  const char *detect_oid;
-  gchar *nl_descr, *nl_descr_escaped, *asset_id;
+  const char *detect_oid, *asset_id;
+  gchar *nl_descr, *nl_descr_escaped;
   const char *qod = result_iterator_qod (results);
   const char *qod_type = result_iterator_qod_type (results);
   result_t result = result_iterator_result (results);
@@ -10741,8 +10741,7 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
   g_free (detect_name);
 
   if (result_iterator_host (results))
-    asset_id = result_host_asset_id (result_iterator_host (results),
-                                     get_iterator_resource (results));
+    asset_id = result_iterator_asset_host_id (results);
   else
     asset_id = NULL;
 
@@ -10755,7 +10754,6 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
                             result_iterator_host (results),
                             asset_id ? asset_id : "",
                             result_iterator_hostname (results) ?: "");
-  free (asset_id);
 
   buffer_xml_append_printf (buffer,
                             "<port>%s</port>",
