@@ -2577,6 +2577,7 @@ typedef struct
   char *host_search_phrase;  ///< Search phrase result filter.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides_details; ///< Boolean.  Whether to include details of above.
+  int result_tags;       ///< Boolean.  Whether to include result tags.
   char *type;            ///< Type of report.
   char *host;            ///< Host for asset report.
   char *pos;             ///< Position of report from end.
@@ -6470,6 +6471,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_reports_data->overrides_details = strcmp (attribute, "0");
             else
               get_reports_data->overrides_details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "result_tags", &attribute))
+              get_reports_data->result_tags = strcmp (attribute, "0");
+            else
+              get_reports_data->result_tags = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "type", &attribute))
@@ -15934,6 +15941,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 &get_reports_data->get,
                                 get_reports_data->notes_details,
                                 get_reports_data->overrides_details,
+                                get_reports_data->result_tags,
                                 get_reports_data->ignore_pagination,
                                 /* Special case the XML reports, bah. */
                                 strcmp
@@ -16183,6 +16191,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 &get_reports_data->get,
                                 get_reports_data->notes_details,
                                 get_reports_data->overrides_details,
+                                get_reports_data->result_tags,
                                 get_reports_data->ignore_pagination,
                                 /* Special case the XML report, bah. */
                                 get_reports_data->format_id
