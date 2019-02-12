@@ -21203,45 +21203,32 @@ result_uuid (result_t result, char ** id)
  * @param[in]   result      Vulnerability detection result.
  * @param[in]   report      Report of result.
  * @param[in]   host        Host of result.
+ * @param[in]   oid         Detection script OID.
  * @param[out]  ref         Detection result UUID.
  * @param[out]  product     Product name.
  * @param[out]  location    Product location.
- * @param[out]  oid         Detection script OID.
  * @param[out]  name        Detection script name.
  *
  * @return -1 on error, 0 on success.
  */
 int
 result_detection_reference (result_t result, report_t report, const gchar *host,
-                            char **ref, char **product, char **location,
-                            char **oid, char **name)
+                            const char *oid, char **ref, char **product,
+                            char **location, char **name)
 {
   gchar *quoted_location, *quoted_host;
 
-  if ((ref == NULL) || (product == NULL) || (location == NULL) || (oid == NULL)
+  if ((ref == NULL) || (product == NULL) || (location == NULL)
       || (name == NULL))
     return -1;
 
-  if ((report == 0) || (host == NULL))
+  if ((report == 0) || (host == NULL) || (oid == NULL))
     return -1;
 
   quoted_location = NULL;
-  *ref = *product = *location = *oid = *name = NULL;
+  *ref = *product = *location = *name = NULL;
 
   quoted_host = sql_quote (host);
-
-  *oid = sql_string ("SELECT value"
-                     " FROM report_host_details"
-                     " WHERE report_host = (SELECT id"
-                     "                      FROM report_hosts"
-                     "                      WHERE report = %llu"
-                     "                      AND host = '%s')"
-                     " AND name = 'detected_by'"
-                     " AND source_name = (SELECT nvt FROM results"
-                     "                    WHERE id = %llu);",
-                     report, quoted_host, result);
-  if (*oid == NULL)
-    goto detect_cleanup;
 
   *location = sql_string ("SELECT value"
                           " FROM report_host_details"
@@ -21267,14 +21254,14 @@ result_detection_reference (result_t result, report_t report, const gchar *host,
                          " AND source_name = '%s'"
                          " AND name != 'detected_at'"
                          " AND value = '%s';",
-                         report, quoted_host, *oid, quoted_location);
+                         report, quoted_host, oid, quoted_location);
   if (*product == NULL)
     goto detect_cleanup;
 
-  if (g_str_has_prefix (*oid, "CVE-"))
-    *name = g_strdup (*oid);
+  if (g_str_has_prefix (oid, "CVE-"))
+    *name = g_strdup (oid);
   else
-    *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", *oid);
+    *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", oid);
   if (*name == NULL)
     goto detect_cleanup;
 
@@ -21288,7 +21275,7 @@ result_detection_reference (result_t result, report_t report, const gchar *host,
                      " AND nvt = '%s'"
                      " AND (description LIKE '%%%s%%'"
                      "      OR port LIKE '%%%s%%');",
-                     report, quoted_host, *oid, quoted_location,
+                     report, quoted_host, oid, quoted_location,
                      quoted_location);
   if (*ref == NULL)
     goto detect_cleanup;
@@ -23726,6 +23713,16 @@ where_qod (int min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "(SELECT value"                                                         \
+      " FROM report_host_details"                                             \
+      " WHERE report_host = (SELECT id"                                       \
+      "                      FROM report_hosts"                               \
+      "                      WHERE report = results.report"                   \
+      "                      AND host = results.host)"                        \
+      " AND name = 'detected_by'"                                             \
+      " AND source_name = results.nvt)",                                      \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23814,6 +23811,16 @@ where_qod (int min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "(SELECT value"                                                         \
+      " FROM report_host_details"                                             \
+      " WHERE report_host = (SELECT id"                                       \
+      "                      FROM report_hosts"                               \
+      "                      WHERE report = results.report"                   \
+      "                      AND host = results.host)"                        \
+      " AND name = 'detected_by'"                                             \
+      " AND source_name = results.nvt)",                                      \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -24741,6 +24748,16 @@ DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
  *         cleanup_iterator.
  */
 DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
+
+/**
+ * @brief Get the "detected_by" NVT OID from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The OID of the "detected_by" NVT.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_detected_by_oid, GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Initialise a host iterator.

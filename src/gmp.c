@@ -10594,11 +10594,12 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
 {
   const char *descr = result_iterator_descr (results);
   const char *name, *owner_name, *comment, *creation_time, *modification_time;
+  const char *detect_oid;
   gchar *nl_descr, *nl_descr_escaped, *asset_id;
   const char *qod = result_iterator_qod (results);
   const char *qod_type = result_iterator_qod_type (results);
   result_t result = result_iterator_result (results);
-  char *detect_ref, *detect_cpe, *detect_loc, *detect_oid, *detect_name;
+  char *detect_ref, *detect_cpe, *detect_loc, *detect_name;
   task_t selected_task;
 
   if (descr)
@@ -10710,11 +10711,12 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
         }
     }
 
-  detect_ref = detect_cpe = detect_loc = detect_oid = detect_name = NULL;
+  detect_oid = result_iterator_detected_by_oid (results);
+  detect_ref = detect_cpe = detect_loc = detect_name = NULL;
   if (result_detection_reference (result, result_iterator_report (results),
                                   result_iterator_host (results),
-                                  &detect_ref, &detect_cpe, &detect_loc,
-                                  &detect_oid, &detect_name)
+                                  detect_oid, &detect_ref, &detect_cpe,
+                                  &detect_loc, &detect_name)
       == 0)
     {
       buffer_xml_append_printf (buffer,
@@ -10736,7 +10738,6 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
   g_free (detect_ref);
   g_free (detect_cpe);
   g_free (detect_loc);
-  g_free (detect_oid);
   g_free (detect_name);
 
   if (result_iterator_host (results))
