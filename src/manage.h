@@ -1444,6 +1444,9 @@ result_iterator_date (iterator_t*);
 const char*
 result_iterator_detected_by_oid (iterator_t*);
 
+const char*
+result_iterator_asset_host_id (iterator_t*);
+
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 

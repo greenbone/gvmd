@@ -23723,6 +23723,21 @@ where_qod (int min_qod)
       " AND source_name = results.nvt)",                                      \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT CASE WHEN host IS NULL"                                        \
+      "             THEN NULL"                                                \
+      "             ELSE (SELECT uuid FROM hosts"                             \
+      "                   WHERE id = (SELECT host FROM host_identifiers"      \
+      "                               WHERE source_type = 'Report Host'"      \
+      "                               AND name = 'ip'"                        \
+      "                               AND source_id"                          \
+      "                                   = (SELECT uuid"                     \
+      "                                      FROM reports"                    \
+      "                                      WHERE id = results.report)"      \
+      "                               AND value = results.host"               \
+      "                               LIMIT 1))"                              \
+      "             END)",                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23819,6 +23834,21 @@ where_qod (int min_qod)
       "                      AND host = results.host)"                        \
       " AND name = 'detected_by'"                                             \
       " AND source_name = results.nvt)",                                      \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT CASE WHEN host IS NULL"                                        \
+      "             THEN NULL"                                                \
+      "             ELSE (SELECT uuid FROM hosts"                             \
+      "                   WHERE id = (SELECT host FROM host_identifiers"      \
+      "                               WHERE source_type = 'Report Host'"      \
+      "                               AND name = 'ip'"                        \
+      "                               AND source_id"                          \
+      "                                   = (SELECT uuid"                     \
+      "                                      FROM reports"                    \
+      "                                      WHERE id = results.report)"      \
+      "                               AND value = results.host"               \
+      "                               LIMIT 1))"                              \
+      "             END)",                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -24758,6 +24788,16 @@ DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
  *         calling cleanup_iterator.
  */
 DEF_ACCESS (result_iterator_detected_by_oid, GET_ITERATOR_COLUMN_COUNT + 22);
+
+/**
+ * @brief Get the asset host ID from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The ID of the asset host.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_asset_host_id, GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Initialise a host iterator.
