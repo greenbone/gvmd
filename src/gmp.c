@@ -10791,7 +10791,8 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
                               result_iterator_original_level (results),
                               result_iterator_original_severity (results));
 
-  if (include_notes)
+  if (include_notes
+      && result_iterator_may_have_notes (results))
     buffer_result_notes_xml (buffer, result,
                              selected_task, include_notes_details);
 
