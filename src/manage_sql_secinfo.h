@@ -26,6 +26,24 @@
 #define _GVMD_MANAGE_SQL_SECINFO_H
 
 /**
+ * @brief SQL to check if a result has CERT Bunds.
+ */
+#define SECINFO_SQL_RESULT_HAS_CERT_BUNDS                          \
+ "(SELECT EXISTS (SELECT * FROM cert_bund_cves"                    \
+ "                WHERE cve_name IN (SELECT cve_name"              \
+ "                                   FROM nvt_cves"                \
+ "                                   WHERE oid = results.nvt)))"
+
+/**
+ * @brief SQL to check if a result has CERT Bunds.
+ */
+#define SECINFO_SQL_RESULT_HAS_DFN_CERTS                           \
+ "(SELECT EXISTS (SELECT * FROM dfn_cert_cves"                     \
+ "                WHERE cve_name IN (SELECT cve_name"              \
+ "                                   FROM nvt_cves"                \
+ "                                   WHERE oid = results.nvt)))"
+
+/**
  * @brief Filter columns for CVE iterator.
  */
 #define CVE_INFO_ITERATOR_FILTER_COLUMNS                         \
