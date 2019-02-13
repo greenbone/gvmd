@@ -30213,6 +30213,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  type               Type of report, NULL, "scan" or "assets".
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  host               Host or NULL, when type "assets".
  * @param[in]  pos                Position of report from end, when type
  *                                "assets".
@@ -32202,6 +32203,7 @@ apply_report_format (gchar *report_format_id,
  * @param[in]  get                GET command data.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  ignore_pagination  Whether to ignore pagination.
  * @param[in]  base64             Whether to base64 encode the report.
  * @param[in]  send               Function to write to client.
