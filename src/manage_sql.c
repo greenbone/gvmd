@@ -23758,6 +23758,9 @@ where_qod (int min_qod)
       "        END)",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23889,6 +23892,9 @@ where_qod (int min_qod)
       "        THEN 1"                                                        \
       "        ELSE 0"                                                        \
       "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -24865,6 +24871,20 @@ result_iterator_may_have_overrides (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
+}
+
+/**
+ * @brief Get whether tickets may exist from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if notes may exist, else 0.
+ */
+int
+result_iterator_may_have_tickets (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 26);
 }
 
 /**
