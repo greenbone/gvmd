@@ -1453,6 +1453,9 @@ result_iterator_may_have_notes (iterator_t*);
 int
 result_iterator_may_have_overrides (iterator_t*);
 
+int
+result_iterator_may_have_tickets (iterator_t*);
+
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 
