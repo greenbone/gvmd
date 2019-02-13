@@ -23654,8 +23654,7 @@ where_qod (int min_qod)
 /**
  * @brief Result iterator filterable columns, for severity only version .
  */
-#define RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                           \
-  {                                                                           \
+#define BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                      \
     { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
     { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
@@ -23760,7 +23759,14 @@ where_qod (int min_qod)
       KEYWORD_TYPE_INTEGER },                                                 \
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
+      KEYWORD_TYPE_INTEGER },
+
+/**
+ * @brief Result iterator columns.
+ */
+#define RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                           \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                          \
     { SECINFO_SQL_RESULT_HAS_CERT_BUNDS,                                      \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -23771,10 +23777,24 @@ where_qod (int min_qod)
   }
 
 /**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE_NO_CERT                   \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                          \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
  * @brief Result iterator columns.
  */
-#define RESULT_ITERATOR_COLUMNS                                               \
-  {                                                                           \
+#define BASE_RESULT_ITERATOR_COLUMNS                                          \
     { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
     { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
@@ -23902,12 +23922,33 @@ where_qod (int min_qod)
       KEYWORD_TYPE_INTEGER },                                                 \
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-/* FIX only if cert loaded */ \
+      KEYWORD_TYPE_INTEGER },
+
+/**
+ * @brief Result iterator columns.
+ */
+#define RESULT_ITERATOR_COLUMNS                                               \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS                                              \
     { SECINFO_SQL_RESULT_HAS_CERT_BUNDS,                                      \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
     { SECINFO_SQL_RESULT_HAS_DFN_CERTS,                                       \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define RESULT_ITERATOR_COLUMNS_NO_CERT                                       \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -24055,6 +24096,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_t columns[3];
   static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
+  static column_t static_filterable_columns_no_cert[]
+    = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE_NO_CERT;
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   column_t *filterable_columns;
   int ret;
@@ -24086,7 +24129,10 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
 
-  filterable_columns = column_array_copy (static_filterable_columns);
+  if (manage_cert_loaded ())
+    filterable_columns = column_array_copy (static_filterable_columns);
+  else
+    filterable_columns = column_array_copy (static_filterable_columns_no_cert);
   column_array_set
    (filterable_columns,
     "type",
@@ -24298,6 +24344,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
   gchar *filter;
   int autofp, apply_overrides, dynamic_severity;
@@ -24331,7 +24378,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             "result",
                             get,
                             /* SELECT columns. */
-                            columns,
+                            manage_cert_loaded () ? columns : columns_no_cert,
                             NULL,
                             /* Filterable columns not in SELECT columns. */
                             NULL,
@@ -24362,6 +24409,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
   gchar *filter;
   int apply_overrides, autofp, dynamic_severity;
@@ -24389,8 +24437,8 @@ result_count (const get_data_t *get, report_t report, const char* host)
                                      filter ? filter : get->filter);
 
   ret = count ("result", get,
-                columns,
-                columns,
+                manage_cert_loaded () ? columns : columns_no_cert,
+                manage_cert_loaded () ? columns : columns_no_cert,
                 filter_columns, 0,
                 extra_tables,
                 extra_where,
@@ -68359,6 +68407,7 @@ type_select_columns (const char *type)
   static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
   static column_t result_columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t result_columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   static column_t vuln_columns[] = VULN_ITERATOR_COLUMNS;
   static column_t host_columns[] = HOST_ITERATOR_COLUMNS;
   static column_t os_columns[] = OS_ITERATOR_COLUMNS;
@@ -68380,7 +68429,11 @@ type_select_columns (const char *type)
   else if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
   else if (strcasecmp (type, "RESULT") == 0)
-    return result_columns;
+    {
+      if (manage_cert_loaded ())
+        return result_columns;
+      return result_columns_no_cert;
+    }
   else if (strcasecmp (type, "VULN") == 0)
     return vuln_columns;
   else if (strcasecmp (type, "HOST") == 0)
