@@ -10427,33 +10427,42 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
  *
  * @param[in]  buffer       Buffer.
  * @param[in]  oid          OID.
- * @param[in]  cert_loaded  Whether CERT db is loaded.
+ * @param[in]  cert_loaded     Whether CERT db is loaded.
+ * @param[in]  has_cert_bunds  Whether results has CERT-Bund advisories.
+ * @param[in]  has_dfn_certs   Whether results has DFN-CERT advisories.
  */
 static void
-results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded)
+results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
+                         int has_cert_bunds, int has_dfn_certs)
 {
   iterator_t cert_refs_iterator;
 
   buffer_xml_append_printf (buffer, "<cert>");
   if (cert_loaded)
     {
-      init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
-      while (next (&cert_refs_iterator))
+      if (has_cert_bunds)
         {
-          g_string_append_printf
-           (buffer, "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
-            get_iterator_name (&cert_refs_iterator));
+          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          while (next (&cert_refs_iterator))
+            {
+              g_string_append_printf
+               (buffer, "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+                get_iterator_name (&cert_refs_iterator));
+            }
+          cleanup_iterator (&cert_refs_iterator);
         }
-      cleanup_iterator (&cert_refs_iterator);
 
-      init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
-      while (next (&cert_refs_iterator))
+      if (has_dfn_certs)
         {
-          g_string_append_printf
-           (buffer, "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
-            get_iterator_name (&cert_refs_iterator));
+          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          while (next (&cert_refs_iterator))
+            {
+              g_string_append_printf
+               (buffer, "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+                get_iterator_name (&cert_refs_iterator));
+            }
+          cleanup_iterator (&cert_refs_iterator);
         }
-      cleanup_iterator (&cert_refs_iterator);
     }
   else
     g_string_append_printf (buffer,
@@ -10560,7 +10569,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     result_iterator_nvt_tag (results) ?: "");
         }
 
-      results_xml_append_cert (buffer, oid, cert_loaded);
+      results_xml_append_cert (buffer, oid, cert_loaded,
+                               result_iterator_has_cert_bunds (results),
+                               result_iterator_has_dfn_certs (results));
     }
 
   buffer_xml_append_printf (buffer, "</nvt>");
