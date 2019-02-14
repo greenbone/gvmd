@@ -27198,13 +27198,9 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 }
 
 /** @todo Defined in gmp.c! */
-void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
-                         int, int, int, const char *, iterator_t *, int);
-
-/** @todo Defined in gmp.c! */
-void buffer_results_xml_cert (GString *, iterator_t *, task_t, int, int, int,
-                              int, int, int, int, const char *, iterator_t *,
-                              int, int);
+void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int,
+                         int, int, int, int, const char *, iterator_t *,
+                         int, int);
 
 /**
  * @brief Comparison returns.
@@ -27532,7 +27528,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "changed",
                                   delta_results,
-                                  1);
+                                  1,
+                                  -1);
           }
         break;
 
@@ -27561,7 +27558,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "gone",
                                   delta_results,
-                                  0);
+                                  0,
+                                  -1);
           }
         break;
 
@@ -27590,7 +27588,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "new",
                                   delta_results,
-                                  0);
+                                  0,
+                                  -1);
           }
         break;
 
@@ -27619,7 +27618,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "same",
                                   delta_results,
-                                  0);
+                                  0,
+                                  -1);
           }
         break;
 
@@ -29647,7 +29647,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     0,
                                     "new",
                                     NULL,
-                                    0);
+                                    0,
+                                    -1);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -29692,7 +29693,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     0,
                                     "gone",
                                     NULL,
-                                    0);
+                                    0,
+                                    -1);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -31070,20 +31072,20 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           GHashTable *f_host_result_counts;
           GString *buffer = g_string_new ("");
 
-          buffer_results_xml_cert (buffer,
-                                   &results,
-                                   task,
-                                   notes,
-                                   notes_details,
-                                   overrides,
-                                   overrides_details,
-                                   result_tags,
-                                   1,
-                                   0,
-                                   NULL,
-                                   NULL,
-                                   0,
-                                   cert_loaded);
+          buffer_results_xml (buffer,
+                              &results,
+                              task,
+                              notes,
+                              notes_details,
+                              overrides,
+                              overrides_details,
+                              result_tags,
+                              1,
+                              0,
+                              NULL,
+                              NULL,
+                              0,
+                              cert_loaded);
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)

@@ -134,7 +134,7 @@
 /** @todo Exported for manage_sql.c. */
 void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
-                    int, int, const char *, iterator_t *, int);
+                    int, int, const char *, iterator_t *, int, int);
 
 
 /* Helper functions. */
@@ -9778,7 +9778,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     0,  /* Result details. */
                                     NULL,
                                     NULL,
-                                    0);
+                                    0,
+                                    -1);
               cleanup_iterator (&results);
             }
           else
@@ -10059,7 +10060,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     0,  /* Result details. */
                                     NULL,
                                     NULL,
-                                    0);
+                                    0,
+                                    -1);
               cleanup_iterator (&results);
             }
           else
@@ -10599,16 +10601,17 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
  * @param[in]  delta_results          Iterator for delta result to include, or
  *                                    NULL.
  * @param[in]  changed                Whether the result is a "changed" delta.
- * @param[in]  cert_loaded            Whether the CERT db is loaded.
+ * @param[in]  cert_loaded            Whether the CERT db is loaded.  0 not loaded,
+ *                                    -1 needs to be checked, else loaded.
  */
 void
-buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
-                         int include_notes, int include_notes_details,
-                         int include_overrides, int include_overrides_details,
-                         int include_tags, int include_tags_details,
-                         int include_details,
-                         const char *delta_state, iterator_t *delta_results,
-                         int changed, int cert_loaded)
+buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
+                    int include_notes, int include_notes_details,
+                    int include_overrides, int include_overrides_details,
+                    int include_tags, int include_tags_details,
+                    int include_details,
+                    const char *delta_state, iterator_t *delta_results,
+                    int changed, int cert_loaded)
 {
   const char *descr = result_iterator_descr (results);
   const char *name, *owner_name, *comment, *creation_time, *modification_time;
@@ -10777,6 +10780,8 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
                             "<port>%s</port>",
                             result_iterator_port (results));
 
+  if (cert_loaded == -1)
+    cert_loaded = manage_cert_loaded ();
   results_xml_append_nvt (results, buffer, cert_loaded);
 
   buffer_xml_append_printf
@@ -10825,7 +10830,7 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
                               include_notes, include_notes_details,
                               include_overrides, include_overrides_details,
                               include_tags, include_tags_details,
-                              include_details, delta_state, NULL, 0);
+                              include_details, delta_state, NULL, 0, -1);
           delta_descr = result_iterator_descr (delta_results);
           delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                        : NULL;
@@ -10881,44 +10886,6 @@ buffer_results_xml_cert (GString *buffer, iterator_t *results, task_t task,
     buffer_result_tickets_xml (buffer, result);
 
   g_string_append (buffer, "</result>");
-}
-
-/** @todo Exported for manage_sql.c. */
-/**
- * @brief Buffer XML for some results.
- *
- * @param[in]  buffer                 Buffer into which to buffer results.
- * @param[in]  results                Result iterator.
- * @param[in]  task                   Task associated with results.  Only
- *                                    needed with include_notes or
- *                                    include_overrides.
- * @param[in]  include_notes          Whether to include notes.
- * @param[in]  include_notes_details  Whether to include details of notes.
- * @param[in]  include_overrides          Whether to include overrides.
- * @param[in]  include_overrides_details  Whether to include details of overrides.
- * @param[in]  include_tags           Whether to include user tag count.
- * @param[in]  include_tags_details   Whether to include details of tags.
- * @param[in]  include_details        Whether to include details of the result.
- * @param[in]  delta_state            Delta state of result, or NULL.
- * @param[in]  delta_results          Iterator for delta result to include, or
- *                                    NULL.
- * @param[in]  changed                Whether the result is a "changed" delta.
- */
-void
-buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
-                    int include_notes, int include_notes_details,
-                    int include_overrides, int include_overrides_details,
-                    int include_tags, int include_tags_details,
-                    int include_details,
-                    const char *delta_state, iterator_t *delta_results,
-                    int changed)
-{
-  return buffer_results_xml_cert (buffer, results, task, include_notes,
-                                  include_notes_details, include_overrides,
-                                  include_overrides_details, include_tags,
-                                  include_tags_details, include_details,
-                                  delta_state, delta_results, changed,
-                                  manage_cert_loaded ());
 }
 
 #undef ADD_DETAIL
@@ -16824,7 +16791,8 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                   get_results_data->get.details,
                                   NULL,
                                   NULL,
-                                  0);
+                                  0,
+                                  -1);
               SEND_TO_CLIENT_OR_FAIL (buffer->str);
               g_string_free (buffer, TRUE);
               count ++;
