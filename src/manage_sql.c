@@ -24931,7 +24931,7 @@ int
 result_iterator_may_have_overrides (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
 }
 
 /**
