@@ -23719,7 +23719,8 @@ where_qod (int min_qod)
       "                      WHERE report = results.report"                   \
       "                      AND host = results.host)"                        \
       " AND name = 'detected_by'"                                             \
-      " AND source_name = results.nvt)",                                      \
+      " AND source_name = results.nvt"                                        \
+      " LIMIT 1)",                                                            \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT CASE WHEN host IS NULL"                                        \
@@ -23882,7 +23883,8 @@ where_qod (int min_qod)
       "                      WHERE report = results.report"                   \
       "                      AND host = results.host)"                        \
       " AND name = 'detected_by'"                                             \
-      " AND source_name = results.nvt)",                                      \
+      " AND source_name = results.nvt"                                        \
+      " LIMIT 1)",                                                            \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT CASE WHEN host IS NULL"                                        \
