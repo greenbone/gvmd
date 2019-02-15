@@ -1116,8 +1116,8 @@ int
 result_uuid (result_t, char **);
 
 int
-result_detection_reference (result_t, char **, char **, char **, char **,
-                            char **);
+result_detection_reference (result_t, report_t, const char *, const char *,
+                            char **, char **, char **, char **);
 
 /* Reports. */
 
@@ -1441,6 +1441,27 @@ result_iterator_hostname (iterator_t*);
 const char*
 result_iterator_date (iterator_t*);
 
+const char*
+result_iterator_detected_by_oid (iterator_t*);
+
+const char*
+result_iterator_asset_host_id (iterator_t*);
+
+int
+result_iterator_may_have_notes (iterator_t*);
+
+int
+result_iterator_may_have_overrides (iterator_t*);
+
+int
+result_iterator_may_have_tickets (iterator_t*);
+
+int
+result_iterator_has_cert_bunds (iterator_t*);
+
+int
+result_iterator_has_dfn_certs (iterator_t*);
+
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 
@@ -1475,7 +1496,7 @@ manage_report (report_t, report_t, const get_data_t *, report_format_t,
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
-                    int, int, int, int,
+                    int, int, int, int, int,
                     gboolean (*) (const char *,
                                   int (*) (const char*, void*),
                                   void*),
@@ -4041,6 +4062,9 @@ resource_tag_iterator_value (iterator_t*);
 
 const char*
 resource_tag_iterator_comment (iterator_t*);
+
+int
+resource_tag_exists (const char*, resource_t, int);
 
 int
 resource_tag_count (const char*, resource_t, int);

@@ -849,18 +849,18 @@ modify_ticket_element_text (const gchar *text, gsize text_len)
 /**
  * @brief Buffer ticket XML for a result.
  *
- * @param[in]  buffer     Buffer.
- * @param[in]  result_id  ID of result.
+ * @param[in]  buffer   Buffer.
+ * @param[in]  result   Result.
  *
  * @return 0 success, -1 internal error.
  */
 int
-buffer_result_tickets_xml (GString *buffer, const gchar *result_id)
+buffer_result_tickets_xml (GString *buffer, result_t result)
 {
   iterator_t tickets;
   int ret;
 
-  ret = init_result_ticket_iterator (&tickets, result_id);
+  ret = init_result_ticket_iterator (&tickets, result);
 
   if (ret == 0)
     {

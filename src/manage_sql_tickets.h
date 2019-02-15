@@ -28,6 +28,16 @@
 
 #include "manage.h"
 
+/**
+ * @brief SQL to check if a result may have tickets.
+ */
+#define TICKET_SQL_RESULT_MAY_HAVE_TICKETS                                     \
+ "(SELECT EXISTS (SELECT * FROM tickets"                                       \
+ "                WHERE id IN (SELECT ticket FROM ticket_results"              \
+ "                             WHERE result = results.id"                      \
+ "                             AND result_location"                            \
+ "                                 = " G_STRINGIFY (LOCATION_TABLE) ")))"
+
 user_t
 ticket_owner (ticket_t);
 
