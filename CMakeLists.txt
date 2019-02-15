@@ -20,11 +20,9 @@ cmake_minimum_required (VERSION 3.0)
 
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
-# VERSION: Set patch version for stable releases, e.g. "9.0.0",
-#          unset patch version for prereleases, e.g. "9.0"
 project (gvm
-         VERSION 9.0
-         LANGUAGES C)
+  VERSION 8.0.0
+  LANGUAGES C)
 
 if (POLICY CMP0005)
   cmake_policy (SET CMP0005 NEW)
@@ -47,46 +45,37 @@ OPTION (DEBUG_FUNCTION_NAMES "Print function names on entry and exit" OFF)
 
 ## Retrieve git revision (at configure time)
 include (GetGit)
+
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
   if (EXISTS "${CMAKE_SOURCE_DIR}/.git/")
     if (GIT_FOUND)
       Git_GET_REVISION(${CMAKE_SOURCE_DIR} ProjectRevision)
       set (GIT_REVISION "~git-${ProjectRevision}")
-    else (GIT_FOUND)
-      set (GIT_REVISION "~git")
     endif (GIT_FOUND)
-  else (EXISTS "${CMAKE_SOURCE_DIR}/.git/")
-    set (GIT_REVISION "~git")
   endif (EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
-# set if this is in prerelease status, starting at 0 before first beta release,
+# Set beta version if this is a beta release series,
 # unset if this is a stable release series.
-set (PROJECT_BETA_RELEASE 0)
+set (PROJECT_BETA_RELEASE 4)
 
 if (GIT_REVISION)
   set (PROJECT_VERSION_GIT "${GIT_REVISION}")
 else (GIT_REVISION)
-  set (PROJECT_VERSION_GIT "")
+  set (PROJECT_VERSION_GIT "~git")
 endif (GIT_REVISION)
 
-# If PROJECT_BETA_RELEASE is set to "0", the version string will be set to:
-#   "major.minor+alpha"
-# If PROJECT_BETA_RELEASE is set otherwise, the version string will be set to:
+# If PROJECT_BETA_RELEASE is set, the version string will be set to:
 #   "major.minor+beta${PROJECT_BETA_RELEASE}"
 # If PROJECT_BETA_RELEASE is NOT set, the version string will be set to:
 #   "major.minor.patch"
-if (DEFINED PROJECT_BETA_RELEASE AND NOT PROJECT_BETA_RELEASE STREQUAL "")
-  if (PROJECT_BETA_RELEASE STREQUAL "0")
-    set (PROJECT_VERSION_SUFFIX "+alpha")
-  else (PROJECT_BETA_RELEASE STREQUAL "0")
-    set (PROJECT_VERSION_SUFFIX "+beta${PROJECT_BETA_RELEASE}")
-  endif (PROJECT_BETA_RELEASE STREQUAL "0")
-elseif (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
+if (PROJECT_BETA_RELEASE)
+  set (PROJECT_VERSION_SUFFIX "+beta${PROJECT_BETA_RELEASE}")
+else (PROJECT_BETA_RELEASE)
   set (PROJECT_VERSION_SUFFIX ".${PROJECT_VERSION_PATCH}")
-endif (DEFINED PROJECT_BETA_RELEASE AND NOT PROJECT_BETA_RELEASE STREQUAL "")
+endif (PROJECT_BETA_RELEASE)
 
-set (PROJECT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}${PROJECT_VERSION_SUFFIX}${PROJECT_VERSION_GIT}")
+set (PROJECT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}${PROJECT_VERSION_SUFFIX}")
 
 ## CPack configuration
 
@@ -123,7 +112,7 @@ set (GVMD_SCAP_DATABASE_VERSION 15)
 
 set (GVMD_CERT_DATABASE_VERSION 6)
 
-set (GMP_VERSION "9.0")
+set (GMP_VERSION "8.0")
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
