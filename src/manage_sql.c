@@ -12696,7 +12696,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               gchar *body, *subject;
               char *name, *notice, *from_address;
               gchar *base64, *type, *extension;
-              filter_t filter;
 
               base64 = NULL;
               type = NULL;
@@ -12755,12 +12754,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   gchar *term, *report_zone, *host_summary;
                   report_format_t report_format = 0;
                   gsize content_length;
+                  filter_t filter;
 
                   /* Message with inlined report. */
 
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
+                  /* report_content_for_alert always sets this, but init it
+                   * anyway, to make it easier for the compiler to see. */
+                  filter = 0;
                   ret = report_content_for_alert
                           (alert, 0, task, get,
                            "notice_report_format",
@@ -12831,12 +12834,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   gsize content_length;
                   gchar *alert_subject, *message;
                   gchar *term, *report_zone, *host_summary;
+                  filter_t filter;
 
                   /* Message with attached report. */
 
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
+                  /* report_content_for_alert always sets this, but init it
+                   * anyway, to make it easier for the compiler to see. */
+                  filter = 0;
                   ret = report_content_for_alert
                           (alert, 0, task, get,
                            "notice_attach_format",
