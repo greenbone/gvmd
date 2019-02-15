@@ -15404,12 +15404,12 @@ setup_full_config_prefs (config_t config, int safe_checks,
 
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " 'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       " '" OID_PING_HOST ":checkbox:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " 'Login configurations[checkbox]:NTLMSSP',"
+       " '" OID_LOGINS ":checkbox:NTLMSSP',"
        " 'yes');",
        config);
 }

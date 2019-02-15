@@ -40,6 +40,47 @@
 #include <gvm/osp/osp.h>          /* for osp_connection_t */
 
 
+
+/**
+ * @brief OID of ping_host.nasl
+ */
+#define OID_PING_HOST "1.3.6.1.4.1.25623.1.0.100315"
+
+/**
+ * @brief OID of ssh_authorization_init.nasl
+ */
+#define OID_SSH_AUTH "1.3.6.1.4.1.25623.1.0.103591"
+
+/**
+ * @brief OID of smb_authorization.nasl
+ */
+#define OID_SMB_AUTH "1.3.6.1.4.1.25623.1.0.90023"
+
+/**
+ * @brief OID of gb_esxi_authorization.nasl
+ */
+#define OID_ESXI_AUTH "1.3.6.1.4.1.25623.1.0.105058"
+
+/**
+ * @brief OID of gb_snmp_authorization.nasl
+ */
+#define OID_SNMP_AUTH "1.3.6.1.4.1.25623.1.0.105076"
+
+/**
+ * @brief OID of find_services.nasl
+ */
+#define OID_SERVICES "1.3.6.1.4.1.25623.1.0.10330"
+
+/**
+ * @brief OID of logins.nasl
+ */
+#define OID_LOGINS "1.3.6.1.4.1.25623.1.0.10870"
+
+/**
+ * @brief OID of global_settings.nasl
+ */
+#define OID_GLOBAL_SETTINGS "1.3.6.1.4.1.25623.1.0.12288"
+
 /**
  * @brief Flag with all Glib log levels.
  */

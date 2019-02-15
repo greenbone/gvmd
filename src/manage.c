@@ -2097,14 +2097,14 @@ send_alive_test_preferences (target_t target)
   if (alive_test == 0)
     return 0;
 
-  if (sendf_to_server ("Ping Host[checkbox]:Do a TCP ping <|> %s\n",
+  if (sendf_to_server (OID_PING_HOST ":checkbox:Do a TCP ping <|> %s\n",
                        alive_test & ALIVE_TEST_TCP_ACK_SERVICE
                        || alive_test & ALIVE_TEST_TCP_SYN_SERVICE
                         ? "yes"
                         : "no"))
     return -1;
 
-  if (sendf_to_server ("Ping Host[checkbox]:TCP ping tries also TCP-SYN ping"
+  if (sendf_to_server (OID_PING_HOST ":checkbox:TCP ping tries also TCP-SYN ping"
                        " <|> %s\n",
                        ((alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
                         && (alive_test & ALIVE_TEST_TCP_ACK_SERVICE))
@@ -2112,7 +2112,7 @@ send_alive_test_preferences (target_t target)
                         : "no"))
     return -1;
 
-  if (sendf_to_server ("Ping Host[checkbox]:TCP ping tries only TCP-SYN ping"
+  if (sendf_to_server (OID_PING_HOST ":checkbox:TCP ping tries only TCP-SYN ping"
                        " <|> %s\n",
                        ((alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
                         && !(alive_test & ALIVE_TEST_TCP_ACK_SERVICE))
@@ -2120,19 +2120,19 @@ send_alive_test_preferences (target_t target)
                         : "no"))
     return -1;
 
-  if (sendf_to_server ("Ping Host[checkbox]:Do an ICMP ping <|> %s\n",
+  if (sendf_to_server (OID_PING_HOST ":checkbox:Do an ICMP ping <|> %s\n",
                        (alive_test & ALIVE_TEST_ICMP)
                         ? "yes"
                         : "no"))
     return -1;
 
-  if (sendf_to_server ("Ping Host[checkbox]:Use ARP <|> %s\n",
+  if (sendf_to_server (OID_PING_HOST ":checkbox:Use ARP <|> %s\n",
                        (alive_test & ALIVE_TEST_ARP)
                         ? "yes"
                         : "no"))
     return -1;
 
-  if (sendf_to_server ("Ping Host[checkbox]:"
+  if (sendf_to_server (OID_PING_HOST ":checkbox:"
                        "Mark unrechable Hosts as dead (not scanning) <|> %s\n",
                        (alive_test & ALIVE_TEST_CONSIDER_ALIVE)
                         ? "no"
@@ -2142,7 +2142,7 @@ send_alive_test_preferences (target_t target)
   if (alive_test == ALIVE_TEST_CONSIDER_ALIVE)
     {
       /* Also select a method, otherwise Ping Host logs a warning. */
-      if (sendf_to_server ("Ping Host[checkbox]:Do a TCP ping <|> yes\n"))
+      if (sendf_to_server (OID_PING_HOST ":checkbox:Do a TCP ping <|> yes\n"))
         return -1;
     }
 
@@ -5357,15 +5357,15 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
           const char *user = credential_iterator_login (&credentials);
           const char *password = credential_iterator_password (&credentials);
 
-          if (sendf_to_server ("SSH Authorization[entry]:SSH login name:"
+          if (sendf_to_server (OID_SSH_AUTH ":entry:SSH login name:"
                                " <|> %s\n",
                                user ? user : "")
               || (credential_iterator_private_key (&credentials)
-                   ? sendf_to_server ("SSH Authorization[password]:"
+                   ? sendf_to_server (OID_SSH_AUTH ":password:"
                                       "SSH key passphrase:"
                                       " <|> %s\n",
                                       password ? password : "")
-                   : sendf_to_server ("SSH Authorization[password]:"
+                   : sendf_to_server (OID_SSH_AUTH ":password:"
                                       "SSH password (unsafe!):"
                                       " <|> %s\n",
                                       password ? password : "")))
@@ -5396,8 +5396,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
                 (gpointer) g_strdup (credential_iterator_private_key
                                       (&credentials)));
 
-              if (sendf_to_server ("SSH Authorization[file]:"
-                                   "SSH private key:"
+              if (sendf_to_server (OID_SSH_AUTH ":file:SSH private key:"
                                    " <|> %s\n",
                                    file_uuid))
                 goto fail;
@@ -5416,9 +5415,9 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
           const char *user = credential_iterator_login (&credentials);
           const char *password = credential_iterator_password (&credentials);
 
-          if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
+          if (sendf_to_server (OID_SMB_AUTH ":entry:SMB login: <|> %s\n",
                                user ? user : "")
-              || sendf_to_server ("SMB Authorization[password]:SMB password:"
+              || sendf_to_server (OID_SMB_AUTH ":password:SMB password:"
                                   " <|> %s\n",
                                   password ? password : ""))
             {
@@ -5447,10 +5446,10 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
           const char *user = credential_iterator_login (&credentials);
           const char *password = credential_iterator_password (&credentials);
 
-          if (sendf_to_server ("ESXi Authorization[entry]:ESXi login name:"
+          if (sendf_to_server (OID_ESXI_AUTH ":entry:ESXi login name:"
                                " <|> %s\n",
                                user ? user : "")
-              || sendf_to_server ("ESXi Authorization[password]:ESXi login password:"
+              || sendf_to_server (OID_ESXI_AUTH ":password:ESXi login password:"
                                   " <|> %s\n",
                                   password ? password : ""))
             {
@@ -5486,25 +5485,25 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
           const char *privacy_algorithm
             = credential_iterator_privacy_algorithm (&credentials);
 
-          if (sendf_to_server ("SNMP Authorization[password]:SNMP Community:"
+          if (sendf_to_server (OID_SNMP_AUTH ":password:SNMP Community:"
                                " <|> %s\n",
                                community ? community : "")
-              || sendf_to_server ("SNMP Authorization[entry]:SNMPv3 Username:"
+              || sendf_to_server (OID_SNMP_AUTH ":entry:SNMPv3 Username:"
                                   " <|> %s\n",
                                   user ? user : "")
-              || sendf_to_server ("SNMP Authorization[password]:"
+              || sendf_to_server (OID_SNMP_AUTH ":password:"
                                   "SNMPv3 Password:"
                                   " <|> %s\n",
                                   password ? password : "")
-              || sendf_to_server ("SNMP Authorization[radio]:"
+              || sendf_to_server (OID_SNMP_AUTH ":radio:"
                                   "SNMPv3 Authentication Algorithm:"
                                   " <|> %s\n",
                                   auth_algorithm ? auth_algorithm : "")
-              || sendf_to_server ("SNMP Authorization[password]:"
+              || sendf_to_server (OID_SNMP_AUTH ":password:"
                                   "SNMPv3 Privacy Password:"
                                   " <|> %s\n",
                                   privacy_password ? privacy_password : "")
-              || sendf_to_server ("SNMP Authorization[radio]:"
+              || sendf_to_server (OID_SNMP_AUTH ":radio:"
                                   "SNMPv3 Privacy Algorithm:"
                                   " <|> %s\n",
                                   privacy_algorithm ? privacy_algorithm : ""))
