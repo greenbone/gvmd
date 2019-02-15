@@ -99,7 +99,7 @@ const char*
 ticket_result_iterator_result_id (iterator_t*);
 
 int
-init_result_ticket_iterator (iterator_t *, const gchar *);
+init_result_ticket_iterator (iterator_t *, result_t);
 
 const char*
 result_ticket_iterator_ticket_id (iterator_t*);

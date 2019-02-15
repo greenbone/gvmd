@@ -15973,6 +15973,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>result_tags</name>
+        <summary>Whether to include tags in the results</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>host</name>
         <summary>For "assets", single host to retrieve</summary>
         <type>text</type>
