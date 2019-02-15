@@ -15648,11 +15648,11 @@ handle_get_preferences (gmp_parser_t *gmp_parser, GError **error)
       if (get_preferences_data->preference)
         while (next (&prefs))
           {
-            char *name = strstr (nvt_preference_iterator_name (&prefs), "]:");
-            if (name
-                && (strcmp (name + 2,
-                            get_preferences_data->preference)
-                    == 0))
+            char *name = strstr (nvt_preference_iterator_name (&prefs), ":");
+            if (name)
+              name = strstr (name + 1, ":");
+            if (name && (strcmp (name + 1, get_preferences_data->preference)
+                         == 0))
               {
                 GString *buffer = g_string_new ("");
                 buffer_config_preference_xml (buffer, &prefs, config, 1);
