@@ -25,12 +25,11 @@
 #ifndef _GVMD_MANAGE_SQL_H
 #define _GVMD_MANAGE_SQL_H
 
-#include <gvm/util/xmlutils.h> /* for entity_t */
-
 #include "manage.h"
 #include "manage_utils.h"
 
-
+#include <gvm/util/xmlutils.h> /* for entity_t */
+
 /* Internal types and preprocessor definitions. */
 
 /**
@@ -42,7 +41,7 @@
  * @brief UUID of 'Full and fast ultimate' config.
  */
 #define CONFIG_UUID_FULL_AND_FAST_ULTIMATE \
- "698f691e-7489-11df-9d8c-002264764cea"
+  "698f691e-7489-11df-9d8c-002264764cea"
 
 /**
  * @brief UUID of 'Full and very deep' config.
@@ -53,7 +52,7 @@
  * @brief UUID of 'Full and very deep ultimate' config.
  */
 #define CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE \
- "74db13d6-7489-11df-91b9-002264764cea"
+  "74db13d6-7489-11df-91b9-002264764cea"
 
 /**
  * @brief UUID of 'Empty' config.
@@ -93,19 +92,20 @@
 /**
  * @brief UUID of 'Discovery' NVT selector.
  */
-#define MANAGE_NVT_SELECTOR_UUID_DISCOVERY "0d9a2738-8fe2-4e22-8f26-bb886179e759"
+#define MANAGE_NVT_SELECTOR_UUID_DISCOVERY \
+  "0d9a2738-8fe2-4e22-8f26-bb886179e759"
 
 /**
  * @brief UUID of 'Host Discovery' NVT selector.
  */
 #define MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY \
- "f5f80744-55c7-11e3-8dc6-406186ea4fc5"
+  "f5f80744-55c7-11e3-8dc6-406186ea4fc5"
 
 /**
  * @brief UUID of 'System Discovery' NVT selector.
  */
 #define MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY \
- "07045d1c-a951-11e3-8da7-406186ea4fc5"
+  "07045d1c-a951-11e3-8da7-406186ea4fc5"
 
 /**
  * @brief Predefined role UUID.
@@ -115,7 +115,8 @@
 /**
  * @brief Predefined role UUID.
  */
-#define PERMISSION_UUID_SUPER_ADMIN_EVERYTHING "a9801074-6fe2-11e4-9d81-406186ea4fc5"
+#define PERMISSION_UUID_SUPER_ADMIN_EVERYTHING \
+  "a9801074-6fe2-11e4-9d81-406186ea4fc5"
 
 /**
  * @brief UUID of 'OpenVAS Default' port list.
@@ -130,12 +131,14 @@
 /**
  * @brief UUID of 'All TCP and Nmap 5.51 Top 100 UDP' port list.
  */
-#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "730ef368-57e2-11e1-a90f-406186ea4fc5"
+#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 \
+  "730ef368-57e2-11e1-a90f-406186ea4fc5"
 
 /**
  * @brief UUID of 'All TCP and Nmap 5.51 Top 1000 UDP' port list.
  */
-#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "9ddce1ae-57e7-11e1-b13c-406186ea4fc5"
+#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 \
+  "9ddce1ae-57e7-11e1-b13c-406186ea4fc5"
 
 /**
  * @brief UUID of 'All privileged TCP' port list.
@@ -155,12 +158,14 @@
 /**
  * @brief UUID of 'All privileged TCP and UDP' port list.
  */
-#define PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "4a4717fe-57d2-11e1-9a26-406186ea4fc5"
+#define PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 \
+  "4a4717fe-57d2-11e1-9a26-406186ea4fc5"
 
 /**
  * @brief UUID of 'Nmap 5.51 top 2000 TCP top 100 UDP' port list.
  */
-#define PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "ab33f6b0-57f8-11e1-96f5-406186ea4fc5"
+#define PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 \
+  "ab33f6b0-57f8-11e1-96f5-406186ea4fc5"
 
 /**
  * @brief Predefined role UUID.
@@ -250,10 +255,9 @@
 /**
  * @brief Number of milliseconds between timevals a and b (performs a-b).
  */
-#define TIMEVAL_SUBTRACT_MS(a,b) ((((a).tv_sec - (b).tv_sec) * 1000) + \
-                                  ((a).tv_usec - (b).tv_usec) / 1000)
+#define TIMEVAL_SUBTRACT_MS(a, b) \
+  ((((a).tv_sec - (b).tv_sec) * 1000) + ((a).tv_usec - (b).tv_usec) / 1000)
 
-
 /* Macros. */
 
 /**
@@ -265,17 +269,16 @@
  * @param[in]  name  Name of accessor.
  * @param[in]  col   Column number to access.
  */
-#define DEF_ACCESS(name, col)                                     \
-const char*                                                       \
-name (iterator_t* iterator)                                       \
-{                                                                 \
-  const char *ret;                                                \
-  if (iterator->done) return NULL;                                \
-  ret = iterator_string (iterator, col);                          \
-  return ret;                                                     \
-}
+#define DEF_ACCESS(name, col)              \
+  const char *name (iterator_t *iterator)  \
+  {                                        \
+    const char *ret;                       \
+    if (iterator->done)                    \
+      return NULL;                         \
+    ret = iterator_string (iterator, col); \
+    return ret;                            \
+  }
 
-
 /* Iterator definitions. */
 
 /**
@@ -291,23 +294,22 @@ typedef struct
 /**
  * @brief Filter columns for GET iterator.
  */
-#define ANON_GET_ITERATOR_FILTER_COLUMNS "uuid", \
- "created", "modified", "_owner"
+#define ANON_GET_ITERATOR_FILTER_COLUMNS "uuid", "created", "modified", "_owner"
 
 /**
  * @brief Filter columns for GET iterator.
  */
-#define GET_ITERATOR_FILTER_COLUMNS "uuid", "name", "comment", \
- "created", "modified", "_owner"
+#define GET_ITERATOR_FILTER_COLUMNS \
+  "uuid", "name", "comment", "created", "modified", "_owner"
 
 /**
  * @brief Columns for GET iterator, as a single string.
  *
  * @param[in]  prefix  Column prefix.
  */
-#define GET_ITERATOR_COLUMNS_STRING                                \
-  "id, uuid, name, comment, iso_time (creation_time),"             \
-  " iso_time (modification_time), creation_time AS created,"       \
+#define GET_ITERATOR_COLUMNS_STRING                          \
+  "id, uuid, name, comment, iso_time (creation_time),"       \
+  " iso_time (modification_time), creation_time AS created," \
   " modification_time AS modified"
 
 /**
@@ -316,54 +318,55 @@ typedef struct
  * @param[in]  prefix  Column prefix.
  */
 #define GET_ITERATOR_COLUMNS_PREFIX(prefix)                                 \
-  { prefix "id", NULL, KEYWORD_TYPE_INTEGER },                              \
-  { prefix "uuid", NULL, KEYWORD_TYPE_STRING },                             \
-  { prefix "name", NULL, KEYWORD_TYPE_STRING },                             \
-  { prefix "comment", NULL, KEYWORD_TYPE_STRING },                          \
-  { " iso_time (" prefix "creation_time)", NULL, KEYWORD_TYPE_STRING },     \
-  { " iso_time (" prefix "modification_time)", NULL, KEYWORD_TYPE_STRING }, \
-  { prefix "creation_time", "created", KEYWORD_TYPE_INTEGER },              \
-  { prefix "modification_time", "modified", KEYWORD_TYPE_INTEGER }
+  {prefix "id", NULL, KEYWORD_TYPE_INTEGER},                                \
+    {prefix "uuid", NULL, KEYWORD_TYPE_STRING},                             \
+    {prefix "name", NULL, KEYWORD_TYPE_STRING},                             \
+    {prefix "comment", NULL, KEYWORD_TYPE_STRING},                          \
+    {" iso_time (" prefix "creation_time)", NULL, KEYWORD_TYPE_STRING},     \
+    {" iso_time (" prefix "modification_time)", NULL, KEYWORD_TYPE_STRING}, \
+    {prefix "creation_time", "created", KEYWORD_TYPE_INTEGER},              \
+  {                                                                         \
+    prefix "modification_time", "modified", KEYWORD_TYPE_INTEGER            \
+  }
 
 /**
  * @brief Columns for GET iterator.
  *
  * @param[in]  table  Table.
  */
-#define GET_ITERATOR_COLUMNS(table)                                             \
-  GET_ITERATOR_COLUMNS_PREFIX(""),                                              \
-  {                                                                             \
-    "(SELECT name FROM users AS inner_users"                                    \
-    " WHERE inner_users.id = " G_STRINGIFY (table) ".owner)",                   \
-    "_owner",                                                                   \
-    KEYWORD_TYPE_STRING                                                         \
-  },                                                                            \
-  { "owner", NULL, KEYWORD_TYPE_INTEGER }
+#define GET_ITERATOR_COLUMNS(table)                            \
+  GET_ITERATOR_COLUMNS_PREFIX (""),                            \
+    {"(SELECT name FROM users AS inner_users"                  \
+     " WHERE inner_users.id = " G_STRINGIFY (table) ".owner)", \
+     "_owner", KEYWORD_TYPE_STRING},                           \
+  {                                                            \
+    "owner", NULL, KEYWORD_TYPE_INTEGER                        \
+  }
 
 /**
  * @brief Number of columns for GET iterator.
  */
 #define GET_ITERATOR_COLUMN_COUNT 10
 
-
 /* Variables */
 
 extern gchar *gvmd_db_name;
 
-
 /* Function prototypes */
 
 typedef long long int rowid_t;
 
-int manage_db_empty ();
+int
+manage_db_empty ();
 
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 
-char*
+char *
 report_host_ip (const char *);
 
-gchar *tag_value (const gchar *, const gchar *);
+gchar *
+tag_value (const gchar *, const gchar *);
 
 void trim_report (report_t);
 
@@ -371,122 +374,172 @@ int delete_report_internal (report_t);
 
 int set_report_scan_run_status (report_t, task_status_t);
 
-int set_report_slave_progress (report_t, int);
+int
+set_report_slave_progress (report_t, int);
 
-int update_from_slave (task_t, entity_t, entity_t *, int *);
+int
+update_from_slave (task_t, entity_t, entity_t *, int *);
 
-void set_report_slave_task_uuid (report_t, const char *);
+void
+set_report_slave_task_uuid (report_t, const char *);
 
-int set_task_requested (task_t, task_status_t *);
+int
+set_task_requested (task_t, task_status_t *);
 
-void init_task_file_iterator (iterator_t *, task_t, const char *);
-const char *task_file_iterator_name (iterator_t *);
-const char *task_file_iterator_content (iterator_t *);
+void
+init_task_file_iterator (iterator_t *, task_t, const char *);
+const char *
+task_file_iterator_name (iterator_t *);
+const char *
+task_file_iterator_content (iterator_t *);
 
 void set_task_schedule_next_time (task_t, time_t);
 
-void set_task_schedule_next_time_uuid (const gchar *, time_t);
+void
+set_task_schedule_next_time_uuid (const gchar *, time_t);
 
-void init_otp_pref_iterator (iterator_t *, config_t, const char *);
-const char *otp_pref_iterator_name (iterator_t *);
-const char *otp_pref_iterator_value (iterator_t *);
+void
+init_otp_pref_iterator (iterator_t *, config_t, const char *);
+const char *
+otp_pref_iterator_name (iterator_t *);
+const char *
+otp_pref_iterator_value (iterator_t *);
 
 port_list_t target_port_list (target_t);
 credential_t target_ssh_credential (target_t);
 credential_t target_smb_credential (target_t);
 credential_t target_esxi_credential (target_t);
 
-int create_current_report (task_t, char **, task_status_t);
+int
+create_current_report (task_t, char **, task_status_t);
 
-char *alert_data (alert_t, const char *, const char *);
+char *
+alert_data (alert_t, const char *, const char *);
 
-int init_task_schedule_iterator (iterator_t *);
+int
+init_task_schedule_iterator (iterator_t *);
 
-void cleanup_task_schedule_iterator (iterator_t *);
+void
+cleanup_task_schedule_iterator (iterator_t *);
 
-task_t task_schedule_iterator_task (iterator_t *);
+task_t
+task_schedule_iterator_task (iterator_t *);
 
-const char *task_schedule_iterator_task_uuid (iterator_t *);
+const char *
+task_schedule_iterator_task_uuid (iterator_t *);
 
-schedule_t task_schedule_iterator_schedule (iterator_t *);
+schedule_t
+task_schedule_iterator_schedule (iterator_t *);
 
-const char *task_schedule_iterator_icalendar (iterator_t *);
+const char *
+task_schedule_iterator_icalendar (iterator_t *);
 
-const char *task_schedule_iterator_timezone (iterator_t *);
+const char *
+task_schedule_iterator_timezone (iterator_t *);
 
-const char *task_schedule_iterator_owner_uuid (iterator_t *);
+const char *
+task_schedule_iterator_owner_uuid (iterator_t *);
 
-const char *task_schedule_iterator_owner_name (iterator_t *);
+const char *
+task_schedule_iterator_owner_name (iterator_t *);
 
-gboolean task_schedule_iterator_timed_out (iterator_t *);
+gboolean
+task_schedule_iterator_timed_out (iterator_t *);
 
-gboolean task_schedule_iterator_start_due (iterator_t *);
+gboolean
+task_schedule_iterator_start_due (iterator_t *);
 
-gboolean task_schedule_iterator_stop_due (iterator_t *);
+gboolean
+task_schedule_iterator_stop_due (iterator_t *);
 
-time_t task_schedule_iterator_initial_offset (iterator_t *);
+time_t
+task_schedule_iterator_initial_offset (iterator_t *);
 
-int set_task_schedule_uuid (const gchar*, schedule_t, int);
+int
+set_task_schedule_uuid (const gchar *, schedule_t, int);
 
-void reinit_manage_process ();
+void
+reinit_manage_process ();
 
-int manage_update_nvti_cache ();
+int
+manage_update_nvti_cache ();
 
-int manage_report_host_details (report_t, const char *, entity_t);
+int
+manage_report_host_details (report_t, const char *, entity_t);
 
 const char *run_status_name_internal (task_status_t);
 
-gchar *get_ovaldef_short_filename (char*);
+gchar *
+get_ovaldef_short_filename (char *);
 
-void update_config_cache_init (const char *);
+void
+update_config_cache_init (const char *);
 
 alive_test_t target_alive_tests (target_t);
 
-void manage_session_init (const char *);
+void
+manage_session_init (const char *);
 
-int valid_gmp_command (const char *);
+int
+valid_gmp_command (const char *);
 
-void check_generate_scripts ();
+void
+check_generate_scripts ();
 
-void auto_delete_reports ();
+void
+auto_delete_reports ();
 
-int parse_iso_time (const char *);
+int
+parse_iso_time (const char *);
 
 void set_report_scheduled (report_t);
 
-gchar *resource_uuid (const gchar *, resource_t);
+gchar *
+resource_uuid (const gchar *, resource_t);
 
-gboolean find_resource_with_permission (const char *, const char *,
-                                        resource_t *, const char *, int);
+gboolean
+find_resource_with_permission (const char *, const char *, resource_t *,
+                               const char *, int);
 
-void parse_osp_report (task_t, report_t, const char *);
+void
+parse_osp_report (task_t, report_t, const char *);
 
-void reschedule_task (const gchar *);
+void
+reschedule_task (const gchar *);
 
-void insert_port_range (port_list_t, port_protocol_t, int, int);
+void
+insert_port_range (port_list_t, port_protocol_t, int, int);
 
-int manage_update_cert_db_init ();
+int
+manage_update_cert_db_init ();
 
-void manage_update_cert_db_cleanup ();
+void
+manage_update_cert_db_cleanup ();
 
-int manage_update_scap_db_init ();
+int
+manage_update_scap_db_init ();
 
-void manage_update_scap_db_cleanup ();
+void
+manage_update_scap_db_cleanup ();
 
-int manage_cert_db_exists ();
+int
+manage_cert_db_exists ();
 
-int manage_scap_db_exists ();
+int
+manage_scap_db_exists ();
 
-void manage_db_check_mode (const gchar *);
+void
+manage_db_check_mode (const gchar *);
 
-int manage_db_check (const gchar *);
+int
+manage_db_check (const gchar *);
 
 int
 count (const char *, const get_data_t *, column_t *, column_t *, const char **,
        int, const char *, const char *, int);
 
 int
-init_get_iterator (iterator_t*, const char *, const get_data_t *, column_t *,
+init_get_iterator (iterator_t *, const char *, const get_data_t *, column_t *,
                    column_t *, const char **, int, const char *, const char *,
                    int);
 
@@ -494,7 +547,7 @@ gchar *
 columns_build_select (column_t *);
 
 gchar *
-filter_clause (const char*, const char*, const char **, column_t *,
+filter_clause (const char *, const char *, const char **, column_t *,
                column_t *, int, gchar **, int *, int *, array_t **, gchar **);
 
 void
@@ -535,7 +588,8 @@ gboolean
 resource_with_name_exists (const char *, const char *, resource_t);
 
 int
-create_permission_internal (const char *, const char *, const char *, const char *,
-                            const char *, const char *, permission_t *);
+create_permission_internal (const char *, const char *, const char *,
+                            const char *, const char *, const char *,
+                            permission_t *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */

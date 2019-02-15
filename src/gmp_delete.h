@@ -26,9 +26,9 @@
 #ifndef _GVMD_GMP_DELETE_H
 #define _GVMD_GMP_DELETE_H
 
-#include <glib.h>
-
 #include "gmp_base.h"
+
+#include <glib.h>
 
 void
 delete_start (const gchar *, const gchar *, const gchar **, const gchar **);
