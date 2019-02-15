@@ -1621,10 +1621,10 @@ nvt_selector_plugins (config_t config)
 static gchar*
 preference_value (const char* name, const char* full_value)
 {
-  char *bracket = strchr (name, '[');
+  char *bracket = strchr (name, ':');
   if (bracket)
     {
-      if (strncmp (bracket, "[radio]:", strlen ("[radio]:")) == 0)
+      if (strncmp (bracket, ":radio:", strlen (":radio:")) == 0)
         {
           char *semicolon = strchr (full_value, ';');
           if (semicolon)
@@ -1678,8 +1678,8 @@ send_config_preferences (config_t config, const char* section_name,
         {
           int type_start = -1, type_end = -1, count;
 
-          /* LDAPsearch[entry]:Timeout value */
-          count = sscanf (pref_name, "%*[^[][%n%*[^]]%n]:", &type_start,
+          /* OID:PrefType:PrefName value */
+          count = sscanf (pref_name, "%*[^:]:%n%*[^:]%n:", &type_start,
                           &type_end);
           if (count == 0
               && type_start > 0

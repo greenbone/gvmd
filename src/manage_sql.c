@@ -36498,10 +36498,10 @@ config_insert_preferences (config_t config,
             if (config_type == NULL || strcmp (config_type, "0") == 0)
               {
                 /* NVT preference */
-                /* LDAPsearch[entry]:Timeout value */
+                /* OID:PrefType:PrefName value */
                 sql ("INSERT INTO config_preferences"
                      " (config, type, name, value)"
-                     " VALUES (%llu, 'PLUGINS_PREFS', '%s[%s]:%s', '%s');",
+                     " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s', '%s');",
                      config,
                      quoted_nvt_name,
                      quoted_type,
@@ -37853,7 +37853,7 @@ init_otp_pref_iterator (iterator_t* iterator,
                  config,
                  quoted_section,
                  strcmp (quoted_section, "SERVER_PREFS") == 0
-                  ? "NOT LIKE '%[%]%'" : "LIKE '%[%]%'",
+                  ? "NOT LIKE '%:%:%'" : "LIKE '%:%:%'",
                  config);
   g_free (quoted_section);
 }
@@ -37941,8 +37941,8 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
 
       quoted_name = sql_quote (name);
 
-      /* scanner[scanner]:Timeout */
-      count = sscanf (name, "%*[^[][scanner]:%n", &end);
+      /* OID:scanner:PrefType */
+      count = sscanf (name, "%*[^:]:scanner:%n", &end);
       if (count == 0 && end > 0)
         {
           /* A scanner preference.  Remove type decoration from name. */
@@ -37993,8 +37993,8 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
   else
     value = g_strdup ("");
 
-  /* LDAPsearch[entry]:Timeout value */
-  count = sscanf (name, "%*[^[][%n%*[^]]%n]:", &type_start, &type_end);
+  /* OID:PrefType:PrefName value */
+  count = sscanf (name, "%*[^:]:%n%*[^:]%n:", &type_start, &type_end);
   if (count == 0 && type_start > 0 && type_end > 0)
     {
       if (strncmp (name + type_start, "radio", type_end - type_start) == 0)
@@ -41085,7 +41085,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name != '%s[entry]:Timeout'"
+                     " AND name != '%s:entry:Timeout'"
                      " AND name NOT %s 'server_info_%%'"
                      /* Task preferences. */
                      " AND name != 'max_checks'"
@@ -41105,7 +41105,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT %s '%%[entry]:Timeout'"
+                   " AND name NOT %s '%%:entry:Timeout'"
                    " AND name NOT %s 'server_info_%%'"
                    /* Task preferences. */
                    " AND name != 'max_checks'"
@@ -41151,8 +41151,8 @@ nvt_preference_iterator_real_name (iterator_t* iterator)
   if (ret)
     {
       int value_start = -1, value_end = -1, count;
-      /* LDAPsearch[entry]:Timeout value */
-      count = sscanf (ret, "%*[^[][%*[^]]]:%n%*[ -~]%n", &value_start, &value_end);
+      /* OID:PrefType:PrefName value */
+      count = sscanf (ret, "%*[^:]:%*[^:]:%n%*[ -~]%n", &value_start, &value_end);
       if (count == 0 && value_start > 0 && value_end > 0)
         {
           ret += value_start;
@@ -41179,7 +41179,7 @@ nvt_preference_iterator_type (iterator_t* iterator)
   if (ret)
     {
       int type_start = -1, type_end = -1, count;
-      count = sscanf (ret, "%*[^[][%n%*[^]]%n]:", &type_start, &type_end);
+      count = sscanf (ret, "%*[^:]:%n%*[^:]%n:", &type_start, &type_end);
       if (count == 0 && type_start > 0 && type_end > 0)
         {
           ret += type_start;
@@ -41206,7 +41206,7 @@ nvt_preference_iterator_nvt (iterator_t* iterator)
   if (ret)
     {
       int type_start = -1, count;
-      count = sscanf (ret, "%*[^[]%n[%*[^]]]:", &type_start);
+      count = sscanf (ret, "%*[^:]%n:%*[^:]:", &type_start);
       if (count == 0 && type_start > 0)
         {
           return g_strndup (ret, type_start);
@@ -41261,7 +41261,7 @@ nvt_preference_count (const char *name)
 {
   gchar *quoted_name = sql_quote (name);
   int ret = sql_int ("SELECT COUNT(*) FROM nvt_preferences"
-                     " WHERE name != '%s[entry]:Timeout'"
+                     " WHERE name != '%s:entry:Timeout'"
                      "   AND name %s '%s[%%';",
                      quoted_name,
                      sql_ilike_op (),
