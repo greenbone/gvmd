@@ -1352,10 +1352,10 @@ process_otp_scanner_input ()
                     count = sscanf (field, "%128[^:]:%*[^:]:%n%*[ -~]%n",
                                     name, &value_start, &value_end);
                     if (count == 1 && value_start > 0 && value_end > 0
-                        && ((strcmp (name, "1.3.6.1.4.1.25623.1.0.103591") == 0)
-                            || (strcmp (name, "1.3.6.1.4.1.25623.1.0.105076") == 0)
-                            || (strcmp (name, "1.3.6.1.4.1.25623.1.0.105058") == 0)
-                            || (strcmp (name, "1.3.6.1.4.1.25623.1.0.90023") == 0)))
+                        && ((strcmp (name, OID_SSH_AUTH) == 0)
+                            || (strcmp (name, OID_SNMP_AUTH) == 0)
+                            || (strcmp (name, OID_ESXI_AUTH) == 0)
+                            || (strcmp (name, OID_SMB_AUTH) == 0)))
                       current_scanner_preference = NULL;
                     else
                       current_scanner_preference = g_strdup (field);
