@@ -10120,19 +10120,17 @@ void
 buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
                               config_t config, int hide_passwords)
 {
-  char *real_name, *type, *value, *nvt;
+  char *real_name, *type, *value, *oid, *nvt = NULL;
   const char *default_value;
-  char *oid = NULL;
 
-  real_name = nvt_preference_iterator_real_name (prefs);
+  oid = nvt_preference_iterator_oid (prefs);
   type = nvt_preference_iterator_type (prefs);
-  value = nvt_preference_iterator_config_value (prefs, config);
-  nvt = nvt_preference_iterator_nvt (prefs);
-
+  real_name = nvt_preference_iterator_real_name (prefs);
   default_value = nvt_preference_iterator_value (prefs);
+  value = nvt_preference_iterator_config_value (prefs, config);
 
-  if (nvt) oid = nvt_oid (nvt);
-
+  if (oid)
+    nvt = nvt_name (oid);
   buffer_xml_append_printf (buffer,
                             "<preference>"
                             "<nvt oid=\"%s\"><name>%s</name></nvt>"
@@ -10189,11 +10187,11 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
 
   buffer_xml_append_printf (buffer, "</preference>");
 
-  free (real_name);
-  free (type);
-  free (value);
-  free (nvt);
-  free (oid);
+  g_free (real_name);
+  g_free (type);
+  g_free (value);
+  g_free (nvt);
+  g_free (oid);
 }
 
 /**
@@ -15639,12 +15637,11 @@ handle_get_preferences (gmp_parser_t *gmp_parser, GError **error)
     }
   else
     {
-      char *nvt_name = manage_nvt_name (nvt);
+      char *nvt_oid = get_preferences_data->nvt_oid;
       SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">");
-      init_nvt_preference_iterator (&prefs, nvt_name);
-      free (nvt_name);
+      init_nvt_preference_iterator (&prefs, nvt_oid);
       if (get_preferences_data->preference)
         while (next (&prefs))
           {

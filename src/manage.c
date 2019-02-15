@@ -8237,7 +8237,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       if (preferences)
         {
           iterator_t prefs;
-          const char *nvt_name = nvt_iterator_name (nvts);
+          const char *nvt_oid = nvt_iterator_oid (nvts);
 
           /* Send the preferences for the NVT. */
 
@@ -8248,7 +8248,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              timeout ? timeout : "",
                              default_timeout ? default_timeout : "");
 
-          init_nvt_preference_iterator (&prefs, nvt_name);
+          init_nvt_preference_iterator (&prefs, nvt_oid);
           while (next (&prefs))
             buffer_config_preference_xml (buffer, &prefs, config, 1);
           cleanup_iterator (&prefs);

@@ -41069,17 +41069,17 @@ manage_nvt_preferences_enable ()
  * @brief Initialise an NVT preference iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  name      Name of NVT, NULL for all preferences.
+ * @param[in]  oid       OID of NVT, NULL for all preferences.
  */
 void
-init_nvt_preference_iterator (iterator_t* iterator, const char *name)
+init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
 {
-  if (name)
+  if (oid)
     {
-      gchar *quoted_name = sql_quote (name);
+      gchar *quoted_oid = sql_quote (oid);
       init_iterator (iterator,
                      "SELECT name, value FROM nvt_preferences"
-                     " WHERE name %s '%s[%%'"
+                     " WHERE name %s '%s:%%'"
                      " AND name != 'cache_folder'"
                      " AND name != 'include_folders'"
                      " AND name != 'nasl_no_signature_check'"
@@ -41092,10 +41092,10 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                      " AND name != 'max_hosts'"
                      " ORDER BY name ASC",
                      sql_ilike_op (),
-                     quoted_name,
-                     quoted_name,
+                     quoted_oid,
+                     quoted_oid,
                      sql_ilike_op ());
-      g_free (quoted_name);
+      g_free (quoted_oid);
     }
   else
     init_iterator (iterator,
@@ -41146,19 +41146,16 @@ char*
 nvt_preference_iterator_real_name (iterator_t* iterator)
 {
   const char *ret;
+  char *real_name = NULL;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      int value_start = -1, value_end = -1, count;
-      /* OID:PrefType:PrefName value */
-      count = sscanf (ret, "%*[^:]:%*[^:]:%n%*[ -~]%n", &value_start, &value_end);
-      if (count == 0 && value_start > 0 && value_end > 0)
-        {
-          ret += value_start;
-          return g_strdup (ret);
-        }
-      return g_strdup (ret);
+      char **splits = g_strsplit (ret, ":", 3);
+      if (splits && g_strv_length (splits) == 3)
+        real_name = g_strdup (splits[2]);
+      g_strfreev (splits);
+      return real_name ?: g_strdup (ret);
     }
   return NULL;
 }
@@ -41174,18 +41171,16 @@ char*
 nvt_preference_iterator_type (iterator_t* iterator)
 {
   const char *ret;
+  char *type = NULL;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      int type_start = -1, type_end = -1, count;
-      count = sscanf (ret, "%*[^:]:%n%*[^:]%n:", &type_start, &type_end);
-      if (count == 0 && type_start > 0 && type_end > 0)
-        {
-          ret += type_start;
-          return g_strndup (ret, type_end - type_start);
-        }
-      return NULL;
+      char **splits = g_strsplit (ret, ":", 3);
+      if (splits && g_strv_length (splits) == 3)
+        type = g_strdup (splits[1]);
+      g_strfreev (splits);
+      return type ?: NULL;
     }
   return NULL;
 }
@@ -41198,20 +41193,19 @@ nvt_preference_iterator_type (iterator_t* iterator)
  * @return NVT.
  */
 char*
-nvt_preference_iterator_nvt (iterator_t* iterator)
+nvt_preference_iterator_oid (iterator_t* iterator)
 {
   const char *ret;
+  char *oid = NULL;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      int type_start = -1, count;
-      count = sscanf (ret, "%*[^:]%n:%*[^:]:", &type_start);
-      if (count == 0 && type_start > 0)
-        {
-          return g_strndup (ret, type_start);
-        }
-      return NULL;
+      char **splits = g_strsplit (ret, ":", 3);
+      if (splits && g_strv_length (splits) == 3)
+        oid = g_strdup (splits[0]);
+      g_strfreev (splits);
+      return oid ?: NULL;
     }
   return NULL;
 }

@@ -1942,7 +1942,7 @@ char *
 manage_nvt_name (nvt_t);
 
 char *
-nvt_oid (const char *);
+nvt_name (const char *);
 
 char*
 nvts_feed_version ();
@@ -2101,7 +2101,7 @@ char*
 nvt_preference_iterator_type (iterator_t*);
 
 char*
-nvt_preference_iterator_nvt (iterator_t*);
+nvt_preference_iterator_oid (iterator_t*);
 
 int
 nvt_preference_count (const char *);

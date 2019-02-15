@@ -89,19 +89,19 @@ manage_nvt_name (nvt_t nvt)
 }
 
 /**
- * @brief Guess the OID of an NVT given a name.
+ * @brief Get the name of an NVT given its OID.
  *
- * @param[in]  name  Name of NVT.
+ * @param[in]  oid  OID of NVT.
  *
- * @return OID of NVT if possible, else NULL.
+ * @return Name of NVT if possible, else NULL.
  */
 char *
-nvt_oid (const char *name)
+nvt_name (const char *oid)
 {
-  gchar *quoted_name = sql_quote (name);
-  char *ret = sql_string ("SELECT oid FROM nvts WHERE name = '%s' LIMIT 1;",
-                          quoted_name);
-  g_free (quoted_name);
+  gchar *quoted_oid = sql_quote (oid);
+  char *ret = sql_string ("SELECT name FROM nvts WHERE oid = '%s' LIMIT 1;",
+                          quoted_oid);
+  g_free (quoted_oid);
   return ret;
 }
 
