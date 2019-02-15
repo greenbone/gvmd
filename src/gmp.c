@@ -18658,8 +18658,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       gchar *task_schedule_name_escaped;
       char *task_scanner_uuid, *task_scanner_name;
       gchar *task_scanner_name_escaped;
-      gchar *first_report, *last_report;
-      gchar *second_last_report_id, *second_last_report;
+      gchar *last_report;
+      gchar *second_last_report_id;
       gchar *current_report;
       report_t running_report;
       schedule_t schedule;
@@ -18877,9 +18877,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           first_report_id = task_iterator_first_report (&tasks);
           if (first_report_id && (get_tasks_data->get.trash == 0))
             {
-              gchar *timestamp;
-              char *scan_start, *scan_end;
-
               // TODO Could skip this count for tasks page.
               if (report_counts (first_report_id,
                                  &debugs, &holes_2, &infos_2, &logs,
@@ -18889,61 +18886,11 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " first report, aborting",
                          __FUNCTION__);
-
-              if (report_timestamp (first_report_id, &timestamp))
-                g_error ("%s: GET_TASKS: failed to get timestamp of"
-                         " first report, aborting",
-                         __FUNCTION__);
-
-              scan_start = scan_start_time_uuid (first_report_id);
-              scan_end = scan_end_time_uuid (first_report_id);
-
-              first_report = g_strdup_printf ("<first_report>"
-                                              "<report id=\"%s\">"
-                                              "<timestamp>"
-                                              "%s"
-                                              "</timestamp>"
-                                              "<scan_start>%s</scan_start>"
-                                              "<scan_end>%s</scan_end>"
-                                              "<result_count>"
-                                              "<debug>%i</debug>"
-                                              "<hole>%i</hole>"
-                                              "<info>%i</info>"
-                                              "<log>%i</log>"
-                                              "<warning>%i</warning>"
-                                              "<false_positive>"
-                                              "%i"
-                                              "</false_positive>"
-                                              "</result_count>"
-                                              "<severity>"
-                                              "%1.1f"
-                                              "</severity>"
-                                              "</report>"
-                                              "</first_report>",
-                                              first_report_id,
-                                              timestamp,
-                                              scan_start,
-                                              scan_end,
-                                              debugs,
-                                              holes_2,
-                                              infos_2,
-                                              logs,
-                                              warnings_2,
-                                              false_positives,
-                                              severity_2);
-              free (scan_start);
-              free (scan_end);
-              g_free (timestamp);
             }
-          else
-            first_report = g_strdup ("");
 
           second_last_report_id = task_second_last_report_id (index);
           if (second_last_report_id && (get_tasks_data->get.trash == 0))
             {
-              gchar *timestamp;
-              char *scan_start, *scan_end;
-
               /* If the first report is the second last report then skip
                 * doing the count again. */
               if (((first_report_id == NULL)
@@ -18957,51 +18904,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " second report, aborting",
                          __FUNCTION__);
-
-              if (report_timestamp (second_last_report_id, &timestamp))
-                g_error ("%s: GET_TASKS: error getting timestamp of"
-                         " second report, aborting",
-                         __FUNCTION__);
-
-              scan_start = scan_start_time_uuid (second_last_report_id);
-              scan_end = scan_end_time_uuid (second_last_report_id);
-
-              second_last_report = g_strdup_printf
-                                    ("<second_last_report>"
-                                     "<report id=\"%s\">"
-                                     "<timestamp>%s</timestamp>"
-                                     "<scan_start>%s</scan_start>"
-                                     "<scan_end>%s</scan_end>"
-                                     "<result_count>"
-                                     "<debug>%i</debug>"
-                                     "<hole>%i</hole>"
-                                     "<info>%i</info>"
-                                     "<log>%i</log>"
-                                     "<warning>%i</warning>"
-                                     "<false_positive>"
-                                     "%i"
-                                     "</false_positive>"
-                                     "</result_count>"
-                                     "<severity>%1.1f</severity>"
-                                     "</report>"
-                                     "</second_last_report>",
-                                     second_last_report_id,
-                                     timestamp,
-                                     scan_start,
-                                     scan_end,
-                                     debugs,
-                                     holes_2,
-                                     infos_2,
-                                     logs,
-                                     warnings_2,
-                                     false_positives,
-                                     severity_2);
-              free (scan_start);
-              free (scan_end);
-              g_free (timestamp);
             }
-          else
-            second_last_report = g_strdup ("");
 
           last_report_id = task_iterator_last_report (&tasks);
           if (get_tasks_data->get.trash && last_report_id)
@@ -19267,7 +19170,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        "%s"
                        "</schedule>"
                        "<schedule_periods>%i</schedule_periods>"
-                       "%s%s%s%s",
+                       "%s%s",
                        get_tasks_data->get.trash
                         ? 0
                         : task_alterable (index),
@@ -19302,9 +19205,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        schedule_available ? "" : "<permissions/>",
                        task_schedule_periods (index),
                        current_report,
-                       first_report,
-                       last_report,
-                       second_last_report);
+                       last_report);
           g_free (config_name);
           g_free (config_uuid);
           g_free (config_name_escaped);
@@ -19313,9 +19214,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (task_target_name_escaped);
           g_free (progress_xml);
           g_free (current_report);
-          g_free (first_report);
           g_free (last_report);
-          g_free (second_last_report);
           g_free (task_schedule_uuid);
           g_free (task_schedule_name);
           g_free (task_schedule_name_escaped);
