@@ -1347,15 +1347,15 @@ process_otp_scanner_input ()
 
                   {
                     int value_start = -1, value_end = -1, count;
-                    char name[21];
-                    /* LDAPsearch[entry]:Timeout value */
-                    count = sscanf (field, "%20[^[][%*[^]]]:%n%*[ -~]%n",
+                    char name[128];
+                    /* OID:PrefType:PrefName value */
+                    count = sscanf (field, "%128[^:]:%*[^:]:%n%*[ -~]%n",
                                     name, &value_start, &value_end);
                     if (count == 1 && value_start > 0 && value_end > 0
-                        && ((strcmp (name, "SSH Authorization") == 0)
-                            || (strcmp (name, "SNMP Authorization") == 0)
-                            || (strcmp (name, "ESXi Authorization") == 0)
-                            || (strcmp (name, "SMB Authorization") == 0)))
+                        && ((strcmp (name, "1.3.6.1.4.1.25623.1.0.103591") == 0)
+                            || (strcmp (name, "1.3.6.1.4.1.25623.1.0.105076") == 0)
+                            || (strcmp (name, "1.3.6.1.4.1.25623.1.0.105058") == 0)
+                            || (strcmp (name, "1.3.6.1.4.1.25623.1.0.90023") == 0)))
                       current_scanner_preference = NULL;
                     else
                       current_scanner_preference = g_strdup (field);
