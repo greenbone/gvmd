@@ -1676,18 +1676,15 @@ send_config_preferences (config_t config, const char* section_name,
 
       if (pref_files)
         {
-          int type_start = -1, type_end = -1, count;
-
+          char **splits;
+          int is_file = 0;
           /* OID:PrefType:PrefName value */
-          count = sscanf (pref_name, "%*[^:]:%n%*[^:]%n:", &type_start,
-                          &type_end);
-          if (count == 0
-              && type_start > 0
-              && type_end > 0
-              && (strncmp (pref_name + type_start,
-                           "file",
-                           type_end - type_start)
-                  == 0))
+          splits = g_strsplit (pref_name, ":", 3);
+          if (splits && g_strv_length (splits) == 3
+              && strcmp (splits[1], "file") == 0)
+            is_file = 1;
+          g_strfreev (splits);
+          if (is_file)
             {
               GSList *head;
               char *uuid;
