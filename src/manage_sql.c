@@ -37910,14 +37910,11 @@ int
 manage_set_config_preference (const gchar *config_id, const char* nvt,
                               const char* name, const char* value_64)
 {
-  gchar *quoted_name, *quoted_value, *value;
-  int type_start = -1, type_end = -1, count;
+  gchar *quoted_name, *quoted_value, *value, **splits;
   config_t config;
 
   if (value_64 == NULL)
     {
-      int end = -1;
-
       sql_begin_immediate ();
 
       if (find_config_with_permission (config_id, &config, "modify_config"))
@@ -37942,13 +37939,15 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
       quoted_name = sql_quote (name);
 
       /* OID:scanner:PrefType */
-      count = sscanf (name, "%*[^:]:scanner:%n", &end);
-      if (count == 0 && end > 0)
+      splits = g_strsplit (name, ":", 3);
+      if (splits && g_strv_length (splits) == 3
+          && strcmp (splits[1], "scanner") == 0)
         {
           /* A scanner preference.  Remove type decoration from name. */
           g_free (quoted_name);
-          quoted_name = sql_quote (name + end);
+          quoted_name = sql_quote (splits[2]);
         }
+      g_strfreev (splits);
 
       sql ("DELETE FROM config_preferences"
            " WHERE config = %llu"
@@ -37994,10 +37993,10 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
     value = g_strdup ("");
 
   /* OID:PrefType:PrefName value */
-  count = sscanf (name, "%*[^:]:%n%*[^:]%n:", &type_start, &type_end);
-  if (count == 0 && type_start > 0 && type_end > 0)
+  splits = g_strsplit (name, ":", 3);
+  if (splits && g_strv_length (splits) == 3)
     {
-      if (strncmp (name + type_start, "radio", type_end - type_start) == 0)
+      if (strcmp (splits[1], "radio") == 0)
         {
           char *old_value;
           gchar **split, **point;
@@ -38054,15 +38053,15 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
               value = g_string_free (string, FALSE);
             }
         }
-      else if (strncmp (name + type_start, "scanner", type_end - type_start)
-               == 0)
+      else if (strcmp (splits[1], "scanner") == 0)
         {
           /* A scanner preference.  Remove type decoration from name. */
 
           g_free (quoted_name);
-          quoted_name = sql_quote (name + type_end + 2);
+          quoted_name = sql_quote (splits[2]);
         }
     }
+  g_strfreev (splits);
 
   quoted_value = sql_quote ((gchar*) value);
   g_free (value);
