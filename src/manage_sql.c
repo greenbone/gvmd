@@ -41031,9 +41031,22 @@ manage_nvt_preference_add (const char* name, const char* value)
   gchar* quoted_value = sql_quote (value);
 
   if (strcmp (name, "port_range"))
-    sql ("INSERT into nvt_preferences (name, value)"
-         " VALUES ('%s', '%s');",
-         quoted_name, quoted_value);
+    {
+      if (sql_int ("SELECT EXISTS"
+                   "  (SELECT * FROM nvt_preferences"
+                   "   WHERE name = '%s')",
+                   quoted_name))
+        {
+          g_warning ("%s: preference '%s' already exists",
+                     __FUNCTION__, name);
+        }
+      else
+        {
+          sql ("INSERT into nvt_preferences (name, value)"
+               " VALUES ('%s', '%s');",
+               quoted_name, quoted_value);
+        }
+    }
 
   g_free (quoted_name);
   g_free (quoted_value);
