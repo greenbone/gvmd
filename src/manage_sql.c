@@ -15404,12 +15404,12 @@ setup_full_config_prefs (config_t config, int safe_checks,
 
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " 'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       " '" OID_PING_HOST ":checkbox:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " 'Login configurations[checkbox]:NTLMSSP',"
+       " '" OID_LOGINS ":checkbox:NTLMSSP',"
        " 'yes');",
        config);
 }
@@ -36498,10 +36498,10 @@ config_insert_preferences (config_t config,
             if (config_type == NULL || strcmp (config_type, "0") == 0)
               {
                 /* NVT preference */
-                /* LDAPsearch[entry]:Timeout value */
+                /* OID:PrefType:PrefName value */
                 sql ("INSERT INTO config_preferences"
                      " (config, type, name, value)"
-                     " VALUES (%llu, 'PLUGINS_PREFS', '%s[%s]:%s', '%s');",
+                     " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s', '%s');",
                      config,
                      quoted_nvt_name,
                      quoted_type,
@@ -37853,7 +37853,7 @@ init_otp_pref_iterator (iterator_t* iterator,
                  config,
                  quoted_section,
                  strcmp (quoted_section, "SERVER_PREFS") == 0
-                  ? "NOT LIKE '%[%]%'" : "LIKE '%[%]%'",
+                  ? "NOT LIKE '%:%:%'" : "LIKE '%:%:%'",
                  config);
   g_free (quoted_section);
 }
@@ -37910,14 +37910,11 @@ int
 manage_set_config_preference (const gchar *config_id, const char* nvt,
                               const char* name, const char* value_64)
 {
-  gchar *quoted_name, *quoted_value, *value;
-  int type_start = -1, type_end = -1, count;
+  gchar *quoted_name, *quoted_value, *value, **splits;
   config_t config;
 
   if (value_64 == NULL)
     {
-      int end = -1;
-
       sql_begin_immediate ();
 
       if (find_config_with_permission (config_id, &config, "modify_config"))
@@ -37941,14 +37938,16 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
 
       quoted_name = sql_quote (name);
 
-      /* scanner[scanner]:Timeout */
-      count = sscanf (name, "%*[^[][scanner]:%n", &end);
-      if (count == 0 && end > 0)
+      /* OID:scanner:PrefType */
+      splits = g_strsplit (name, ":", 3);
+      if (splits && g_strv_length (splits) == 3
+          && strcmp (splits[1], "scanner") == 0)
         {
           /* A scanner preference.  Remove type decoration from name. */
           g_free (quoted_name);
-          quoted_name = sql_quote (name + end);
+          quoted_name = sql_quote (splits[2]);
         }
+      g_strfreev (splits);
 
       sql ("DELETE FROM config_preferences"
            " WHERE config = %llu"
@@ -37993,11 +37992,11 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
   else
     value = g_strdup ("");
 
-  /* LDAPsearch[entry]:Timeout value */
-  count = sscanf (name, "%*[^[][%n%*[^]]%n]:", &type_start, &type_end);
-  if (count == 0 && type_start > 0 && type_end > 0)
+  /* OID:PrefType:PrefName value */
+  splits = g_strsplit (name, ":", 3);
+  if (splits && g_strv_length (splits) == 3)
     {
-      if (strncmp (name + type_start, "radio", type_end - type_start) == 0)
+      if (strcmp (splits[1], "radio") == 0)
         {
           char *old_value;
           gchar **split, **point;
@@ -38054,15 +38053,15 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
               value = g_string_free (string, FALSE);
             }
         }
-      else if (strncmp (name + type_start, "scanner", type_end - type_start)
-               == 0)
+      else if (strcmp (splits[1], "scanner") == 0)
         {
           /* A scanner preference.  Remove type decoration from name. */
 
           g_free (quoted_name);
-          quoted_name = sql_quote (name + type_end + 2);
+          quoted_name = sql_quote (splits[2]);
         }
     }
+  g_strfreev (splits);
 
   quoted_value = sql_quote ((gchar*) value);
   g_free (value);
@@ -41069,33 +41068,33 @@ manage_nvt_preferences_enable ()
  * @brief Initialise an NVT preference iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  name      Name of NVT, NULL for all preferences.
+ * @param[in]  oid       OID of NVT, NULL for all preferences.
  */
 void
-init_nvt_preference_iterator (iterator_t* iterator, const char *name)
+init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
 {
-  if (name)
+  if (oid)
     {
-      gchar *quoted_name = sql_quote (name);
+      gchar *quoted_oid = sql_quote (oid);
       init_iterator (iterator,
                      "SELECT name, value FROM nvt_preferences"
-                     " WHERE name %s '%s[%%'"
+                     " WHERE name %s '%s:%%'"
                      " AND name != 'cache_folder'"
                      " AND name != 'include_folders'"
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name != '%s[entry]:Timeout'"
+                     " AND name != '%s:entry:Timeout'"
                      " AND name NOT %s 'server_info_%%'"
                      /* Task preferences. */
                      " AND name != 'max_checks'"
                      " AND name != 'max_hosts'"
                      " ORDER BY name ASC",
                      sql_ilike_op (),
-                     quoted_name,
-                     quoted_name,
+                     quoted_oid,
+                     quoted_oid,
                      sql_ilike_op ());
-      g_free (quoted_name);
+      g_free (quoted_oid);
     }
   else
     init_iterator (iterator,
@@ -41105,7 +41104,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT %s '%%[entry]:Timeout'"
+                   " AND name NOT %s '%%:entry:Timeout'"
                    " AND name NOT %s 'server_info_%%'"
                    /* Task preferences. */
                    " AND name != 'max_checks'"
@@ -41146,19 +41145,16 @@ char*
 nvt_preference_iterator_real_name (iterator_t* iterator)
 {
   const char *ret;
+  char *real_name = NULL;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      int value_start = -1, value_end = -1, count;
-      /* LDAPsearch[entry]:Timeout value */
-      count = sscanf (ret, "%*[^[][%*[^]]]:%n%*[ -~]%n", &value_start, &value_end);
-      if (count == 0 && value_start > 0 && value_end > 0)
-        {
-          ret += value_start;
-          return g_strdup (ret);
-        }
-      return g_strdup (ret);
+      char **splits = g_strsplit (ret, ":", 3);
+      if (splits && g_strv_length (splits) == 3)
+        real_name = g_strdup (splits[2]);
+      g_strfreev (splits);
+      return real_name ?: g_strdup (ret);
     }
   return NULL;
 }
@@ -41174,18 +41170,16 @@ char*
 nvt_preference_iterator_type (iterator_t* iterator)
 {
   const char *ret;
+  char *type = NULL;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      int type_start = -1, type_end = -1, count;
-      count = sscanf (ret, "%*[^[][%n%*[^]]%n]:", &type_start, &type_end);
-      if (count == 0 && type_start > 0 && type_end > 0)
-        {
-          ret += type_start;
-          return g_strndup (ret, type_end - type_start);
-        }
-      return NULL;
+      char **splits = g_strsplit (ret, ":", 3);
+      if (splits && g_strv_length (splits) == 3)
+        type = g_strdup (splits[1]);
+      g_strfreev (splits);
+      return type ?: NULL;
     }
   return NULL;
 }
@@ -41198,20 +41192,19 @@ nvt_preference_iterator_type (iterator_t* iterator)
  * @return NVT.
  */
 char*
-nvt_preference_iterator_nvt (iterator_t* iterator)
+nvt_preference_iterator_oid (iterator_t* iterator)
 {
   const char *ret;
+  char *oid = NULL;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      int type_start = -1, count;
-      count = sscanf (ret, "%*[^[]%n[%*[^]]]:", &type_start);
-      if (count == 0 && type_start > 0)
-        {
-          return g_strndup (ret, type_start);
-        }
-      return NULL;
+      char **splits = g_strsplit (ret, ":", 3);
+      if (splits && g_strv_length (splits) == 3)
+        oid = g_strdup (splits[0]);
+      g_strfreev (splits);
+      return oid ?: NULL;
     }
   return NULL;
 }
@@ -41261,7 +41254,7 @@ nvt_preference_count (const char *name)
 {
   gchar *quoted_name = sql_quote (name);
   int ret = sql_int ("SELECT COUNT(*) FROM nvt_preferences"
-                     " WHERE name != '%s[entry]:Timeout'"
+                     " WHERE name != '%s:entry:Timeout'"
                      "   AND name %s '%s[%%';",
                      quoted_name,
                      sql_ilike_op (),

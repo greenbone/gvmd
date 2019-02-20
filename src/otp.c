@@ -1346,19 +1346,19 @@ process_otp_scanner_input ()
                     }
 
                   {
-                    int value_start = -1, value_end = -1, count;
-                    char name[21];
-                    /* LDAPsearch[entry]:Timeout value */
-                    count = sscanf (field, "%20[^[][%*[^]]]:%n%*[ -~]%n",
-                                    name, &value_start, &value_end);
-                    if (count == 1 && value_start > 0 && value_end > 0
-                        && ((strcmp (name, "SSH Authorization") == 0)
-                            || (strcmp (name, "SNMP Authorization") == 0)
-                            || (strcmp (name, "ESXi Authorization") == 0)
-                            || (strcmp (name, "SMB Authorization") == 0)))
+                    char **splits;
+                    /* OID:PrefType:PrefName value */
+
+                    splits = g_strsplit (field, ":", 3);
+                    if (splits && g_strv_length (splits) == 3
+                        && ((strcmp (splits[0], OID_SSH_AUTH) == 0)
+                            || (strcmp (splits[0], OID_SNMP_AUTH) == 0)
+                            || (strcmp (splits[0], OID_ESXI_AUTH) == 0)
+                            || (strcmp (splits[0], OID_SMB_AUTH) == 0)))
                       current_scanner_preference = NULL;
                     else
                       current_scanner_preference = g_strdup (field);
+                    g_strfreev (splits);
                     set_scanner_state (SCANNER_PREFERENCE_VALUE);
                     switch (parse_scanner_preference_value (&messages))
                       {

@@ -941,13 +941,13 @@ make_config_discovery (char *const uuid, char *const selector_name)
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       "         '" OID_PING_HOST ":checkbox:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        uuid);
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Report about unrechable Hosts',"
+       "         '" OID_PING_HOST ":checkbox:Report about unrechable Hosts',"
        "         'no');",
        uuid);
 
@@ -955,7 +955,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
-       "         'Services[radio]:Test SSL based services',"
+       "         '" OID_SERVICES ":radio:Test SSL based services',"
        "         'All;Known SSL ports;None');",
        uuid);
 }
@@ -975,7 +975,7 @@ check_config_discovery (const char *uuid)
   sql ("UPDATE config_preferences SET value = 'no'"
        " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
        " AND type = 'PLUGINS_PREFS'"
-       " AND name = 'Ping Host[checkbox]:Report about unrechable Hosts'"
+       " AND name = '" OID_PING_HOST ":checkbox:Report about unrechable Hosts'"
        " AND value = 'yes';",
        uuid);
 

@@ -15531,7 +15531,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <get_preferences_response status="200" status_text="OK">
           <preference>
-            <name>Services[entry]:Network connection timeout :</name>
+            <name>1.3.6.1.4.1.25623.1.0.10330:entry:Network connection timeout :</name>
             <value>5</value>
           </preference>
           <truncated>...</truncated>
@@ -15547,7 +15547,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <get_preferences_response status="200" status_text="OK">
           <preference>
-            <name>Services[entry]:Network connection timeout :</name>
+            <name>1.3.6.1.4.1.25623.1.0.10330:entry:Network connection timeout :</name>
             <value>5</value>
             <default>5</default>
           </preference>
@@ -23773,7 +23773,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
           <preference>
             <nvt oid="1.3.6.1.4.1.25623.1.0.14259"></nvt>
-            <name>Nmap (NASL wrapper)[checkbox]:UDP port scan</name>
+            <name>1.3.6.1.4.1.25623.1.0.14259:checkbox:UDP port scan</name>
             <value>eWVz</value>
           </preference>
         </modify_config>
@@ -23788,7 +23788,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
           <preference>
-            <name>scanner[scanner]:vhosts</name>
+            <name>scanner:scanner:vhosts</name>
             <value>ZXhhbXBsZQ==</value>
           </preference>
         </modify_config>
