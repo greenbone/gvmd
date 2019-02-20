@@ -57,16 +57,17 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        " VALUES ('%s', 'Host Discovery', NULL,"
        "         '%s', 'Network Host Discovery scan configuration.',"
        "         0, 0, 0, 0, 0, m_now (), m_now ());",
-       uuid,
-       selector_name);
+       uuid, selector_name);
 
   config = sql_last_insert_id ();
 
   /* Add the Ping Host NVT to the config. */
 
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.100315', "
+                                "'Port scanners');",
        selector_name);
 
   /* Update number of families and nvts. */
@@ -76,15 +77,15 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        "     modification_time = m_now ()"
        " WHERE id = %llu;",
        nvt_selector_family_count (selector_name, 0),
-       nvt_selector_nvt_count (selector_name, NULL, 0),
-       config);
+       nvt_selector_nvt_count (selector_name, NULL, 0), config);
 
   /* Add preferences for "ping host" nvt. */
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not "
+       "scanning)',"
        "         'yes');",
        config);
 
@@ -149,11 +150,14 @@ check_config_host_discovery (const char *uuid)
                uuid)
       == 0)
     {
-      sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-           " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
-           "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-           "         '1.3.6.1.4.1.25623.1.0.12288', 'Settings');",
-           uuid);
+      sql (
+        "INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+        " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
+        "         " G_STRINGIFY (
+          NVT_SELECTOR_TYPE_NVT) ","
+                                 "         '1.3.6.1.4.1.25623.1.0.12288', "
+                                 "'Settings');",
+        uuid);
       update = 1;
     }
 

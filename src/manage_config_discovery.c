@@ -53,526 +53,1046 @@
 void
 make_config_discovery_service_detection (char *const selector_name)
 {
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11929", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900534", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902019", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800991", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900539", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800995", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800997", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800999", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100106", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900381", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901084", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900384", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902023", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900620", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901089", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900387", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902028", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902106", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900547", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900705", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900628", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901087", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900624", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900543", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900629", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801869", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11865", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901174", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.12647", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900550", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901178", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900632", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80079", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900556", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900714", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801874", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900710", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100201", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100206", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100208", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900394", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900712", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11945", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.20377", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900562", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103652", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901188", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902046", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900641", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103579", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902044", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900647", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17583", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100215", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100217", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100219", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11963", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80092", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900493", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900571", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80095", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902134", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902058", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902137", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900578", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900576", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900659", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100221", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100301", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100302", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902053", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100226", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100224", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18532", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18533", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18534", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801972", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100300", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902061", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902220", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900583", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900744", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900822", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900746", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900748", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900904", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902309", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101013", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100154", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100313", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801988", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101019", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101018", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900827", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100311", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100233", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11986", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11987", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902311", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900596", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902078", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900598", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100082", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100160", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100240", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101021", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900753", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100243", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900917", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101025", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18393", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900839", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100324", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100322", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100407", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100328", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100329", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902081", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902083", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902084", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900681", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902089", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900686", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900923", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100174", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900926", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100254", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100331", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100335", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100259", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100417", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100419", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900930", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900853", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900932", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900855", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100180", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100184", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100261", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100187", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100266", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100423", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100268", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100425", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100503", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.20834", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902187", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100192", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902503", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100194", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900867", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100196", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900945", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100432", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100437", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100517", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19289", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800300", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100518", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801005", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801007", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19608", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900950", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100280", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902513", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900956", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100285", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100288", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100367", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102005", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102006", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102009", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17975", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102003", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800158", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801017", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800317", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102001", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.66286", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902520", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900961", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902447", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900966", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100294", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10159", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100374", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102013", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100376", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100456", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102011", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102017", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801100", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800165", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801102", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103979", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801106", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100292", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800407", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900971", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902533", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900976", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100382", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100540", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100466", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100464", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100468", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800170", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800098", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801112", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19559", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800413", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801038", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801115", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801117", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801119", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10330", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10175", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902545", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902701", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902547", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100392", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900983", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100460", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100552", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11032", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100395", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100477", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800180", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100479", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801040", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100558", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801121", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103997", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801124", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800268", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801126", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801209", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11120", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11121", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10342", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11128", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902717", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102048", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100801", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100489", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800272", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801053", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800274", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800276", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801213", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800355", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800279", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801138", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801217", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800432", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902480", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902561", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11134", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100486", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100571", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100573", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100651", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800280", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100819", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801069", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800523", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800603", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800525", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801067", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14664", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800608", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801223", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800446", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100742", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800291", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801072", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801074", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100669", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100748", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801234", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800297", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100827", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14674", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800617", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800610", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801152", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801232", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11153", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11154", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10379", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801081", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100755", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100911", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100675", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801087", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100838", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801244", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800467", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801403", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800547", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800627", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802109", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800707", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800464", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800709", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100836", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801247", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10462", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800622", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10622", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100681", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103021", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801091", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800391", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800470", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801251", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800394", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800630", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800553", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800631", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800477", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800712", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14772", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800559", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800716", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800633", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14773", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103106", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100846", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801415", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100770", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103111", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100850", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100854", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103118", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801340", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100937", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100859", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800643", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801421", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800568", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800802", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800564", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17200", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800728", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800807", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14788", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100845", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.9000001", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100780", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801242", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103123", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103124", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103048", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103125", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100867", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800571", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103206", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800573", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100783", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800575", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103204", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801278", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801350", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801438", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800816", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800818", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800579", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800496", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103207", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800735", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100870", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900200", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100795", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103059", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100950", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801363", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801443", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802145", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800900", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800901", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800821", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800825", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800905", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.15588", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103140", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10666", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103141", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103143", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103223", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103147", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800590", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800592", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900218", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800594", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802230", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800832", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800677", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800911", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800913", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800918", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802158", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103070", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800598", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103073", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103230", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801612", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103156", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901003", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103158", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801381", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800680", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800681", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901008", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800683", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802244", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103317", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800765", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800688", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800923", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800768", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17244", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800925", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.15765", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.15766", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800928", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10761", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103081", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103086", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901013", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103245", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801390", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901016", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800690", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801392", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800692", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800693", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802178", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801394", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800933", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800779", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800936", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103326", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800939", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900242", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103098", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103255", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901025", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80003", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80004", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80005", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80006", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901107", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901023", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800941", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800864", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800786", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800949", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103181", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.20301", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900251", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900253", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900256", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900334", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900259", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900338", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800792", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800790", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901118", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800870", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800951", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901036", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801575", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800877", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800878", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800955", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801812", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18219", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103190", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801737", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901121", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901044", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80100", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103514", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800884", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800964", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800969", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.20160", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10884", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11822", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900194", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900352", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901056", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11906", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11907", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900357", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800891", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901135", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800893", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11908", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800895", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800898", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801916", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900360", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103294", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11913", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80044", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80045", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801681", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902009", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800980", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800984", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800988", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900371", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900374", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900376", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108198", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108199", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108203", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108204", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11929",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900534",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902019",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800991",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900539",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800995",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800997",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800999",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100106",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900381",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901084",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900384",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902023",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900620",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901089",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900387",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902028",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902106",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900547",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900705",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900628",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901087",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900624",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900543",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900629",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801869",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11865",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901174",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.12647",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900550",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901178",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900632",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80079",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900556",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900714",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801874",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900710",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100201",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100206",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100208",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900394",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900712",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11945",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.20377",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900562",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103652",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901188",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902046",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900641",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103579",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902044",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900647",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17583",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100215",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100217",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100219",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11963",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80092",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900493",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900571",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80095",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902134",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902058",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902137",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900578",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900576",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900659",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100221",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100301",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100302",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902053",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100226",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100224",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18532",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18533",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18534",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801972",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100300",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902061",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902220",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900583",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900744",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900822",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900746",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900748",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900904",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902309",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101013",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100154",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100313",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801988",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101019",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101018",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900827",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100311",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100233",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11986",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11987",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902311",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900596",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902078",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900598",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100082",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100160",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100240",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101021",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900753",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100243",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900917",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.101025",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18393",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900839",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100324",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100322",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100407",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100328",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100329",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902081",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902083",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902084",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900681",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902089",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900686",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900923",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100174",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900926",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100254",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100331",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100335",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100259",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100417",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100419",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900930",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900853",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900932",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900855",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100180",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100184",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100261",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100187",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100266",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100423",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100268",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100425",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100503",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.20834",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902187",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100192",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902503",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100194",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900867",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100196",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900945",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100432",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100437",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100517",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19289",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800300",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100518",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801005",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801007",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19608",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900950",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100280",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902513",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900956",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100285",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100288",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100367",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102005",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102006",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102009",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17975",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102003",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800158",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801017",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800317",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102001",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.66286",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902520",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900961",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902447",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900966",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100294",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10159",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100374",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102013",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100376",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100456",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102011",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102017",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801100",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800165",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801102",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103979",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801106",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100292",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800407",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900971",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902533",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900976",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100382",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100540",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100466",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100464",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100468",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800170",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800098",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801112",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19559",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800413",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801038",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801115",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801117",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801119",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10330",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10175",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902545",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902701",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902547",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100392",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900983",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100460",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100552",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11032",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100395",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100477",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800180",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100479",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801040",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100558",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801121",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103997",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801124",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800268",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801126",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801209",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11120",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11121",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10342",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11128",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902717",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.102048",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100801",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100489",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800272",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801053",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800274",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800276",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801213",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800355",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800279",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801138",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801217",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800432",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902480",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902561",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11134",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100486",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100571",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100573",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100651",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800280",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100819",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801069",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800523",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800603",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800525",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801067",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14664",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800608",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801223",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800446",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100742",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800291",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801072",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801074",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100669",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100748",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801234",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800297",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100827",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14674",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800617",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800610",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801152",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801232",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11153",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11154",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10379",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801081",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100755",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100911",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100675",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801087",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100838",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801244",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800467",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801403",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800547",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800627",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802109",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800707",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800464",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800709",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100836",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801247",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10462",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800622",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10622",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100681",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103021",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801091",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800391",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800470",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801251",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800394",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800630",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800553",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800631",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800477",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800712",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14772",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800559",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800716",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800633",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14773",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103106",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100846",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801415",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100770",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103111",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100850",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100854",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103118",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801340",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100937",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100859",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800643",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801421",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800568",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800802",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800564",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17200",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800728",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800807",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14788",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100845",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.9000001",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100780",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801242",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103123",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103124",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103048",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103125",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100867",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800571",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103206",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800573",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100783",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800575",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103204",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801278",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801350",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801438",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800816",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800818",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800579",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800496",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103207",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800735",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100870",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900200",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100795",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103059",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100950",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801363",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801443",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802145",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800900",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800901",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800821",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800825",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800905",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.15588",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103140",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10666",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103141",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103143",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103223",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103147",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800590",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800592",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900218",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800594",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802230",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800832",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800677",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800911",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800913",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800918",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802158",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103070",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800598",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103073",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103230",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801612",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103156",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901003",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103158",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801381",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800680",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800681",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901008",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800683",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802244",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103317",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800765",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800688",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800923",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800768",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17244",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800925",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.15765",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.15766",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800928",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10761",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103081",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103086",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901013",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103245",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801390",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901016",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800690",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801392",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800692",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800693",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.802178",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801394",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800933",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800779",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800936",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103326",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800939",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900242",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103098",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103255",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901025",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80003",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80004",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80005",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80006",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901107",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901023",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800941",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800864",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800786",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800949",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103181",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.20301",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900251",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900253",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900256",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900334",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900259",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900338",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800792",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800790",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901118",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800870",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800951",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901036",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801575",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800877",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800878",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800955",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801812",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18219",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103190",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801737",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901121",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901044",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80100",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103514",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800884",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800964",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800969",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.20160",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10884",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11822",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900194",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900352",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901056",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11906",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11907",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900357",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800891",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.901135",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800893",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11908",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800895",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800898",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801916",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900360",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103294",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11913",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80044",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80045",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801681",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902009",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800980",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800984",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800988",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900371",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900374",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900376",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108198",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108199",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108203",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108204",
+                "Service detection");
 }
 
 /**
@@ -593,14 +1113,16 @@ make_config_discovery (char *const uuid, char *const selector_name)
        " VALUES ('%s', 'Discovery', NULL,"
        "         '%s', 'Network Discovery scan configuration.',"
        "         0, 0, 0, 0, 0, m_now (), m_now ());",
-       uuid,
-       selector_name);
+       uuid, selector_name);
 
   /* Setup the appropriate NVTs for the config. */
   make_config_discovery_service_detection (selector_name);
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17586", "Brute force attacks");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17584", "Brute force attacks");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17368", "Brute force attacks");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17586",
+                "Brute force attacks");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17584",
+                "Brute force attacks");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.17368",
+                "Brute force attacks");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11762", "Firewalls");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80059", "Firewalls");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100083", "Firewalls");
@@ -771,17 +1293,25 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800357", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900217", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.51662", "General");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11431", "Peer-To-Peer File Sharing");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11427", "Peer-To-Peer File Sharing");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11125", "Peer-To-Peer File Sharing");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10946", "Peer-To-Peer File Sharing");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19585", "Peer-To-Peer File Sharing");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.13751", "Peer-To-Peer File Sharing");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14644", "Peer-To-Peer File Sharing");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11431",
+                "Peer-To-Peer File Sharing");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11427",
+                "Peer-To-Peer File Sharing");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11125",
+                "Peer-To-Peer File Sharing");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10946",
+                "Peer-To-Peer File Sharing");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19585",
+                "Peer-To-Peer File Sharing");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.13751",
+                "Peer-To-Peer File Sharing");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14644",
+                "Peer-To-Peer File Sharing");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10265", "SNMP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103416", "SNMP");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.18528", "SMTP problems");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.91984", "Remote file access");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.91984",
+                "Remote file access");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900602", "RPC");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11111", "RPC");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11239", "Web Servers");
@@ -789,10 +1319,14 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80024", "Web Servers");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.19689", "Web Servers");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10386", "Web Servers");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108479", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108102", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108478", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10942", "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108479",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108102",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.108478",
+                "Service detection");
+  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10942",
+                "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.12231", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80039", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10394", "Windows");
@@ -924,8 +1458,10 @@ make_config_discovery (char *const uuid, char *const selector_name)
 
   /* Add the Product Detection family. */
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
-       "         'Product detection', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_FAMILY) ","
+                                   "         'Product detection', 'Product "
+                                   "detection');",
        selector_name);
 
   /* Update number of families and nvts. */
@@ -934,14 +1470,14 @@ make_config_discovery (char *const uuid, char *const selector_name)
        " modification_time = m_now ()"
        " WHERE uuid = '%s';",
        nvt_selector_family_count (selector_name, 0),
-       nvt_selector_nvt_count (selector_name, NULL, 0),
-       uuid);
+       nvt_selector_nvt_count (selector_name, NULL, 0), uuid);
 
   /* Add preferences for "ping host" nvt. */
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not "
+       "scanning)',"
        " 'yes');",
        uuid);
   sql ("INSERT INTO config_preferences (config, type, name, value)"

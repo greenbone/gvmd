@@ -31,6 +31,7 @@
  */
 
 #include "gmp_get.h"
+
 #include "gmp_base.h"
 #include "manage_acl.h"
 
@@ -63,31 +64,27 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
 
   data->type = g_strdup (type);
 
-  append_attribute (attribute_names, attribute_values, "filter",
-                    &data->filter);
+  append_attribute (attribute_names, attribute_values, "filter", &data->filter);
 
   name = g_strdup_printf ("%s_id", type);
-  append_attribute (attribute_names, attribute_values, name,
-                    &data->id);
+  append_attribute (attribute_names, attribute_values, name, &data->id);
   g_free (name);
 
   append_attribute (attribute_names, attribute_values, "filt_id",
                     &data->filt_id);
 
-  if (find_attribute (attribute_names, attribute_values,
-                      "trash", &attribute))
+  if (find_attribute (attribute_names, attribute_values, "trash", &attribute))
     data->trash = strcmp (attribute, "0");
   else
     data->trash = 0;
 
-  if (find_attribute (attribute_names, attribute_values,
-                      "details", &attribute))
+  if (find_attribute (attribute_names, attribute_values, "details", &attribute))
     data->details = strcmp (attribute, "0");
   else
     data->details = 0;
 
-  if (find_attribute (attribute_names, attribute_values,
-                      "ignore_pagination", &attribute))
+  if (find_attribute (attribute_names, attribute_values, "ignore_pagination",
+                      &attribute))
     data->ignore_pagination = strcmp (attribute, "0");
   else
     data->ignore_pagination = 0;
@@ -107,7 +104,7 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
  * @return 0 success, -1 error.
  */
 int
-init_get (gchar *command, get_data_t * get, const gchar *setting_name,
+init_get (gchar *command, get_data_t *get, const gchar *setting_name,
           int *first)
 {
   gchar *filter, *replacement;
@@ -182,11 +179,8 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
           gchar *new_filter, *clean;
 
           clean = manage_clean_filter_remove (term, get->filter_replace);
-          new_filter = g_strdup_printf
-                        ("%s=%s %s",
-                         get->filter_replace,
-                         replacement,
-                         clean);
+          new_filter = g_strdup_printf ("%s=%s %s", get->filter_replace,
+                                        replacement, clean);
           g_free (clean);
           if (get->filter)
             {
@@ -234,37 +228,37 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
  */
 int
 get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
-          int (*init) (iterator_t*, const get_data_t *))
+          int (*init) (iterator_t *, const get_data_t *))
 {
   if (next (resources) == FALSE)
-   {
-     gchar *new_filter;
+    {
+      gchar *new_filter;
 
-     if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
-       /* If filtering by a named filter, then just end, because changing
-        * the filter term would probably surprise the user. */
-       return 1;
+      if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+        /* If filtering by a named filter, then just end, because changing
+         * the filter term would probably surprise the user. */
+        return 1;
 
-     if (*first == 0)
-       return 1;
+      if (*first == 0)
+        return 1;
 
-     if (*first == 1 || *count > 0)
-       /* Some results were found or first was 1, so stop iterating. */
-       return 1;
+      if (*first == 1 || *count > 0)
+        /* Some results were found or first was 1, so stop iterating. */
+        return 1;
 
-     /* Reset the iterator with first 1, and start again. */
-     cleanup_iterator (resources);
-     new_filter = g_strdup_printf ("first=1 %s", get->filter);
-     g_free (get->filter);
-     get->filter = new_filter;
-     if (init (resources, get))
-       return -1;
-     *count = 0;
-     *first = 1;
-     if (next (resources) == FALSE)
-       return 1;
-   }
- return 0;
+      /* Reset the iterator with first 1, and start again. */
+      cleanup_iterator (resources);
+      new_filter = g_strdup_printf ("first=1 %s", get->filter);
+      g_free (get->filter);
+      get->filter = new_filter;
+      if (init (resources, get))
+        return -1;
+      *count = 0;
+      *first = 1;
+      if (next (resources) == FALSE)
+        return 1;
+    }
+  return 0;
 }
 
 /**
@@ -277,8 +271,8 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
  * @return 0 success, 1 send to client failed.
  */
 int
-send_get_start (const char *type, int (*write_to_client) (const char*, void*),
-                void* write_to_client_data)
+send_get_start (const char *type, int (*write_to_client) (const char *, void *),
+                void *write_to_client_data)
 {
   gchar *msg;
 
@@ -292,7 +286,6 @@ send_get_start (const char *type, int (*write_to_client) (const char*, void*),
                                    " status=\"" STATUS_OK "\""
                                    " status_text=\"" STATUS_OK_TEXT "\">",
                                    type);
-
 
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
@@ -318,8 +311,8 @@ send_get_start (const char *type, int (*write_to_client) (const char*, void*),
  */
 int
 send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
-                 int (*write_to_client) (const char *, void*),
-                 void* write_to_client_data, int writable, int in_use)
+                 int (*write_to_client) (const char *, void *),
+                 void *write_to_client_data, int writable, int in_use)
 {
   GString *buffer;
   const char *tag_type;
@@ -328,41 +321,32 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
 
   buffer = g_string_new ("");
 
-  buffer_xml_append_printf (buffer,
-                            "<%s id=\"%s\">"
-                            "<owner><name>%s</name></owner>"
-                            "<name>%s</name>"
-                            "<comment>%s</comment>"
-                            "<creation_time>%s</creation_time>"
-                            "<modification_time>%s</modification_time>"
-                            "<writable>%i</writable>"
-                            "<in_use>%i</in_use>"
-                            "<permissions>",
-                            type,
-                            get_iterator_uuid (iterator)
-                            ? get_iterator_uuid (iterator)
-                            : "",
-                            get_iterator_owner_name (iterator)
-                            ? get_iterator_owner_name (iterator)
-                            : "",
-                            get_iterator_name (iterator)
-                            ? get_iterator_name (iterator)
-                            : "",
-                            get_iterator_comment (iterator)
-                            ? get_iterator_comment (iterator)
-                            : "",
-                            get_iterator_creation_time (iterator)
-                            ? get_iterator_creation_time (iterator)
-                            : "",
-                            get_iterator_modification_time (iterator)
-                            ? get_iterator_modification_time (iterator)
-                            : "",
-                            writable,
-                            in_use);
+  buffer_xml_append_printf (
+    buffer,
+    "<%s id=\"%s\">"
+    "<owner><name>%s</name></owner>"
+    "<name>%s</name>"
+    "<comment>%s</comment>"
+    "<creation_time>%s</creation_time>"
+    "<modification_time>%s</modification_time>"
+    "<writable>%i</writable>"
+    "<in_use>%i</in_use>"
+    "<permissions>",
+    type, get_iterator_uuid (iterator) ? get_iterator_uuid (iterator) : "",
+    get_iterator_owner_name (iterator) ? get_iterator_owner_name (iterator)
+                                       : "",
+    get_iterator_name (iterator) ? get_iterator_name (iterator) : "",
+    get_iterator_comment (iterator) ? get_iterator_comment (iterator) : "",
+    get_iterator_creation_time (iterator)
+      ? get_iterator_creation_time (iterator)
+      : "",
+    get_iterator_modification_time (iterator)
+      ? get_iterator_modification_time (iterator)
+      : "",
+    writable, in_use);
 
   if (/* The user is the owner. */
-      (current_credentials.username
-       && get_iterator_owner_name (iterator)
+      (current_credentials.username && get_iterator_owner_name (iterator)
        && (strcmp (get_iterator_owner_name (iterator),
                    current_credentials.username)
            == 0))
@@ -379,21 +363,19 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
               && permission_is_admin (get_iterator_uuid (iterator)))
           && acl_user_can_everything (current_credentials.uuid)))
     {
-      buffer_xml_append_printf (buffer,
-                                "<permission>"
-                                "<name>Everything</name>"
-                                "</permission>"
-                                "</permissions>");
+      buffer_xml_append_printf (buffer, "<permission>"
+                                        "<name>Everything</name>"
+                                        "</permission>"
+                                        "</permissions>");
     }
-  else if (current_credentials.uuid
-           && (strcmp (type, "user") == 0)
+  else if (current_credentials.uuid && (strcmp (type, "user") == 0)
            && acl_user_can_super_everyone (get_iterator_uuid (iterator))
            && strcmp (get_iterator_uuid (iterator), current_credentials.uuid))
     {
       /* Resource is the Super Admin. */
-      buffer_xml_append_printf (buffer,
-                                "<permission><name>get_users</name></permission>"
-                                "</permissions>");
+      buffer_xml_append_printf (
+        buffer, "<permission><name>get_users</name></permission>"
+                "</permissions>");
     }
   else
     {
@@ -417,9 +399,8 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
     }
 
   tag_type = get->subtype ? get->subtype : get->type;
-  tag_count = resource_tag_count (tag_type,
-                                  get_iterator_resource (iterator),
-                                  1);
+  tag_count =
+    resource_tag_count (tag_type, get_iterator_resource (iterator), 1);
 
   if (tag_count)
     {
@@ -430,9 +411,8 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                                     "<count>%i</count>",
                                     tag_count);
 
-          init_resource_tag_iterator (&tags, tag_type,
-                                      get_iterator_resource (iterator),
-                                      1, NULL, 1);
+          init_resource_tag_iterator (
+            &tags, tag_type, get_iterator_resource (iterator), 1, NULL, 1);
 
           while (next (&tags))
             {
@@ -450,8 +430,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
 
           cleanup_iterator (&tags);
 
-          buffer_xml_append_printf (buffer,
-                                    "</user_tags>");
+          buffer_xml_append_printf (buffer, "</user_tags>");
         }
       else
         {
@@ -484,9 +463,8 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
  * @return Always 0.
  */
 int
-buffer_get_filter_xml (GString *msg, const char* type,
-                       const get_data_t *get, const char* filter_term,
-                       const char *extra_xml)
+buffer_get_filter_xml (GString *msg, const char *type, const get_data_t *get,
+                       const char *filter_term, const char *extra_xml)
 {
   keyword_t **point;
   array_t *split;
@@ -495,52 +473,45 @@ buffer_get_filter_xml (GString *msg, const char* type,
   buffer_xml_append_printf (msg,
                             "<filters id=\"%s\">"
                             "<term>%s</term>",
-                            get->filt_id ? get->filt_id : "",
-                            filter_term);
+                            get->filt_id ? get->filt_id : "", filter_term);
 
-  if (get->filt_id
-      && strcmp (get->filt_id, "")
+  if (get->filt_id && strcmp (get->filt_id, "")
       && (find_filter_with_permission (get->filt_id, &filter, "get_filters")
           == 0)
       && filter != 0)
-    buffer_xml_append_printf (msg,
-                              "<name>%s</name>",
-                              filter_name (filter));
+    buffer_xml_append_printf (msg, "<name>%s</name>", filter_name (filter));
 
   if (extra_xml)
     g_string_append (msg, extra_xml);
 
-  buffer_xml_append_printf (msg,
-                            "<keywords>");
+  buffer_xml_append_printf (msg, "<keywords>");
 
   split = split_filter (filter_term);
-  point = (keyword_t**) split->pdata;
+  point = (keyword_t **) split->pdata;
   while (*point)
     {
       keyword_t *keyword;
       keyword = *point;
-      buffer_xml_append_printf (msg,
-                                "<keyword>"
-                                "<column>%s</column>"
-                                "<relation>%s</relation>"
-                                "<value>%s%s%s</value>"
-                                "</keyword>",
-                                keyword->column ? keyword->column : "",
-                                keyword->equal
-                                  ? "="
-                                  : (keyword_special (keyword)
-                                       ? ""
-                                       : keyword_relation_symbol (keyword->relation)),
-                                keyword->quoted ? "\"" : "",
-                                keyword->string ? keyword->string : "",
-                                keyword->quoted ? "\"" : "");
+      buffer_xml_append_printf (
+        msg,
+        "<keyword>"
+        "<column>%s</column>"
+        "<relation>%s</relation>"
+        "<value>%s%s%s</value>"
+        "</keyword>",
+        keyword->column ? keyword->column : "",
+        keyword->equal ? "="
+                       : (keyword_special (keyword)
+                            ? ""
+                            : keyword_relation_symbol (keyword->relation)),
+        keyword->quoted ? "\"" : "", keyword->string ? keyword->string : "",
+        keyword->quoted ? "\"" : "");
       point++;
     }
   filter_free (split);
 
-  buffer_xml_append_printf (msg,
-                            "</keywords>"
-                            "</filters>");
+  buffer_xml_append_printf (msg, "</keywords>"
+                                 "</filters>");
   return 0;
 }
 
@@ -562,8 +533,8 @@ buffer_get_filter_xml (GString *msg, const char* type,
 static int
 send_get_end_internal (const char *type, get_data_t *get, int get_counts,
                        int count, int filtered, int full,
-                       int (*write_to_client) (const char *, void*),
-                       void* write_to_client_data)
+                       int (*write_to_client) (const char *, void *),
+                       void *write_to_client_data)
 {
   gchar *sort_field, *filter;
   int first, max, sort_order;
@@ -581,11 +552,10 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
   else
     filter = NULL;
 
-  manage_filter_controls (filter ? filter : get->filter,
-                          &first, &max, &sort_field, &sort_order);
+  manage_filter_controls (filter ? filter : get->filter, &first, &max,
+                          &sort_field, &sort_order);
 
-  if (get->ignore_pagination
-      && (strcmp (type, "task") == 0))
+  if (get->ignore_pagination && (strcmp (type, "task") == 0))
     {
       first = 1;
       max = -1;
@@ -598,8 +568,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
       gchar *new_filter;
       new_filter = manage_clean_filter (filter ? filter : get->filter);
       g_free (filter);
-      if ((strcmp (type, "task") == 0)
-          || (strcmp (type, "report") == 0)
+      if ((strcmp (type, "task") == 0) || (strcmp (type, "report") == 0)
           || (strcmp (type, "result") == 0))
         {
           gchar *value;
@@ -608,9 +577,8 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
           if (value == NULL)
             {
               filter = new_filter;
-              new_filter = g_strdup_printf ("min_qod=%i %s",
-                                            MIN_QOD_DEFAULT,
-                                            filter);
+              new_filter =
+                g_strdup_printf ("min_qod=%i %s", MIN_QOD_DEFAULT, filter);
               g_free (filter);
             }
           g_free (value);
@@ -620,8 +588,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
             {
               filter = new_filter;
               new_filter = g_strdup_printf ("apply_overrides=%i %s",
-                                            APPLY_OVERRIDES_DEFAULT,
-                                            filter);
+                                            APPLY_OVERRIDES_DEFAULT, filter);
               g_free (filter);
             }
           g_free (value);
@@ -630,13 +597,10 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
     }
   else
     {
-      if ((strcmp (type, "task") == 0)
-          || (strcmp (type, "report") == 0)
+      if ((strcmp (type, "task") == 0) || (strcmp (type, "report") == 0)
           || (strcmp (type, "result") == 0))
-        filter = manage_clean_filter("apply_overrides="
-                                     G_STRINGIFY (APPLY_OVERRIDES_DEFAULT)
-                                     " min_qod="
-                                     G_STRINGIFY (MIN_QOD_DEFAULT));
+        filter = manage_clean_filter ("apply_overrides=" G_STRINGIFY (
+          APPLY_OVERRIDES_DEFAULT) " min_qod=" G_STRINGIFY (MIN_QOD_DEFAULT));
       else
         filter = manage_clean_filter ("");
     }
@@ -655,11 +619,8 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
                             "<field>%s<order>%s</order></field>"
                             "</sort>"
                             "<%s start=\"%i\" max=\"%i\"/>",
-                            sort_field,
-                            sort_order ? "ascending" : "descending",
-                            type_many->str,
-                            first,
-                            max);
+                            sort_field, sort_order ? "ascending" : "descending",
+                            type_many->str, first, max);
   if (get_counts)
     buffer_xml_append_printf (msg,
                               "<%s_count>"
@@ -667,14 +628,8 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
                               "<filtered>%i</filtered>"
                               "<page>%i</page>"
                               "</%s_count>",
-                              type,
-                              full,
-                              filtered,
-                              count,
-                              type);
-  buffer_xml_append_printf (msg,
-                            "</get_%s_response>",
-                            type_many->str);
+                              type, full, filtered, count, type);
+  buffer_xml_append_printf (msg, "</get_%s_response>", type_many->str);
   g_string_free (type_many, TRUE);
   g_free (sort_field);
   g_free (filter);
@@ -704,8 +659,8 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
  */
 int
 send_get_end (const char *type, get_data_t *get, int count, int filtered,
-              int full, int (*write_to_client) (const char *, void*),
-              void* write_to_client_data)
+              int full, int (*write_to_client) (const char *, void *),
+              void *write_to_client_data)
 {
   return send_get_end_internal (type, get, 1, count, filtered, full,
                                 write_to_client, write_to_client_data);
@@ -724,8 +679,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
  */
 int
 send_get_end_no_counts (const char *type, get_data_t *get,
-                        int (*write_to_client) (const char *, void*),
-                        void* write_to_client_data)
+                        int (*write_to_client) (const char *, void *),
+                        void *write_to_client_data)
 {
   return send_get_end_internal (type, get, 0, 0, 0, 0, write_to_client,
                                 write_to_client_data);

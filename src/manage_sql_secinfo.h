@@ -22,6 +22,8 @@
  * @brief Manager Manage library: SQL backend headers.
  */
 
+#include <signal.h>
+
 #ifndef _GVMD_MANAGE_SQL_SECINFO_H
 #define _GVMD_MANAGE_SQL_SECINFO_H
 
