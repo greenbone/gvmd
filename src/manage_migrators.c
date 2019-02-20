@@ -15213,7 +15213,11 @@ replace_preference_names_205_to_206 (const char *table_name)
               table_name, quoted_new_name, rowid);
         }
       else
-        g_warning ("No NVT named '%s' found", nvt_name);
+        {
+          new_name = NULL;
+          quoted_new_name = NULL;
+          g_warning ("No NVT named '%s' found", nvt_name);
+        }
 
       g_free (nvt_name);
       g_free (quoted_nvt_name);
