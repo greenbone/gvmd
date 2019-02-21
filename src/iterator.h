@@ -32,7 +32,6 @@
 
 #include <glib.h>
 
-
 /* Types. */
 
 /**
@@ -50,7 +49,7 @@ typedef struct sql_stmt sql_stmt_t;
  */
 struct iterator
 {
-  sql_stmt_t* stmt;          ///< SQL statement.
+  sql_stmt_t *stmt;          ///< SQL statement.
   gboolean done;             ///< End flag.
   int prepared;              ///< Prepared flag.
   lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
@@ -61,13 +60,12 @@ struct iterator
  */
 typedef struct iterator iterator_t;
 
-
 /* Functions. */
 
 void
-cleanup_iterator (iterator_t*);
+cleanup_iterator (iterator_t *);
 
 gboolean
-next (iterator_t*);
+next (iterator_t *);
 
 #endif /* not _GVMD_ITERATOR_H */
