@@ -184,44 +184,38 @@ static int chunk_count = 0;
 #define CHUNK_SIZE 100
 
 /**
- * @brief Make an nvt from an nvti.
+ * @brief Insert an NVT.
  *
- * @param[in]  nvti    NVTI.
- *
- * @return An NVT.
+ * @param[in]  name       NVT name.
+ * @param[in]  cve        NVT CVE.
+ * @param[in]  bid        NVT BID.
+ * @param[in]  xref       NVT XREF.
+ * @param[in]  tags       NVT tags.
+ * @param[in]  cvss_base  NVT CVSS base.
+ * @param[in]  family     NVT family.
+ * @param[in]  oid        NVT OID.
+ * @param[in]  category   NVT category.
  */
-static nvt_t
-make_nvt_from_nvti (const nvti_t *nvti)
+static void
+insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
+            const gchar *xref, const gchar *tags, const gchar *cvss_base,
+            const gchar *family, const gchar *oid, int category)
 {
   gchar *qod_str, *qod_type;
   gchar *quoted_name;
   gchar *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
-
   int creation_time, modification_time, qod;
 
-  if (chunk_count == 0)
+  quoted_name = sql_quote (name ? name : "");
+  quoted_cve = sql_quote (cve ? cve : "");
+  quoted_bid = sql_quote (bid ? bid : "");
+  quoted_xref = sql_quote (xref ? xref : "");
+  if (tags)
     {
-      sql_begin_immediate ();
-      chunk_count++;
-    }
-  else if (chunk_count == CHUNK_SIZE)
-    chunk_count = 0;
-  else
-    chunk_count++;
-
-  quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
-  quoted_cve = sql_quote (nvti_cve (nvti) ? nvti_cve (nvti) : "");
-  quoted_bid = sql_quote (nvti_bid (nvti) ? nvti_bid (nvti) : "");
-  quoted_xref = sql_quote (nvti_xref (nvti) ? nvti_xref (nvti) : "");
-  if (nvti_tag (nvti))
-    {
-      const char *tags;
       gchar **split, **point;
       GString *tag;
-
-      tags = nvti_tag (nvti);
 
       /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
 
@@ -270,12 +264,10 @@ make_nvt_from_nvti (const nvti_t *nvti)
     }
   else
     quoted_tag = g_strdup ("");
-  quoted_cvss_base = sql_quote (nvti_cvss_base (nvti)
-                                 ? nvti_cvss_base (nvti)
-                                 : "");
+  quoted_cvss_base = sql_quote (cvss_base ? cvss_base : "");
 
-  qod_str = tag_value (nvti_tag (nvti), "qod");
-  qod_type = tag_value (nvti_tag (nvti), "qod_type");
+  qod_str = tag_value (tags, "qod");
+  qod_type = tag_value (tags, "qod_type");
 
   if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
     qod = qod_from_type (qod_type);
@@ -285,14 +277,14 @@ make_nvt_from_nvti (const nvti_t *nvti)
   g_free (qod_str);
   g_free (qod_type);
 
-  quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
+  quoted_family = sql_quote (family ? family : "");
 
-  value = tag_value (nvti_tag (nvti), "creation_date");
+  value = tag_value (tags, "creation_date");
   switch (parse_time (value, &creation_time))
     {
       case -1:
         g_warning ("%s: Failed to parse creation time of %s: %s",
-                   __FUNCTION__, nvti_oid (nvti), value);
+                   __FUNCTION__, oid, value);
         creation_time = 0;
         break;
       case -2:
@@ -308,12 +300,12 @@ make_nvt_from_nvti (const nvti_t *nvti)
     }
   g_free (value);
 
-  value = tag_value (nvti_tag (nvti), "last_modification");
+  value = tag_value (tags, "last_modification");
   switch (parse_time (value, &modification_time))
     {
       case -1:
         g_warning ("%s: Failed to parse last_modification time of %s: %s",
-                   __FUNCTION__, nvti_oid (nvti), value);
+                   __FUNCTION__, oid, value);
         modification_time = 0;
         break;
       case -2:
@@ -329,7 +321,7 @@ make_nvt_from_nvti (const nvti_t *nvti)
     }
   g_free (value);
 
-  value = tag_value (nvti_tag (nvti), "solution_type");
+  value = tag_value (tags, "solution_type");
   if (value)
     {
       quoted_solution_type = sql_quote (value);
@@ -339,9 +331,9 @@ make_nvt_from_nvti (const nvti_t *nvti)
     quoted_solution_type = g_strdup ("");
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
-               nvti_oid (nvti)))
+               oid))
     g_warning ("%s: NVT with OID %s exists already, ignoring", __FUNCTION__,
-               nvti_oid (nvti));
+               oid);
   else
     sql ("INSERT into nvts (oid, name,"
          " cve, bid, xref, tag, category, family, cvss_base,"
@@ -349,14 +341,11 @@ make_nvt_from_nvti (const nvti_t *nvti)
          " qod, qod_type)"
          " VALUES ('%s', '%s', '%s', '%s', '%s',"
          " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-         nvti_oid (nvti), quoted_name,
+         oid, quoted_name,
          quoted_cve, quoted_bid, quoted_xref, quoted_tag,
-         nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-         modification_time, nvti_oid (nvti), quoted_solution_type,
+         category, quoted_family, quoted_cvss_base, creation_time,
+         modification_time, oid, quoted_solution_type,
          qod, quoted_qod_type);
-
-  if (chunk_count == 0)
-    sql_commit ();
 
   g_free (quoted_name);
   g_free (quoted_cve);
@@ -367,8 +356,38 @@ make_nvt_from_nvti (const nvti_t *nvti)
   g_free (quoted_family);
   g_free (quoted_solution_type);
   g_free (quoted_qod_type);
+}
 
-  return sql_last_insert_id ();
+/**
+ * @brief Make an nvt from an nvti.
+ *
+ * @param[in]  nvti    NVTI.
+ */
+static void
+make_nvt_from_nvti (const nvti_t *nvti)
+{
+  if (chunk_count == 0)
+    {
+      sql_begin_immediate ();
+      chunk_count++;
+    }
+  else if (chunk_count == CHUNK_SIZE)
+    chunk_count = 0;
+  else
+    chunk_count++;
+
+  insert_nvt (nvti_name (nvti),
+              nvti_cve (nvti),
+              nvti_bid (nvti),
+              nvti_xref (nvti),
+              nvti_tag (nvti),
+              nvti_cvss_base (nvti),
+              nvti_family (nvti),
+              nvti_oid (nvti),
+              nvti_category (nvti));
+
+  if (chunk_count == 0)
+    sql_commit ();
 }
 
 /**
