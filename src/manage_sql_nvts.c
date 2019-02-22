@@ -1194,15 +1194,254 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
 }
 
 /**
+ * @brief Get CVE field from VT.
+ *
+ * @params[in]  vt_refs  VT refs.
+ * @params[in]  type     Type to get.
+ * @params[in]  empty    String to return if empty.
+ *
+ * @return Freshly allocated string for ref field, or NULL on error.
+ */
+static gchar *
+get_ref (entity_t vt_refs, const gchar *type, const gchar *empty)
+{
+  entities_t children;
+  entity_t ref;
+  int first;
+  GString *refs;
+
+  first = 1;
+  refs = g_string_new ("");
+  children = vt_refs->entities;
+  while ((ref = first_entity (children)))
+    {
+      const gchar *ref_type;
+
+      ref_type = entity_attribute (ref, "type");
+      if (ref_type == NULL)
+        {
+          GString *debug = g_string_new ("");
+          g_warning ("%s: REF missing type attribute", __FUNCTION__);
+          print_entity_to_string (ref, debug);
+          g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+          g_string_free (debug, TRUE);
+        }
+      else if (strcasecmp (ref_type, type) == 0)
+        {
+          const gchar *id;
+
+          id = entity_attribute (ref, "id");
+          if (id == NULL)
+            {
+              GString *debug = g_string_new ("");
+              g_warning ("%s: REF missing id attribute", __FUNCTION__);
+              print_entity_to_string (ref, debug);
+              g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+              g_string_free (debug, TRUE);
+            }
+          else if (first)
+            {
+              g_string_append (refs, id);
+              first = 0;
+            }
+          else
+            g_string_append_printf (refs, ", %s", id);
+        }
+
+      children = next_entities (children);
+    }
+
+  if (first == 1)
+    g_string_append (refs, empty);
+
+  return g_string_free (refs, FALSE);
+}
+
+/**
+ * @brief Get CVE field from VT.
+ *
+ * @params[in]  vt_refs  VT refs.
+ *
+ * @return Freshly allocated string for CVE field, or NULL on error.
+ */
+static gchar *
+get_cve (entity_t vt_refs)
+{
+  return get_ref (vt_refs, "cve", "NOCVE");
+}
+
+/**
+ * @brief Get BID field from VT.
+ *
+ * @params[in]  vt_refs  VT refs.
+ *
+ * @return Freshly allocated string for BID field, or NULL on error.
+ */
+static gchar *
+get_bid (entity_t vt_refs)
+{
+  return get_ref (vt_refs, "bid", "NOBID");
+}
+
+/**
+ * @brief Get XREF field from VT.
+ *
+ * @params[in]  vt_refs  VT refs.
+ *
+ * @return Freshly allocated string for XREF field, or NULL on error.
+ */
+static gchar *
+get_xref (entity_t vt_refs)
+{
+  entities_t children;
+  entity_t ref;
+  int first;
+  GString *refs;
+
+  first = 1;
+  refs = g_string_new ("");
+  children = vt_refs->entities;
+  while ((ref = first_entity (children)))
+    {
+      const gchar *type;
+
+      type = entity_attribute (ref, "type");
+      if (type == NULL)
+        g_warning ("%s: REF missing type attribute", __FUNCTION__);
+      else if (strcasecmp (type, "cve")
+               && strcasecmp (type, "bid"))
+        {
+          const gchar *id;
+          gchar *type_up;
+
+          type_up = g_ascii_strup (type, -1);
+          id = entity_attribute (ref, "id");
+          if (id == NULL)
+            g_warning ("%s: REF missing id attribute", __FUNCTION__);
+          else if (first)
+            {
+              g_string_append_printf (refs, "%s:%s", type_up, id);
+              first = 0;
+            }
+          else
+            g_string_append_printf (refs, ", %s:%s", type_up, id);
+
+          g_free (type_up);
+        }
+
+      children = next_entities (children);
+    }
+
+  if (first == 1)
+    g_string_append (refs, "NOXREF");
+
+  return g_string_free (refs, FALSE);
+}
+
+/**
+ * @brief Get tag field from VT.
+ *
+ * @params[in]  vt_refs  VT refs.
+ *
+ * @return Freshly allocated string for tag field, or NULL on error.
+ */
+static gchar *
+get_tag (entity_t vt)
+{
+  entity_t child;
+  GString *tag;
+  int first;
+
+  first = 1;
+  tag = g_string_new ("");
+
+  child = entity_child (vt, "solution");
+  if (child)
+    {
+      const gchar *type;
+
+      g_string_append_printf (tag,
+                              "%ssolution=%s",
+                              first ? "" : "|",
+                              entity_text (child));
+      first = 0;
+
+      type = entity_attribute (child, "type");
+      if (type == NULL)
+        g_warning ("%s: SOLUTION missing type", __FUNCTION__);
+      else
+        g_string_append_printf (tag, "|solution_type=%s", type);
+    }
+
+  child = entity_child (vt, "detection");
+  if (child)
+    {
+      const gchar *qod_type;
+
+      if (strlen (entity_text (child)))
+        {
+          g_string_append_printf (tag,
+                                  "%svuldetect=%s",
+                                  first ? "" : "|",
+                                  entity_text (child));
+          first = 0;
+        }
+
+      qod_type = entity_attribute (child, "qod_type");
+      if (qod_type == NULL)
+        g_warning ("%s: DETECTION missing qod_type", __FUNCTION__);
+      else
+        {
+          g_string_append_printf (tag,
+                                  "%sqod_type=%s",
+                                  first ? "" : "|",
+                                  qod_type);
+          first = 0;
+        }
+    }
+
+  child = entity_child (vt, "summary");
+  if (child)
+    {
+      g_string_append_printf (tag,
+                              "%ssummary=%s",
+                              first ? "" : "|",
+                              entity_text (child));
+      first = 0;
+    }
+
+  child = entity_child (vt, "insight");
+  if (child)
+    {
+      g_string_append_printf (tag,
+                              "%sinsight=%s",
+                              first ? "" : "|",
+                              entity_text (child));
+      first = 0;
+    }
+
+  child = entity_child (vt, "affected");
+  if (child)
+    g_string_append_printf (tag,
+                            "%saffected=%s",
+                            first ? "" : "|",
+                            entity_text (child));
+
+  return g_string_free (tag, FALSE);
+}
+
+/**
  * @brief Update NVTs from VTs XML.
+ *
+ * @params[in]  get_vts_response      OSP GET_VTS response.
+ * @params[in]  scanner_feed_version  Version of feed from scanner.
  */
 static void
-update_nvts_from_vts (entity_t *get_vts_response)
+update_nvts_from_vts (entity_t *get_vts_response,
+                      const gchar *scanner_feed_version)
 {
   entity_t vts, vt;
   entities_t children;
-
-  g_warning ("%s", __FUNCTION__);
 
   vts = entity_child (*get_vts_response, "vts");
   if (vts == NULL)
@@ -1211,22 +1450,134 @@ update_nvts_from_vts (entity_t *get_vts_response)
       return;
     }
 
+  sql_begin_immediate ();
+
+  sql ("CREATE TEMPORARY TABLE old_nvts"
+       " (oid TEXT, modification_time INTEGER);");
+  sql ("INSERT INTO old_nvts (oid, modification_time)"
+       " SELECT oid, modification_time FROM nvts;");
+
+  if (sql_is_sqlite3 ())
+    {
+      sql ("DELETE FROM nvt_cves;");
+      sql ("DELETE FROM nvts;");
+      sql ("DELETE FROM nvt_preferences;");
+    }
+  else
+    {
+      sql ("TRUNCATE nvts CASCADE;");
+      sql ("TRUNCATE nvt_preferences;");
+    }
+
   children = vts->entities;
   while ((vt = first_entity (children)))
     {
       const char *id;
+      entity_t name, vt_refs, custom, family, category;
+      gchar *cve, *bid, *xref, *tag;
 
       id = entity_attribute (vt, "id");
       if (id == NULL)
         {
           g_warning ("%s: VT missing id attribute", __FUNCTION__);
+          sql_rollback ();
           return;
         }
 
-      g_warning ("%s: id: %s", __FUNCTION__, id);
+      name = entity_child (vt, "name");
+      if (name == NULL)
+        {
+          g_warning ("%s: VT missing NAME", __FUNCTION__);
+          sql_rollback ();
+          return;
+        }
+
+      vt_refs = entity_child (vt, "vt_refs");
+      if (vt_refs == NULL)
+        {
+          g_warning ("%s: VT missing VT_REFS", __FUNCTION__);
+          sql_rollback ();
+          return;
+        }
+
+      cve = get_cve (vt_refs);
+      if (cve == NULL)
+        {
+          sql_rollback ();
+          return;
+        }
+
+      bid = get_bid (vt_refs);
+      if (bid == NULL)
+        {
+          sql_rollback ();
+          return;
+        }
+
+      xref = get_xref (vt_refs);
+      if (xref == NULL)
+        {
+          sql_rollback ();
+          return;
+        }
+
+      tag = get_tag (vt);
+      if (tag == NULL)
+        {
+          sql_rollback ();
+          return;
+        }
+
+      custom = entity_child (vt, "custom");
+      if (custom == NULL)
+        {
+          g_warning ("%s: VT missing CUSTOM", __FUNCTION__);
+          sql_rollback ();
+          return;
+        }
+
+      family = entity_child (custom, "family");
+      if (family == NULL)
+        {
+          g_warning ("%s: VT/CUSTOM missing FAMILY", __FUNCTION__);
+          sql_rollback ();
+          return;
+        }
+
+      category = entity_child (custom, "category");
+      if (category == NULL)
+        {
+          g_warning ("%s: VT/CUSTOM missing CATEGORY", __FUNCTION__);
+          sql_rollback ();
+          return;
+        }
+
+      insert_nvt (entity_text (name),
+                  cve,
+                  bid,
+                  xref,
+                  tag,
+                  "0.0", // FIX cvss_base
+                  entity_text (family),
+                  id,
+                  atoi (entity_text (category)));
+
+
+      g_free (cve);
+      g_free (bid);
+      g_free (xref);
+      g_free (tag);
 
       children = next_entities (children);
     }
+
+  set_nvts_check_time ();
+
+  sql ("DROP TABLE old_nvts;");
+
+  set_nvts_feed_version (scanner_feed_version);
+
+  sql_commit ();
 }
 
 /**
@@ -1244,8 +1595,6 @@ manage_update_nvt_cache_osp ()
   gchar *host, *ca_pub, *key_pub, *key_priv;
   int port;
 
-  g_warning ("%s", __FUNCTION__);
-
   /* Re-open DB after fork. */
 
   reinit_manage_process ();
@@ -1260,7 +1609,7 @@ manage_update_nvt_cache_osp ()
     }
 
   db_feed_version = nvts_feed_version ();
-  g_warning ("%s: db_feed_version: %s", __FUNCTION__, db_feed_version);
+  g_debug ("%s: db_feed_version: %s", __FUNCTION__, db_feed_version);
 
   connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
   if (!connection)
@@ -1274,7 +1623,7 @@ manage_update_nvt_cache_osp ()
       g_warning ("%s: failed to get scanner_version", __FUNCTION__);
       return -1;
     }
-  g_warning ("%s: scanner_feed_version: %s", __FUNCTION__, scanner_feed_version);
+  g_debug ("%s: scanner_feed_version: %s", __FUNCTION__, scanner_feed_version);
 
   osp_connection_close (connection);
 
@@ -1295,10 +1644,10 @@ manage_update_nvt_cache_osp ()
           return -1;
         }
 
-      update_nvts_from_vts (&vts);
-      free_entity (vts);
-
       osp_connection_close (connection);
+
+      update_nvts_from_vts (&vts, scanner_feed_version);
+      free_entity (vts);
     }
 
   return 0;
