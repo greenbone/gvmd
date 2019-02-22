@@ -1647,7 +1647,8 @@ manage_update_nvt_cache_osp ()
 
   osp_connection_close (connection);
 
-  if (strcmp (scanner_feed_version, db_feed_version))
+  if ((db_feed_version == NULL)
+      || strcmp (scanner_feed_version, db_feed_version))
     {
       entity_t vts;
 
