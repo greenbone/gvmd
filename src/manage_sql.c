@@ -12696,7 +12696,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               gchar *body, *subject;
               char *name, *notice, *from_address;
               gchar *base64, *type, *extension;
-              filter_t filter;
 
               base64 = NULL;
               type = NULL;
@@ -12755,12 +12754,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   gchar *term, *report_zone, *host_summary;
                   report_format_t report_format = 0;
                   gsize content_length;
+                  filter_t filter;
 
                   /* Message with inlined report. */
 
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
+                  /* report_content_for_alert always sets this, but init it
+                   * anyway, to make it easier for the compiler to see. */
+                  filter = 0;
                   ret = report_content_for_alert
                           (alert, 0, task, get,
                            "notice_report_format",
@@ -12831,12 +12834,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   gsize content_length;
                   gchar *alert_subject, *message;
                   gchar *term, *report_zone, *host_summary;
+                  filter_t filter;
 
                   /* Message with attached report. */
 
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
+                  /* report_content_for_alert always sets this, but init it
+                   * anyway, to make it easier for the compiler to see. */
+                  filter = 0;
                   ret = report_content_for_alert
                           (alert, 0, task, get,
                            "notice_attach_format",
@@ -15397,12 +15404,12 @@ setup_full_config_prefs (config_t config, int safe_checks,
 
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " 'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       " '" OID_PING_HOST ":checkbox:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " 'Login configurations[checkbox]:NTLMSSP',"
+       " '" OID_LOGINS ":checkbox:NTLMSSP',"
        " 'yes');",
        config);
 }
@@ -21201,60 +21208,46 @@ result_uuid (result_t result, char ** id)
  *        detection result.
  *
  * @param[in]   result      Vulnerability detection result.
+ * @param[in]   report      Report of result.
+ * @param[in]   host        Host of result.
+ * @param[in]   oid         Detection script OID.
  * @param[out]  ref         Detection result UUID.
  * @param[out]  product     Product name.
  * @param[out]  location    Product location.
- * @param[out]  oid         Detection script OID.
  * @param[out]  name        Detection script name.
  *
  * @return -1 on error, 0 on success.
  */
 int
-result_detection_reference (result_t result, char **ref, char **product,
-                            char **location, char **oid, char **name)
+result_detection_reference (result_t result, report_t report, const gchar *host,
+                            const char *oid, char **ref, char **product,
+                            char **location, char **name)
 {
-  char *report, *host = NULL;
-  gchar *quoted_location = NULL;
+  gchar *quoted_location, *quoted_host;
 
-  if ((ref == NULL) || (product == NULL) || (location == NULL) || (oid == NULL)
+  if ((ref == NULL) || (product == NULL) || (location == NULL)
       || (name == NULL))
     return -1;
 
-  *ref = *product = *location = *oid = *name = NULL;
-  report = sql_string ("SELECT report FROM results WHERE id = %llu;",
-                       result);
-  if (report == NULL)
-    goto detect_cleanup;
+  if ((report == 0) || (host == NULL) || (oid == NULL))
+    return -1;
 
-  host = sql_string ("SELECT host FROM results where id = %llu;",
-                     result);
-  if (host == NULL)
-    goto detect_cleanup;
+  quoted_location = NULL;
+  *ref = *product = *location = *name = NULL;
 
-  *oid = sql_string ("SELECT value"
-                     " FROM report_host_details"
-                     " WHERE report_host = (SELECT id"
-                     "                      FROM report_hosts"
-                     "                      WHERE report = %s"
-                     "                      AND host = '%s')"
-                     " AND name = 'detected_by'"
-                     " AND source_name = (SELECT nvt FROM results"
-                     "                    WHERE id = %llu);",
-                     report, host, result);
-  if (*oid == NULL)
-    goto detect_cleanup;
+  quoted_host = sql_quote (host);
 
   *location = sql_string ("SELECT value"
                           " FROM report_host_details"
                           " WHERE report_host = (SELECT id"
                           "                      FROM report_hosts"
-                          "                      WHERE report = %s"
+                          "                      WHERE report = %llu"
                           "                      AND host = '%s')"
                           " AND name = 'detected_at'"
                           " AND source_name = (SELECT nvt"
                           "                    FROM results"
                           "                    WHERE id = %llu);",
-                          report, host, result);
+                          report, quoted_host, result);
   if (*location == NULL)
     goto detect_cleanup;
   quoted_location = sql_quote (*location);
@@ -21263,19 +21256,19 @@ result_detection_reference (result_t result, char **ref, char **product,
                          " FROM report_host_details"
                          " WHERE report_host = (SELECT id"
                          "                      FROM report_hosts"
-                         "                      WHERE report = %s"
+                         "                      WHERE report = %llu"
                          "                      AND host = '%s')"
                          " AND source_name = '%s'"
                          " AND name != 'detected_at'"
                          " AND value = '%s';",
-                         report, host, *oid, quoted_location);
+                         report, quoted_host, oid, quoted_location);
   if (*product == NULL)
     goto detect_cleanup;
 
-  if (g_str_has_prefix (*oid, "CVE-"))
-    *name = g_strdup (*oid);
+  if (g_str_has_prefix (oid, "CVE-"))
+    *name = g_strdup (oid);
   else
-    *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", *oid);
+    *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", oid);
   if (*name == NULL)
     goto detect_cleanup;
 
@@ -21284,24 +21277,23 @@ result_detection_reference (result_t result, char **ref, char **product,
    * location in order for this to work. */
   *ref = sql_string ("SELECT uuid"
                      " FROM results"
-                     " WHERE report = %s"
+                     " WHERE report = %llu"
                      " AND host = '%s'"
                      " AND nvt = '%s'"
                      " AND (description LIKE '%%%s%%'"
                      "      OR port LIKE '%%%s%%');",
-                     report, host, *oid, quoted_location, quoted_location);
+                     report, quoted_host, oid, quoted_location,
+                     quoted_location);
   if (*ref == NULL)
     goto detect_cleanup;
 
-  g_free (report);
-  g_free (host);
+  g_free (quoted_host);
   g_free (quoted_location);
 
   return 0;
 
 detect_cleanup:
-  g_free (report);
-  g_free (host);
+  g_free (quoted_host);
   g_free (quoted_location);
 
   return -1;
@@ -23669,8 +23661,7 @@ where_qod (int min_qod)
 /**
  * @brief Result iterator filterable columns, for severity only version .
  */
-#define RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                           \
-  {                                                                           \
+#define BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                      \
     { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
     { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
@@ -23728,14 +23719,90 @@ where_qod (int min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "(SELECT value"                                                         \
+      " FROM report_host_details"                                             \
+      " WHERE report_host = (SELECT id"                                       \
+      "                      FROM report_hosts"                               \
+      "                      WHERE report = results.report"                   \
+      "                      AND host = results.host)"                        \
+      " AND name = 'detected_by'"                                             \
+      " AND source_name = results.nvt"                                        \
+      " LIMIT 1)",                                                            \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT CASE WHEN host IS NULL"                                        \
+      "             THEN NULL"                                                \
+      "             ELSE (SELECT uuid FROM hosts"                             \
+      "                   WHERE id = (SELECT host FROM host_identifiers"      \
+      "                               WHERE source_type = 'Report Host'"      \
+      "                               AND name = 'ip'"                        \
+      "                               AND source_id"                          \
+      "                                   = (SELECT uuid"                     \
+      "                                      FROM reports"                    \
+      "                                      WHERE id = results.report)"      \
+      "                               AND value = results.host"               \
+      "                               LIMIT 1))"                              \
+      "             END)",                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM notes"                              \
+      "                     WHERE (result = results.id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = results.task))"           \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM overrides"                          \
+      "                     WHERE (result = results.id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = results.task))"           \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },
+
+/**
+ * @brief Result iterator columns.
+ */
+#define RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                           \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                          \
+    { SECINFO_SQL_RESULT_HAS_CERT_BUNDS,                                      \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { SECINFO_SQL_RESULT_HAS_DFN_CERTS,                                       \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE_NO_CERT                   \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                          \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
 /**
  * @brief Result iterator columns.
  */
-#define RESULT_ITERATOR_COLUMNS                                               \
-  {                                                                           \
+#define BASE_RESULT_ITERATOR_COLUMNS                                          \
     { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
     { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
@@ -23816,6 +23883,83 @@ where_qod (int min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "(SELECT value"                                                         \
+      " FROM report_host_details"                                             \
+      " WHERE report_host = (SELECT id"                                       \
+      "                      FROM report_hosts"                               \
+      "                      WHERE report = results.report"                   \
+      "                      AND host = results.host)"                        \
+      " AND name = 'detected_by'"                                             \
+      " AND source_name = results.nvt"                                        \
+      " LIMIT 1)",                                                            \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT CASE WHEN host IS NULL"                                        \
+      "             THEN NULL"                                                \
+      "             ELSE (SELECT uuid FROM hosts"                             \
+      "                   WHERE id = (SELECT host FROM host_identifiers"      \
+      "                               WHERE source_type = 'Report Host'"      \
+      "                               AND name = 'ip'"                        \
+      "                               AND source_id"                          \
+      "                                   = (SELECT uuid"                     \
+      "                                      FROM reports"                    \
+      "                                      WHERE id = results.report)"      \
+      "                               AND value = results.host"               \
+      "                               LIMIT 1))"                              \
+      "             END)",                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM notes"                              \
+      "                     WHERE (result = results.id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = results.task))"           \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM overrides"                          \
+      "                     WHERE (result = results.id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = results.task))"           \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },
+
+/**
+ * @brief Result iterator columns.
+ */
+#define RESULT_ITERATOR_COLUMNS                                               \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { SECINFO_SQL_RESULT_HAS_CERT_BUNDS,                                      \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { SECINFO_SQL_RESULT_HAS_DFN_CERTS,                                       \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define RESULT_ITERATOR_COLUMNS_NO_CERT                                       \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23961,6 +24105,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_t columns[3];
   static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
+  static column_t static_filterable_columns_no_cert[]
+    = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE_NO_CERT;
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   column_t *filterable_columns;
   int ret;
@@ -23992,7 +24138,10 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
 
-  filterable_columns = column_array_copy (static_filterable_columns);
+  if (manage_cert_loaded ())
+    filterable_columns = column_array_copy (static_filterable_columns);
+  else
+    filterable_columns = column_array_copy (static_filterable_columns_no_cert);
   column_array_set
    (filterable_columns,
     "type",
@@ -24204,6 +24353,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
   gchar *filter;
   int autofp, apply_overrides, dynamic_severity;
@@ -24237,7 +24387,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             "result",
                             get,
                             /* SELECT columns. */
-                            columns,
+                            manage_cert_loaded () ? columns : columns_no_cert,
                             NULL,
                             /* Filterable columns not in SELECT columns. */
                             NULL,
@@ -24268,6 +24418,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
   gchar *filter;
   int apply_overrides, autofp, dynamic_severity;
@@ -24295,8 +24446,8 @@ result_count (const get_data_t *get, report_t report, const char* host)
                                      filter ? filter : get->filter);
 
   ret = count ("result", get,
-                columns,
-                columns,
+                manage_cert_loaded () ? columns : columns_no_cert,
+                manage_cert_loaded () ? columns : columns_no_cert,
                 filter_columns, 0,
                 extra_tables,
                 extra_where,
@@ -24743,6 +24894,96 @@ DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
  *         cleanup_iterator.
  */
 DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
+
+/**
+ * @brief Get the "detected_by" NVT OID from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The OID of the "detected_by" NVT.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_detected_by_oid, GET_ITERATOR_COLUMN_COUNT + 22);
+
+/**
+ * @brief Get the asset host ID from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The ID of the asset host.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_asset_host_id, GET_ITERATOR_COLUMN_COUNT + 23);
+
+/**
+ * @brief Get whether notes may exist from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if notes may exist, else 0.
+ */
+int
+result_iterator_may_have_notes (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 24);
+}
+
+/**
+ * @brief Get whether overrides may exist from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if overrides may exist, else 0.
+ */
+int
+result_iterator_may_have_overrides (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
+}
+
+/**
+ * @brief Get whether tickets may exist from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if notes may exist, else 0.
+ */
+int
+result_iterator_may_have_tickets (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 26);
+}
+
+/**
+ * @brief Get whether CERT-Bunds may exist from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if notes may exist, else 0.
+ */
+int
+result_iterator_has_cert_bunds (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 27);
+}
+
+/**
+ * @brief Get whether DFN-CERTs may exist from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if notes may exist, else 0.
+ */
+int
+result_iterator_has_dfn_certs (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
+}
 
 /**
  * @brief Initialise a host iterator.
@@ -26964,8 +27205,9 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 }
 
 /** @todo Defined in gmp.c! */
-void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
-                         int, int, int, const char *, iterator_t *, int);
+void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int,
+                         int, int, int, int, const char *, iterator_t *,
+                         int, int);
 
 /**
  * @brief Comparison returns.
@@ -27293,7 +27535,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "changed",
                                   delta_results,
-                                  1);
+                                  1,
+                                  -1);
           }
         break;
 
@@ -27322,7 +27565,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "gone",
                                   delta_results,
-                                  0);
+                                  0,
+                                  -1);
           }
         break;
 
@@ -27351,7 +27595,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "new",
                                   delta_results,
-                                  0);
+                                  0,
+                                  -1);
           }
         break;
 
@@ -27380,7 +27625,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "same",
                                   delta_results,
-                                  0);
+                                  0,
+                                  -1);
           }
         break;
 
@@ -29408,7 +29654,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     0,
                                     "new",
                                     NULL,
-                                    0);
+                                    0,
+                                    -1);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -29453,7 +29700,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     0,
                                     "gone",
                                     NULL,
-                                    0);
+                                    0,
+                                    -1);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -29976,6 +30224,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  type               Type of report, NULL, "scan" or "assets".
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  host               Host or NULL, when type "assets".
  * @param[in]  pos                Position of report from end, when type
  *                                "assets".
@@ -30000,7 +30249,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                         gchar* xml_start, const get_data_t *get,
                         const char *type,
                         int notes_details, int overrides_details,
-                        const char *host, int pos,
+                        int result_tags, const char *host, int pos,
                         const char *host_search_phrase, const char *host_levels,
                         int host_first_result, int host_max_results,
                         int ignore_pagination, gchar **filter_term_return,
@@ -30821,11 +31070,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else if (get->details)
     {
+      int cert_loaded;
+
+      cert_loaded = manage_cert_loaded ();
       while (next (&results))
         {
           const char* level;
           GHashTable *f_host_result_counts;
           GString *buffer = g_string_new ("");
+
           buffer_results_xml (buffer,
                               &results,
                               task,
@@ -30833,12 +31086,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                               notes_details,
                               overrides,
                               overrides_details,
-                              1,
+                              result_tags,
                               1,
                               0,
                               NULL,
                               NULL,
-                              0);
+                              0,
+                              cert_loaded);
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)
@@ -31303,6 +31557,7 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
   xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
   ret = print_report_xml_start (report, delta_report, task, xml_start, get,
                                 type, notes_details, overrides_details,
+                                1 /* result_tags */,
                                 NULL, 0, NULL, NULL, 0, 0, /* host params */
                                 0 /* ignore_pagination */,
                                 filter_term_return, zone_return, host_summary);
@@ -31959,6 +32214,7 @@ apply_report_format (gchar *report_format_id,
  * @param[in]  get                GET command data.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  ignore_pagination  Whether to ignore pagination.
  * @param[in]  base64             Whether to base64 encode the report.
  * @param[in]  send               Function to write to client.
@@ -31989,7 +32245,7 @@ apply_report_format (gchar *report_format_id,
 int
 manage_send_report (report_t report, report_t delta_report,
                     report_format_t report_format, const get_data_t *get,
-                    int notes_details, int overrides_details,
+                    int notes_details, int overrides_details, int result_tags,
                     int ignore_pagination, int base64,
                     gboolean (*send) (const char *,
                                       int (*) (const char *, void*),
@@ -32062,6 +32318,7 @@ manage_send_report (report_t report, report_t delta_report,
   xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
   ret = print_report_xml_start (report, delta_report, task, xml_start, get,
                                 type, notes_details, overrides_details,
+                                result_tags,
                                 host, pos, host_search_phrase, host_levels,
                                 host_first_result, host_max_results,
                                 ignore_pagination, NULL, NULL, NULL);
@@ -36241,10 +36498,10 @@ config_insert_preferences (config_t config,
             if (config_type == NULL || strcmp (config_type, "0") == 0)
               {
                 /* NVT preference */
-                /* LDAPsearch[entry]:Timeout value */
+                /* OID:PrefType:PrefName value */
                 sql ("INSERT INTO config_preferences"
                      " (config, type, name, value)"
-                     " VALUES (%llu, 'PLUGINS_PREFS', '%s[%s]:%s', '%s');",
+                     " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s', '%s');",
                      config,
                      quoted_nvt_name,
                      quoted_type,
@@ -37596,7 +37853,7 @@ init_otp_pref_iterator (iterator_t* iterator,
                  config,
                  quoted_section,
                  strcmp (quoted_section, "SERVER_PREFS") == 0
-                  ? "NOT LIKE '%[%]%'" : "LIKE '%[%]%'",
+                  ? "NOT LIKE '%:%:%'" : "LIKE '%:%:%'",
                  config);
   g_free (quoted_section);
 }
@@ -37653,14 +37910,11 @@ int
 manage_set_config_preference (const gchar *config_id, const char* nvt,
                               const char* name, const char* value_64)
 {
-  gchar *quoted_name, *quoted_value, *value;
-  int type_start = -1, type_end = -1, count;
+  gchar *quoted_name, *quoted_value, *value, **splits;
   config_t config;
 
   if (value_64 == NULL)
     {
-      int end = -1;
-
       sql_begin_immediate ();
 
       if (find_config_with_permission (config_id, &config, "modify_config"))
@@ -37684,14 +37938,16 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
 
       quoted_name = sql_quote (name);
 
-      /* scanner[scanner]:Timeout */
-      count = sscanf (name, "%*[^[][scanner]:%n", &end);
-      if (count == 0 && end > 0)
+      /* OID:scanner:PrefType */
+      splits = g_strsplit (name, ":", 3);
+      if (splits && g_strv_length (splits) == 3
+          && strcmp (splits[1], "scanner") == 0)
         {
           /* A scanner preference.  Remove type decoration from name. */
           g_free (quoted_name);
-          quoted_name = sql_quote (name + end);
+          quoted_name = sql_quote (splits[2]);
         }
+      g_strfreev (splits);
 
       sql ("DELETE FROM config_preferences"
            " WHERE config = %llu"
@@ -37736,11 +37992,11 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
   else
     value = g_strdup ("");
 
-  /* LDAPsearch[entry]:Timeout value */
-  count = sscanf (name, "%*[^[][%n%*[^]]%n]:", &type_start, &type_end);
-  if (count == 0 && type_start > 0 && type_end > 0)
+  /* OID:PrefType:PrefName value */
+  splits = g_strsplit (name, ":", 3);
+  if (splits && g_strv_length (splits) == 3)
     {
-      if (strncmp (name + type_start, "radio", type_end - type_start) == 0)
+      if (strcmp (splits[1], "radio") == 0)
         {
           char *old_value;
           gchar **split, **point;
@@ -37797,15 +38053,15 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
               value = g_string_free (string, FALSE);
             }
         }
-      else if (strncmp (name + type_start, "scanner", type_end - type_start)
-               == 0)
+      else if (strcmp (splits[1], "scanner") == 0)
         {
           /* A scanner preference.  Remove type decoration from name. */
 
           g_free (quoted_name);
-          quoted_name = sql_quote (name + type_end + 2);
+          quoted_name = sql_quote (splits[2]);
         }
     }
+  g_strfreev (splits);
 
   quoted_value = sql_quote ((gchar*) value);
   g_free (value);
@@ -40774,9 +41030,22 @@ manage_nvt_preference_add (const char* name, const char* value)
   gchar* quoted_value = sql_quote (value);
 
   if (strcmp (name, "port_range"))
-    sql ("INSERT into nvt_preferences (name, value)"
-         " VALUES ('%s', '%s');",
-         quoted_name, quoted_value);
+    {
+      if (sql_int ("SELECT EXISTS"
+                   "  (SELECT * FROM nvt_preferences"
+                   "   WHERE name = '%s')",
+                   quoted_name))
+        {
+          g_warning ("%s: preference '%s' already exists",
+                     __FUNCTION__, name);
+        }
+      else
+        {
+          sql ("INSERT into nvt_preferences (name, value)"
+               " VALUES ('%s', '%s');",
+               quoted_name, quoted_value);
+        }
+    }
 
   g_free (quoted_name);
   g_free (quoted_value);
@@ -40799,33 +41068,33 @@ manage_nvt_preferences_enable ()
  * @brief Initialise an NVT preference iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  name      Name of NVT, NULL for all preferences.
+ * @param[in]  oid       OID of NVT, NULL for all preferences.
  */
 void
-init_nvt_preference_iterator (iterator_t* iterator, const char *name)
+init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
 {
-  if (name)
+  if (oid)
     {
-      gchar *quoted_name = sql_quote (name);
+      gchar *quoted_oid = sql_quote (oid);
       init_iterator (iterator,
                      "SELECT name, value FROM nvt_preferences"
-                     " WHERE name %s '%s[%%'"
+                     " WHERE name %s '%s:%%'"
                      " AND name != 'cache_folder'"
                      " AND name != 'include_folders'"
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name != '%s[entry]:Timeout'"
+                     " AND name != '%s:entry:Timeout'"
                      " AND name NOT %s 'server_info_%%'"
                      /* Task preferences. */
                      " AND name != 'max_checks'"
                      " AND name != 'max_hosts'"
                      " ORDER BY name ASC",
                      sql_ilike_op (),
-                     quoted_name,
-                     quoted_name,
+                     quoted_oid,
+                     quoted_oid,
                      sql_ilike_op ());
-      g_free (quoted_name);
+      g_free (quoted_oid);
     }
   else
     init_iterator (iterator,
@@ -40835,7 +41104,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT %s '%%[entry]:Timeout'"
+                   " AND name NOT %s '%%:entry:Timeout'"
                    " AND name NOT %s 'server_info_%%'"
                    /* Task preferences. */
                    " AND name != 'max_checks'"
@@ -40876,19 +41145,16 @@ char*
 nvt_preference_iterator_real_name (iterator_t* iterator)
 {
   const char *ret;
+  char *real_name = NULL;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      int value_start = -1, value_end = -1, count;
-      /* LDAPsearch[entry]:Timeout value */
-      count = sscanf (ret, "%*[^[][%*[^]]]:%n%*[ -~]%n", &value_start, &value_end);
-      if (count == 0 && value_start > 0 && value_end > 0)
-        {
-          ret += value_start;
-          return g_strdup (ret);
-        }
-      return g_strdup (ret);
+      char **splits = g_strsplit (ret, ":", 3);
+      if (splits && g_strv_length (splits) == 3)
+        real_name = g_strdup (splits[2]);
+      g_strfreev (splits);
+      return real_name ?: g_strdup (ret);
     }
   return NULL;
 }
@@ -40904,18 +41170,16 @@ char*
 nvt_preference_iterator_type (iterator_t* iterator)
 {
   const char *ret;
+  char *type = NULL;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      int type_start = -1, type_end = -1, count;
-      count = sscanf (ret, "%*[^[][%n%*[^]]%n]:", &type_start, &type_end);
-      if (count == 0 && type_start > 0 && type_end > 0)
-        {
-          ret += type_start;
-          return g_strndup (ret, type_end - type_start);
-        }
-      return NULL;
+      char **splits = g_strsplit (ret, ":", 3);
+      if (splits && g_strv_length (splits) == 3)
+        type = g_strdup (splits[1]);
+      g_strfreev (splits);
+      return type ?: NULL;
     }
   return NULL;
 }
@@ -40928,20 +41192,19 @@ nvt_preference_iterator_type (iterator_t* iterator)
  * @return NVT.
  */
 char*
-nvt_preference_iterator_nvt (iterator_t* iterator)
+nvt_preference_iterator_oid (iterator_t* iterator)
 {
   const char *ret;
+  char *oid = NULL;
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      int type_start = -1, count;
-      count = sscanf (ret, "%*[^[]%n[%*[^]]]:", &type_start);
-      if (count == 0 && type_start > 0)
-        {
-          return g_strndup (ret, type_start);
-        }
-      return NULL;
+      char **splits = g_strsplit (ret, ":", 3);
+      if (splits && g_strv_length (splits) == 3)
+        oid = g_strdup (splits[0]);
+      g_strfreev (splits);
+      return oid ?: NULL;
     }
   return NULL;
 }
@@ -40991,7 +41254,7 @@ nvt_preference_count (const char *name)
 {
   gchar *quoted_name = sql_quote (name);
   int ret = sql_int ("SELECT COUNT(*) FROM nvt_preferences"
-                     " WHERE name != '%s[entry]:Timeout'"
+                     " WHERE name != '%s:entry:Timeout'"
                      "   AND name %s '%s[%%';",
                      quoted_name,
                      sql_ilike_op (),
@@ -68043,6 +68306,42 @@ DEF_ACCESS (resource_tag_iterator_value, 3);
 DEF_ACCESS (resource_tag_iterator_comment, 4);
 
 /**
+ * @brief Check if there are tags attached to a resource.
+ *
+ * @param[in]  type         Resource type.
+ * @param[in]  resource     Resource.
+ * @param[in]  active_only  Whether to count only active tags.
+ *
+ * @return 1 if resource has tags, else 0.
+ */
+int
+resource_tag_exists (const char* type, resource_t resource, int active_only)
+{
+  int ret;
+
+  assert (type);
+  assert (resource);
+
+  ret = sql_int ("SELECT EXISTS (SELECT *"
+                 "               FROM tags"
+                 "               WHERE resource_type = '%s'"
+                 "               AND EXISTS"
+                 "                   (SELECT * FROM tag_resources"
+                 "                    WHERE tag = tags.id"
+                 "                    AND resource = %llu"
+                 "                    AND resource_location = %d"
+                 "                    AND tags.resource_type"
+                 "                        = tag_resources.resource_type)"
+                 "               %s);",
+                 type,
+                 resource,
+                 LOCATION_TABLE,
+                 active_only ? "AND active=1": "");
+
+  return ret;
+}
+
+/**
  * @brief Count number of tags attached to a resource.
  *
  * @param[in]  type         Resource type.
@@ -68161,6 +68460,7 @@ type_select_columns (const char *type)
   static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
   static column_t result_columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t result_columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   static column_t vuln_columns[] = VULN_ITERATOR_COLUMNS;
   static column_t host_columns[] = HOST_ITERATOR_COLUMNS;
   static column_t os_columns[] = OS_ITERATOR_COLUMNS;
@@ -68182,7 +68482,11 @@ type_select_columns (const char *type)
   else if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
   else if (strcasecmp (type, "RESULT") == 0)
-    return result_columns;
+    {
+      if (manage_cert_loaded ())
+        return result_columns;
+      return result_columns_no_cert;
+    }
   else if (strcasecmp (type, "VULN") == 0)
     return vuln_columns;
   else if (strcasecmp (type, "HOST") == 0)

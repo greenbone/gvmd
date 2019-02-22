@@ -15531,7 +15531,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <get_preferences_response status="200" status_text="OK">
           <preference>
-            <name>Services[entry]:Network connection timeout :</name>
+            <name>1.3.6.1.4.1.25623.1.0.10330:entry:Network connection timeout :</name>
             <value>5</value>
           </preference>
           <truncated>...</truncated>
@@ -15547,7 +15547,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <get_preferences_response status="200" status_text="OK">
           <preference>
-            <name>Services[entry]:Network connection timeout :</name>
+            <name>1.3.6.1.4.1.25623.1.0.10330:entry:Network connection timeout :</name>
             <value>5</value>
             <default>5</default>
           </preference>
@@ -15970,6 +15970,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>overrides_details</name>
         <summary>If overrides are included, whether to include override details</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>result_tags</name>
+        <summary>Whether to include tags in the results</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
@@ -20591,9 +20596,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>report_count</e>
               <e>trend</e>
               <o><e>current_report</e></o>
-              <o><e>first_report</e></o>
               <o><e>last_report</e></o>
-              <o><e>second_last_report</e></o>
               <any><e>reports</e></any>
               <o><e>average_duration</e></o>
               <e>result_count</e>
@@ -21021,145 +21024,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
-          <name>first_report</name>
-          <pattern>
-            <e>report</e>
-          </pattern>
-          <ele>
-            <name>report</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>timestamp</e>
-              <e>scan_end</e>
-              <e>result_count</e>
-              <e>severity</e>
-            </pattern>
-            <ele>
-              <name>timestamp</name>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
-            <ele>
-              <name>scan_end</name>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
-            <ele>
-              <name>result_count</name>
-              <summary>Result counts for this report</summary>
-              <pattern>
-                <e>debug</e>
-                <e>false_positive</e>
-                <e>log</e>
-                <e>info</e>
-                <e>warning</e>
-                <e>hole</e>
-              </pattern>
-              <ele>
-                <name>debug</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>false_positive</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>log</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>info</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>warning</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>hole</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-            </ele>
-            <ele>
-              <name>severity</name>
-              <pattern><t>severity</t></pattern>
-              <summary>Maximum severity of the report</summary>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
           <name>last_report</name>
-          <pattern>
-            <e>report</e>
-          </pattern>
-          <ele>
-            <name>report</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>timestamp</e>
-              <e>scan_end</e>
-              <e>result_count</e>
-              <e>severity</e>
-            </pattern>
-            <ele>
-              <name>timestamp</name>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
-            <ele>
-              <name>scan_end</name>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
-            <ele>
-              <name>result_count</name>
-              <summary>Result counts for this report</summary>
-              <pattern>
-                <e>debug</e>
-                <e>false_positive</e>
-                <e>log</e>
-                <e>info</e>
-                <e>warning</e>
-                <e>hole</e>
-              </pattern>
-              <ele>
-                <name>debug</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>false_positive</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>log</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>info</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>warning</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>hole</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
-            </ele>
-            <ele>
-              <name>severity</name>
-              <pattern><t>severity</t></pattern>
-              <summary>Maximum severity of the report</summary>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>second_last_report</name>
           <pattern>
             <e>report</e>
           </pattern>
@@ -21498,19 +21363,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name></name>
               <next_time>over</next_time>
             </schedule>
-            <first_report>
-              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
-                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
-                <result_count>
-                  <debug>0</debug>
-                  <hole>0</hole>
-                  <info>7</info>
-                  <log>0</log>
-                  <warning>3</warning>
-                </result_count>
-                <severity>5.0</severity>
-              </report>
-            </first_report>
             <last_report>
               <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
@@ -21524,19 +21376,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <severity>5.0</severity>
               </report>
             </last_report>
-            <second_last_report>
-              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
-                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
-                <result_count>
-                  <debug>0</debug>
-                  <hole>0</hole>
-                  <info>7</info>
-                  <log>0</log>
-                  <warning>3</warning>
-                </result_count>
-                <severity>5.0</severity>
-              </report>
-            </second_last_report>
             <alert id="">
               <name></name>
             </alert>
@@ -21600,19 +21439,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name></name>
               <next_time>over</next_time>
             </schedule>
-            <first_report>
-              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
-                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
-                <result_count>
-                  <debug>0</debug>
-                  <hole>0</hole>
-                  <info>7</info>
-                  <log>0</log>
-                  <warning>3</warning>
-                </result_count>
-                <severity>5.0</severity>
-              </report>
-            </first_report>
             <last_report>
               <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
@@ -21626,19 +21452,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <severity>5.0</severity>
               </report>
             </last_report>
-            <second_last_report>
-              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
-                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
-                <result_count>
-                  <debug>0</debug>
-                  <hole>0</hole>
-                  <info>7</info>
-                  <log>0</log>
-                  <warning>3</warning>
-                </result_count>
-                <severity>5.0</severity>
-              </report>
-            </second_last_report>
             <alert id="">
               <name></name>
             </alert>
@@ -23960,7 +23773,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
           <preference>
             <nvt oid="1.3.6.1.4.1.25623.1.0.14259"></nvt>
-            <name>Nmap (NASL wrapper)[checkbox]:UDP port scan</name>
+            <name>1.3.6.1.4.1.25623.1.0.14259:checkbox:UDP port scan</name>
             <value>eWVz</value>
           </preference>
         </modify_config>
@@ -23975,7 +23788,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
           <preference>
-            <name>scanner[scanner]:vhosts</name>
+            <name>scanner:scanner:vhosts</name>
             <value>ZXhhbXBsZQ==</value>
           </preference>
         </modify_config>

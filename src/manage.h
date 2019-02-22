@@ -40,6 +40,47 @@
 #include <gvm/osp/osp.h>          /* for osp_connection_t */
 
 
+
+/**
+ * @brief OID of ping_host.nasl
+ */
+#define OID_PING_HOST "1.3.6.1.4.1.25623.1.0.100315"
+
+/**
+ * @brief OID of ssh_authorization_init.nasl
+ */
+#define OID_SSH_AUTH "1.3.6.1.4.1.25623.1.0.103591"
+
+/**
+ * @brief OID of smb_authorization.nasl
+ */
+#define OID_SMB_AUTH "1.3.6.1.4.1.25623.1.0.90023"
+
+/**
+ * @brief OID of gb_esxi_authorization.nasl
+ */
+#define OID_ESXI_AUTH "1.3.6.1.4.1.25623.1.0.105058"
+
+/**
+ * @brief OID of gb_snmp_authorization.nasl
+ */
+#define OID_SNMP_AUTH "1.3.6.1.4.1.25623.1.0.105076"
+
+/**
+ * @brief OID of find_services.nasl
+ */
+#define OID_SERVICES "1.3.6.1.4.1.25623.1.0.10330"
+
+/**
+ * @brief OID of logins.nasl
+ */
+#define OID_LOGINS "1.3.6.1.4.1.25623.1.0.10870"
+
+/**
+ * @brief OID of global_settings.nasl
+ */
+#define OID_GLOBAL_SETTINGS "1.3.6.1.4.1.25623.1.0.12288"
+
 /**
  * @brief Flag with all Glib log levels.
  */
@@ -1116,8 +1157,8 @@ int
 result_uuid (result_t, char **);
 
 int
-result_detection_reference (result_t, char **, char **, char **, char **,
-                            char **);
+result_detection_reference (result_t, report_t, const char *, const char *,
+                            char **, char **, char **, char **);
 
 /* Reports. */
 
@@ -1441,6 +1482,27 @@ result_iterator_hostname (iterator_t*);
 const char*
 result_iterator_date (iterator_t*);
 
+const char*
+result_iterator_detected_by_oid (iterator_t*);
+
+const char*
+result_iterator_asset_host_id (iterator_t*);
+
+int
+result_iterator_may_have_notes (iterator_t*);
+
+int
+result_iterator_may_have_overrides (iterator_t*);
+
+int
+result_iterator_may_have_tickets (iterator_t*);
+
+int
+result_iterator_has_cert_bunds (iterator_t*);
+
+int
+result_iterator_has_dfn_certs (iterator_t*);
+
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 
@@ -1475,7 +1537,7 @@ manage_report (report_t, report_t, const get_data_t *, report_format_t,
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
-                    int, int, int, int,
+                    int, int, int, int, int,
                     gboolean (*) (const char *,
                                   int (*) (const char*, void*),
                                   void*),
@@ -1880,7 +1942,7 @@ char *
 manage_nvt_name (nvt_t);
 
 char *
-nvt_oid (const char *);
+nvt_name (const char *);
 
 char*
 nvts_feed_version ();
@@ -2039,7 +2101,7 @@ char*
 nvt_preference_iterator_type (iterator_t*);
 
 char*
-nvt_preference_iterator_nvt (iterator_t*);
+nvt_preference_iterator_oid (iterator_t*);
 
 int
 nvt_preference_count (const char *);
@@ -4041,6 +4103,9 @@ resource_tag_iterator_value (iterator_t*);
 
 const char*
 resource_tag_iterator_comment (iterator_t*);
+
+int
+resource_tag_exists (const char*, resource_t, int);
 
 int
 resource_tag_count (const char*, resource_t, int);

@@ -15161,6 +15161,113 @@ migrate_204_to_205 ()
   return 0;
 }
 
+/**
+ * @brief Converts old NVT preferences to the new format.
+ *
+ * @param[in]  table_name  The name of the table to update.
+ */
+static void
+replace_preference_names_205_to_206 (const char *table_name)
+{
+  iterator_t preferences;
+
+  init_iterator (&preferences,
+                 "SELECT id, name"
+                 " FROM \"%s\""
+                 " WHERE name LIKE '%%[%%]:%%';",
+                 table_name);
+
+  while (next (&preferences))
+    {
+      resource_t rowid;
+      const char *old_name;
+      char *start, *end;
+      gchar *nvt_name, *type, *preference;
+      char *oid, *new_name, *quoted_nvt_name, *quoted_new_name;
+
+      rowid = iterator_int64 (&preferences, 0);
+      old_name = iterator_string (&preferences, 1);
+
+      // Text before first "["
+      end = strstr (old_name, "[");
+      nvt_name = g_strndup (old_name, end - old_name);
+      // Text between first "[" and first "]"
+      start = end + 1;
+      end = strstr (start, "]");
+      type = g_strndup (start, end - start);
+      // Text after first ":" after first "]"
+      start = strstr (end, ":") + 1;
+      preference = g_strdup (start);
+
+      // Find OID:
+      quoted_nvt_name = sql_quote (nvt_name);
+      oid = sql_string ("SELECT oid FROM nvts WHERE name = '%s';",
+                        quoted_nvt_name);
+
+      // Update
+      if (oid)
+        {
+          new_name = g_strdup_printf ("%s:%s:%s", oid, type, preference);
+          quoted_new_name = sql_quote (new_name);
+          sql ("UPDATE \"%s\" SET name = '%s' WHERE id = %llu",
+              table_name, quoted_new_name, rowid);
+        }
+      else
+        {
+          new_name = NULL;
+          quoted_new_name = NULL;
+          g_warning ("No NVT named '%s' found", nvt_name);
+        }
+
+      g_free (nvt_name);
+      g_free (quoted_nvt_name);
+      g_free (type);
+      g_free (preference);
+      free (oid);
+      g_free (new_name);
+      g_free (quoted_new_name);
+    }
+  cleanup_iterator (&preferences);
+}
+
+/**
+ * @brief Migrate the database from version 205 to version 206.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_205_to_206 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 205. */
+
+  if (manage_db_version () != 205)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Change NVT preferences to new style */
+  replace_preference_names_205_to_206 ("nvt_preferences");
+
+  /* Change config preferences to new style */
+  replace_preference_names_205_to_206 ("config_preferences");
+
+  /* Change trash config preferences to new style */
+  replace_preference_names_205_to_206 ("config_preferences_trash");
+
+  /* Set the database version to 206. */
+
+  set_db_version (206);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15384,7 +15491,8 @@ static migrator_t database_migrators[]
     {202, migrate_201_to_202},
     {203, migrate_202_to_203},
     {204, migrate_203_to_204},
-    {205, migrate_204_to_205},
+    {205, migrate_204_to_205}, // v8.0: rev 205
+    {206, migrate_205_to_206},
     /* End marker. */
     {-1, NULL}};
 

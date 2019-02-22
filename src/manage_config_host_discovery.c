@@ -84,29 +84,24 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       "         '" OID_PING_HOST ":checkbox:Mark unrechable Hosts as dead (not scanning)',"
        "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Report about reachable Hosts',"
+       "         '" OID_PING_HOST ":checkbox:Report about reachable Hosts',"
        "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Report about unrechable Hosts',"
+       "         '" OID_PING_HOST ":checkbox:Report about unrechable Hosts',"
        "         'no');",
        config);
 }
-
-/**
- * @brief Preference name.
- */
-#define NAME "Global variable settings[checkbox]:Strictly unauthenticated"
 
 /**
  * @brief Ensure the Host Discovery config is up to date.
@@ -127,14 +122,14 @@ check_config_host_discovery (const char *uuid)
   if (sql_int ("SELECT count (*) FROM config_preferences"
                " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
                "       AND type = 'PLUGINS_PREFS'"
-               "       AND name = '" NAME "';",
+               "       AND name = '" OID_GLOBAL_SETTINGS ":checkbox:Strictly unauthenticated';",
                uuid)
       == 0)
     {
       sql ("INSERT INTO config_preferences (config, type, name, value)"
            " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
            "         'PLUGINS_PREFS',"
-           "         '" NAME "',"
+           "         '" OID_GLOBAL_SETTINGS ":checkbox:Strictly unauthenticated',"
            "         'yes');",
            uuid);
       update = 1;
