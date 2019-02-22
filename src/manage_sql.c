@@ -47311,7 +47311,11 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 /**
  * @brief Create the given scanner.
  *
- * @param[out]  host  Host
+ * @param[out]  host      Host.
+ * @param[out]  port      Port.
+ * @param[out]  ca_pub    CACert.
+ * @param[out]  key_pub   Public key.
+ * @param[out]  key_priv  Private key.
  *
  * @return 0 success, -1 error.
  */

@@ -1196,9 +1196,9 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
 /**
  * @brief Get CVE field from VT.
  *
- * @params[in]  vt_refs  VT refs.
- * @params[in]  type     Type to get.
- * @params[in]  empty    String to return if empty.
+ * @param[in]  vt_refs  VT refs.
+ * @param[in]  type     Type to get.
+ * @param[in]  empty    String to return if empty.
  *
  * @return Freshly allocated string for ref field, or NULL on error.
  */
@@ -1260,7 +1260,7 @@ get_ref (entity_t vt_refs, const gchar *type, const gchar *empty)
 /**
  * @brief Get CVE field from VT.
  *
- * @params[in]  vt_refs  VT refs.
+ * @param[in]  vt_refs  VT refs.
  *
  * @return Freshly allocated string for CVE field, or NULL on error.
  */
@@ -1273,7 +1273,7 @@ get_cve (entity_t vt_refs)
 /**
  * @brief Get BID field from VT.
  *
- * @params[in]  vt_refs  VT refs.
+ * @param[in]  vt_refs  VT refs.
  *
  * @return Freshly allocated string for BID field, or NULL on error.
  */
@@ -1286,7 +1286,7 @@ get_bid (entity_t vt_refs)
 /**
  * @brief Get XREF field from VT.
  *
- * @params[in]  vt_refs  VT refs.
+ * @param[in]  vt_refs  VT refs.
  *
  * @return Freshly allocated string for XREF field, or NULL on error.
  */
@@ -1341,7 +1341,7 @@ get_xref (entity_t vt_refs)
 /**
  * @brief Get tag field from VT.
  *
- * @params[in]  vt_refs  VT refs.
+ * @param[in]  vt  VT.
  *
  * @return Freshly allocated string for tag field, or NULL on error.
  */
@@ -1453,8 +1453,8 @@ get_tag (entity_t vt)
 /**
  * @brief Update NVTs from VTs XML.
  *
- * @params[in]  get_vts_response      OSP GET_VTS response.
- * @params[in]  scanner_feed_version  Version of feed from scanner.
+ * @param[in]  get_vts_response      OSP GET_VTS response.
+ * @param[in]  scanner_feed_version  Version of feed from scanner.
  */
 static void
 update_nvts_from_vts (entity_t *get_vts_response,
