@@ -92,26 +92,36 @@ create_ssh_key (const char *comment, const char *passphrase,
   g_free (dir);
 
   /* Spawn ssh-keygen. */
-  command = g_strconcat ("ssh-keygen -t rsa -f ", privpath, " -C \"", comment,
-                         "\" -P \"", passphrase, "\"", NULL);
+  command = g_strconcat ("ssh-keygen -t rsa -f ",
+                         privpath,
+                         " -C \"",
+                         comment,
+                         "\" -P \"",
+                         passphrase,
+                         "\"",
+                         NULL);
   g_debug ("command: ssh-keygen -t rsa -f %s -C \"%s\" -P \"********\"",
-           privpath, comment);
+           privpath,
+           comment);
 
-  if ((g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status,
-                                  &err)
+  if ((g_spawn_command_line_sync (
+         command, &astdout, &astderr, &exit_status, &err)
        == FALSE)
       || (WIFEXITED (exit_status) == 0) || WEXITSTATUS (exit_status))
     {
       if (err)
         {
-          g_warning ("%s: failed to create private key: %s", __FUNCTION__,
-                     err->message);
+          g_warning (
+            "%s: failed to create private key: %s", __FUNCTION__, err->message);
           g_error_free (err);
         }
       else
         g_warning ("%s: failed to create private key", __FUNCTION__);
-      g_debug ("%s: key-gen failed with %d (WIF %i, WEX %i).\n", __FUNCTION__,
-               exit_status, WIFEXITED (exit_status), WEXITSTATUS (exit_status));
+      g_debug ("%s: key-gen failed with %d (WIF %i, WEX %i).\n",
+               __FUNCTION__,
+               exit_status,
+               WIFEXITED (exit_status),
+               WEXITSTATUS (exit_status));
       g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
       g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
       g_free (command);
@@ -206,8 +216,10 @@ lsc_user_rpm_create (const gchar *username, const gchar *public_key_path,
   new_pubkey_filename = g_build_filename (tmpdir, pubkey_basename, NULL);
   if (gvm_file_copy (public_key_path, new_pubkey_filename) == FALSE)
     {
-      g_warning ("%s: failed to copy key file %s to %s", __FUNCTION__,
-                 public_key_path, new_pubkey_filename);
+      g_warning ("%s: failed to copy key file %s to %s",
+                 __FUNCTION__,
+                 public_key_path,
+                 new_pubkey_filename);
       g_free (pubkey_basename);
       g_free (new_pubkey_filename);
       return FALSE;
@@ -224,16 +236,31 @@ lsc_user_rpm_create (const gchar *username, const gchar *public_key_path,
   cmd[3] = g_strdup (tmpdir);
   cmd[4] = g_strdup (to_filename);
   cmd[5] = NULL;
-  g_debug ("%s: Spawning in %s: %s %s %s %s %s", __FUNCTION__, tmpdir, cmd[0],
-           cmd[1], cmd[2], cmd[3], cmd[4]);
-  if ((g_spawn_sync (tmpdir, cmd, NULL,         /* Environment. */
-                     G_SPAWN_SEARCH_PATH, NULL, /* Setup function. */
-                     NULL, &standard_out, &standard_err, &exit_status, NULL)
+  g_debug ("%s: Spawning in %s: %s %s %s %s %s",
+           __FUNCTION__,
+           tmpdir,
+           cmd[0],
+           cmd[1],
+           cmd[2],
+           cmd[3],
+           cmd[4]);
+  if ((g_spawn_sync (tmpdir,
+                     cmd,
+                     NULL, /* Environment. */
+                     G_SPAWN_SEARCH_PATH,
+                     NULL, /* Setup function. */
+                     NULL,
+                     &standard_out,
+                     &standard_err,
+                     &exit_status,
+                     NULL)
        == FALSE)
       || (WIFEXITED (exit_status) == 0) || WEXITSTATUS (exit_status))
     {
       g_warning ("%s: failed to create the rpm: %d (WIF %i, WEX %i)",
-                 __FUNCTION__, exit_status, WIFEXITED (exit_status),
+                 __FUNCTION__,
+                 exit_status,
+                 WIFEXITED (exit_status),
                  WEXITSTATUS (exit_status));
       g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
       g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
@@ -255,8 +282,8 @@ lsc_user_rpm_create (const gchar *username, const gchar *public_key_path,
 
   if (gvm_file_remove_recurse (tmpdir) != 0 && success == TRUE)
     {
-      g_warning ("%s: failed to remove temporary directory %s", __FUNCTION__,
-                 tmpdir);
+      g_warning (
+        "%s: failed to remove temporary directory %s", __FUNCTION__, tmpdir);
       success = FALSE;
     }
 
@@ -292,8 +319,8 @@ lsc_user_rpm_recreate (const gchar *name, const char *public_key, void **rpm,
 
   error = NULL;
   public_key_path = g_build_filename (key_dir, "key.pub", NULL);
-  g_file_set_contents (public_key_path, public_key, strlen (public_key),
-                       &error);
+  g_file_set_contents (
+    public_key_path, public_key, strlen (public_key), &error);
   if (error)
     goto free_exit;
 
@@ -377,8 +404,10 @@ lsc_user_deb_create (const gchar *username, const gchar *public_key_path,
   new_pubkey_filename = g_build_filename (tmpdir, pubkey_basename, NULL);
   if (gvm_file_copy (public_key_path, new_pubkey_filename) == FALSE)
     {
-      g_warning ("%s: failed to copy key file %s to %s", __FUNCTION__,
-                 public_key_path, new_pubkey_filename);
+      g_warning ("%s: failed to copy key file %s to %s",
+                 __FUNCTION__,
+                 public_key_path,
+                 new_pubkey_filename);
       g_free (pubkey_basename);
       g_free (new_pubkey_filename);
       return FALSE;
@@ -396,16 +425,32 @@ lsc_user_deb_create (const gchar *username, const gchar *public_key_path,
   cmd[4] = g_strdup (to_filename);
   cmd[5] = g_strdup (maintainer);
   cmd[6] = NULL;
-  g_debug ("%s: Spawning in %s: %s %s %s %s %s %s", __FUNCTION__, tmpdir,
-           cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5]);
-  if ((g_spawn_sync (tmpdir, cmd, NULL,         /* Environment. */
-                     G_SPAWN_SEARCH_PATH, NULL, /* Setup function. */
-                     NULL, &standard_out, &standard_err, &exit_status, NULL)
+  g_debug ("%s: Spawning in %s: %s %s %s %s %s %s",
+           __FUNCTION__,
+           tmpdir,
+           cmd[0],
+           cmd[1],
+           cmd[2],
+           cmd[3],
+           cmd[4],
+           cmd[5]);
+  if ((g_spawn_sync (tmpdir,
+                     cmd,
+                     NULL, /* Environment. */
+                     G_SPAWN_SEARCH_PATH,
+                     NULL, /* Setup function. */
+                     NULL,
+                     &standard_out,
+                     &standard_err,
+                     &exit_status,
+                     NULL)
        == FALSE)
       || (WIFEXITED (exit_status) == 0) || WEXITSTATUS (exit_status))
     {
       g_warning ("%s: failed to create the deb: %d (WIF %i, WEX %i)",
-                 __FUNCTION__, exit_status, WIFEXITED (exit_status),
+                 __FUNCTION__,
+                 exit_status,
+                 WIFEXITED (exit_status),
                  WEXITSTATUS (exit_status));
       g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
       g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
@@ -428,8 +473,8 @@ lsc_user_deb_create (const gchar *username, const gchar *public_key_path,
 
   if (gvm_file_remove_recurse (tmpdir) != 0 && success == TRUE)
     {
-      g_warning ("%s: failed to remove temporary directory %s", __FUNCTION__,
-                 tmpdir);
+      g_warning (
+        "%s: failed to remove temporary directory %s", __FUNCTION__, tmpdir);
       success = FALSE;
     }
 
@@ -466,8 +511,8 @@ lsc_user_deb_recreate (const gchar *name, const char *public_key,
 
   error = NULL;
   public_key_path = g_build_filename (key_dir, "key.pub", NULL);
-  g_file_set_contents (public_key_path, public_key, strlen (public_key),
-                       &error);
+  g_file_set_contents (
+    public_key_path, public_key, strlen (public_key), &error);
   if (error)
     goto free_exit;
 
@@ -559,38 +604,45 @@ create_nsis_script (const gchar *script_name, const gchar *package_name,
   fprintf (fd, "setOutPath $INSTDIR\n\n");
 
   fprintf (fd, "# Uninstaller name\n");
-  fprintf (fd, "writeUninstaller $INSTDIR\\openvas_lsc_remove_%s.exe\n\n",
-           user_name);
+  fprintf (
+    fd, "writeUninstaller $INSTDIR\\openvas_lsc_remove_%s.exe\n\n", user_name);
 
   // Need to find localized Administrators group name, create a
   // GetAdminGroupName - vb script (Thanks to Thomas Rotter)
   fprintf (fd, "# Create Thomas Rotters GetAdminGroupName.vb script\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Set objWMIService = "
-               "GetObject($\\\"winmgmts:\\\\.\\root\\cimv2$\\\") > "
-               "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" \"\n");
+  fprintf (fd,
+           "ExecWait \"cmd /C Echo Set objWMIService = "
+           "GetObject($\\\"winmgmts:\\\\.\\root\\cimv2$\\\") > "
+           "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" \"\n");
   fprintf (fd,
            "ExecWait \"cmd /C Echo Set colAccounts = objWMIService.ExecQuery "
            "($\\\"Select * From Win32_Group Where SID = 'S-1-5-32-544'$\\\")  "
            ">> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo For Each objAccount in colAccounts >> "
-               "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Wscript.Echo objAccount.Name >> "
-               "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Next >> "
-               "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C cscript //nologo "
-               "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" > "
-               "$\\\"%%temp%%\\AdminGroupName.txt$\\\"\"\n\n");
+  fprintf (fd,
+           "ExecWait \"cmd /C Echo For Each objAccount in colAccounts >> "
+           "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
+  fprintf (fd,
+           "ExecWait \"cmd /C Echo Wscript.Echo objAccount.Name >> "
+           "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
+  fprintf (fd,
+           "ExecWait \"cmd /C Echo Next >> "
+           "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
+  fprintf (fd,
+           "ExecWait \"cmd /C cscript //nologo "
+           "$\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" > "
+           "$\\\"%%temp%%\\AdminGroupName.txt$\\\"\"\n\n");
 
   /** @todo provide /comment:"GVM User" /fullname:"GVM Testuser" */
   fprintf (fd, "# Create batch script that installs the user\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Set /P AdminGroupName= "
-               "^<$\\\"%%temp%%\\AdminGroupName.txt$\\\" > "
-               "$\\\"%%temp%%\\AddUser.bat$\\\"\" \n");
+  fprintf (fd,
+           "ExecWait \"cmd /C Echo Set /P AdminGroupName= "
+           "^<$\\\"%%temp%%\\AdminGroupName.txt$\\\" > "
+           "$\\\"%%temp%%\\AddUser.bat$\\\"\" \n");
   fprintf (fd,
            "ExecWait \"cmd /C Echo net user %s %s /add /active:yes >> "
            "$\\\"%%temp%%\\AddUser.bat$\\\"\"\n",
-           user_name, password);
+           user_name,
+           password);
   fprintf (fd,
            "ExecWait \"cmd /C Echo net localgroup %%AdminGroupName%% "
            "%%COMPUTERNAME%%\\%s /add >> $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n",
@@ -609,8 +661,9 @@ create_nsis_script (const gchar *script_name, const gchar *package_name,
   /** @todo Display note about NTLM and SMB signing and encryption, 'Easy
    * Filesharing' in WIN XP */
   fprintf (fd, "# Display message that everything seems to be fine\n");
-  fprintf (fd, "messageBox MB_OK \"A user has been added. An uninstaller is "
-               "placed on your Desktop.\"\n\n");
+  fprintf (fd,
+           "messageBox MB_OK \"A user has been added. An uninstaller is "
+           "placed on your Desktop.\"\n\n");
 
   fprintf (fd, "# Default (install) section end\n");
   fprintf (fd, "sectionEnd\n\n");
@@ -627,8 +680,9 @@ create_nsis_script (const gchar *script_name, const gchar *package_name,
            "# Unistaller should remove itself (from desktop/installdir)\n\n");
 
   fprintf (fd, "# Display message that everything seems to be fine\n");
-  fprintf (fd, "messageBox MB_OK \"A user has been removed. You can now safely "
-               "remove the uninstaller from your Desktop.\"\n\n");
+  fprintf (fd,
+           "messageBox MB_OK \"A user has been removed. You can now safely "
+           "remove the uninstaller from your Desktop.\"\n\n");
 
   fprintf (fd, "# Uninstaller section end\n");
   fprintf (fd, "sectionEnd\n\n");
@@ -665,14 +719,23 @@ execute_makensis (const gchar *nsis_script)
   cmd[2] = NULL;
   g_debug ("--- executing makensis");
   g_debug ("%s: Spawning in %s: %s %s", __FUNCTION__, dirname, cmd[0], cmd[1]);
-  if ((g_spawn_sync (dirname, cmd, NULL,        /* Environment. */
-                     G_SPAWN_SEARCH_PATH, NULL, /* Setup func. */
-                     NULL, &standard_out, &standard_err, &exit_status, NULL)
+  if ((g_spawn_sync (dirname,
+                     cmd,
+                     NULL, /* Environment. */
+                     G_SPAWN_SEARCH_PATH,
+                     NULL, /* Setup func. */
+                     NULL,
+                     &standard_out,
+                     &standard_err,
+                     &exit_status,
+                     NULL)
        == FALSE)
       || (WIFEXITED (exit_status) == 0) || WEXITSTATUS (exit_status))
     {
       g_warning ("%s: failed to create the exe: %d (WIF %i, WEX %i)",
-                 __FUNCTION__, exit_status, WIFEXITED (exit_status),
+                 __FUNCTION__,
+                 exit_status,
+                 WIFEXITED (exit_status),
                  WEXITSTATUS (exit_status));
       g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
       g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);

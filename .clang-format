@@ -13,7 +13,7 @@ AllowShortIfStatementsOnASingleLine: 'false'
 AllowShortLoopsOnASingleLine: 'false'
 AlwaysBreakAfterReturnType: All
 AlwaysBreakBeforeMultilineStrings: 'false'
-BinPackArguments: 'true'
+BinPackArguments: 'false'
 BinPackParameters: 'true'
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: GNU

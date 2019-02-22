@@ -419,11 +419,14 @@ next_time (time_t first, int period, int period_months, int byday,
        * Simply: the next possible time on a daily schedule. */
       next_day_multiple = now + (SECS_PER_DAY - ((now - first) % SECS_PER_DAY));
 
-      g_debug ("%s: next_day_multiple: %lli", __FUNCTION__,
+      g_debug ("%s: next_day_multiple: %lli",
+               __FUNCTION__,
                (long long) next_day_multiple);
-      g_debug ("%s: day_of_week (next_day_multiple): %i", __FUNCTION__,
+      g_debug ("%s: day_of_week (next_day_multiple): %i",
+               __FUNCTION__,
                day_of_week (next_day_multiple));
-      g_debug ("%s: next_day (^, byday): %i", __FUNCTION__,
+      g_debug ("%s: next_day (^, byday): %i",
+               __FUNCTION__,
                next_day (day_of_week (next_day_multiple), byday));
 
       /* Return the next possible daily time, offset according the next day of
@@ -531,12 +534,12 @@ parse_time (const gchar *string, int *seconds)
                   == NULL)
                 {
                   memset (&tm, 0, sizeof (struct tm));
-                  if (strptime ((char *) string, "$Date: %a %b %d %T %Y %z",
-                                &tm)
+                  if (strptime (
+                        (char *) string, "$Date: %a %b %d %T %Y %z", &tm)
                       == NULL)
                     {
-                      g_warning ("%s: Failed to parse time: %s", __FUNCTION__,
-                                 string);
+                      g_warning (
+                        "%s: Failed to parse time: %s", __FUNCTION__, string);
                       return -1;
                     }
                 }
@@ -554,21 +557,23 @@ parse_time (const gchar *string, int *seconds)
 
   if ((sscanf ((char *) string, "%*u-%*u-%*u %*u:%*u:%*u %d%*[^]]", &offset)
        != 1)
-      && (sscanf ((char *) string, "$Date: %*u-%*u-%*u %*u:%*u:%*u %d%*[^]]",
-                  &offset)
+      && (sscanf (
+            (char *) string, "$Date: %*u-%*u-%*u %*u:%*u:%*u %d%*[^]]", &offset)
           != 1)
-      && (sscanf ((char *) string, "%*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
+      && (sscanf (
+            (char *) string, "%*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]", &offset)
+          != 1)
+      && (sscanf ((char *) string,
+                  "$Date: %*s %*s %*s %*u %*u:%*u:%*u %d%*[^]]",
                   &offset)
           != 1)
       && (sscanf ((char *) string,
-                  "$Date: %*s %*s %*s %*u %*u:%*u:%*u %d%*[^]]", &offset)
-          != 1)
-      && (sscanf ((char *) string,
-                  "$Date: %*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]", &offset)
+                  "$Date: %*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
+                  &offset)
           != 1))
     {
-      g_warning ("%s: Failed to parse timezone offset: %s", __FUNCTION__,
-                 string);
+      g_warning (
+        "%s: Failed to parse timezone offset: %s", __FUNCTION__, string);
       return -3;
     }
 
@@ -1192,8 +1197,8 @@ icalendar_from_string (const char *ical_string, gchar **error)
               //  following ones.
               if (vevent_count == 0)
                 {
-                  new_vevent = icalendar_simplify_vevent (subcomp, tzids, error,
-                                                          warnings_buffer);
+                  new_vevent = icalendar_simplify_vevent (
+                    subcomp, tzids, error, warnings_buffer);
                   if (new_vevent == NULL)
                     ICAL_RETURN_ERROR (*error);
                   icalcomponent_add_component (ical_new, new_vevent);
@@ -1247,8 +1252,8 @@ icalendar_from_string (const char *ical_string, gchar **error)
       {
         icalcomponent *new_vevent;
 
-        new_vevent = icalendar_simplify_vevent (ical_parsed, tzids, error,
-                                                warnings_buffer);
+        new_vevent = icalendar_simplify_vevent (
+          ical_parsed, tzids, error, warnings_buffer);
         if (new_vevent == NULL)
           ICAL_RETURN_ERROR (*error);
         icalcomponent_add_component (ical_new, new_vevent);
@@ -1590,8 +1595,8 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
   next_time = recur_time;
 
   // Get time from RDATEs
-  rdates_time = icalendar_next_time_from_rdates (rdates, reference_time, tz,
-                                                 periods_offset);
+  rdates_time = icalendar_next_time_from_rdates (
+    rdates, reference_time, tz, periods_offset);
 
   // Select appropriate time as the RRULE time, compare it to the RDATEs time
   //  and return the appropriate time.
@@ -1710,8 +1715,8 @@ icalendar_next_time_from_string (const char *ical_string,
   icalcomponent *ical_parsed;
 
   ical_parsed = icalcomponent_new_from_string (ical_string);
-  next_time = icalendar_next_time_from_vcalendar (ical_parsed, default_tzid,
-                                                  periods_offset);
+  next_time = icalendar_next_time_from_vcalendar (
+    ical_parsed, default_tzid, periods_offset);
   icalcomponent_free (ical_parsed);
   return next_time;
 }

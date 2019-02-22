@@ -171,8 +171,16 @@ init_cpe_info_iterator (iterator_t *iterator, get_data_t *get, const char *name)
       g_free (get->filter);
       get->filter = NULL;
     }
-  ret = init_get_iterator (iterator, "cpe", get, columns, NULL, filter_columns,
-                           0, NULL, clause, FALSE);
+  ret = init_get_iterator (iterator,
+                           "cpe",
+                           get,
+                           columns,
+                           NULL,
+                           filter_columns,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
   g_free (clause);
   return ret;
 }
@@ -250,7 +258,8 @@ init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
                  "  WHERE cpe ="
                  "  (SELECT id FROM cpes WHERE name = '%s'))"
                  " ORDER BY %s %s;",
-                 quoted_cpe, sort_field ? sort_field : "cvss DESC, name",
+                 quoted_cpe,
+                 sort_field ? sort_field : "cvss DESC, name",
                  ascending ? "ASC" : "DESC");
   g_free (quoted_cpe);
 }
@@ -344,8 +353,16 @@ init_cve_info_iterator (iterator_t *iterator, get_data_t *get, const char *name)
       g_free (get->filter);
       get->filter = NULL;
     }
-  ret = init_get_iterator (iterator, "cve", get, columns, NULL, filter_columns,
-                           0, NULL, clause, FALSE);
+  ret = init_get_iterator (iterator,
+                           "cve",
+                           get,
+                           columns,
+                           NULL,
+                           filter_columns,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
   g_free (clause);
   return ret;
 }
@@ -481,8 +498,16 @@ init_ovaldef_info_iterator (iterator_t *iterator, get_data_t *get,
       g_free (get->filter);
       get->filter = NULL;
     }
-  ret = init_get_iterator (iterator, "ovaldef", get, columns, NULL,
-                           filter_columns, 0, NULL, clause, FALSE);
+  ret = init_get_iterator (iterator,
+                           "ovaldef",
+                           get,
+                           columns,
+                           NULL,
+                           filter_columns,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
   g_free (clause);
   return ret;
 }
@@ -635,7 +660,8 @@ ovaldef_uuid (const char *name, const char *fname)
   quoted_fname = sql_quote (fname);
   ret = sql_string ("SELECT uuid FROM ovaldefs WHERE name = '%s'"
                     " AND xml_file = '%s';",
-                    name, fname);
+                    name,
+                    fname);
   g_free (quoted_name);
   g_free (quoted_fname);
   return ret;
@@ -709,8 +735,8 @@ ovaldef_cves (const char *id)
   while (next (&iterator))
     {
       char *tmp = ret;
-      ret = g_strdup_printf ("%s%s%s", ret ?: "", ret ? ", " : "",
-                             iterator_string (&iterator, 0));
+      ret = g_strdup_printf (
+        "%s%s%s", ret ?: "", ret ? ", " : "", iterator_string (&iterator, 0));
       g_free (tmp);
     }
   cleanup_iterator (&iterator);
@@ -757,8 +783,16 @@ init_cert_bund_adv_info_iterator (iterator_t *iterator, get_data_t *get,
       g_free (get->filter);
       get->filter = NULL;
     }
-  ret = init_get_iterator (iterator, "cert_bund_adv", get, columns, NULL,
-                           filter_columns, 0, NULL, clause, FALSE);
+  ret = init_get_iterator (iterator,
+                           "cert_bund_adv",
+                           get,
+                           columns,
+                           NULL,
+                           filter_columns,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
   g_free (clause);
   return ret;
 }
@@ -776,8 +810,8 @@ cert_bund_adv_info_count (const get_data_t *get)
   static const char *filter_columns[] =
     CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
-  return count ("cert_bund_adv", get, columns, NULL, filter_columns, 0, 0, 0,
-                FALSE);
+  return count (
+    "cert_bund_adv", get, columns, NULL, filter_columns, 0, 0, 0, FALSE);
 }
 
 /**
@@ -850,7 +884,9 @@ init_cve_cert_bund_adv_iterator (iterator_t *iterator, const char *cve,
                  " WHERE id IN (SELECT adv_id FROM cert_bund_cves"
                  "              WHERE cve_name = '%s')"
                  " ORDER BY %s %s;",
-                 columns, cve, sort_field ? sort_field : "name",
+                 columns,
+                 cve,
+                 sort_field ? sort_field : "name",
                  ascending ? "ASC" : "DESC");
   g_free (columns);
 }
@@ -881,7 +917,9 @@ init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid,
                  "                                 FROM nvt_cves"
                  "                                 WHERE oid = '%s'))"
                  " ORDER BY %s %s;",
-                 columns, oid, sort_field ? sort_field : "name",
+                 columns,
+                 oid,
+                 sort_field ? sort_field : "name",
                  ascending ? "ASC" : "DESC");
   g_free (columns);
 }
@@ -926,8 +964,16 @@ init_dfn_cert_adv_info_iterator (iterator_t *iterator, get_data_t *get,
       g_free (get->filter);
       get->filter = NULL;
     }
-  ret = init_get_iterator (iterator, "dfn_cert_adv", get, columns, NULL,
-                           filter_columns, 0, NULL, clause, FALSE);
+  ret = init_get_iterator (iterator,
+                           "dfn_cert_adv",
+                           get,
+                           columns,
+                           NULL,
+                           filter_columns,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
   g_free (clause);
   return ret;
 }
@@ -945,8 +991,8 @@ dfn_cert_adv_info_count (const get_data_t *get)
   static const char *filter_columns[] =
     DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
-  return count ("dfn_cert_adv", get, columns, NULL, filter_columns, 0, 0, 0,
-                FALSE);
+  return count (
+    "dfn_cert_adv", get, columns, NULL, filter_columns, 0, 0, 0, FALSE);
 }
 
 /**
@@ -1017,7 +1063,9 @@ init_cve_dfn_cert_adv_iterator (iterator_t *iterator, const char *cve,
                  " WHERE id IN (SELECT adv_id FROM dfn_cert_cves"
                  "              WHERE cve_name = '%s')"
                  " ORDER BY %s %s;",
-                 columns, cve, sort_field ? sort_field : "name",
+                 columns,
+                 cve,
+                 sort_field ? sort_field : "name",
                  ascending ? "ASC" : "DESC");
   g_free (columns);
 }
@@ -1048,7 +1096,9 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
                  "                                 FROM nvt_cves"
                  "                                 WHERE oid = '%s'))"
                  " ORDER BY %s %s;",
-                 columns, oid, sort_field ? sort_field : "name",
+                 columns,
+                 oid,
+                 sort_field ? sort_field : "name",
                  ascending ? "ASC" : "DESC");
   g_free (columns);
 }
@@ -1096,9 +1146,17 @@ total_info_count (const get_data_t *get, int filtered)
       else
         filter = NULL;
 
-      clause = filter_clause ("allinfo", filter ? filter : get->filter,
-                              filter_columns, select_columns, NULL, get->trash,
-                              NULL, NULL, NULL, NULL, NULL);
+      clause = filter_clause ("allinfo",
+                              filter ? filter : get->filter,
+                              filter_columns,
+                              select_columns,
+                              NULL,
+                              get->trash,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL);
       if (clause)
         return sql_int (
           "SELECT count (id) FROM" ALL_INFO_UNION_COLUMNS " WHERE %s;", clause);
@@ -1155,9 +1213,17 @@ init_all_info_iterator (iterator_t *iterator, get_data_t *get, const char *name)
   else
     filter = NULL;
 
-  clause = filter_clause ("allinfo", filter ? filter : get->filter,
-                          filter_columns, select_columns, NULL, get->trash,
-                          &order, &first, &max, NULL, NULL);
+  clause = filter_clause ("allinfo",
+                          filter ? filter : get->filter,
+                          filter_columns,
+                          select_columns,
+                          NULL,
+                          get->trash,
+                          &order,
+                          &first,
+                          &max,
+                          NULL,
+                          NULL);
   columns = columns_build_select (select_columns);
 
   subselect_limit_clause =
@@ -1166,46 +1232,110 @@ init_all_info_iterator (iterator_t *iterator, get_data_t *get, const char *name)
   limit_clause =
     g_strdup_printf ("LIMIT %s OFFSET %i", sql_select_limit (max), first);
 
-  cve_clause = filter_clause ("cve", filter ? filter : get->filter,
-                              filter_columns, cve_select_columns, NULL,
-                              get->trash, &cve_order, NULL, NULL, NULL, NULL);
-  cpe_clause = filter_clause ("cpe", filter ? filter : get->filter,
-                              filter_columns, cpe_select_columns, NULL,
-                              get->trash, &cpe_order, NULL, NULL, NULL, NULL);
-  nvt_clause = filter_clause ("nvt", filter ? filter : get->filter,
-                              filter_columns, nvt_select_columns, NULL,
-                              get->trash, &nvt_order, NULL, NULL, NULL, NULL);
-  cert_clause = filter_clause ("cert_bund_adv", filter ? filter : get->filter,
-                               filter_columns, cert_select_columns, NULL,
-                               get->trash, &cert_order, NULL, NULL, NULL, NULL);
-  dfn_clause = filter_clause ("dfn_cert_adv", filter ? filter : get->filter,
-                              filter_columns, dfn_select_columns, NULL,
-                              get->trash, &dfn_order, NULL, NULL, NULL, NULL);
-  ovaldef_clause =
-    filter_clause ("ovaldef", filter ? filter : get->filter, filter_columns,
-                   ovaldef_select_columns, NULL, get->trash, &ovaldef_order,
-                   NULL, NULL, NULL, NULL);
+  cve_clause = filter_clause ("cve",
+                              filter ? filter : get->filter,
+                              filter_columns,
+                              cve_select_columns,
+                              NULL,
+                              get->trash,
+                              &cve_order,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL);
+  cpe_clause = filter_clause ("cpe",
+                              filter ? filter : get->filter,
+                              filter_columns,
+                              cpe_select_columns,
+                              NULL,
+                              get->trash,
+                              &cpe_order,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL);
+  nvt_clause = filter_clause ("nvt",
+                              filter ? filter : get->filter,
+                              filter_columns,
+                              nvt_select_columns,
+                              NULL,
+                              get->trash,
+                              &nvt_order,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL);
+  cert_clause = filter_clause ("cert_bund_adv",
+                               filter ? filter : get->filter,
+                               filter_columns,
+                               cert_select_columns,
+                               NULL,
+                               get->trash,
+                               &cert_order,
+                               NULL,
+                               NULL,
+                               NULL,
+                               NULL);
+  dfn_clause = filter_clause ("dfn_cert_adv",
+                              filter ? filter : get->filter,
+                              filter_columns,
+                              dfn_select_columns,
+                              NULL,
+                              get->trash,
+                              &dfn_order,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL);
+  ovaldef_clause = filter_clause ("ovaldef",
+                                  filter ? filter : get->filter,
+                                  filter_columns,
+                                  ovaldef_select_columns,
+                                  NULL,
+                                  get->trash,
+                                  &ovaldef_order,
+                                  NULL,
+                                  NULL,
+                                  NULL,
+                                  NULL);
 
-  init_iterator (
-    iterator,
-    "SELECT %s"
-    " FROM " ALL_INFO_UNION_COLUMNS_LIMIT " %s%s"
-    " %s"
-    " %s;",
-    /* For the outer SELECT. */
-    columns,
-    /* For the inner SELECTs. */
-    cve_clause ? "WHERE " : "", cve_clause ? cve_clause : "", cve_order,
-    subselect_limit_clause, cpe_clause ? "WHERE " : "",
-    cpe_clause ? cpe_clause : "", cpe_order, subselect_limit_clause,
-    nvt_clause ? "WHERE " : "", nvt_clause ? nvt_clause : "", nvt_order,
-    subselect_limit_clause, cert_clause ? "WHERE " : "",
-    cert_clause ? cert_clause : "", cert_order, subselect_limit_clause,
-    dfn_clause ? "WHERE " : "", dfn_clause ? dfn_clause : "", dfn_order,
-    subselect_limit_clause, ovaldef_clause ? "WHERE " : "",
-    ovaldef_clause ? ovaldef_clause : "", ovaldef_order, subselect_limit_clause,
-    /* For the outer SELECT. */
-    clause ? "WHERE " : "", clause ? clause : "", order, limit_clause);
+  init_iterator (iterator,
+                 "SELECT %s"
+                 " FROM " ALL_INFO_UNION_COLUMNS_LIMIT " %s%s"
+                 " %s"
+                 " %s;",
+                 /* For the outer SELECT. */
+                 columns,
+                 /* For the inner SELECTs. */
+                 cve_clause ? "WHERE " : "",
+                 cve_clause ? cve_clause : "",
+                 cve_order,
+                 subselect_limit_clause,
+                 cpe_clause ? "WHERE " : "",
+                 cpe_clause ? cpe_clause : "",
+                 cpe_order,
+                 subselect_limit_clause,
+                 nvt_clause ? "WHERE " : "",
+                 nvt_clause ? nvt_clause : "",
+                 nvt_order,
+                 subselect_limit_clause,
+                 cert_clause ? "WHERE " : "",
+                 cert_clause ? cert_clause : "",
+                 cert_order,
+                 subselect_limit_clause,
+                 dfn_clause ? "WHERE " : "",
+                 dfn_clause ? dfn_clause : "",
+                 dfn_order,
+                 subselect_limit_clause,
+                 ovaldef_clause ? "WHERE " : "",
+                 ovaldef_clause ? ovaldef_clause : "",
+                 ovaldef_order,
+                 subselect_limit_clause,
+                 /* For the outer SELECT. */
+                 clause ? "WHERE " : "",
+                 clause ? clause : "",
+                 order,
+                 limit_clause);
 
   g_free (subselect_limit_clause);
   g_free (limit_clause);
@@ -1313,8 +1443,8 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
 
   if (g_stat (full_path, &state))
     {
-      g_warning ("%s: Failed to stat CERT file: %s", __FUNCTION__,
-                 strerror (errno));
+      g_warning (
+        "%s: Failed to stat CERT file: %s", __FUNCTION__, strerror (errno));
       return -1;
     }
 
@@ -1331,8 +1461,8 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
   g_file_get_contents (full_path, &xml, &xml_len, &error);
   if (error)
     {
-      g_warning ("%s: Failed to get contents: %s", __FUNCTION__,
-                 error->message);
+      g_warning (
+        "%s: Failed to get contents: %s", __FUNCTION__, error->message);
       g_error_free (error);
       g_free (full_path);
       return -1;
@@ -1422,9 +1552,12 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               quoted_summary = sql_quote (entity_text (summary));
               sql ("SELECT merge_dfn_cert_adv"
                    "        ('%s', %i, %i, '%s', '%s', %i);",
-                   quoted_refnum, parse_iso_time (entity_text (published)),
-                   parse_iso_time (entity_text (updated)), quoted_title,
-                   quoted_summary, cve_refs);
+                   quoted_refnum,
+                   parse_iso_time (entity_text (published)),
+                   parse_iso_time (entity_text (updated)),
+                   quoted_title,
+                   quoted_summary,
+                   cve_refs);
               increment_transaction_size (&transaction_size);
               g_free (quoted_title);
               g_free (quoted_summary);
@@ -1462,7 +1595,8 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                                    " ((SELECT id FROM dfn_cert_advs"
                                    "   WHERE name = '%s'),"
                                    "  '%s')",
-                                   quoted_refnum, quoted_point);
+                                   quoted_refnum,
+                                   quoted_point);
                               increment_transaction_size (&transaction_size);
                               g_free (quoted_point);
                             }
@@ -1514,8 +1648,10 @@ update_dfn_cert_advisories (int last_cert_update)
   dir = g_dir_open (GVM_CERT_DATA_DIR, 0, &error);
   if (dir == NULL)
     {
-      g_warning ("%s: Failed to open directory '%s': %s", __FUNCTION__,
-                 GVM_CERT_DATA_DIR, error->message);
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__,
+                 GVM_CERT_DATA_DIR,
+                 error->message);
       g_error_free (error);
       return -1;
     }
@@ -1579,8 +1715,8 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
 
   if (g_stat (full_path, &state))
     {
-      g_warning ("%s: Failed to stat CERT file: %s", __FUNCTION__,
-                 strerror (errno));
+      g_warning (
+        "%s: Failed to stat CERT file: %s", __FUNCTION__, strerror (errno));
       return -1;
     }
 
@@ -1597,8 +1733,8 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   g_file_get_contents (full_path, &xml, &xml_len, &error);
   if (error)
     {
-      g_warning ("%s: Failed to get contents: %s", __FUNCTION__,
-                 error->message);
+      g_warning (
+        "%s: Failed to get contents: %s", __FUNCTION__, error->message);
       g_error_free (error);
       g_free (full_path);
       return -1;
@@ -1699,9 +1835,12 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
               g_string_free (summary, TRUE);
               sql ("SELECT merge_bund_adv"
                    "        ('%s', %i, %i, '%s', '%s', %i);",
-                   quoted_refnum, parse_iso_time (entity_text (date)),
-                   parse_iso_time (entity_text (date)), quoted_title,
-                   quoted_summary, cve_refs);
+                   quoted_refnum,
+                   parse_iso_time (entity_text (date)),
+                   parse_iso_time (entity_text (date)),
+                   quoted_title,
+                   quoted_summary,
+                   cve_refs);
               increment_transaction_size (&transaction_size);
               g_free (quoted_title);
               g_free (quoted_summary);
@@ -1726,7 +1865,8 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                                " ((SELECT id FROM cert_bund_advs"
                                "   WHERE name = '%s'),"
                                "  '%s')",
-                               quoted_refnum, quoted_cve);
+                               quoted_refnum,
+                               quoted_cve);
                           increment_transaction_size (&transaction_size);
                           g_free (quoted_cve);
                         }
@@ -1775,8 +1915,10 @@ update_cert_bund_advisories (int last_cert_update)
   dir = g_dir_open (GVM_CERT_DATA_DIR, 0, &error);
   if (dir == NULL)
     {
-      g_warning ("%s: Failed to open directory '%s': %s", __FUNCTION__,
-                 GVM_CERT_DATA_DIR, error->message);
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__,
+                 GVM_CERT_DATA_DIR,
+                 error->message);
       g_error_free (error);
       return -1;
     }
@@ -1832,13 +1974,13 @@ update_scap_cpes (int last_scap_update)
   int transaction_size = 0;
 
   updated_scap_cpes = 0;
-  full_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                "official-cpe-dictionary_v2.2.xml", NULL);
+  full_path = g_build_filename (
+    GVM_SCAP_DATA_DIR, "official-cpe-dictionary_v2.2.xml", NULL);
 
   if (g_stat (full_path, &state))
     {
-      g_warning ("%s: No CPE dictionary found at %s", __FUNCTION__,
-                 strerror (errno));
+      g_warning (
+        "%s: No CPE dictionary found at %s", __FUNCTION__, strerror (errno));
       return -1;
     }
 
@@ -1863,8 +2005,8 @@ update_scap_cpes (int last_scap_update)
   g_free (full_path);
   if (error)
     {
-      g_warning ("%s: Failed to get contents: %s", __FUNCTION__,
-                 error->message);
+      g_warning (
+        "%s: Failed to get contents: %s", __FUNCTION__, error->message);
       g_error_free (error);
       return -1;
     }
@@ -1940,12 +2082,13 @@ update_scap_cpes (int last_scap_update)
               deprecated =
                 entity_attribute (item_metadata, "deprecated-by-nvd-id");
               if (deprecated
-                  && (g_regex_match_simple ("^[0-9]+$", (gchar *) deprecated, 0,
-                                            0)
+                  && (g_regex_match_simple (
+                        "^[0-9]+$", (gchar *) deprecated, 0, 0)
                       == 0))
                 {
                   g_warning ("%s: invalid deprecated-by-nvd-id: %s",
-                             __FUNCTION__, deprecated);
+                             __FUNCTION__,
+                             deprecated);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1984,10 +2127,13 @@ update_scap_cpes (int last_scap_update)
               quoted_nvd_id = sql_quote (nvd_id);
               sql ("SELECT merge_cpe"
                    "        ('%s', '%s', %i, %i, '%s', %s, '%s');",
-                   quoted_name, quoted_title,
+                   quoted_name,
+                   quoted_title,
                    parse_iso_time (modification_date),
-                   parse_iso_time (modification_date), quoted_status,
-                   deprecated ? deprecated : "NULL", quoted_nvd_id);
+                   parse_iso_time (modification_date),
+                   quoted_status,
+                   deprecated ? deprecated : "NULL",
+                   quoted_nvd_id);
               increment_transaction_size (&transaction_size);
               g_free (quoted_title);
               g_free (quoted_name);
@@ -2039,8 +2185,8 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
 
   if (g_stat (full_path, &state))
     {
-      g_warning ("%s: Failed to stat SCAP file: %s", __FUNCTION__,
-                 strerror (errno));
+      g_warning (
+        "%s: Failed to stat SCAP file: %s", __FUNCTION__, strerror (errno));
       return -1;
     }
 
@@ -2059,8 +2205,8 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   g_file_get_contents (full_path, &xml, &xml_len, &error);
   if (error)
     {
-      g_warning ("%s: Failed to get contents: %s", __FUNCTION__,
-                 error->message);
+      g_warning (
+        "%s: Failed to get contents: %s", __FUNCTION__, error->message);
       g_error_free (error);
       g_free (full_path);
       return -1;
@@ -2229,8 +2375,8 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   while ((product = first_entity (products)))
                     {
                       if (strcmp (entity_name (product), "vuln:product") == 0)
-                        g_string_append_printf (software, "%s ",
-                                                entity_text (product));
+                        g_string_append_printf (
+                          software, "%s ", entity_text (product));
                       products = next_entities (products);
                     }
                 }
@@ -2262,11 +2408,18 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               sql ("SELECT merge_cve"
                    "        ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
                    "         '%s', '%s', '%s', '%s');",
-                   quoted_id, quoted_id, time_published, time_modified,
-                   score ? entity_text (score) : "NULL", quoted_summary,
-                   quoted_access_vector, quoted_access_complexity,
-                   quoted_authentication, quoted_confidentiality_impact,
-                   quoted_integrity_impact, quoted_availability_impact,
+                   quoted_id,
+                   quoted_id,
+                   time_published,
+                   time_modified,
+                   score ? entity_text (score) : "NULL",
+                   quoted_summary,
+                   quoted_access_vector,
+                   quoted_access_complexity,
+                   quoted_authentication,
+                   quoted_confidentiality_impact,
+                   quoted_integrity_impact,
+                   quoted_availability_impact,
                    quoted_software);
               increment_transaction_size (&transaction_size);
               g_free (quoted_summary);
@@ -2309,13 +2462,16 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                               g_free (product_tilde);
 
                               sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
-                                   quoted_product, quoted_product,
-                                   time_published, time_modified);
+                                   quoted_product,
+                                   quoted_product,
+                                   time_published,
+                                   time_modified);
                               sql ("SELECT merge_affected_product"
                                    "        (%llu,"
                                    "         (SELECT id FROM cpes"
                                    "          WHERE name='%s'))",
-                                   cve_rowid, quoted_product);
+                                   cve_rowid,
+                                   quoted_product);
                               transaction_size++;
                               increment_transaction_size (&transaction_size);
                               g_free (quoted_product);
@@ -2366,8 +2522,10 @@ update_scap_cves (int last_scap_update)
   dir = g_dir_open (GVM_SCAP_DATA_DIR, 0, &error);
   if (dir == NULL)
     {
-      g_warning ("%s: Failed to open directory '%s': %s", __FUNCTION__,
-                 GVM_SCAP_DATA_DIR, error->message);
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __FUNCTION__,
+                 GVM_SCAP_DATA_DIR,
+                 error->message);
       g_error_free (error);
       return -1;
     }
@@ -2523,8 +2681,8 @@ verify_oval_file (const gchar *full_path)
   g_file_get_contents (full_path, &xml, &xml_len, &error);
   if (error)
     {
-      g_warning ("%s: Failed to get contents: %s", __FUNCTION__,
-                 error->message);
+      g_warning (
+        "%s: Failed to get contents: %s", __FUNCTION__, error->message);
       g_error_free (error);
       return -1;
     }
@@ -2664,7 +2822,9 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
 
   if (g_stat (xml_path, &state))
     {
-      g_warning ("%s: Failed to stat OVAL file %s: %s", __FUNCTION__, xml_path,
+      g_warning ("%s: Failed to stat OVAL file %s: %s",
+                 __FUNCTION__,
+                 xml_path,
                  strerror (errno));
       return -1;
     }
@@ -2680,8 +2840,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   xml_basename = strstr (xml_path, GVM_SCAP_DATA_DIR);
   if (xml_basename == NULL)
     {
-      g_warning ("%s: xml_path missing GVM_SCAP_DATA_DIR: %s", __FUNCTION__,
-                 xml_path);
+      g_warning (
+        "%s: xml_path missing GVM_SCAP_DATA_DIR: %s", __FUNCTION__, xml_path);
       return -1;
     }
   xml_basename += strlen (GVM_SCAP_DATA_DIR);
@@ -2723,8 +2883,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   g_file_get_contents (xml_path, &xml, &xml_len, &error);
   if (error)
     {
-      g_warning ("%s: Failed to get contents: %s", __FUNCTION__,
-                 error->message);
+      g_warning (
+        "%s: Failed to get contents: %s", __FUNCTION__, error->message);
       g_error_free (error);
       g_free (quoted_xml_basename);
       return -1;
@@ -2746,7 +2906,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   sql ("INSERT INTO ovalfiles (xml_file)"
        " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM ovalfiles"
        "                               WHERE xml_file = '%s');",
-       quoted_xml_basename, quoted_xml_basename);
+       quoted_xml_basename,
+       quoted_xml_basename);
 
   sql_commit ();
   sql_begin_immediate ();
@@ -2775,8 +2936,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
 
               /* The newest and oldest of this definition's dates (created,
                * modified, etc), from the OVAL XML. */
-              oval_definition_dates (definition, &definition_date_newest,
-                                     &definition_date_oldest);
+              oval_definition_dates (
+                definition, &definition_date_newest, &definition_date_oldest);
 
               if (definition_date_oldest
                   && (definition_date_oldest <= last_oval_update))
@@ -2785,7 +2946,9 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
 
                   id = entity_attribute (definition, "id");
                   quoted_oval_id = sql_quote (id ? id : "");
-                  g_info ("%s: Filtered %s (%i)", __FUNCTION__, quoted_oval_id,
+                  g_info ("%s: Filtered %s (%i)",
+                          __FUNCTION__,
+                          quoted_oval_id,
                           definition_date_oldest);
                   g_free (quoted_oval_id);
                 }
@@ -2865,8 +3028,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   if (g_regex_match_simple ("^[0-9]+$", (gchar *) version, 0, 0)
                       == 0)
                     {
-                      g_warning ("%s: invalid version: %s", __FUNCTION__,
-                                 version);
+                      g_warning (
+                        "%s: invalid version: %s", __FUNCTION__, version);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2886,15 +3049,20 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   sql ("SELECT merge_ovaldef ('%s', '%s', '', %i, %i, %i, %i,"
                        "                      '%s', '%s', '%s', '%s', '%s',"
                        "                      %i);",
-                       quoted_id, quoted_oval_id,
+                       quoted_id,
+                       quoted_oval_id,
                        definition_date_oldest == 0 ? file_timestamp
                                                    : definition_date_newest,
                        definition_date_oldest == 0 ? file_timestamp
                                                    : definition_date_oldest,
                        version,
                        (deprecated && strcasecmp (deprecated, "TRUE")) ? 1 : 0,
-                       quoted_class, quoted_title, quoted_description,
-                       quoted_xml_basename, quoted_status, cve_count);
+                       quoted_class,
+                       quoted_title,
+                       quoted_description,
+                       quoted_xml_basename,
+                       quoted_status,
+                       cve_count);
                   increment_transaction_size (&transaction_size);
                   g_free (quoted_id);
                   g_free (quoted_class);
@@ -2925,7 +3093,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                             " AND NOT EXISTS (SELECT * FROM affected_ovaldefs"
                             "                 WHERE cve = cves.id"
                             "                 AND ovaldef = ovaldefs.id);",
-                            quoted_ref_id, quoted_oval_id);
+                            quoted_ref_id,
+                            quoted_oval_id);
                           increment_transaction_size (&transaction_size);
                         }
                       references = next_entities (references);
@@ -3079,7 +3248,9 @@ oval_files_add (const char *path, const struct stat *stat, int flag,
   g_file_get_contents (path, &oval_xml, &len, &error);
   if (error)
     {
-      g_warning ("%s: Failed get contents of %s: %s", __FUNCTION__, path,
+      g_warning ("%s: Failed get contents of %s: %s",
+                 __FUNCTION__,
+                 path,
                  error->message);
       g_error_free (error);
       return -1;
@@ -3211,7 +3382,9 @@ update_scap_ovaldefs (int last_scap_update, int private)
           oval_files_free ();
           return 0;
         }
-      g_warning ("%s: failed to lstat '%s': %s", __FUNCTION__, oval_dir,
+      g_warning ("%s: failed to lstat '%s': %s",
+                 __FUNCTION__,
+                 oval_dir,
                  strerror (errno));
       g_free (oval_dir);
       oval_files_free ();
@@ -3224,16 +3397,20 @@ update_scap_ovaldefs (int last_scap_update, int private)
       if (errno == ENOENT)
         {
           if (private)
-            g_debug ("%s: nftw of private '%s': %s", __FUNCTION__, oval_dir,
+            g_debug ("%s: nftw of private '%s': %s",
+                     __FUNCTION__,
+                     oval_dir,
                      strerror (errno));
           else
-            g_warning ("%s: nftw of '%s': %s", __FUNCTION__, oval_dir,
-                       strerror (errno));
+            g_warning (
+              "%s: nftw of '%s': %s", __FUNCTION__, oval_dir, strerror (errno));
           g_free (oval_dir);
           oval_files_free ();
           return 0;
         }
-      g_warning ("%s: failed to traverse '%s': %s", __FUNCTION__, oval_dir,
+      g_warning ("%s: failed to traverse '%s': %s",
+                 __FUNCTION__,
+                 oval_dir,
                  strerror (errno));
       g_free (oval_dir);
       oval_files_free ();
@@ -3267,8 +3444,8 @@ update_scap_ovaldefs (int last_scap_update, int private)
             }
           else
             {
-              g_warning ("g_dir_open (%s) failed - %s", oval_dir,
-                         error->message);
+              g_warning (
+                "g_dir_open (%s) failed - %s", oval_dir, error->message);
               g_free (oval_dir);
               g_error_free (error);
               oval_files_free ();
@@ -3344,14 +3521,15 @@ update_scap_ovaldefs (int last_scap_update, int private)
           if (suffix == NULL)
             {
               g_warning ("%s: pair[0] missing GVM_SCAP_DATA_DIR: %s",
-                         __FUNCTION__, pair[0]);
+                         __FUNCTION__,
+                         pair[0]);
               g_free (oval_dir);
               oval_files_free ();
               return -1;
             }
           suffix += strlen (GVM_SCAP_DATA_DIR);
-          g_string_append_printf (oval_files_clause, "%s'%s'",
-                                  first ? "" : ", ", suffix);
+          g_string_append_printf (
+            oval_files_clause, "%s'%s'", first ? "" : ", ", suffix);
           first = 0;
         }
       g_string_append (oval_files_clause, "))");
@@ -3410,7 +3588,8 @@ write_sync_start (int lockfile)
           if (errno == EAGAIN || errno == EINTR)
             /* Interrupted, try write again. */
             continue;
-          g_warning ("%s: failed to write to lockfile: %s", __FUNCTION__,
+          g_warning ("%s: failed to write to lockfile: %s",
+                     __FUNCTION__,
                      strerror (errno));
           break;
         }
@@ -3474,13 +3653,16 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
       lockfile_name =
         g_build_filename (g_get_tmp_dir (), lockfile_basename, NULL);
 
-      lockfile = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
+      lockfile = open (lockfile_name,
+                       O_RDWR | O_CREAT | O_APPEND,
                        /* "-rw-r--r--" */
                        S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
       if (lockfile == -1)
         {
-          g_warning ("%s: failed to open lock file '%s': %s", __FUNCTION__,
-                     lockfile_name, strerror (errno));
+          g_warning ("%s: failed to open lock file '%s': %s",
+                     __FUNCTION__,
+                     lockfile_name,
+                     strerror (errno));
           g_free (lockfile_name);
           exit (EXIT_FAILURE);
         }
@@ -3524,8 +3706,8 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
   if (close (lockfile))
     {
       g_free (lockfile_name);
-      g_warning ("%s: failed to close lock file: %s", __FUNCTION__,
-                 strerror (errno));
+      g_warning (
+        "%s: failed to close lock file: %s", __FUNCTION__, strerror (errno));
       exit (EXIT_FAILURE);
     }
 
@@ -3551,19 +3733,19 @@ manage_feed_timestamp (const gchar *name)
 
   error = NULL;
   if (strcasecmp (name, "scap") == 0)
-    g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
-                         &error);
+    g_file_get_contents (
+      GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len, &error);
   else
-    g_file_get_contents (GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len,
-                         &error);
+    g_file_get_contents (
+      GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len, &error);
   if (error)
     {
       if (error->code == G_FILE_ERROR_NOENT)
         stamp = 0;
       else
         {
-          g_warning ("%s: Failed to get timestamp: %s", __FUNCTION__,
-                     error->message);
+          g_warning (
+            "%s: Failed to get timestamp: %s", __FUNCTION__, error->message);
           return -1;
         }
     }
@@ -3571,8 +3753,8 @@ manage_feed_timestamp (const gchar *name)
     {
       if (strlen (timestamp) < 8)
         {
-          g_warning ("%s: Feed timestamp too short: %s", __FUNCTION__,
-                     timestamp);
+          g_warning (
+            "%s: Feed timestamp too short: %s", __FUNCTION__, timestamp);
           g_free (timestamp);
           return -1;
         }
@@ -3626,16 +3808,16 @@ update_cert_timestamp ()
   time_t stamp;
 
   error = NULL;
-  g_file_get_contents (GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len,
-                       &error);
+  g_file_get_contents (
+    GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len, &error);
   if (error)
     {
       if (error->code == G_FILE_ERROR_NOENT)
         stamp = 0;
       else
         {
-          g_warning ("%s: Failed to get timestamp: %s", __FUNCTION__,
-                     error->message);
+          g_warning (
+            "%s: Failed to get timestamp: %s", __FUNCTION__, error->message);
           return -1;
         }
     }
@@ -3643,8 +3825,8 @@ update_cert_timestamp ()
     {
       if (strlen (timestamp) < 8)
         {
-          g_warning ("%s: Feed timestamp too short: %s", __FUNCTION__,
-                     timestamp);
+          g_warning (
+            "%s: Feed timestamp too short: %s", __FUNCTION__, timestamp);
           g_free (timestamp);
           return -1;
         }
@@ -3847,8 +4029,8 @@ sync_cert (int lockfile)
   /* Clear date from lock file. */
 
   if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s", __FUNCTION__,
-               strerror (errno));
+    g_warning (
+      "%s: failed to ftruncate lockfile: %s", __FUNCTION__, strerror (errno));
 
   return 0;
 
@@ -3856,8 +4038,8 @@ fail:
   /* Clear date from lock file. */
 
   if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s", __FUNCTION__,
-               strerror (errno));
+    g_warning (
+      "%s: failed to ftruncate lockfile: %s", __FUNCTION__, strerror (errno));
 
   return -1;
 }
@@ -3870,8 +4052,8 @@ fail:
 void
 manage_sync_cert (sigset_t *sigmask_current)
 {
-  sync_secinfo (sigmask_current, sync_cert, "gvmd: Syncing CERT",
-                "gvm-sync-cert");
+  sync_secinfo (
+    sigmask_current, sync_cert, "gvmd: Syncing CERT", "gvm-sync-cert");
 }
 
 /* SCAP update. */
@@ -3923,16 +4105,16 @@ update_scap_timestamp ()
   time_t stamp;
 
   error = NULL;
-  g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
-                       &error);
+  g_file_get_contents (
+    GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len, &error);
   if (error)
     {
       if (error->code == G_FILE_ERROR_NOENT)
         stamp = 0;
       else
         {
-          g_warning ("%s: Failed to get timestamp: %s", __FUNCTION__,
-                     error->message);
+          g_warning (
+            "%s: Failed to get timestamp: %s", __FUNCTION__, error->message);
           return -1;
         }
     }
@@ -3940,8 +4122,8 @@ update_scap_timestamp ()
     {
       if (strlen (timestamp) < 8)
         {
-          g_warning ("%s: Feed timestamp too short: %s", __FUNCTION__,
-                     timestamp);
+          g_warning (
+            "%s: Feed timestamp too short: %s", __FUNCTION__, timestamp);
           g_free (timestamp);
           return -1;
         }
@@ -4154,8 +4336,8 @@ sync_scap (int lockfile)
       break;
     }
 
-  update_scap_cvss (updated_scap_cves, updated_scap_cpes,
-                    updated_scap_ovaldefs);
+  update_scap_cvss (
+    updated_scap_cves, updated_scap_cpes, updated_scap_ovaldefs);
   update_scap_placeholders (updated_scap_cves);
 
   g_debug ("%s: update timestamp", __FUNCTION__);
@@ -4173,8 +4355,8 @@ sync_scap (int lockfile)
   /* Clear date from lock file. */
 
   if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s", __FUNCTION__,
-               strerror (errno));
+    g_warning (
+      "%s: failed to ftruncate lockfile: %s", __FUNCTION__, strerror (errno));
 
   return 0;
 
@@ -4182,8 +4364,8 @@ fail:
   /* Clear date from lock file. */
 
   if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s", __FUNCTION__,
-               strerror (errno));
+    g_warning (
+      "%s: failed to ftruncate lockfile: %s", __FUNCTION__, strerror (errno));
 
   return -1;
 }
@@ -4196,8 +4378,8 @@ fail:
 void
 manage_sync_scap (sigset_t *sigmask_current)
 {
-  sync_secinfo (sigmask_current, sync_scap, "gvmd: Syncing SCAP",
-                "gvm-sync-scap");
+  sync_secinfo (
+    sigmask_current, sync_scap, "gvmd: Syncing SCAP", "gvm-sync-scap");
 }
 
 /**

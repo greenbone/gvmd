@@ -84,8 +84,8 @@ void
 get_tickets_start (const gchar **attribute_names,
                    const gchar **attribute_values)
 {
-  get_data_parse_attributes (&get_tickets_data.get, "ticket", attribute_names,
-                             attribute_values);
+  get_data_parse_attributes (
+    &get_tickets_data.get, "ticket", attribute_names, attribute_values);
 }
 
 /**
@@ -128,8 +128,8 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
       switch (ret)
         {
         case 1:
-          if (send_find_error_to_client ("get_tickets", "ticket",
-                                         get_tickets_data.get.id, gmp_parser))
+          if (send_find_error_to_client (
+                "get_tickets", "ticket", get_tickets_data.get.id, gmp_parser))
             {
               error_send_to_client (error);
               get_tickets_reset ();
@@ -137,7 +137,8 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
             }
           break;
         case 2:
-          if (send_find_error_to_client ("get_tickets", "filter",
+          if (send_find_error_to_client ("get_tickets",
+                                         "filter",
                                          get_tickets_data.get.filt_id,
                                          gmp_parser))
             {
@@ -162,8 +163,8 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
       iterator_t results;
       int orphan;
 
-      ret = get_next (&tickets, &get_tickets_data.get, &first, &count,
-                      init_ticket_iterator);
+      ret = get_next (
+        &tickets, &get_tickets_data.get, &first, &count, init_ticket_iterator);
       if (ret == 1)
         break;
       if (ret == -1)
@@ -179,28 +180,29 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Send ticket info. */
 
-      SENDF_TO_CLIENT_OR_FAIL (
-        "<assigned_to>"
-        "<user id=\"%s\">"
-        "<name>%s</name>"
-        "</user>"
-        "</assigned_to>"
-        "<severity>%1.1f</severity>"
-        "<host>%s</host>"
-        "<location>%s</location>"
-        "<solution_type>%s</solution_type>"
-        "<status>%s</status>"
-        "<open_time>%s</open_time>"
-        "<open_note>%s</open_note>"
-        "<nvt oid=\"%s\"/>",
-        ticket_iterator_user_id (&tickets),
-        ticket_iterator_user_name (&tickets),
-        ticket_iterator_severity (&tickets), ticket_iterator_host (&tickets),
-        ticket_iterator_location (&tickets),
-        ticket_iterator_solution_type (&tickets),
-        ticket_iterator_status (&tickets), ticket_iterator_open_time (&tickets),
-        ticket_iterator_open_note (&tickets),
-        ticket_iterator_nvt_oid (&tickets));
+      SENDF_TO_CLIENT_OR_FAIL ("<assigned_to>"
+                               "<user id=\"%s\">"
+                               "<name>%s</name>"
+                               "</user>"
+                               "</assigned_to>"
+                               "<severity>%1.1f</severity>"
+                               "<host>%s</host>"
+                               "<location>%s</location>"
+                               "<solution_type>%s</solution_type>"
+                               "<status>%s</status>"
+                               "<open_time>%s</open_time>"
+                               "<open_note>%s</open_note>"
+                               "<nvt oid=\"%s\"/>",
+                               ticket_iterator_user_id (&tickets),
+                               ticket_iterator_user_name (&tickets),
+                               ticket_iterator_severity (&tickets),
+                               ticket_iterator_host (&tickets),
+                               ticket_iterator_location (&tickets),
+                               ticket_iterator_solution_type (&tickets),
+                               ticket_iterator_status (&tickets),
+                               ticket_iterator_open_time (&tickets),
+                               ticket_iterator_open_note (&tickets),
+                               ticket_iterator_nvt_oid (&tickets));
 
       if (ticket_iterator_task_id (&tickets))
         SENDF_TO_CLIENT_OR_FAIL (
@@ -271,14 +273,15 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                 "<timestamp>%s</timestamp>"
                 "</report>"
                 "</fix_verified_report>",
-                ticket_iterator_fix_verified_report_id (&tickets), timestamp);
+                ticket_iterator_fix_verified_report_id (&tickets),
+                timestamp);
             }
         }
 
       /* Send results that are linked to ticket. */
 
-      if (init_ticket_result_iterator (&results, get_iterator_uuid (&tickets),
-                                       get_tickets_data.get.trash))
+      if (init_ticket_result_iterator (
+            &results, get_iterator_uuid (&tickets), get_tickets_data.get.trash))
         {
           internal_error_send_to_client (error);
           get_tickets_reset ();
@@ -350,8 +353,8 @@ create_ticket_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
 {
   memset (&create_ticket_data, 0, sizeof (create_ticket_t));
   create_ticket_data.context = g_malloc0 (sizeof (context_data_t));
-  create_ticket_element_start (gmp_parser, "create_ticket", attribute_names,
-                               attribute_values);
+  create_ticket_element_start (
+    gmp_parser, "create_ticket", attribute_names, attribute_values);
 }
 
 /**
@@ -367,8 +370,8 @@ create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
-  xml_handle_start_element (create_ticket_data.context, name, attribute_names,
-                            attribute_values);
+  xml_handle_start_element (
+    create_ticket_data.context, name, attribute_names, attribute_values);
 }
 
 /**
@@ -393,8 +396,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       /* Copy from an existing ticket and exit. */
 
       comment = entity_child (entity, "comment");
-      switch (copy_ticket (comment ? entity_text (comment) : "",
-                           entity_text (copy), &new_ticket))
+      switch (copy_ticket (
+        comment ? entity_text (comment) : "", entity_text (copy), &new_ticket))
         {
         case 0:
           {
@@ -411,8 +414,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
           log_event_fail ("ticket", "Ticket", NULL, "created");
           break;
         case 2:
-          if (send_find_error_to_client ("create_ticket", "ticket",
-                                         entity_text (copy), gmp_parser))
+          if (send_find_error_to_client (
+                "create_ticket", "ticket", entity_text (copy), gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -481,18 +484,23 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   if ((result_id == NULL) || (strlen (result_id) == 0))
     SEND_TO_CLIENT_OR_FAIL (
-      XML_ERROR_SYNTAX ("create_ticket", "CREATE_TICKET RESULT must have an id"
-                                         " attribute"));
+      XML_ERROR_SYNTAX ("create_ticket",
+                        "CREATE_TICKET RESULT must have an id"
+                        " attribute"));
   else if ((user_id == NULL) || (strlen (user_id) == 0))
     SEND_TO_CLIENT_OR_FAIL (
-      XML_ERROR_SYNTAX ("create_ticket", "CREATE_TICKET USER must have an id"
-                                         " attribute"));
+      XML_ERROR_SYNTAX ("create_ticket",
+                        "CREATE_TICKET USER must have an id"
+                        " attribute"));
   else if (strlen (entity_text (open_note)) == 0)
     SEND_TO_CLIENT_OR_FAIL (
       XML_ERROR_SYNTAX ("create_ticket", "CREATE_TICKET OPEN_NOTE is empty"));
   else
-    switch (create_ticket (comment ? entity_text (comment) : "", result_id,
-                           user_id, entity_text (open_note), &new_ticket))
+    switch (create_ticket (comment ? entity_text (comment) : "",
+                           result_id,
+                           user_id,
+                           entity_text (open_note),
+                           &new_ticket))
       {
       case 0:
         {
@@ -504,8 +512,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
         }
       case 1:
         log_event_fail ("ticket", "Ticket", NULL, "created");
-        if (send_find_error_to_client ("create_ticket", "user", user_id,
-                                       gmp_parser))
+        if (send_find_error_to_client (
+              "create_ticket", "user", user_id, gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -513,8 +521,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
         break;
       case 2:
         log_event_fail ("ticket", "Ticket", NULL, "created");
-        if (send_find_error_to_client ("create_ticket", "result", result_id,
-                                       gmp_parser))
+        if (send_find_error_to_client (
+              "create_ticket", "result", result_id, gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -614,8 +622,8 @@ modify_ticket_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
 {
   memset (&modify_ticket_data, 0, sizeof (modify_ticket_t));
   modify_ticket_data.context = g_malloc0 (sizeof (context_data_t));
-  modify_ticket_element_start (gmp_parser, "modify_ticket", attribute_names,
-                               attribute_values);
+  modify_ticket_element_start (
+    gmp_parser, "modify_ticket", attribute_names, attribute_values);
 }
 
 /**
@@ -631,8 +639,8 @@ modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
-  xml_handle_start_element (modify_ticket_data.context, name, attribute_names,
-                            attribute_values);
+  xml_handle_start_element (
+    modify_ticket_data.context, name, attribute_names, attribute_values);
 }
 
 /**
@@ -677,9 +685,10 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       user_id = entity_attribute (user, "id");
       if ((user_id == NULL) || (strlen (user_id) == 0))
         {
-          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
-            "modify_ticket", "MODIFY_TICKET USER must have an id"
-                             " attribute"));
+          SEND_TO_CLIENT_OR_FAIL (
+            XML_ERROR_SYNTAX ("modify_ticket",
+                              "MODIFY_TICKET USER must have an id"
+                              " attribute"));
           modify_ticket_reset ();
           return;
         }
@@ -691,10 +700,12 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
 
   if (ticket_id == NULL)
     SEND_TO_CLIENT_OR_FAIL (
-      XML_ERROR_SYNTAX ("modify_ticket", "MODIFY_TICKET requires a ticket_id"
-                                         " attribute"));
+      XML_ERROR_SYNTAX ("modify_ticket",
+                        "MODIFY_TICKET requires a ticket_id"
+                        " attribute"));
   else
-    switch (modify_ticket (ticket_id, comment ? entity_text (comment) : NULL,
+    switch (modify_ticket (ticket_id,
+                           comment ? entity_text (comment) : NULL,
                            status ? entity_text (status) : NULL,
                            open_note ? entity_text (open_note) : NULL,
                            fixed_note ? entity_text (fixed_note) : NULL,
@@ -712,8 +723,8 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
         break;
       case 2:
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
-        if (send_find_error_to_client ("modify_ticket", "ticket", ticket_id,
-                                       gmp_parser))
+        if (send_find_error_to_client (
+              "modify_ticket", "ticket", ticket_id, gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -721,8 +732,8 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
         break;
       case 3:
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
-        if (send_find_error_to_client ("modify_ticket", "user", user_id,
-                                       gmp_parser))
+        if (send_find_error_to_client (
+              "modify_ticket", "user", user_id, gmp_parser))
           {
             error_send_to_client (error);
             return;
@@ -819,7 +830,8 @@ buffer_result_tickets_xml (GString *buffer, result_t result)
     {
       buffer_xml_append_printf (buffer, "<tickets>");
       while (next (&tickets))
-        buffer_xml_append_printf (buffer, "<ticket id=\"%s\"/>",
+        buffer_xml_append_printf (buffer,
+                                  "<ticket id=\"%s\"/>",
                                   result_ticket_iterator_ticket_id (&tickets));
       buffer_xml_append_printf (buffer, "</tickets>");
       cleanup_iterator (&tickets);

@@ -131,7 +131,8 @@ set_nvts_feed_version (const char *feed_version)
   sql ("DELETE FROM %s.meta WHERE name = 'nvts_feed_version';", sql_schema ());
   sql ("INSERT INTO %s.meta (name, value)"
        " VALUES ('nvts_feed_version', '%s');",
-       sql_schema (), quoted);
+       sql_schema (),
+       quoted);
   g_free (quoted);
 
   sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
@@ -228,7 +229,8 @@ make_nvt_from_nvti (const nvti_t *nvti)
                    == 0)
                && ((*point)[strlen ("creation_date")] == '='))
               || ((strlen (*point) > strlen ("last_modification"))
-                  && (strncmp (*point, "last_modification",
+                  && (strncmp (*point,
+                               "last_modification",
                                strlen ("last_modification"))
                       == 0)
                   && ((*point)[strlen ("last_modification")] == '=')))
@@ -283,8 +285,10 @@ make_nvt_from_nvti (const nvti_t *nvti)
   switch (parse_time (value, &creation_time))
     {
     case -1:
-      g_warning ("%s: Failed to parse creation time of %s: %s", __FUNCTION__,
-                 nvti_oid (nvti), value);
+      g_warning ("%s: Failed to parse creation time of %s: %s",
+                 __FUNCTION__,
+                 nvti_oid (nvti),
+                 value);
       creation_time = 0;
       break;
     case -2:
@@ -292,8 +296,8 @@ make_nvt_from_nvti (const nvti_t *nvti)
       creation_time = 0;
       break;
     case -3:
-      g_warning ("%s: Failed to parse timezone offset: %s", __FUNCTION__,
-                 value);
+      g_warning (
+        "%s: Failed to parse timezone offset: %s", __FUNCTION__, value);
       creation_time = 0;
       break;
     }
@@ -304,7 +308,9 @@ make_nvt_from_nvti (const nvti_t *nvti)
     {
     case -1:
       g_warning ("%s: Failed to parse last_modification time of %s: %s",
-                 __FUNCTION__, nvti_oid (nvti), value);
+                 __FUNCTION__,
+                 nvti_oid (nvti),
+                 value);
       modification_time = 0;
       break;
     case -2:
@@ -312,8 +318,8 @@ make_nvt_from_nvti (const nvti_t *nvti)
       modification_time = 0;
       break;
     case -3:
-      g_warning ("%s: Failed to parse timezone offset: %s", __FUNCTION__,
-                 value);
+      g_warning (
+        "%s: Failed to parse timezone offset: %s", __FUNCTION__, value);
       modification_time = 0;
       break;
     }
@@ -330,7 +336,8 @@ make_nvt_from_nvti (const nvti_t *nvti)
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
                nvti_oid (nvti)))
-    g_warning ("%s: NVT with OID %s exists already, ignoring", __FUNCTION__,
+    g_warning ("%s: NVT with OID %s exists already, ignoring",
+               __FUNCTION__,
                nvti_oid (nvti));
   else
     sql ("INSERT into nvts (oid, name,"
@@ -339,10 +346,21 @@ make_nvt_from_nvti (const nvti_t *nvti)
          " qod, qod_type)"
          " VALUES ('%s', '%s', '%s', '%s', '%s',"
          " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-         nvti_oid (nvti), quoted_name, quoted_cve, quoted_bid, quoted_xref,
-         quoted_tag, nvti_category (nvti), quoted_family, quoted_cvss_base,
-         creation_time, modification_time, nvti_oid (nvti),
-         quoted_solution_type, qod, quoted_qod_type);
+         nvti_oid (nvti),
+         quoted_name,
+         quoted_cve,
+         quoted_bid,
+         quoted_xref,
+         quoted_tag,
+         nvti_category (nvti),
+         quoted_family,
+         quoted_cvss_base,
+         creation_time,
+         modification_time,
+         nvti_oid (nvti),
+         quoted_solution_type,
+         qod,
+         quoted_qod_type);
 
   if (chunk_count == 0)
     sql_commit ();
@@ -395,11 +413,18 @@ init_nvt_info_iterator (iterator_t *iterator, get_data_t *get, const char *name)
       get->filter = NULL;
     }
 
-  ret = init_get_iterator (iterator, "nvt", get,
+  ret = init_get_iterator (iterator,
+                           "nvt",
+                           get,
                            /* Columns. */
                            columns,
                            /* Columns for trashcan. */
-                           NULL, filter_columns, 0, NULL, clause, 0);
+                           NULL,
+                           filter_columns,
+                           0,
+                           NULL,
+                           clause,
+                           0);
 
   g_free (clause);
   return ret;
@@ -496,7 +521,8 @@ select_config_nvts (const config_t config, const char *family, int ascending,
             sql = g_strdup_printf ("SELECT %s"
                                    " FROM nvts WHERE family = '%s'"
                                    " ORDER BY %s %s;",
-                                   nvt_iterator_columns (), quoted_family,
+                                   nvt_iterator_columns (),
+                                   quoted_family,
                                    sort_field ? sort_field : "name",
                                    ascending ? "ASC" : "DESC");
           else
@@ -509,7 +535,8 @@ select_config_nvts (const config_t config, const char *family, int ascending,
                     " AND type = " G_STRINGIFY (
                       NVT_SELECTOR_TYPE_FAMILY) " AND family_or_nvt = '%s'"
                                                 ";",
-                    quoted_selector, quoted_family))
+                    quoted_selector,
+                    quoted_family))
                 /* The family is excluded, just iterate the NVT includes. */
                 sql = g_strdup_printf (
                   "SELECT %s"
@@ -523,8 +550,11 @@ select_config_nvts (const config_t config, const char *family, int ascending,
                                            " AND nvts.oid = "
                                            "nvt_selectors.family_or_nvt"
                                            " ORDER BY %s %s;",
-                  nvt_iterator_columns_nvts (), quoted_family, quoted_selector,
-                  quoted_family, sort_field ? sort_field : "nvts.name",
+                  nvt_iterator_columns_nvts (),
+                  quoted_family,
+                  quoted_selector,
+                  quoted_family,
+                  sort_field ? sort_field : "nvts.name",
                   ascending ? "ASC" : "DESC");
               else
                 /* The family is included.
@@ -546,8 +576,11 @@ select_config_nvts (const config_t config, const char *family, int ascending,
                                            " AND nvts.oid = "
                                            "nvt_selectors.family_or_nvt"
                                            " ORDER BY %s %s;",
-                  nvt_iterator_columns (), quoted_family,
-                  nvt_iterator_columns_nvts (), quoted_family, quoted_selector,
+                  nvt_iterator_columns (),
+                  quoted_family,
+                  nvt_iterator_columns_nvts (),
+                  quoted_family,
+                  quoted_selector,
                   quoted_family,
                   // FIX PG "ERROR: missing FROM-clause" using nvts.name.
                   sort_field && strcmp (sort_field, "nvts.name")
@@ -567,7 +600,8 @@ select_config_nvts (const config_t config, const char *family, int ascending,
                      " WHERE name = '%s' AND exclude = 0"
                      " AND type = " G_STRINGIFY (
                        NVT_SELECTOR_TYPE_FAMILY) " AND family_or_nvt = '%s';",
-                     quoted_selector, quoted_family);
+                     quoted_selector,
+                     quoted_family);
 
           if (all)
             /* There is a family include for this family. */
@@ -587,8 +621,11 @@ select_config_nvts (const config_t config, const char *family, int ascending,
                                        " AND nvts.oid = "
                                        "nvt_selectors.family_or_nvt"
                                        " ORDER BY %s %s;",
-              nvt_iterator_columns (), quoted_family,
-              nvt_iterator_columns_nvts (), quoted_family, quoted_selector,
+              nvt_iterator_columns (),
+              quoted_family,
+              nvt_iterator_columns_nvts (),
+              quoted_family,
+              quoted_selector,
               quoted_family,
               // FIX PG "ERROR: missing FROM-clause" using nvts.name.
               sort_field && strcmp (sort_field, "nvts.name")
@@ -608,8 +645,11 @@ select_config_nvts (const config_t config, const char *family, int ascending,
                                        " AND nvts.oid = "
                                        "nvt_selectors.family_or_nvt"
                                        " ORDER BY %s %s;",
-              nvt_iterator_columns_nvts (), quoted_family, quoted_selector,
-              quoted_family, sort_field ? sort_field : "nvts.name",
+              nvt_iterator_columns_nvts (),
+              quoted_family,
+              quoted_selector,
+              quoted_family,
+              sort_field ? sort_field : "nvts.name",
               ascending ? "ASC" : "DESC");
         }
     }
@@ -627,8 +667,11 @@ select_config_nvts (const config_t config, const char *family, int ascending,
           NVT_SELECTOR_TYPE_NVT) " AND nvt_selectors.name = '%s'"
                                  " AND nvts.oid = nvt_selectors.family_or_nvt"
                                  " ORDER BY %s %s;",
-        nvt_iterator_columns_nvts (), quoted_family, quoted_selector,
-        sort_field ? sort_field : "nvts.id", ascending ? "ASC" : "DESC");
+        nvt_iterator_columns_nvts (),
+        quoted_family,
+        quoted_selector,
+        sort_field ? sort_field : "nvts.id",
+        ascending ? "ASC" : "DESC");
     }
 
   g_free (quoted_selector);
@@ -662,7 +705,8 @@ init_nvt_iterator (iterator_t *iterator, nvt_t nvt, config_t config,
       gchar *sql;
       sql = g_strdup_printf ("SELECT %s"
                              " FROM nvts WHERE id = %llu;",
-                             nvt_iterator_columns (), nvt);
+                             nvt_iterator_columns (),
+                             nvt);
       init_iterator (iterator, sql);
       g_free (sql);
     }
@@ -691,7 +735,8 @@ init_nvt_iterator (iterator_t *iterator, nvt_t nvt, config_t config,
                      " FROM nvts"
                      " WHERE family = '%s'"
                      " ORDER BY %s %s;",
-                     nvt_iterator_columns (), quoted_family,
+                     nvt_iterator_columns (),
+                     quoted_family,
                      sort_field ? sort_field : "name",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_family);
@@ -705,7 +750,8 @@ init_nvt_iterator (iterator_t *iterator, nvt_t nvt, config_t config,
                      " FROM nvts"
                      " WHERE category = '%s'"
                      " ORDER BY %s %s;",
-                     nvt_iterator_columns (), quoted_category,
+                     nvt_iterator_columns (),
+                     quoted_category,
                      sort_field ? sort_field : "name",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_category);
@@ -715,7 +761,8 @@ init_nvt_iterator (iterator_t *iterator, nvt_t nvt, config_t config,
                    "SELECT %s"
                    " FROM nvts"
                    " ORDER BY %s %s;",
-                   nvt_iterator_columns (), sort_field ? sort_field : "name",
+                   nvt_iterator_columns (),
+                   sort_field ? sort_field : "name",
                    ascending ? "ASC" : "DESC");
 }
 
@@ -736,8 +783,11 @@ init_cve_nvt_iterator (iterator_t *iterator, const char *cve, int ascending,
                  " FROM nvts"
                  " WHERE cve %s '%%%s%%'"
                  " ORDER BY %s %s;",
-                 nvt_iterator_columns (), sql_ilike_op (), cve ? cve : "",
-                 sort_field ? sort_field : "name", ascending ? "ASC" : "DESC");
+                 nvt_iterator_columns (),
+                 sql_ilike_op (),
+                 cve ? cve : "",
+                 sort_field ? sort_field : "name",
+                 ascending ? "ASC" : "DESC");
 }
 
 /**
@@ -1031,7 +1081,9 @@ refresh_nvt_cves ()
               quoted_oid = sql_insert (iterator_string (&nvts, 1));
               sql ("INSERT INTO nvt_cves (nvt, oid, cve_name)"
                    " VALUES (%llu, %s, %s);",
-                   iterator_int64 (&nvts, 0), quoted_oid, quoted_cve);
+                   iterator_int64 (&nvts, 0),
+                   quoted_oid,
+                   quoted_cve);
               g_free (quoted_cve);
               g_free (quoted_oid);
             }

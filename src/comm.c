@@ -100,7 +100,8 @@ sendn_to_server (const void *msg, size_t n)
   if (TO_SERVER_BUFFER_SIZE - to_server_end < n)
     {
       g_debug ("   sendn_to_server: available space (%i) < n (%zu)",
-               TO_SERVER_BUFFER_SIZE - to_server_end, n);
+               TO_SERVER_BUFFER_SIZE - to_server_end,
+               n);
       return 1;
     }
 

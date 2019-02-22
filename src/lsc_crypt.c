@@ -187,11 +187,15 @@ create_the_key (lsc_crypt_ctx_t ctx)
   err = gpgme_op_genkey (ctx->encctx, parms, NULL, NULL);
   if (err)
     {
-      log_gpgme (G_LOG_LEVEL_WARNING, err, "error creating OpenPGP key '%s'",
+      log_gpgme (G_LOG_LEVEL_WARNING,
+                 err,
+                 "error creating OpenPGP key '%s'",
                  ENCRYPTION_KEY_UID);
       return -1;
     }
-  log_gpgme (G_LOG_LEVEL_INFO, 0, "OpenPGP key '%s' has been generated",
+  log_gpgme (G_LOG_LEVEL_INFO,
+             0,
+             "OpenPGP key '%s' has been generated",
              ENCRYPTION_KEY_UID);
   return 0;
 }
@@ -220,7 +224,8 @@ again:
   err = gpgme_op_keylist_start (ctx->encctx, "=" ENCRYPTION_KEY_UID, 0);
   if (err)
     {
-      log_gpgme (G_LOG_LEVEL_WARNING, err,
+      log_gpgme (G_LOG_LEVEL_WARNING,
+                 err,
                  "error starting search for OpenPGP key '%s'",
                  ENCRYPTION_KEY_UID);
       return NULL;
@@ -233,7 +238,9 @@ again:
       if (!key->can_encrypt || key->revoked || key->expired || key->disabled
           || key->invalid)
         {
-          log_gpgme (G_LOG_LEVEL_MESSAGE, 0, "skipping unusable OpenPGP key %s",
+          log_gpgme (G_LOG_LEVEL_MESSAGE,
+                     0,
+                     "skipping unusable OpenPGP key %s",
                      key->subkeys ? nonnull (key->subkeys->keyid) : "?");
           any_skipped = 1;
           continue;
@@ -284,8 +291,10 @@ again:
 
   if (err)
     {
-      log_gpgme (G_LOG_LEVEL_MESSAGE, err,
-                 "error searching for OpenPGP key '%s'", ENCRYPTION_KEY_UID);
+      log_gpgme (G_LOG_LEVEL_MESSAGE,
+                 err,
+                 "error searching for OpenPGP key '%s'",
+                 ENCRYPTION_KEY_UID);
       gpgme_key_unref (found);
       found = NULL;
     }
@@ -326,16 +335,20 @@ do_encrypt (lsc_crypt_ctx_t ctx, const void *plaintext, size_t plaintextlen)
   err = gpgme_data_new_from_mem (&in, plaintext, plaintextlen, 0);
   if (err)
     {
-      log_gpgme (G_LOG_LEVEL_WARNING, err,
-                 "%s: error creating data object from plaintext", G_STRFUNC);
+      log_gpgme (G_LOG_LEVEL_WARNING,
+                 err,
+                 "%s: error creating data object from plaintext",
+                 G_STRFUNC);
       return NULL;
     }
 
   err = gpgme_data_new (&out);
   if (err)
     {
-      log_gpgme (G_LOG_LEVEL_WARNING, err,
-                 "%s: error creating data object for ciphertext", G_STRFUNC);
+      log_gpgme (G_LOG_LEVEL_WARNING,
+                 err,
+                 "%s: error creating data object for ciphertext",
+                 G_STRFUNC);
       gpgme_data_release (in);
       return NULL;
     }
@@ -343,13 +356,13 @@ do_encrypt (lsc_crypt_ctx_t ctx, const void *plaintext, size_t plaintextlen)
   gpgme_set_armor (ctx->encctx, 0);
   keyarray[0] = ctx->enckey;
   keyarray[1] = NULL;
-  err = gpgme_op_encrypt (ctx->encctx, keyarray, GPGME_ENCRYPT_ALWAYS_TRUST, in,
-                          out);
+  err = gpgme_op_encrypt (
+    ctx->encctx, keyarray, GPGME_ENCRYPT_ALWAYS_TRUST, in, out);
   gpgme_data_release (in);
   if (err)
     {
-      log_gpgme (G_LOG_LEVEL_WARNING, err, "%s: error encrypting credential",
-                 G_STRFUNC);
+      log_gpgme (
+        G_LOG_LEVEL_WARNING, err, "%s: error encrypting credential", G_STRFUNC);
       gpgme_data_release (out);
       return NULL;
     }
@@ -402,8 +415,10 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
   err = gpgme_data_new_from_mem (&in, ciphertext, ciphertextlen, 0);
   if (err)
     {
-      log_gpgme (G_LOG_LEVEL_WARNING, err,
-                 "%s: error creating data object from ciphertext", G_STRFUNC);
+      log_gpgme (G_LOG_LEVEL_WARNING,
+                 err,
+                 "%s: error creating data object from ciphertext",
+                 G_STRFUNC);
       g_free (ciphertext);
       return NULL;
     }
@@ -412,8 +427,10 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
   err = gpgme_data_new (&out);
   if (err)
     {
-      log_gpgme (G_LOG_LEVEL_WARNING, err,
-                 "%s: error creating data object for plaintext", G_STRFUNC);
+      log_gpgme (G_LOG_LEVEL_WARNING,
+                 err,
+                 "%s: error creating data object for plaintext",
+                 G_STRFUNC);
       gpgme_data_release (in);
       g_free (ciphertext);
       return NULL;
@@ -431,13 +448,17 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
       log_gpgme (G_LOG_LEVEL_WARNING, err, "error decrypting credential");
       decres = gpgme_op_decrypt_result (ctx->encctx);
       if (decres->unsupported_algorithm)
-        log_gpgme (G_LOG_LEVEL_INFO, 0, "   unsupported algorithm (%s)",
+        log_gpgme (G_LOG_LEVEL_INFO,
+                   0,
+                   "   unsupported algorithm (%s)",
                    decres->unsupported_algorithm);
       if (decres->wrong_key_usage)
         log_gpgme (G_LOG_LEVEL_INFO, 0, "   wrong key usage");
       for (recp = decres->recipients; recp; recp = recp->next)
-        log_gpgme (G_LOG_LEVEL_INFO, recp->status,
-                   "   encrypted to keyid %s, algo=%d", recp->keyid,
+        log_gpgme (G_LOG_LEVEL_INFO,
+                   recp->status,
+                   "   encrypted to keyid %s, algo=%d",
+                   recp->keyid,
                    recp->pubkey_algo);
       return NULL;
     }
@@ -566,7 +587,9 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
           if (len > MAX_VALUE_LENGTH)
             {
               g_warning ("%s: value for '%s' larger than our limit (%d)",
-                         G_STRFUNC, name, MAX_VALUE_LENGTH);
+                         G_STRFUNC,
+                         name,
+                         MAX_VALUE_LENGTH);
               g_string_free (stringbuf, TRUE);
               va_end (arg_ptr);
               return NULL;
@@ -680,7 +703,9 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
           if (n > MAX_VALUE_LENGTH)
             {
               g_warning ("%s: value for '%s' larger than our limit (%d)",
-                         G_STRFUNC, name, MAX_VALUE_LENGTH);
+                         G_STRFUNC,
+                         name,
+                         MAX_VALUE_LENGTH);
               return NULL;
             }
           nl = g_malloc (sizeof *nl + namelen);
@@ -723,7 +748,9 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
 failed:
   g_warning ("%s: decrypted credential data block is inconsistent;"
              " %zu bytes remaining at offset %zu",
-             G_STRFUNC, len, (size_t) (p - ctx->plaintext));
+             G_STRFUNC,
+             len,
+             (size_t) (p - ctx->plaintext));
 not_found:
   /* Cache a NULL value.  */
   nl = g_malloc (sizeof *nl + namelen);

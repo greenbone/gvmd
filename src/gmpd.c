@@ -110,9 +110,15 @@ init_gmpd (GSList *log_config, int nvt_cache_mode, const gchar *database,
            int max_email_include_size, int max_email_message_size,
            manage_connection_forker_t fork_connection, int skip_db_check)
 {
-  return init_gmp (log_config, nvt_cache_mode, database, max_ips_per_target,
-                   max_email_attachment_size, max_email_include_size,
-                   max_email_message_size, fork_connection, skip_db_check);
+  return init_gmp (log_config,
+                   nvt_cache_mode,
+                   database,
+                   max_ips_per_target,
+                   max_email_attachment_size,
+                   max_email_include_size,
+                   max_email_message_size,
+                   fork_connection,
+                   skip_db_check);
 }
 
 /**
@@ -144,7 +150,8 @@ read_from_client_unix (int client_socket)
   while (from_client_end < from_buffer_size)
     {
       int count;
-      count = read (client_socket, from_client + from_client_end,
+      count = read (client_socket,
+                    from_client + from_client_end,
                     from_buffer_size - from_client_end);
       if (count < 0)
         {
@@ -154,7 +161,8 @@ read_from_client_unix (int client_socket)
           if (errno == EINTR)
             /* Interrupted, try read again. */
             continue;
-          g_warning ("%s: failed to read from client: %s", __FUNCTION__,
+          g_warning ("%s: failed to read from client: %s",
+                     __FUNCTION__,
                      strerror (errno));
           return -1;
         }
@@ -193,9 +201,9 @@ read_from_client_tls (gnutls_session_t *client_session)
   while (from_client_end < from_buffer_size)
     {
       ssize_t count;
-      count =
-        gnutls_record_recv (*client_session, from_client + from_client_end,
-                            from_buffer_size - from_client_end);
+      count = gnutls_record_recv (*client_session,
+                                  from_client + from_client_end,
+                                  from_buffer_size - from_client_end);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
@@ -216,10 +224,11 @@ read_from_client_tls (gnutls_session_t *client_session)
             {
               int alert = gnutls_alert_get (*client_session);
               const char *alert_name = gnutls_alert_get_name (alert);
-              g_warning ("%s: TLS Alert %d: %s", __FUNCTION__, alert,
-                         alert_name);
+              g_warning (
+                "%s: TLS Alert %d: %s", __FUNCTION__, alert, alert_name);
             }
-          g_warning ("%s: failed to read from client: %s", __FUNCTION__,
+          g_warning ("%s: failed to read from client: %s",
+                     __FUNCTION__,
                      gnutls_strerror ((int) count));
           return -1;
         }
@@ -274,7 +283,8 @@ write_to_client_tls (gnutls_session_t *client_session)
   while (to_client_start < to_client_end)
     {
       ssize_t count;
-      count = gnutls_record_send (*client_session, to_client + to_client_start,
+      count = gnutls_record_send (*client_session,
+                                  to_client + to_client_start,
                                   to_client_end - to_client_start);
       if (count < 0)
         {
@@ -287,7 +297,8 @@ write_to_client_tls (gnutls_session_t *client_session)
           if (count == GNUTLS_E_REHANDSHAKE)
             /** @todo Rehandshake. */
             continue;
-          g_warning ("%s: failed to write to client: %s", __FUNCTION__,
+          g_warning ("%s: failed to write to client: %s",
+                     __FUNCTION__,
                      gnutls_strerror ((int) count));
           return -1;
         }
@@ -314,7 +325,8 @@ write_to_client_unix (int client_socket)
   while (to_client_start < to_client_end)
     {
       ssize_t count;
-      count = write (client_socket, to_client + to_client_start,
+      count = write (client_socket,
+                     to_client + to_client_start,
                      to_client_end - to_client_start);
       if (count < 0)
         {
@@ -324,7 +336,8 @@ write_to_client_unix (int client_socket)
           if (errno == EINTR)
             /* Interrupted, try write again. */
             continue;
-          g_warning ("%s: failed to write to client: %s", __FUNCTION__,
+          g_warning ("%s: failed to write to client: %s",
+                     __FUNCTION__,
                      strerror (errno));
           return -1;
         }
@@ -380,7 +393,8 @@ gmpd_send_to_client (const char *msg, void *write_to_client_data)
         case 0: /* Wrote everything in to_client. */
           break;
         case -1: /* Error. */
-          g_debug ("   %s full (%i < %zu); client write failed", __FUNCTION__,
+          g_debug ("   %s full (%i < %zu); client write failed",
+                   __FUNCTION__,
                    ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
                    strlen (msg));
           return TRUE;
@@ -479,9 +493,11 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
     g_debug ("   Serving GMP");
 
   /* Initialise the XML parser and the manage library. */
-  init_gmp_process (gmpd_nvt_cache_mode, database,
+  init_gmp_process (gmpd_nvt_cache_mode,
+                    database,
                     (int (*) (const char *, void *)) gmpd_send_to_client,
-                    (void *) client_connection, disable);
+                    (void *) client_connection,
+                    disable);
 
   /* Setup the scanner address and try to connect. */
   if (gmpd_nvt_cache_mode && !openvas_scanner_connected ())
@@ -545,7 +561,8 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
       if (termination_signal)
         {
-          g_debug ("%s: Received %s signal.", __FUNCTION__,
+          g_debug ("%s: Received %s signal.",
+                   __FUNCTION__,
                    sys_siglist[get_termination_signal ()]);
 
           if (openvas_scanner_connected ())
@@ -656,8 +673,8 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
         }
       else if (ret < 0)
         {
-          g_warning ("%s: child select failed: %s", __FUNCTION__,
-                     strerror (errno));
+          g_warning (
+            "%s: child select failed: %s", __FUNCTION__, strerror (errno));
           rc = -1;
           goto client_free;
         }
@@ -696,10 +713,12 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           if (from_client_end > initial_start)
             {
               if (g_strstr_len (from_client + initial_start,
-                                from_client_end - initial_start, "<password>"))
+                                from_client_end - initial_start,
+                                "<password>"))
                 g_debug ("<= client  Input may contain password, suppressed");
               else
-                g_debug ("<= client  \"%.*s\"", from_client_end - initial_start,
+                g_debug ("<= client  \"%.*s\"",
+                         from_client_end - initial_start,
                          from_client + initial_start);
             }
 

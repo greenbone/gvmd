@@ -389,13 +389,14 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
 
   lockfile_name = g_build_filename (GVM_RUN_DIR, lockfile_basename, NULL);
 
-  fd = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
+  fd = open (lockfile_name,
+             O_RDWR | O_CREAT | O_APPEND,
              /* "-rw-r--r--" */
              S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
   if (fd == -1)
     {
-      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
-                 strerror (errno));
+      g_warning (
+        "Failed to open lock file '%s': %s", lockfile_name, strerror (errno));
       lockfile->name = NULL;
       g_free (lockfile_name);
       return -1;
@@ -411,7 +412,8 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
       lockfile->name = NULL;
       g_free (lockfile_name);
       if (close (fd))
-        g_warning ("%s: failed to close lock file fd: %s", __FUNCTION__,
+        g_warning ("%s: failed to close lock file fd: %s",
+                   __FUNCTION__,
                    strerror (errno));
       if (flock_errno == EWOULDBLOCK)
         return 1;

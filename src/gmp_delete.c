@@ -94,8 +94,8 @@ delete_start (const gchar *type, const gchar *type_capital,
   append_attribute (attribute_names, attribute_values, id_name, &delete.id);
   g_free (id_name);
 
-  if (find_attribute (attribute_names, attribute_values, "ultimate",
-                      &attribute))
+  if (find_attribute (
+        attribute_names, attribute_values, "ultimate", &attribute))
     delete.ultimate = strcmp (attribute, "0");
   else
     delete.ultimate = 0;
@@ -137,8 +137,8 @@ delete_run (gmp_parser_t *gmp_parser, GError **error)
       log_event_fail (delete.type, delete.type_capital, delete.id, "deleted");
       break;
     case 2:
-      if (send_find_error_to_client (delete.command, delete.type, delete.id,
-                                     gmp_parser))
+      if (send_find_error_to_client (
+            delete.command, delete.type, delete.id, gmp_parser))
         {
           error_send_to_client (error);
           return;

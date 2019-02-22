@@ -237,9 +237,13 @@ write_message (task_t task, message_t *message, char *type)
   assert (global_current_report);
 
   manage_transaction_start ();
-  result =
-    make_result (task, message->host, message->hostname, message->port.string,
-                 message->oid, type, message->description);
+  result = make_result (task,
+                        message->host,
+                        message->hostname,
+                        message->port.string,
+                        message->oid,
+                        type,
+                        message->description);
   if (global_current_report)
     report_add_result (global_current_report, result);
 }
@@ -289,10 +293,12 @@ append_log_message (task_t task, message_t *message)
           && (message->description[len - 2] == '\\'))
         message->description[len - 2] = '\0';
       /* Add detail to report. */
-      if (manage_report_host_detail (global_current_report, message->host,
-                                     message->description))
+      if (manage_report_host_detail (
+            global_current_report, message->host, message->description))
         g_warning ("%s: Failed to add report detail for host '%s': %s",
-                   __FUNCTION__, message->host, message->description);
+                   __FUNCTION__,
+                   message->host,
+                   message->description);
     }
   else
     write_message (task, message, "Log Message");
@@ -827,11 +833,14 @@ process_otp_scanner_input ()
         {
           parse_scanner_loading (messages);
           if (scanner_current_loading && scanner_total_loading)
-            g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
+            g_log (G_LOG_DOMAIN,
+                   G_LOG_LEVEL_MESSAGE,
                    "Waiting for scanner to load NVTs: %d / %d",
-                   scanner_current_loading, scanner_total_loading);
+                   scanner_current_loading,
+                   scanner_total_loading);
           else
-            g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
+            g_log (G_LOG_DOMAIN,
+                   G_LOG_LEVEL_MESSAGE,
                    "Waiting for scanner to load: No information provided. "
                    "(Message: %s)",
                    messages);
@@ -853,7 +862,8 @@ process_otp_scanner_input ()
         {
           g_debug ("   scanner fail: expected \"%s\""
                    "   got \"%.12s\"",
-                   ver_str, messages);
+                   ver_str,
+                   messages);
           return -1;
         }
       from_scanner_start += ver_len;
@@ -1039,7 +1049,8 @@ process_otp_scanner_input ()
                     protocol[0] = '\0';
                   }
                 g_debug ("   scanner got debug port, number: %i, protocol: %s",
-                         number, protocol);
+                         number,
+                         protocol);
 
                 set_message_port_number (current_message, number);
                 set_message_port_protocol (current_message, protocol);
@@ -1119,7 +1130,8 @@ process_otp_scanner_input ()
                     protocol[0] = '\0';
                   }
                 g_debug ("   scanner got alarm port, number: %i, protocol: %s",
-                         number, protocol);
+                         number,
+                         protocol);
 
                 set_message_port_number (current_message, number);
                 set_message_port_protocol (current_message, protocol);
@@ -1199,7 +1211,8 @@ process_otp_scanner_input ()
                     protocol[0] = '\0';
                   }
                 g_debug ("   scanner got log port, number: %i, protocol: %s",
-                         number, protocol);
+                         number,
+                         protocol);
 
                 set_message_port_number (current_message, number);
                 set_message_port_protocol (current_message, protocol);
@@ -1386,8 +1399,11 @@ process_otp_scanner_input ()
                   int value_start = -1, value_end = -1, count;
                   char name[21];
                   /* LDAPsearch[entry]:Timeout value */
-                  count = sscanf (field, "%20[^[][%*[^]]]:%n%*[ -~]%n", name,
-                                  &value_start, &value_end);
+                  count = sscanf (field,
+                                  "%20[^[][%*[^]]]:%n%*[ -~]%n",
+                                  name,
+                                  &value_start,
+                                  &value_end);
                   if (count == 1 && value_start > 0 && value_end > 0
                       && ((strcmp (name, "SSH Authorization") == 0)
                           || (strcmp (name, "SNMP Authorization") == 0)
@@ -1474,8 +1490,8 @@ process_otp_scanner_input ()
                     unsigned int current, max;
                     g_debug ("   scanner got ports: %s", field);
                     if (sscanf (field, "%u/%u", &current, &max) == 2)
-                      set_scan_ports (global_current_report, current_host,
-                                      current, max);
+                      set_scan_ports (
+                        global_current_report, current_host, current, max);
                   }
                 if (current_host)
                   {
@@ -1524,8 +1540,8 @@ process_otp_scanner_input ()
                     assert (current_host);
                     assert (global_current_report);
 
-                    set_scan_host_start_time_otp (global_current_report,
-                                                  current_host, field);
+                    set_scan_host_start_time_otp (
+                      global_current_report, current_host, field);
                     g_free (current_host);
                     current_host = NULL;
                   }
@@ -1559,16 +1575,21 @@ process_otp_scanner_input ()
                   {
                     char *uuid;
                     uuid = report_uuid (global_current_report);
-                    host_notice (current_host, "ip", current_host,
-                                 "Report Host", uuid, 1, 0);
+                    host_notice (current_host,
+                                 "ip",
+                                 current_host,
+                                 "Report Host",
+                                 uuid,
+                                 1,
+                                 0);
                     free (uuid);
                   }
 
                 if (current_scanner_task)
                   {
                     assert (current_host);
-                    set_scan_host_end_time_otp (global_current_report,
-                                                current_host, field);
+                    set_scan_host_end_time_otp (
+                      global_current_report, current_host, field);
                     g_free (current_host);
                     current_host = NULL;
                   }
@@ -1628,8 +1649,8 @@ process_otp_scanner_input ()
                     if (global_current_report)
                       {
                         hosts_set_identifiers (global_current_report);
-                        hosts_set_max_severity (global_current_report, NULL,
-                                                NULL);
+                        hosts_set_max_severity (
+                          global_current_report, NULL, NULL);
                         hosts_set_details (global_current_report);
                         set_scan_end_time_otp (global_current_report, field);
                       }

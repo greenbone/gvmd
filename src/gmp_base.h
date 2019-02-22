@@ -76,19 +76,19 @@ internal_error_send_to_client (GError **);
  * @param[in]   format    Format string for message.
  * @param[in]   args      Arguments for format string.
  */
-#define SENDF_TO_CLIENT_OR_FAIL(format, args...)             \
-  do                                                         \
-    {                                                        \
-      gchar *msg = g_markup_printf_escaped (format, ##args); \
-      if (send_to_client (msg, gmp_parser->client_writer,    \
-                          gmp_parser->client_writer_data))   \
-        {                                                    \
-          g_free (msg);                                      \
-          error_send_to_client (error);                      \
-          return;                                            \
-        }                                                    \
-      g_free (msg);                                          \
-    }                                                        \
+#define SENDF_TO_CLIENT_OR_FAIL(format, args...)                             \
+  do                                                                         \
+    {                                                                        \
+      gchar *msg = g_markup_printf_escaped (format, ##args);                 \
+      if (send_to_client (                                                   \
+            msg, gmp_parser->client_writer, gmp_parser->client_writer_data)) \
+        {                                                                    \
+          g_free (msg);                                                      \
+          error_send_to_client (error);                                      \
+          return;                                                            \
+        }                                                                    \
+      g_free (msg);                                                          \
+    }                                                                        \
   while (0)
 
 /**
@@ -99,16 +99,16 @@ internal_error_send_to_client (GError **);
  *
  * @param[in]   msg    The message, a string.
  */
-#define SEND_TO_CLIENT_OR_FAIL(msg)                        \
-  do                                                       \
-    {                                                      \
-      if (send_to_client (msg, gmp_parser->client_writer,  \
-                          gmp_parser->client_writer_data)) \
-        {                                                  \
-          error_send_to_client (error);                    \
-          return;                                          \
-        }                                                  \
-    }                                                      \
+#define SEND_TO_CLIENT_OR_FAIL(msg)                                          \
+  do                                                                         \
+    {                                                                        \
+      if (send_to_client (                                                   \
+            msg, gmp_parser->client_writer, gmp_parser->client_writer_data)) \
+        {                                                                    \
+          error_send_to_client (error);                                      \
+          return;                                                            \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
 void
@@ -362,15 +362,17 @@ log_event_fail (const char *, const char *, const char *, const char *);
     {                                                                          \
       char *str;                                                               \
       if (scanner_current_loading && scanner_total_loading)                    \
-        str =                                                                  \
-          g_strdup_printf ("<%s_response status='%s' "                         \
-                           "status_text='Scanner loading nvts (%d/%d)'/>",     \
-                           tag, STATUS_SERVICE_DOWN, scanner_current_loading,  \
-                           scanner_total_loading);                             \
+        str = g_strdup_printf ("<%s_response status='%s' "                     \
+                               "status_text='Scanner loading nvts (%d/%d)'/>", \
+                               tag,                                            \
+                               STATUS_SERVICE_DOWN,                            \
+                               scanner_current_loading,                        \
+                               scanner_total_loading);                         \
       else                                                                     \
-        str =                                                                  \
-          g_strdup_printf ("<%s_response status='%s' status_text='%s'/>", tag, \
-                           STATUS_SERVICE_DOWN, STATUS_SERVICE_DOWN_TEXT);     \
+        str = g_strdup_printf ("<%s_response status='%s' status_text='%s'/>",  \
+                               tag,                                            \
+                               STATUS_SERVICE_DOWN,                            \
+                               STATUS_SERVICE_DOWN_TEXT);                      \
       SEND_TO_CLIENT_OR_FAIL (str);                                            \
       g_free (str);                                                            \
     }                                                                          \
