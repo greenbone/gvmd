@@ -348,7 +348,8 @@ create_ticket_reset ()
  * @param[in]  attribute_values  All attribute values.
  */
 void
-create_ticket_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
+create_ticket_start (gmp_parser_t *gmp_parser,
+                     const gchar **attribute_names,
                      const gchar **attribute_values)
 {
   memset (&create_ticket_data, 0, sizeof (create_ticket_t));
@@ -366,7 +367,8 @@ create_ticket_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
  * @param[in]  attribute_values  All attribute values.
  */
 void
-create_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
+create_ticket_element_start (gmp_parser_t *gmp_parser,
+                             const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
@@ -553,7 +555,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
  * @return 0 success, 1 command finished.
  */
 int
-create_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
+create_ticket_element_end (gmp_parser_t *gmp_parser,
+                           GError **error,
                            const gchar *name)
 {
   xml_handle_end_element (create_ticket_data.context, name);
@@ -617,7 +620,8 @@ modify_ticket_reset ()
  * @param[in]  attribute_values  All attribute values.
  */
 void
-modify_ticket_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
+modify_ticket_start (gmp_parser_t *gmp_parser,
+                     const gchar **attribute_names,
                      const gchar **attribute_values)
 {
   memset (&modify_ticket_data, 0, sizeof (modify_ticket_t));
@@ -635,7 +639,8 @@ modify_ticket_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
  * @param[in]  attribute_values  All attribute values.
  */
 void
-modify_ticket_element_start (gmp_parser_t *gmp_parser, const gchar *name,
+modify_ticket_element_start (gmp_parser_t *gmp_parser,
+                             const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
@@ -784,7 +789,8 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
  * @return 0 success, 1 command finished.
  */
 int
-modify_ticket_element_end (gmp_parser_t *gmp_parser, GError **error,
+modify_ticket_element_end (gmp_parser_t *gmp_parser,
+                           GError **error,
                            const gchar *name)
 {
   xml_handle_end_element (modify_ticket_data.context, name);

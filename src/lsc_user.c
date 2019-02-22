@@ -57,7 +57,8 @@
  * @return 0 if successful, -1 otherwise.
  */
 static int
-create_ssh_key (const char *comment, const char *passphrase,
+create_ssh_key (const char *comment,
+                const char *passphrase,
                 const char *privpath)
 {
   gchar *astdout = NULL;
@@ -190,7 +191,8 @@ free_exit:
  * @return Path to rpm file if successful, NULL otherwise.
  */
 static gboolean
-lsc_user_rpm_create (const gchar *username, const gchar *public_key_path,
+lsc_user_rpm_create (const gchar *username,
+                     const gchar *public_key_path,
                      const gchar *to_filename)
 {
   gint exit_status;
@@ -301,7 +303,9 @@ lsc_user_rpm_create (const gchar *username, const gchar *public_key_path,
  * @return 0 success, -1 error.
  */
 int
-lsc_user_rpm_recreate (const gchar *name, const char *public_key, void **rpm,
+lsc_user_rpm_recreate (const gchar *name,
+                       const char *public_key,
+                       void **rpm,
                        gsize *rpm_size)
 {
   GError *error;
@@ -378,8 +382,10 @@ free_exit:
  * @return Path to rpm file if successful, NULL otherwise.
  */
 static gboolean
-lsc_user_deb_create (const gchar *username, const gchar *public_key_path,
-                     const gchar *to_filename, const gchar *maintainer)
+lsc_user_deb_create (const gchar *username,
+                     const gchar *public_key_path,
+                     const gchar *to_filename,
+                     const gchar *maintainer)
 {
   gint exit_status;
   gchar *new_pubkey_filename = NULL;
@@ -493,8 +499,11 @@ lsc_user_deb_create (const gchar *username, const gchar *public_key_path,
  * @return 0 success, -1 error.
  */
 int
-lsc_user_deb_recreate (const gchar *name, const char *public_key,
-                       const char *maintainer, void **deb, gsize *deb_size)
+lsc_user_deb_recreate (const gchar *name,
+                       const char *public_key,
+                       const char *maintainer,
+                       void **deb,
+                       gsize *deb_size)
 {
   GError *error;
   char deb_dir[] = "/tmp/deb_XXXXXX";
@@ -570,8 +579,10 @@ free_exit:
  * @return 0 success, -1 error.
  */
 static int
-create_nsis_script (const gchar *script_name, const gchar *package_name,
-                    const gchar *user_name, const gchar *password)
+create_nsis_script (const gchar *script_name,
+                    const gchar *package_name,
+                    const gchar *user_name,
+                    const gchar *password)
 {
   FILE *fd;
 
@@ -762,7 +773,8 @@ execute_makensis (const gchar *nsis_script)
  * @return 0 success, -1 error.
  */
 static int
-lsc_user_exe_create (const gchar *user_name, const gchar *password,
+lsc_user_exe_create (const gchar *user_name,
+                     const gchar *password,
                      const gchar *to_filename)
 {
   gchar *dirname = g_path_get_dirname (to_filename);
@@ -799,7 +811,9 @@ lsc_user_exe_create (const gchar *user_name, const gchar *password,
  * @return 0 success, -1 error.
  */
 int
-lsc_user_exe_recreate (const gchar *name, const gchar *password, void **exe,
+lsc_user_exe_recreate (const gchar *name,
+                       const gchar *password,
+                       void **exe,
                        gsize *exe_size)
 {
   GError *error;

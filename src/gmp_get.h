@@ -29,7 +29,9 @@
 #include "manage.h"
 
 void
-get_data_parse_attributes (get_data_t *, const gchar *, const gchar **,
+get_data_parse_attributes (get_data_t *,
+                           const gchar *,
+                           const gchar **,
                            const gchar **);
 
 int
@@ -65,7 +67,10 @@ init_get (gchar *, get_data_t *, const gchar *, int *);
     }
 
 int
-get_next (iterator_t *, get_data_t *, int *, int *,
+get_next (iterator_t *,
+          get_data_t *,
+          int *,
+          int *,
           int (*) (iterator_t *, const get_data_t *));
 
 int
@@ -90,8 +95,13 @@ send_get_start (const char *, int (*) (const char *, void *), void *);
   while (0)
 
 int
-send_get_common (const char *, get_data_t *, iterator_t *,
-                 int (*) (const char *, void *), void *, int, int);
+send_get_common (const char *,
+                 get_data_t *,
+                 iterator_t *,
+                 int (*) (const char *, void *),
+                 void *,
+                 int,
+                 int);
 
 /**
  * @brief Send common part of GET response to client, returning on fail.
@@ -123,16 +133,26 @@ send_get_common (const char *, get_data_t *, iterator_t *,
   while (0)
 
 int
-buffer_get_filter_xml (GString *, const char *, const get_data_t *,
-                       const char *, const char *);
+buffer_get_filter_xml (GString *,
+                       const char *,
+                       const get_data_t *,
+                       const char *,
+                       const char *);
 
 int
-send_get_end (const char *, get_data_t *, int, int, int,
-              int (*) (const char *, void *), void *);
+send_get_end (const char *,
+              get_data_t *,
+              int,
+              int,
+              int,
+              int (*) (const char *, void *),
+              void *);
 
 int
-send_get_end_no_counts (const char *, get_data_t *,
-                        int (*) (const char *, void *), void *);
+send_get_end_no_counts (const char *,
+                        get_data_t *,
+                        int (*) (const char *, void *),
+                        void *);
 
 /**
  * @brief Send end of GET response to client, returning on fail.

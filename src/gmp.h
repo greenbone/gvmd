@@ -49,11 +49,21 @@
 #define TRUNCATE_TEXT_SUFFIX "[...]\n(text truncated)"
 
 int
-init_gmp (GSList *, int, const gchar *, int, int, int, int,
-          manage_connection_forker_t, int);
+init_gmp (GSList *,
+          int,
+          const gchar *,
+          int,
+          int,
+          int,
+          int,
+          manage_connection_forker_t,
+          int);
 
 void
-init_gmp_process (int, const gchar *, int (*) (const char *, void *), void *,
+init_gmp_process (int,
+                  const gchar *,
+                  int (*) (const char *, void *),
+                  void *,
                   gchar **);
 
 int

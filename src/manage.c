@@ -301,8 +301,10 @@ truncate_private_key (const gchar *private_key)
  * @return 0 success, -1 error.
  */
 int
-get_certificate_info (const gchar *certificate, time_t *activation_time,
-                      time_t *expiration_time, gchar **fingerprint,
+get_certificate_info (const gchar *certificate,
+                      time_t *activation_time,
+                      time_t *expiration_time,
+                      gchar **fingerprint,
                       gchar **issuer)
 {
   gchar *cert_truncated;
@@ -508,7 +510,8 @@ truncate_text (gchar *string, size_t max_len, gboolean xml, const char *suffix)
  * @return Newly allocated string with XML escaped, truncated text.
  */
 gchar *
-xml_escape_text_truncated (const char *string, size_t max_len,
+xml_escape_text_truncated (const char *string,
+                           size_t max_len,
                            const char *suffix)
 {
   gchar *escaped;
@@ -630,7 +633,8 @@ type_is_scap (const char *type)
  * @return 0 success, -1 error, 99 permission denied.
  */
 static int
-check_available (const gchar *type, resource_t resource,
+check_available (const gchar *type,
+                 resource_t resource,
                  const gchar *permission)
 {
   if (resource)
@@ -898,8 +902,11 @@ delete_reports (task_t task)
  * @return Filter term.
  */
 static gchar *
-report_results_filter_term (int first, int rows, int apply_overrides,
-                            int autofp, int min_qod)
+report_results_filter_term (int first,
+                            int rows,
+                            int apply_overrides,
+                            int autofp,
+                            int min_qod)
 {
   return g_strdup_printf ("first=%d rows=%d"
                           " apply_overrides=%d autofp=%d min_qod=%d",
@@ -922,7 +929,10 @@ report_results_filter_term (int first, int rows, int apply_overrides,
  * @return GET data struct.
  */
 get_data_t *
-report_results_get_data (int first, int rows, int apply_overrides, int autofp,
+report_results_get_data (int first,
+                         int rows,
+                         int apply_overrides,
+                         int autofp,
                          int min_qod)
 {
   get_data_t *get = g_malloc (sizeof (get_data_t));
@@ -1038,7 +1048,8 @@ severity_data_add (severity_data_t *severity_data, double severity)
  * @param[in]   count           The number of occurrences to add.
  */
 void
-severity_data_add_count (severity_data_t *severity_data, double severity,
+severity_data_add_count (severity_data_t *severity_data,
+                         double severity,
                          int count)
 {
   (severity_data->counts)[severity_data_index (severity)] += count;
@@ -1060,7 +1071,8 @@ severity_data_add_count (severity_data_t *severity_data, double severity,
  */
 static int
 severity_data_range_count (const severity_data_t *severity_data,
-                           double min_severity, double max_severity)
+                           double min_severity,
+                           double max_severity)
 {
   int i, i_max, count;
 
@@ -1089,9 +1101,14 @@ severity_data_range_count (const severity_data_t *severity_data,
  */
 void
 severity_data_level_counts (const severity_data_t *severity_data,
-                            const gchar *severity_class, int *errors,
-                            int *debugs, int *false_positives, int *logs,
-                            int *lows, int *mediums, int *highs)
+                            const gchar *severity_class,
+                            int *errors,
+                            int *debugs,
+                            int *false_positives,
+                            int *logs,
+                            int *lows,
+                            int *mediums,
+                            int *highs)
 {
   if (errors)
     *errors =
@@ -1646,8 +1663,10 @@ preference_value (const char *name, const char *full_value)
  * @return 0 on success, -1 on failure.
  */
 static int
-send_config_preferences (config_t config, const char *section_name,
-                         GSList *task_files, GPtrArray *pref_files)
+send_config_preferences (config_t config,
+                         const char *section_name,
+                         GSList *task_files,
+                         GPtrArray *pref_files)
 {
   iterator_t prefs;
 
@@ -2520,9 +2539,13 @@ get_tasks_last_report (entity_t get_tasks)
  * @return 0 success, 1 giveup.
  */
 static int
-setup_ids (gvm_connection_t *connection, task_t task, entity_t get_tasks,
-           gchar **slave_config_uuid, gchar **slave_target_uuid,
-           gchar **slave_port_list_uuid, gchar **slave_ssh_credential_uuid,
+setup_ids (gvm_connection_t *connection,
+           task_t task,
+           entity_t get_tasks,
+           gchar **slave_config_uuid,
+           gchar **slave_target_uuid,
+           gchar **slave_port_list_uuid,
+           gchar **slave_ssh_credential_uuid,
            gchar **slave_smb_credential_uuid,
            gchar **slave_esxi_credential_uuid,
            gchar **slave_snmp_credential_uuid)
@@ -2646,11 +2669,15 @@ set_task_interrupted (task_t task, const gchar *message)
  * @return 0 success, 1 retry, 3 giveup.
  */
 static int
-slave_setup (gvm_connection_t *connection, const char *name, task_t task,
-             target_t target, credential_t target_ssh_credential,
+slave_setup (gvm_connection_t *connection,
+             const char *name,
+             task_t task,
+             target_t target,
+             credential_t target_ssh_credential,
              credential_t target_smb_credential,
              credential_t target_esxi_credential,
-             credential_t target_snmp_credential, report_t last_stopped_report)
+             credential_t target_snmp_credential,
+             report_t last_stopped_report)
 {
   const int ret_giveup = 3;
   int ret_fail, next_result;
@@ -3701,13 +3728,16 @@ giveup:
  *         task name.
  */
 static int
-handle_slave_task (task_t task, target_t target,
+handle_slave_task (task_t task,
+                   target_t target,
                    credential_t target_ssh_credential,
                    credential_t target_smb_credential,
                    credential_t target_esxi_credential,
                    credential_t target_snmp_credential,
-                   report_t last_stopped_report, gvm_connection_t *connection,
-                   const gchar *slave_id, const gchar *slave_name)
+                   report_t last_stopped_report,
+                   gvm_connection_t *connection,
+                   const gchar *slave_id,
+                   const gchar *slave_name)
 {
   char *name, *uuid;
   int ret;
@@ -3949,8 +3979,12 @@ task_scanner_options (task_t task, target_t target)
  * @param[in]   key_priv    Private key.
  */
 static void
-delete_osp_scan (const char *report_id, const char *host, int port,
-                 const char *ca_pub, const char *key_pub, const char *key_priv)
+delete_osp_scan (const char *report_id,
+                 const char *host,
+                 int port,
+                 const char *ca_pub,
+                 const char *key_pub,
+                 const char *key_priv)
 {
   osp_connection_t *connection;
 
@@ -3979,9 +4013,14 @@ delete_osp_scan (const char *report_id, const char *host, int port,
  * @return -1 on error, progress value between 0 and 100 on success.
  */
 static int
-get_osp_scan_report (const char *scan_id, const char *host, int port,
-                     const char *ca_pub, const char *key_pub,
-                     const char *key_priv, int details, char **report_xml)
+get_osp_scan_report (const char *scan_id,
+                     const char *host,
+                     int port,
+                     const char *ca_pub,
+                     const char *key_pub,
+                     const char *key_priv,
+                     int details,
+                     char **report_xml)
 {
   osp_connection_t *connection;
   int progress;
@@ -4156,7 +4195,9 @@ get_osp_task_options (task_t task, target_t target)
  * @return 0 success, -1 if scanner is down.
  */
 static int
-launch_osp_task (task_t task, target_t target, const char *scan_id,
+launch_osp_task (task_t task,
+                 target_t target,
+                 const char *scan_id,
                  char **error)
 {
   osp_connection_t *connection;
@@ -4702,9 +4743,13 @@ scanner_setup (scanner_t scanner)
  * @return 0 success, -1 error, 99 permission denied.
  */
 static int
-run_task_setup (task_t task, config_t *config, target_t *target,
-                port_list_t *port_list, credential_t *ssh_credential,
-                credential_t *smb_credential, credential_t *esxi_credential,
+run_task_setup (task_t task,
+                config_t *config,
+                target_t *target,
+                port_list_t *port_list,
+                credential_t *ssh_credential,
+                credential_t *smb_credential,
+                credential_t *esxi_credential,
                 credential_t *snmp_credential)
 {
   int ret;
@@ -4765,7 +4810,9 @@ run_task_setup (task_t task, config_t *config, target_t *target,
  * @return 0 success, -1 error, -3 creating the report failed.
  */
 static int
-run_task_prepare_report (task_t task, char **report_id, int from,
+run_task_prepare_report (task_t task,
+                         char **report_id,
+                         int from,
                          task_status_t run_status,
                          report_t *last_stopped_report)
 {
@@ -4835,8 +4882,11 @@ run_task_prepare_report (task_t task, char **report_id, int from,
  *         -1 error.
  */
 static int
-run_slave_or_gmp_task (task_t task, int from, char **report_id,
-                       gvm_connection_t *connection, const gchar *slave_id,
+run_slave_or_gmp_task (task_t task,
+                       int from,
+                       char **report_id,
+                       gvm_connection_t *connection,
+                       const gchar *slave_id,
                        const gchar *slave_name)
 {
   int ret, pid;
@@ -6191,8 +6241,10 @@ credential_full_type (const char *abbreviation)
  * -1 otherwise.
  */
 static int
-get_slave_system_report_types (const char *required_type, gchar ***start,
-                               gchar ***types, const char *slave_id)
+get_slave_system_report_types (const char *required_type,
+                               gchar ***start,
+                               gchar ***types,
+                               const char *slave_id)
 {
   scanner_t slave = 0;
   char *host, **end;
@@ -6305,8 +6357,10 @@ fail:
  *         -1 otherwise.
  */
 static int
-get_system_report_types (const char *required_type, gchar ***start,
-                         gchar ***types, const char *slave_id)
+get_system_report_types (const char *required_type,
+                         gchar ***start,
+                         gchar ***types,
+                         const char *slave_id)
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
@@ -6403,7 +6457,8 @@ get_system_report_types (const char *required_type, gchar ***start,
  */
 int
 init_system_report_type_iterator (report_type_iterator_t *iterator,
-                                  const char *type, const char *slave_id)
+                                  const char *type,
+                                  const char *slave_id)
 {
   int ret;
 
@@ -6493,9 +6548,12 @@ report_type_iterator_title (report_type_iterator_t *iterator)
  * -1 otherwise.
  */
 static int
-slave_system_report (const char *name, const char *duration,
-                     const char *start_time, const char *end_time,
-                     const char *slave_id, char **report)
+slave_system_report (const char *name,
+                     const char *duration,
+                     const char *start_time,
+                     const char *end_time,
+                     const char *slave_id,
+                     char **report)
 {
   scanner_t slave = 0;
   char *host;
@@ -6607,9 +6665,12 @@ fail:
  *         5 authentication failed, 6 failed to get system report.
  */
 int
-manage_system_report (const char *name, const char *duration,
-                      const char *start_time, const char *end_time,
-                      const char *slave_id, char **report)
+manage_system_report (const char *name,
+                      const char *duration,
+                      const char *start_time,
+                      const char *end_time,
+                      const char *slave_id,
+                      char **report)
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
@@ -6836,7 +6897,8 @@ typedef struct
  * @return Scheduled task structure.
  */
 static scheduled_task_t *
-scheduled_task_new (const gchar *task_uuid, const gchar *owner_uuid,
+scheduled_task_new (const gchar *task_uuid,
+                    const gchar *owner_uuid,
                     const gchar *owner_name)
 {
   scheduled_task_t *scheduled_task;
@@ -7161,7 +7223,8 @@ manage_sync (sigset_t *sigmask_current, int (*fork_update_nvt_cache) ())
  * @return 0 success, 1 failed to get lock, -1 error.
  */
 int
-manage_schedule (manage_connection_forker_t fork_connection, gboolean run_tasks,
+manage_schedule (manage_connection_forker_t fork_connection,
+                 gboolean run_tasks,
                  sigset_t *sigmask_current)
 {
   iterator_t schedules;
@@ -7713,8 +7776,11 @@ parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base)
  * @return 0 success, -1 error.
  */
 int
-delete_slave_task (const gchar *host, int port, const gchar *username,
-                   const gchar *password, const char *slave_task_uuid)
+delete_slave_task (const gchar *host,
+                   int port,
+                   const gchar *username,
+                   const gchar *password,
+                   const char *slave_task_uuid)
 {
   int socket;
   gnutls_session_t session;
@@ -7938,7 +8004,9 @@ get_dfn_cert_adv_filename (char *item_id)
  *         result of the operation of NULL on failure.
  */
 static gchar *
-xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
+xsl_transform (gchar *stylesheet,
+               gchar *xmlfile,
+               gchar **param_names,
                gchar **param_values)
 {
   int i, param_idx;
@@ -8038,8 +8106,13 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
  * @return A dynamically allocated string containing the XML description.
  */
 gchar *
-get_nvti_xml (iterator_t *nvts, int details, int pref_count, int preferences,
-              const char *timeout, config_t config, int close_tag)
+get_nvti_xml (iterator_t *nvts,
+              int details,
+              int pref_count,
+              int preferences,
+              const char *timeout,
+              config_t config,
+              int close_tag)
 {
   const char *oid = nvt_iterator_oid (nvts);
   const char *name = nvt_iterator_name (nvts);
@@ -8509,7 +8582,8 @@ gvm_sync_script_perform_selftest (const gchar *sync_script, gchar **result)
  */
 gboolean
 gvm_get_sync_script_identification (const gchar *sync_script,
-                                    gchar **identification, int feed_type)
+                                    gchar **identification,
+                                    int feed_type)
 {
   g_assert (sync_script);
   if (identification)
@@ -8851,9 +8925,13 @@ gvm_migrate_secinfo (int feed_type)
 int
 manage_run_wizard (const gchar *wizard_name,
                    int (*run_command) (void *, gchar *, gchar **),
-                   void *run_command_data, array_t *params, int read_only,
-                   const char *mode, gchar **command_error,
-                   gchar **command_error_code, gchar **ret_response)
+                   void *run_command_data,
+                   array_t *params,
+                   int read_only,
+                   const char *mode,
+                   gchar **command_error,
+                   gchar **command_error_code,
+                   gchar **ret_response)
 {
   GString *params_xml;
   gchar *file, *file_name, *response, *extra, *extra_wrapped, *wizard;

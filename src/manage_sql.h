@@ -499,8 +499,11 @@ gchar *
 resource_uuid (const gchar *, resource_t);
 
 gboolean
-find_resource_with_permission (const char *, const char *, resource_t *,
-                               const char *, int);
+find_resource_with_permission (const char *,
+                               const char *,
+                               resource_t *,
+                               const char *,
+                               int);
 
 void
 parse_osp_report (task_t, report_t, const char *);
@@ -536,20 +539,43 @@ int
 manage_db_check (const gchar *);
 
 int
-count (const char *, const get_data_t *, column_t *, column_t *, const char **,
-       int, const char *, const char *, int);
+count (const char *,
+       const get_data_t *,
+       column_t *,
+       column_t *,
+       const char **,
+       int,
+       const char *,
+       const char *,
+       int);
 
 int
-init_get_iterator (iterator_t *, const char *, const get_data_t *, column_t *,
-                   column_t *, const char **, int, const char *, const char *,
+init_get_iterator (iterator_t *,
+                   const char *,
+                   const get_data_t *,
+                   column_t *,
+                   column_t *,
+                   const char **,
+                   int,
+                   const char *,
+                   const char *,
                    int);
 
 gchar *
 columns_build_select (column_t *);
 
 gchar *
-filter_clause (const char *, const char *, const char **, column_t *,
-               column_t *, int, gchar **, int *, int *, array_t **, gchar **);
+filter_clause (const char *,
+               const char *,
+               const char **,
+               column_t *,
+               column_t *,
+               int,
+               gchar **,
+               int *,
+               int *,
+               array_t **,
+               gchar **);
 
 void
 check_alerts ();
@@ -582,15 +608,25 @@ void
 permissions_set_orphans (const char *, resource_t, int);
 
 int
-copy_resource (const char *, const char *, const char *, const char *,
-               const char *, int, resource_t *, resource_t *);
+copy_resource (const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               int,
+               resource_t *,
+               resource_t *);
 
 gboolean
 resource_with_name_exists (const char *, const char *, resource_t);
 
 int
-create_permission_internal (const char *, const char *, const char *,
-                            const char *, const char *, const char *,
+create_permission_internal (const char *,
+                            const char *,
+                            const char *,
+                            const char *,
+                            const char *,
+                            const char *,
                             permission_t *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */

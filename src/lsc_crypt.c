@@ -398,7 +398,8 @@ do_encrypt (lsc_crypt_ctx_t ctx, const void *plaintext, size_t plaintextlen)
  *         returned on error.
  */
 static char *
-do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
+do_decrypt (lsc_crypt_ctx_t ctx,
+            const char *cipherstring,
             size_t *r_plaintextlen)
 {
   gpg_error_t err;
@@ -631,7 +632,8 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
  *         returned.
  */
 const char *
-lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
+lsc_crypt_decrypt (lsc_crypt_ctx_t ctx,
+                   const char *ciphertext,
                    const char *name)
 {
   size_t namelen;

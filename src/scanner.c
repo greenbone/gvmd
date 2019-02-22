@@ -905,7 +905,8 @@ openvas_scanner_set_unix (const char *path)
  * @param[in]  key_priv     Scanner private key.
  */
 void
-openvas_scanner_set_certs (const char *ca_pub, const char *key_pub,
+openvas_scanner_set_certs (const char *ca_pub,
+                           const char *key_pub,
                            const char *key_priv)
 {
   if (openvas_scanner_unix_path)

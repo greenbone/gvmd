@@ -84,8 +84,10 @@ delete_reset ()
  * @param[in]  attribute_values  All attribute values.
  */
 void
-delete_start (const gchar *type, const gchar *type_capital,
-              const gchar **attribute_names, const gchar **attribute_values)
+delete_start (const gchar *type,
+              const gchar *type_capital,
+              const gchar **attribute_names,
+              const gchar **attribute_values)
 {
   const gchar *attribute;
   gchar *id_name, *command;

@@ -284,7 +284,8 @@ sql_order_inet (sqlite3_context *context, int argc, sqlite3_value **argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_order_message_type (sqlite3_context *context, int argc,
+sql_order_message_type (sqlite3_context *context,
+                        int argc,
                         sqlite3_value **argv)
 {
   const char *type;
@@ -503,7 +504,8 @@ sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value **argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_merge_dfn_cert_adv (sqlite3_context *context, int argc,
+sql_merge_dfn_cert_adv (sqlite3_context *context,
+                        int argc,
                         sqlite3_value **argv)
 {
   const unsigned char *refnum, *title, *summary;
@@ -927,7 +929,8 @@ sql_merge_cpe_name (sqlite3_context *context, int argc, sqlite3_value **argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_merge_affected_product (sqlite3_context *context, int argc,
+sql_merge_affected_product (sqlite3_context *context,
+                            int argc,
                             sqlite3_value **argv)
 {
   int cve, cpe;
@@ -1415,8 +1418,10 @@ sql_max_hosts (sqlite3_context *context, int argc, sqlite3_value **argv)
  * @param[in]  new_name   Name of column in new table.
  */
 void
-sql_rename_column (const char *old_table, const char *new_table,
-                   const char *old_name, const char *new_name)
+sql_rename_column (const char *old_table,
+                   const char *new_table,
+                   const char *old_name,
+                   const char *new_name)
 {
   iterator_t rows;
 
@@ -1724,7 +1729,9 @@ clear_cache (void *cache_arg)
  * @return Severity.
  */
 static char *
-cached_task_severity (sqlite3_context *context, task_t task, int overrides,
+cached_task_severity (sqlite3_context *context,
+                      task_t task,
+                      int overrides,
                       int min_qod)
 {
   static sql_severity_t static_cache = {.task = 0,
@@ -1973,7 +1980,8 @@ report_severity_count (report_t report, int overrides, int min_qod, char *level)
  * @param[in]  argv     Argument array.
  */
 void
-sql_report_severity_count (sqlite3_context *context, int argc,
+sql_report_severity_count (sqlite3_context *context,
+                           int argc,
                            sqlite3_value **argv)
 {
   report_t report;
@@ -2051,7 +2059,8 @@ sql_report_host_count (sqlite3_context *context, int argc, sqlite3_value **argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_report_result_host_count (sqlite3_context *context, int argc,
+sql_report_result_host_count (sqlite3_context *context,
+                              int argc,
                               sqlite3_value **argv)
 {
   report_t report;
@@ -2167,7 +2176,8 @@ sql_task_last_report (sqlite3_context *context, int argc, sqlite3_value **argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_severity_matches_ov (sqlite3_context *context, int argc,
+sql_severity_matches_ov (sqlite3_context *context,
+                         int argc,
                          sqlite3_value **argv)
 {
   double severity, ov_severity;
@@ -2508,7 +2518,8 @@ sql_target_credential (sqlite3_context *context, int argc, sqlite3_value **argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_trash_target_credential_location (sqlite3_context *context, int argc,
+sql_trash_target_credential_location (sqlite3_context *context,
+                                      int argc,
                                       sqlite3_value **argv)
 {
   target_t target;
@@ -2576,7 +2587,8 @@ sql_target_login_port (sqlite3_context *context, int argc, sqlite3_value **argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_user_can_everything (sqlite3_context *context, int argc,
+sql_user_can_everything (sqlite3_context *context,
+                         int argc,
                          sqlite3_value **argv)
 {
   const unsigned char *uuid;
@@ -2603,7 +2615,8 @@ sql_user_can_everything (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_user_has_access_uuid (sqlite3_context *context, int argc,
+sql_user_has_access_uuid (sqlite3_context *context,
+                          int argc,
                           sqlite3_value **argv)
 {
   const unsigned char *type, *uuid, *permission;
@@ -4966,7 +4979,8 @@ manage_backup_db (const gchar *database)
  * @param[in]  argv     Argument array.
  */
 void
-migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
+migrate_51_to_52_sql_convert (sqlite3_context *context,
+                              int argc,
                               sqlite3_value **argv)
 {
   const unsigned char *text_time;
