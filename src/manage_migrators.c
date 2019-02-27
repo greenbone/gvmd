@@ -116,28 +116,26 @@
 /* time.h in glibc2 needs this for strptime. */
 #define _XOPEN_SOURCE
 
-#include <time.h>
-#include <stdlib.h>
-#include <string.h>
+#include <assert.h>
 #include <errno.h>
 #include <glib/gstdio.h>
-#include <assert.h>
-#include <sys/stat.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/param.h>
+#include <sys/stat.h>
+#include <time.h>
 #ifdef __FreeBSD__
 #include <sys/wait.h>
 #endif
+#include "manage_sql.h"
+#include "sql.h"
+#include "utils.h"
+
 #include <ctype.h>
 #include <dirent.h>
-
-#include "manage_sql.h"
-#include "utils.h"
-#include "sql.h"
-
 #include <gvm/base/logging.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/uuidutils.h>
-
 
 #undef G_LOG_DOMAIN
 /**
@@ -150,7 +148,6 @@
 void
 manage_create_result_indexes ();
 
-
 /* Types. */
 
 /**
@@ -158,8 +155,8 @@ manage_create_result_indexes ();
  */
 typedef struct
 {
-  int version;         ///< Version that the migrator produces.
-  int (*function) ();  ///< Function that does the migration.  NULL if too hard.
+  int version;        ///< Version that the migrator produces.
+  int (*function) (); ///< Function that does the migration.  NULL if too hard.
 } migrator_t;
 
 /* Functions. */
@@ -169,6 +166,8 @@ typedef struct
  * Currently the SQL functions abort on failure.  This a general problem,
  * not just for migrators, so perhaps the SQL interface should keep
  * track of the transaction, and rollback before aborting. */
+
+// clang-format off
 
 /**
  * @brief Permission SQL for migrate_150_to_151.
@@ -187,6 +186,7 @@ typedef struct
        "  (SELECT id FROM roles WHERE uuid = '%s'),"                           \
        "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",             \
        role)
+// clang-format on
 
 /**
  * @brief Migrate the database from version 184 to version 185.
@@ -215,7 +215,7 @@ migrate_184_to_185 ()
        "   SET scanner_location = " G_STRINGIFY (LOCATION_TABLE));
 
   /* Remove the foreign key constraint in Postgres */
-  if (! sql_is_sqlite3 ())
+  if (!sql_is_sqlite3 ())
     {
       iterator_t fkeys;
       init_iterator (&fkeys,
@@ -228,12 +228,10 @@ migrate_184_to_185 ()
                      "  AND ccu.table_name = 'scanners';");
       while (next (&fkeys))
         {
-          const char* constraint_name;
+          const char *constraint_name;
           constraint_name = iterator_string (&fkeys, 0);
-          sql ("ALTER TABLE configs_trash DROP constraint %s",
-               constraint_name);
+          sql ("ALTER TABLE configs_trash DROP constraint %s", constraint_name);
         }
-
     }
 
   /* Set the database version to 185. */
@@ -513,7 +511,6 @@ migrate_190_to_191 ()
   icalcomponent *ical_component;
   gchar *quoted_ical;
 
-
   sql_begin_immediate ();
 
   /* Ensure that the database is currently version 190. */
@@ -548,21 +545,26 @@ migrate_190_to_191 ()
       byday = iterator_int (&schedule_iter, 5);
       zone = iterator_string (&schedule_iter, 6);
 
-      ical_component
-        = icalendar_from_old_schedule_data (first_time, period, period_months,
-                                            duration, byday, zone);
+      ical_component = icalendar_from_old_schedule_data (
+        first_time, period, period_months, duration, byday, zone);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
 
       g_debug ("%s: schedule %llu - first: %s (%s), period: %ld,"
                " period_months: %ld, duration: %ld - byday: %d\n"
                "generated iCalendar:\n%s",
-               __FUNCTION__, schedule,
+               __FUNCTION__,
+               schedule,
                iso_time_tz (&first_time, zone, NULL),
-               zone, period, period_months, duration, byday,
+               zone,
+               period,
+               period_months,
+               duration,
+               byday,
                quoted_ical);
 
       sql ("UPDATE schedules SET icalendar = '%s' WHERE id = %llu",
-           quoted_ical, schedule);
+           quoted_ical,
+           schedule);
 
       icalcomponent_free (ical_component);
       g_free (quoted_ical);
@@ -586,21 +588,26 @@ migrate_190_to_191 ()
       byday = iterator_int (&schedule_iter, 5);
       zone = iterator_string (&schedule_iter, 6);
 
-      ical_component
-        = icalendar_from_old_schedule_data (first_time, period, period_months,
-                                            duration, byday, zone);
+      ical_component = icalendar_from_old_schedule_data (
+        first_time, period, period_months, duration, byday, zone);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
 
       g_debug ("%s: trash schedule %llu - first: %s (%s), period: %ld,"
                " period_months: %ld, duration: %ld - byday: %d\n"
                "generated iCalendar:\n%s",
-               __FUNCTION__, schedule,
+               __FUNCTION__,
+               schedule,
                iso_time_tz (&first_time, zone, NULL),
-               zone, period, period_months, duration, byday,
+               zone,
+               period,
+               period_months,
+               duration,
+               byday,
                quoted_ical);
 
       sql ("UPDATE schedules_trash SET icalendar = '%s' WHERE id = %llu",
-           quoted_ical, schedule);
+           quoted_ical,
+           schedule);
 
       icalcomponent_free (ical_component);
       g_free (quoted_ical);
@@ -692,18 +699,18 @@ migrate_192_to_193 ()
   else
     {
       sql ("CREATE TABLE IF NOT EXISTS tag_resources"
-          " (tag integer REFERENCES tags (id),"
-          "  resource_type text,"
-          "  resource integer,"
-          "  resource_uuid text,"
-          "  resource_location integer);");
+           " (tag integer REFERENCES tags (id),"
+           "  resource_type text,"
+           "  resource integer,"
+           "  resource_uuid text,"
+           "  resource_location integer);");
 
       sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
-          " (tag integer REFERENCES tags_trash (id),"
-          "  resource_type text,"
-          "  resource integer,"
-          "  resource_uuid text,"
-          "  resource_location integer);");
+           " (tag integer REFERENCES tags_trash (id),"
+           "  resource_type text,"
+           "  resource integer,"
+           "  resource_uuid text,"
+           "  resource_location integer);");
     }
 
   /* Move tag resources to new tables */
@@ -965,12 +972,13 @@ migrate_196_to_197 ()
     {
       sql ("ALTER TABLE reports RENAME TO reports_196;");
 
-      sql ("CREATE TABLE IF NOT EXISTS reports"
-           " (id INTEGER PRIMARY KEY, uuid, owner INTEGER,"
-           "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
-           "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
-           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
-           "  flags INTEGER);");
+      sql (
+        "CREATE TABLE IF NOT EXISTS reports"
+        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER,"
+        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
+        "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
+        "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
+        "  flags INTEGER);");
 
       sql ("INSERT INTO reports"
            " (id, uuid, owner, task, date, start_time, end_time, nbefile,"
@@ -1024,11 +1032,12 @@ migrate_197_to_198 ()
     {
       sql ("ALTER TABLE nvts RENAME TO nvts_197;");
 
-      sql ("CREATE TABLE IF NOT EXISTS nvts"
-           " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
-           "  cve, bid, xref, tag, category INTEGER, family, cvss_base,"
-           "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
-           "  qod_type TEXT);");
+      sql (
+        "CREATE TABLE IF NOT EXISTS nvts"
+        " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
+        "  cve, bid, xref, tag, category INTEGER, family, cvss_base,"
+        "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
+        "  qod_type TEXT);");
 
       sql ("INSERT INTO nvts"
            " (id, uuid, oid, name, comment, cve, bid, xref, tag, category,"
@@ -1090,7 +1099,8 @@ migrate_198_to_199 ()
 /**
  * @brief UUID of 'Discovery' NVT selector, for migrator.
  */
-#define MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "0d9a2738-8fe2-4e22-8f26-bb886179e759"
+#define MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY \
+  "0d9a2738-8fe2-4e22-8f26-bb886179e759"
 
 /**
  * @brief NVT selector type for "NVT" rule.
@@ -1119,6 +1129,7 @@ migrate_199_to_200 ()
 
   /* Various NVTs were added to and removed from the Discovery scan config. */
 
+  // clang-format off
   sql ("DELETE FROM nvt_selectors WHERE "
        " name='" MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "'"
        " AND (family_or_nvt='1.3.6.1.4.1.25623.1.0.902799'"
@@ -1149,6 +1160,7 @@ migrate_199_to_200 ()
        "        ('" MIGRATE_TO_200_NVT_SELECTOR_UUID_DISCOVERY "', 0,"
        "         " G_STRINGIFY (MIGRATE_TO_200_NVT_SELECTOR_TYPE_NVT) ","
        "         '1.3.6.1.4.1.25623.1.0.10942', 'Service detection');");
+  // clang-format on
 
   /* Set the database version to 200. */
 
@@ -1338,7 +1350,8 @@ migrate_203_to_204 ()
       sql ("UPDATE tickets SET open_comment = 'No comment for migration.';");
 
       sql ("ALTER TABLE tickets_trash ADD COLUMN open_comment text;");
-      sql ("UPDATE tickets_trash SET open_comment = 'No comment for migration.';");
+      sql (
+        "UPDATE tickets_trash SET open_comment = 'No comment for migration.';");
     }
 
   /* Set the database version to 204. */
@@ -1442,8 +1455,8 @@ replace_preference_names_205_to_206 (const char *table_name)
 
       // Find OID:
       quoted_nvt_name = sql_quote (nvt_name);
-      oid = sql_string ("SELECT oid FROM nvts WHERE name = '%s';",
-                        quoted_nvt_name);
+      oid =
+        sql_string ("SELECT oid FROM nvts WHERE name = '%s';", quoted_nvt_name);
 
       // Update
       if (oid)
@@ -1451,7 +1464,9 @@ replace_preference_names_205_to_206 (const char *table_name)
           new_name = g_strdup_printf ("%s:%s:%s", oid, type, preference);
           quoted_new_name = sql_quote (new_name);
           sql ("UPDATE \"%s\" SET name = '%s' WHERE id = %llu",
-              table_name, quoted_new_name, rowid);
+               table_name,
+               quoted_new_name,
+               rowid);
         }
       else
         {
@@ -1514,31 +1529,31 @@ migrate_205_to_206 ()
 /**
  * @brief Array of database version migrators.
  */
-static migrator_t database_migrators[]
- = {{185, migrate_184_to_185}, // v7.0: rev 184
-    {186, migrate_185_to_186},
-    {187, migrate_186_to_187},
-    {188, migrate_187_to_188},
-    {189, migrate_188_to_189},
-    {190, migrate_189_to_190},
-    {191, migrate_190_to_191},
-    {192, migrate_191_to_192},
-    {193, migrate_192_to_193},
-    {194, migrate_193_to_194},
-    {195, migrate_194_to_195},
-    {196, migrate_195_to_196},
-    {197, migrate_196_to_197},
-    {198, migrate_197_to_198},
-    {199, migrate_198_to_199},
-    {200, migrate_199_to_200},
-    {201, migrate_200_to_201},
-    {202, migrate_201_to_202},
-    {203, migrate_202_to_203},
-    {204, migrate_203_to_204},
-    {205, migrate_204_to_205}, // v8.0: rev 205
-    {206, migrate_205_to_206},
-    /* End marker. */
-    {-1, NULL}};
+static migrator_t database_migrators[] = {
+  {185, migrate_184_to_185}, // v7.0: rev 184
+  {186, migrate_185_to_186},
+  {187, migrate_186_to_187},
+  {188, migrate_187_to_188},
+  {189, migrate_188_to_189},
+  {190, migrate_189_to_190},
+  {191, migrate_190_to_191},
+  {192, migrate_191_to_192},
+  {193, migrate_192_to_193},
+  {194, migrate_193_to_194},
+  {195, migrate_194_to_195},
+  {196, migrate_195_to_196},
+  {197, migrate_196_to_197},
+  {198, migrate_197_to_198},
+  {199, migrate_198_to_199},
+  {200, migrate_199_to_200},
+  {201, migrate_200_to_201},
+  {202, migrate_201_to_202},
+  {203, migrate_202_to_203},
+  {204, migrate_203_to_204},
+  {205, migrate_204_to_205}, // v8.0: rev 205
+  {206, migrate_205_to_206},
+  /* End marker. */
+  {-1, NULL}};
 
 /**
  * @brief Check whether the migration needs the real timezone.
@@ -1552,10 +1567,8 @@ gboolean
 manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
 {
   int db_version;
-  g_log_set_handler (G_LOG_DOMAIN,
-                     ALL_LOG_LEVELS,
-                     (GLogFunc) gvm_log_func,
-                     log_config);
+  g_log_set_handler (
+    G_LOG_DOMAIN, ALL_LOG_LEVELS, (GLogFunc) gvm_log_func, log_config);
   init_manage_process (0, database);
   db_version = manage_db_version ();
   cleanup_manage_process (TRUE);
@@ -1579,8 +1592,10 @@ migrate_is_available (int old_version, int new_version)
 
   while ((migrators->version >= 0) && (migrators->version <= new_version))
     {
-      if (migrators->function == NULL) return 0;
-      if (migrators->version == new_version) return 1;
+      if (migrators->function == NULL)
+        return 0;
+      if (migrators->version == new_version)
+        return 1;
       migrators++;
     }
 
@@ -1607,10 +1622,8 @@ manage_migrate (GSList *log_config, const gchar *database)
   int new_version, new_scap_version, new_cert_version;
   int version_current = 0, scap_version_current = 0, cert_version_current = 0;
 
-  g_log_set_handler (G_LOG_DOMAIN,
-                     ALL_LOG_LEVELS,
-                     (GLogFunc) gvm_log_func,
-                     log_config);
+  g_log_set_handler (
+    G_LOG_DOMAIN, ALL_LOG_LEVELS, (GLogFunc) gvm_log_func, log_config);
 
   init_manage_process (0, database);
 
@@ -1637,12 +1650,12 @@ manage_migrate (GSList *log_config, const gchar *database)
     {
       switch (migrate_is_available (old_version, new_version))
         {
-          case -1:
-            cleanup_manage_process (TRUE);
-            return -1;
-          case  0:
-            cleanup_manage_process (TRUE);
-            return  2;
+        case -1:
+          cleanup_manage_process (TRUE);
+          return -1;
+        case 0:
+          cleanup_manage_process (TRUE);
+          return 2;
         }
 
       /* Call the migrators to take the DB from the old version to the new. */
@@ -1694,20 +1707,20 @@ manage_migrate (GSList *log_config, const gchar *database)
       g_message ("Migrating SCAP database");
       switch (gvm_migrate_secinfo (SCAP_FEED))
         {
-          case 0:
-            g_message ("SCAP database migrated successfully");
-            break;
-          case 1:
-            g_warning ("SCAP sync already running");
-            cleanup_manage_process (TRUE);
-            return 11;
-            break;
-          default:
-            assert (0);
-          case -1:
-            cleanup_manage_process (TRUE);
-            return -11;
-            break;
+        case 0:
+          g_message ("SCAP database migrated successfully");
+          break;
+        case 1:
+          g_warning ("SCAP sync already running");
+          cleanup_manage_process (TRUE);
+          return 11;
+          break;
+        default:
+          assert (0);
+        case -1:
+          cleanup_manage_process (TRUE);
+          return -11;
+          break;
         }
     }
 
@@ -1731,20 +1744,20 @@ manage_migrate (GSList *log_config, const gchar *database)
       g_message ("Migrating CERT database");
       switch (gvm_migrate_secinfo (CERT_FEED))
         {
-          case 0:
-            g_message ("CERT database migrated successfully");
-            break;
-          case 1:
-            g_warning ("CERT sync already running");
-            cleanup_manage_process (TRUE);
-            return 12;
-            break;
-          default:
-            assert (0);
-          case -1:
-            cleanup_manage_process (TRUE);
-            return -12;
-            break;
+        case 0:
+          g_message ("CERT database migrated successfully");
+          break;
+        case 1:
+          g_warning ("CERT sync already running");
+          cleanup_manage_process (TRUE);
+          return 12;
+          break;
+        default:
+          assert (0);
+        case -1:
+          cleanup_manage_process (TRUE);
+          return -12;
+          break;
         }
     }
 
