@@ -25,11 +25,13 @@
  * functions for the management layer that need to be implemented in C.
  */
 
+// clang-format off
+#include "postgres.h" /* Keep include before executor/spi.h */
+// clang-format on
 #include "executor/spi.h"
 #include "fmgr.h"
 #include "glib.h"
 #include "manage_utils.h"
-#include "postgres.h"
 
 #include <gvm/base/hosts.h>
 
