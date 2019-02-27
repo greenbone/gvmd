@@ -45,8 +45,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #undef G_LOG_DOMAIN
@@ -55,7 +55,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-
 /* Sleep. */
 
 /**
@@ -102,7 +101,6 @@ gvm_sleep (unsigned int seconds)
   return gvm_usleep (seconds * 1000000);
 }
 
-
 /* Time. */
 
 /**
@@ -135,7 +133,7 @@ parse_utc_time (const char *format, const char *text_time)
     }
 
   memset (&tm, 0, sizeof (struct tm));
-  if (strptime ((char*) text_time, format, &tm) == NULL)
+  if (strptime ((char *) text_time, format, &tm) == NULL)
     {
       g_warning ("%s: Failed to parse time", __FUNCTION__);
       if (tz != NULL)
@@ -216,7 +214,7 @@ parse_ctime (const char *text_time)
   /* ctime format: "Wed Jun 30 21:49:08 1993". */
 
   memset (&tm, 0, sizeof (struct tm));
-  if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
+  if (strptime ((char *) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
     {
       g_warning ("%s: Failed to parse time '%s'", __FUNCTION__, text_time);
       return 0;
@@ -245,7 +243,8 @@ days_from_now (time_t *epoch_time)
   time_t now = time (NULL);
   int diff = *epoch_time - now;
 
-  if (diff < 0) return -1;
+  if (diff < 0)
+    return -1;
   return diff / 86400; /* 60 sec * 60 min * 24 h */
 }
 
@@ -367,7 +366,6 @@ iso_time_tz (time_t *epoch_time, const char *zone, const char **abbrev)
   return ret;
 }
 
-
 /* Locks. */
 
 /**
@@ -381,7 +379,8 @@ iso_time_tz (time_t *epoch_time, const char *zone, const char **abbrev)
  * @return 0 success, 1 already locked, -1 error
  */
 static int
-lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
+lock_internal (lockfile_t *lockfile,
+               const gchar *lockfile_basename,
                int operation)
 {
   int fd;
@@ -391,13 +390,14 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
 
   lockfile_name = g_build_filename (GVM_RUN_DIR, lockfile_basename, NULL);
 
-  fd = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
+  fd = open (lockfile_name,
+             O_RDWR | O_CREAT | O_APPEND,
              /* "-rw-r--r--" */
              S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
   if (fd == -1)
     {
-      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
-                 strerror (errno));
+      g_warning (
+        "Failed to open lock file '%s': %s", lockfile_name, strerror (errno));
       lockfile->name = NULL;
       g_free (lockfile_name);
       return -1;
@@ -405,7 +405,7 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
 
   /* Lock the lockfile. */
 
-  if (flock (fd, operation))  /* Blocks, unless operation includes LOCK_NB. */
+  if (flock (fd, operation)) /* Blocks, unless operation includes LOCK_NB. */
     {
       int flock_errno;
 

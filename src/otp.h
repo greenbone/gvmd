@@ -26,6 +26,7 @@
 #define _GVMD_OTP_H
 
 #include "manage.h"
+
 #include <glib.h>
 
 void

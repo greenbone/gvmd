@@ -25,12 +25,13 @@
  * functions for the management layer that need to be implemented in C.
  */
 
-#include "manage_utils.h"
-
-#include "postgres.h"
-#include "fmgr.h"
+// clang-format off
+#include "postgres.h" /* Keep include before executor/spi.h */
+// clang-format on
 #include "executor/spi.h"
+#include "fmgr.h"
 #include "glib.h"
+#include "manage_utils.h"
 
 #include <gvm/base/hosts.h>
 
@@ -70,7 +71,7 @@ get_max_hosts ()
   ret = SPI_exec ("SELECT coalesce ((SELECT value FROM meta"
                   "                  WHERE name = 'max_hosts'),"
                   "                 '4095');", /* Same as MANAGE_MAX_HOSTS. */
-                  1); /* Max 1 row returned. */
+                  1);                          /* Max 1 row returned. */
   if (SPI_processed > 0 && ret > 0 && SPI_tuptable != NULL)
     {
       char *cell;
@@ -98,8 +99,7 @@ PG_FUNCTION_INFO_V1 (sql_hosts_contains);
  *
  * @return Postgres Datum.
  */
-Datum
-sql_hosts_contains (PG_FUNCTION_ARGS)
+Datum sql_hosts_contains (PG_FUNCTION_ARGS)
 {
   if (PG_ARGISNULL (0) || PG_ARGISNULL (1))
     PG_RETURN_BOOL (0);
@@ -109,16 +109,15 @@ sql_hosts_contains (PG_FUNCTION_ARGS)
       char *hosts, *find_host;
       int max_hosts, ret;
 
-      hosts_arg = PG_GETARG_TEXT_P(0);
+      hosts_arg = PG_GETARG_TEXT_P (0);
       hosts = textndup (hosts_arg, VARSIZE (hosts_arg) - VARHDRSZ);
 
-      find_host_arg = PG_GETARG_TEXT_P(1);
+      find_host_arg = PG_GETARG_TEXT_P (1);
       find_host = textndup (find_host_arg, VARSIZE (find_host_arg) - VARHDRSZ);
 
       max_hosts = get_max_hosts ();
 
-      if (hosts_str_contains ((gchar *) hosts, (gchar *) find_host,
-                              max_hosts))
+      if (hosts_str_contains ((gchar *) hosts, (gchar *) find_host, max_hosts))
         ret = 1;
       else
         ret = 0;
@@ -141,8 +140,7 @@ PG_FUNCTION_INFO_V1 (sql_next_time);
  *
  * @return Postgres Datum.
  */
-Datum
-sql_next_time (PG_FUNCTION_ARGS)
+Datum sql_next_time (PG_FUNCTION_ARGS)
 {
   int32 first, period, period_months, byday, periods_offset;
   char *zone;
@@ -153,22 +151,21 @@ sql_next_time (PG_FUNCTION_ARGS)
   period_months = PG_GETARG_INT32 (2);
   byday = PG_GETARG_INT32 (3);
 
-  if (PG_NARGS() < 5 || PG_ARGISNULL (4))
+  if (PG_NARGS () < 5 || PG_ARGISNULL (4))
     zone = NULL;
   else
     {
-      text* timezone_arg;
+      text *timezone_arg;
       timezone_arg = PG_GETARG_TEXT_P (4);
       zone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
-  if (PG_NARGS() < 6 || PG_ARGISNULL (5))
+  if (PG_NARGS () < 6 || PG_ARGISNULL (5))
     periods_offset = 0;
   else
     periods_offset = PG_GETARG_INT32 (5);
 
-  ret = next_time (first, period, period_months, byday, zone,
-                   periods_offset);
+  ret = next_time (first, period, period_months, byday, zone, periods_offset);
   if (zone)
     pfree (zone);
   PG_RETURN_INT32 (ret);
@@ -186,38 +183,36 @@ PG_FUNCTION_INFO_V1 (sql_next_time_ical);
  *
  * @return Postgres Datum.
  */
-Datum
-sql_next_time_ical (PG_FUNCTION_ARGS)
+Datum sql_next_time_ical (PG_FUNCTION_ARGS)
 {
   char *ical_string, *zone;
   int periods_offset;
   int32 ret;
 
-  if (PG_NARGS() < 1 || PG_ARGISNULL (0))
+  if (PG_NARGS () < 1 || PG_ARGISNULL (0))
     {
       PG_RETURN_NULL ();
     }
   else
     {
-      text* ical_string_arg;
+      text *ical_string_arg;
       ical_string_arg = PG_GETARG_TEXT_P (0);
-      ical_string = textndup (ical_string_arg,
-                              VARSIZE (ical_string_arg) - VARHDRSZ);
+      ical_string =
+        textndup (ical_string_arg, VARSIZE (ical_string_arg) - VARHDRSZ);
     }
 
-  if (PG_NARGS() < 2 || PG_ARGISNULL (1))
+  if (PG_NARGS () < 2 || PG_ARGISNULL (1))
     zone = NULL;
   else
     {
-      text* timezone_arg;
+      text *timezone_arg;
       timezone_arg = PG_GETARG_TEXT_P (1);
       zone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
   periods_offset = PG_GETARG_INT32 (2);
 
-  ret = icalendar_next_time_from_string (ical_string, zone,
-                                         periods_offset);
+  ret = icalendar_next_time_from_string (ical_string, zone, periods_offset);
   if (ical_string)
     pfree (ical_string);
   if (zone)
@@ -237,8 +232,7 @@ PG_FUNCTION_INFO_V1 (sql_max_hosts);
  *
  * @return Postgres Datum.
  */
-Datum
-sql_max_hosts (PG_FUNCTION_ARGS)
+Datum sql_max_hosts (PG_FUNCTION_ARGS)
 {
   if (PG_ARGISNULL (0))
     PG_RETURN_INT32 (0);
@@ -282,8 +276,7 @@ PG_FUNCTION_INFO_V1 (sql_level_min_severity);
  *
  * @return Postgres Datum.
  */
-Datum
-sql_level_min_severity (PG_FUNCTION_ARGS)
+Datum sql_level_min_severity (PG_FUNCTION_ARGS)
 {
   if (PG_ARGISNULL (0))
     PG_RETURN_FLOAT8 (0.0);
@@ -319,8 +312,7 @@ PG_FUNCTION_INFO_V1 (sql_level_max_severity);
  *
  * @return Postgres Datum.
  */
-Datum
-sql_level_max_severity (PG_FUNCTION_ARGS)
+Datum sql_level_max_severity (PG_FUNCTION_ARGS)
 {
   if (PG_ARGISNULL (0))
     PG_RETURN_FLOAT8 (0.0);
@@ -356,8 +348,7 @@ PG_FUNCTION_INFO_V1 (sql_severity_matches_ov);
  *
  * @return Postgres Datum.
  */
-Datum
-sql_severity_matches_ov (PG_FUNCTION_ARGS)
+Datum sql_severity_matches_ov (PG_FUNCTION_ARGS)
 {
   if (PG_ARGISNULL (0))
     PG_RETURN_BOOL (0);
@@ -388,8 +379,7 @@ PG_FUNCTION_INFO_V1 (sql_valid_db_resource_type);
  *
  * @return Postgres Datum.
  */
-Datum
-sql_valid_db_resource_type (PG_FUNCTION_ARGS)
+Datum sql_valid_db_resource_type (PG_FUNCTION_ARGS)
 {
   if (PG_ARGISNULL (0))
     PG_RETURN_BOOL (0);
@@ -421,8 +411,7 @@ PG_FUNCTION_INFO_V1 (sql_regexp);
  *
  * @return Postgres Datum.
  */
-Datum
-sql_regexp (PG_FUNCTION_ARGS)
+Datum sql_regexp (PG_FUNCTION_ARGS)
 {
   if (PG_ARGISNULL (0) || PG_ARGISNULL (1))
     PG_RETURN_BOOL (0);
@@ -432,10 +421,10 @@ sql_regexp (PG_FUNCTION_ARGS)
       char *string, *regexp;
       int ret;
 
-      regexp_arg = PG_GETARG_TEXT_P(1);
+      regexp_arg = PG_GETARG_TEXT_P (1);
       regexp = textndup (regexp_arg, VARSIZE (regexp_arg) - VARHDRSZ);
 
-      string_arg = PG_GETARG_TEXT_P(0);
+      string_arg = PG_GETARG_TEXT_P (0);
       string = textndup (string_arg, VARSIZE (string_arg) - VARHDRSZ);
 
       if (g_regex_match_simple ((gchar *) regexp, (gchar *) string, 0, 0))

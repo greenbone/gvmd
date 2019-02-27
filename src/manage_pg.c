@@ -25,13 +25,13 @@
  * to be coded for each backend.  This is the PostgreSQL version.
  */
 
-#include <strings.h> /* for strcasecmp() */
-#include <assert.h>  /* for assert() */
-
-#include "sql.h"
+#include "manage_acl.h"
 #include "manage_sql.h"
 #include "manage_utils.h"
-#include "manage_acl.h"
+#include "sql.h"
+
+#include <assert.h>  /* for assert() */
+#include <strings.h> /* for strcasecmp() */
 
 #undef G_LOG_DOMAIN
 /**
@@ -39,7 +39,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-
 /* Session. */
 
 /**
@@ -71,7 +70,6 @@ manage_session_set_timezone (const char *zone)
   return;
 }
 
-
 /* Helpers. */
 
 /**
@@ -91,7 +89,6 @@ manage_db_empty ()
          == 0;
 }
 
-
 /* SCAP. */
 
 /**
@@ -163,7 +160,7 @@ manage_update_cert_db_init ()
        "               cve_refs_arg);"
        "       RETURN;"
        "     EXCEPTION WHEN unique_violation THEN"
-       "       NULL;"  /* Try again. */
+       "       NULL;" /* Try again. */
        "     END;"
        "   END LOOP;"
        " END;"
@@ -200,7 +197,7 @@ manage_update_cert_db_init ()
        "               cve_refs_arg);"
        "       RETURN;"
        "     EXCEPTION WHEN unique_violation THEN"
-       "       NULL;"  /* Try again. */
+       "       NULL;" /* Try again. */
        "     END;"
        "   END LOOP;"
        " END;"
@@ -269,7 +266,7 @@ manage_update_scap_db_init ()
        "               nvd_id_arg);"
        "       RETURN;"
        "     EXCEPTION WHEN unique_violation THEN"
-       "       NULL;"  /* Try again. */
+       "       NULL;" /* Try again. */
        "     END;"
        "   END LOOP;"
        " END;"
@@ -322,7 +319,7 @@ manage_update_scap_db_init ()
        "               availability_impact_arg, products_arg);"
        "       RETURN;"
        "     EXCEPTION WHEN unique_violation THEN"
-       "       NULL;"  /* Try again. */
+       "       NULL;" /* Try again. */
        "     END;"
        "   END LOOP;"
        " END;"
@@ -347,7 +344,7 @@ manage_update_scap_db_init ()
        "       VALUES (uuid_arg, name_arg, published_arg, modified_arg);"
        "       RETURN;"
        "     EXCEPTION WHEN unique_violation THEN"
-       "       NULL;"  /* Try again. */
+       "       NULL;" /* Try again. */
        "     END;"
        "   END LOOP;"
        " END;"
@@ -370,7 +367,7 @@ manage_update_scap_db_init ()
        "       VALUES (cve_arg, cpe_arg);"
        "       RETURN;"
        "     EXCEPTION WHEN unique_violation THEN"
-       "       NULL;"  /* Try again. */
+       "       NULL;" /* Try again. */
        "     END;"
        "   END LOOP;"
        " END;"
@@ -423,7 +420,7 @@ manage_update_scap_db_init ()
        "               status_arg, 0.0, cve_refs_arg);"
        "       RETURN;"
        "     EXCEPTION WHEN unique_violation THEN"
-       "       NULL;"  /* Try again. */
+       "       NULL;" /* Try again. */
        "     END;"
        "   END LOOP;"
        " END;"
@@ -481,7 +478,6 @@ manage_update_scap_db_cleanup ()
        "                             cve_refs_arg INTEGER);");
 }
 
-
 /* SQL functions. */
 
 /**
@@ -493,8 +489,10 @@ manage_update_scap_db_cleanup ()
  * @param[in]  new_name   Name of column in new table.
  */
 void
-sql_rename_column (const char *old_table, const char *new_table,
-                   const char *old_name, const char *new_name)
+sql_rename_column (const char *old_table,
+                   const char *new_table,
+                   const char *old_name,
+                   const char *new_name)
 {
   return;
 }
@@ -502,40 +500,41 @@ sql_rename_column (const char *old_table, const char *new_table,
 /**
  * @brief Common overrides SQL for SQL functions.
  */
-#define OVERRIDES_SQL(severity_sql)                         \
- " coalesce"                                                \
- "  ((SELECT overrides.new_severity"                        \
- "    FROM overrides"                                       \
- "    WHERE overrides.result_nvt = results.result_nvt"      \
- "    AND ((overrides.owner IS NULL)"                       \
- "         OR (overrides.owner ="                           \
- "             (SELECT id FROM users"                       \
- "              WHERE users.uuid"                           \
- "                    = (SELECT uuid"                       \
- "                       FROM current_credentials))))"      \
- "    AND ((overrides.end_time = 0)"                        \
- "         OR (overrides.end_time >= m_now ()))"            \
- "    AND (overrides.task = results.task"                   \
- "         OR overrides.task = 0)"                          \
- "    AND (overrides.result = results.id"                   \
- "         OR overrides.result = 0)"                        \
- "    AND (overrides.hosts is NULL"                         \
- "         OR overrides.hosts = ''"                         \
- "         OR hosts_contains (overrides.hosts,"             \
- "                            results.host))"               \
- "    AND (overrides.port is NULL"                          \
- "         OR overrides.port = ''"                          \
- "         OR overrides.port = results.port)"               \
- "    AND severity_matches_ov"                              \
- "         (" severity_sql ", overrides.severity)"          \
- "    ORDER BY overrides.result DESC,"                      \
- "             overrides.task DESC,"                        \
- "             overrides.port DESC,"                        \
- "             overrides.severity ASC,"                     \
- "             overrides.creation_time DESC"                \
- "    LIMIT 1),"                                            \
- "   " severity_sql ")"
+#define OVERRIDES_SQL(severity_sql)                     \
+  " coalesce"                                           \
+  "  ((SELECT overrides.new_severity"                   \
+  "    FROM overrides"                                  \
+  "    WHERE overrides.result_nvt = results.result_nvt" \
+  "    AND ((overrides.owner IS NULL)"                  \
+  "         OR (overrides.owner ="                      \
+  "             (SELECT id FROM users"                  \
+  "              WHERE users.uuid"                      \
+  "                    = (SELECT uuid"                  \
+  "                       FROM current_credentials))))" \
+  "    AND ((overrides.end_time = 0)"                   \
+  "         OR (overrides.end_time >= m_now ()))"       \
+  "    AND (overrides.task = results.task"              \
+  "         OR overrides.task = 0)"                     \
+  "    AND (overrides.result = results.id"              \
+  "         OR overrides.result = 0)"                   \
+  "    AND (overrides.hosts is NULL"                    \
+  "         OR overrides.hosts = ''"                    \
+  "         OR hosts_contains (overrides.hosts,"        \
+  "                            results.host))"          \
+  "    AND (overrides.port is NULL"                     \
+  "         OR overrides.port = ''"                     \
+  "         OR overrides.port = results.port)"          \
+  "    AND severity_matches_ov"                         \
+  "         (" severity_sql ", overrides.severity)"     \
+  "    ORDER BY overrides.result DESC,"                 \
+  "             overrides.task DESC,"                   \
+  "             overrides.port DESC,"                   \
+  "             overrides.severity ASC,"                \
+  "             overrides.creation_time DESC"           \
+  "    LIMIT 1),"                                       \
+  "   " severity_sql ")"
 
+// clang-format off
 /**
  * @brief Create functions.
  *
@@ -1977,8 +1976,8 @@ manage_create_sql_functions ()
 
   return 0;
 }
+// clang-format on
 
-
 /* Creation. */
 
 /**
@@ -1998,10 +1997,12 @@ manage_create_result_indexes ()
 /**
  * @brief Results WHERE SQL for creating views in create_tabes.
  */
-#define VULNS_RESULTS_WHERE                                           \
-  " WHERE uuid IN"                                                    \
-  "   (SELECT nvt FROM results"                                       \
+#define VULNS_RESULTS_WHERE     \
+  " WHERE uuid IN"              \
+  "   (SELECT nvt FROM results" \
   "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
+
+// clang-format off
 
 /**
  * @brief Create all tables.
@@ -3254,6 +3255,7 @@ create_tables ()
        "         'result_nvt_reports',"
        "         'report');");
 }
+// clang-format on
 
 /**
  * @brief Ensure sequences for automatic ids are in a consistent state.
@@ -3264,28 +3266,27 @@ void
 check_db_sequences ()
 {
   iterator_t sequence_tables;
-  init_iterator(&sequence_tables,
-                "SELECT table_name, column_name,"
-                "       pg_get_serial_sequence (table_name, column_name)"
-                "  FROM information_schema.columns"
-                "  WHERE table_schema = 'public'"
-                "    AND pg_get_serial_sequence (table_name, column_name)"
-                "        IS NOT NULL;");
+  init_iterator (&sequence_tables,
+                 "SELECT table_name, column_name,"
+                 "       pg_get_serial_sequence (table_name, column_name)"
+                 "  FROM information_schema.columns"
+                 "  WHERE table_schema = 'public'"
+                 "    AND pg_get_serial_sequence (table_name, column_name)"
+                 "        IS NOT NULL;");
 
   while (next (&sequence_tables))
     {
-      const char* table = iterator_string (&sequence_tables, 0);
-      const char* column = iterator_string (&sequence_tables, 1);
-      const char* sequence = iterator_string (&sequence_tables, 2);
+      const char *table = iterator_string (&sequence_tables, 0);
+      const char *column = iterator_string (&sequence_tables, 1);
+      const char *sequence = iterator_string (&sequence_tables, 2);
       resource_t old_start, new_start;
 
-      sql_int64 (&old_start,
-                 "SELECT last_value + 1 FROM %s;",
-                 sequence);
+      sql_int64 (&old_start, "SELECT last_value + 1 FROM %s;", sequence);
 
       sql_int64 (&new_start,
                  "SELECT coalesce (max (%s), 0) + 1 FROM %s;",
-                 column, table);
+                 column,
+                 table);
 
       if (old_start < new_start)
         sql ("ALTER SEQUENCE %s RESTART WITH %llu;", sequence, new_start);
@@ -3294,7 +3295,6 @@ check_db_sequences ()
   cleanup_iterator (&sequence_tables);
 }
 
-
 /* SecInfo. */
 
 /**
@@ -3524,13 +3524,13 @@ manage_db_init (const gchar *name)
       sql ("CREATE TABLE scap.ovaldefs"
            " (id SERIAL PRIMARY KEY,"
            "  uuid text UNIQUE,"
-           "  name text,"                   /* OVAL identifier. */
+           "  name text," /* OVAL identifier. */
            "  comment text,"
            "  creation_time integer,"
            "  modification_time integer,"
            "  version INTEGER,"
            "  deprecated INTEGER,"
-           "  def_class TEXT,"              /* Enum. */
+           "  def_class TEXT," /* Enum. */
            "  title TEXT,"
            "  description TEXT,"
            "  xml_file TEXT,"
@@ -3570,7 +3570,7 @@ manage_db_init (const gchar *name)
            "$$ LANGUAGE plpgsql;");
 
       sql ("CREATE TRIGGER cves_delete AFTER DELETE ON cves"
-	   " FOR EACH ROW EXECUTE PROCEDURE scap_delete_affected ();");
+           " FOR EACH ROW EXECUTE PROCEDURE scap_delete_affected ();");
 
       sql ("CREATE OR REPLACE FUNCTION scap_update_cpes ()"
            " RETURNS TRIGGER AS $$"
@@ -3605,7 +3605,7 @@ manage_db_init (const gchar *name)
 
       sql ("CREATE TRIGGER affected_ovaldefs_delete"
            " AFTER DELETE ON affected_ovaldefs"
-	   " FOR EACH ROW EXECUTE PROCEDURE scap_update_oval ();");
+           " FOR EACH ROW EXECUTE PROCEDURE scap_update_oval ();");
 
       /* Init tables. */
 
@@ -3679,7 +3679,6 @@ manage_scap_loaded ()
                     sql_database ());
 }
 
-
 /* Backup. */
 
 /**
@@ -3696,7 +3695,6 @@ manage_backup_db (const gchar *database)
   return -1;
 }
 
-
 /* Migrator helper. */
 
 /**

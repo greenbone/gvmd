@@ -27,17 +27,17 @@
  * @file gmp_base.c
  * @brief GVM GMP layer: Base facilities.
  *
- * GMP base facilities used by all modules, but not exported for users of the GMP
- * layer (i.e. gmpd.c).
+ * GMP base facilities used by all modules, but not exported for users of the
+ * GMP layer (i.e. gmpd.c).
  */
 
 #include "gmp_base.h"
+
 #include "manage.h"
 
+#include <gvm/base/strings.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <gvm/base/strings.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -90,9 +90,9 @@ append_attribute (const gchar **attribute_names,
                   const char *attribute_name,
                   gchar **string)
 {
-  const gchar* attribute;
-  if (find_attribute (attribute_names, attribute_values, attribute_name,
-                      &attribute))
+  const gchar *attribute;
+  if (find_attribute (
+        attribute_names, attribute_values, attribute_name, &attribute))
     {
       gvm_append_string (string, attribute);
       return 1;
@@ -119,7 +119,6 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
   g_free (msg);
 }
 
-
 /* Communication. */
 
 /**
@@ -132,9 +131,9 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
  * @return TRUE if send to client failed, else FALSE.
  */
 gboolean
-send_to_client (const char* msg,
-                int (*user_send_to_client) (const char*, void*),
-                void* user_send_to_client_data)
+send_to_client (const char *msg,
+                int (*user_send_to_client) (const char *, void *),
+                void *user_send_to_client_data)
 {
   if (user_send_to_client && msg)
     return user_send_to_client (msg, user_send_to_client_data);
@@ -152,16 +151,16 @@ send_to_client (const char* msg,
  * @return TRUE if out of space in to_client, else FALSE.
  */
 gboolean
-send_element_error_to_client (const char* command, const char* element,
-                              int (*write_to_client) (const char*, void*),
-                              void* write_to_client_data)
+send_element_error_to_client (const char *command,
+                              const char *element,
+                              int (*write_to_client) (const char *, void *),
+                              void *write_to_client_data)
 {
   gchar *msg;
   gboolean ret;
 
   /** @todo Set gerror so parsing terminates. */
-  msg = g_strdup_printf ("<%s_response status=\""
-                         STATUS_ERROR_SYNTAX
+  msg = g_strdup_printf ("<%s_response status=\"" STATUS_ERROR_SYNTAX
                          "\" status_text=\"Bogus element: %s\"/>",
                          command,
                          element);
@@ -181,18 +180,21 @@ send_element_error_to_client (const char* command, const char* element,
  * @return TRUE if out of space in to_client, else FALSE.
  */
 gboolean
-send_find_error_to_client (const char* command, const char* type,
-                           const char* id, gmp_parser_t *gmp_parser)
+send_find_error_to_client (const char *command,
+                           const char *type,
+                           const char *id,
+                           gmp_parser_t *gmp_parser)
 {
   gchar *msg;
   gboolean ret;
 
-  msg = g_strdup_printf ("<%s_response status=\""
-                         STATUS_ERROR_MISSING
+  msg = g_strdup_printf ("<%s_response status=\"" STATUS_ERROR_MISSING
                          "\" status_text=\"Failed to find %s '%s'\"/>",
-                         command, type, id);
-  ret = send_to_client (msg, gmp_parser->client_writer,
-                        gmp_parser->client_writer_data);
+                         command,
+                         type,
+                         id);
+  ret = send_to_client (
+    msg, gmp_parser->client_writer, gmp_parser->client_writer_data);
   g_free (msg);
   return ret;
 }
@@ -203,10 +205,12 @@ send_find_error_to_client (const char* command, const char* type,
  * @param [out]  error  The error.
  */
 void
-error_send_to_client (GError** error)
+error_send_to_client (GError **error)
 {
   g_debug ("   send_to_client out of space in to_client");
-  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+  g_set_error (error,
+               G_MARKUP_ERROR,
+               G_MARKUP_ERROR_PARSE,
                "Manager out of space for reply to client.");
 }
 
@@ -216,10 +220,9 @@ error_send_to_client (GError** error)
  * @param [out]  error  The error.
  */
 void
-internal_error_send_to_client (GError** error)
+internal_error_send_to_client (GError **error)
 {
-  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
-               "Internal Error.");
+  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE, "Internal Error.");
 }
 
 /**
@@ -232,8 +235,11 @@ internal_error_send_to_client (GError** error)
  * @param[in]   fail        Whether it is a fail event.
  */
 static void
-log_event_internal (const char *type, const char *type_name, const char *id,
-                    const char *action, int fail)
+log_event_internal (const char *type,
+                    const char *type_name,
+                    const char *id,
+                    const char *action,
+                    int fail)
 {
   gchar *domain;
 
@@ -245,21 +251,25 @@ log_event_internal (const char *type, const char *type_name, const char *id,
 
       if (manage_resource_name (type, id, &name))
         name = NULL;
-      else if ((name == NULL)
-               && manage_trash_resource_name (type, id, &name))
+      else if ((name == NULL) && manage_trash_resource_name (type, id, &name))
         name = NULL;
 
       if (name)
-        g_log (domain, G_LOG_LEVEL_MESSAGE,
+        g_log (domain,
+               G_LOG_LEVEL_MESSAGE,
                "%s %s (%s) %s %s by %s",
-               type_name, name, id,
+               type_name,
+               name,
+               id,
                fail ? "could not be" : "has been",
                action,
                current_credentials.username);
       else
-        g_log (domain, G_LOG_LEVEL_MESSAGE,
+        g_log (domain,
+               G_LOG_LEVEL_MESSAGE,
                "%s %s %s %s by %s",
-               type_name, id,
+               type_name,
+               id,
                fail ? "could not be" : "has been",
                action,
                current_credentials.username);
@@ -267,7 +277,8 @@ log_event_internal (const char *type, const char *type_name, const char *id,
       free (name);
     }
   else
-    g_log (domain, G_LOG_LEVEL_MESSAGE,
+    g_log (domain,
+           G_LOG_LEVEL_MESSAGE,
            "%s %s %s by %s",
            type_name,
            fail ? "could not be" : "has been",
@@ -286,7 +297,9 @@ log_event_internal (const char *type, const char *type_name, const char *id,
  * @param[in]   action      Action done.
  */
 void
-log_event (const char *type, const char *type_name, const char *id,
+log_event (const char *type,
+           const char *type_name,
+           const char *id,
            const char *action)
 {
   log_event_internal (type, type_name, id, action, 0);
@@ -301,7 +314,9 @@ log_event (const char *type, const char *type_name, const char *id,
  * @param[in]   action      Action done.
  */
 void
-log_event_fail (const char *type, const char *type_name, const char *id,
+log_event_fail (const char *type,
+                const char *type_name,
+                const char *id,
                 const char *action)
 {
   log_event_internal (type, type_name, id, action, 1);

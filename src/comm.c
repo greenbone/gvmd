@@ -81,7 +81,8 @@ int to_server_start = 0;
 unsigned int
 to_server_buffer_space ()
 {
-  if (to_server_end < to_server_start) abort ();
+  if (to_server_end < to_server_start)
+    abort ();
   return (unsigned int) (to_server_end - to_server_start);
 }
 
@@ -94,12 +95,13 @@ to_server_buffer_space ()
  * @return 0 for success, any other value for failure.
  */
 int
-sendn_to_server (const void * msg, size_t n)
+sendn_to_server (const void *msg, size_t n)
 {
   if (TO_SERVER_BUFFER_SIZE - to_server_end < n)
     {
       g_debug ("   sendn_to_server: available space (%i) < n (%zu)",
-               TO_SERVER_BUFFER_SIZE - to_server_end, n);
+               TO_SERVER_BUFFER_SIZE - to_server_end,
+               n);
       return 1;
     }
 
@@ -119,7 +121,7 @@ sendn_to_server (const void * msg, size_t n)
  * @return 0 for success, any other value for failure.
  */
 int
-send_to_server (const char * msg)
+send_to_server (const char *msg)
 {
   return sendn_to_server (msg, strlen (msg));
 }
@@ -132,10 +134,10 @@ send_to_server (const char * msg)
  * @return 0 for success, any other value for failure.
  */
 int
-sendf_to_server (const char* format, ...)
+sendf_to_server (const char *format, ...)
 {
   va_list args;
-  gchar* msg;
+  gchar *msg;
   int ret;
   va_start (args, format);
   msg = g_strdup_vprintf (format, args);

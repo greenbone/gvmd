@@ -65,8 +65,10 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
   /* Add the Ping Host NVT to the config. */
 
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.100315', "
+                                "'Port scanners');",
        selector_name);
 
   /* Update number of families and nvts. */
@@ -84,7 +86,8 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not "
+       "scanning)',"
        "         'yes');",
        config);
 
@@ -149,11 +152,14 @@ check_config_host_discovery (const char *uuid)
                uuid)
       == 0)
     {
-      sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-           " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
-           "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-           "         '1.3.6.1.4.1.25623.1.0.12288', 'Settings');",
-           uuid);
+      sql (
+        "INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+        " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
+        "         " G_STRINGIFY (
+          NVT_SELECTOR_TYPE_NVT) ","
+                                 "         '1.3.6.1.4.1.25623.1.0.12288', "
+                                 "'Settings');",
+        uuid);
       update = 1;
     }
 

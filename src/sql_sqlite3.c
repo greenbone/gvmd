@@ -28,12 +28,12 @@
 #include "utils.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <sqlite3.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <errno.h>
 
 /**
  * @brief Chunk size for SQLite memory allocation.
@@ -51,13 +51,11 @@
  */
 #define BUSY_TIMEOUT 1000
 
-
 /* Headers of sql.c symbols used only here. */
 
 int
-sqlv (int, char*, va_list);
+sqlv (int, char *, va_list);
 
-
 /* Types. */
 
 /**
@@ -65,18 +63,16 @@ sqlv (int, char*, va_list);
  */
 struct sql_stmt
 {
-  sqlite3_stmt *stmt;     ///< The statement.
+  sqlite3_stmt *stmt; ///< The statement.
 };
 
-
 /* Variables. */
 
 /**
  * @brief Handle on the database.
  */
-sqlite3* gvmd_db = NULL;
+sqlite3 *gvmd_db = NULL;
 
-
 /* Helpers. */
 
 /**
@@ -225,18 +221,16 @@ sql_open (const char *database)
       abort ();
     }
 
-  err = stat (database ? database : sql_default_database (),
-              &state);
+  err = stat (database ? database : sql_default_database (), &state);
   if (err)
     switch (errno)
       {
-        case ENOENT:
-          break;
-        default:
-          g_warning ("%s: failed to stat database: %s",
-                     __FUNCTION__,
-                     strerror (errno));
-          abort ();
+      case ENOENT:
+        break;
+      default:
+        g_warning (
+          "%s: failed to stat database: %s", __FUNCTION__, strerror (errno));
+        abort ();
       }
   else if (state.st_mode & (S_IXUSR | S_IRWXG | S_IRWXO))
     {
@@ -245,25 +239,21 @@ sql_open (const char *database)
       if (chmod (database ? database : sql_default_database (),
                  S_IRUSR | S_IWUSR))
         {
-          g_warning ("%s: chmod failed: %s",
-                     __FUNCTION__,
-                     strerror (errno));
+          g_warning ("%s: chmod failed: %s", __FUNCTION__, strerror (errno));
           abort ();
         }
     }
 
-  /* Workaround for SQLite temp file name conflicts that can occur if
-   * concurrent forked processes have the same PRNG state. */
+    /* Workaround for SQLite temp file name conflicts that can occur if
+     * concurrent forked processes have the same PRNG state. */
 #if SQLITE_VERSION_NUMBER < 3008003
-    sqlite3_test_control (SQLITE_TESTCTRL_PRNG_RESET);
+  sqlite3_test_control (SQLITE_TESTCTRL_PRNG_RESET);
 #endif
 
-  if (sqlite3_open (database ? database : sql_default_database (),
-                    &gvmd_db))
+  if (sqlite3_open (database ? database : sql_default_database (), &gvmd_db))
     {
-      g_warning ("%s: sqlite3_open failed: %s",
-                 __FUNCTION__,
-                 sqlite3_errmsg (gvmd_db));
+      g_warning (
+        "%s: sqlite3_open failed: %s", __FUNCTION__, sqlite3_errmsg (gvmd_db));
       return -1;
     }
 
@@ -276,7 +266,7 @@ sql_open (const char *database)
   sqlite3_file_control (gvmd_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunk_size);
 
   sql ("PRAGMA journal_mode=WAL;");
-  sql ("PRAGMA journal_size_limit=134217728;");  /* 128 MB. */
+  sql ("PRAGMA journal_size_limit=134217728;"); /* 128 MB. */
 
   return 0;
 }
@@ -295,8 +285,7 @@ sql_close ()
      * sqlite3.pVdbe points to.  This is the list of open statements
      * in the current implementation (and subject to change without
      * notice). */
-    g_warning ("%s: attempt to close db with open statement(s)",
-               __FUNCTION__);
+    g_warning ("%s: attempt to close db with open statement(s)", __FUNCTION__);
   gvmd_db = NULL;
 }
 
@@ -339,7 +328,7 @@ sql_last_insert_id ()
  * @param[in]  ...       Arguments for format string.
  */
 void
-sqli (resource_t *resource, char* sql, ...)
+sqli (resource_t *resource, char *sql, ...)
 {
   va_list args;
 
@@ -363,13 +352,16 @@ sqli (resource_t *resource, char* sql, ...)
  * @return 0 success, 1 gave up, -1 error.
  */
 int
-sql_prepare_internal (int retry, int log, const char* sql, va_list args,
+sql_prepare_internal (int retry,
+                      int log,
+                      const char *sql,
+                      va_list args,
                       sql_stmt_t **stmt)
 {
-  const char* tail;
+  const char *tail;
   int ret;
   unsigned int retries;
-  gchar* formatted;
+  gchar *formatted;
   sqlite3_stmt *sqlite_stmt;
 
   assert (stmt);
@@ -383,19 +375,18 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
     sqlite3_busy_timeout (gvmd_db, 0);
 
   retries = 0;
-  *stmt = (sql_stmt_t*) g_malloc0 (sizeof (sql_stmt_t));
+  *stmt = (sql_stmt_t *) g_malloc0 (sizeof (sql_stmt_t));
   sqlite_stmt = NULL;
   while (1)
     {
-      ret = sqlite3_prepare_v2 (gvmd_db, (char*) formatted, -1, &sqlite_stmt,
-                                &tail);
+      ret = sqlite3_prepare_v2 (
+        gvmd_db, (char *) formatted, -1, &sqlite_stmt, &tail);
       if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
         {
           if (retry)
             {
               if ((retries > 10) && (GVM_SQLITE_SLEEP_MAX > 0))
-                gvm_usleep (MIN ((retries - 10) * 10000,
-                                 GVM_SQLITE_SLEEP_MAX));
+                gvm_usleep (MIN ((retries - 10) * 10000, GVM_SQLITE_SLEEP_MAX));
               retries++;
               continue;
             }
@@ -440,8 +431,8 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  stmt   Statement.
  *
- * @return 0 complete, 1 row available in results, 2 condition where caller must rerun
- *         prepare (for example schema changed internally after VACUUM), -1 error,
+ * @return 0 complete, 1 row available in results, 2 condition where caller must
+ * rerun prepare (for example schema changed internally after VACUUM), -1 error,
  *         -2 gave up.
  */
 int
@@ -462,8 +453,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
           if (retry)
             {
               if ((retries > 10) && (GVM_SQLITE_SLEEP_MAX > 0))
-                gvm_usleep (MIN ((retries - 10) * 10000,
-                                 GVM_SQLITE_SLEEP_MAX));
+                gvm_usleep (MIN ((retries - 10) * 10000, GVM_SQLITE_SLEEP_MAX));
               retries++;
               continue;
             }
@@ -477,9 +467,8 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
         return 0;
       if (ret == SQLITE_ROW)
         return 1;
-      g_warning ("%s: sqlite3_step failed: %s",
-                 __FUNCTION__,
-                 sqlite3_errmsg (gvmd_db));
+      g_warning (
+        "%s: sqlite3_step failed: %s", __FUNCTION__, sqlite3_errmsg (gvmd_db));
       return -1;
     }
 }
@@ -493,7 +482,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
  * @return 0 success, -1 error.
  */
 int
-sql_explain_internal (const char* sql, va_list args)
+sql_explain_internal (const char *sql, va_list args)
 {
   char *explain_sql;
   sql_stmt_t *explain_stmt;
@@ -512,11 +501,11 @@ sql_explain_internal (const char* sql, va_list args)
       explain_ret = sql_exec_internal (1, explain_stmt);
       if (explain_ret == 1)
         g_debug ("%s : %s|%s|%s|%s",
-                __FUNCTION__,
-                sqlite3_column_text (explain_stmt->stmt, 0),
-                sqlite3_column_text (explain_stmt->stmt, 1),
-                sqlite3_column_text (explain_stmt->stmt, 2),
-                sqlite3_column_text (explain_stmt->stmt, 3));
+                 __FUNCTION__,
+                 sqlite3_column_text (explain_stmt->stmt, 0),
+                 sqlite3_column_text (explain_stmt->stmt, 1),
+                 sqlite3_column_text (explain_stmt->stmt, 2),
+                 sqlite3_column_text (explain_stmt->stmt, 3));
       else if (explain_ret == 0)
         break;
       else
@@ -533,7 +522,6 @@ sql_explain_internal (const char* sql, va_list args)
   return 0;
 }
 
-
 /* Transactions. */
 
 /**
@@ -594,7 +582,6 @@ sql_rollback ()
   sql ("ROLLBACK;");
 }
 
-
 /* Iterators. */
 
 /**
@@ -606,9 +593,10 @@ sql_rollback ()
  * @return 1 if NULL, else 0.
  */
 int
-iterator_null (iterator_t* iterator, int col)
+iterator_null (iterator_t *iterator, int col)
 {
-  if (iterator->done) abort ();
+  if (iterator->done)
+    abort ();
   return sqlite3_column_type (iterator->stmt->stmt, col) == SQLITE_NULL;
 }
 
@@ -620,11 +608,12 @@ iterator_null (iterator_t* iterator, int col)
  *
  * @return Name of given column.
  */
-const char*
-iterator_column_name (iterator_t* iterator, int col)
+const char *
+iterator_column_name (iterator_t *iterator, int col)
 {
-  if (iterator->done) abort ();
-  return (const char*) sqlite3_column_name (iterator->stmt->stmt, col);
+  if (iterator->done)
+    abort ();
+  return (const char *) sqlite3_column_name (iterator->stmt->stmt, col);
 }
 
 /**
@@ -635,13 +624,13 @@ iterator_column_name (iterator_t* iterator, int col)
  * @return Number of columns.
  */
 int
-iterator_column_count (iterator_t* iterator)
+iterator_column_count (iterator_t *iterator)
 {
-  if (iterator->done) abort ();
+  if (iterator->done)
+    abort ();
   return sqlite3_column_count (iterator->stmt->stmt);
 }
 
-
 /* Prepared statements. */
 
 /**
@@ -655,7 +644,9 @@ iterator_column_count (iterator_t* iterator)
  * @return 0 success, -1 error.
  */
 int
-sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
+sql_bind_blob (sql_stmt_t *stmt,
+               int position,
+               const void *value,
                int value_size)
 {
   unsigned int retries;
@@ -663,20 +654,17 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
   while (1)
     {
       int ret;
-      ret = sqlite3_bind_blob (stmt->stmt,
-                               position,
-                               value,
-                               value_size,
-                               SQLITE_TRANSIENT);
+      ret = sqlite3_bind_blob (
+        stmt->stmt, position, value, value_size, SQLITE_TRANSIENT);
       if (ret == SQLITE_BUSY)
         {
           if ((retries > 10) && (GVM_SQLITE_SLEEP_MAX > 0))
-            gvm_usleep (MIN ((retries - 10) * 10000,
-                             GVM_SQLITE_SLEEP_MAX));
+            gvm_usleep (MIN ((retries - 10) * 10000, GVM_SQLITE_SLEEP_MAX));
           retries++;
           continue;
         }
-      if (ret == SQLITE_OK) break;
+      if (ret == SQLITE_OK)
+        break;
       g_warning ("%s: sqlite3_bind_blob failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (gvmd_db));
@@ -696,7 +684,9 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
  * @return 0 success, -1 error.
  */
 int
-sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
+sql_bind_text (sql_stmt_t *stmt,
+               int position,
+               const gchar *value,
                gsize value_size)
 {
   unsigned int retries;
@@ -704,20 +694,17 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
   while (1)
     {
       int ret;
-      ret = sqlite3_bind_text (stmt->stmt,
-                               position,
-                               value,
-                               value_size,
-                               SQLITE_TRANSIENT);
+      ret = sqlite3_bind_text (
+        stmt->stmt, position, value, value_size, SQLITE_TRANSIENT);
       if (ret == SQLITE_BUSY)
         {
           if ((retries > 10) && (GVM_SQLITE_SLEEP_MAX > 0))
-            gvm_usleep (MIN ((retries - 10) * 10000,
-                             GVM_SQLITE_SLEEP_MAX));
+            gvm_usleep (MIN ((retries - 10) * 10000, GVM_SQLITE_SLEEP_MAX));
           retries++;
           continue;
         }
-      if (ret == SQLITE_OK) break;
+      if (ret == SQLITE_OK)
+        break;
       g_warning ("%s: sqlite3_bind_text failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (gvmd_db));
@@ -759,12 +746,12 @@ sql_reset (sql_stmt_t *stmt)
       if (ret == SQLITE_BUSY)
         {
           if ((retries > 10) && (GVM_SQLITE_SLEEP_MAX > 0))
-            gvm_usleep (MIN ((retries - 10) * 10000,
-                             GVM_SQLITE_SLEEP_MAX));
+            gvm_usleep (MIN ((retries - 10) * 10000, GVM_SQLITE_SLEEP_MAX));
           retries++;
           continue;
         }
-      if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
+      if (ret == SQLITE_DONE || ret == SQLITE_OK)
+        break;
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
           g_warning ("%s: sqlite3_reset failed: %s",
@@ -801,7 +788,7 @@ sql_column_double (sql_stmt_t *stmt, int position)
 const char *
 sql_column_text (sql_stmt_t *stmt, int position)
 {
-  return (const char*) sqlite3_column_text (stmt->stmt, position);
+  return (const char *) sqlite3_column_text (stmt->stmt, position);
 }
 
 /**

@@ -65,124 +65,184 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
   /* Add NVTs to the config. */
 
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.100315', "
+                                "'Port scanners');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.14259', 'Port scanners');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.14259', 'Port "
+                                "scanners');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.50282', 'General');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.50282', "
+                                "'General');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.51662', 'General');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.51662', "
+                                "'General');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.96207', 'Windows');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.96207', "
+                                "'Windows');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103621', 'Windows');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103621', "
+                                "'Windows');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103220', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103220', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.102002', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.102002', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103633', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103633', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103804', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103804', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.96200', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.96200', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103675', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103675', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103817', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103817', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103628', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103628', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.803719', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.803719', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103799', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103799', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103685', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103685', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103809', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103809', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103707', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103707', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103418', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103418', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.10267', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.10267', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103417', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103417', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103648', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103648', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103779', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103779', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.105937', 'Product detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.105937', "
+                                "'Product detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103997', 'Service detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103997', "
+                                "'Service detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.10884', 'Service detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.10884', "
+                                "'Service detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.102011', 'Service detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.102011', "
+                                "'Service detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.101013', 'Service detection');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.101013', "
+                                "'Service detection');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.103416', 'SNMP');",
+       " VALUES ('%s', 0, " G_STRINGIFY (
+         NVT_SELECTOR_TYPE_NVT) ","
+                                "         '1.3.6.1.4.1.25623.1.0.103416', "
+                                "'SNMP');",
        selector_name);
 
   /* Update number of families and nvts. */
@@ -219,11 +279,14 @@ check_config_system_discovery (const char *uuid)
                uuid)
       == 0)
     {
-      sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-           " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
-           "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-           "         '1.3.6.1.4.1.25623.1.0.51662', 'General');",
-           uuid);
+      sql (
+        "INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+        " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
+        "         " G_STRINGIFY (
+          NVT_SELECTOR_TYPE_NVT) ","
+                                 "         '1.3.6.1.4.1.25623.1.0.51662', "
+                                 "'General');",
+        uuid);
       update = 1;
     }
 
@@ -234,11 +297,14 @@ check_config_system_discovery (const char *uuid)
                uuid)
       == 0)
     {
-      sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-           " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
-           "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-           "         '1.3.6.1.4.1.25623.1.0.105937', 'Product detection');",
-           uuid);
+      sql (
+        "INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+        " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
+        "         " G_STRINGIFY (
+          NVT_SELECTOR_TYPE_NVT) ","
+                                 "         '1.3.6.1.4.1.25623.1.0.105937', "
+                                 "'Product detection');",
+        uuid);
       update = 1;
     }
 
