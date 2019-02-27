@@ -167,26 +167,27 @@ typedef struct
  * not just for migrators, so perhaps the SQL interface should keep
  * track of the transaction, and rollback before aborting. */
 
-// clang-format off
-
 /**
  * @brief Permission SQL for migrate_150_to_151.
  *
  * @param[in]  name  Name.
  * @param[in]  role  Role.
  */
-#define INSERT_PERMISSION(name, role)                                          \
-  sql ("INSERT INTO permissions"                                               \
-       " (uuid, owner, name, comment, resource_type, resource, resource_uuid," \
-       "  resource_location, subject_type, subject, subject_location,"         \
-       "  creation_time, modification_time)"                                   \
-       " VALUES"                                                               \
-       " (make_uuid (), NULL, '" G_STRINGIFY (name) "', '', '',"               \
-       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"                    \
-       "  (SELECT id FROM roles WHERE uuid = '%s'),"                           \
-       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",             \
-       role)
-// clang-format on
+static void
+insert_permission (const char *name, const char *role)
+{
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       "  (make_uuid (), NULL, '%s', '', '', 0, '', %d, 'role',"
+       "   (SELECT id FROM roles WHERE uuid = '%s'), %d, m_now (), m_now ());",
+       name,
+       LOCATION_TABLE,
+       role,
+       LOCATION_TABLE);
+}
 
 /**
  * @brief Migrate the database from version 184 to version 185.
@@ -1193,12 +1194,12 @@ migrate_200_to_201 ()
 
   /* Ticket commands were added. */
 
-  INSERT_PERMISSION (get_tickets, ROLE_UUID_OBSERVER);
+  insert_permission ("get_tickets", ROLE_UUID_OBSERVER);
 
-  INSERT_PERMISSION (get_tickets, ROLE_UUID_USER);
-  INSERT_PERMISSION (create_ticket, ROLE_UUID_USER);
-  INSERT_PERMISSION (modify_ticket, ROLE_UUID_USER);
-  INSERT_PERMISSION (delete_ticket, ROLE_UUID_USER);
+  insert_permission ("get_tickets", ROLE_UUID_USER);
+  insert_permission ("create_ticket", ROLE_UUID_USER);
+  insert_permission ("modify_ticket", ROLE_UUID_USER);
+  insert_permission ("delete_ticket", ROLE_UUID_USER);
 
   /* Set the database version to 201. */
 
