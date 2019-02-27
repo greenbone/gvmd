@@ -246,7 +246,9 @@ DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
  * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
+init_cpe_cve_iterator (iterator_t *iterator,
+                       const char *cve,
+                       int ascending,
                        const char *sort_field)
 {
   gchar *quoted_cpe;
@@ -472,7 +474,8 @@ DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 8);
  *         -1 error.
  */
 int
-init_ovaldef_info_iterator (iterator_t *iterator, get_data_t *get,
+init_ovaldef_info_iterator (iterator_t *iterator,
+                            get_data_t *get,
                             const char *name)
 {
   static const char *filter_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
@@ -756,7 +759,8 @@ ovaldef_cves (const char *id)
  *         -1 error.
  */
 int
-init_cert_bund_adv_info_iterator (iterator_t *iterator, get_data_t *get,
+init_cert_bund_adv_info_iterator (iterator_t *iterator,
+                                  get_data_t *get,
                                   const char *name)
 {
   static const char *filter_columns[] =
@@ -869,8 +873,10 @@ DEF_ACCESS (cert_bund_adv_info_iterator_max_cvss,
  * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_cve_cert_bund_adv_iterator (iterator_t *iterator, const char *cve,
-                                 int ascending, const char *sort_field)
+init_cve_cert_bund_adv_iterator (iterator_t *iterator,
+                                 const char *cve,
+                                 int ascending,
+                                 const char *sort_field)
 {
   static column_t select_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
   gchar *columns;
@@ -900,8 +906,10 @@ init_cve_cert_bund_adv_iterator (iterator_t *iterator, const char *cve,
  * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid,
-                                 int ascending, const char *sort_field)
+init_nvt_cert_bund_adv_iterator (iterator_t *iterator,
+                                 const char *oid,
+                                 int ascending,
+                                 const char *sort_field)
 {
   static column_t select_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
   gchar *columns;
@@ -937,7 +945,8 @@ init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid,
  *         -1 error.
  */
 int
-init_dfn_cert_adv_info_iterator (iterator_t *iterator, get_data_t *get,
+init_dfn_cert_adv_info_iterator (iterator_t *iterator,
+                                 get_data_t *get,
                                  const char *name)
 {
   static const char *filter_columns[] =
@@ -1048,8 +1057,10 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
  * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_cve_dfn_cert_adv_iterator (iterator_t *iterator, const char *cve,
-                                int ascending, const char *sort_field)
+init_cve_dfn_cert_adv_iterator (iterator_t *iterator,
+                                const char *cve,
+                                int ascending,
+                                const char *sort_field)
 {
   static column_t select_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
   gchar *columns;
@@ -1079,8 +1090,10 @@ init_cve_dfn_cert_adv_iterator (iterator_t *iterator, const char *cve,
  * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
-                                int ascending, const char *sort_field)
+init_nvt_dfn_cert_adv_iterator (iterator_t *iterator,
+                                const char *oid,
+                                int ascending,
+                                const char *sort_field)
 {
   static column_t select_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
   gchar *columns;
@@ -1424,7 +1437,8 @@ DEF_ACCESS (ovaldi_file_iterator_name, 0);
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_dfn_xml (const gchar *xml_path, int last_cert_update,
+update_dfn_xml (const gchar *xml_path,
+                int last_cert_update,
                 int last_dfn_update)
 {
   GError *error;
@@ -1698,7 +1712,8 @@ update_dfn_cert_advisories (int last_cert_update)
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_bund_xml (const gchar *xml_path, int last_cert_update,
+update_bund_xml (const gchar *xml_path,
+                 int last_cert_update,
                  int last_bund_update)
 {
   GError *error;
@@ -2168,7 +2183,8 @@ fail:
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_cve_xml (const gchar *xml_path, int last_scap_update,
+update_cve_xml (const gchar *xml_path,
+                int last_scap_update,
                 int last_cve_update)
 {
   GError *error;
@@ -2569,7 +2585,8 @@ update_scap_cves (int last_scap_update)
  * @param[out] definition_date_oldest  Oldest date.
  */
 static void
-oval_definition_dates (entity_t definition, int *definition_date_newest,
+oval_definition_dates (entity_t definition,
+                       int *definition_date_newest,
                        int *definition_date_oldest)
 {
   entity_t metadata, oval_repository, date, dates;
@@ -2797,8 +2814,10 @@ verify_oval_file (const gchar *full_path)
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
-                    int last_ovaldef_update, int private)
+update_ovaldef_xml (gchar **file_and_date,
+                    int last_scap_update,
+                    int last_ovaldef_update,
+                    int private)
 {
   GError *error;
   entity_t entity, child;
@@ -3227,7 +3246,9 @@ static array_t *oval_files = NULL;
  * @return 0 success, -1 error.
  */
 static int
-oval_files_add (const char *path, const struct stat *stat, int flag,
+oval_files_add (const char *path,
+                const struct stat *stat,
+                int flag,
                 struct FTW *traversal)
 {
   GError *error;
@@ -3625,8 +3646,10 @@ manage_db_reinit (const gchar *name)
  * @param[in]  lockfile_basename  Basename for lockfile.
  */
 static void
-sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
-              const gchar *process_title, const gchar *lockfile_basename)
+sync_secinfo (sigset_t *sigmask_current,
+              int (*update) (int),
+              const gchar *process_title,
+              const gchar *lockfile_basename)
 {
   int pid, lockfile;
   gchar *lockfile_name;
@@ -3854,7 +3877,8 @@ update_cert_timestamp ()
  * @param[in]  last_scap_update  Time of last SCAP update.
  */
 static void
-update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
+update_cvss_dfn_cert (int updated_dfn_cert,
+                      int last_cert_update,
                       int last_scap_update)
 {
   /* TODO greenbone-certdata-sync did retries. */
@@ -3886,7 +3910,8 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
  * @param[in]  last_scap_update  Time of last SCAP update.
  */
 static void
-update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
+update_cvss_cert_bund (int updated_cert_bund,
+                       int last_cert_update,
                        int last_scap_update)
 {
   /* TODO greenbone-certdata-sync did retries. */

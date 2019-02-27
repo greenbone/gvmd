@@ -56,8 +56,10 @@
  * @return 1 if found, else 0.
  */
 int
-find_attribute (const gchar **attribute_names, const gchar **attribute_values,
-                const char *attribute_name, const gchar **attribute_value)
+find_attribute (const gchar **attribute_names,
+                const gchar **attribute_values,
+                const char *attribute_name,
+                const gchar **attribute_value)
 {
   while (*attribute_names && *attribute_values)
     if (strcmp (*attribute_names, attribute_name))
@@ -83,8 +85,10 @@ find_attribute (const gchar **attribute_names, const gchar **attribute_values,
  * @return 1 if found and appended, else 0.
  */
 int
-append_attribute (const gchar **attribute_names, const gchar **attribute_values,
-                  const char *attribute_name, gchar **string)
+append_attribute (const gchar **attribute_names,
+                  const gchar **attribute_values,
+                  const char *attribute_name,
+                  gchar **string)
 {
   const gchar *attribute;
   if (find_attribute (
@@ -147,7 +151,8 @@ send_to_client (const char *msg,
  * @return TRUE if out of space in to_client, else FALSE.
  */
 gboolean
-send_element_error_to_client (const char *command, const char *element,
+send_element_error_to_client (const char *command,
+                              const char *element,
                               int (*write_to_client) (const char *, void *),
                               void *write_to_client_data)
 {
@@ -175,8 +180,10 @@ send_element_error_to_client (const char *command, const char *element,
  * @return TRUE if out of space in to_client, else FALSE.
  */
 gboolean
-send_find_error_to_client (const char *command, const char *type,
-                           const char *id, gmp_parser_t *gmp_parser)
+send_find_error_to_client (const char *command,
+                           const char *type,
+                           const char *id,
+                           gmp_parser_t *gmp_parser)
 {
   gchar *msg;
   gboolean ret;
@@ -228,8 +235,11 @@ internal_error_send_to_client (GError **error)
  * @param[in]   fail        Whether it is a fail event.
  */
 static void
-log_event_internal (const char *type, const char *type_name, const char *id,
-                    const char *action, int fail)
+log_event_internal (const char *type,
+                    const char *type_name,
+                    const char *id,
+                    const char *action,
+                    int fail)
 {
   gchar *domain;
 
@@ -287,7 +297,9 @@ log_event_internal (const char *type, const char *type_name, const char *id,
  * @param[in]   action      Action done.
  */
 void
-log_event (const char *type, const char *type_name, const char *id,
+log_event (const char *type,
+           const char *type_name,
+           const char *id,
            const char *action)
 {
   log_event_internal (type, type_name, id, action, 0);
@@ -302,7 +314,9 @@ log_event (const char *type, const char *type_name, const char *id,
  * @param[in]   action      Action done.
  */
 void
-log_event_fail (const char *type, const char *type_name, const char *id,
+log_event_fail (const char *type,
+                const char *type_name,
+                const char *id,
                 const char *action)
 {
   log_event_internal (type, type_name, id, action, 1);

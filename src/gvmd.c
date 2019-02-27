@@ -649,7 +649,8 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
  */
 static int
 fork_connection_internal (gvm_connection_t *client_connection,
-                          const gchar *uuid, int scheduler)
+                          const gchar *uuid,
+                          int scheduler)
 {
   int pid, parent_client_socket, ret;
   int sockets[2];
@@ -1440,9 +1441,13 @@ serve_and_schedule ()
  * @return 0 success, -1 error.
  */
 static int
-manager_listen (const char *address_str_unix, const char *address_str_tls,
-                const char *port_str, const char *socket_owner,
-                const char *socket_group, const char *socket_mode, int *soc)
+manager_listen (const char *address_str_unix,
+                const char *address_str_tls,
+                const char *port_str,
+                const char *socket_owner,
+                const char *socket_group,
+                const char *socket_mode,
+                int *soc)
 {
   struct sockaddr *address;
   struct sockaddr_un address_unix;

@@ -14,7 +14,7 @@ AllowShortLoopsOnASingleLine: 'false'
 AlwaysBreakAfterReturnType: All
 AlwaysBreakBeforeMultilineStrings: 'false'
 BinPackArguments: 'false'
-BinPackParameters: 'true'
+BinPackParameters: 'false'
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: GNU
 BreakBeforeTernaryOperators: 'true'

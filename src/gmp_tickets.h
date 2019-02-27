@@ -39,7 +39,9 @@ void
 create_ticket_start (gmp_parser_t *, const gchar **, const gchar **);
 
 void
-create_ticket_element_start (gmp_parser_t *, const gchar *, const gchar **,
+create_ticket_element_start (gmp_parser_t *,
+                             const gchar *,
+                             const gchar **,
                              const gchar **);
 
 int
@@ -52,7 +54,9 @@ void
 modify_ticket_start (gmp_parser_t *, const gchar **, const gchar **);
 
 void
-modify_ticket_element_start (gmp_parser_t *, const gchar *, const gchar **,
+modify_ticket_element_start (gmp_parser_t *,
+                             const gchar *,
+                             const gchar **,
                              const gchar **);
 
 int

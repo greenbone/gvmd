@@ -481,7 +481,9 @@ acl_user_is_user (const char *uuid)
  * @return 1 if user has Super, else 0.
  */
 static int
-acl_user_has_super_on (const char *type, const char *field, const char *value,
+acl_user_has_super_on (const char *type,
+                       const char *field,
+                       const char *value,
                        int trash)
 {
   gchar *quoted_value;
@@ -509,8 +511,10 @@ acl_user_has_super_on (const char *type, const char *field, const char *value,
  * @return 1 if user has Super, else 0.
  */
 static int
-acl_user_has_super_on_resource (const char *type, const char *field,
-                                resource_t resource, int trash)
+acl_user_has_super_on_resource (const char *type,
+                                const char *field,
+                                resource_t resource,
+                                int trash)
 {
   if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
                "               WHERE " ACL_SUPER_CLAUSE ("%llu") ");",
@@ -721,8 +725,10 @@ acl_user_owns_trash_uuid (const char *type, const char *uuid)
  * @return 1 if user may access resource, else 0.
  */
 int
-acl_user_has_access_uuid (const char *type, const char *uuid,
-                          const char *permission, int trash)
+acl_user_has_access_uuid (const char *type,
+                          const char *uuid,
+                          const char *permission,
+                          int trash)
 {
   int ret, get;
   char *uuid_task;
@@ -913,10 +919,15 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
  * @return Newly allocated owned clause.
  */
 static gchar *
-acl_where_owned_user (const char *user_id, const char *user_sql,
-                      const char *type, const get_data_t *get, int owned,
-                      const gchar *owner_filter, resource_t resource,
-                      array_t *permissions, gchar **with)
+acl_where_owned_user (const char *user_id,
+                      const char *user_sql,
+                      const char *type,
+                      const get_data_t *get,
+                      int owned,
+                      const gchar *owner_filter,
+                      resource_t resource,
+                      array_t *permissions,
+                      gchar **with)
 {
   gchar *owned_clause, *filter_owned_clause;
   GString *permission_or;
@@ -1428,9 +1439,13 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
  * @return Newly allocated owned clause.
  */
 gchar *
-acl_where_owned (const char *type, const get_data_t *get, int owned,
-                 const gchar *owner_filter, resource_t resource,
-                 array_t *permissions, gchar **with)
+acl_where_owned (const char *type,
+                 const get_data_t *get,
+                 int owned,
+                 const gchar *owner_filter,
+                 resource_t resource,
+                 array_t *permissions,
+                 gchar **with)
 {
   gchar *ret, *user_sql;
   if (current_credentials.uuid)
@@ -1510,7 +1525,8 @@ acl_where_owned_for_get (const char *type, const char *user_sql, gchar **with)
  */
 
 gchar *
-acl_users_with_access_sql (const char *type, const char *resource_id,
+acl_users_with_access_sql (const char *type,
+                           const char *resource_id,
                            const char *users_where)
 {
   GString *users_string;
@@ -1571,8 +1587,10 @@ acl_users_with_access_sql (const char *type, const char *resource_id,
  */
 
 gchar *
-acl_users_with_access_where (const char *type, const char *resource_id,
-                             const char *users_where, const char *user_expr)
+acl_users_with_access_where (const char *type,
+                             const char *resource_id,
+                             const char *users_where,
+                             const char *user_expr)
 {
   gchar *values, *ret;
   assert (user_expr);

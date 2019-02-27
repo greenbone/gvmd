@@ -379,7 +379,8 @@ iso_time_tz (time_t *epoch_time, const char *zone, const char **abbrev)
  * @return 0 success, 1 already locked, -1 error
  */
 static int
-lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
+lock_internal (lockfile_t *lockfile,
+               const gchar *lockfile_basename,
                int operation)
 {
   int fd;

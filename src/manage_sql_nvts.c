@@ -486,7 +486,9 @@ nvt_info_count (const get_data_t *get)
  * @return Freshly allocated SELECT statement on success, or NULL on error.
  */
 static gchar *
-select_config_nvts (const config_t config, const char *family, int ascending,
+select_config_nvts (const config_t config,
+                    const char *family,
+                    int ascending,
                     const char *sort_field)
 {
   gchar *quoted_selector, *quoted_family, *sql;
@@ -694,8 +696,12 @@ select_config_nvts (const config_t config, const char *family, int ascending,
  * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_nvt_iterator (iterator_t *iterator, nvt_t nvt, config_t config,
-                   const char *family, const char *category, int ascending,
+init_nvt_iterator (iterator_t *iterator,
+                   nvt_t nvt,
+                   config_t config,
+                   const char *family,
+                   const char *category,
+                   int ascending,
                    const char *sort_field)
 {
   assert ((nvt && family) == 0);
@@ -775,7 +781,9 @@ init_nvt_iterator (iterator_t *iterator, nvt_t nvt, config_t config,
  * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_cve_nvt_iterator (iterator_t *iterator, const char *cve, int ascending,
+init_cve_nvt_iterator (iterator_t *iterator,
+                       const char *cve,
+                       int ascending,
                        const char *sort_field)
 {
   init_iterator (iterator,

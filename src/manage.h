@@ -107,8 +107,15 @@ typedef int (*manage_connection_forker_t) (gvm_connection_t *conn,
                                            const gchar *uuid);
 
 int
-init_manage (GSList *, int, const gchar *, int, int, int, int,
-             manage_connection_forker_t, int);
+init_manage (GSList *,
+             int,
+             const gchar *,
+             int,
+             int,
+             int,
+             int,
+             manage_connection_forker_t,
+             int);
 
 int
 init_manage_helper (GSList *, const gchar *, int);
@@ -594,17 +601,33 @@ int
 manage_check_alerts (GSList *, const gchar *);
 
 int
-create_alert (const char *, const char *, const char *, const char *, event_t,
-              GPtrArray *, alert_condition_t, GPtrArray *, alert_method_t,
-              GPtrArray *, alert_t *);
+create_alert (const char *,
+              const char *,
+              const char *,
+              const char *,
+              event_t,
+              GPtrArray *,
+              alert_condition_t,
+              GPtrArray *,
+              alert_method_t,
+              GPtrArray *,
+              alert_t *);
 
 int
 copy_alert (const char *, const char *, const char *, alert_t *);
 
 int
-modify_alert (const char *, const char *, const char *, const char *,
-              const char *, event_t, GPtrArray *, alert_condition_t,
-              GPtrArray *, alert_method_t, GPtrArray *);
+modify_alert (const char *,
+              const char *,
+              const char *,
+              const char *,
+              const char *,
+              event_t,
+              GPtrArray *,
+              alert_condition_t,
+              GPtrArray *,
+              alert_method_t,
+              GPtrArray *);
 
 int
 delete_alert (const char *, int);
@@ -855,7 +878,14 @@ int
 task_last_report (task_t, report_t *);
 
 const char *
-task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
+task_iterator_trend_counts (iterator_t *,
+                            int,
+                            int,
+                            int,
+                            double,
+                            int,
+                            int,
+                            int,
                             double);
 
 const char *
@@ -952,10 +982,22 @@ int
 manage_task_remove_file (const gchar *, const char *);
 
 int
-modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
-             const gchar *, const gchar *, const gchar *, array_t *,
-             const gchar *, array_t *, const gchar *, const gchar *, array_t *,
-             const gchar *, gchar **, gchar **);
+modify_task (const gchar *,
+             const gchar *,
+             const gchar *,
+             const gchar *,
+             const gchar *,
+             const gchar *,
+             const gchar *,
+             array_t *,
+             const gchar *,
+             array_t *,
+             const gchar *,
+             const gchar *,
+             array_t *,
+             const gchar *,
+             gchar **,
+             gchar **);
 
 void
 init_config_file_iterator (iterator_t *, const char *, const char *);
@@ -1018,8 +1060,15 @@ void
 severity_data_add_count (severity_data_t *, double, int);
 
 void
-severity_data_level_counts (const severity_data_t *, const gchar *, int *,
-                            int *, int *, int *, int *, int *, int *);
+severity_data_level_counts (const severity_data_t *,
+                            const gchar *,
+                            int *,
+                            int *,
+                            int *,
+                            int *,
+                            int *,
+                            int *,
+                            int *);
 
 /* General task facilities. */
 
@@ -1080,8 +1129,14 @@ int
 result_uuid (result_t, char **);
 
 int
-result_detection_reference (result_t, report_t, const char *, const char *,
-                            char **, char **, char **, char **);
+result_detection_reference (result_t,
+                            report_t,
+                            const char *,
+                            const char *,
+                            char **,
+                            char **,
+                            char **,
+                            char **);
 
 /* Reports. */
 
@@ -1110,7 +1165,10 @@ void
 reports_clear_count_cache_for_override (override_t, int);
 
 void
-init_report_counts_build_iterator (iterator_t *, report_t, int, int,
+init_report_counts_build_iterator (iterator_t *,
+                                   report_t,
+                                   int,
+                                   int,
                                    const char *);
 
 double
@@ -1131,12 +1189,23 @@ int
 qod_from_type (const char *);
 
 result_t
-make_result (task_t, const char *, const char *, const char *, const char *,
-             const char *, const char *);
+make_result (task_t,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             const char *);
 
 result_t
-make_osp_result (task_t, const char *, const char *, const char *, const char *,
-                 const char *, const char *, int);
+make_osp_result (task_t,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 int);
 
 result_t
 make_cve_result (task_t, const char *, const char *, double, const char *);
@@ -1175,8 +1244,13 @@ void
 host_detail_free (host_detail_t *);
 
 void
-insert_report_host_detail (report_t, const char *, const char *, const char *,
-                           const char *, const char *, const char *);
+insert_report_host_detail (report_t,
+                           const char *,
+                           const char *,
+                           const char *,
+                           const char *,
+                           const char *,
+                           const char *);
 
 int
 manage_report_host_detail (report_t, const char *, const char *);
@@ -1194,9 +1268,17 @@ void clear_duration_schedules (task_t);
 void update_duration_schedule_periods (task_t);
 
 int
-create_report (array_t *, const char *, const char *, const char *,
-               const char *, const char *, const char *, array_t *, array_t *,
-               array_t *, char **);
+create_report (array_t *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               array_t *,
+               array_t *,
+               array_t *,
+               char **);
 
 void report_add_result (report_t, result_t);
 
@@ -1237,20 +1319,52 @@ report_task (report_t, task_t *);
 char *report_slave_task_uuid (report_t);
 
 int
-report_scan_result_count (report_t, const char *, const char *, int,
-                          const char *, const char *, int, int, int *);
+report_scan_result_count (report_t,
+                          const char *,
+                          const char *,
+                          int,
+                          const char *,
+                          const char *,
+                          int,
+                          int,
+                          int *);
 
 int
-report_counts (const char *, int *, int *, int *, int *, int *, int *, double *,
-               int, int, int);
+report_counts (const char *,
+               int *,
+               int *,
+               int *,
+               int *,
+               int *,
+               int *,
+               double *,
+               int,
+               int,
+               int);
 
 int
-report_counts_id (report_t, int *, int *, int *, int *, int *, int *, double *,
-                  const get_data_t *, const char *);
+report_counts_id (report_t,
+                  int *,
+                  int *,
+                  int *,
+                  int *,
+                  int *,
+                  int *,
+                  double *,
+                  const get_data_t *,
+                  const char *);
 
 int
-report_counts_id_no_filt (report_t, int *, int *, int *, int *, int *, int *,
-                          double *, const get_data_t *, const char *);
+report_counts_id_no_filt (report_t,
+                          int *,
+                          int *,
+                          int *,
+                          int *,
+                          int *,
+                          int *,
+                          double *,
+                          const get_data_t *,
+                          const char *);
 
 get_data_t *
 report_results_get_data (int, int, int, int, int);
@@ -1316,8 +1430,11 @@ int
 result_count (const get_data_t *, report_t, const char *);
 
 int
-init_result_get_iterator (iterator_t *, const get_data_t *, report_t,
-                          const char *, const gchar *);
+init_result_get_iterator (iterator_t *,
+                          const get_data_t *,
+                          report_t,
+                          const char *,
+                          const gchar *);
 
 gboolean
 next_report (iterator_t *, report_t *);
@@ -1442,16 +1559,44 @@ int
 report_progress (report_t, task_t, gchar **);
 
 gchar *
-manage_report (report_t, report_t, const get_data_t *, report_format_t, int,
-               int, const char *, gsize *, gchar **, gchar **, gchar **,
-               gchar **, gchar **);
+manage_report (report_t,
+               report_t,
+               const get_data_t *,
+               report_format_t,
+               int,
+               int,
+               const char *,
+               gsize *,
+               gchar **,
+               gchar **,
+               gchar **,
+               gchar **,
+               gchar **);
 
 int
-manage_send_report (
-  report_t, report_t, report_format_t, const get_data_t *, int, int, int, int,
-  int, gboolean (*) (const char *, int (*) (const char *, void *), void *),
-  int (*) (const char *, void *), void *, const char *, const char *,
-  const char *, int, const char *, const char *, int, int, const gchar *);
+manage_send_report (report_t,
+                    report_t,
+                    report_format_t,
+                    const get_data_t *,
+                    int,
+                    int,
+                    int,
+                    int,
+                    int,
+                    gboolean (*) (const char *,
+                                  int (*) (const char *, void *),
+                                  void *),
+                    int (*) (const char *, void *),
+                    void *,
+                    const char *,
+                    const char *,
+                    const char *,
+                    int,
+                    const char *,
+                    const char *,
+                    int,
+                    int,
+                    const gchar *);
 
 /* Reports. */
 
@@ -1459,8 +1604,14 @@ gchar *
 app_location (report_host_t, const gchar *);
 
 void
-init_host_prognosis_iterator (iterator_t *, report_host_t, int, int,
-                              const char *, const char *, int, const char *);
+init_host_prognosis_iterator (iterator_t *,
+                              report_host_t,
+                              int,
+                              int,
+                              const char *,
+                              const char *,
+                              int,
+                              const char *);
 
 double
 prognosis_iterator_cvss_double (iterator_t *);
@@ -1500,9 +1651,22 @@ void
 manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 
 void
-manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
-                               int *, gchar **, gchar **, gchar **, gchar **,
-                               int *, int *, int *, int *, int *, gchar **);
+manage_report_filter_controls (const gchar *,
+                               int *,
+                               int *,
+                               gchar **,
+                               int *,
+                               int *,
+                               gchar **,
+                               gchar **,
+                               gchar **,
+                               gchar **,
+                               int *,
+                               int *,
+                               int *,
+                               int *,
+                               int *,
+                               gchar **);
 
 gchar *
 manage_clean_filter (const gchar *);
@@ -1517,19 +1681,41 @@ gboolean
 find_target_with_permission (const char *, target_t *, const char *);
 
 int
-create_target (const char *, const char *, const char *, const char *,
-               const char *, const char *, const char *, credential_t,
-               const char *, credential_t, credential_t, credential_t,
-               const char *, const char *, const char *, target_t *);
+create_target (const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               credential_t,
+               const char *,
+               credential_t,
+               credential_t,
+               credential_t,
+               const char *,
+               const char *,
+               const char *,
+               target_t *);
 
 int
 copy_target (const char *, const char *, const char *, target_t *);
 
 int
-modify_target (const char *, const char *, const char *, const char *,
-               const char *, const char *, const char *, const char *,
-               const char *, const char *, const char *, const char *,
-               const char *, const char *);
+modify_target (const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *,
+               const char *);
 
 int
 delete_target (const char *, int);
@@ -1689,8 +1875,13 @@ typedef struct
 } nvt_selector_t;
 
 int
-create_config (const char *, const char *, const array_t *, const array_t *,
-               const char *, config_t *, char **);
+create_config (const char *,
+               const char *,
+               const array_t *,
+               const array_t *,
+               const char *,
+               config_t *,
+               char **);
 
 int
 create_config_from_scanner (const char *, const char *, const char *, char **);
@@ -1770,7 +1961,9 @@ int
 modify_task_check_config_scanner (task_t, const char *, const char *);
 
 int
-manage_set_config_preference (const gchar *, const char *, const char *,
+manage_set_config_preference (const gchar *,
+                              const char *,
+                              const char *,
                               const char *);
 
 void
@@ -1798,8 +1991,11 @@ int
 manage_set_config_nvts (const gchar *, const char *, GPtrArray *);
 
 int
-manage_set_config_families (const gchar *, GPtrArray *, GPtrArray *,
-                            GPtrArray *, int);
+manage_set_config_families (const gchar *,
+                            GPtrArray *,
+                            GPtrArray *,
+                            GPtrArray *,
+                            int);
 
 void
 init_config_timeout_iterator (iterator_t *, config_t);
@@ -1836,8 +2032,13 @@ int
 nvt_info_count (const get_data_t *);
 
 void
-init_nvt_iterator (iterator_t *, nvt_t, config_t, const char *, const char *,
-                   int, const char *);
+init_nvt_iterator (iterator_t *,
+                   nvt_t,
+                   config_t,
+                   const char *,
+                   const char *,
+                   int,
+                   const char *);
 
 void
 init_cve_nvt_iterator (iterator_t *, const char *, int, const char *);
@@ -2027,18 +2228,37 @@ gboolean
 find_credential_with_permission (const char *, credential_t *, const char *);
 
 int
-create_credential (const char *, const char *, const char *, const char *,
-                   const char *, const char *, const char *, const char *,
-                   const char *, const char *, const char *, const char *,
-                   const char *, credential_t *);
+create_credential (const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   credential_t *);
 
 int
 copy_credential (const char *, const char *, const char *, credential_t *);
 
 int
-modify_credential (const char *, const char *, const char *, const char *,
-                   const char *, const char *, const char *, const char *,
-                   const char *, const char *, const char *, const char *,
+modify_credential (const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
                    const char *);
 
 int
@@ -2163,8 +2383,14 @@ credential_encrypted_value (credential_t, const char *);
 /* Agents. */
 
 int
-create_agent (const char *, const char *, const char *, const char *,
-              const char *, const char *, const char *, agent_t *);
+create_agent (const char *,
+              const char *,
+              const char *,
+              const char *,
+              const char *,
+              const char *,
+              const char *,
+              agent_t *);
 
 int
 copy_agent (const char *, const char *, const char *, agent_t *);
@@ -2220,8 +2446,13 @@ result_host_asset_id (const char *, result_t);
 char *host_uuid (resource_t);
 
 host_t
-host_notice (const char *, const char *, const char *, const char *,
-             const char *, int, int);
+host_notice (const char *,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             int,
+             int);
 
 void
 init_host_identifier_iterator (iterator_t *, host_t, int, const char *);
@@ -2325,8 +2556,15 @@ gboolean
 find_note_with_permission (const char *, note_t *, const char *);
 
 int
-create_note (const char *, const char *, const char *, const char *,
-             const char *, const char *, const char *, task_t, result_t,
+create_note (const char *,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             task_t,
+             result_t,
              note_t *);
 
 int
@@ -2339,9 +2577,16 @@ int
 note_uuid (note_t, char **);
 
 int
-modify_note (const gchar *, const char *, const char *, const char *,
-             const char *, const char *, const char *, const char *,
-             const gchar *, const gchar *);
+modify_note (const gchar *,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             const char *,
+             const gchar *,
+             const gchar *);
 
 int
 note_count (const get_data_t *, nvt_t, result_t, task_t);
@@ -2397,9 +2642,18 @@ gboolean
 find_override_with_permission (const char *, override_t *, const char *);
 
 int
-create_override (const char *, const char *, const char *, const char *,
-                 const char *, const char *, const char *, const char *,
-                 const char *, task_t, result_t, override_t *);
+create_override (const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 task_t,
+                 result_t,
+                 override_t *);
 
 int
 override_uuid (override_t, char **);
@@ -2411,15 +2665,27 @@ int
 delete_override (const char *, int);
 
 int
-modify_override (const gchar *, const char *, const char *, const char *,
-                 const char *, const char *, const char *, const char *,
-                 const char *, const char *, const gchar *, const gchar *);
+modify_override (const gchar *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 const gchar *,
+                 const gchar *);
 
 int
 override_count (const get_data_t *, nvt_t, result_t, task_t);
 
 int
-init_override_iterator (iterator_t *, const get_data_t *, nvt_t, result_t,
+init_override_iterator (iterator_t *,
+                        const get_data_t *,
+                        nvt_t,
+                        result_t,
                         task_t);
 
 const char *
@@ -2493,7 +2759,8 @@ typedef struct
 } report_type_iterator_t;
 
 int
-init_system_report_type_iterator (report_type_iterator_t *, const char *,
+init_system_report_type_iterator (report_type_iterator_t *,
+                                  const char *,
                                   const char *);
 
 void
@@ -2509,18 +2776,35 @@ const char *
 report_type_iterator_title (report_type_iterator_t *);
 
 int
-manage_system_report (const char *, const char *, const char *, const char *,
-                      const char *, char **);
+manage_system_report (const char *,
+                      const char *,
+                      const char *,
+                      const char *,
+                      const char *,
+                      char **);
 
 int
-manage_create_scanner (GSList *, const char *, const char *, const char *,
-                       const char *, const char *, const char *, const char *,
+manage_create_scanner (GSList *,
+                       const char *,
+                       const char *,
+                       const char *,
+                       const char *,
+                       const char *,
+                       const char *,
+                       const char *,
                        const char *);
 
 int
-manage_modify_scanner (GSList *, const gchar *, const char *, const char *,
-                       const char *, const char *, const char *, const char *,
-                       const char *, const char *);
+manage_modify_scanner (GSList *,
+                       const gchar *,
+                       const char *,
+                       const char *,
+                       const char *,
+                       const char *,
+                       const char *,
+                       const char *,
+                       const char *,
+                       const char *);
 
 int
 manage_delete_scanner (GSList *, const gchar *, const gchar *);
@@ -2532,15 +2816,27 @@ int
 manage_get_scanners (GSList *, const gchar *);
 
 int
-create_scanner (const char *, const char *, const char *, const char *,
-                const char *, scanner_t *, const char *, const char *);
+create_scanner (const char *,
+                const char *,
+                const char *,
+                const char *,
+                const char *,
+                scanner_t *,
+                const char *,
+                const char *);
 
 int
 copy_scanner (const char *, const char *, const char *, scanner_t *);
 
 int
-modify_scanner (const char *, const char *, const char *, const char *,
-                const char *, const char *, const char *, const char *);
+modify_scanner (const char *,
+                const char *,
+                const char *,
+                const char *,
+                const char *,
+                const char *,
+                const char *,
+                const char *);
 
 int
 delete_scanner (const char *, int);
@@ -2643,8 +2939,13 @@ char *trash_scanner_name (scanner_t);
 char *trash_scanner_uuid (scanner_t);
 
 int
-osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,
-                               char **, char **);
+osp_get_version_from_iterator (iterator_t *,
+                               char **,
+                               char **,
+                               char **,
+                               char **,
+                               char **,
+                               char **);
 
 int
 osp_get_details_from_iterator (iterator_t *, char **, GSList **);
@@ -2676,8 +2977,16 @@ gboolean
 find_schedule_with_permission (const char *, schedule_t *, const char *);
 
 int
-create_schedule (const char *, const char *, const char *, time_t, time_t,
-                 time_t, const char *, time_t, const char *, schedule_t *,
+create_schedule (const char *,
+                 const char *,
+                 const char *,
+                 time_t,
+                 time_t,
+                 time_t,
+                 const char *,
+                 time_t,
+                 const char *,
+                 schedule_t *,
                  gchar **);
 
 int
@@ -2710,8 +3019,15 @@ int schedule_duration (schedule_t);
 int schedule_period (schedule_t);
 
 int
-schedule_info (schedule_t, int, time_t *, time_t *, int *, int *, int *,
-               gchar **, gchar **);
+schedule_info (schedule_t,
+               int,
+               time_t *,
+               time_t *,
+               int *,
+               int *,
+               int *,
+               gchar **,
+               gchar **);
 
 int
 init_schedule_iterator (iterator_t *, const get_data_t *);
@@ -2772,8 +3088,17 @@ int
 schedule_task_iterator_readable (iterator_t *);
 
 int
-modify_schedule (const char *, const char *, const char *, const char *, time_t,
-                 time_t, time_t, const char *, time_t, const char *, gchar **);
+modify_schedule (const char *,
+                 const char *,
+                 const char *,
+                 const char *,
+                 time_t,
+                 time_t,
+                 time_t,
+                 const char *,
+                 time_t,
+                 const char *,
+                 gchar **);
 
 int
 get_schedule_timeout ();
@@ -2784,7 +3109,8 @@ set_schedule_timeout (int);
 /* Report Formats. */
 
 gboolean
-find_report_format_with_permission (const char *, report_format_t *,
+find_report_format_with_permission (const char *,
+                                    report_format_t *,
                                     const char *);
 
 /**
@@ -2801,16 +3127,30 @@ typedef struct
 } create_report_format_param_t;
 
 int
-create_report_format (const char *, const char *, const char *, const char *,
-                      const char *, const char *, int, array_t *, array_t *,
-                      array_t *, const char *, report_format_t *);
+create_report_format (const char *,
+                      const char *,
+                      const char *,
+                      const char *,
+                      const char *,
+                      const char *,
+                      int,
+                      array_t *,
+                      array_t *,
+                      array_t *,
+                      const char *,
+                      report_format_t *);
 
 int
 copy_report_format (const char *, const char *, report_format_t *);
 
 int
-modify_report_format (const char *, const char *, const char *, const char *,
-                      const char *, const char *, const char *);
+modify_report_format (const char *,
+                      const char *,
+                      const char *,
+                      const char *,
+                      const char *,
+                      const char *,
+                      const char *);
 
 int
 delete_report_format (const char *, int);
@@ -2936,7 +3276,10 @@ report_format_param_type_t
 report_format_param_type_from_name (const char *);
 
 void
-init_report_format_param_iterator (iterator_t *, report_format_t, int, int,
+init_report_format_param_iterator (iterator_t *,
+                                   report_format_t,
+                                   int,
+                                   int,
                                    const char *);
 
 report_format_param_t
@@ -2964,7 +3307,9 @@ const char *
 report_format_param_iterator_fallback (iterator_t *);
 
 void
-init_param_option_iterator (iterator_t *, report_format_param_t, int,
+init_param_option_iterator (iterator_t *,
+                            report_format_param_t,
+                            int,
                             const char *);
 
 const char *
@@ -3005,8 +3350,13 @@ modify_group (const char *, const char *, const char *, const char *);
 /* Permissions. */
 
 int
-create_permission (const char *, const char *, const char *, const char *,
-                   const char *, const char *, permission_t *);
+create_permission (const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   permission_t *);
 
 int
 copy_permission (const char *, const char *, permission_t *);
@@ -3067,8 +3417,13 @@ int
 delete_permission (const char *, int);
 
 int
-modify_permission (const char *, const char *, const char *, const char *,
-                   const char *, const char *, const char *);
+modify_permission (const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *);
 
 /* Permission caching */
 
@@ -3089,8 +3444,12 @@ gboolean
 find_port_range (const char *, port_list_t *);
 
 int
-create_port_list (const char *, const char *, const char *, const char *,
-                  array_t *, port_list_t *);
+create_port_list (const char *,
+                  const char *,
+                  const char *,
+                  const char *,
+                  array_t *,
+                  port_list_t *);
 
 int
 copy_port_list (const char *, const char *, const char *, port_list_t *);
@@ -3099,8 +3458,12 @@ int
 modify_port_list (const char *, const char *, const char *);
 
 int
-create_port_range (const char *, const char *, const char *, const char *,
-                   const char *, port_range_t *);
+create_port_range (const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   const char *,
+                   port_range_t *);
 
 int
 delete_port_list (const char *, int);
@@ -3290,7 +3653,10 @@ int
 filter_term_min_qod (const char *);
 
 int
-create_filter (const char *, const char *, const char *, const char *,
+create_filter (const char *,
+               const char *,
+               const char *,
+               const char *,
                filter_t *);
 
 int
@@ -3332,7 +3698,10 @@ int
 filter_alert_iterator_readable (iterator_t *);
 
 int
-modify_filter (const char *, const char *, const char *, const char *,
+modify_filter (const char *,
+               const char *,
+               const char *,
+               const char *,
                const char *);
 
 /* Schema. */
@@ -3588,7 +3957,12 @@ const char *
 setting_severity ();
 
 void
-init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,
+init_setting_iterator (iterator_t *,
+                       const char *,
+                       const char *,
+                       int,
+                       int,
+                       int,
                        const char *);
 
 const char *
@@ -3607,7 +3981,10 @@ int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 int
-manage_modify_setting (GSList *, const gchar *, const gchar *, const gchar *,
+manage_modify_setting (GSList *,
+                       const gchar *,
+                       const gchar *,
+                       const gchar *,
                        const char *);
 
 char *
@@ -3619,7 +3996,10 @@ gboolean
 find_user_by_name_with_permission (const char *, user_t *, const char *);
 
 int
-manage_create_user (GSList *, const gchar *, const gchar *, const gchar *,
+manage_create_user (GSList *,
+                    const gchar *,
+                    const gchar *,
+                    const gchar *,
                     const gchar *);
 
 int
@@ -3705,17 +4085,40 @@ int
 user_role_iterator_readable (iterator_t *);
 
 int
-create_user (const gchar *, const gchar *, const gchar *, const gchar *, int,
-             const gchar *, int, const array_t *, array_t *, gchar **,
-             array_t *, gchar **, gchar **, user_t *, int);
+create_user (const gchar *,
+             const gchar *,
+             const gchar *,
+             const gchar *,
+             int,
+             const gchar *,
+             int,
+             const array_t *,
+             array_t *,
+             gchar **,
+             array_t *,
+             gchar **,
+             gchar **,
+             user_t *,
+             int);
 
 int
 delete_user (const char *, const char *, int, int, const char *, const char *);
 
 int
-modify_user (const gchar *, gchar **, const gchar *, const gchar *,
-             const gchar *, const gchar *, int, const gchar *, int,
-             const array_t *, array_t *, gchar **, array_t *, gchar **,
+modify_user (const gchar *,
+             gchar **,
+             const gchar *,
+             const gchar *,
+             const gchar *,
+             const gchar *,
+             int,
+             const gchar *,
+             int,
+             const array_t *,
+             array_t *,
+             gchar **,
+             array_t *,
+             gchar **,
              gchar **);
 
 int user_in_use (user_t);
@@ -3793,15 +4196,29 @@ int
 copy_tag (const char *, const char *, const char *, tag_t *);
 
 int
-create_tag (const char *, const char *, const char *, const char *, array_t *,
-            const char *, const char *, tag_t *, gchar **);
+create_tag (const char *,
+            const char *,
+            const char *,
+            const char *,
+            array_t *,
+            const char *,
+            const char *,
+            tag_t *,
+            gchar **);
 
 int
 delete_tag (const char *, int);
 
 int
-modify_tag (const char *, const char *, const char *, const char *,
-            const char *, array_t *, const char *, const char *, const char *,
+modify_tag (const char *,
+            const char *,
+            const char *,
+            const char *,
+            const char *,
+            array_t *,
+            const char *,
+            const char *,
+            const char *,
             gchar **);
 
 int
@@ -3844,8 +4261,12 @@ const char *
 tag_name_iterator_name (iterator_t *);
 
 int
-init_resource_tag_iterator (iterator_t *, const char *, resource_t, int,
-                            const char *, int);
+init_resource_tag_iterator (iterator_t *,
+                            const char *,
+                            resource_t,
+                            int,
+                            const char *,
+                            int);
 
 const char *
 resource_tag_iterator_uuid (iterator_t *);
@@ -3889,9 +4310,19 @@ void
 sort_data_free (sort_data_t *);
 
 int
-init_aggregate_iterator (iterator_t *, const char *, const get_data_t *, int,
-                         GArray *, const char *, const char *, GArray *,
-                         GArray *, int, int, const char *, const char *);
+init_aggregate_iterator (iterator_t *,
+                         const char *,
+                         const get_data_t *,
+                         int,
+                         GArray *,
+                         const char *,
+                         const char *,
+                         GArray *,
+                         GArray *,
+                         int,
+                         int,
+                         const char *,
+                         const char *);
 
 int
 aggregate_iterator_count (iterator_t *);
@@ -3941,8 +4372,15 @@ gvm_get_sync_script_feed_version (const gchar *, gchar **);
 /* Wizards. */
 
 int
-manage_run_wizard (const gchar *, int (*) (void *, gchar *, gchar **), void *,
-                   array_t *, int, const char *, gchar **, gchar **, gchar **);
+manage_run_wizard (const gchar *,
+                   int (*) (void *, gchar *, gchar **),
+                   void *,
+                   array_t *,
+                   int,
+                   const char *,
+                   gchar **,
+                   gchar **,
+                   gchar **);
 
 /* Helpers. */
 

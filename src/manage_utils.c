@@ -375,8 +375,12 @@ next_day (int day_of_week, int byday)
  * @return  the next time a schedule with the given times is due.
  */
 time_t
-next_time (time_t first, int period, int period_months, int byday,
-           const char *zone, int periods_offset)
+next_time (time_t first,
+           int period,
+           int period_months,
+           int byday,
+           const char *zone,
+           int periods_offset)
 {
   int periods_diff;
   time_t now;
@@ -605,7 +609,8 @@ parse_time (const gchar *string, int *seconds)
  * @return Number of hosts, or -1 on error.
  */
 int
-manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
+manage_count_hosts_max (const char *given_hosts,
+                        const char *exclude_hosts,
                         int max_hosts)
 {
   int count;
@@ -720,7 +725,8 @@ level_max_severity (const char *level, const char *class)
  * @return 1 if host has equal in hosts_str, 0 otherwise.
  */
 int
-hosts_str_contains (const char *hosts_str, const char *find_host_str,
+hosts_str_contains (const char *hosts_str,
+                    const char *find_host_str,
                     int max_hosts)
 {
   gvm_hosts_t *hosts, *find_hosts;
@@ -832,9 +838,12 @@ icalendar_timezone_from_tzid (const char *tzid)
  * @return  The generated iCalendar component.
  */
 icalcomponent *
-icalendar_from_old_schedule_data (time_t first_time, time_t period,
-                                  time_t period_months, time_t duration,
-                                  int byday_mask, const char *zone)
+icalendar_from_old_schedule_data (time_t first_time,
+                                  time_t period,
+                                  time_t period_months,
+                                  time_t duration,
+                                  int byday_mask,
+                                  const char *zone)
 {
   gchar *uid;
   icalcomponent *ical_new, *vevent;
@@ -970,8 +979,10 @@ icalendar_from_old_schedule_data (time_t first_time, time_t period,
  * @return  A newly allocated, simplified VEVENT component.
  */
 static icalcomponent *
-icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
-                           gchar **error, GString *warnings_buffer)
+icalendar_simplify_vevent (icalcomponent *vevent,
+                           GHashTable *used_tzids,
+                           gchar **error,
+                           GString *warnings_buffer)
 {
   icalproperty *error_prop;
   gchar *uid;
@@ -1492,8 +1503,10 @@ icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
  * @return  The next or previous time as time_t.
  */
 static time_t
-icalendar_next_time_from_rdates (GPtrArray *rdates, icaltimetype ref_time_ical,
-                                 icaltimezone *tz, int periods_offset)
+icalendar_next_time_from_rdates (GPtrArray *rdates,
+                                 icaltimetype ref_time_ical,
+                                 icaltimezone *tz,
+                                 int periods_offset)
 {
   int index;
   time_t ref_time, closest_time;
@@ -1546,8 +1559,10 @@ static time_t
 icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
                                      icaltimetype dtstart,
                                      icaltimetype reference_time,
-                                     icaltimezone *tz, GPtrArray *exdates,
-                                     GPtrArray *rdates, int periods_offset)
+                                     icaltimezone *tz,
+                                     GPtrArray *exdates,
+                                     GPtrArray *rdates,
+                                     int periods_offset)
 {
   icalrecur_iterator *recur_iter;
   icaltimetype recur_time, prev_time, next_time;
@@ -1709,7 +1724,8 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
  */
 time_t
 icalendar_next_time_from_string (const char *ical_string,
-                                 const char *default_tzid, int periods_offset)
+                                 const char *default_tzid,
+                                 int periods_offset)
 {
   time_t next_time;
   icalcomponent *ical_parsed;

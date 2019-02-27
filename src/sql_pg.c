@@ -146,7 +146,9 @@ sql_select_limit (int max)
  * @param[in]  param_format  0 text, 1 binary.
  */
 static void
-sql_stmt_param_add (sql_stmt_t *stmt, const char *param_value, int param_size,
+sql_stmt_param_add (sql_stmt_t *stmt,
+                    const char *param_value,
+                    int param_size,
                     int param_format)
 {
   array_add (stmt->param_values, g_strndup (param_value, param_size));
@@ -466,7 +468,10 @@ sqli (resource_t *resource, char *sql, ...)
  * @return 0 success, 1 gave up, -1 error.
  */
 int
-sql_prepare_internal (int retry, int log, const char *sql, va_list args,
+sql_prepare_internal (int retry,
+                      int log,
+                      const char *sql,
+                      va_list args,
                       sql_stmt_t **stmt)
 {
   assert (stmt);
@@ -708,8 +713,11 @@ iterator_null (iterator_t *iterator, int col)
  * @param[in]  param_format  0 text, 1 binary.
  */
 static void
-bind_param (sql_stmt_t *stmt, int position, const void *param_value,
-            int param_size, int param_format)
+bind_param (sql_stmt_t *stmt,
+            int position,
+            const void *param_value,
+            int param_size,
+            int param_format)
 {
   if (position > stmt->param_values->len + 1)
     {
@@ -733,7 +741,9 @@ bind_param (sql_stmt_t *stmt, int position, const void *param_value,
  * @return 0 success, -1 error.
  */
 int
-sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
+sql_bind_blob (sql_stmt_t *stmt,
+               int position,
+               const void *value,
                int value_size)
 {
   bind_param (stmt, position, value, value_size, 1);
@@ -751,7 +761,9 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
  * @return 0 success, -1 error.
  */
 int
-sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
+sql_bind_text (sql_stmt_t *stmt,
+               int position,
+               const gchar *value,
                gsize value_size)
 {
   bind_param (

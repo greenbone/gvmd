@@ -352,7 +352,10 @@ sqli (resource_t *resource, char *sql, ...)
  * @return 0 success, 1 gave up, -1 error.
  */
 int
-sql_prepare_internal (int retry, int log, const char *sql, va_list args,
+sql_prepare_internal (int retry,
+                      int log,
+                      const char *sql,
+                      va_list args,
                       sql_stmt_t **stmt)
 {
   const char *tail;
@@ -641,7 +644,9 @@ iterator_column_count (iterator_t *iterator)
  * @return 0 success, -1 error.
  */
 int
-sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
+sql_bind_blob (sql_stmt_t *stmt,
+               int position,
+               const void *value,
                int value_size)
 {
   unsigned int retries;
@@ -679,7 +684,9 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
  * @return 0 success, -1 error.
  */
 int
-sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
+sql_bind_text (sql_stmt_t *stmt,
+               int position,
+               const gchar *value,
                gsize value_size)
 {
   unsigned int retries;

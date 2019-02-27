@@ -487,7 +487,8 @@ DEF_ACCESS (ticket_iterator_task_name, GET_ITERATOR_COLUMN_COUNT + 23);
  * @return 0 success, 1 failed to find ticket, -1 error.
  */
 int
-init_ticket_result_iterator (iterator_t *iterator, const gchar *ticket_id,
+init_ticket_result_iterator (iterator_t *iterator,
+                             const gchar *ticket_id,
                              int trash)
 {
   ticket_t ticket;
@@ -898,8 +899,11 @@ restore_ticket (const char *ticket_id)
  *         99 permission denied, -1 error.
  */
 int
-create_ticket (const char *comment, const char *result_id, const char *user_id,
-               const char *open_note, ticket_t *ticket)
+create_ticket (const char *comment,
+               const char *result_id,
+               const char *user_id,
+               const char *open_note,
+               ticket_t *ticket)
 {
   ticket_t new_ticket;
   permission_t permission;
@@ -1175,9 +1179,12 @@ set_note (ticket_t ticket, const gchar *name, const gchar *note)
  *         99 permission denied, -1 error.
  */
 int
-modify_ticket (const gchar *ticket_id, const gchar *comment,
-               const gchar *status_name, const gchar *open_note,
-               const gchar *fixed_note, const gchar *closed_note,
+modify_ticket (const gchar *ticket_id,
+               const gchar *comment,
+               const gchar *status_name,
+               const gchar *open_note,
+               const gchar *fixed_note,
+               const gchar *closed_note,
                const gchar *user_id)
 {
   ticket_t ticket;

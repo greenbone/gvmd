@@ -46,8 +46,15 @@
 #define FROM_BUFFER_SIZE 1048576
 
 int
-init_gmpd (GSList *, int, const gchar *, int, int, int, int,
-           manage_connection_forker_t, int);
+init_gmpd (GSList *,
+           int,
+           const gchar *,
+           int,
+           int,
+           int,
+           int,
+           manage_connection_forker_t,
+           int);
 
 void
 init_gmpd_process (const gchar *, gchar **);

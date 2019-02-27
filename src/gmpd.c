@@ -105,10 +105,15 @@ static int gmpd_nvt_cache_mode = 0;
  *         -4 max_ips_per_target out of range.
  */
 int
-init_gmpd (GSList *log_config, int nvt_cache_mode, const gchar *database,
-           int max_ips_per_target, int max_email_attachment_size,
-           int max_email_include_size, int max_email_message_size,
-           manage_connection_forker_t fork_connection, int skip_db_check)
+init_gmpd (GSList *log_config,
+           int nvt_cache_mode,
+           const gchar *database,
+           int max_ips_per_target,
+           int max_email_attachment_size,
+           int max_email_include_size,
+           int max_email_message_size,
+           manage_connection_forker_t fork_connection,
+           int skip_db_check)
 {
   return init_gmp (log_config,
                    nvt_cache_mode,
@@ -475,7 +480,8 @@ session_clean (gvm_connection_t *client_connection)
  * @return 0 success, 1 scanner still loading, -1 error, -2 scanner has no cert.
  */
 int
-serve_gmp (gvm_connection_t *client_connection, const gchar *database,
+serve_gmp (gvm_connection_t *client_connection,
+           const gchar *database,
            gchar **disable)
 {
   int nfds, scan_handler = 0, rc = 0;

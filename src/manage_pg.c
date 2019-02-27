@@ -489,8 +489,10 @@ manage_update_scap_db_cleanup ()
  * @param[in]  new_name   Name of column in new table.
  */
 void
-sql_rename_column (const char *old_table, const char *new_table,
-                   const char *old_name, const char *new_name)
+sql_rename_column (const char *old_table,
+                   const char *new_table,
+                   const char *old_name,
+                   const char *new_name)
 {
   return;
 }

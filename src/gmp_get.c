@@ -55,7 +55,8 @@
  * @param[in]  data  Command data.
  */
 void
-get_data_parse_attributes (get_data_t *data, const gchar *type,
+get_data_parse_attributes (get_data_t *data,
+                           const gchar *type,
                            const gchar **attribute_names,
                            const gchar **attribute_values)
 {
@@ -104,7 +105,9 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
  * @return 0 success, -1 error.
  */
 int
-init_get (gchar *command, get_data_t *get, const gchar *setting_name,
+init_get (gchar *command,
+          get_data_t *get,
+          const gchar *setting_name,
           int *first)
 {
   gchar *filter, *replacement;
@@ -227,7 +230,10 @@ init_get (gchar *command, get_data_t *get, const gchar *setting_name,
  * @return What to do next: 0 continue, 1 end, -1 fail.
  */
 int
-get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
+get_next (iterator_t *resources,
+          get_data_t *get,
+          int *first,
+          int *count,
           int (*init) (iterator_t *, const get_data_t *))
 {
   if (next (resources) == FALSE)
@@ -271,7 +277,8 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
  * @return 0 success, 1 send to client failed.
  */
 int
-send_get_start (const char *type, int (*write_to_client) (const char *, void *),
+send_get_start (const char *type,
+                int (*write_to_client) (const char *, void *),
                 void *write_to_client_data)
 {
   gchar *msg;
@@ -310,9 +317,13 @@ send_get_start (const char *type, int (*write_to_client) (const char *, void *),
  * @return 0 success, 1 send error.
  */
 int
-send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
+send_get_common (const char *type,
+                 get_data_t *get,
+                 iterator_t *iterator,
                  int (*write_to_client) (const char *, void *),
-                 void *write_to_client_data, int writable, int in_use)
+                 void *write_to_client_data,
+                 int writable,
+                 int in_use)
 {
   GString *buffer;
   const char *tag_type;
@@ -467,8 +478,11 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
  * @return Always 0.
  */
 int
-buffer_get_filter_xml (GString *msg, const char *type, const get_data_t *get,
-                       const char *filter_term, const char *extra_xml)
+buffer_get_filter_xml (GString *msg,
+                       const char *type,
+                       const get_data_t *get,
+                       const char *filter_term,
+                       const char *extra_xml)
 {
   keyword_t **point;
   array_t *split;
@@ -538,8 +552,12 @@ buffer_get_filter_xml (GString *msg, const char *type, const get_data_t *get,
  *         term.
  */
 static int
-send_get_end_internal (const char *type, get_data_t *get, int get_counts,
-                       int count, int filtered, int full,
+send_get_end_internal (const char *type,
+                       get_data_t *get,
+                       int get_counts,
+                       int count,
+                       int filtered,
+                       int full,
                        int (*write_to_client) (const char *, void *),
                        void *write_to_client_data)
 {
@@ -672,8 +690,12 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
  *         term.
  */
 int
-send_get_end (const char *type, get_data_t *get, int count, int filtered,
-              int full, int (*write_to_client) (const char *, void *),
+send_get_end (const char *type,
+              get_data_t *get,
+              int count,
+              int filtered,
+              int full,
+              int (*write_to_client) (const char *, void *),
               void *write_to_client_data)
 {
   return send_get_end_internal (
@@ -692,7 +714,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
  *         term.
  */
 int
-send_get_end_no_counts (const char *type, get_data_t *get,
+send_get_end_no_counts (const char *type,
+                        get_data_t *get,
                         int (*write_to_client) (const char *, void *),
                         void *write_to_client_data)
 {
