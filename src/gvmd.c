@@ -454,11 +454,12 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
       int optval;
 
       optval = 1;
-      if (setsockopt (server_socket, SOL_SOCKET, SO_KEEPALIVE, &optval,
-                      sizeof (int)))
+      if (setsockopt (
+            server_socket, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof (int)))
         {
           g_critical ("%s: failed to set SO_KEEPALIVE on scanner socket: %s",
-                      __FUNCTION__, strerror (errno));
+                      __FUNCTION__,
+                      strerror (errno));
           exit (EXIT_FAILURE);
         }
     }
@@ -466,8 +467,8 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
   if (client_watch_interval)
     {
       watcher_data = connection_watcher_data_new (client_connection);
-      pthread_create (&watch_thread, NULL, watch_client_connection,
-                      watcher_data);
+      pthread_create (
+        &watch_thread, NULL, watch_client_connection, watcher_data);
     }
   else
     {
@@ -477,7 +478,8 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
   if (client_connection->tls
       && gvm_server_attach (client_connection->socket, &client_session))
     {
-      g_debug ("%s: failed to attach client session to socket %i", __FUNCTION__,
+      g_debug ("%s: failed to attach client session to socket %i",
+               __FUNCTION__,
                client_connection->socket);
       goto fail;
     }
@@ -486,7 +488,8 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
    * error" removes the data between `select' and `read'. */
   if (fcntl (client_connection->socket, F_SETFL, O_NONBLOCK) == -1)
     {
-      g_warning ("%s: failed to set real client socket flag: %s", __FUNCTION__,
+      g_warning ("%s: failed to set real client socket flag: %s",
+                 __FUNCTION__,
                  strerror (errno));
       goto fail;
     }
@@ -560,7 +563,8 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
       if (errno == EAGAIN || errno == EWOULDBLOCK)
         /* The connection is gone, return to select. */
         return;
-      g_critical ("%s: failed to accept client connection: %s", __FUNCTION__,
+      g_critical ("%s: failed to accept client connection: %s",
+                  __FUNCTION__,
                   strerror (errno));
       exit (EXIT_FAILURE);
     }
@@ -590,7 +594,8 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
         if (sigaction (SIGCHLD, &action, NULL) == -1)
           {
             g_critical ("%s: failed to set client SIGCHLD handler: %s",
-                        __FUNCTION__, strerror (errno));
+                        __FUNCTION__,
+                        strerror (errno));
             shutdown (client_socket, SHUT_RDWR);
             close (client_socket);
             exit (EXIT_FAILURE);
@@ -602,7 +607,8 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
         if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
           {
             g_critical ("%s: failed to set client socket flag: %s",
-                        __FUNCTION__, strerror (errno));
+                        __FUNCTION__,
+                        strerror (errno));
             shutdown (client_socket, SHUT_RDWR);
             close (client_socket);
             exit (EXIT_FAILURE);
@@ -619,8 +625,8 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
       }
     case -1:
       /* Parent when error, return to select. */
-      g_warning ("%s: failed to fork child: %s", __FUNCTION__,
-                 strerror (errno));
+      g_warning (
+        "%s: failed to fork child: %s", __FUNCTION__, strerror (errno));
       close (client_socket);
       break;
     default:
@@ -709,7 +715,8 @@ fork_connection_internal (gvm_connection_t *client_connection,
       if (sigaction (SIGCHLD, &action, NULL) == -1)
         {
           g_critical ("%s: failed to set client SIGCHLD handler: %s",
-                      __FUNCTION__, strerror (errno));
+                      __FUNCTION__,
+                      strerror (errno));
           shutdown (parent_client_socket, SHUT_RDWR);
           close (parent_client_socket);
           exit (EXIT_FAILURE);
@@ -720,7 +727,8 @@ fork_connection_internal (gvm_connection_t *client_connection,
        */
       if (fcntl (parent_client_socket, F_SETFL, O_NONBLOCK) == -1)
         {
-          g_critical ("%s: failed to set client socket flag: %s", __FUNCTION__,
+          g_critical ("%s: failed to set client socket flag: %s",
+                      __FUNCTION__,
                       strerror (errno));
           shutdown (parent_client_socket, SHUT_RDWR);
           close (parent_client_socket);
@@ -740,8 +748,12 @@ fork_connection_internal (gvm_connection_t *client_connection,
 
       if (use_tls)
         {
-          if (gvm_server_new (GNUTLS_SERVER, CACERT, SCANNERCERT, SCANNERKEY,
-                              &client_session, &client_credentials))
+          if (gvm_server_new (GNUTLS_SERVER,
+                              CACERT,
+                              SCANNERCERT,
+                              SCANNERKEY,
+                              &client_session,
+                              &client_credentials))
             {
               g_critical ("%s: client server initialisation failed",
                           __FUNCTION__);
@@ -755,7 +767,8 @@ fork_connection_internal (gvm_connection_t *client_connection,
 
       /* Serve client. */
 
-      g_debug ("%s: serving GMP to client on socket %i", __FUNCTION__,
+      g_debug ("%s: serving GMP to client on socket %i",
+               __FUNCTION__,
                parent_client_socket);
 
       memset (client_connection, 0, sizeof (*client_connection));
@@ -795,7 +808,10 @@ fork_connection_internal (gvm_connection_t *client_connection,
 
       if (use_tls)
         {
-          if (gvm_server_new (GNUTLS_CLIENT, CACERT, CLIENTCERT, CLIENTKEY,
+          if (gvm_server_new (GNUTLS_CLIENT,
+                              CACERT,
+                              CLIENTCERT,
+                              CLIENTKEY,
                               &client_connection->session,
                               &client_connection->credentials))
             exit (EXIT_FAILURE);
@@ -805,7 +821,8 @@ fork_connection_internal (gvm_connection_t *client_connection,
             exit (EXIT_FAILURE);
         }
 
-      g_debug ("%s: all set to request GMP on socket %i", __FUNCTION__,
+      g_debug ("%s: all set to request GMP on socket %i",
+               __FUNCTION__,
                client_connection->socket);
 
       return 0;
@@ -878,8 +895,8 @@ cleanup ()
   if (log_stream != NULL)
     {
       if (fclose (log_stream))
-        g_critical ("%s: failed to close log stream: %s", __FUNCTION__,
-                    strerror (errno));
+        g_critical (
+          "%s: failed to close log stream: %s", __FUNCTION__, strerror (errno));
     }
 #endif /* LOG */
   g_debug ("   Exiting");
@@ -913,8 +930,8 @@ setup_signal_handler (int signal, void (*handler) (int), int block)
   action.sa_handler = handler;
   if (sigaction (signal, &action, NULL) == -1)
     {
-      g_critical ("%s: failed to register %s handler", __FUNCTION__,
-                  sys_siglist[signal]);
+      g_critical (
+        "%s: failed to register %s handler", __FUNCTION__, sys_siglist[signal]);
       exit (EXIT_FAILURE);
     }
 }
@@ -944,8 +961,8 @@ setup_signal_handler_info (int signal,
   action.sa_sigaction = handler;
   if (sigaction (signal, &action, NULL) == -1)
     {
-      g_critical ("%s: failed to register %s handler", __FUNCTION__,
-                  sys_siglist[signal]);
+      g_critical (
+        "%s: failed to register %s handler", __FUNCTION__, sys_siglist[signal]);
       exit (EXIT_FAILURE);
     }
 }
@@ -1078,11 +1095,15 @@ update_nvt_cache (int register_cleanup)
 
   proctitle_set ("gvmd: Updating NVT cache");
 
-  switch (init_gmpd (log_config, -1, database, manage_max_hosts (),
+  switch (init_gmpd (log_config,
+                     -1,
+                     database,
+                     manage_max_hosts (),
                      0, /* Max email attachment size. */
                      0, /* Max email include size. */
                      0, /* Max email message size. */
-                     NULL, 1 /* Skip DB check (including table creation). */))
+                     NULL,
+                     1 /* Skip DB check (including table creation). */))
     {
     case 0:
       break;
@@ -1317,13 +1338,13 @@ serve_and_schedule ()
         }
 
       if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
-        switch (manage_schedule (fork_connection_for_scheduler,
-                                 scheduling_enabled, sigmask_normal))
+        switch (manage_schedule (
+          fork_connection_for_scheduler, scheduling_enabled, sigmask_normal))
           {
           case 0:
             last_schedule_time = time (NULL);
-            g_debug ("%s: last_schedule_time: %li", __FUNCTION__,
-                     last_schedule_time);
+            g_debug (
+              "%s: last_schedule_time: %li", __FUNCTION__, last_schedule_time);
             break;
           case 1:
             break;
@@ -1372,12 +1393,13 @@ serve_and_schedule ()
         }
 
       if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
-        switch (manage_schedule (fork_connection_for_scheduler,
-                                 scheduling_enabled, sigmask_normal))
+        switch (manage_schedule (
+          fork_connection_for_scheduler, scheduling_enabled, sigmask_normal))
           {
           case 0:
             last_schedule_time = time (NULL);
-            g_debug ("%s: last_schedule_time 2: %li", __FUNCTION__,
+            g_debug ("%s: last_schedule_time 2: %li",
+                     __FUNCTION__,
                      last_schedule_time);
             break;
           case 1:
@@ -1438,11 +1460,12 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
       /* UNIX file socket. */
 
       address_unix.sun_family = AF_UNIX;
-      strncpy (address_unix.sun_path, address_str_unix,
+      strncpy (address_unix.sun_path,
+               address_str_unix,
                sizeof (address_unix.sun_path) - 1);
 
-      g_debug ("%s: address_unix.sun_path: %s", __FUNCTION__,
-               address_unix.sun_path);
+      g_debug (
+        "%s: address_unix.sun_path: %s", __FUNCTION__, address_unix.sun_path);
 
       *soc = socket (AF_UNIX, SOCK_STREAM, 0);
       if (*soc == -1)
@@ -1683,139 +1706,387 @@ main (int argc, char **argv)
   lockfile_t lockfile_checking, lockfile_serving;
   GOptionContext *option_context;
   static GOptionEntry option_entries[] = {
-    {"backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database,
-     "Backup the database.", NULL},
-    {"check-alerts", '\0', 0, G_OPTION_ARG_NONE, &check_alerts,
-     "Check SecInfo alerts.", NULL},
-    {"client-watch-interval", '\0', 0, G_OPTION_ARG_INT, &client_watch_interval,
+    {"backup",
+     '\0',
+     0,
+     G_OPTION_ARG_NONE,
+     &backup_database,
+     "Backup the database.",
+     NULL},
+    {"check-alerts",
+     '\0',
+     0,
+     G_OPTION_ARG_NONE,
+     &check_alerts,
+     "Check SecInfo alerts.",
+     NULL},
+    {"client-watch-interval",
+     '\0',
+     0,
+     G_OPTION_ARG_INT,
+     &client_watch_interval,
      "Check if client connection was closed every <number> seconds."
      " 0 to disable. Defaults to " G_STRINGIFY (
        DEFAULT_CLIENT_WATCH_INTERVAL) " seconds.",
      "<number>"},
-    {"database", 'd', 0, G_OPTION_ARG_STRING, &database,
-     "Use <file/name> as database for SQLite/Postgres.", "<file/name>"},
-    {"disable-cmds", '\0', 0, G_OPTION_ARG_STRING, &disable,
-     "Disable comma-separated <commands>.", "<commands>"},
-    {"disable-encrypted-credentials", '\0', 0, G_OPTION_ARG_NONE,
-     &disable_encrypted_credentials, "Do not encrypt or decrypt credentials.",
+    {"database",
+     'd',
+     0,
+     G_OPTION_ARG_STRING,
+     &database,
+     "Use <file/name> as database for SQLite/Postgres.",
+     "<file/name>"},
+    {"disable-cmds",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &disable,
+     "Disable comma-separated <commands>.",
+     "<commands>"},
+    {"disable-encrypted-credentials",
+     '\0',
+     0,
+     G_OPTION_ARG_NONE,
+     &disable_encrypted_credentials,
+     "Do not encrypt or decrypt credentials.",
      NULL},
-    {"disable-password-policy", '\0', 0, G_OPTION_ARG_NONE,
-     &disable_password_policy, "Do not restrict passwords to the policy.",
+    {"disable-password-policy",
+     '\0',
+     0,
+     G_OPTION_ARG_NONE,
+     &disable_password_policy,
+     "Do not restrict passwords to the policy.",
      NULL},
-    {"disable-scheduling", '\0', 0, G_OPTION_ARG_NONE, &disable_scheduling,
-     "Disable task scheduling.", NULL},
-    {"create-user", '\0', 0, G_OPTION_ARG_STRING, &create_user,
-     "Create admin user <username> and exit.", "<username>"},
-    {"delete-user", '\0', 0, G_OPTION_ARG_STRING, &delete_user,
-     "Delete user <username> and exit.", "<username>"},
-    {"get-users", '\0', 0, G_OPTION_ARG_NONE, &get_users,
-     "List users and exit.", NULL},
-    {"create-scanner", '\0', 0, G_OPTION_ARG_STRING, &create_scanner,
-     "Create global scanner <scanner> and exit.", "<scanner>"},
-    {"modify-scanner", '\0', 0, G_OPTION_ARG_STRING, &modify_scanner,
-     "Modify scanner <scanner-uuid> and exit.", "<scanner-uuid>"},
-    {"scanner-name", '\0', 0, G_OPTION_ARG_STRING, &scanner_name,
-     "Name for --modify-scanner.", "<name>"},
-    {"scanner-host", '\0', 0, G_OPTION_ARG_STRING, &scanner_host,
+    {"disable-scheduling",
+     '\0',
+     0,
+     G_OPTION_ARG_NONE,
+     &disable_scheduling,
+     "Disable task scheduling.",
+     NULL},
+    {"create-user",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &create_user,
+     "Create admin user <username> and exit.",
+     "<username>"},
+    {"delete-user",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &delete_user,
+     "Delete user <username> and exit.",
+     "<username>"},
+    {"get-users",
+     '\0',
+     0,
+     G_OPTION_ARG_NONE,
+     &get_users,
+     "List users and exit.",
+     NULL},
+    {"create-scanner",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &create_scanner,
+     "Create global scanner <scanner> and exit.",
+     "<scanner>"},
+    {"modify-scanner",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &modify_scanner,
+     "Modify scanner <scanner-uuid> and exit.",
+     "<scanner-uuid>"},
+    {"scanner-name",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &scanner_name,
+     "Name for --modify-scanner.",
+     "<name>"},
+    {"scanner-host",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &scanner_host,
      "Scanner host for --create-scanner and --modify-scanner. Default "
      "is " OPENVASSD_ADDRESS ".",
      "<scanner-host>"},
-    {"scanner-port", '\0', 0, G_OPTION_ARG_STRING, &scanner_port,
+    {"scanner-port",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &scanner_port,
      "Scanner port for --create-scanner and --modify-scanner. Default "
      "is " G_STRINGIFY (OPENVASSD_PORT) ".",
      "<scanner-port>"},
-    {"scanner-type", '\0', 0, G_OPTION_ARG_STRING, &scanner_type,
+    {"scanner-type",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &scanner_type,
      "Scanner type for --create-scanner and --modify-scanner. Either 'OpenVAS' "
      "or 'OSP'.",
      "<scanner-type>"},
-    {"scanner-ca-pub", '\0', 0, G_OPTION_ARG_STRING, &scanner_ca_pub,
+    {"scanner-ca-pub",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &scanner_ca_pub,
      "Scanner CA Certificate path for --[create|modify]-scanner.",
      "<scanner-ca-pub>"},
-    {"scanner-key-pub", '\0', 0, G_OPTION_ARG_STRING, &scanner_key_pub,
+    {"scanner-key-pub",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &scanner_key_pub,
      "Scanner Certificate path for --[create|modify]-scanner.",
      "<scanner-key-public>"},
-    {"scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING, &scanner_key_priv,
+    {"scanner-key-priv",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &scanner_key_priv,
      "Scanner private key path for --[create|modify]-scanner.",
      "<scanner-key-private>"},
-    {"verify-scanner", '\0', 0, G_OPTION_ARG_STRING, &verify_scanner,
-     "Verify scanner <scanner-uuid> and exit.", "<scanner-uuid>"},
-    {"delete-scanner", '\0', 0, G_OPTION_ARG_STRING, &delete_scanner,
-     "Delete scanner <scanner-uuid> and exit.", "<scanner-uuid>"},
-    {"get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners,
-     "List scanners and exit.", NULL},
-    {"secinfo-commit-size", '\0', 0, G_OPTION_ARG_INT, &secinfo_commit_size,
+    {"verify-scanner",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &verify_scanner,
+     "Verify scanner <scanner-uuid> and exit.",
+     "<scanner-uuid>"},
+    {"delete-scanner",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &delete_scanner,
+     "Delete scanner <scanner-uuid> and exit.",
+     "<scanner-uuid>"},
+    {"get-scanners",
+     '\0',
+     0,
+     G_OPTION_ARG_NONE,
+     &get_scanners,
+     "List scanners and exit.",
+     NULL},
+    {"secinfo-commit-size",
+     '\0',
+     0,
+     G_OPTION_ARG_INT,
+     &secinfo_commit_size,
      "During CERT and SCAP sync, commit updates to the database every <number> "
      "items, 0 for unlimited, default: " G_STRINGIFY (
        SECINFO_COMMIT_SIZE_DEFAULT),
      "<number>"},
-    {"schedule-timeout", '\0', 0, G_OPTION_ARG_INT, &schedule_timeout,
+    {"schedule-timeout",
+     '\0',
+     0,
+     G_OPTION_ARG_INT,
+     &schedule_timeout,
      "Time out tasks that are more than <time> minutes overdue. -1 to disable, "
      "0 for minimum time, default: " G_STRINGIFY (SCHEDULE_TIMEOUT_DEFAULT),
      "<time>"},
-    {"foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.",
+    {"foreground",
+     'f',
+     0,
+     G_OPTION_ARG_NONE,
+     &foreground,
+     "Run in foreground.",
      NULL},
-    {"inheritor", '\0', 0, G_OPTION_ARG_STRING, &inheritor,
-     "Have <username> inherit from deleted user.", "<username>"},
-    {"listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string,
-     "Listen on <address>.", "<address>"},
-    {"listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2,
-     "Listen also on <address>.", "<address>"},
-    {"listen-owner", '\0', 0, G_OPTION_ARG_STRING, &listen_owner,
-     "Owner of the unix socket", "<string>"},
-    {"listen-group", '\0', 0, G_OPTION_ARG_STRING, &listen_group,
-     "Group of the unix socket", "<string>"},
-    {"listen-mode", '\0', 0, G_OPTION_ARG_STRING, &listen_mode,
-     "File mode of the unix socket", "<string>"},
-    {"max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target,
-     "Maximum number of IPs per target.", "<number>"},
-    {"max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT,
+    {"inheritor",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &inheritor,
+     "Have <username> inherit from deleted user.",
+     "<username>"},
+    {"listen",
+     'a',
+     0,
+     G_OPTION_ARG_STRING,
+     &manager_address_string,
+     "Listen on <address>.",
+     "<address>"},
+    {"listen2",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &manager_address_string_2,
+     "Listen also on <address>.",
+     "<address>"},
+    {"listen-owner",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &listen_owner,
+     "Owner of the unix socket",
+     "<string>"},
+    {"listen-group",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &listen_group,
+     "Group of the unix socket",
+     "<string>"},
+    {"listen-mode",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &listen_mode,
+     "File mode of the unix socket",
+     "<string>"},
+    {"max-ips-per-target",
+     '\0',
+     0,
+     G_OPTION_ARG_INT,
+     &max_ips_per_target,
+     "Maximum number of IPs per target.",
+     "<number>"},
+    {"max-email-attachment-size",
+     '\0',
+     0,
+     G_OPTION_ARG_INT,
      &max_email_attachment_size,
-     "Maximum size of alert email attachments, in bytes.", "<number>"},
-    {"max-email-include-size", '\0', 0, G_OPTION_ARG_INT,
+     "Maximum size of alert email attachments, in bytes.",
+     "<number>"},
+    {"max-email-include-size",
+     '\0',
+     0,
+     G_OPTION_ARG_INT,
      &max_email_include_size,
-     "Maximum size of inlined content in alert emails, in bytes.", "<number>"},
-    {"max-email-message-size", '\0', 0, G_OPTION_ARG_INT,
+     "Maximum size of inlined content in alert emails, in bytes.",
+     "<number>"},
+    {"max-email-message-size",
+     '\0',
+     0,
+     G_OPTION_ARG_INT,
      &max_email_message_size,
      "Maximum size of user-defined message text in alert emails, in bytes.",
      "<number>"},
-    {"migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database,
-     "Migrate the database and exit.", NULL},
-    {"modify-setting", '\0', 0, G_OPTION_ARG_STRING, &modify_setting,
-     "Modify setting <uuid> and exit.", "<uuid>"},
-    {"encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
-     &encrypt_all_credentials, "(Re-)Encrypt all credentials.", NULL},
-    {"decrypt-all-credentials", '\0', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,
-     &decrypt_all_credentials, NULL, NULL},
-    {"new-password", '\0', 0, G_OPTION_ARG_STRING, &new_password,
-     "Modify user's password and exit.", "<password>"},
-    {"optimize", '\0', 0, G_OPTION_ARG_STRING, &optimize,
+    {"migrate",
+     'm',
+     0,
+     G_OPTION_ARG_NONE,
+     &migrate_database,
+     "Migrate the database and exit.",
+     NULL},
+    {"modify-setting",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &modify_setting,
+     "Modify setting <uuid> and exit.",
+     "<uuid>"},
+    {"encrypt-all-credentials",
+     '\0',
+     0,
+     G_OPTION_ARG_NONE,
+     &encrypt_all_credentials,
+     "(Re-)Encrypt all credentials.",
+     NULL},
+    {"decrypt-all-credentials",
+     '\0',
+     G_OPTION_FLAG_HIDDEN,
+     G_OPTION_ARG_NONE,
+     &decrypt_all_credentials,
+     NULL,
+     NULL},
+    {"new-password",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &new_password,
+     "Modify user's password and exit.",
+     "<password>"},
+    {"optimize",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &optimize,
      "Run an optimization: vacuum, analyze, cleanup-config-prefs, "
      "cleanup-port-names, cleanup-result-severities, cleanup-schedule-times, "
      "rebuild-report-cache or update-report-cache.",
      "<name>"},
-    {"password", '\0', 0, G_OPTION_ARG_STRING, &password,
-     "Password, for --create-user.", "<password>"},
-    {"port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string,
-     "Use port number <number>.", "<number>"},
-    {"port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2,
-     "Use port number <number> for address 2.", "<number>"},
-    {"role", '\0', 0, G_OPTION_ARG_STRING, &role,
-     "Role for --create-user and --get-users.", "<role>"},
-    {"unix-socket", 'c', 0, G_OPTION_ARG_STRING, &manager_address_string_unix,
-     "Listen on UNIX socket at <filename>.", "<filename>"},
-    {"user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.",
+    {"password",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &password,
+     "Password, for --create-user.",
+     "<password>"},
+    {"port",
+     'p',
+     0,
+     G_OPTION_ARG_STRING,
+     &manager_port_string,
+     "Use port number <number>.",
+     "<number>"},
+    {"port2",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &manager_port_string_2,
+     "Use port number <number> for address 2.",
+     "<number>"},
+    {"role",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &role,
+     "Role for --create-user and --get-users.",
+     "<role>"},
+    {"unix-socket",
+     'c',
+     0,
+     G_OPTION_ARG_STRING,
+     &manager_address_string_unix,
+     "Listen on UNIX socket at <filename>.",
+     "<filename>"},
+    {"user",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &user,
+     "User for --new-password.",
      "<username>"},
-    {"gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities,
+    {"gnutls-priorities",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &priorities,
      "Sets the GnuTLS priorities for the Manager socket.",
      "<priorities-string>"},
-    {"dh-params", '\0', 0, G_OPTION_ARG_STRING, &dh_params,
-     "Diffie-Hellman parameters file", "<file>"},
-    {"value", '\0', 0, G_OPTION_ARG_STRING, &value,
-     "Value for --modify-setting.", "<value>"},
-    {"verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose,
-     "Has no effect.  See INSTALL.md for logging config.", NULL},
-    {"version", '\0', 0, G_OPTION_ARG_NONE, &print_version,
-     "Print version and exit.", NULL},
+    {"dh-params",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &dh_params,
+     "Diffie-Hellman parameters file",
+     "<file>"},
+    {"value",
+     '\0',
+     0,
+     G_OPTION_ARG_STRING,
+     &value,
+     "Value for --modify-setting.",
+     "<value>"},
+    {"verbose",
+     'v',
+     0,
+     G_OPTION_ARG_NONE,
+     &verbose,
+     "Has no effect.  See INSTALL.md for logging config.",
+     NULL},
+    {"version",
+     '\0',
+     0,
+     G_OPTION_ARG_NONE,
+     &print_version,
+     "Print version and exit.",
+     NULL},
     {NULL}};
 
   /* Set locale based on environment variables. */
@@ -1830,8 +2101,8 @@ main (int argc, char **argv)
   if (!g_option_context_parse (option_context, &argc, &argv, &error))
     {
       g_option_context_free (option_context);
-      g_critical ("%s: g_option_context_parse: %s", __FUNCTION__,
-                  error->message);
+      g_critical (
+        "%s: g_option_context_parse: %s", __FUNCTION__, error->message);
       exit (EXIT_FAILURE);
     }
   g_option_context_free (option_context);
@@ -1941,10 +2212,13 @@ main (int argc, char **argv)
 #ifdef GVMD_GIT_REVISION
   g_message ("   Greenbone Vulnerability Manager version %s (GIT revision %s) "
              "(DB revision %i)",
-             GVMD_VERSION, GVMD_GIT_REVISION, manage_db_supported_version ());
+             GVMD_VERSION,
+             GVMD_GIT_REVISION,
+             manage_db_supported_version ());
 #else
   g_message ("   Greenbone Vulnerability Manager version %s (DB revision %i)",
-             GVMD_VERSION, manage_db_supported_version ());
+             GVMD_VERSION,
+             manage_db_supported_version ());
 #endif
 
   /* Get exclusivity on the startup locks.
@@ -2105,8 +2379,8 @@ main (int argc, char **argv)
       password_policy =
         g_build_filename (GVM_SYSCONF_DIR, "pwpolicy.conf", NULL);
       if (g_file_test (password_policy, G_FILE_TEST_EXISTS) == FALSE)
-        g_warning ("%s: password policy missing: %s", __FUNCTION__,
-                   password_policy);
+        g_warning (
+          "%s: password policy missing: %s", __FUNCTION__, password_policy);
       g_free (password_policy);
     }
 
@@ -2160,9 +2434,15 @@ main (int argc, char **argv)
           return EXIT_FAILURE;
         }
       stype = g_strdup_printf ("%u", type);
-      ret = manage_create_scanner (
-        log_config, database, create_scanner, scanner_host, scanner_port, stype,
-        scanner_ca_pub, scanner_key_pub, scanner_key_priv);
+      ret = manage_create_scanner (log_config,
+                                   database,
+                                   create_scanner,
+                                   scanner_host,
+                                   scanner_port,
+                                   stype,
+                                   scanner_ca_pub,
+                                   scanner_key_pub,
+                                   scanner_key_priv);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -2201,9 +2481,16 @@ main (int argc, char **argv)
       else
         stype = NULL;
 
-      ret = manage_modify_scanner (
-        log_config, database, modify_scanner, scanner_name, scanner_host,
-        scanner_port, stype, scanner_ca_pub, scanner_key_pub, scanner_key_priv);
+      ret = manage_modify_scanner (log_config,
+                                   database,
+                                   modify_scanner,
+                                   scanner_name,
+                                   scanner_host,
+                                   scanner_port,
+                                   stype,
+                                   scanner_ca_pub,
+                                   scanner_key_pub,
+                                   scanner_key_priv);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -2349,8 +2636,8 @@ main (int argc, char **argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_modify_setting (log_config, database, user, modify_setting,
-                                   value);
+      ret = manage_modify_setting (
+        log_config, database, user, modify_setting, value);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2421,7 +2708,8 @@ main (int argc, char **argv)
           break;
         case -1:
           /* Parent when error. */
-          g_critical ("%s: failed to fork into background: %s", __FUNCTION__,
+          g_critical ("%s: failed to fork into background: %s",
+                      __FUNCTION__,
                       strerror (errno));
           log_config_free ();
           exit (EXIT_FAILURE);
@@ -2436,9 +2724,15 @@ main (int argc, char **argv)
 
   /* Initialise GMP daemon. */
 
-  switch (init_gmpd (log_config, 0, database, max_ips_per_target,
-                     max_email_attachment_size, max_email_include_size,
-                     max_email_message_size, fork_connection_for_event, 0))
+  switch (init_gmpd (log_config,
+                     0,
+                     database,
+                     max_ips_per_target,
+                     max_email_attachment_size,
+                     max_email_include_size,
+                     max_email_message_size,
+                     fork_connection_for_event,
+                     0))
     {
     case 0:
       break;
@@ -2450,7 +2744,8 @@ main (int argc, char **argv)
     case -4:
       g_critical ("%s: --max-ips-per-target out of range"
                   " (min=1, max=%i, requested=%i)",
-                  __FUNCTION__, MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
+                  __FUNCTION__,
+                  MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
                   max_ips_per_target);
       log_config_free ();
       exit (EXIT_FAILURE);
@@ -2500,7 +2795,8 @@ main (int argc, char **argv)
   if (g_mkdir_with_parents (GVM_LOG_DIR, 0755) /* "rwxr-xr-x" */
       == -1)
     {
-      g_critical ("%s: failed to create log directory: %s", __FUNCTION__,
+      g_critical ("%s: failed to create log directory: %s",
+                  __FUNCTION__,
                   strerror (errno));
       exit (EXIT_FAILURE);
     }
@@ -2508,8 +2804,8 @@ main (int argc, char **argv)
   log_stream = fopen (LOG_FILE, "w");
   if (log_stream == NULL)
     {
-      g_critical ("%s: failed to open log file: %s", __FUNCTION__,
-                  strerror (errno));
+      g_critical (
+        "%s: failed to open log file: %s", __FUNCTION__, strerror (errno));
       exit (EXIT_FAILURE);
     }
 #endif
@@ -2528,8 +2824,12 @@ main (int argc, char **argv)
 
   if (use_tls)
     {
-      if (gvm_server_new (GNUTLS_SERVER, CACERT, SCANNERCERT, SCANNERKEY,
-                          &client_session, &client_credentials))
+      if (gvm_server_new (GNUTLS_SERVER,
+                          CACERT,
+                          SCANNERCERT,
+                          SCANNERKEY,
+                          &client_session,
+                          &client_credentials))
         {
           g_critical ("%s: client server initialisation failed", __FUNCTION__);
           exit (EXIT_FAILURE);
@@ -2549,11 +2849,19 @@ main (int argc, char **argv)
                                    ? manager_address_string
                                    : (ipv6_is_enabled () ? "::" : "0.0.0.0"))
                               : NULL,
-                      manager_port_string, listen_owner, listen_group,
-                      listen_mode, &manager_socket))
+                      manager_port_string,
+                      listen_owner,
+                      listen_group,
+                      listen_mode,
+                      &manager_socket))
     return EXIT_FAILURE;
-  if (manager_listen (NULL, manager_address_string_2, manager_port_string_2,
-                      NULL, NULL, NULL, &manager_socket_2))
+  if (manager_listen (NULL,
+                      manager_address_string_2,
+                      manager_port_string_2,
+                      NULL,
+                      NULL,
+                      NULL,
+                      &manager_socket_2))
     return EXIT_FAILURE;
 
   /* Initialise the process for manage_schedule. */

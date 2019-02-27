@@ -87,8 +87,8 @@ append_attribute (const gchar **attribute_names, const gchar **attribute_values,
                   const char *attribute_name, gchar **string)
 {
   const gchar *attribute;
-  if (find_attribute (attribute_names, attribute_values, attribute_name,
-                      &attribute))
+  if (find_attribute (
+        attribute_names, attribute_values, attribute_name, &attribute))
     {
       gvm_append_string (string, attribute);
       return 1;
@@ -157,7 +157,8 @@ send_element_error_to_client (const char *command, const char *element,
   /** @todo Set gerror so parsing terminates. */
   msg = g_strdup_printf ("<%s_response status=\"" STATUS_ERROR_SYNTAX
                          "\" status_text=\"Bogus element: %s\"/>",
-                         command, element);
+                         command,
+                         element);
   ret = send_to_client (msg, write_to_client, write_to_client_data);
   g_free (msg);
   return ret;
@@ -182,9 +183,11 @@ send_find_error_to_client (const char *command, const char *type,
 
   msg = g_strdup_printf ("<%s_response status=\"" STATUS_ERROR_MISSING
                          "\" status_text=\"Failed to find %s '%s'\"/>",
-                         command, type, id);
-  ret = send_to_client (msg, gmp_parser->client_writer,
-                        gmp_parser->client_writer_data);
+                         command,
+                         type,
+                         id);
+  ret = send_to_client (
+    msg, gmp_parser->client_writer, gmp_parser->client_writer_data);
   g_free (msg);
   return ret;
 }
@@ -198,7 +201,9 @@ void
 error_send_to_client (GError **error)
 {
   g_debug ("   send_to_client out of space in to_client");
-  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+  g_set_error (error,
+               G_MARKUP_ERROR,
+               G_MARKUP_ERROR_PARSE,
                "Manager out of space for reply to client.");
 }
 
@@ -240,19 +245,34 @@ log_event_internal (const char *type, const char *type_name, const char *id,
         name = NULL;
 
       if (name)
-        g_log (domain, G_LOG_LEVEL_MESSAGE, "%s %s (%s) %s %s by %s", type_name,
-               name, id, fail ? "could not be" : "has been", action,
+        g_log (domain,
+               G_LOG_LEVEL_MESSAGE,
+               "%s %s (%s) %s %s by %s",
+               type_name,
+               name,
+               id,
+               fail ? "could not be" : "has been",
+               action,
                current_credentials.username);
       else
-        g_log (domain, G_LOG_LEVEL_MESSAGE, "%s %s %s %s by %s", type_name, id,
-               fail ? "could not be" : "has been", action,
+        g_log (domain,
+               G_LOG_LEVEL_MESSAGE,
+               "%s %s %s %s by %s",
+               type_name,
+               id,
+               fail ? "could not be" : "has been",
+               action,
                current_credentials.username);
 
       free (name);
     }
   else
-    g_log (domain, G_LOG_LEVEL_MESSAGE, "%s %s %s by %s", type_name,
-           fail ? "could not be" : "has been", action,
+    g_log (domain,
+           G_LOG_LEVEL_MESSAGE,
+           "%s %s %s by %s",
+           type_name,
+           fail ? "could not be" : "has been",
+           action,
            current_credentials.username);
 
   g_free (domain);

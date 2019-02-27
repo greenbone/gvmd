@@ -121,10 +121,12 @@ ticket_status_name (ticket_status_t status)
 #define TICKET_ITERATOR_COLUMNS                                                \
   {                                                                            \
     GET_ITERATOR_COLUMNS (tickets),                                            \
-      {"(SELECT uuid FROM users WHERE id = assigned_to)", NULL,                \
+      {"(SELECT uuid FROM users WHERE id = assigned_to)",                      \
+       NULL,                                                                   \
        KEYWORD_TYPE_STRING},                                                   \
       {"(SELECT uuid FROM tasks WHERE id = task)", NULL, KEYWORD_TYPE_STRING}, \
-      {"(SELECT uuid FROM reports WHERE id = report)", NULL,                   \
+      {"(SELECT uuid FROM reports WHERE id = report)",                         \
+       NULL,                                                                   \
        KEYWORD_TYPE_STRING},                                                   \
       {"(CASE"                                                                 \
        " WHEN (SELECT EXISTS (SELECT * FROM ticket_results"                    \
@@ -143,7 +145,8 @@ ticket_status_name (ticket_status_t status)
        "       LIMIT 1)"                                                       \
        " ELSE severity"                                                        \
        " END)",                                                                \
-       "severity", KEYWORD_TYPE_DOUBLE},                                       \
+       "severity",                                                             \
+       KEYWORD_TYPE_DOUBLE},                                                   \
       {"host", NULL, KEYWORD_TYPE_STRING},                                     \
       {"location", NULL, KEYWORD_TYPE_STRING},                                 \
       {"solution_type", NULL, KEYWORD_TYPE_STRING},                            \
@@ -162,20 +165,24 @@ ticket_status_name (ticket_status_t status)
        " THEN 0"                                                               \
        " ELSE 1"                                                               \
        " END)",                                                                \
-       "orphan", KEYWORD_TYPE_INTEGER},                                        \
+       "orphan",                                                               \
+       KEYWORD_TYPE_INTEGER},                                                  \
       {"open_note", NULL, KEYWORD_TYPE_STRING},                                \
       {"fixed_note", NULL, KEYWORD_TYPE_STRING},                               \
       {"closed_note", NULL, KEYWORD_TYPE_STRING},                              \
-      {"(SELECT uuid FROM reports WHERE id = fix_verified_report)", NULL,      \
+      {"(SELECT uuid FROM reports WHERE id = fix_verified_report)",            \
+       NULL,                                                                   \
        KEYWORD_TYPE_STRING},                                                   \
       {"nvt", NULL, KEYWORD_TYPE_STRING},                                      \
-      {"(SELECT name FROM users WHERE id = assigned_to)", NULL,                \
+      {"(SELECT name FROM users WHERE id = assigned_to)",                      \
+       NULL,                                                                   \
        KEYWORD_TYPE_STRING},                                                   \
       {"(SELECT name FROM tasks WHERE id = task)", NULL, KEYWORD_TYPE_STRING}, \
       {"(SELECT result_uuid FROM ticket_results"                               \
        " WHERE ticket = tickets.id"                                            \
        " AND result_location = " G_STRINGIFY (LOCATION_TABLE) " LIMIT 1)",     \
-       "result_id", KEYWORD_TYPE_STRING},                                      \
+       "result_id",                                                            \
+       KEYWORD_TYPE_STRING},                                                   \
     {                                                                          \
       NULL, NULL, KEYWORD_TYPE_UNKNOWN                                         \
     }                                                                          \
@@ -187,10 +194,12 @@ ticket_status_name (ticket_status_t status)
 #define TICKET_ITERATOR_TRASH_COLUMNS                                          \
   {                                                                            \
     GET_ITERATOR_COLUMNS (tickets_trash),                                      \
-      {"(SELECT uuid FROM users WHERE id = assigned_to)", NULL,                \
+      {"(SELECT uuid FROM users WHERE id = assigned_to)",                      \
+       NULL,                                                                   \
        KEYWORD_TYPE_STRING},                                                   \
       {"(SELECT uuid FROM tasks WHERE id = task)", NULL, KEYWORD_TYPE_STRING}, \
-      {"(SELECT uuid FROM reports WHERE id = report)", NULL,                   \
+      {"(SELECT uuid FROM reports WHERE id = report)",                         \
+       NULL,                                                                   \
        KEYWORD_TYPE_STRING},                                                   \
       {"severity", NULL, KEYWORD_TYPE_DOUBLE},                                 \
       {"host", NULL, KEYWORD_TYPE_STRING},                                     \
@@ -211,20 +220,24 @@ ticket_status_name (ticket_status_t status)
        " THEN 0"                                                               \
        " ELSE 1"                                                               \
        " END)",                                                                \
-       "orphan", KEYWORD_TYPE_INTEGER},                                        \
+       "orphan",                                                               \
+       KEYWORD_TYPE_INTEGER},                                                  \
       {"open_note", NULL, KEYWORD_TYPE_STRING},                                \
       {"fixed_note", NULL, KEYWORD_TYPE_STRING},                               \
       {"closed_note", NULL, KEYWORD_TYPE_STRING},                              \
-      {"(SELECT uuid FROM reports WHERE id = fix_verified_report)", NULL,      \
+      {"(SELECT uuid FROM reports WHERE id = fix_verified_report)",            \
+       NULL,                                                                   \
        KEYWORD_TYPE_STRING},                                                   \
       {"nvt", NULL, KEYWORD_TYPE_STRING},                                      \
-      {"(SELECT name FROM users WHERE id = assigned_to)", NULL,                \
+      {"(SELECT name FROM users WHERE id = assigned_to)",                      \
+       NULL,                                                                   \
        KEYWORD_TYPE_STRING},                                                   \
       {"(SELECT name FROM tasks WHERE id = task)", NULL, KEYWORD_TYPE_STRING}, \
       {"(SELECT result_uuid FROM ticket_results_trash"                         \
        " WHERE ticket = tickets_trash.id"                                      \
        " AND result_location = " G_STRINGIFY (LOCATION_TABLE) " LIMIT 1)",     \
-       "result_id", KEYWORD_TYPE_STRING},                                      \
+       "result_id",                                                            \
+       KEYWORD_TYPE_STRING},                                                   \
     {                                                                          \
       NULL, NULL, KEYWORD_TYPE_UNKNOWN                                         \
     }                                                                          \
@@ -244,8 +257,8 @@ ticket_count (const get_data_t *get)
   static column_t columns[] = TICKET_ITERATOR_COLUMNS;
   static column_t trash_columns[] = TICKET_ITERATOR_TRASH_COLUMNS;
 
-  return count ("ticket", get, columns, trash_columns, extra_columns, 0, 0, 0,
-                TRUE);
+  return count (
+    "ticket", get, columns, trash_columns, extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -264,8 +277,16 @@ init_ticket_iterator (iterator_t *iterator, const get_data_t *get)
   static column_t columns[] = TICKET_ITERATOR_COLUMNS;
   static column_t trash_columns[] = TICKET_ITERATOR_TRASH_COLUMNS;
 
-  return init_get_iterator (iterator, "ticket", get, columns, trash_columns,
-                            filter_columns, 0, NULL, NULL, TRUE);
+  return init_get_iterator (iterator,
+                            "ticket",
+                            get,
+                            columns,
+                            trash_columns,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -490,7 +511,9 @@ init_ticket_result_iterator (iterator_t *iterator, const gchar *ticket_id,
                  " FROM ticket_results%s"
                  " WHERE ticket = %llu"
                  " ORDER BY id;",
-                 LOCATION_TABLE, trash ? "_trash" : "", ticket);
+                 LOCATION_TABLE,
+                 trash ? "_trash" : "",
+                 ticket);
   return 0;
 }
 
@@ -535,7 +558,9 @@ init_result_ticket_iterator (iterator_t *iterator, result_t result)
                  "              AND result_location = %i)"
                  " AND %s"
                  " ORDER BY id;",
-                 with_clause ? with_clause : "", result, LOCATION_TABLE,
+                 with_clause ? with_clause : "",
+                 result,
+                 LOCATION_TABLE,
                  owned_clause);
 
   g_free (with_clause);
@@ -681,8 +706,8 @@ delete_ticket (const char *ticket_id, int ultimate)
 
   /* Search in the regular table. */
 
-  if (find_resource_with_permission ("ticket", ticket_id, &ticket,
-                                     "delete_ticket", 0))
+  if (find_resource_with_permission (
+        "ticket", ticket_id, &ticket, "delete_ticket", 0))
     {
       sql_rollback ();
       return -1;
@@ -713,7 +738,8 @@ delete_ticket (const char *ticket_id, int ultimate)
            " WHERE resource_type = 'ticket'"
            " AND resource_location = %i"
            " AND resource = %llu;",
-           LOCATION_TRASH, ticket);
+           LOCATION_TRASH,
+           ticket);
 
       sql ("DELETE FROM permissions"
            " WHERE resource_type = 'task'"
@@ -760,10 +786,11 @@ delete_ticket (const char *ticket_id, int ultimate)
            " SELECT %llu, result, result_location, result_uuid, report"
            " FROM ticket_results"
            " WHERE ticket = %llu;",
-           trash_ticket, ticket);
+           trash_ticket,
+           ticket);
 
-      permissions_set_locations ("ticket", ticket, trash_ticket,
-                                 LOCATION_TRASH);
+      permissions_set_locations (
+        "ticket", ticket, trash_ticket, LOCATION_TRASH);
       tags_set_locations ("ticket", ticket, trash_ticket, LOCATION_TRASH);
     }
   else
@@ -774,7 +801,8 @@ delete_ticket (const char *ticket_id, int ultimate)
            " WHERE resource_type = 'ticket'"
            " AND resource_location = %i"
            " AND resource = %llu;",
-           LOCATION_TABLE, ticket);
+           LOCATION_TABLE,
+           ticket);
 
       sql ("DELETE FROM permissions"
            " WHERE resource_type = 'task'"
@@ -840,7 +868,8 @@ restore_ticket (const char *ticket_id)
        " SELECT %llu, result, result_location, result_uuid, report"
        " FROM ticket_results_trash"
        " WHERE ticket = %llu;",
-       ticket, trash_ticket);
+       ticket,
+       trash_ticket);
 
   /* Adjust references to the ticket. */
 
@@ -957,10 +986,19 @@ create_ticket (const char *comment, const char *result_id, const char *user_id,
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
        "  '%s', '%s', %llu, %llu, %0.1f, '%s', '%s', '%s',"
        "  %llu, %i, m_now (), '%s', m_now (), m_now ());",
-       quoted_name, current_credentials.uuid, quoted_comment, quoted_oid, task,
+       quoted_name,
+       current_credentials.uuid,
+       quoted_comment,
+       quoted_oid,
+       task,
        result_iterator_report (&results),
-       result_iterator_severity_double (&results), quoted_host, quoted_location,
-       quoted_solution, user, TICKET_STATUS_OPEN, quoted_open_note);
+       result_iterator_severity_double (&results),
+       quoted_host,
+       quoted_location,
+       quoted_solution,
+       user,
+       TICKET_STATUS_OPEN,
+       quoted_open_note);
 
   g_free (quoted_open_note);
   g_free (quoted_location);
@@ -980,8 +1018,11 @@ create_ticket (const char *comment, const char *result_id, const char *user_id,
   sql ("INSERT INTO ticket_results"
        " (ticket, result, result_location, result_uuid, report)"
        " VALUES (%llu, %llu, %i, '%s', %llu)",
-       new_ticket, result_iterator_result (&results), LOCATION_TABLE,
-       quoted_uuid, result_iterator_report (&results));
+       new_ticket,
+       result_iterator_result (&results),
+       LOCATION_TABLE,
+       quoted_uuid,
+       result_iterator_report (&results));
 
   g_free (quoted_uuid);
   cleanup_iterator (&results);
@@ -991,8 +1032,12 @@ create_ticket (const char *comment, const char *result_id, const char *user_id,
   /* Give assigned user permission to access ticket and ticket's task. */
 
   if (create_permission_internal ("modify_ticket",
-                                  "Automatically created for ticket", NULL,
-                                  new_ticket_id, "user", user_id, &permission))
+                                  "Automatically created for ticket",
+                                  NULL,
+                                  new_ticket_id,
+                                  "user",
+                                  user_id,
+                                  &permission))
     {
       sql_rollback ();
       return -1;
@@ -1000,8 +1045,12 @@ create_ticket (const char *comment, const char *result_id, const char *user_id,
 
   task_uuid (task, &task_id);
   if (create_permission_internal ("get_tasks",
-                                  "Automatically created for ticket", NULL,
-                                  task_id, "user", user_id, &permission))
+                                  "Automatically created for ticket",
+                                  NULL,
+                                  task_id,
+                                  "user",
+                                  user_id,
+                                  &permission))
     {
       free (task_id);
       sql_rollback ();
@@ -1038,13 +1087,18 @@ copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
 
   assert (new_ticket);
 
-  ret = copy_resource ("ticket", NULL, comment, ticket_id,
+  ret = copy_resource ("ticket",
+                       NULL,
+                       comment,
+                       ticket_id,
                        "nvt, task, report, severity, host, location,"
                        " solution_type, assigned_to, status, open_time,"
                        " open_note, fixed_time, fixed_note,"
                        " fix_verified_time, fix_verified_report, closed_time,"
                        " closed_note",
-                       0, new_ticket, &old_ticket);
+                       0,
+                       new_ticket,
+                       &old_ticket);
   if (ret)
     return ret;
 
@@ -1053,7 +1107,8 @@ copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
        " SELECT %llu, result, result_location, result_uuid, report"
        " FROM ticket_results"
        " WHERE ticket = %llu",
-       *new_ticket, old_ticket);
+       *new_ticket,
+       old_ticket);
 
   return 0;
 }
@@ -1090,7 +1145,9 @@ set_note (ticket_t ticket, const gchar *name, const gchar *note)
       quoted_note = sql_quote (note);
       sql ("UPDATE tickets SET %s = '%s'"
            " WHERE id = %llu;",
-           name, quoted_note, ticket);
+           name,
+           quoted_note,
+           ticket);
       g_free (quoted_note);
 
       return 1;
@@ -1143,8 +1200,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
     }
 
   ticket = 0;
-  if (find_resource_with_permission ("ticket", ticket_id, &ticket,
-                                     "modify_ticket", 0))
+  if (find_resource_with_permission (
+        "ticket", ticket_id, &ticket, "modify_ticket", 0))
     {
       sql_rollback ();
       return -1;
@@ -1167,7 +1224,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            " comment = '%s',"
            " modification_time = m_now ()"
            " WHERE id = %llu;",
-           quoted_comment, ticket);
+           quoted_comment,
+           ticket);
       g_free (quoted_comment);
 
       updated = 1;
@@ -1236,7 +1294,9 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
            " modification_time = m_now (),"
            " %s = m_now ()"
            " WHERE id = %llu;",
-           status, time_column, ticket);
+           status,
+           time_column,
+           ticket);
 
       updated = 1;
     }
@@ -1281,15 +1341,20 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
                " assigned_to = %llu,"
                " modification_time = m_now ()"
                " WHERE id = %llu;",
-               user, ticket);
+               user,
+               ticket);
 
           updated = 1;
 
           /* Ensure that the user can access the ticket and task. */
 
-          if (create_permission_internal (
-                "modify_ticket", "Automatically created for ticket", NULL,
-                ticket_id, "user", user_id, &permission))
+          if (create_permission_internal ("modify_ticket",
+                                          "Automatically created for ticket",
+                                          NULL,
+                                          ticket_id,
+                                          "user",
+                                          user_id,
+                                          &permission))
             {
               sql_rollback ();
               return -1;
@@ -1304,7 +1369,10 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
               if (create_permission_internal ("get_tasks",
                                               "Automatically created for"
                                               " ticket",
-                                              NULL, task_id, "user", user_id,
+                                              NULL,
+                                              task_id,
+                                              "user",
+                                              user_id,
                                               &permission))
                 {
                   free (task_id);
@@ -1323,7 +1391,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
       /* An Assigned Ticket Changed event is not generated if the ticket
        * assignee modifies the ticket. */
       if (sql_int ("SELECT id != %llu FROM users WHERE uuid = '%s';",
-                   assigned_to, current_credentials.uuid))
+                   assigned_to,
+                   current_credentials.uuid))
         event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
 
       /* An Owned Ticket Changed event is not generated if the ticket owner
@@ -1331,7 +1400,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
       if (sql_int ("SELECT owner != (SELECT id FROM users WHERE uuid = '%s')"
                    " FROM tickets"
                    " WHERE id = %llu;",
-                   current_credentials.uuid, ticket))
+                   current_credentials.uuid,
+                   ticket))
         event (EVENT_OWNED_TICKET_CHANGED, NULL, ticket, 0);
     }
 
@@ -1352,7 +1422,8 @@ empty_trashcan_tickets ()
        " AND resource IN (SELECT id FROM tickets_trash"
        "                  WHERE owner = (SELECT id FROM users"
        "                                 WHERE uuid = '%s'));",
-       LOCATION_TRASH, current_credentials.uuid);
+       LOCATION_TRASH,
+       current_credentials.uuid);
 
   sql ("DELETE FROM permissions"
        " WHERE resource_type = 'task'"
@@ -1387,7 +1458,8 @@ check_tickets (task_t task)
     {
       g_warning ("%s: failed to get last report of task %llu,"
                  " skipping ticket check",
-                 __FUNCTION__, task);
+                 __FUNCTION__,
+                 task);
       return;
     }
 
@@ -1419,8 +1491,13 @@ check_tickets (task_t task)
     "                 WHERE report = %llu"
     /*                SMB Login Failed For Authenticated Checks. */
     "                 AND nvt = '1.3.6.1.4.1.25623.1.0.106091');",
-    task, TICKET_STATUS_OPEN, TICKET_STATUS_FIXED, report, LOCATION_TABLE,
-    report, report);
+    task,
+    TICKET_STATUS_OPEN,
+    TICKET_STATUS_FIXED,
+    report,
+    LOCATION_TABLE,
+    report,
+    report);
   while (next (&tickets))
     {
       ticket_t ticket;
@@ -1432,7 +1509,9 @@ check_tickets (task_t task)
            "     fix_verified_time = m_now (),"
            "     fix_verified_report = %llu"
            " WHERE id = %llu;",
-           TICKET_STATUS_FIX_VERIFIED, report, ticket);
+           TICKET_STATUS_FIX_VERIFIED,
+           report,
+           ticket);
 
       event (EVENT_OWNED_TICKET_CHANGED, NULL, ticket, 0);
       event (EVENT_ASSIGNED_TICKET_CHANGED, NULL, ticket, 0);
@@ -1487,14 +1566,17 @@ inherit_tickets (user_t user, user_t inheritor)
 
   sql ("UPDATE tickets SET owner = %llu WHERE owner = %llu;", inheritor, user);
   sql ("UPDATE tickets SET assigned_to = %llu WHERE assigned_to = %llu;",
-       inheritor, user);
+       inheritor,
+       user);
 
   /* Trash tickets. */
 
-  sql ("UPDATE tickets_trash SET owner = %llu WHERE owner = %llu;", inheritor,
+  sql ("UPDATE tickets_trash SET owner = %llu WHERE owner = %llu;",
+       inheritor,
        user);
   sql ("UPDATE tickets_trash SET assigned_to = %llu WHERE assigned_to = %llu;",
-       inheritor, user);
+       inheritor,
+       user);
 }
 
 /**
@@ -1541,14 +1623,18 @@ tickets_trash_task (task_t task)
        "               WHERE task = %llu"
        "               AND uuid = ticket_results.result_uuid)"
        " WHERE result IN (SELECT id FROM results WHERE task = %llu);",
-       LOCATION_TRASH, task, task);
+       LOCATION_TRASH,
+       task,
+       task);
   sql ("UPDATE ticket_results_trash"
        " SET result_location = %i,"
        "     result = (SELECT id FROM results_trash"
        "               WHERE task = %llu"
        "               AND uuid = ticket_results_trash.result_uuid)"
        " WHERE result IN (SELECT id FROM results WHERE task = %llu);",
-       LOCATION_TRASH, task, task);
+       LOCATION_TRASH,
+       task,
+       task);
 }
 
 /**
@@ -1567,12 +1653,16 @@ tickets_restore_task (task_t task)
        "               WHERE task = %llu"
        "               AND uuid = ticket_results.result_uuid)"
        " WHERE result IN (SELECT id FROM results_trash WHERE task = %llu);",
-       LOCATION_TABLE, task, task);
+       LOCATION_TABLE,
+       task,
+       task);
   sql ("UPDATE ticket_results_trash"
        " SET result_location = %i,"
        "     result = (SELECT id FROM results"
        "               WHERE task = %llu"
        "               AND uuid = ticket_results_trash.result_uuid)"
        " WHERE result IN (SELECT id FROM results_trash WHERE task = %llu);",
-       LOCATION_TABLE, task, task);
+       LOCATION_TABLE,
+       task,
+       task);
 }

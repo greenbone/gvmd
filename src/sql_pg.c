@@ -263,9 +263,9 @@ sql_open (const char *database)
   PostgresPollingStatusType poll_status;
   int socket;
 
-  conn_info =
-    g_strdup_printf ("dbname='%s' application_name='%s'",
-                     database ? database : sql_default_database (), "gvmd");
+  conn_info = g_strdup_printf ("dbname='%s' application_name='%s'",
+                               database ? database : sql_default_database (),
+                               "gvmd");
   conn = PQconnectStart (conn_info);
   g_free (conn_info);
   if (conn == NULL)
@@ -275,7 +275,8 @@ sql_open (const char *database)
     }
   if (PQstatus (conn) == CONNECTION_BAD)
     {
-      g_warning ("%s: PQconnectStart to '%s' failed: %s", __FUNCTION__,
+      g_warning ("%s: PQconnectStart to '%s' failed: %s",
+                 __FUNCTION__,
                  database ? database : sql_default_database (),
                  PQerrorMessage (conn));
       goto fail;
@@ -307,8 +308,8 @@ sql_open (const char *database)
             continue;
           if (ret < 0)
             {
-              g_warning ("%s: write select failed: %s", __FUNCTION__,
-                         strerror (errno));
+              g_warning (
+                "%s: write select failed: %s", __FUNCTION__, strerror (errno));
               goto fail;
             }
           /* Poll again. */
@@ -326,8 +327,8 @@ sql_open (const char *database)
             continue;
           if (ret < 0)
             {
-              g_warning ("%s: read select failed: %s", __FUNCTION__,
-                         strerror (errno));
+              g_warning (
+                "%s: read select failed: %s", __FUNCTION__, strerror (errno));
               goto fail;
             }
           /* Poll again. */
@@ -335,7 +336,8 @@ sql_open (const char *database)
       else if (poll_status == PGRES_POLLING_FAILED)
         {
           g_warning ("%s: PQconnectPoll failed", __FUNCTION__);
-          g_warning ("%s: PQerrorMessage (conn): %s", __FUNCTION__,
+          g_warning ("%s: PQerrorMessage (conn): %s",
+                     __FUNCTION__,
                      PQerrorMessage (conn));
           goto fail;
         }
@@ -499,7 +501,9 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
     {
       // FIX retry?
 
-      result = PQexecParams (conn, stmt->sql, stmt->param_values->len,
+      result = PQexecParams (conn,
+                             stmt->sql,
+                             stmt->param_values->len,
                              NULL, /* Default param types. */
                              (const char *const *) stmt->param_values->pdata,
                              (const int *) stmt->param_lengths->data,
@@ -520,14 +524,16 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
             }
           else if (sqlstate && (strcmp (sqlstate, "55P03") == 0))
             {
-              g_debug ("%s: lock unavailable: %s", __FUNCTION__,
+              g_debug ("%s: lock unavailable: %s",
+                       __FUNCTION__,
                        PQresultErrorMessage (result));
               return -3;
             }
 
           if (log_errors)
             {
-              g_warning ("%s: PQexec failed: %s (%i)", __FUNCTION__,
+              g_warning ("%s: PQexec failed: %s (%i)",
+                         __FUNCTION__,
                          PQresultErrorMessage (result),
                          PQresultStatus (result));
               g_warning ("%s: SQL: %s", __FUNCTION__, stmt->sql);
@@ -582,7 +588,8 @@ sql_explain_internal (const char *sql, va_list args)
       explain_ret = sql_exec_internal (1, explain_stmt);
       if (explain_ret == 1)
         g_debug (
-          "%s : %s", __FUNCTION__,
+          "%s : %s",
+          __FUNCTION__,
           PQgetvalue (explain_stmt->result, explain_stmt->current_row, 0));
       else if (explain_ret == 0)
         break;
@@ -707,7 +714,9 @@ bind_param (sql_stmt_t *stmt, int position, const void *param_value,
   if (position > stmt->param_values->len + 1)
     {
       g_critical ("%s: binding out of order: parameter %i after %i",
-                  __FUNCTION__, position, stmt->param_values->len);
+                  __FUNCTION__,
+                  position,
+                  stmt->param_values->len);
       abort ();
     }
   sql_stmt_param_add (stmt, param_value, param_size, param_format);
@@ -745,8 +754,8 @@ int
 sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
                gsize value_size)
 {
-  bind_param (stmt, position, value,
-              value_size == -1 ? strlen (value) : value_size, 0);
+  bind_param (
+    stmt, position, value, value_size == -1 ? strlen (value) : value_size, 0);
   return 0;
 }
 

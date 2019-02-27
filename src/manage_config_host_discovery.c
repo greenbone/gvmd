@@ -57,7 +57,8 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        " VALUES ('%s', 'Host Discovery', NULL,"
        "         '%s', 'Network Host Discovery scan configuration.',"
        "         0, 0, 0, 0, 0, m_now (), m_now ());",
-       uuid, selector_name);
+       uuid,
+       selector_name);
 
   config = sql_last_insert_id ();
 
@@ -77,7 +78,8 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        "     modification_time = m_now ()"
        " WHERE id = %llu;",
        nvt_selector_family_count (selector_name, 0),
-       nvt_selector_nvt_count (selector_name, NULL, 0), config);
+       nvt_selector_nvt_count (selector_name, NULL, 0),
+       config);
 
   /* Add preferences for "ping host" nvt. */
 

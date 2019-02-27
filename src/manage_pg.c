@@ -3281,8 +3281,10 @@ check_db_sequences ()
 
       sql_int64 (&old_start, "SELECT last_value + 1 FROM %s;", sequence);
 
-      sql_int64 (&new_start, "SELECT coalesce (max (%s), 0) + 1 FROM %s;",
-                 column, table);
+      sql_int64 (&new_start,
+                 "SELECT coalesce (max (%s), 0) + 1 FROM %s;",
+                 column,
+                 table);
 
       if (old_start < new_start)
         sql ("ALTER SEQUENCE %s RESTART WITH %llu;", sequence, new_start);

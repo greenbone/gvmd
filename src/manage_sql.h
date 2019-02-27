@@ -338,7 +338,8 @@ typedef struct
   GET_ITERATOR_COLUMNS_PREFIX (""),                            \
     {"(SELECT name FROM users AS inner_users"                  \
      " WHERE inner_users.id = " G_STRINGIFY (table) ".owner)", \
-     "_owner", KEYWORD_TYPE_STRING},                           \
+     "_owner",                                                 \
+     KEYWORD_TYPE_STRING},                                     \
   {                                                            \
     "owner", NULL, KEYWORD_TYPE_INTEGER                        \
   }

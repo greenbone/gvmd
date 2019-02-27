@@ -41,25 +41,27 @@ init_get (gchar *, get_data_t *, const gchar *, int *);
  * @param[in]  type     Resource type.
  * @param[in]  capital  Resource type, capitalised.
  */
-#define INIT_GET(type, capital)                                            \
-  count = 0;                                                               \
-  ret = init_get ("get_" G_STRINGIFY (type) "s", &get_##type##s_data->get, \
-                  G_STRINGIFY (capital) "s", &first);                      \
-  if (ret)                                                                 \
-    {                                                                      \
-      switch (ret)                                                         \
-        {                                                                  \
-        case 99:                                                           \
-          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (                       \
-            "get_" G_STRINGIFY (type) "s", "Permission denied"));          \
-          break;                                                           \
-        default:                                                           \
-          internal_error_send_to_client (error);                           \
-          return;                                                          \
-        }                                                                  \
-      get_##type##s_data_reset (get_##type##s_data);                       \
-      set_client_state (CLIENT_AUTHENTIC);                                 \
-      return;                                                              \
+#define INIT_GET(type, capital)                                   \
+  count = 0;                                                      \
+  ret = init_get ("get_" G_STRINGIFY (type) "s",                  \
+                  &get_##type##s_data->get,                       \
+                  G_STRINGIFY (capital) "s",                      \
+                  &first);                                        \
+  if (ret)                                                        \
+    {                                                             \
+      switch (ret)                                                \
+        {                                                         \
+        case 99:                                                  \
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (              \
+            "get_" G_STRINGIFY (type) "s", "Permission denied")); \
+          break;                                                  \
+        default:                                                  \
+          internal_error_send_to_client (error);                  \
+          return;                                                 \
+        }                                                         \
+      get_##type##s_data_reset (get_##type##s_data);              \
+      set_client_state (CLIENT_AUTHENTIC);                        \
+      return;                                                     \
     }
 
 int
@@ -75,16 +77,16 @@ send_get_start (const char *, int (*) (const char *, void *), void *);
  * @param[in]  type  Type of resource.
  * @param[in]  get   GET data.
  */
-#define SEND_GET_START(type)                               \
-  do                                                       \
-    {                                                      \
-      if (send_get_start (type, gmp_parser->client_writer, \
-                          gmp_parser->client_writer_data)) \
-        {                                                  \
-          error_send_to_client (error);                    \
-          return;                                          \
-        }                                                  \
-    }                                                      \
+#define SEND_GET_START(type)                                                  \
+  do                                                                          \
+    {                                                                         \
+      if (send_get_start (                                                    \
+            type, gmp_parser->client_writer, gmp_parser->client_writer_data)) \
+        {                                                                     \
+          error_send_to_client (error);                                       \
+          return;                                                             \
+        }                                                                     \
+    }                                                                         \
   while (0)
 
 int
@@ -102,7 +104,10 @@ send_get_common (const char *, get_data_t *, iterator_t *,
   do                                                                       \
     {                                                                      \
       if (send_get_common (                                                \
-            G_STRINGIFY (type), get, iterator, gmp_parser->client_writer,  \
+            G_STRINGIFY (type),                                            \
+            get,                                                           \
+            iterator,                                                      \
+            gmp_parser->client_writer,                                     \
             gmp_parser->client_writer_data,                                \
             (get)->trash                                                   \
               ? trash_##type##_writable (get_iterator_resource (iterator)) \
@@ -135,17 +140,21 @@ send_get_end_no_counts (const char *, get_data_t *,
  * @param[in]  type  Type of resource.
  * @param[in]  get   GET data.
  */
-#define SEND_GET_END(type, get, count, filtered)                               \
-  do                                                                           \
-    {                                                                          \
-      if (send_get_end (type, get, count, filtered,                            \
-                        resource_count (type, get), gmp_parser->client_writer, \
-                        gmp_parser->client_writer_data))                       \
-        {                                                                      \
-          error_send_to_client (error);                                        \
-          return;                                                              \
-        }                                                                      \
-    }                                                                          \
+#define SEND_GET_END(type, get, count, filtered)         \
+  do                                                     \
+    {                                                    \
+      if (send_get_end (type,                            \
+                        get,                             \
+                        count,                           \
+                        filtered,                        \
+                        resource_count (type, get),      \
+                        gmp_parser->client_writer,       \
+                        gmp_parser->client_writer_data)) \
+        {                                                \
+          error_send_to_client (error);                  \
+          return;                                        \
+        }                                                \
+    }                                                    \
   while (0)
 
 #endif /* not _GVMD_GMP_GET_H */

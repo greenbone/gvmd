@@ -65,9 +65,13 @@ acl_user_may (const char *operation)
 
   quoted_operation = sql_quote (operation);
 
-  ret = sql_int (ACL_USER_MAY ("0"), current_credentials.uuid,
-                 current_credentials.uuid, current_credentials.uuid,
-                 quoted_operation, quoted_operation, quoted_operation,
+  ret = sql_int (ACL_USER_MAY ("0"),
+                 current_credentials.uuid,
+                 current_credentials.uuid,
+                 current_credentials.uuid,
+                 quoted_operation,
+                 quoted_operation,
+                 quoted_operation,
                  quoted_operation);
 
   g_free (quoted_operation);
@@ -156,7 +160,9 @@ acl_user_can_super_everyone (const char *uuid)
                         "users.uuid"
                         "                                                = "
                         "'%s')))));",
-      quoted_uuid, quoted_uuid, quoted_uuid))
+      quoted_uuid,
+      quoted_uuid,
+      quoted_uuid))
     {
       g_free (quoted_uuid);
       return 1;
@@ -205,7 +211,9 @@ acl_user_can_everything (const char *user_id)
                       "                                    WHERE users.uuid"
                       "                                          = '%s'))))"
                       " AND name = 'Everything';",
-    quoted_user_id, quoted_user_id, quoted_user_id);
+    quoted_user_id,
+    quoted_user_id,
+    quoted_user_id);
   g_free (quoted_user_id);
   return ret;
 }
@@ -274,7 +282,11 @@ acl_user_has_super (const char *super_user_id, user_t other_user)
                         "users.uuid"
                         "                                                = "
                         "'%s')))));",
-      other_user, other_user, other_user, super_user_id, super_user_id,
+      other_user,
+      other_user,
+      other_user,
+      super_user_id,
+      super_user_id,
       super_user_id))
     {
       g_free (quoted_super_user_id);
@@ -476,8 +488,8 @@ acl_user_has_super_on (const char *type, const char *field, const char *value,
   quoted_value = sql_quote (value);
   if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
                "               WHERE " ACL_SUPER_CLAUSE ("'%s'") ");",
-               ACL_SUPER_CLAUSE_ARGS (type, field, quoted_value,
-                                      current_credentials.uuid, trash)))
+               ACL_SUPER_CLAUSE_ARGS (
+                 type, field, quoted_value, current_credentials.uuid, trash)))
     {
       g_free (quoted_value);
       return 1;
@@ -502,8 +514,8 @@ acl_user_has_super_on_resource (const char *type, const char *field,
 {
   if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
                "               WHERE " ACL_SUPER_CLAUSE ("%llu") ");",
-               ACL_SUPER_CLAUSE_ARGS (type, field, resource,
-                                      current_credentials.uuid, trash)))
+               ACL_SUPER_CLAUSE_ARGS (
+                 type, field, resource, current_credentials.uuid, trash)))
     return 1;
   return 0;
 }
@@ -529,7 +541,9 @@ acl_user_is_owner (const char *type, const char *uuid)
                  " WHERE uuid = '%s'"
                  " AND owner = (SELECT users.id FROM users"
                  "              WHERE users.uuid = '%s');",
-                 type, quoted_uuid, current_credentials.uuid);
+                 type,
+                 quoted_uuid,
+                 current_credentials.uuid);
   g_free (quoted_uuid);
 
   return ret;
@@ -571,32 +585,37 @@ acl_user_owns_uuid (const char *type, const char *uuid, int trash)
                    " AND results.report = reports.id"
                    " AND (reports.owner = (SELECT users.id FROM users"
                    "                       WHERE users.uuid = '%s'));",
-                   quoted_uuid, current_credentials.uuid);
+                   quoted_uuid,
+                   current_credentials.uuid);
   else if (strcmp (type, "report") == 0)
     ret = sql_int ("SELECT count(*) FROM reports"
                    " WHERE uuid = '%s'"
                    " AND (owner = (SELECT users.id FROM users"
                    "               WHERE users.uuid = '%s'));",
-                   quoted_uuid, current_credentials.uuid);
+                   quoted_uuid,
+                   current_credentials.uuid);
   else if (strcmp (type, "permission") == 0)
-    ret =
-      sql_int ("SELECT count(*) FROM permissions%s"
-               " WHERE uuid = '%s'"
-               " AND ((owner IS NULL)"
-               "      OR (owner = (SELECT users.id FROM users"
-               "                   WHERE users.uuid = '%s')));",
-               trash ? "_trash" : "", quoted_uuid, current_credentials.uuid);
+    ret = sql_int ("SELECT count(*) FROM permissions%s"
+                   " WHERE uuid = '%s'"
+                   " AND ((owner IS NULL)"
+                   "      OR (owner = (SELECT users.id FROM users"
+                   "                   WHERE users.uuid = '%s')));",
+                   trash ? "_trash" : "",
+                   quoted_uuid,
+                   current_credentials.uuid);
   else
-    ret = sql_int (
-      "SELECT count(*) FROM %ss%s"
-      " WHERE uuid = '%s'"
-      "%s"
-      " AND (owner = (SELECT users.id FROM users"
-      "               WHERE users.uuid = '%s'));",
-      type, (strcmp (type, "task") && trash) ? "_trash" : "", quoted_uuid,
-      (strcmp (type, "task") ? ""
-                             : (trash ? " AND hidden = 2" : " AND hidden < 2")),
-      current_credentials.uuid);
+    ret = sql_int ("SELECT count(*) FROM %ss%s"
+                   " WHERE uuid = '%s'"
+                   "%s"
+                   " AND (owner = (SELECT users.id FROM users"
+                   "               WHERE users.uuid = '%s'));",
+                   type,
+                   (strcmp (type, "task") && trash) ? "_trash" : "",
+                   quoted_uuid,
+                   (strcmp (type, "task")
+                      ? ""
+                      : (trash ? " AND hidden = 2" : " AND hidden < 2")),
+                   current_credentials.uuid);
   g_free (quoted_uuid);
 
   return ret;
@@ -636,18 +655,21 @@ acl_user_owns (const char *type, resource_t resource, int trash)
                    " AND results.report = reports.id"
                    " AND (reports.owner = (SELECT users.id FROM users"
                    "                       WHERE users.uuid = '%s'));",
-                   resource, current_credentials.uuid);
+                   resource,
+                   current_credentials.uuid);
   else
-    ret = sql_int (
-      "SELECT count(*) FROM %ss%s"
-      " WHERE id = %llu"
-      "%s"
-      " AND (owner = (SELECT users.id FROM users"
-      "               WHERE users.uuid = '%s'));",
-      type, (strcmp (type, "task") && trash) ? "_trash" : "", resource,
-      (strcmp (type, "task") ? ""
-                             : (trash ? " AND hidden = 2" : " AND hidden < 2")),
-      current_credentials.uuid);
+    ret = sql_int ("SELECT count(*) FROM %ss%s"
+                   " WHERE id = %llu"
+                   "%s"
+                   " AND (owner = (SELECT users.id FROM users"
+                   "               WHERE users.uuid = '%s'));",
+                   type,
+                   (strcmp (type, "task") && trash) ? "_trash" : "",
+                   resource,
+                   (strcmp (type, "task")
+                      ? ""
+                      : (trash ? " AND hidden = 2" : " AND hidden < 2")),
+                   current_credentials.uuid);
 
   return ret;
 }
@@ -680,7 +702,9 @@ acl_user_owns_trash_uuid (const char *type, const char *uuid)
                  " WHERE uuid = '%s'"
                  " AND (owner = (SELECT users.id FROM users"
                  "               WHERE users.uuid = '%s'));",
-                 type, quoted_uuid, current_credentials.uuid);
+                 type,
+                 quoted_uuid,
+                 current_credentials.uuid);
   g_free (quoted_uuid);
 
   return ret;
@@ -727,8 +751,8 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
       task_t task;
       report_t report;
 
-      switch (sql_int64 (&report, "SELECT id FROM reports WHERE uuid = '%s';",
-                         quoted_uuid))
+      switch (sql_int64 (
+        &report, "SELECT id FROM reports WHERE uuid = '%s';", quoted_uuid))
         {
         case 0:
           break;
@@ -811,8 +835,10 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
                           "                                          = "
                           "'%s'))));",
         uuid_task ? uuid_task : quoted_uuid,
-        uuid_task ? uuid_task : quoted_uuid, current_credentials.uuid,
-        current_credentials.uuid, current_credentials.uuid);
+        uuid_task ? uuid_task : quoted_uuid,
+        current_credentials.uuid,
+        current_credentials.uuid,
+        current_credentials.uuid);
       free (uuid_task);
       g_free (quoted_uuid);
       return ret;
@@ -856,9 +882,12 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
                       "                                    WHERE users.uuid"
                       "                                          = '%s'))))"
                       " %s%s%s;",
-    uuid_task ? uuid_task : quoted_uuid, current_credentials.uuid,
-    current_credentials.uuid, current_credentials.uuid,
-    (get ? "" : "AND name = '"), (get ? "" : quoted_permission),
+    uuid_task ? uuid_task : quoted_uuid,
+    current_credentials.uuid,
+    current_credentials.uuid,
+    current_credentials.uuid,
+    (get ? "" : "AND name = '"),
+    (get ? "" : quoted_permission),
     (get ? "" : "'"));
 
   free (uuid_task);
@@ -979,7 +1008,9 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                           "                         AND resource_type = "
                           "'group'))"
                           "              AS all_users)",
-        user_sql, user_sql, user_sql);
+        user_sql,
+        user_sql,
+        user_sql);
 
       permission_clause = NULL;
       if (user_id && index)
@@ -992,27 +1023,34 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
             "  AND resource_type = '%s'"
             "  AND resource_location = %i"
             "  AND (%s))",
-            type, get->trash && strcmp (type, "task") ? "_trash" : "", type,
-            get->trash ? LOCATION_TRASH : LOCATION_TABLE, permission_or->str);
+            type,
+            get->trash && strcmp (type, "task") ? "_trash" : "",
+            type,
+            get->trash ? LOCATION_TRASH : LOCATION_TABLE,
+            permission_or->str);
 
           if (strcmp (type, "report") == 0)
-            permission_clause = g_strdup_printf (
-              "%s"
-              " OR EXISTS"
-              " (SELECT id FROM permissions_subject"
-              "  WHERE resource = reports%s.task"
-              "  AND resource_type = 'task'"
-              "  AND (%s))",
-              clause, get->trash ? "_trash" : "", permission_or->str);
+            permission_clause =
+              g_strdup_printf ("%s"
+                               " OR EXISTS"
+                               " (SELECT id FROM permissions_subject"
+                               "  WHERE resource = reports%s.task"
+                               "  AND resource_type = 'task'"
+                               "  AND (%s))",
+                               clause,
+                               get->trash ? "_trash" : "",
+                               permission_or->str);
           else if (strcmp (type, "result") == 0)
-            permission_clause = g_strdup_printf (
-              "%s"
-              " OR EXISTS"
-              " (SELECT id FROM permissions_subject"
-              "  WHERE resource = results%s.task"
-              "  AND resource_type = 'task'"
-              "  AND (%s))",
-              clause, get->trash ? "_trash" : "", permission_or->str);
+            permission_clause =
+              g_strdup_printf ("%s"
+                               " OR EXISTS"
+                               " (SELECT id FROM permissions_subject"
+                               "  WHERE resource = results%s.task"
+                               "  AND resource_type = 'task'"
+                               "  AND (%s))",
+                               clause,
+                               get->trash ? "_trash" : "",
+                               permission_or->str);
 
           if ((strcmp (type, "report") == 0) || (strcmp (type, "result") == 0))
             g_free (clause);
@@ -1097,20 +1135,27 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                                                                    "  OR permissions%s.owner IN (SELECT *"
                                                                                    "                            FROM super_on_users)"
                                                                                    "  %s)",
-                             get->trash ? "_trash" : "", user_sql,
+                             get->trash ? "_trash" : "",
+                             user_sql,
                              admin ? (get->trash
                                         ? "OR (permissions_trash.owner IS NULL)"
                                         : "OR (permissions.owner IS NULL)")
                                    : "",
-                             get->trash, table_trash ? "_trash" : "",
-                             table_trash ? "_trash" : "",
-                             table_trash ? "_trash" : "", user_sql, get->trash,
+                             get->trash,
                              table_trash ? "_trash" : "",
                              table_trash ? "_trash" : "",
-                             table_trash ? "_trash" : "", user_sql, get->trash,
+                             table_trash ? "_trash" : "",
+                             user_sql,
+                             get->trash,
                              table_trash ? "_trash" : "",
                              table_trash ? "_trash" : "",
-                             table_trash ? "_trash" : "", user_sql,
+                             table_trash ? "_trash" : "",
+                             user_sql,
+                             get->trash,
+                             table_trash ? "_trash" : "",
+                             table_trash ? "_trash" : "",
+                             table_trash ? "_trash" : "",
+                             user_sql,
                              table_trash ? "_trash" : "",
                              permission_clause ? permission_clause : "");
         }
@@ -1129,7 +1174,10 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                            "  OR %ss%s.owner IN (SELECT *"
                            "                     FROM super_on_users)"
                            "  %s)",
-                           type, table_trash ? "_trash" : "", user_sql, type,
+                           type,
+                           table_trash ? "_trash" : "",
+                           user_sql,
+                           type,
                            table_trash ? "_trash" : "",
                            permission_clause ? permission_clause : "");
 
@@ -1175,9 +1223,14 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                               "                   WHERE \"user\""
                               "                         = (%s))))"
                               "  AND (%s))",
-            type, get->trash && strcmp (type, "task") ? "_trash" : "", type,
-            get->trash ? LOCATION_TRASH : LOCATION_TABLE, user_sql, user_sql,
-            user_sql, permission_or->str);
+            type,
+            get->trash && strcmp (type, "task") ? "_trash" : "",
+            type,
+            get->trash ? LOCATION_TRASH : LOCATION_TABLE,
+            user_sql,
+            user_sql,
+            user_sql,
+            permission_or->str);
 
           if (strcmp (type, "report") == 0)
             permission_clause = g_strdup_printf (
@@ -1204,7 +1257,11 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                 "                   WHERE \"user\""
                                 "                         = (%s))))"
                                 "  AND (%s))",
-              clause, get->trash ? "_trash" : "", user_sql, user_sql, user_sql,
+              clause,
+              get->trash ? "_trash" : "",
+              user_sql,
+              user_sql,
+              user_sql,
               permission_or->str);
           else if (strcmp (type, "result") == 0)
             permission_clause = g_strdup_printf (
@@ -1231,7 +1288,11 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                 "                   WHERE \"user\""
                                 "                         = (%s))))"
                                 "  AND (%s))",
-              clause, get->trash ? "_trash" : "", user_sql, user_sql, user_sql,
+              clause,
+              get->trash ? "_trash" : "",
+              user_sql,
+              user_sql,
+              user_sql,
               permission_or->str);
 
           if ((strcmp (type, "report") == 0) || (strcmp (type, "result") == 0))
@@ -1297,11 +1358,19 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                            "                                   "
                                            " = (%s)))))"
                                            "  %s)",
-                         type, table_trash ? "_trash" : "", user_sql, type,
-                         table_trash ? "_trash" : "", type,
-                         table_trash ? "_trash" : "", type,
-                         table_trash ? "_trash" : "", user_sql, user_sql,
-                         user_sql, permission_clause ? permission_clause : "");
+                         type,
+                         table_trash ? "_trash" : "",
+                         user_sql,
+                         type,
+                         table_trash ? "_trash" : "",
+                         type,
+                         table_trash ? "_trash" : "",
+                         type,
+                         table_trash ? "_trash" : "",
+                         user_sql,
+                         user_sql,
+                         user_sql,
+                         permission_clause ? permission_clause : "");
 
       g_free (permission_clause);
     }
@@ -1313,7 +1382,8 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
       gchar *new;
       new = g_strdup_printf (" (%ss.hidden = 2"
                              "  AND %s)",
-                             type, owned_clause);
+                             type,
+                             owned_clause);
       g_free (owned_clause);
       owned_clause = new;
     }
@@ -1329,13 +1399,15 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                              "          FROM users"
                                              "          WHERE name = '%s')"
                                              " AND %s)",
-                                             quoted, owned_clause);
+                                             quoted,
+                                             owned_clause);
       g_free (quoted);
     }
   else
     filter_owned_clause = g_strdup_printf ("((owner = (%s))"
                                            " AND %s)",
-                                           user_sql, owned_clause);
+                                           user_sql,
+                                           owned_clause);
 
   g_free (owned_clause);
 
@@ -1366,8 +1438,15 @@ acl_where_owned (const char *type, const get_data_t *get, int owned,
                                 current_credentials.uuid);
   else
     user_sql = NULL;
-  ret = acl_where_owned_user (current_credentials.uuid, user_sql, type, get,
-                              owned, owner_filter, resource, permissions, with);
+  ret = acl_where_owned_user (current_credentials.uuid,
+                              user_sql,
+                              type,
+                              get,
+                              owned,
+                              owner_filter,
+                              resource,
+                              permissions,
+                              with);
   g_free (user_sql);
   return ret;
 }
@@ -1406,9 +1485,14 @@ acl_where_owned_for_get (const char *type, const char *user_sql, gchar **with)
     acl_where_owned_user (current_credentials.uuid ? current_credentials.uuid
                                                    /* Use user_sql_new. */
                                                    : "",
-                          user_sql_new, type, &get, 1, /* Do owner checks. */
-                          "any", 0,                    /* Resource. */
-                          permissions, with);
+                          user_sql_new,
+                          type,
+                          &get,
+                          1, /* Do owner checks. */
+                          "any",
+                          0, /* Resource. */
+                          permissions,
+                          with);
   array_free (permissions);
   g_free (user_sql_new);
 
@@ -1435,7 +1519,8 @@ acl_users_with_access_sql (const char *type, const char *resource_id,
   iterator_t users;
 
   old_user_id = current_credentials.uuid;
-  init_iterator (&users, "SELECT id, uuid FROM users WHERE %s;",
+  init_iterator (&users,
+                 "SELECT id, uuid FROM users WHERE %s;",
                  users_where ? users_where : "t()");
 
   users_string = g_string_new ("(VALUES ");
@@ -1451,8 +1536,8 @@ acl_users_with_access_sql (const char *type, const char *resource_id,
           if (users_count)
             g_string_append (users_string, ", ");
 
-          g_string_append_printf (users_string, "(%llu)",
-                                  iterator_int64 (&users, 0));
+          g_string_append_printf (
+            users_string, "(%llu)", iterator_int64 (&users, 0));
           users_count++;
         }
       g_free (current_credentials.uuid);
