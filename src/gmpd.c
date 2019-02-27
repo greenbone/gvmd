@@ -33,24 +33,24 @@
  */
 
 #include "gmpd.h"
-#include "scanner.h"
+
 #include "gmp.h"
+#include "scanner.h"
 /** @todo For scanner_init_state. */
-#include "otp.h"
 #include "comm.h"
+#include "otp.h"
 
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
+#include <gvm/util/serverutils.h>
 #include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
-
-#include <gvm/util/serverutils.h>
 
 #if FROM_BUFFER_SIZE > SSIZE_MAX
 #error FROM_BUFFER_SIZE too big for "read"
@@ -112,8 +112,7 @@ init_gmpd (GSList *log_config, int nvt_cache_mode, const gchar *database,
 {
   return init_gmp (log_config, nvt_cache_mode, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
-                   max_email_message_size,
-                   fork_connection, skip_db_check);
+                   max_email_message_size, fork_connection, skip_db_check);
 }
 
 /**
@@ -145,8 +144,7 @@ read_from_client_unix (int client_socket)
   while (from_client_end < from_buffer_size)
     {
       int count;
-      count = read (client_socket,
-                    from_client + from_client_end,
+      count = read (client_socket, from_client + from_client_end,
                     from_buffer_size - from_client_end);
       if (count < 0)
         {
@@ -156,8 +154,8 @@ read_from_client_unix (int client_socket)
           if (errno == EINTR)
             /* Interrupted, try read again. */
             continue;
-          g_warning ("%s: failed to read from client: %s",
-                     __FUNCTION__, strerror (errno));
+          g_warning ("%s: failed to read from client: %s", __FUNCTION__,
+                     strerror (errno));
           return -1;
         }
       if (count == 0)
@@ -190,14 +188,14 @@ read_from_client_unix (int client_socket)
  * from_client buffer is full or -3 on reaching end of file.
  */
 static int
-read_from_client_tls (gnutls_session_t* client_session)
+read_from_client_tls (gnutls_session_t *client_session)
 {
   while (from_client_end < from_buffer_size)
     {
       ssize_t count;
-      count = gnutls_record_recv (*client_session,
-                                  from_client + from_client_end,
-                                  from_buffer_size - from_client_end);
+      count =
+        gnutls_record_recv (*client_session, from_client + from_client_end,
+                            from_buffer_size - from_client_end);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
@@ -217,12 +215,12 @@ read_from_client_tls (gnutls_session_t* client_session)
                   || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
             {
               int alert = gnutls_alert_get (*client_session);
-              const char* alert_name = gnutls_alert_get_name (alert);
-              g_warning ("%s: TLS Alert %d: %s",
-                         __FUNCTION__, alert, alert_name);
+              const char *alert_name = gnutls_alert_get_name (alert);
+              g_warning ("%s: TLS Alert %d: %s", __FUNCTION__, alert,
+                         alert_name);
             }
-          g_warning ("%s: failed to read from client: %s",
-                     __FUNCTION__, gnutls_strerror ((int) count));
+          g_warning ("%s: failed to read from client: %s", __FUNCTION__,
+                     gnutls_strerror ((int) count));
           return -1;
         }
       if (count == 0)
@@ -271,13 +269,12 @@ read_from_client (gvm_connection_t *client_connection)
  * @return 0 wrote everything, -1 error, -2 wrote as much as client accepted.
  */
 static int
-write_to_client_tls (gnutls_session_t* client_session)
+write_to_client_tls (gnutls_session_t *client_session)
 {
   while (to_client_start < to_client_end)
     {
       ssize_t count;
-      count = gnutls_record_send (*client_session,
-                                  to_client + to_client_start,
+      count = gnutls_record_send (*client_session, to_client + to_client_start,
                                   to_client_end - to_client_start);
       if (count < 0)
         {
@@ -290,8 +287,7 @@ write_to_client_tls (gnutls_session_t* client_session)
           if (count == GNUTLS_E_REHANDSHAKE)
             /** @todo Rehandshake. */
             continue;
-          g_warning ("%s: failed to write to client: %s",
-                     __FUNCTION__,
+          g_warning ("%s: failed to write to client: %s", __FUNCTION__,
                      gnutls_strerror ((int) count));
           return -1;
         }
@@ -318,8 +314,7 @@ write_to_client_unix (int client_socket)
   while (to_client_start < to_client_end)
     {
       ssize_t count;
-      count = write (client_socket,
-                     to_client + to_client_start,
+      count = write (client_socket, to_client + to_client_start,
                      to_client_end - to_client_start);
       if (count < 0)
         {
@@ -329,8 +324,7 @@ write_to_client_unix (int client_socket)
           if (errno == EINTR)
             /* Interrupted, try write again. */
             continue;
-          g_warning ("%s: failed to write to client: %s",
-                     __FUNCTION__,
+          g_warning ("%s: failed to write to client: %s", __FUNCTION__,
                      strerror (errno));
           return -1;
         }
@@ -370,13 +364,12 @@ write_to_client (gvm_connection_t *client_connection)
  * @return TRUE if write to client failed, else FALSE.
  */
 static gboolean
-gmpd_send_to_client (const char* msg, void* write_to_client_data)
+gmpd_send_to_client (const char *msg, void *write_to_client_data)
 {
   assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);
   assert (msg);
 
-  while (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
-         < strlen (msg))
+  while (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end < strlen (msg))
     {
       buffer_size_t length;
 
@@ -384,18 +377,17 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
 
       switch (write_to_client (write_to_client_data))
         {
-          case  0:      /* Wrote everything in to_client. */
-            break;
-          case -1:      /* Error. */
-            g_debug ("   %s full (%i < %zu); client write failed",
-                    __FUNCTION__,
-                    ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
-                    strlen (msg));
-            return TRUE;
-          case -2:      /* Wrote as much as client was willing to accept. */
-            break;
-          default:      /* Programming error. */
-            assert (0);
+        case 0: /* Wrote everything in to_client. */
+          break;
+        case -1: /* Error. */
+          g_debug ("   %s full (%i < %zu); client write failed", __FUNCTION__,
+                   ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
+                   strlen (msg));
+          return TRUE;
+        case -2: /* Wrote as much as client was willing to accept. */
+          break;
+        default: /* Programming error. */
+          assert (0);
         }
 
       length = ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end;
@@ -487,11 +479,9 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
     g_debug ("   Serving GMP");
 
   /* Initialise the XML parser and the manage library. */
-  init_gmp_process (gmpd_nvt_cache_mode,
-                    database,
-                    (int (*) (const char*, void*)) gmpd_send_to_client,
-                    (void*) client_connection,
-                    disable);
+  init_gmp_process (gmpd_nvt_cache_mode, database,
+                    (int (*) (const char *, void *)) gmpd_send_to_client,
+                    (void *) client_connection, disable);
 
   /* Setup the scanner address and try to connect. */
   if (gmpd_nvt_cache_mode && !openvas_scanner_connected ())
@@ -555,9 +545,8 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
       if (termination_signal)
         {
-          g_debug ("%s: Received %s signal.",
-                   __FUNCTION__,
-                   sys_siglist[get_termination_signal()]);
+          g_debug ("%s: Received %s signal.", __FUNCTION__,
+                   sys_siglist[get_termination_signal ()]);
 
           if (openvas_scanner_connected ())
             {
@@ -616,8 +605,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
        * exhibit a problem in Scanner due to a different buffering
        * strategy.  */
       ret = 0;
-      if (client_connection->socket > 0
-          && client_connection->tls
+      if (client_connection->socket > 0 && client_connection->tls
           && FD_ISSET (client_connection->socket, &readfds)
           && gnutls_record_check_pending (client_connection->session))
         {
@@ -682,25 +670,25 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
           switch (read_from_client (client_connection))
             {
-              case  0:       /* Read everything. */
-                break;
-              case -1:       /* Error. */
-                rc = -1;
-                goto client_free;
-              case -2:       /* from_client buffer full. */
-                /* There may be more to read. */
-                break;
-              case -3:       /* End of file. */
-                g_debug ("   EOF reading from client");
-                if (client_connection->socket > 0
-                    && FD_ISSET (client_connection->socket, &writefds))
-                  /* Write rest of to_client to client, so that the client gets
-                   * any buffered output and the response to the error. */
-                  write_to_client (client_connection);
-                rc = 0;
-                goto client_free;
-              default:       /* Programming error. */
-                assert (0);
+            case 0: /* Read everything. */
+              break;
+            case -1: /* Error. */
+              rc = -1;
+              goto client_free;
+            case -2: /* from_client buffer full. */
+              /* There may be more to read. */
+              break;
+            case -3: /* End of file. */
+              g_debug ("   EOF reading from client");
+              if (client_connection->socket > 0
+                  && FD_ISSET (client_connection->socket, &writefds))
+                /* Write rest of to_client to client, so that the client gets
+                 * any buffered output and the response to the error. */
+                write_to_client (client_connection);
+              rc = 0;
+              goto client_free;
+            default: /* Programming error. */
+              assert (0);
             }
 
           /* This check prevents output in the "asynchronous network
@@ -708,13 +696,11 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           if (from_client_end > initial_start)
             {
               if (g_strstr_len (from_client + initial_start,
-                                from_client_end - initial_start,
-                                "<password>"))
+                                from_client_end - initial_start, "<password>"))
                 g_debug ("<= client  Input may contain password, suppressed");
               else
-                g_debug ("<= client  \"%.*s\"",
-                        from_client_end - initial_start,
-                        from_client + initial_start);
+                g_debug ("<= client  \"%.*s\"", from_client_end - initial_start,
+                         from_client + initial_start);
             }
 
           ret = process_gmp_client_input ();
@@ -797,28 +783,28 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
         {
           switch (openvas_scanner_read ())
             {
-              case  0:       /* Read everything. */
-                break;
-              case -1:       /* Error. */
-                /* This may be because the scanner closed the connection
-                 * at the end of a command. */
-                /** @todo Then should get EOF (-3). */
-                set_scanner_init_state (SCANNER_INIT_TOP);
-                rc = -1;
-                goto client_free;
-              case -2:       /* from_scanner buffer full. */
-                /* There may be more to read. */
-                break;
-              case -3:       /* End of file. */
-                set_scanner_init_state (SCANNER_INIT_TOP);
-                if (client_active == 0)
-                  /* The client has closed the connection, so exit. */
-                  return 0;
-                /* Scanner went down, exit. */
-                rc = -1;
-                goto client_free;
-              default:       /* Programming error. */
-                assert (0);
+            case 0: /* Read everything. */
+              break;
+            case -1: /* Error. */
+              /* This may be because the scanner closed the connection
+               * at the end of a command. */
+              /** @todo Then should get EOF (-3). */
+              set_scanner_init_state (SCANNER_INIT_TOP);
+              rc = -1;
+              goto client_free;
+            case -2: /* from_scanner buffer full. */
+              /* There may be more to read. */
+              break;
+            case -3: /* End of file. */
+              set_scanner_init_state (SCANNER_INIT_TOP);
+              if (client_active == 0)
+                /* The client has closed the connection, so exit. */
+                return 0;
+              /* Scanner went down, exit. */
+              rc = -1;
+              goto client_free;
+            default: /* Programming error. */
+              assert (0);
             }
         }
 
@@ -830,19 +816,19 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
           switch (openvas_scanner_write (gmpd_nvt_cache_mode))
             {
-              case  0:      /* Wrote everything in to_scanner. */
-                break;
-              case -1:      /* Error. */
-                /** @todo This may be because the scanner closed the connection
-                 * at the end of a command? */
-                rc = -1;
-                goto client_free;
-              case -2:      /* Wrote as much as scanner was willing to accept. */
-                break;
-              case -3:      /* Did an initialisation step. */
-                break;
-              default:      /* Programming error. */
-                assert (0);
+            case 0: /* Wrote everything in to_scanner. */
+              break;
+            case -1: /* Error. */
+              /** @todo This may be because the scanner closed the connection
+               * at the end of a command? */
+              rc = -1;
+              goto client_free;
+            case -2: /* Wrote as much as scanner was willing to accept. */
+              break;
+            case -3: /* Did an initialisation step. */
+              break;
+            default: /* Programming error. */
+              assert (0);
             }
         }
 
@@ -854,15 +840,15 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
           switch (write_to_client (client_connection))
             {
-              case  0:      /* Wrote everything in to_client. */
-                break;
-              case -1:      /* Error. */
-                rc = -1;
-                goto client_free;
-              case -2:      /* Wrote as much as client was willing to accept. */
-                break;
-              default:      /* Programming error. */
-                assert (0);
+            case 0: /* Wrote everything in to_client. */
+              break;
+            case -1: /* Error. */
+              rc = -1;
+              goto client_free;
+            case -2: /* Wrote as much as client was willing to accept. */
+              break;
+            default: /* Programming error. */
+              assert (0);
             }
         }
 

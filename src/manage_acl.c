@@ -27,6 +27,7 @@
  */
 
 #include "manage_acl.h"
+
 #include "manage_sql.h"
 #include "sql.h"
 
@@ -59,19 +60,14 @@ acl_user_may (const char *operation)
     /* Allow the dummy user in init_manage to do anything. */
     return 1;
 
-  if (sql_int ("SELECT user_can_everything ('%s');",
-               current_credentials.uuid))
+  if (sql_int ("SELECT user_can_everything ('%s');", current_credentials.uuid))
     return 1;
 
   quoted_operation = sql_quote (operation);
 
-  ret = sql_int (ACL_USER_MAY ("0"),
-                 current_credentials.uuid,
-                 current_credentials.uuid,
-                 current_credentials.uuid,
-                 quoted_operation,
-                 quoted_operation,
-                 quoted_operation,
+  ret = sql_int (ACL_USER_MAY ("0"), current_credentials.uuid,
+                 current_credentials.uuid, current_credentials.uuid,
+                 quoted_operation, quoted_operation, quoted_operation,
                  quoted_operation);
 
   g_free (quoted_operation);
@@ -91,18 +87,19 @@ acl_role_can_super_everyone (const char *role_id)
 {
   gchar *quoted_role_id;
   quoted_role_id = sql_quote (role_id);
-  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE name = 'Super'"
-               /*                    Super on everyone. */
-               "                AND (resource = 0)"
-               "                AND subject_location"
-               "                    = " G_STRINGIFY (LOCATION_TABLE)
-               "                AND (subject_type = 'role'"
-               "                     AND subject"
-               "                         = (SELECT id"
-               "                            FROM roles"
-               "                            WHERE uuid = '%s')));",
-               role_id))
+  if (sql_int (
+        " SELECT EXISTS (SELECT * FROM permissions"
+        "                WHERE name = 'Super'"
+        /*                    Super on everyone. */
+        "                AND (resource = 0)"
+        "                AND subject_location"
+        "                    = " G_STRINGIFY (
+          LOCATION_TABLE) "                AND (subject_type = 'role'"
+                          "                     AND subject"
+                          "                         = (SELECT id"
+                          "                            FROM roles"
+                          "                            WHERE uuid = '%s')));",
+        role_id))
     {
       g_free (quoted_role_id);
       return 1;
@@ -124,37 +121,42 @@ acl_user_can_super_everyone (const char *uuid)
   gchar *quoted_uuid;
 
   quoted_uuid = sql_quote (uuid);
-  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE name = 'Super'"
-               /*                    Super on everyone. */
-               "                AND (resource = 0)"
-               "                AND subject_location"
-               "                    = " G_STRINGIFY (LOCATION_TABLE)
-               "                AND ((subject_type = 'user'"
-               "                      AND subject"
-               "                          = (SELECT id FROM users"
-               "                             WHERE users.uuid = '%s'))"
-               "                     OR (subject_type = 'group'"
-               "                         AND subject"
-               "                             IN (SELECT DISTINCT \"group\""
-               "                                 FROM group_users"
-               "                                 WHERE \"user\""
-               "                                       = (SELECT id"
-               "                                          FROM users"
-               "                                          WHERE users.uuid"
-               "                                                = '%s')))"
-               "                     OR (subject_type = 'role'"
-               "                         AND subject"
-               "                             IN (SELECT DISTINCT role"
-               "                                 FROM role_users"
-               "                                 WHERE \"user\""
-               "                                       = (SELECT id"
-               "                                          FROM users"
-               "                                          WHERE users.uuid"
-               "                                                = '%s')))));",
-               quoted_uuid,
-               quoted_uuid,
-               quoted_uuid))
+  if (
+    sql_int (
+      " SELECT EXISTS (SELECT * FROM permissions"
+      "                WHERE name = 'Super'"
+      /*                    Super on everyone. */
+      "                AND (resource = 0)"
+      "                AND subject_location"
+      "                    = " G_STRINGIFY (
+        LOCATION_TABLE) "                AND ((subject_type = 'user'"
+                        "                      AND subject"
+                        "                          = (SELECT id FROM users"
+                        "                             WHERE users.uuid = '%s'))"
+                        "                     OR (subject_type = 'group'"
+                        "                         AND subject"
+                        "                             IN (SELECT DISTINCT "
+                        "\"group\""
+                        "                                 FROM group_users"
+                        "                                 WHERE \"user\""
+                        "                                       = (SELECT id"
+                        "                                          FROM users"
+                        "                                          WHERE "
+                        "users.uuid"
+                        "                                                = "
+                        "'%s')))"
+                        "                     OR (subject_type = 'role'"
+                        "                         AND subject"
+                        "                             IN (SELECT DISTINCT role"
+                        "                                 FROM role_users"
+                        "                                 WHERE \"user\""
+                        "                                       = (SELECT id"
+                        "                                          FROM users"
+                        "                                          WHERE "
+                        "users.uuid"
+                        "                                                = "
+                        "'%s')))));",
+      quoted_uuid, quoted_uuid, quoted_uuid))
     {
       g_free (quoted_uuid);
       return 1;
@@ -177,34 +179,33 @@ acl_user_can_everything (const char *user_id)
   int ret;
 
   quoted_user_id = sql_quote (user_id);
-  ret = sql_int ("SELECT count(*) > 0 FROM permissions"
-                 " WHERE resource = 0"
-                 " AND subject_location"
-                 "     = " G_STRINGIFY (LOCATION_TABLE)
-                 " AND ((subject_type = 'user'"
-                 "       AND subject"
-                 "           = (SELECT id FROM users"
-                 "              WHERE users.uuid = '%s'))"
-                 "      OR (subject_type = 'group'"
-                 "          AND subject"
-                 "              IN (SELECT DISTINCT \"group\""
-                 "                  FROM group_users"
-                 "                  WHERE \"user\" = (SELECT id"
-                 "                                    FROM users"
-                 "                                    WHERE users.uuid"
-                 "                                          = '%s')))"
-                 "      OR (subject_type = 'role'"
-                 "          AND subject"
-                 "              IN (SELECT DISTINCT role"
-                 "                  FROM role_users"
-                 "                  WHERE \"user\" = (SELECT id"
-                 "                                    FROM users"
-                 "                                    WHERE users.uuid"
-                 "                                          = '%s'))))"
-                 " AND name = 'Everything';",
-                 quoted_user_id,
-                 quoted_user_id,
-                 quoted_user_id);
+  ret = sql_int (
+    "SELECT count(*) > 0 FROM permissions"
+    " WHERE resource = 0"
+    " AND subject_location"
+    "     = " G_STRINGIFY (
+      LOCATION_TABLE) " AND ((subject_type = 'user'"
+                      "       AND subject"
+                      "           = (SELECT id FROM users"
+                      "              WHERE users.uuid = '%s'))"
+                      "      OR (subject_type = 'group'"
+                      "          AND subject"
+                      "              IN (SELECT DISTINCT \"group\""
+                      "                  FROM group_users"
+                      "                  WHERE \"user\" = (SELECT id"
+                      "                                    FROM users"
+                      "                                    WHERE users.uuid"
+                      "                                          = '%s')))"
+                      "      OR (subject_type = 'role'"
+                      "          AND subject"
+                      "              IN (SELECT DISTINCT role"
+                      "                  FROM role_users"
+                      "                  WHERE \"user\" = (SELECT id"
+                      "                                    FROM users"
+                      "                                    WHERE users.uuid"
+                      "                                          = '%s'))))"
+                      " AND name = 'Everything';",
+    quoted_user_id, quoted_user_id, quoted_user_id);
   g_free (quoted_user_id);
   return ret;
 }
@@ -223,55 +224,58 @@ acl_user_has_super (const char *super_user_id, user_t other_user)
   gchar *quoted_super_user_id;
 
   quoted_super_user_id = sql_quote (super_user_id);
-  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE name = 'Super'"
-               /*                    Super on everyone. */
-               "                AND ((resource = 0)"
-               /*                    Super on other_user. */
-               "                     OR ((resource_type = 'user')"
-               "                         AND (resource = %llu))"
-               /*                    Super on other_user's role. */
-               "                     OR ((resource_type = 'role')"
-               "                         AND (resource"
-               "                              IN (SELECT DISTINCT role"
-               "                                  FROM role_users"
-               "                                  WHERE \"user\" = %llu)))"
-               /*                    Super on other_user's group. */
-               "                     OR ((resource_type = 'group')"
-               "                         AND (resource"
-               "                              IN (SELECT DISTINCT \"group\""
-               "                                  FROM group_users"
-               "                                  WHERE \"user\" = %llu))))"
-               "                AND subject_location"
-               "                    = " G_STRINGIFY (LOCATION_TABLE)
-               "                AND ((subject_type = 'user'"
-               "                      AND subject"
-               "                          = (SELECT id FROM users"
-               "                             WHERE users.uuid = '%s'))"
-               "                     OR (subject_type = 'group'"
-               "                         AND subject"
-               "                             IN (SELECT DISTINCT \"group\""
-               "                                 FROM group_users"
-               "                                 WHERE \"user\""
-               "                                       = (SELECT id"
-               "                                          FROM users"
-               "                                          WHERE users.uuid"
-               "                                                = '%s')))"
-               "                     OR (subject_type = 'role'"
-               "                         AND subject"
-               "                             IN (SELECT DISTINCT role"
-               "                                 FROM role_users"
-               "                                 WHERE \"user\""
-               "                                       = (SELECT id"
-               "                                          FROM users"
-               "                                          WHERE users.uuid"
-               "                                                = '%s')))));",
-               other_user,
-               other_user,
-               other_user,
-               super_user_id,
-               super_user_id,
-               super_user_id))
+  if (
+    sql_int (
+      " SELECT EXISTS (SELECT * FROM permissions"
+      "                WHERE name = 'Super'"
+      /*                    Super on everyone. */
+      "                AND ((resource = 0)"
+      /*                    Super on other_user. */
+      "                     OR ((resource_type = 'user')"
+      "                         AND (resource = %llu))"
+      /*                    Super on other_user's role. */
+      "                     OR ((resource_type = 'role')"
+      "                         AND (resource"
+      "                              IN (SELECT DISTINCT role"
+      "                                  FROM role_users"
+      "                                  WHERE \"user\" = %llu)))"
+      /*                    Super on other_user's group. */
+      "                     OR ((resource_type = 'group')"
+      "                         AND (resource"
+      "                              IN (SELECT DISTINCT \"group\""
+      "                                  FROM group_users"
+      "                                  WHERE \"user\" = %llu))))"
+      "                AND subject_location"
+      "                    = " G_STRINGIFY (
+        LOCATION_TABLE) "                AND ((subject_type = 'user'"
+                        "                      AND subject"
+                        "                          = (SELECT id FROM users"
+                        "                             WHERE users.uuid = '%s'))"
+                        "                     OR (subject_type = 'group'"
+                        "                         AND subject"
+                        "                             IN (SELECT DISTINCT "
+                        "\"group\""
+                        "                                 FROM group_users"
+                        "                                 WHERE \"user\""
+                        "                                       = (SELECT id"
+                        "                                          FROM users"
+                        "                                          WHERE "
+                        "users.uuid"
+                        "                                                = "
+                        "'%s')))"
+                        "                     OR (subject_type = 'role'"
+                        "                         AND subject"
+                        "                             IN (SELECT DISTINCT role"
+                        "                                 FROM role_users"
+                        "                                 WHERE \"user\""
+                        "                                       = (SELECT id"
+                        "                                          FROM users"
+                        "                                          WHERE "
+                        "users.uuid"
+                        "                                                = "
+                        "'%s')))));",
+      other_user, other_user, other_user, super_user_id, super_user_id,
+      super_user_id))
     {
       g_free (quoted_super_user_id);
       return 1;
@@ -380,57 +384,61 @@ acl_user_is_user (const char *uuid)
  *
  * @param[in]  format  Value format specifier.
  */
-#define ACL_SUPER_CLAUSE(format)                                          \
-  "                name = 'Super'"                                        \
-  /*                    Super on everyone. */                             \
-  "                AND ((resource = 0)"                                   \
-  /*                    Super on other_user. */                           \
-  "                     OR ((resource_type = 'user')"                     \
-  "                         AND (resource = (SELECT %ss%s.owner"          \
-  "                                          FROM %ss%s"                  \
-  "                                          WHERE %s = " format ")))"    \
-  /*                    Super on other_user's role. */                    \
-  "                     OR ((resource_type = 'role')"                     \
-  "                         AND (resource"                                \
-  "                              IN (SELECT DISTINCT role"                \
-  "                                  FROM role_users"                     \
-  "                                  WHERE \"user\""                      \
-  "                                        = (SELECT %ss%s.owner"         \
-  "                                           FROM %ss%s"                 \
-  "                                           WHERE %s"                   \
-  "                                                 = " format "))))"     \
-  /*                    Super on other_user's group. */                   \
-  "                     OR ((resource_type = 'group')"                    \
-  "                         AND (resource"                                \
-  "                              IN (SELECT DISTINCT \"group\""           \
-  "                                  FROM group_users"                    \
-  "                                  WHERE \"user\""                      \
-  "                                        = (SELECT %ss%s.owner"         \
-  "                                           FROM %ss%s"                 \
-  "                                           WHERE %s = " format ")))))" \
-  "                AND subject_location = " G_STRINGIFY (LOCATION_TABLE)  \
-  "                AND ((subject_type = 'user'"                           \
-  "                      AND subject"                                     \
-  "                          = (SELECT id FROM users"                     \
-  "                             WHERE users.uuid = '%s'))"                \
-  "                     OR (subject_type = 'group'"                       \
-  "                         AND subject"                                  \
-  "                             IN (SELECT DISTINCT \"group\""            \
-  "                                 FROM group_users"                     \
-  "                                 WHERE \"user\""                       \
-  "                                       = (SELECT id"                   \
-  "                                          FROM users"                  \
-  "                                          WHERE users.uuid"            \
-  "                                                = '%s')))"             \
-  "                     OR (subject_type = 'role'"                        \
-  "                         AND subject"                                  \
-  "                             IN (SELECT DISTINCT role"                 \
-  "                                 FROM role_users"                      \
-  "                                 WHERE \"user\""                       \
-  "                                       = (SELECT id"                   \
-  "                                          FROM users"                  \
-  "                                          WHERE users.uuid"            \
-  "                                                = '%s'))))"
+#define ACL_SUPER_CLAUSE(format)                                               \
+  "                name = 'Super'" /*                    Super on everyone. */ \
+  "                AND ((resource = 0)" /*                    Super on         \
+                                           other_user. */                      \
+  "                     OR ((resource_type = 'user')"                          \
+  "                         AND (resource = (SELECT %ss%s.owner"               \
+  "                                          FROM %ss%s"                       \
+  "                                          WHERE %s = " format               \
+  ")))" /*                    Super on other_user's role. */                   \
+  "                     OR ((resource_type = 'role')"                          \
+  "                         AND (resource"                                     \
+  "                              IN (SELECT DISTINCT role"                     \
+  "                                  FROM role_users"                          \
+  "                                  WHERE \"user\""                           \
+  "                                        = (SELECT %ss%s.owner"              \
+  "                                           FROM %ss%s"                      \
+  "                                           WHERE %s"                        \
+  "                                                 = " format                 \
+  "))))" /*                    Super on other_user's group. */                 \
+  "                     OR ((resource_type = 'group')"                         \
+  "                         AND (resource"                                     \
+  "                              IN (SELECT DISTINCT \"group\""                \
+  "                                  FROM group_users"                         \
+  "                                  WHERE \"user\""                           \
+  "                                        = (SELECT %ss%s.owner"              \
+  "                                           FROM %ss%s"                      \
+  "                                           WHERE %s = " format ")))))"      \
+  "                AND subject_location = " G_STRINGIFY (                      \
+    LOCATION_TABLE) "                AND ((subject_type = 'user'"              \
+                    "                      AND subject"                        \
+                    "                          = (SELECT id FROM users"        \
+                    "                             WHERE users.uuid = '%s'))"   \
+                    "                     OR (subject_type = 'group'"          \
+                    "                         AND subject"                     \
+                    "                             IN (SELECT DISTINCT "        \
+                    "\"group\""                                                \
+                    "                                 FROM group_users"        \
+                    "                                 WHERE \"user\""          \
+                    "                                       = (SELECT id"      \
+                    "                                          FROM users"     \
+                    "                                          WHERE "         \
+                    "users.uuid"                                               \
+                    "                                                = "       \
+                    "'%s')))"                                                  \
+                    "                     OR (subject_type = 'role'"           \
+                    "                         AND subject"                     \
+                    "                             IN (SELECT DISTINCT role"    \
+                    "                                 FROM role_users"         \
+                    "                                 WHERE \"user\""          \
+                    "                                       = (SELECT id"      \
+                    "                                          FROM users"     \
+                    "                                          WHERE "         \
+                    "users.uuid"                                               \
+                    "                                                = "       \
+                    "'%s'))))"
 
 /**
  * @brief Super clause arguments.
@@ -441,28 +449,14 @@ acl_user_is_user (const char *uuid)
  * @param[in]  user_id  UUID of user.
  * @param[in]  trash    Whether to search trash.
  */
-#define ACL_SUPER_CLAUSE_ARGS(type, field, value, user_id, trash) \
-  type,                                                       \
-  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
-  type,                                                       \
-  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
-  field,                                                      \
-  value,                                                      \
-  type,                                                       \
-  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
-  type,                                                       \
-  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
-  field,                                                      \
-  value,                                                      \
-  type,                                                       \
-  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
-  type,                                                       \
-  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
-  field,                                                      \
-  value,                                                      \
-  user_id,                                                    \
-  user_id,                                                    \
-  user_id
+#define ACL_SUPER_CLAUSE_ARGS(type, field, value, user_id, trash)           \
+  type, trash ? (strcasecmp (type, "task") ? "_trash" : "") : "", type,     \
+    trash ? (strcasecmp (type, "task") ? "_trash" : "") : "", field, value, \
+    type, trash ? (strcasecmp (type, "task") ? "_trash" : "") : "", type,   \
+    trash ? (strcasecmp (type, "task") ? "_trash" : "") : "", field, value, \
+    type, trash ? (strcasecmp (type, "task") ? "_trash" : "") : "", type,   \
+    trash ? (strcasecmp (type, "task") ? "_trash" : "") : "", field, value, \
+    user_id, user_id, user_id
 
 /**
  * @brief Test whether a user has Super permission on a resource.
@@ -535,9 +529,7 @@ acl_user_is_owner (const char *type, const char *uuid)
                  " WHERE uuid = '%s'"
                  " AND owner = (SELECT users.id FROM users"
                  "              WHERE users.uuid = '%s');",
-                 type,
-                 quoted_uuid,
-                 current_credentials.uuid);
+                 type, quoted_uuid, current_credentials.uuid);
   g_free (quoted_uuid);
 
   return ret;
@@ -563,10 +555,8 @@ acl_user_owns_uuid (const char *type, const char *uuid, int trash)
 
   assert (current_credentials.uuid);
 
-  if ((strcmp (type, "nvt") == 0)
-      || (strcmp (type, "cve") == 0)
-      || (strcmp (type, "cpe") == 0)
-      || (strcmp (type, "ovaldef") == 0)
+  if ((strcmp (type, "nvt") == 0) || (strcmp (type, "cve") == 0)
+      || (strcmp (type, "cpe") == 0) || (strcmp (type, "ovaldef") == 0)
       || (strcmp (type, "cert_bund_adv") == 0)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
@@ -581,37 +571,32 @@ acl_user_owns_uuid (const char *type, const char *uuid, int trash)
                    " AND results.report = reports.id"
                    " AND (reports.owner = (SELECT users.id FROM users"
                    "                       WHERE users.uuid = '%s'));",
-                   quoted_uuid,
-                   current_credentials.uuid);
+                   quoted_uuid, current_credentials.uuid);
   else if (strcmp (type, "report") == 0)
     ret = sql_int ("SELECT count(*) FROM reports"
                    " WHERE uuid = '%s'"
                    " AND (owner = (SELECT users.id FROM users"
                    "               WHERE users.uuid = '%s'));",
-                   quoted_uuid,
-                   current_credentials.uuid);
+                   quoted_uuid, current_credentials.uuid);
   else if (strcmp (type, "permission") == 0)
-    ret = sql_int ("SELECT count(*) FROM permissions%s"
-                   " WHERE uuid = '%s'"
-                   " AND ((owner IS NULL)"
-                   "      OR (owner = (SELECT users.id FROM users"
-                   "                   WHERE users.uuid = '%s')));",
-                   trash ? "_trash" : "",
-                   quoted_uuid,
-                   current_credentials.uuid);
+    ret =
+      sql_int ("SELECT count(*) FROM permissions%s"
+               " WHERE uuid = '%s'"
+               " AND ((owner IS NULL)"
+               "      OR (owner = (SELECT users.id FROM users"
+               "                   WHERE users.uuid = '%s')));",
+               trash ? "_trash" : "", quoted_uuid, current_credentials.uuid);
   else
-    ret = sql_int ("SELECT count(*) FROM %ss%s"
-                   " WHERE uuid = '%s'"
-                   "%s"
-                   " AND (owner = (SELECT users.id FROM users"
-                   "               WHERE users.uuid = '%s'));",
-                   type,
-                   (strcmp (type, "task") && trash) ? "_trash" : "",
-                   quoted_uuid,
-                   (strcmp (type, "task")
-                     ? ""
-                     : (trash ? " AND hidden = 2" : " AND hidden < 2")),
-                   current_credentials.uuid);
+    ret = sql_int (
+      "SELECT count(*) FROM %ss%s"
+      " WHERE uuid = '%s'"
+      "%s"
+      " AND (owner = (SELECT users.id FROM users"
+      "               WHERE users.uuid = '%s'));",
+      type, (strcmp (type, "task") && trash) ? "_trash" : "", quoted_uuid,
+      (strcmp (type, "task") ? ""
+                             : (trash ? " AND hidden = 2" : " AND hidden < 2")),
+      current_credentials.uuid);
   g_free (quoted_uuid);
 
   return ret;
@@ -636,10 +621,8 @@ acl_user_owns (const char *type, resource_t resource, int trash)
 
   assert (current_credentials.uuid);
 
-  if ((strcmp (type, "nvt") == 0)
-      || (strcmp (type, "cve") == 0)
-      || (strcmp (type, "cpe") == 0)
-      || (strcmp (type, "ovaldef") == 0)
+  if ((strcmp (type, "nvt") == 0) || (strcmp (type, "cve") == 0)
+      || (strcmp (type, "cpe") == 0) || (strcmp (type, "ovaldef") == 0)
       || (strcmp (type, "cert_bund_adv") == 0)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
@@ -653,21 +636,18 @@ acl_user_owns (const char *type, resource_t resource, int trash)
                    " AND results.report = reports.id"
                    " AND (reports.owner = (SELECT users.id FROM users"
                    "                       WHERE users.uuid = '%s'));",
-                   resource,
-                   current_credentials.uuid);
+                   resource, current_credentials.uuid);
   else
-    ret = sql_int ("SELECT count(*) FROM %ss%s"
-                   " WHERE id = %llu"
-                   "%s"
-                   " AND (owner = (SELECT users.id FROM users"
-                   "               WHERE users.uuid = '%s'));",
-                   type,
-                   (strcmp (type, "task") && trash) ? "_trash" : "",
-                   resource,
-                   (strcmp (type, "task")
-                     ? ""
-                     : (trash ? " AND hidden = 2" : " AND hidden < 2")),
-                   current_credentials.uuid);
+    ret = sql_int (
+      "SELECT count(*) FROM %ss%s"
+      " WHERE id = %llu"
+      "%s"
+      " AND (owner = (SELECT users.id FROM users"
+      "               WHERE users.uuid = '%s'));",
+      type, (strcmp (type, "task") && trash) ? "_trash" : "", resource,
+      (strcmp (type, "task") ? ""
+                             : (trash ? " AND hidden = 2" : " AND hidden < 2")),
+      current_credentials.uuid);
 
   return ret;
 }
@@ -700,9 +680,7 @@ acl_user_owns_trash_uuid (const char *type, const char *uuid)
                  " WHERE uuid = '%s'"
                  " AND (owner = (SELECT users.id FROM users"
                  "               WHERE users.uuid = '%s'));",
-                 type,
-                 quoted_uuid,
-                 current_credentials.uuid);
+                 type, quoted_uuid, current_credentials.uuid);
   g_free (quoted_uuid);
 
   return ret;
@@ -731,7 +709,7 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
   if (permission && (valid_gmp_command (permission) == 0))
     return 0;
 
-  if (!strcmp (current_credentials.uuid,  ""))
+  if (!strcmp (current_credentials.uuid, ""))
     return 1;
 
   /* The Super case is checked here. */
@@ -749,22 +727,21 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
       task_t task;
       report_t report;
 
-      switch (sql_int64 (&report,
-                         "SELECT id FROM reports WHERE uuid = '%s';",
+      switch (sql_int64 (&report, "SELECT id FROM reports WHERE uuid = '%s';",
                          quoted_uuid))
         {
-          case 0:
-            break;
-          case 1:        /* Too few rows in result of query. */
-            g_free (quoted_uuid);
-            return 0;
-            break;
-          default:       /* Programming error. */
-            assert (0);
-          case -1:
-            g_free (quoted_uuid);
-            return 0;
-            break;
+        case 0:
+          break;
+        case 1: /* Too few rows in result of query. */
+          g_free (quoted_uuid);
+          return 0;
+          break;
+        default: /* Programming error. */
+          assert (0);
+        case -1:
+          g_free (quoted_uuid);
+          return 0;
+          break;
         }
 
       report_task (report, &task);
@@ -779,22 +756,21 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
     {
       task_t task;
 
-      switch (sql_int64 (&task,
-                         "SELECT task FROM results WHERE uuid = '%s';",
-                         uuid))
+      switch (
+        sql_int64 (&task, "SELECT task FROM results WHERE uuid = '%s';", uuid))
         {
-          case 0:
-            break;
-          case 1:        /* Too few rows in result of query. */
-            g_free (quoted_uuid);
-            return 0;
-            break;
-          default:       /* Programming error. */
-            assert (0);
-          case -1:
-            g_free (quoted_uuid);
-            return 0;
-            break;
+        case 0:
+          break;
+        case 1: /* Too few rows in result of query. */
+          g_free (quoted_uuid);
+          return 0;
+          break;
+        default: /* Programming error. */
+          assert (0);
+        case -1:
+          g_free (quoted_uuid);
+          return 0;
+          break;
         }
 
       task_uuid (task, &uuid_task);
@@ -806,37 +782,37 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
       && ((permission == NULL)
           || (strlen (permission) > 3 && strncmp (permission, "get", 3) == 0)))
     {
-      ret = sql_int ("SELECT count(*) FROM permissions"
-                     /* Any permission implies 'get'. */
-                     " WHERE (resource_uuid = '%s'"
-                     /* Users may view any permissions that affect them. */
-                     "        OR uuid = '%s')"
-                     " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
-                     " AND ((subject_type = 'user'"
-                     "       AND subject"
-                     "           = (SELECT id FROM users"
-                     "              WHERE users.uuid = '%s'))"
-                     "      OR (subject_type = 'group'"
-                     "          AND subject"
-                     "              IN (SELECT DISTINCT \"group\""
-                     "                  FROM group_users"
-                     "                  WHERE \"user\" = (SELECT id"
-                     "                                    FROM users"
-                     "                                    WHERE users.uuid"
-                     "                                          = '%s')))"
-                     "      OR (subject_type = 'role'"
-                     "          AND subject"
-                     "              IN (SELECT DISTINCT role"
-                     "                  FROM role_users"
-                     "                  WHERE \"user\" = (SELECT id"
-                     "                                    FROM users"
-                     "                                    WHERE users.uuid"
-                     "                                          = '%s'))));",
-                     uuid_task ? uuid_task : quoted_uuid,
-                     uuid_task ? uuid_task : quoted_uuid,
-                     current_credentials.uuid,
-                     current_credentials.uuid,
-                     current_credentials.uuid);
+      ret = sql_int (
+        "SELECT count(*) FROM permissions"
+        /* Any permission implies 'get'. */
+        " WHERE (resource_uuid = '%s'"
+        /* Users may view any permissions that affect them. */
+        "        OR uuid = '%s')"
+        " AND subject_location = " G_STRINGIFY (
+          LOCATION_TABLE) " AND ((subject_type = 'user'"
+                          "       AND subject"
+                          "           = (SELECT id FROM users"
+                          "              WHERE users.uuid = '%s'))"
+                          "      OR (subject_type = 'group'"
+                          "          AND subject"
+                          "              IN (SELECT DISTINCT \"group\""
+                          "                  FROM group_users"
+                          "                  WHERE \"user\" = (SELECT id"
+                          "                                    FROM users"
+                          "                                    WHERE users.uuid"
+                          "                                          = '%s')))"
+                          "      OR (subject_type = 'role'"
+                          "          AND subject"
+                          "              IN (SELECT DISTINCT role"
+                          "                  FROM role_users"
+                          "                  WHERE \"user\" = (SELECT id"
+                          "                                    FROM users"
+                          "                                    WHERE users.uuid"
+                          "                                          = "
+                          "'%s'))));",
+        uuid_task ? uuid_task : quoted_uuid,
+        uuid_task ? uuid_task : quoted_uuid, current_credentials.uuid,
+        current_credentials.uuid, current_credentials.uuid);
       free (uuid_task);
       g_free (quoted_uuid);
       return ret;
@@ -855,37 +831,35 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
          || (strlen (permission) > 3 && strncmp (permission, "get", 3) == 0));
   quoted_permission = sql_quote (permission ? permission : "");
 
-  ret = sql_int ("SELECT count(*) FROM permissions"
-                 " WHERE resource_uuid = '%s'"
-                 " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
-                 " AND ((subject_type = 'user'"
-                 "       AND subject"
-                 "           = (SELECT id FROM users"
-                 "              WHERE users.uuid = '%s'))"
-                 "      OR (subject_type = 'group'"
-                 "          AND subject"
-                 "              IN (SELECT DISTINCT \"group\""
-                 "                  FROM group_users"
-                 "                  WHERE \"user\" = (SELECT id"
-                 "                                    FROM users"
-                 "                                    WHERE users.uuid"
-                 "                                          = '%s')))"
-                 "      OR (subject_type = 'role'"
-                 "          AND subject"
-                 "              IN (SELECT DISTINCT role"
-                 "                  FROM role_users"
-                 "                  WHERE \"user\" = (SELECT id"
-                 "                                    FROM users"
-                 "                                    WHERE users.uuid"
-                 "                                          = '%s'))))"
-                 " %s%s%s;",
-                 uuid_task ? uuid_task : quoted_uuid,
-                 current_credentials.uuid,
-                 current_credentials.uuid,
-                 current_credentials.uuid,
-                 (get ? "" : "AND name = '"),
-                 (get ? "" : quoted_permission),
-                 (get ? "" : "'"));
+  ret = sql_int (
+    "SELECT count(*) FROM permissions"
+    " WHERE resource_uuid = '%s'"
+    " AND subject_location = " G_STRINGIFY (
+      LOCATION_TABLE) " AND ((subject_type = 'user'"
+                      "       AND subject"
+                      "           = (SELECT id FROM users"
+                      "              WHERE users.uuid = '%s'))"
+                      "      OR (subject_type = 'group'"
+                      "          AND subject"
+                      "              IN (SELECT DISTINCT \"group\""
+                      "                  FROM group_users"
+                      "                  WHERE \"user\" = (SELECT id"
+                      "                                    FROM users"
+                      "                                    WHERE users.uuid"
+                      "                                          = '%s')))"
+                      "      OR (subject_type = 'role'"
+                      "          AND subject"
+                      "              IN (SELECT DISTINCT role"
+                      "                  FROM role_users"
+                      "                  WHERE \"user\" = (SELECT id"
+                      "                                    FROM users"
+                      "                                    WHERE users.uuid"
+                      "                                          = '%s'))))"
+                      " %s%s%s;",
+    uuid_task ? uuid_task : quoted_uuid, current_credentials.uuid,
+    current_credentials.uuid, current_credentials.uuid,
+    (get ? "" : "AND name = '"), (get ? "" : quoted_permission),
+    (get ? "" : "'"));
 
   free (uuid_task);
   g_free (quoted_permission);
@@ -924,7 +898,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
     *with = NULL;
 
   if (owned == 0)
-   return g_strdup (" t ()");
+    return g_strdup (" t ()");
 
   permission_or = g_string_new ("");
   index = 0;
@@ -938,7 +912,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
     for (; index < permissions->len; index++)
       {
         gchar *permission, *quoted;
-        permission = (gchar*) g_ptr_array_index (permissions, index);
+        permission = (gchar *) g_ptr_array_index (permissions, index);
         if (strcasecmp (permission, "any") == 0)
           {
             g_string_free (permission_or, TRUE);
@@ -950,107 +924,97 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
         if (index == 0)
           g_string_append_printf (permission_or, "name = '%s'", quoted);
         else
-          g_string_append_printf (permission_or, " OR name = '%s'",
-                                  quoted);
+          g_string_append_printf (permission_or, " OR name = '%s'", quoted);
         g_free (quoted);
       }
 
   table_trash = get->trash && strcasecmp (type, "task");
   if (resource || (user_id == NULL))
-    owned_clause
-     = g_strdup (" (t ())");
+    owned_clause = g_strdup (" (t ())");
   else if (with)
     {
       gchar *permission_clause;
 
       /* Caller supports WITH clause. */
 
-      *with = g_strdup_printf
-               ("WITH permissions_subject"
-                "     AS (SELECT * FROM permissions"
-                "         WHERE subject_location"
-                "               = " G_STRINGIFY (LOCATION_TABLE)
-                "         AND ((subject_type = 'user'"
-                "               AND subject"
-                "                   = (%s))"
-                "              OR (subject_type = 'group'"
-                "                  AND subject"
-                "                      IN (SELECT DISTINCT \"group\""
-                "                          FROM group_users"
-                "                          WHERE \"user\""
-                "                                = (%s)))"
-                "              OR (subject_type = 'role'"
-                "                  AND subject"
-                "                      IN (SELECT DISTINCT role"
-                "                          FROM role_users"
-                "                          WHERE \"user\""
-                "                                = (%s))))),"
-                "     super_on_users"
-                "     AS (SELECT DISTINCT *"
-                "         FROM (SELECT resource FROM permissions_subject"
-                "               WHERE name = 'Super'"
-                "               AND resource_type = 'user'"
-                "               UNION"
-                "               SELECT \"user\" FROM role_users"
-                "               WHERE role"
-                "                     IN (SELECT resource"
-                "                         FROM permissions_subject"
-                "                         WHERE name = 'Super'"
-                "                         AND resource_type = 'role')"
-                "               UNION"
-                "               SELECT \"user\" FROM group_users"
-                "               WHERE \"group\""
-                "                     IN (SELECT resource"
-                "                         FROM permissions_subject"
-                "                         WHERE name = 'Super'"
-                "                         AND resource_type = 'group'))"
-                "              AS all_users)",
-                user_sql,
-                user_sql,
-                user_sql);
+      *with = g_strdup_printf (
+        "WITH permissions_subject"
+        "     AS (SELECT * FROM permissions"
+        "         WHERE subject_location"
+        "               = " G_STRINGIFY (
+          LOCATION_TABLE) "         AND ((subject_type = 'user'"
+                          "               AND subject"
+                          "                   = (%s))"
+                          "              OR (subject_type = 'group'"
+                          "                  AND subject"
+                          "                      IN (SELECT DISTINCT \"group\""
+                          "                          FROM group_users"
+                          "                          WHERE \"user\""
+                          "                                = (%s)))"
+                          "              OR (subject_type = 'role'"
+                          "                  AND subject"
+                          "                      IN (SELECT DISTINCT role"
+                          "                          FROM role_users"
+                          "                          WHERE \"user\""
+                          "                                = (%s))))),"
+                          "     super_on_users"
+                          "     AS (SELECT DISTINCT *"
+                          "         FROM (SELECT resource FROM "
+                          "permissions_subject"
+                          "               WHERE name = 'Super'"
+                          "               AND resource_type = 'user'"
+                          "               UNION"
+                          "               SELECT \"user\" FROM role_users"
+                          "               WHERE role"
+                          "                     IN (SELECT resource"
+                          "                         FROM permissions_subject"
+                          "                         WHERE name = 'Super'"
+                          "                         AND resource_type = 'role')"
+                          "               UNION"
+                          "               SELECT \"user\" FROM group_users"
+                          "               WHERE \"group\""
+                          "                     IN (SELECT resource"
+                          "                         FROM permissions_subject"
+                          "                         WHERE name = 'Super'"
+                          "                         AND resource_type = "
+                          "'group'))"
+                          "              AS all_users)",
+        user_sql, user_sql, user_sql);
 
       permission_clause = NULL;
       if (user_id && index)
         {
           gchar *clause;
-          clause
-           = g_strdup_printf ("OR EXISTS"
-                              " (SELECT id FROM permissions_subject"
-                              "  WHERE resource = %ss%s.id"
-                              "  AND resource_type = '%s'"
-                              "  AND resource_location = %i"
-                              "  AND (%s))",
-                              type,
-                              get->trash && strcmp (type, "task") ? "_trash" : "",
-                              type,
-                              get->trash ? LOCATION_TRASH : LOCATION_TABLE,
-                              permission_or->str);
+          clause = g_strdup_printf (
+            "OR EXISTS"
+            " (SELECT id FROM permissions_subject"
+            "  WHERE resource = %ss%s.id"
+            "  AND resource_type = '%s'"
+            "  AND resource_location = %i"
+            "  AND (%s))",
+            type, get->trash && strcmp (type, "task") ? "_trash" : "", type,
+            get->trash ? LOCATION_TRASH : LOCATION_TABLE, permission_or->str);
 
           if (strcmp (type, "report") == 0)
-            permission_clause
-             = g_strdup_printf ("%s"
-                                " OR EXISTS"
-                                " (SELECT id FROM permissions_subject"
-                                "  WHERE resource = reports%s.task"
-                                "  AND resource_type = 'task'"
-                                "  AND (%s))",
-                                clause,
-                                get->trash ? "_trash" : "",
-                                permission_or->str);
+            permission_clause = g_strdup_printf (
+              "%s"
+              " OR EXISTS"
+              " (SELECT id FROM permissions_subject"
+              "  WHERE resource = reports%s.task"
+              "  AND resource_type = 'task'"
+              "  AND (%s))",
+              clause, get->trash ? "_trash" : "", permission_or->str);
           else if (strcmp (type, "result") == 0)
-            permission_clause
-             = g_strdup_printf ("%s"
-                                " OR EXISTS"
-                                " (SELECT id FROM permissions_subject"
-                                "  WHERE resource = results%s.task"
-                                "  AND resource_type = 'task'"
-                                "  AND (%s))",
-                                clause,
-                                get->trash ? "_trash" : "",
-                                permission_or->str);
+            permission_clause = g_strdup_printf (
+              "%s"
+              " OR EXISTS"
+              " (SELECT id FROM permissions_subject"
+              "  WHERE resource = results%s.task"
+              "  AND resource_type = 'task'"
+              "  AND (%s))",
+              clause, get->trash ? "_trash" : "", permission_or->str);
 
-          if ((strcmp (type, "report") == 0)
-              || (strcmp (type, "result") == 0))
+          if ((strcmp (type, "report") == 0) || (strcmp (type, "result") == 0))
             g_free (clause);
           else
             permission_clause = clause;
@@ -1063,91 +1027,111 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
           admin = acl_user_can_everything (user_id);
           /* A user sees permissions that involve the user.  Admin users also
            * see all higher level permissions. */
-          owned_clause
-           = g_strdup_printf (/* Either the user is the owner. */
-                              " ((permissions%s.owner = (%s))"
-                              /* Or, for admins, it's a global permission. */
-                              "  %s"
-                              /* Or the permission applies to the user. */
-                              "  OR (%i = 0" /* Skip for trash. */
-                              "      AND (permissions%s.subject_type = 'user'"
-                              "           AND permissions%s.subject_location"
-                              "               = " G_STRINGIFY (LOCATION_TABLE)
-                              "           AND permissions%s.subject"
-                              "               = (%s)))"
-                              /* Or the permission applies to the user's group. */
-                              "  OR (%i = 0" /* Skip for trash. */
-                              "      AND (permissions%s.subject_type = 'group'"
-                              "           AND permissions%s.subject_location"
-                              "               = " G_STRINGIFY (LOCATION_TABLE)
-                              "           AND permissions%s.subject"
-                              "               IN (SELECT DISTINCT \"group\""
-                              "                   FROM group_users"
-                              "                   WHERE \"user\" = (%s))))"
-                              /* Or the permission applies to the user's role. */
-                              "  OR (%i = 0" /* Skip for trash. */
-                              "      AND (permissions%s.subject_type = 'role'"
-                              "           AND permissions%s.subject_location"
-                              "               = " G_STRINGIFY (LOCATION_TABLE)
-                              "           AND permissions%s.subject"
-                              "               IN (SELECT DISTINCT role"
-                              "                   FROM role_users"
-                              "                   WHERE \"user\" = (%s))))"
-                              /* Or the user has super permission on all. */
-                              "  OR EXISTS (SELECT * FROM permissions_subject"
-                              "             WHERE name = 'Super'"
-                              "             AND (resource = 0))"
-                              /* Or the user has super permission on the owner,
-                               * (directly, via the role, or via the group). */
-                              "  OR permissions%s.owner IN (SELECT *"
-                              "                            FROM super_on_users)"
-                              "  %s)",
-                              get->trash ? "_trash" : "",
-                              user_sql,
-                              admin
-                               ? (get->trash
-                                   ? "OR (permissions_trash.owner IS NULL)"
-                                   : "OR (permissions.owner IS NULL)")
-                               : "",
-                              get->trash,
-                              table_trash ? "_trash" : "",
-                              table_trash ? "_trash" : "",
-                              table_trash ? "_trash" : "",
-                              user_sql,
-                              get->trash,
-                              table_trash ? "_trash" : "",
-                              table_trash ? "_trash" : "",
-                              table_trash ? "_trash" : "",
-                              user_sql,
-                              get->trash,
-                              table_trash ? "_trash" : "",
-                              table_trash ? "_trash" : "",
-                              table_trash ? "_trash" : "",
-                              user_sql,
-                              table_trash ? "_trash" : "",
-                              permission_clause ? permission_clause : "");
+          owned_clause =
+            g_strdup_printf (/* Either the user is the owner. */
+                             " ((permissions%s.owner = (%s))"
+                             /* Or, for admins, it's a global permission. */
+                             "  %s"
+                             /* Or the permission applies to the user. */
+                             "  OR (%i = 0" /* Skip for trash. */
+                             "      AND (permissions%s.subject_type = 'user'"
+                             "           AND permissions%s.subject_location"
+                             "               = " G_STRINGIFY (
+                               LOCATION_TABLE) "           AND "
+                                               "permissions%s.subject"
+                                               "               = (%s)))"
+                                               /* Or the permission applies to
+                                                  the user's group. */
+                                               "  OR (%i = 0" /* Skip for trash.
+                                                               */
+                                               "      AND "
+                                               "(permissions%s.subject_type = "
+                                               "'group'"
+                                               "           AND "
+                                               "permissions%s.subject_location"
+                                               "               = " G_STRINGIFY (
+                                                 LOCATION_TABLE) "           "
+                                                                 "AND "
+                                                                 "permissions%"
+                                                                 "s.subject"
+                                                                 "             "
+                                                                 "  IN (SELECT "
+                                                                 "DISTINCT "
+                                                                 "\"group\""
+                                                                 "             "
+                                                                 "      FROM "
+                                                                 "group_users"
+                                                                 "             "
+                                                                 "      WHERE "
+                                                                 "\"user\" = "
+                                                                 "(%s))))"
+                                                                 /* Or the
+                                                                    permission
+                                                                    applies to
+                                                                    the user's
+                                                                    role. */
+                                                                 "  OR (%i = 0" /* Skip for trash. */
+                                                                 "      AND "
+                                                                 "(permissions%"
+                                                                 "s.subject_"
+                                                                 "type = 'role'"
+                                                                 "           "
+                                                                 "AND "
+                                                                 "permissions%"
+                                                                 "s.subject_"
+                                                                 "location"
+                                                                 "             "
+                                                                 "  "
+                                                                 "="
+                                                                 " " G_STRINGIFY (
+                                                                   LOCATION_TABLE) "           AND permissions%s.subject"
+                                                                                   "               IN (SELECT DISTINCT role"
+                                                                                   "                   FROM role_users"
+                                                                                   "                   WHERE \"user\" = (%s))))"
+                                                                                   /* Or the user has super permission on all. */
+                                                                                   "  OR EXISTS (SELECT * FROM permissions_subject"
+                                                                                   "             WHERE name = 'Super'"
+                                                                                   "             AND (resource = 0))"
+                                                                                   /* Or the user has super permission on the owner,
+                                                                                    * (directly, via the role, or via the group). */
+                                                                                   "  OR permissions%s.owner IN (SELECT *"
+                                                                                   "                            FROM super_on_users)"
+                                                                                   "  %s)",
+                             get->trash ? "_trash" : "", user_sql,
+                             admin ? (get->trash
+                                        ? "OR (permissions_trash.owner IS NULL)"
+                                        : "OR (permissions.owner IS NULL)")
+                                   : "",
+                             get->trash, table_trash ? "_trash" : "",
+                             table_trash ? "_trash" : "",
+                             table_trash ? "_trash" : "", user_sql, get->trash,
+                             table_trash ? "_trash" : "",
+                             table_trash ? "_trash" : "",
+                             table_trash ? "_trash" : "", user_sql, get->trash,
+                             table_trash ? "_trash" : "",
+                             table_trash ? "_trash" : "",
+                             table_trash ? "_trash" : "", user_sql,
+                             table_trash ? "_trash" : "",
+                             permission_clause ? permission_clause : "");
         }
       else
         /* Any resource type other than Permissions. */
-        owned_clause
-         = g_strdup_printf (/* Either the user is the owner. */
-                            " ((%ss%s.owner"
-                            "   = (%s))"
-                            /* Or the user has super permission on all. */
-                            "  OR EXISTS (SELECT * FROM permissions_subject"
-                            "             WHERE name = 'Super'"
-                            "             AND (resource = 0))"
-                            /* Or the user has super permission on the owner,
-                             * (directly, via the role, or via the group). */
-                            "  OR %ss%s.owner IN (SELECT *"
-                            "                     FROM super_on_users)"
-                            "  %s)",
-                            type,
-                            table_trash ? "_trash" : "",
-                            user_sql,
-                            type,
-                            table_trash ? "_trash" : "",
-                            permission_clause ? permission_clause : "");
+        owned_clause =
+          g_strdup_printf (/* Either the user is the owner. */
+                           " ((%ss%s.owner"
+                           "   = (%s))"
+                           /* Or the user has super permission on all. */
+                           "  OR EXISTS (SELECT * FROM permissions_subject"
+                           "             WHERE name = 'Super'"
+                           "             AND (resource = 0))"
+                           /* Or the user has super permission on the owner,
+                            * (directly, via the role, or via the group). */
+                           "  OR %ss%s.owner IN (SELECT *"
+                           "                     FROM super_on_users)"
+                           "  %s)",
+                           type, table_trash ? "_trash" : "", user_sql, type,
+                           table_trash ? "_trash" : "",
+                           permission_clause ? permission_clause : "");
 
       g_free (permission_clause);
     }
@@ -1167,15 +1151,15 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
       if (user_id && index)
         {
           gchar *clause;
-          clause
-           = g_strdup_printf ("OR EXISTS"
-                              " (SELECT id FROM permissions"
-                              "  WHERE resource = %ss%s.id"
-                              "  AND resource_type = '%s'"
-                              "  AND resource_location = %i"
-                              "  AND subject_location"
-                              "      = " G_STRINGIFY (LOCATION_TABLE)
-                              "  AND ((subject_type = 'user'"
+          clause = g_strdup_printf (
+            "OR EXISTS"
+            " (SELECT id FROM permissions"
+            "  WHERE resource = %ss%s.id"
+            "  AND resource_type = '%s'"
+            "  AND resource_location = %i"
+            "  AND subject_location"
+            "      = " G_STRINGIFY (
+              LOCATION_TABLE) "  AND ((subject_type = 'user'"
                               "        AND subject"
                               "            = (%s))"
                               "       OR (subject_type = 'group'"
@@ -1191,25 +1175,20 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                               "                   WHERE \"user\""
                               "                         = (%s))))"
                               "  AND (%s))",
-                              type,
-                              get->trash && strcmp (type, "task") ? "_trash" : "",
-                              type,
-                              get->trash ? LOCATION_TRASH : LOCATION_TABLE,
-                              user_sql,
-                              user_sql,
-                              user_sql,
-                              permission_or->str);
+            type, get->trash && strcmp (type, "task") ? "_trash" : "", type,
+            get->trash ? LOCATION_TRASH : LOCATION_TABLE, user_sql, user_sql,
+            user_sql, permission_or->str);
 
           if (strcmp (type, "report") == 0)
-            permission_clause
-             = g_strdup_printf ("%s"
-                                " OR EXISTS"
-                                " (SELECT id FROM permissions"
-                                "  WHERE resource = reports%s.task"
-                                "  AND resource_type = 'task'"
-                                "  AND subject_location"
-                                "      = " G_STRINGIFY (LOCATION_TABLE)
-                                "  AND ((subject_type = 'user'"
+            permission_clause = g_strdup_printf (
+              "%s"
+              " OR EXISTS"
+              " (SELECT id FROM permissions"
+              "  WHERE resource = reports%s.task"
+              "  AND resource_type = 'task'"
+              "  AND subject_location"
+              "      = " G_STRINGIFY (
+                LOCATION_TABLE) "  AND ((subject_type = 'user'"
                                 "        AND subject"
                                 "            = (%s))"
                                 "       OR (subject_type = 'group'"
@@ -1225,22 +1204,18 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                 "                   WHERE \"user\""
                                 "                         = (%s))))"
                                 "  AND (%s))",
-                                clause,
-                                get->trash ? "_trash" : "",
-                                user_sql,
-                                user_sql,
-                                user_sql,
-                                permission_or->str);
+              clause, get->trash ? "_trash" : "", user_sql, user_sql, user_sql,
+              permission_or->str);
           else if (strcmp (type, "result") == 0)
-            permission_clause
-             = g_strdup_printf ("%s"
-                                " OR EXISTS"
-                                " (SELECT id FROM permissions"
-                                "  WHERE resource = results%s.task"
-                                "  AND resource_type = 'task'"
-                                "  AND subject_location"
-                                "      = " G_STRINGIFY (LOCATION_TABLE)
-                                "  AND ((subject_type = 'user'"
+            permission_clause = g_strdup_printf (
+              "%s"
+              " OR EXISTS"
+              " (SELECT id FROM permissions"
+              "  WHERE resource = results%s.task"
+              "  AND resource_type = 'task'"
+              "  AND subject_location"
+              "      = " G_STRINGIFY (
+                LOCATION_TABLE) "  AND ((subject_type = 'user'"
                                 "        AND subject"
                                 "            = (%s))"
                                 "       OR (subject_type = 'group'"
@@ -1256,77 +1231,77 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                 "                   WHERE \"user\""
                                 "                         = (%s))))"
                                 "  AND (%s))",
-                                clause,
-                                get->trash ? "_trash" : "",
-                                user_sql,
-                                user_sql,
-                                user_sql,
-                                permission_or->str);
+              clause, get->trash ? "_trash" : "", user_sql, user_sql, user_sql,
+              permission_or->str);
 
-          if ((strcmp (type, "report") == 0)
-              || (strcmp (type, "result") == 0))
+          if ((strcmp (type, "report") == 0) || (strcmp (type, "result") == 0))
             g_free (clause);
           else
             permission_clause = clause;
         }
 
-      owned_clause
-       = g_strdup_printf (/* Either the user is the owner. */
-                          " ((%ss%s.owner"
-                          "   = (%s))"
-                          /* Or the user has super permission. */
-                          "  OR EXISTS (SELECT * FROM permissions"
-                          "             WHERE name = 'Super'"
-                          /*                 Super on everyone. */
-                          "             AND ((resource = 0)"
-                          /*                 Super on other_user. */
-                          "                  OR ((resource_type = 'user')"
-                          "                      AND (resource = %ss%s.owner))"
-                          /*                 Super on other_user's role. */
-                          "                  OR ((resource_type = 'role')"
-                          "                      AND (resource"
-                          "                           IN (SELECT DISTINCT role"
-                          "                               FROM role_users"
-                          "                               WHERE \"user\""
-                          "                                     = %ss%s.owner)))"
-                          /*                 Super on other_user's group. */
-                          "                  OR ((resource_type = 'group')"
-                          "                      AND (resource"
-                          "                           IN (SELECT DISTINCT \"group\""
-                          "                               FROM group_users"
-                          "                               WHERE \"user\""
-                          "                                     = %ss%s.owner))))"
-                          "             AND subject_location"
-                          "                 = " G_STRINGIFY (LOCATION_TABLE)
-                          "             AND ((subject_type = 'user'"
-                          "                   AND subject"
-                          "                       = (%s))"
-                          "                  OR (subject_type = 'group'"
-                          "                      AND subject"
-                          "                          IN (SELECT DISTINCT \"group\""
-                          "                              FROM group_users"
-                          "                              WHERE \"user\""
-                          "                                    = (%s)))"
-                          "                  OR (subject_type = 'role'"
-                          "                      AND subject"
-                          "                          IN (SELECT DISTINCT role"
-                          "                              FROM role_users"
-                          "                              WHERE \"user\""
-                          "                                    = (%s)))))"
-                          "  %s)",
-                          type,
-                          table_trash ? "_trash" : "",
-                          user_sql,
-                          type,
-                          table_trash ? "_trash" : "",
-                          type,
-                          table_trash ? "_trash" : "",
-                          type,
-                          table_trash ? "_trash" : "",
-                          user_sql,
-                          user_sql,
-                          user_sql,
-                          permission_clause ? permission_clause : "");
+      owned_clause =
+        g_strdup_printf (/* Either the user is the owner. */
+                         " ((%ss%s.owner"
+                         "   = (%s))"
+                         /* Or the user has super permission. */
+                         "  OR EXISTS (SELECT * FROM permissions"
+                         "             WHERE name = 'Super'"
+                         /*                 Super on everyone. */
+                         "             AND ((resource = 0)"
+                         /*                 Super on other_user. */
+                         "                  OR ((resource_type = 'user')"
+                         "                      AND (resource = %ss%s.owner))"
+                         /*                 Super on other_user's role. */
+                         "                  OR ((resource_type = 'role')"
+                         "                      AND (resource"
+                         "                           IN (SELECT DISTINCT role"
+                         "                               FROM role_users"
+                         "                               WHERE \"user\""
+                         "                                     = %ss%s.owner)))"
+                         /*                 Super on other_user's group. */
+                         "                  OR ((resource_type = 'group')"
+                         "                      AND (resource"
+                         "                           IN (SELECT DISTINCT "
+                         "\"group\""
+                         "                               FROM group_users"
+                         "                               WHERE \"user\""
+                         "                                     = "
+                         "%ss%s.owner))))"
+                         "             AND subject_location"
+                         "                 = " G_STRINGIFY (
+                           LOCATION_TABLE) "             AND ((subject_type = "
+                                           "'user'"
+                                           "                   AND subject"
+                                           "                       = (%s))"
+                                           "                  OR (subject_type "
+                                           "= 'group'"
+                                           "                      AND subject"
+                                           "                          IN "
+                                           "(SELECT DISTINCT \"group\""
+                                           "                              FROM "
+                                           "group_users"
+                                           "                              "
+                                           "WHERE \"user\""
+                                           "                                   "
+                                           " = (%s)))"
+                                           "                  OR (subject_type "
+                                           "= 'role'"
+                                           "                      AND subject"
+                                           "                          IN "
+                                           "(SELECT DISTINCT role"
+                                           "                              FROM "
+                                           "role_users"
+                                           "                              "
+                                           "WHERE \"user\""
+                                           "                                   "
+                                           " = (%s)))))"
+                                           "  %s)",
+                         type, table_trash ? "_trash" : "", user_sql, type,
+                         table_trash ? "_trash" : "", type,
+                         table_trash ? "_trash" : "", type,
+                         table_trash ? "_trash" : "", user_sql, user_sql,
+                         user_sql, permission_clause ? permission_clause : "");
 
       g_free (permission_clause);
     }
@@ -1338,8 +1313,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
       gchar *new;
       new = g_strdup_printf (" (%ss.hidden = 2"
                              "  AND %s)",
-                             type,
-                             owned_clause);
+                             type, owned_clause);
       g_free (owned_clause);
       owned_clause = new;
     }
@@ -1355,15 +1329,13 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                              "          FROM users"
                                              "          WHERE name = '%s')"
                                              " AND %s)",
-                                             quoted,
-                                             owned_clause);
+                                             quoted, owned_clause);
       g_free (quoted);
     }
   else
     filter_owned_clause = g_strdup_printf ("((owner = (%s))"
                                            " AND %s)",
-                                           user_sql,
-                                           owned_clause);
+                                           user_sql, owned_clause);
 
   g_free (owned_clause);
 
@@ -1395,8 +1367,7 @@ acl_where_owned (const char *type, const get_data_t *get, int owned,
   else
     user_sql = NULL;
   ret = acl_where_owned_user (current_credentials.uuid, user_sql, type, get,
-                              owned, owner_filter, resource, permissions,
-                              with);
+                              owned, owner_filter, resource, permissions, with);
   g_free (user_sql);
   return ret;
 }
@@ -1423,26 +1394,21 @@ acl_where_owned_for_get (const char *type, const char *user_sql, gchar **with)
   if (user_sql)
     user_sql_new = g_strdup (user_sql);
   else if (current_credentials.uuid)
-    user_sql_new = g_strdup_printf ("SELECT id FROM users WHERE users.uuid = '%s'",
-                                    current_credentials.uuid);
+    user_sql_new = g_strdup_printf (
+      "SELECT id FROM users WHERE users.uuid = '%s'", current_credentials.uuid);
   else
     user_sql_new = NULL;
 
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup_printf ("get_%ss", type));
-  owned_clause = acl_where_owned_user (current_credentials.uuid
-                                        ? current_credentials.uuid
-                                        /* Use user_sql_new. */
-                                        : "",
-                                       user_sql_new,
-                                       type,
-                                       &get,
-                                       1,              /* Do owner checks. */
-                                       "any",
-                                       0,              /* Resource. */
-                                       permissions,
-                                       with);
+  owned_clause =
+    acl_where_owned_user (current_credentials.uuid ? current_credentials.uuid
+                                                   /* Use user_sql_new. */
+                                                   : "",
+                          user_sql_new, type, &get, 1, /* Do owner checks. */
+                          "any", 0,                    /* Resource. */
+                          permissions, with);
   array_free (permissions);
   g_free (user_sql_new);
 
@@ -1483,17 +1449,15 @@ acl_users_with_access_sql (const char *type, const char *resource_id,
       if (acl_user_has_access_uuid (type, resource_id, command, 0))
         {
           if (users_count)
-            g_string_append (users_string,
-                             ", ");
+            g_string_append (users_string, ", ");
 
-          g_string_append_printf (users_string,
-                                  "(%llu)",
+          g_string_append_printf (users_string, "(%llu)",
                                   iterator_int64 (&users, 0));
-          users_count ++;
+          users_count++;
         }
       g_free (current_credentials.uuid);
     }
-  g_string_append(users_string, ")");
+  g_string_append (users_string, ")");
   cleanup_iterator (&users);
 
   current_credentials.uuid = old_user_id;
@@ -1508,7 +1472,6 @@ acl_users_with_access_sql (const char *type, const char *resource_id,
     }
 
   return g_string_free (users_string, FALSE);
-
 }
 
 /**
@@ -1524,7 +1487,7 @@ acl_users_with_access_sql (const char *type, const char *resource_id,
 
 gchar *
 acl_users_with_access_where (const char *type, const char *resource_id,
-                             const char *users_where, const char* user_expr)
+                             const char *users_where, const char *user_expr)
 {
   gchar *values, *ret;
   assert (user_expr);

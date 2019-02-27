@@ -32,21 +32,20 @@
  */
 #define _XOPEN_SOURCE
 
-#include "sql.h"
 #include "manage.h"
-#include "manage_utils.h"
 #include "manage_acl.h"
+#include "manage_utils.h"
+#include "sql.h"
 
 #include <assert.h>
 #include <errno.h>
-#include <sqlite3.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
-
 #include <gvm/base/hosts.h>
 #include <gvm/util/uuidutils.h>
+#include <sqlite3.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -74,16 +73,13 @@
  */
 #define CERT_DB_FILE CERT_DB_DIR "cert.db"
 
-
 /* Variables */
 
-extern sqlite3 *
-gvmd_db;
+extern sqlite3 *gvmd_db;
 
-
 /* Headers of manage_sql.c functions also used here. */
 
-gchar*
+gchar *
 clean_hosts (const char *, int *);
 
 char *
@@ -98,15 +94,14 @@ resource_name (const char *, const char *, int, char **);
 int
 resource_exists (const char *, resource_t, int);
 
-
 /* Session. */
 
 /**
  * @brief WHERE clause for view vulns.
  */
-#define VULNS_RESULTS_WHERE                                           \
-  " WHERE uuid IN"                                                    \
-  "   (SELECT nvt FROM results"                                       \
+#define VULNS_RESULTS_WHERE     \
+  " WHERE uuid IN"              \
+  "   (SELECT nvt FROM results" \
   "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
 /**
@@ -130,29 +125,29 @@ manage_session_init (const char *uuid)
 
   sql ("DROP VIEW IF EXISTS vulns;");
   if (manage_scap_loaded ())
-    sql ("CREATE TEMPORARY VIEW vulns AS"
-         " SELECT id, uuid, name, creation_time, modification_time,"
-         "        cast (cvss_base AS double precision) AS severity, qod,"
-         "        'nvt' AS type"
-         " FROM nvts"
-         VULNS_RESULTS_WHERE
-         " UNION ALL SELECT id, uuid, name, creation_time, modification_time,"
-         "       cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
-         "       'cve' AS type"
-         " FROM scap.cves"
-         VULNS_RESULTS_WHERE
-         " UNION ALL SELECT id, uuid, name, creation_time, modification_time,"
-         "       max_cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
-         "       'ovaldef' AS type"
-         " FROM scap.ovaldefs"
-         VULNS_RESULTS_WHERE);
+    sql (
+      "CREATE TEMPORARY VIEW vulns AS"
+      " SELECT id, uuid, name, creation_time, modification_time,"
+      "        cast (cvss_base AS double precision) AS severity, qod,"
+      "        'nvt' AS type"
+      " FROM nvts" VULNS_RESULTS_WHERE
+      " UNION ALL SELECT id, uuid, name, creation_time, modification_time,"
+      "       cvss AS severity, " G_STRINGIFY (
+        QOD_DEFAULT) " AS qod,"
+                     "       'cve' AS type"
+                     " FROM scap.cves" VULNS_RESULTS_WHERE
+                     " UNION ALL SELECT id, uuid, name, creation_time, "
+                     "modification_time,"
+                     "       max_cvss AS severity, " G_STRINGIFY (
+                       QOD_DEFAULT) " AS qod,"
+                                    "       'ovaldef' AS type"
+                                    " FROM scap.ovaldefs" VULNS_RESULTS_WHERE);
   else
     sql ("CREATE TEMPORARY VIEW vulns AS"
          " SELECT id, uuid, name, creation_time, modification_time,"
          "        cast (cvss_base AS double precision) AS severity, qod,"
          "        'nvt' AS type"
-         " FROM nvts"
-         VULNS_RESULTS_WHERE);
+         " FROM nvts" VULNS_RESULTS_WHERE);
 
 #undef VULNS_RESULTS_WHERE
 }
@@ -168,7 +163,6 @@ manage_session_set_timezone (const char *zone)
   return;
 }
 
-
 /* Helpers. */
 
 /**
@@ -185,7 +179,6 @@ manage_db_empty ()
          == 0;
 }
 
-
 /* SQL functions. */
 
 /**
@@ -198,7 +191,7 @@ manage_db_empty ()
  * @param[in]  argv     Argument array.
  */
 void
-sql_t (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_t (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   assert (argc == 0);
 
@@ -217,8 +210,7 @@ sql_t (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_strpos (sqlite3_context *context, int argc,
-            sqlite3_value** argv)
+sql_strpos (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *str, *substr, *substr_in_str;
 
@@ -239,11 +231,10 @@ sql_strpos (sqlite3_context *context, int argc,
       return;
     }
 
-  substr_in_str = (const unsigned char *)g_strrstr ((const gchar*)str,
-                                                    (const gchar*)substr);
+  substr_in_str = (const unsigned char *) g_strrstr ((const gchar *) str,
+                                                     (const gchar *) substr);
 
-  sqlite3_result_int (context,
-                      substr_in_str ? substr_in_str - str + 1 : 0);
+  sqlite3_result_int (context, substr_in_str ? substr_in_str - str + 1 : 0);
 }
 
 /**
@@ -256,7 +247,7 @@ sql_strpos (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_order_inet (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_order_inet (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const char *ip;
   unsigned int one, two, three, four;
@@ -270,15 +261,12 @@ sql_order_inet (sqlite3_context *context, int argc, sqlite3_value** argv)
     sqlite3_result_int (context, 0);
   else
     {
-      if (g_regex_match_simple ("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$",
-                                ip, 0, 0)
+      if (g_regex_match_simple ("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$", ip, 0, 0)
           && sscanf (ip, "%u.%u.%u.%u", &one, &two, &three, &four) == 4)
         {
-          ip_expanded = g_strdup_printf ("%03u.%03u.%03u.%03u",
-                                         one, two, three, four);
-          sqlite3_result_text (context,
-                               ip_expanded,
-                               -1, SQLITE_TRANSIENT);
+          ip_expanded =
+            g_strdup_printf ("%03u.%03u.%03u.%03u", one, two, three, four);
+          sqlite3_result_text (context, ip_expanded, -1, SQLITE_TRANSIENT);
           g_free (ip_expanded);
         }
       else
@@ -297,7 +285,7 @@ sql_order_inet (sqlite3_context *context, int argc, sqlite3_value** argv)
  */
 void
 sql_order_message_type (sqlite3_context *context, int argc,
-                        sqlite3_value** argv)
+                        sqlite3_value **argv)
 {
   const char *type;
 
@@ -332,7 +320,7 @@ sql_order_message_type (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_order_port (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_order_port (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const char *port;
   int port_num;
@@ -360,7 +348,7 @@ sql_order_port (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_order_role (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_order_role (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const char *name;
 
@@ -385,7 +373,7 @@ sql_order_role (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_order_threat (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_order_threat (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const char *type;
 
@@ -422,7 +410,7 @@ sql_order_threat (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   char *uuid;
 
@@ -448,21 +436,21 @@ sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const char *hosts, *host;
   int max_hosts;
 
   assert (argc == 2);
 
-  hosts = (const char*)sqlite3_value_text (argv[0]);
+  hosts = (const char *) sqlite3_value_text (argv[0]);
   if (hosts == NULL)
     {
       sqlite3_result_error (context, "Failed to get hosts argument", -1);
       return;
     }
 
-  host = (const char*)sqlite3_value_text (argv[1]);
+  host = (const char *) sqlite3_value_text (argv[1]);
   if (host == NULL)
     {
       sqlite3_result_error (context, "Failed to get host argument", -1);
@@ -486,7 +474,7 @@ sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *hosts;
   gchar *clean;
@@ -500,7 +488,7 @@ sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
       return;
     }
 
-  clean = clean_hosts ((gchar*) hosts, NULL);
+  clean = clean_hosts ((gchar *) hosts, NULL);
   sqlite3_result_text (context, clean, -1, SQLITE_TRANSIENT);
   g_free (clean);
 }
@@ -516,7 +504,7 @@ sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
  */
 void
 sql_merge_dfn_cert_adv (sqlite3_context *context, int argc,
-                        sqlite3_value** argv)
+                        sqlite3_value **argv)
 {
   const unsigned char *refnum, *title, *summary;
   time_t published, updated;
@@ -551,22 +539,17 @@ sql_merge_dfn_cert_adv (sqlite3_context *context, int argc,
 
   cve_refs = sqlite3_value_int (argv[5]);
 
-  quoted_refnum = sql_quote ((const char*) refnum);
-  quoted_title = sql_quote ((const char*) title);
-  quoted_summary = sql_quote ((const char*) summary);
+  quoted_refnum = sql_quote ((const char *) refnum);
+  quoted_title = sql_quote ((const char *) title);
+  quoted_summary = sql_quote ((const char *) summary);
 
   sql ("INSERT OR REPLACE INTO dfn_cert_advs"
        " (uuid, name, comment, creation_time, modification_time,"
        "  title, summary, cve_refs)"
        " VALUES"
        " ('%s', '%s', '', %i, %i, '%s', '%s', %i);",
-       quoted_refnum,
-       quoted_refnum,
-       published,
-       updated,
-       quoted_title,
-       quoted_summary,
-       cve_refs);
+       quoted_refnum, quoted_refnum, published, updated, quoted_title,
+       quoted_summary, cve_refs);
 
   g_free (quoted_refnum);
   g_free (quoted_title);
@@ -583,8 +566,7 @@ sql_merge_dfn_cert_adv (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_merge_bund_adv (sqlite3_context *context, int argc,
-                    sqlite3_value** argv)
+sql_merge_bund_adv (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *refnum, *title, *summary;
   time_t published, updated;
@@ -619,22 +601,17 @@ sql_merge_bund_adv (sqlite3_context *context, int argc,
 
   cve_refs = sqlite3_value_int (argv[5]);
 
-  quoted_refnum = sql_quote ((const char*) refnum);
-  quoted_title = sql_quote ((const char*) title);
-  quoted_summary = sql_quote ((const char*) summary);
+  quoted_refnum = sql_quote ((const char *) refnum);
+  quoted_title = sql_quote ((const char *) title);
+  quoted_summary = sql_quote ((const char *) summary);
 
   sql ("INSERT OR REPLACE INTO cert_bund_advs"
        " (uuid, name, comment, creation_time, modification_time,"
        "  title, summary, cve_refs)"
        " VALUES"
        " ('%s', '%s', '', %i, %i, '%s', '%s', %i);",
-       quoted_refnum,
-       quoted_refnum,
-       published,
-       updated,
-       quoted_title,
-       quoted_summary,
-       cve_refs);
+       quoted_refnum, quoted_refnum, published, updated, quoted_title,
+       quoted_summary, cve_refs);
 
   g_free (quoted_refnum);
   g_free (quoted_title);
@@ -651,8 +628,7 @@ sql_merge_bund_adv (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_merge_cpe (sqlite3_context *context, int argc,
-               sqlite3_value** argv)
+sql_merge_cpe (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *name, *title, *status, *nvd_id;
   gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
@@ -693,24 +669,18 @@ sql_merge_cpe (sqlite3_context *context, int argc,
       return;
     }
 
-  quoted_name = sql_quote ((const char*) name);
-  quoted_title = sql_quote ((const char*) title);
-  quoted_status = sql_quote ((const char*) status);
-  quoted_nvd_id = sql_quote ((const char*) nvd_id);
+  quoted_name = sql_quote ((const char *) name);
+  quoted_title = sql_quote ((const char *) title);
+  quoted_status = sql_quote ((const char *) status);
+  quoted_nvd_id = sql_quote ((const char *) nvd_id);
 
   sql ("INSERT OR REPLACE INTO cpes"
        " (uuid, name, title, creation_time, modification_time, status,"
        "  deprecated_by_id, nvd_id)"
        " VALUES"
        " ('%s', '%s', '%s', %i, %i, '%s', %i, '%s');",
-       quoted_name,
-       quoted_name,
-       quoted_title,
-       created,
-       modified,
-       quoted_status,
-       deprecated_by_id,
-       quoted_nvd_id);
+       quoted_name, quoted_name, quoted_title, created, modified, quoted_status,
+       deprecated_by_id, quoted_nvd_id);
 
   g_free (quoted_name);
   g_free (quoted_title);
@@ -728,8 +698,7 @@ sql_merge_cpe (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_merge_cve (sqlite3_context *context, int argc,
-               sqlite3_value** argv)
+sql_merge_cve (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *uuid, *name, *cvss, *description, *vector, *complexity;
   const unsigned char *authentication, *confidentiality, *integrity;
@@ -803,56 +772,50 @@ sql_merge_cve (sqlite3_context *context, int argc,
   authentication = sqlite3_value_text (argv[8]);
   if (authentication == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get authentication argument", -1);
+      sqlite3_result_error (context, "Failed to get authentication argument",
+                            -1);
       return;
     }
 
   confidentiality = sqlite3_value_text (argv[9]);
   if (confidentiality == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get confidentiality_impact argument",
-                            -1);
+      sqlite3_result_error (
+        context, "Failed to get confidentiality_impact argument", -1);
       return;
     }
 
   integrity = sqlite3_value_text (argv[10]);
   if (integrity == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get integrity argument",
-                            -1);
+      sqlite3_result_error (context, "Failed to get integrity argument", -1);
       return;
     }
 
   availability = sqlite3_value_text (argv[11]);
   if (availability == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get availability argument",
-                            -1);
+      sqlite3_result_error (context, "Failed to get availability argument", -1);
       return;
     }
 
   products = sqlite3_value_text (argv[12]);
   if (products == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get products argument", -1);
+      sqlite3_result_error (context, "Failed to get products argument", -1);
       return;
     }
 
-  quoted_uuid = sql_quote ((const char*) uuid);
-  quoted_name = sql_quote ((const char*) name);
-  quoted_description = sql_quote ((const char*) description);
-  quoted_vector = sql_quote ((const char*) vector);
-  quoted_complexity = sql_quote ((const char*) complexity);
-  quoted_authentication = sql_quote ((const char*) authentication);
-  quoted_confidentiality = sql_quote ((const char*) confidentiality);
-  quoted_integrity = sql_quote ((const char*) integrity);
-  quoted_availability = sql_quote ((const char*) availability);
-  quoted_products = sql_quote ((const char*) products);
+  quoted_uuid = sql_quote ((const char *) uuid);
+  quoted_name = sql_quote ((const char *) name);
+  quoted_description = sql_quote ((const char *) description);
+  quoted_vector = sql_quote ((const char *) vector);
+  quoted_complexity = sql_quote ((const char *) complexity);
+  quoted_authentication = sql_quote ((const char *) authentication);
+  quoted_confidentiality = sql_quote ((const char *) confidentiality);
+  quoted_integrity = sql_quote ((const char *) integrity);
+  quoted_availability = sql_quote ((const char *) availability);
+  quoted_products = sql_quote ((const char *) products);
 
   sql ("INSERT OR REPLACE INTO cves"
        " (uuid, name, creation_time, modification_time, cvss, description,"
@@ -861,18 +824,9 @@ sql_merge_cve (sqlite3_context *context, int argc,
        " VALUES"
        " ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
        "  '%s');",
-       quoted_uuid,
-       quoted_name,
-       created,
-       modified,
-       cvss,
-       quoted_description,
-       quoted_vector,
-       quoted_complexity,
-       quoted_authentication,
-       quoted_confidentiality,
-       quoted_integrity,
-       quoted_availability,
+       quoted_uuid, quoted_name, created, modified, cvss, quoted_description,
+       quoted_vector, quoted_complexity, quoted_authentication,
+       quoted_confidentiality, quoted_integrity, quoted_availability,
        quoted_products);
 
   g_free (quoted_uuid);
@@ -897,8 +851,7 @@ sql_merge_cve (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_merge_cpe_name (sqlite3_context *context, int argc,
-                    sqlite3_value** argv)
+sql_merge_cpe_name (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *uuid, *name;
   gchar *quoted_uuid, *quoted_name;
@@ -923,17 +876,14 @@ sql_merge_cpe_name (sqlite3_context *context, int argc,
   creation_time = sqlite3_value_int (argv[2]);
   modification_time = sqlite3_value_int (argv[3]);
 
-  quoted_uuid = sql_quote ((const char*) uuid);
-  quoted_name = sql_quote ((const char*) name);
+  quoted_uuid = sql_quote ((const char *) uuid);
+  quoted_name = sql_quote ((const char *) name);
 
   sql ("INSERT OR IGNORE INTO cpes"
        " (uuid, name, creation_time, modification_time)"
        " VALUES"
        " ('%s', '%s', %i, %i);",
-       quoted_uuid,
-       quoted_name,
-       creation_time,
-       modification_time);
+       quoted_uuid, quoted_name, creation_time, modification_time);
 
   g_free (quoted_uuid);
   g_free (quoted_name);
@@ -950,7 +900,7 @@ sql_merge_cpe_name (sqlite3_context *context, int argc,
  */
 void
 sql_merge_affected_product (sqlite3_context *context, int argc,
-                            sqlite3_value** argv)
+                            sqlite3_value **argv)
 {
   int cve, cpe;
 
@@ -963,8 +913,7 @@ sql_merge_affected_product (sqlite3_context *context, int argc,
        " (cve, cpe)"
        " VALUES"
        " (%i, %i);",
-       cve,
-       cpe);
+       cve, cpe);
 }
 
 /**
@@ -977,8 +926,7 @@ sql_merge_affected_product (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_merge_ovaldef (sqlite3_context *context, int argc,
-                   sqlite3_value** argv)
+sql_merge_ovaldef (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *uuid, *name, *comment, *def_class, *title, *description;
   const unsigned char *xml_file, *status;
@@ -1033,39 +981,34 @@ sql_merge_ovaldef (sqlite3_context *context, int argc,
   description = sqlite3_value_text (argv[9]);
   if (description == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get description argument", -1);
+      sqlite3_result_error (context, "Failed to get description argument", -1);
       return;
     }
 
   xml_file = sqlite3_value_text (argv[10]);
   if (xml_file == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get xml_file argument",
-                            -1);
+      sqlite3_result_error (context, "Failed to get xml_file argument", -1);
       return;
     }
 
   status = sqlite3_value_text (argv[11]);
   if (status == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get status argument",
-                            -1);
+      sqlite3_result_error (context, "Failed to get status argument", -1);
       return;
     }
 
   cve_refs = sqlite3_value_int (argv[12]);
 
-  quoted_uuid = sql_quote ((const char*) uuid);
-  quoted_name = sql_quote ((const char*) name);
-  quoted_comment = sql_quote ((const char*) comment);
-  quoted_def_class = sql_quote ((const char*) def_class);
-  quoted_title = sql_quote ((const char*) title);
-  quoted_description = sql_quote ((const char*) description);
-  quoted_xml_file = sql_quote ((const char*) xml_file);
-  quoted_status = sql_quote ((const char*) status);
+  quoted_uuid = sql_quote ((const char *) uuid);
+  quoted_name = sql_quote ((const char *) name);
+  quoted_comment = sql_quote ((const char *) comment);
+  quoted_def_class = sql_quote ((const char *) def_class);
+  quoted_title = sql_quote ((const char *) title);
+  quoted_description = sql_quote ((const char *) description);
+  quoted_xml_file = sql_quote ((const char *) xml_file);
+  quoted_status = sql_quote ((const char *) status);
 
   sql ("INSERT OR REPLACE INTO ovaldefs"
        " (uuid, name, comment, creation_time, modification_time, version,"
@@ -1074,19 +1017,9 @@ sql_merge_ovaldef (sqlite3_context *context, int argc,
        " VALUES"
        " ('%s', '%s', '%s', %i, %i, %i, %i, '%s', '%s', '%s', '%s', '%s',"
        "  0.0, %i);",
-       quoted_uuid,
-       quoted_name,
-       quoted_comment,
-       created,
-       modified,
-       version,
-       deprecated,
-       quoted_def_class,
-       quoted_title,
-       quoted_description,
-       quoted_xml_file,
-       quoted_status,
-       cve_refs);
+       quoted_uuid, quoted_name, quoted_comment, created, modified, version,
+       deprecated, quoted_def_class, quoted_title, quoted_description,
+       quoted_xml_file, quoted_status, cve_refs);
 
   g_free (quoted_uuid);
   g_free (quoted_name);
@@ -1110,7 +1043,7 @@ sql_merge_ovaldef (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_uniquify (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *proposed_name, *type, *suffix;
   gchar *candidate_name, *quoted_candidate_name;
@@ -1129,8 +1062,7 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
   proposed_name = sqlite3_value_text (argv[1]);
   if (proposed_name == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get proposed name argument",
+      sqlite3_result_error (context, "Failed to get proposed name argument",
                             -1);
       return;
     }
@@ -1140,31 +1072,25 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
   suffix = sqlite3_value_text (argv[3]);
   if (suffix == NULL)
     {
-      sqlite3_result_error (context,
-                            "Failed to get suffix argument",
-                            -1);
+      sqlite3_result_error (context, "Failed to get suffix argument", -1);
       return;
     }
 
   number = 0;
-  candidate_name = g_strdup_printf ("%s%s%c%i", proposed_name, suffix,
-                                    strcmp ((char*) type, "user") ? ' ' : '_',
-                                    ++number);
+  candidate_name =
+    g_strdup_printf ("%s%s%c%i", proposed_name, suffix,
+                     strcmp ((char *) type, "user") ? ' ' : '_', ++number);
   quoted_candidate_name = sql_quote (candidate_name);
 
   while (sql_int ("SELECT COUNT (*) FROM %ss WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner = %llu));",
-                  type,
-                  quoted_candidate_name,
-                  owner))
+                  " AND ((owner IS NULL) OR (owner = %llu));",
+                  type, quoted_candidate_name, owner))
     {
       g_free (candidate_name);
       g_free (quoted_candidate_name);
-      candidate_name = g_strdup_printf ("%s%s%c%u", proposed_name, suffix,
-                                        strcmp ((char*) type, "user")
-                                          ? ' '
-                                          : '_',
-                                        ++number);
+      candidate_name =
+        g_strdup_printf ("%s%s%c%u", proposed_name, suffix,
+                         strcmp ((char *) type, "user") ? ' ' : '_', ++number);
       quoted_candidate_name = sql_quote (candidate_name);
     }
 
@@ -1184,7 +1110,7 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_iso_time (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_iso_time (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   time_t epoch_time;
 
@@ -1215,7 +1141,7 @@ sql_iso_time (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_days_from_now (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_days_from_now (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   time_t epoch_time;
 
@@ -1245,7 +1171,7 @@ sql_days_from_now (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_parse_time (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const gchar *string;
   int epoch_time;
@@ -1256,22 +1182,21 @@ sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   switch (parse_time (string, &epoch_time))
     {
-      case -1:
-        g_warning ("%s: Failed to parse time: %s", __FUNCTION__, string);
-        sqlite3_result_int (context, 0);
-        break;
-      case -2:
-        g_warning ("%s: Failed to make time: %s", __FUNCTION__, string);
-        sqlite3_result_int (context, 0);
-        break;
-      case -3:
-        g_warning ("%s: Failed to parse timezone offset: %s",
-                   __FUNCTION__,
-                   string);
-        sqlite3_result_int (context, 0);
-        break;
-      default:
-        sqlite3_result_int (context, epoch_time);
+    case -1:
+      g_warning ("%s: Failed to parse time: %s", __FUNCTION__, string);
+      sqlite3_result_int (context, 0);
+      break;
+    case -2:
+      g_warning ("%s: Failed to make time: %s", __FUNCTION__, string);
+      sqlite3_result_int (context, 0);
+      break;
+    case -3:
+      g_warning ("%s: Failed to parse timezone offset: %s", __FUNCTION__,
+                 string);
+      sqlite3_result_int (context, 0);
+      break;
+    default:
+      sqlite3_result_int (context, epoch_time);
     }
 }
 
@@ -1285,7 +1210,7 @@ sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_next_time (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   time_t first;
   time_t period;
@@ -1301,16 +1226,15 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
   if (argc < 5 || sqlite3_value_type (argv[4]) == SQLITE_NULL)
     zone = NULL;
   else
-    zone = (char*) sqlite3_value_text (argv[4]);
+    zone = (char *) sqlite3_value_text (argv[4]);
 
   if (argc < 6 || sqlite3_value_type (argv[5]) == SQLITE_NULL)
     periods_offset = 0;
   else
     periods_offset = sqlite3_value_int (argv[5]);
 
-  sqlite3_result_int (context,
-                      next_time (first, period, period_months, byday, zone,
-                                 periods_offset));
+  sqlite3_result_int (context, next_time (first, period, period_months, byday,
+                                          zone, periods_offset));
 }
 
 /**
@@ -1323,31 +1247,30 @@ sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   int periods_offset;
   const char *icalendar, *zone;
 
-  assert (argc == 2 || argc == 3 );
+  assert (argc == 2 || argc == 3);
 
   if (argc < 1 || sqlite3_value_type (argv[0]) == SQLITE_NULL)
     icalendar = NULL;
   else
-    icalendar = (char*) sqlite3_value_text (argv[0]);
+    icalendar = (char *) sqlite3_value_text (argv[0]);
 
   if (argc < 2 || sqlite3_value_type (argv[1]) == SQLITE_NULL)
     zone = NULL;
   else
-    zone = (char*) sqlite3_value_text (argv[1]);
+    zone = (char *) sqlite3_value_text (argv[1]);
 
   if (argc < 3 || sqlite3_value_type (argv[2]) == SQLITE_NULL)
     periods_offset = 0;
   else
     periods_offset = sqlite3_value_int (argv[2]);
 
-  sqlite3_result_int (context,
-                      icalendar_next_time_from_string (icalendar, zone,
-                                                       periods_offset));
+  sqlite3_result_int (
+    context, icalendar_next_time_from_string (icalendar, zone, periods_offset));
 }
 
 /**
@@ -1360,7 +1283,7 @@ sql_next_time_ical (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_now (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_now (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   assert (argc == 0);
   sqlite3_result_int (context, time (NULL));
@@ -1376,21 +1299,21 @@ sql_now (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_tag (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_tag (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const char *tags, *tag;
   gchar *value;
 
   assert (argc == 2);
 
-  tags = (char*) sqlite3_value_text (argv[0]);
+  tags = (char *) sqlite3_value_text (argv[0]);
   if (tags == NULL)
     {
       sqlite3_result_error (context, "Failed to get tags argument", -1);
       return;
     }
 
-  tag = (char*) sqlite3_value_text (argv[1]);
+  tag = (char *) sqlite3_value_text (argv[1]);
   if (tag == NULL)
     {
       sqlite3_result_error (context, "Failed to get tag argument", -1);
@@ -1414,7 +1337,7 @@ sql_tag (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_max_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_max_hosts (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *hosts, *exclude_hosts;
   gchar *max;
@@ -1430,8 +1353,8 @@ sql_max_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
     }
   exclude_hosts = sqlite3_value_text (argv[1]);
 
-  max = g_strdup_printf ("%i", manage_count_hosts ((gchar*) hosts,
-                                                   (gchar *) exclude_hosts));
+  max = g_strdup_printf (
+    "%i", manage_count_hosts ((gchar *) hosts, (gchar *) exclude_hosts));
   sqlite3_result_text (context, max, -1, SQLITE_TRANSIENT);
   g_free (max);
 }
@@ -1471,11 +1394,9 @@ sql_rename_column (const char *old_table, const char *new_table,
         {
           const char *name;
           name = iterator_column_name (&rows, column);
-          g_string_append_printf (one, "%s%s",
-                                  (first ? "" : ", "),
-                                  (strcmp (name, old_name) == 0
-                                    ? new_name
-                                    : name));
+          g_string_append_printf (
+            one, "%s%s", (first ? "" : ", "),
+            (strcmp (name, old_name) == 0 ? new_name : name));
           if (first)
             first = 0;
           else
@@ -1507,7 +1428,7 @@ sql_rename_column (const char *old_table, const char *new_table,
  * @param[in]  argv     Argument array.
  */
 void
-sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_common_cve (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   gchar **split_1, **split_2, **point_1, **point_2;
   const unsigned char *cve1, *cve2;
@@ -1530,15 +1451,16 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
       return;
     }
 
-  split_1 = g_strsplit ((gchar*) cve1, ",", 0);
-  split_2 = g_strsplit ((gchar*) cve2, ",", 0);
+  split_1 = g_strsplit ((gchar *) cve1, ",", 0);
+  split_2 = g_strsplit ((gchar *) cve2, ",", 0);
   point_1 = split_1;
   point_2 = split_2;
   while (*point_1)
     {
       while (*point_2)
         {
-          g_debug ("   %s: %s vs %s", __FUNCTION__, g_strstrip (*point_1), g_strstrip (*point_2));
+          g_debug ("   %s: %s vs %s", __FUNCTION__, g_strstrip (*point_1),
+                   g_strstrip (*point_2));
           if (strcmp (g_strstrip (*point_1), g_strstrip (*point_2)) == 0)
             {
               g_strfreev (split_1);
@@ -1566,7 +1488,7 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_cpe_title (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_cpe_title (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *cpe_id;
   gchar *quoted_cpe_id;
@@ -1576,10 +1498,9 @@ sql_cpe_title (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   cpe_id = sqlite3_value_text (argv[0]);
 
-  if (manage_scap_loaded ()
-      && sqlite3_value_type(argv[0]) != SQLITE_NULL)
+  if (manage_scap_loaded () && sqlite3_value_type (argv[0]) != SQLITE_NULL)
     {
-      quoted_cpe_id = sql_quote ((gchar*) cpe_id);
+      quoted_cpe_id = sql_quote ((gchar *) cpe_id);
       cpe_title = sql_string ("SELECT title FROM scap.cpes"
                               " WHERE uuid = '%s';",
                               quoted_cpe_id);
@@ -1611,11 +1532,11 @@ sql_cpe_title (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_credential_value (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_credential_value (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   credential_t credential;
   int trash;
-  const unsigned char* type;
+  const unsigned char *type;
   gchar *quoted_type, *result;
 
   assert (argc == 3);
@@ -1624,7 +1545,7 @@ sql_credential_value (sqlite3_context *context, int argc, sqlite3_value** argv)
   trash = sqlite3_value_int (argv[1]);
   type = sqlite3_value_text (argv[2]);
 
-  quoted_type = sql_quote ((const char*) type);
+  quoted_type = sql_quote ((const char *) type);
   if (trash)
     {
       result = sql_string ("SELECT value FROM credentials_trash_data"
@@ -1656,12 +1577,11 @@ sql_credential_value (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_current_offset (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_current_offset (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   assert (argc == 1);
-  sqlite3_result_int
-   (context,
-    (int) current_offset ((const char *) sqlite3_value_text (argv[0])));
+  sqlite3_result_int (context, (int) current_offset (
+                                 (const char *) sqlite3_value_text (argv[0])));
 }
 
 /**
@@ -1674,7 +1594,7 @@ sql_current_offset (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_task_trend (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_task_trend (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   unsigned int overrides;
   int min_qod;
@@ -1705,11 +1625,11 @@ sql_task_trend (sqlite3_context *context, int argc, sqlite3_value** argv)
  */
 typedef struct
 {
-  task_t task;                ///< Task.
-  gchar *severity;            ///< Severity.
-  task_t overrides_task;      ///< Task.
-  gchar *overrides_severity;  ///< Severity.
-  int min_qod;                ///< Minimum QoD.
+  task_t task;               ///< Task.
+  gchar *severity;           ///< Severity.
+  task_t overrides_task;     ///< Task.
+  gchar *overrides_severity; ///< Severity.
+  int min_qod;               ///< Minimum QoD.
 } sql_severity_t;
 
 /**
@@ -1722,8 +1642,9 @@ clear_cache (void *cache_arg)
 {
   sql_severity_t *cache;
 
-  cache = (sql_severity_t*) cache_arg;
-  g_debug ("   %s: %llu, %llu", __FUNCTION__, cache->task, cache->overrides_task);
+  cache = (sql_severity_t *) cache_arg;
+  g_debug ("   %s: %llu, %llu", __FUNCTION__, cache->task,
+           cache->overrides_task);
   cache->task = 0;
   cache->overrides_task = 0;
   free (cache->severity);
@@ -1752,10 +1673,11 @@ static char *
 cached_task_severity (sqlite3_context *context, task_t task, int overrides,
                       int min_qod)
 {
-  static sql_severity_t static_cache = { .task = 0, .severity = NULL,
-                                         .min_qod = MIN_QOD_DEFAULT,
-                                         .overrides_task = 0,
-                                         .overrides_severity = NULL };
+  static sql_severity_t static_cache = {.task = 0,
+                                        .severity = NULL,
+                                        .min_qod = MIN_QOD_DEFAULT,
+                                        .overrides_task = 0,
+                                        .overrides_severity = NULL};
   sql_severity_t *cache;
   char *severity;
 
@@ -1810,14 +1732,14 @@ cached_task_severity (sqlite3_context *context, task_t task, int overrides,
  * @param[in]  argv     Argument array.
  */
 void
-sql_task_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_task_threat_level (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   task_t task;
   report_t last_report;
   const char *threat;
   unsigned int overrides;
   int min_qod;
-  char* severity;
+  char *severity;
   double severity_dbl;
 
   assert (argc == 3);
@@ -1838,8 +1760,7 @@ sql_task_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   severity = cached_task_severity (context, task, overrides, min_qod);
 
-  if (severity == NULL
-      || sscanf (severity, "%lf", &severity_dbl) != 1)
+  if (severity == NULL || sscanf (severity, "%lf", &severity_dbl) != 1)
     threat = NULL;
   else
     threat = severity_to_level (severity_dbl, 0);
@@ -1872,7 +1793,7 @@ sql_task_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_report_progress (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_report_progress (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   report_t report;
   task_t task;
@@ -1906,7 +1827,7 @@ sql_report_progress (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_report_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_report_severity (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   report_t report;
   double severity;
@@ -1946,8 +1867,7 @@ sql_report_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @return    The number of results.
  */
 static int
-report_severity_count (report_t report, int overrides, int min_qod,
-                       char *level)
+report_severity_count (report_t report, int overrides, int min_qod, char *level)
 {
   int debugs, false_positives, logs, lows, mediums, highs;
   get_data_t *get;
@@ -1955,10 +1875,8 @@ report_severity_count (report_t report, int overrides, int min_qod,
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
     return 0;
-  get = report_results_get_data (1   /* first */,
-                                 -1, /* rows */
-                                 overrides,
-                                 0,  /* autofp */
+  get = report_results_get_data (1 /* first */, -1, /* rows */
+                                 overrides, 0,      /* autofp */
                                  min_qod);
   report_counts_id (report, &debugs, &highs, &lows, &logs, &mediums,
                     &false_positives, NULL, get, NULL);
@@ -1992,12 +1910,12 @@ report_severity_count (report_t report, int overrides, int min_qod,
  */
 void
 sql_report_severity_count (sqlite3_context *context, int argc,
-                           sqlite3_value** argv)
+                           sqlite3_value **argv)
 {
   report_t report;
   unsigned int overrides;
   int min_qod;
-  char* level;
+  char *level;
   int count;
 
   assert (argc == 4);
@@ -2016,7 +1934,7 @@ sql_report_severity_count (sqlite3_context *context, int argc,
   else
     min_qod = sqlite3_value_int (argv[2]);
 
-  level = (char*) sqlite3_value_text (argv[3]);
+  level = (char *) sqlite3_value_text (argv[3]);
   if (level == 0)
     {
       sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
@@ -2039,8 +1957,7 @@ sql_report_severity_count (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_report_host_count (sqlite3_context *context,
-                       int argc, sqlite3_value** argv)
+sql_report_host_count (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   report_t report;
   int host_count;
@@ -2070,8 +1987,8 @@ sql_report_host_count (sqlite3_context *context,
  * @param[in]  argv     Argument array.
  */
 void
-sql_report_result_host_count (sqlite3_context *context,
-                              int argc, sqlite3_value** argv)
+sql_report_result_host_count (sqlite3_context *context, int argc,
+                              sqlite3_value **argv)
 {
   report_t report;
   int min_qod;
@@ -2107,7 +2024,7 @@ sql_report_result_host_count (sqlite3_context *context,
  * @param[in]  argv     Argument array.
  */
 void
-sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_task_severity (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   task_t task;
   report_t last_report;
@@ -2162,7 +2079,7 @@ sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_task_last_report (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_task_last_report (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   task_t task;
   report_t report;
@@ -2187,7 +2104,7 @@ sql_task_last_report (sqlite3_context *context, int argc, sqlite3_value** argv)
  */
 void
 sql_severity_matches_ov (sqlite3_context *context, int argc,
-                         sqlite3_value** argv)
+                         sqlite3_value **argv)
 {
   double severity, ov_severity;
 
@@ -2200,7 +2117,7 @@ sql_severity_matches_ov (sqlite3_context *context, int argc,
     }
 
   if (sqlite3_value_type (argv[1]) == SQLITE_NULL
-      || strcmp ((const char*) (sqlite3_value_text (argv[1])), "") == 0)
+      || strcmp ((const char *) (sqlite3_value_text (argv[1])), "") == 0)
     {
       sqlite3_result_int (context, 1);
       return;
@@ -2210,8 +2127,7 @@ sql_severity_matches_ov (sqlite3_context *context, int argc,
       severity = sqlite3_value_double (argv[0]);
       ov_severity = sqlite3_value_double (argv[1]);
 
-      sqlite3_result_int (context,
-                          severity_matches_ov (severity, ov_severity));
+      sqlite3_result_int (context, severity_matches_ov (severity, ov_severity));
       return;
     }
 }
@@ -2226,8 +2142,7 @@ sql_severity_matches_ov (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_severity_to_level (sqlite3_context *context, int argc,
-                       sqlite3_value** argv)
+sql_severity_to_level (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   double severity;
   int mode;
@@ -2235,7 +2150,7 @@ sql_severity_to_level (sqlite3_context *context, int argc,
   assert (argc == 2);
 
   if (sqlite3_value_type (argv[0]) == SQLITE_NULL
-      || strcmp ((const char*)(sqlite3_value_text (argv[0])), "") == 0)
+      || strcmp ((const char *) (sqlite3_value_text (argv[0])), "") == 0)
     {
       sqlite3_result_null (context);
       return;
@@ -2245,8 +2160,8 @@ sql_severity_to_level (sqlite3_context *context, int argc,
 
   severity = sqlite3_value_double (argv[0]);
 
-  sqlite3_result_text (context, severity_to_level (severity, mode),
-                       -1, SQLITE_TRANSIENT);
+  sqlite3_result_text (context, severity_to_level (severity, mode), -1,
+                       SQLITE_TRANSIENT);
   return;
 }
 
@@ -2260,15 +2175,14 @@ sql_severity_to_level (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_severity_to_type (sqlite3_context *context, int argc,
-                      sqlite3_value** argv)
+sql_severity_to_type (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   double severity;
 
   assert (argc == 1);
 
   if (sqlite3_value_type (argv[0]) == SQLITE_NULL
-      || strcmp ((const char*)(sqlite3_value_text (argv[0])), "") == 0)
+      || strcmp ((const char *) (sqlite3_value_text (argv[0])), "") == 0)
     {
       sqlite3_result_null (context);
       return;
@@ -2276,8 +2190,8 @@ sql_severity_to_type (sqlite3_context *context, int argc,
 
   severity = sqlite3_value_double (argv[0]);
 
-  sqlite3_result_text (context, severity_to_type (severity),
-                       -1, SQLITE_TRANSIENT);
+  sqlite3_result_text (context, severity_to_type (severity), -1,
+                       SQLITE_TRANSIENT);
   return;
 }
 
@@ -2291,7 +2205,7 @@ sql_severity_to_type (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_regexp (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_regexp (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *string, *regexp;
 
@@ -2331,7 +2245,7 @@ sql_regexp (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_run_status_name (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_run_status_name (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const char *name;
   int status;
@@ -2358,7 +2272,7 @@ sql_run_status_name (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const char *type;
   resource_t resource;
@@ -2366,13 +2280,13 @@ sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   assert (argc == 3);
 
-  type = (char*) sqlite3_value_text (argv[0]);
+  type = (char *) sqlite3_value_text (argv[0]);
   if (type == NULL)
     {
       sqlite3_result_int (context, 0);
       return;
     }
-  if (valid_db_resource_type ((char*) type) == 0)
+  if (valid_db_resource_type ((char *) type) == 0)
     {
       sqlite3_result_error (context, "Invalid resource type argument", -1);
       return;
@@ -2410,7 +2324,7 @@ sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_resource_name (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const char *type, *id;
   int location;
@@ -2418,14 +2332,14 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   assert (argc == 3);
 
-  type = (char*) sqlite3_value_text (argv[0]);
+  type = (char *) sqlite3_value_text (argv[0]);
   if (type == NULL)
     {
       sqlite3_result_null (context);
       return;
     }
 
-  id = (char*) sqlite3_value_text (argv[1]);
+  id = (char *) sqlite3_value_text (argv[1]);
   if (id == NULL)
     {
       sqlite3_result_null (context);
@@ -2463,7 +2377,7 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_severity_in_level (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_severity_in_level (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   double severity;
   const char *threat;
@@ -2472,7 +2386,7 @@ sql_severity_in_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   severity = sqlite3_value_double (argv[0]);
 
-  threat = (char*) sqlite3_value_text (argv[1]);
+  threat = (char *) sqlite3_value_text (argv[1]);
   if (threat == NULL)
     {
       sqlite3_result_null (context);
@@ -2494,7 +2408,7 @@ sql_severity_in_level (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_target_credential (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_target_credential (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   target_t target;
   int trash;
@@ -2504,7 +2418,7 @@ sql_target_credential (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   target = sqlite3_value_int64 (argv[0]);
   trash = sqlite3_value_int (argv[1]);
-  type = (char*) sqlite3_value_text (argv[2]);
+  type = (char *) sqlite3_value_text (argv[2]);
 
   if (type == NULL)
     {
@@ -2530,8 +2444,8 @@ sql_target_credential (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_trash_target_credential_location (sqlite3_context *context,
-                                      int argc, sqlite3_value** argv)
+sql_trash_target_credential_location (sqlite3_context *context, int argc,
+                                      sqlite3_value **argv)
 {
   target_t target;
   const char *type;
@@ -2539,7 +2453,7 @@ sql_trash_target_credential_location (sqlite3_context *context,
   assert (argc == 2);
 
   target = sqlite3_value_int64 (argv[0]);
-  type = (char*) sqlite3_value_text (argv[1]);
+  type = (char *) sqlite3_value_text (argv[1]);
 
   if (type == NULL)
     {
@@ -2562,7 +2476,7 @@ sql_trash_target_credential_location (sqlite3_context *context,
  * @param[in]  argv     Argument array.
  */
 void
-sql_target_login_port (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_target_login_port (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   target_t target;
   int trash;
@@ -2572,7 +2486,7 @@ sql_target_login_port (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   target = sqlite3_value_int64 (argv[0]);
   trash = sqlite3_value_int (argv[1]);
-  type = (char*) sqlite3_value_text (argv[2]);
+  type = (char *) sqlite3_value_text (argv[2]);
 
   if (type == NULL)
     {
@@ -2581,8 +2495,7 @@ sql_target_login_port (sqlite3_context *context, int argc, sqlite3_value** argv)
     }
 
   if (trash)
-    sqlite3_result_int64 (context,
-                          trash_target_login_port (target, type));
+    sqlite3_result_int64 (context, trash_target_login_port (target, type));
   else
     sqlite3_result_int64 (context, target_login_port (target, type));
 
@@ -2600,7 +2513,7 @@ sql_target_login_port (sqlite3_context *context, int argc, sqlite3_value** argv)
  */
 void
 sql_user_can_everything (sqlite3_context *context, int argc,
-                         sqlite3_value** argv)
+                         sqlite3_value **argv)
 {
   const unsigned char *uuid;
 
@@ -2627,7 +2540,7 @@ sql_user_can_everything (sqlite3_context *context, int argc,
  */
 void
 sql_user_has_access_uuid (sqlite3_context *context, int argc,
-                          sqlite3_value** argv)
+                          sqlite3_value **argv)
 {
   const unsigned char *type, *uuid, *permission;
   int trash;
@@ -2658,8 +2571,8 @@ sql_user_has_access_uuid (sqlite3_context *context, int argc,
 
   trash = sqlite3_value_int (argv[3]);
 
-  ret = acl_user_has_access_uuid ((char*)type, (char*)uuid, (char *)permission,
-                                  trash);
+  ret = acl_user_has_access_uuid ((char *) type, (char *) uuid,
+                                  (char *) permission, trash);
 
   sqlite3_result_int (context, ret);
 }
@@ -2674,8 +2587,7 @@ sql_user_has_access_uuid (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_user_owns (sqlite3_context *context, int argc,
-               sqlite3_value** argv)
+sql_user_owns (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *type;
   resource_t resource;
@@ -2709,8 +2621,7 @@ sql_user_owns (sqlite3_context *context, int argc,
  * @param[in]  argv     Argument array.
  */
 void
-sql_vuln_results (sqlite3_context *context, int argc,
-                  sqlite3_value** argv)
+sql_vuln_results (sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   const unsigned char *nvt_oid, *host;
   gchar *nvt_oid_quoted, *host_quoted;
@@ -2726,7 +2637,7 @@ sql_vuln_results (sqlite3_context *context, int argc,
       sqlite3_result_error (context, "Failed to get nvt_oid argument", -1);
       return;
     }
-  nvt_oid_quoted = sql_quote ((char*) nvt_oid);
+  nvt_oid_quoted = sql_quote ((char *) nvt_oid);
 
   task = sqlite3_value_int64 (argv[1]);
   task_null = sqlite3_value_type (argv[1]) == SQLITE_NULL;
@@ -2736,30 +2647,26 @@ sql_vuln_results (sqlite3_context *context, int argc,
 
   host = sqlite3_value_text (argv[3]);
   if (host)
-    host_quoted = sql_quote ((char*) host);
+    host_quoted = sql_quote ((char *) host);
   else
     host_quoted = NULL;
 
-  ret
-    = sql_int ("SELECT count(*) FROM results"
-               " WHERE results.nvt = '%s'"
-               "   AND (%d OR results.report = %llu)"
-               "   AND (%d OR results.task = %llu)"
-               "   AND (%d OR results.host = '%s')"
-               "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
-               "   AND (SELECT has_permission FROM permissions_get_tasks"
-               "         WHERE \"user\" = (SELECT id FROM users"
-               "                           WHERE uuid ="
-               "                             (SELECT uuid"
-               "                              FROM current_credentials))"
-               "           AND task = results.task)",
-               nvt_oid_quoted,
-               report_null,
-               report,
-               task_null,
-               task,
-               host == NULL,
-               host ? (char*)host : "");
+  ret = sql_int (
+    "SELECT count(*) FROM results"
+    " WHERE results.nvt = '%s'"
+    "   AND (%d OR results.report = %llu)"
+    "   AND (%d OR results.task = %llu)"
+    "   AND (%d OR results.host = '%s')"
+    "   AND (results.severity != " G_STRINGIFY (
+      SEVERITY_ERROR) ")"
+                      "   AND (SELECT has_permission FROM permissions_get_tasks"
+                      "         WHERE \"user\" = (SELECT id FROM users"
+                      "                           WHERE uuid ="
+                      "                             (SELECT uuid"
+                      "                              FROM current_credentials))"
+                      "           AND task = results.task)",
+    nvt_oid_quoted, report_null, report, task_null, task, host == NULL,
+    host ? (char *) host : "");
 
   g_free (nvt_oid_quoted);
   g_free (host_quoted);
@@ -2775,714 +2682,538 @@ sql_vuln_results (sqlite3_context *context, int argc,
 int
 manage_create_sql_functions ()
 {
-  if (sqlite3_create_function (gvmd_db,
-                               "t",
-                               0,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_t,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "t", 0,   /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_t, NULL,       /* xStep. */
+                               NULL)              /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to t", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "strpos",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_strpos,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "strpos", 2, /* Number of args. */
+                               SQLITE_UTF8, NULL,    /* Callback data. */
+                               sql_strpos, NULL,     /* xStep. */
+                               NULL)                 /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create strpos", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "order_inet",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_order_inet,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "order_inet", 1, /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_order_inet, NULL,     /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create order_inet", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "order_message_type",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_order_message_type,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "order_message_type",
+                               1,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_order_message_type, NULL, /* xStep. */
+                               NULL)                         /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create order_message_type", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "order_port",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_order_port,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "order_port", 1, /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_order_port, NULL,     /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create order_port", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "order_role",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_order_role,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "order_role", 1, /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_order_role, NULL,     /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create order_role", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "order_threat",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_order_threat,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "order_threat", 1, /* Number of args. */
+                               SQLITE_UTF8, NULL,          /* Callback data. */
+                               sql_order_threat, NULL,     /* xStep. */
+                               NULL)                       /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create order_threat", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "make_uuid",
-                               0,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_make_uuid,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "make_uuid", 0, /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_make_uuid, NULL,     /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create make_uuid", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "hosts_contains",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_hosts_contains,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "hosts_contains",
+                               2,                        /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_hosts_contains, NULL, /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create hosts_contains", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "clean_hosts",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_clean_hosts,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "clean_hosts", 1, /* Number of args. */
+                               SQLITE_UTF8, NULL,         /* Callback data. */
+                               sql_clean_hosts, NULL,     /* xStep. */
+                               NULL)                      /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create clean_hosts", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "iso_time",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_iso_time,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "iso_time", 1, /* Number of args. */
+                               SQLITE_UTF8, NULL,      /* Callback data. */
+                               sql_iso_time, NULL,     /* xStep. */
+                               NULL)                   /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create iso_time", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "days_from_now",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_days_from_now,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "days_from_now",
+                               1,                       /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_days_from_now, NULL, /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create days_from_now", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "parse_time",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_parse_time,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "parse_time", 1, /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_parse_time, NULL,     /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create parse_time", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "tag",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_tag,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "tag", 2, /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_tag, NULL,     /* xStep. */
+                               NULL)              /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create tag", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "uniquify",
-                               4,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_uniquify,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "uniquify", 4, /* Number of args. */
+                               SQLITE_UTF8, NULL,      /* Callback data. */
+                               sql_uniquify, NULL,     /* xStep. */
+                               NULL)                   /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create uniquify", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "next_time",
-                               4,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_next_time,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "next_time", 4, /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_next_time, NULL,     /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create next_time", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "next_time",
-                               5,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_next_time,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "next_time", 5, /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_next_time, NULL,     /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create next_time", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "next_time",
-                               6,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_next_time,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "next_time", 6, /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_next_time, NULL,     /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create next_time", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "next_time_ical",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_next_time_ical,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "next_time_ical",
+                               2,                        /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_next_time_ical, NULL, /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create next_time_ical", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "next_time_ical",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_next_time_ical,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "next_time_ical",
+                               3,                        /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_next_time_ical, NULL, /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create next_time_ical", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "m_now",
-                               0,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_now,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "m_now", 0, /* Number of args. */
+                               SQLITE_UTF8, NULL,   /* Callback data. */
+                               sql_now, NULL,       /* xStep. */
+                               NULL)                /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create m_now", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "max_hosts",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_max_hosts,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "max_hosts", 2, /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_max_hosts, NULL,     /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create max_hosts", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "common_cve",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_common_cve,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "common_cve", 2, /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_common_cve, NULL,     /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create common_cve", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "cpe_title",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_cpe_title,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "cpe_title", 1, /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_cpe_title, NULL,     /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create cpe_title", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "credential_value",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_credential_value,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "credential_value",
+                               3,                          /* Number of args. */
+                               SQLITE_UTF8, NULL,          /* Callback data. */
+                               sql_credential_value, NULL, /* xStep. */
+                               NULL)                       /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create credential_value", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "current_offset",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_current_offset,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "current_offset",
+                               1,                        /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_current_offset, NULL, /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create current_offset", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "task_trend",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_task_trend,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "task_trend", 3, /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_task_trend, NULL,     /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create task_trend", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "task_threat_level",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_task_threat_level,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "task_threat_level",
+                               3,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_task_threat_level, NULL, /* xStep. */
+                               NULL)                        /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create task_threat_level", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "report_progress",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_report_progress,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "report_progress",
+                               1,                         /* Number of args. */
+                               SQLITE_UTF8, NULL,         /* Callback data. */
+                               sql_report_progress, NULL, /* xStep. */
+                               NULL)                      /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create report_progress", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "report_severity",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_report_severity,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "report_severity",
+                               3,                         /* Number of args. */
+                               SQLITE_UTF8, NULL,         /* Callback data. */
+                               sql_report_severity, NULL, /* xStep. */
+                               NULL)                      /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create report_severity", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "report_severity_count",
-                               4,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_report_severity_count,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "report_severity_count",
+                               4,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_report_severity_count, NULL, /* xStep. */
+                               NULL)                            /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create report_severity_count", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "report_host_count",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_report_host_count,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "report_host_count",
+                               1,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_report_host_count, NULL, /* xStep. */
+                               NULL)                        /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create report_result_host_count", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "report_result_host_count",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_report_result_host_count,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "report_result_host_count",
+                               2,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_report_result_host_count, NULL, /* xStep. */
+                               NULL)                               /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create report_result_host_count", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "task_severity",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_task_severity,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "task_severity",
+                               3,                       /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_task_severity, NULL, /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create task_severity", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "task_last_report",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_task_last_report,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "task_last_report",
+                               1,                          /* Number of args. */
+                               SQLITE_UTF8, NULL,          /* Callback data. */
+                               sql_task_last_report, NULL, /* xStep. */
+                               NULL)                       /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create task_last_report", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "severity_matches_ov",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_severity_matches_ov,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "severity_matches_ov",
+                               2,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_severity_matches_ov, NULL, /* xStep. */
+                               NULL)                          /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create severity_matches_ov", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "severity_to_level",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_severity_to_level,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "severity_to_level",
+                               1,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_severity_to_level, NULL, /* xStep. */
+                               NULL)                        /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create severity_to_level", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "severity_to_level",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_severity_to_level,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "severity_to_level",
+                               2,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_severity_to_level, NULL, /* xStep. */
+                               NULL)                        /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create severity_to_level", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "severity_to_type",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_severity_to_type,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "severity_to_type",
+                               1,                          /* Number of args. */
+                               SQLITE_UTF8, NULL,          /* Callback data. */
+                               sql_severity_to_type, NULL, /* xStep. */
+                               NULL)                       /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create severity_to_type", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "run_status_name",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_run_status_name,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "run_status_name",
+                               1,                         /* Number of args. */
+                               SQLITE_UTF8, NULL,         /* Callback data. */
+                               sql_run_status_name, NULL, /* xStep. */
+                               NULL)                      /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create run_status_name", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "resource_exists",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_resource_exists,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "resource_exists",
+                               3,                         /* Number of args. */
+                               SQLITE_UTF8, NULL,         /* Callback data. */
+                               sql_resource_exists, NULL, /* xStep. */
+                               NULL)                      /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create resource_exists", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "regexp",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_regexp,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "regexp", 2, /* Number of args. */
+                               SQLITE_UTF8, NULL,    /* Callback data. */
+                               sql_regexp, NULL,     /* xStep. */
+                               NULL)                 /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create regexp", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "resource_name",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_resource_name,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "resource_name",
+                               3,                       /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_resource_name, NULL, /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create resource_name", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "severity_in_level",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_severity_in_level,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "severity_in_level",
+                               2,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_severity_in_level, NULL, /* xStep. */
+                               NULL)                        /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create severity_in_level", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "target_credential",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_target_credential,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "target_credential",
+                               3,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_target_credential, NULL, /* xStep. */
+                               NULL)                        /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create target_login_data", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "trash_target_credential_location",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_trash_target_credential_location,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (
+        gvmd_db, "trash_target_credential_location", 2, /* Number of args. */
+        SQLITE_UTF8, NULL,                              /* Callback data. */
+        sql_trash_target_credential_location, NULL,     /* xStep. */
+        NULL)                                           /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create target_login_data", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "target_login_port",
-                               3,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_target_login_port,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "target_login_port",
+                               3,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_target_login_port, NULL, /* xStep. */
+                               NULL)                        /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create target_login_data", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "user_can_everything",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_user_can_everything,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "user_can_everything",
+                               1,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_user_can_everything, NULL, /* xStep. */
+                               NULL)                          /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create user_can_everything", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "user_has_access_uuid",
-                               4,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_user_has_access_uuid,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "user_has_access_uuid",
+                               4,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_user_has_access_uuid, NULL, /* xStep. */
+                               NULL)                           /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create user_has_access_uuid", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "user_owns",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_user_owns,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "user_owns", 2, /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_user_owns, NULL,     /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create user_owns", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "vuln_results",
-                               4,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_vuln_results,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "vuln_results", 4, /* Number of args. */
+                               SQLITE_UTF8, NULL,          /* Callback data. */
+                               sql_vuln_results, NULL,     /* xStep. */
+                               NULL)                       /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create user_has_access_uuid", __FUNCTION__);
@@ -3492,7 +3223,6 @@ manage_create_sql_functions ()
   return 0;
 }
 
-
 /* Creation. */
 
 /**
@@ -3609,10 +3339,11 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS hosts"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS host_identifiers"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, host INTEGER, owner INTEGER, name,"
-       "  comment, value, source_type, source_id, source_data, creation_time,"
-       "  modification_time);");
+  sql (
+    "CREATE TABLE IF NOT EXISTS host_identifiers"
+    " (id INTEGER PRIMARY KEY, uuid UNIQUE, host INTEGER, owner INTEGER, name,"
+    "  comment, value, source_type, source_id, source_data, creation_time,"
+    "  modification_time);");
   sql ("CREATE INDEX IF NOT EXISTS host_identifiers_by_host"
        " ON host_identifiers (host);");
   sql ("CREATE INDEX IF NOT EXISTS host_identifiers_by_value"
@@ -3725,9 +3456,10 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS port_ranges_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start,"
        "  end, comment, exclude);");
-  sql ("CREATE TABLE IF NOT EXISTS report_host_details"
-       " (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name,"
-       "  source_description, name, value);");
+  sql (
+    "CREATE TABLE IF NOT EXISTS report_host_details"
+    " (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name,"
+    "  source_description, name, value);");
   sql ("CREATE INDEX IF NOT EXISTS"
        " report_host_details_by_report_host_and_name_and_value"
        " ON report_host_details (report_host, name, value);");
@@ -3943,121 +3675,163 @@ create_tables ()
   g_free (owned_clause);
 
   sql ("DROP VIEW IF EXISTS result_new_severities;");
-  sql ("CREATE VIEW result_new_severities AS"
-       "  SELECT results.id as result, users.id as user, dynamic, override,"
-       "    CASE WHEN dynamic THEN"
-       "      CASE WHEN override THEN"
-       "        coalesce ((SELECT ov_new_severity FROM result_overrides"
-       "                   WHERE result = results.id"
-       "                     AND result_overrides.user = users.id"
-       "                     AND severity_matches_ov"
-       "                           (coalesce ((CASE WHEN results.severity"
-       "                                                 > " G_STRINGIFY
-                                                              (SEVERITY_LOG)
-       "                                       THEN (SELECT cvss_base"
-       "                                             FROM nvts"
-       "                                             WHERE nvts.oid = results.nvt)"
-       "                                       ELSE results.severity"
-       "                                       END),"
-       "                                      results.severity),"
-       "                            ov_old_severity)),"
-       "                  coalesce ((CASE WHEN results.severity"
-       "                                       > " G_STRINGIFY (SEVERITY_LOG)
-       "                             THEN (SELECT cvss_base"
-       "                                   FROM nvts"
-       "                                   WHERE nvts.oid = results.nvt)"
-       "                             ELSE results.severity"
-       "                             END),"
-       "                            results.severity))"
-       "      ELSE"
-       "        coalesce ((CASE WHEN results.severity"
-       "                             > " G_STRINGIFY (SEVERITY_LOG)
-       "                   THEN (SELECT cvss_base"
-       "                         FROM nvts"
-       "                         WHERE nvts.oid = results.nvt)"
-       "                   ELSE results.severity"
-       "                   END),"
-       "                  results.severity)"
-       "      END"
-       "    ELSE"
-       "      CASE WHEN override THEN"
-       "        coalesce ((SELECT ov_new_severity FROM result_overrides"
-       "                   WHERE result = results.id"
-       "                     AND result_overrides.user = users.id"
-       "                     AND severity_matches_ov"
-       "                           (results.severity,"
-       "                            ov_old_severity)),"
-       "                   results.severity)"
-       "      ELSE"
-       "        results.severity"
-       "      END"
-       "    END AS new_severity"
-       "  FROM results, users"
-       "  JOIN (SELECT 0 AS override UNION SELECT 1 AS override_opts)"
-       "  JOIN (SELECT 0 AS dynamic UNION SELECT 1 AS dynamic_opts);");
+  sql (
+    "CREATE VIEW result_new_severities AS"
+    "  SELECT results.id as result, users.id as user, dynamic, override,"
+    "    CASE WHEN dynamic THEN"
+    "      CASE WHEN override THEN"
+    "        coalesce ((SELECT ov_new_severity FROM result_overrides"
+    "                   WHERE result = results.id"
+    "                     AND result_overrides.user = users.id"
+    "                     AND severity_matches_ov"
+    "                           (coalesce ((CASE WHEN results.severity"
+    "                                                 > " G_STRINGIFY (
+      SEVERITY_LOG) "                                       THEN (SELECT "
+                    "cvss_base"
+                    "                                             FROM nvts"
+                    "                                             WHERE "
+                    "nvts.oid = results.nvt)"
+                    "                                       ELSE "
+                    "results.severity"
+                    "                                       END),"
+                    "                                      results.severity),"
+                    "                            ov_old_severity)),"
+                    "                  coalesce ((CASE WHEN results.severity"
+                    "                                       > " G_STRINGIFY (
+                      SEVERITY_LOG) "                             THEN (SELECT "
+                                    "cvss_base"
+                                    "                                   FROM "
+                                    "nvts"
+                                    "                                   WHERE "
+                                    "nvts.oid = results.nvt)"
+                                    "                             ELSE "
+                                    "results.severity"
+                                    "                             END),"
+                                    "                            "
+                                    "results.severity))"
+                                    "      ELSE"
+                                    "        coalesce ((CASE WHEN "
+                                    "results.severity"
+                                    "                             "
+                                    "> " G_STRINGIFY (
+                                      SEVERITY_LOG) "                   THEN "
+                                                    "(SELECT cvss_base"
+                                                    "                         "
+                                                    "FROM nvts"
+                                                    "                         "
+                                                    "WHERE nvts.oid = "
+                                                    "results.nvt)"
+                                                    "                   ELSE "
+                                                    "results.severity"
+                                                    "                   END),"
+                                                    "                  "
+                                                    "results.severity)"
+                                                    "      END"
+                                                    "    ELSE"
+                                                    "      CASE WHEN override "
+                                                    "THEN"
+                                                    "        coalesce ((SELECT "
+                                                    "ov_new_severity FROM "
+                                                    "result_overrides"
+                                                    "                   WHERE "
+                                                    "result = results.id"
+                                                    "                     AND "
+                                                    "result_overrides.user = "
+                                                    "users.id"
+                                                    "                     AND "
+                                                    "severity_matches_ov"
+                                                    "                          "
+                                                    " (results.severity,"
+                                                    "                          "
+                                                    "  ov_old_severity)),"
+                                                    "                   "
+                                                    "results.severity)"
+                                                    "      ELSE"
+                                                    "        results.severity"
+                                                    "      END"
+                                                    "    END AS new_severity"
+                                                    "  FROM results, users"
+                                                    "  JOIN (SELECT 0 AS "
+                                                    "override UNION SELECT 1 "
+                                                    "AS override_opts)"
+                                                    "  JOIN (SELECT 0 AS "
+                                                    "dynamic UNION SELECT 1 AS "
+                                                    "dynamic_opts);");
 
   sql ("DROP VIEW IF EXISTS results_autofp;");
-  sql ("CREATE VIEW results_autofp AS"
-       " SELECT results.id as result, autofp_selection,"
-       "        (CASE autofp_selection"
-       "         WHEN 1 THEN"
-       "          (CASE WHEN"
-       "           (((SELECT family FROM nvts WHERE oid = results.nvt)"
-       "              IN (" LSC_FAMILY_LIST "))"
-       "            OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
-       "            OR EXISTS"
-       "              (SELECT id FROM nvts"
-       "               WHERE oid = results.nvt"
-       "               AND"
-       "               (cve = 'NOCVE'"
-       "                 OR cve NOT IN (SELECT cve FROM nvts"
-       "                                WHERE oid IN (SELECT source_name"
-       "                                    FROM report_host_details"
-       "                                    WHERE report_host"
-       "                                    = (SELECT id"
-       "                                       FROM report_hosts"
-       "                                       WHERE report = %llu"
-       "                                       AND host = results.host)"
-       "                                    AND name = 'EXIT_CODE'"
-       "                                    AND value = 'EXIT_NOTVULN')"
-       "                                AND family IN (" LSC_FAMILY_LIST ")))))"
-       "           THEN NULL"
-       "           WHEN severity = " G_STRINGIFY (SEVERITY_ERROR) " THEN NULL"
-       "           ELSE 1 END)"
-       "         WHEN 2 THEN"
-       "          (CASE WHEN"
-       "            (((SELECT family FROM nvts WHERE oid = results.nvt)"
-       "              IN (" LSC_FAMILY_LIST "))"
-       "             OR results.nvt = '0'" /* Open ports previously had 0 NVT.*/
-       "             OR EXISTS"
-       "             (SELECT id FROM nvts AS outer_nvts"
-       "              WHERE oid = results.nvt"
-       "              AND"
-       "              (cve = 'NOCVE'"
-       "               OR NOT EXISTS"
-       "                  (SELECT cve FROM nvts"
-       "                   WHERE oid IN (SELECT source_name"
-       "                                 FROM report_host_details"
-       "                                 WHERE report_host"
-       "                                 = (SELECT id"
-       "                                    FROM report_hosts"
-       "                                    WHERE report = results.report"
-       "                                    AND host = results.host)"
-       "                                 AND name = 'EXIT_CODE'"
-       "                                 AND value = 'EXIT_NOTVULN')"
-       "                   AND family IN (" LSC_FAMILY_LIST ")"
-       /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
-        * NVT that has registered the "closed" host detail is nvts.cve.
-        * Either can be a list of CVEs. */
-       "                   AND common_cve (nvts.cve, outer_nvts.cve)))))"
-       "           THEN NULL"
-       "           WHEN severity = " G_STRINGIFY (SEVERITY_ERROR) " THEN NULL"
-       "           ELSE 1 END)"
-       "         ELSE 0 END) AS autofp"
-       " FROM results,"
-       "  (SELECT 0 AS autofp_selection"
-       "   UNION SELECT 1 AS autofp_selection"
-       "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
+  sql (
+    "CREATE VIEW results_autofp AS"
+    " SELECT results.id as result, autofp_selection,"
+    "        (CASE autofp_selection"
+    "         WHEN 1 THEN"
+    "          (CASE WHEN"
+    "           (((SELECT family FROM nvts WHERE oid = results.nvt)"
+    "              IN (" LSC_FAMILY_LIST "))"
+    "            OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
+    "            OR EXISTS"
+    "              (SELECT id FROM nvts"
+    "               WHERE oid = results.nvt"
+    "               AND"
+    "               (cve = 'NOCVE'"
+    "                 OR cve NOT IN (SELECT cve FROM nvts"
+    "                                WHERE oid IN (SELECT source_name"
+    "                                    FROM report_host_details"
+    "                                    WHERE report_host"
+    "                                    = (SELECT id"
+    "                                       FROM report_hosts"
+    "                                       WHERE report = %llu"
+    "                                       AND host = results.host)"
+    "                                    AND name = 'EXIT_CODE'"
+    "                                    AND value = 'EXIT_NOTVULN')"
+    "                                AND family IN (" LSC_FAMILY_LIST ")))))"
+    "           THEN NULL"
+    "           WHEN severity = " G_STRINGIFY (
+      SEVERITY_ERROR) " THEN NULL"
+                      "           ELSE 1 END)"
+                      "         WHEN 2 THEN"
+                      "          (CASE WHEN"
+                      "            (((SELECT family FROM nvts WHERE oid = "
+                      "results.nvt)"
+                      "              IN (" LSC_FAMILY_LIST "))"
+                      "             OR results.nvt = '0'" /* Open ports
+                                                             previously had 0
+                                                             NVT.*/
+                      "             OR EXISTS"
+                      "             (SELECT id FROM nvts AS outer_nvts"
+                      "              WHERE oid = results.nvt"
+                      "              AND"
+                      "              (cve = 'NOCVE'"
+                      "               OR NOT EXISTS"
+                      "                  (SELECT cve FROM nvts"
+                      "                   WHERE oid IN (SELECT source_name"
+                      "                                 FROM "
+                      "report_host_details"
+                      "                                 WHERE report_host"
+                      "                                 = (SELECT id"
+                      "                                    FROM report_hosts"
+                      "                                    WHERE report = "
+                      "results.report"
+                      "                                    AND host = "
+                      "results.host)"
+                      "                                 AND name = 'EXIT_CODE'"
+                      "                                 AND value = "
+                      "'EXIT_NOTVULN')"
+                      "                   AND family IN (" LSC_FAMILY_LIST ")"
+                      /* The CVE of the result NVT is outer_nvts.cve.  The CVE
+                       * of the NVT that has registered the "closed" host detail
+                       * is nvts.cve. Either can be a list of CVEs. */
+                      "                   AND common_cve (nvts.cve, "
+                      "outer_nvts.cve)))))"
+                      "           THEN NULL"
+                      "           WHEN severity = " G_STRINGIFY (
+                        SEVERITY_ERROR) " THEN NULL"
+                                        "           ELSE 1 END)"
+                                        "         ELSE 0 END) AS autofp"
+                                        " FROM results,"
+                                        "  (SELECT 0 AS autofp_selection"
+                                        "   UNION SELECT 1 AS autofp_selection"
+                                        "   UNION SELECT 2 AS "
+                                        "autofp_selection) AS autofp_opts;");
 
   /* Vulnerabilities view is created in manage_session_init because
      it must be temporary to allow using the attached SCAP database */
@@ -4072,7 +3846,6 @@ check_db_sequences ()
   // Do nothing because this is only relevant for PostgreSQL.
 }
 
-
 /* SecInfo. */
 
 /**
@@ -4086,13 +3859,12 @@ manage_attach_databases ()
   if (access (SCAP_DB_FILE, R_OK))
     switch (errno)
       {
-        case ENOENT:
-          break;
-        default:
-          g_warning ("%s: failed to stat SCAP database: %s",
-                     __FUNCTION__,
-                     strerror (errno));
-          break;
+      case ENOENT:
+        break;
+      default:
+        g_warning ("%s: failed to stat SCAP database: %s", __FUNCTION__,
+                   strerror (errno));
+        break;
       }
   else
     sql_error ("ATTACH DATABASE '" SCAP_DB_FILE "'"
@@ -4103,13 +3875,12 @@ manage_attach_databases ()
   if (access (CERT_DB_FILE, R_OK))
     switch (errno)
       {
-        case ENOENT:
-          break;
-        default:
-          g_warning ("%s: failed to stat CERT database: %s",
-                     __FUNCTION__,
-                     strerror (errno));
-          break;
+      case ENOENT:
+        break;
+      default:
+        g_warning ("%s: failed to stat CERT database: %s", __FUNCTION__,
+                   strerror (errno));
+        break;
       }
   else
     sql_error ("ATTACH DATABASE '" CERT_DB_FILE "'"
@@ -4146,11 +3917,9 @@ manage_db_init (const gchar *name)
 {
   if (strcasecmp (name, "cert") == 0)
     {
-      if (access (CERT_DB_FILE, R_OK)
-          && errno != ENOENT)
+      if (access (CERT_DB_FILE, R_OK) && errno != ENOENT)
         {
-          g_warning ("%s: failed to stat CERT database: %s",
-                     __FUNCTION__,
+          g_warning ("%s: failed to stat CERT database: %s", __FUNCTION__,
                      strerror (errno));
           return -1;
         }
@@ -4158,12 +3927,10 @@ manage_db_init (const gchar *name)
         {
           /* Ensure the parent directory exists. */
 
-          if (g_mkdir_with_parents (CERT_DB_DIR, 0755 /* "rwxr-xr-x" */)
-              == -1)
+          if (g_mkdir_with_parents (CERT_DB_DIR, 0755 /* "rwxr-xr-x" */) == -1)
             {
               g_warning ("%s: failed to create CERT directory: %s",
-                         __FUNCTION__,
-                         strerror (errno));
+                         __FUNCTION__, strerror (errno));
               abort ();
             }
 
@@ -4255,11 +4022,9 @@ manage_db_init (const gchar *name)
     }
   else if (strcasecmp (name, "scap") == 0)
     {
-      if (access (SCAP_DB_FILE, R_OK)
-          && errno != ENOENT)
+      if (access (SCAP_DB_FILE, R_OK) && errno != ENOENT)
         {
-          g_warning ("%s: failed to stat SCAP database: %s",
-                     __FUNCTION__,
+          g_warning ("%s: failed to stat SCAP database: %s", __FUNCTION__,
                      strerror (errno));
           return -1;
         }
@@ -4267,12 +4032,10 @@ manage_db_init (const gchar *name)
         {
           /* Ensure the parent directory exists. */
 
-          if (g_mkdir_with_parents (SCAP_DB_DIR, 0755 /* "rwxr-xr-x" */)
-              == -1)
+          if (g_mkdir_with_parents (SCAP_DB_DIR, 0755 /* "rwxr-xr-x" */) == -1)
             {
               g_warning ("%s: failed to create SCAP directory: %s",
-                         __FUNCTION__,
-                         strerror (errno));
+                         __FUNCTION__, strerror (errno));
               abort ();
             }
 
@@ -4359,13 +4122,13 @@ manage_db_init (const gchar *name)
       sql ("CREATE TABLE scap.ovaldefs"
            " (id INTEGER PRIMARY KEY AUTOINCREMENT,"
            "  uuid UNIQUE,"
-           "  name,"                        /* OVAL identifier. */
+           "  name," /* OVAL identifier. */
            "  comment,"
            "  creation_time DATE,"
            "  modification_time DATE,"
            "  version INTEGER,"
            "  deprecated BOOLEAN,"
-           "  def_class TEXT,"              /* enum */
+           "  def_class TEXT," /* enum */
            "  title TEXT,"
            "  description TEXT,"
            "  xml_file TEXT,"
@@ -4469,8 +4232,7 @@ manage_db_check (const gchar *name)
           if (errno == ENOENT)
             return 0;
 
-          g_warning ("%s: failed to stat CERT database: %s",
-                     __FUNCTION__,
+          g_warning ("%s: failed to stat CERT database: %s", __FUNCTION__,
                      strerror (errno));
           return -1;
         }
@@ -4492,8 +4254,7 @@ manage_db_check (const gchar *name)
           if (errno == ENOENT)
             return 0;
 
-          g_warning ("%s: failed to stat SCAP database: %s",
-                     __FUNCTION__,
+          g_warning ("%s: failed to stat SCAP database: %s", __FUNCTION__,
                      strerror (errno));
           return -1;
         }
@@ -4524,14 +4285,13 @@ manage_cert_loaded ()
   if (access (CERT_DB_FILE, R_OK))
     switch (errno)
       {
-        case ENOENT:
-          return 0;
-          break;
-        default:
-          g_warning ("%s: failed to stat CERT database: %s",
-                     __FUNCTION__,
-                     strerror (errno));
-          return 0;
+      case ENOENT:
+        return 0;
+        break;
+      default:
+        g_warning ("%s: failed to stat CERT database: %s", __FUNCTION__,
+                   strerror (errno));
+        return 0;
       }
 
   if (sql_error ("SELECT count(*) FROM cert.sqlite_master"
@@ -4560,14 +4320,13 @@ manage_scap_loaded ()
   if (access (SCAP_DB_FILE, R_OK))
     switch (errno)
       {
-        case ENOENT:
-          return 0;
-          break;
-        default:
-          g_warning ("%s: failed to stat SCAP database: %s",
-                     __FUNCTION__,
-                     strerror (errno));
-          return 0;
+      case ENOENT:
+        return 0;
+        break;
+      default:
+        g_warning ("%s: failed to stat SCAP database: %s", __FUNCTION__,
+                   strerror (errno));
+        return 0;
       }
 
   if (sql_error ("SELECT count(*) FROM scap.sqlite_master"
@@ -4591,14 +4350,13 @@ manage_cert_db_exists ()
   if (access (CERT_DB_FILE, R_OK))
     switch (errno)
       {
-        case ENOENT:
-          return 0;
-          break;
-        default:
-          g_warning ("%s: failed to stat CERT database: %s",
-                     __FUNCTION__,
-                     strerror (errno));
-          return 1;
+      case ENOENT:
+        return 0;
+        break;
+      default:
+        g_warning ("%s: failed to stat CERT database: %s", __FUNCTION__,
+                   strerror (errno));
+        return 1;
       }
   return 1;
 }
@@ -4614,14 +4372,13 @@ manage_scap_db_exists ()
   if (access (SCAP_DB_FILE, R_OK))
     switch (errno)
       {
-        case ENOENT:
-          return 0;
-          break;
-        default:
-          g_warning ("%s: failed to stat SCAP database: %s",
-                     __FUNCTION__,
-                     strerror (errno));
-          return 1;
+      case ENOENT:
+        return 0;
+        break;
+      default:
+        g_warning ("%s: failed to stat SCAP database: %s", __FUNCTION__,
+                   strerror (errno));
+        return 1;
       }
   return 1;
 }
@@ -4634,28 +4391,22 @@ manage_scap_db_exists ()
 int
 manage_update_cert_db_init ()
 {
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_dfn_cert_adv",
-                               6,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_merge_dfn_cert_adv,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_dfn_cert_adv",
+                               6,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_merge_dfn_cert_adv, NULL, /* xStep. */
+                               NULL)                         /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create merge_dfn_cert_adv", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_bund_adv",
-                               6,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_merge_bund_adv,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_bund_adv",
+                               6,                        /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_merge_bund_adv, NULL, /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create merge_bund_adv", __FUNCTION__);
@@ -4673,25 +4424,19 @@ manage_update_cert_db_init ()
 void
 manage_update_cert_db_cleanup ()
 {
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_dfn_cert_adv",
-                               6,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               NULL,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_dfn_cert_adv",
+                               6,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               NULL, NULL,        /* xStep. */
+                               NULL)              /* xFinal. */
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_dfn_cert_adv", __FUNCTION__);
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_bund_adv",
-                               6,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               NULL,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_bund_adv",
+                               6,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               NULL, NULL,        /* xStep. */
+                               NULL)              /* xFinal. */
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_bund_adv", __FUNCTION__);
 }
@@ -4704,70 +4449,53 @@ manage_update_cert_db_cleanup ()
 int
 manage_update_scap_db_init ()
 {
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_cpe",
-                               7,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_merge_cpe,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_cpe", 7, /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_merge_cpe, NULL,     /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create merge_cpe", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_cve",
-                               13,              /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_merge_cve,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_cve", 13, /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_merge_cve, NULL,      /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create merge_cpe", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_cpe_name",
-                               4,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_merge_cpe_name,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_cpe_name",
+                               4,                        /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               sql_merge_cpe_name, NULL, /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create merge_cpe_name", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_affected_product",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_merge_affected_product,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_affected_product",
+                               2,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               sql_merge_affected_product, NULL, /* xStep. */
+                               NULL)                             /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create merge_affected_product", __FUNCTION__);
       return -1;
     }
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_ovaldef",
-                               13,              /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_merge_ovaldef,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_ovaldef",
+                               13,                      /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               sql_merge_ovaldef, NULL, /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create merge_ovaldef", __FUNCTION__);
@@ -4785,63 +4513,45 @@ manage_update_scap_db_init ()
 void
 manage_update_scap_db_cleanup ()
 {
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_cpe",
-                               8,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               NULL,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_cpe", 8, /* Number of args. */
+                               SQLITE_UTF8, NULL,       /* Callback data. */
+                               NULL, NULL,              /* xStep. */
+                               NULL)                    /* xFinal. */
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_cpe", __FUNCTION__);
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_cve",
-                               13,              /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               NULL,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_cve", 13, /* Number of args. */
+                               SQLITE_UTF8, NULL,        /* Callback data. */
+                               NULL, NULL,               /* xStep. */
+                               NULL)                     /* xFinal. */
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_cve", __FUNCTION__);
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_cpe_name",
-                               4,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               NULL,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_cpe_name",
+                               4,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               NULL, NULL,        /* xStep. */
+                               NULL)              /* xFinal. */
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_cpe_name", __FUNCTION__);
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_affected_product",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               NULL,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_affected_product",
+                               2,                 /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               NULL, NULL,        /* xStep. */
+                               NULL)              /* xFinal. */
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_affected_product", __FUNCTION__);
 
-  if (sqlite3_create_function (gvmd_db,
-                               "merge_ovaldef",
-                               14,              /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               NULL,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "merge_ovaldef",
+                               14,                /* Number of args. */
+                               SQLITE_UTF8, NULL, /* Callback data. */
+                               NULL, NULL,        /* xStep. */
+                               NULL)              /* xFinal. */
       != SQLITE_OK)
     g_warning ("%s: failed to remove merge_ovaldef", __FUNCTION__);
 }
 
-
 /* Backup. */
 
 /**
@@ -4864,8 +4574,7 @@ backup_db (const gchar *database, gchar **backup_file_arg)
 
   if (sqlite3_open (backup_file, &backup_db) != SQLITE_OK)
     {
-      g_warning ("%s: sqlite3_open failed: %s",
-                 __FUNCTION__,
+      g_warning ("%s: sqlite3_open failed: %s", __FUNCTION__,
                  sqlite3_errmsg (gvmd_db));
       goto fail;
     }
@@ -4879,8 +4588,7 @@ backup_db (const gchar *database, gchar **backup_file_arg)
   backup = sqlite3_backup_init (backup_db, "main", gvmd_db, "main");
   if (backup == NULL)
     {
-      g_warning ("%s: sqlite3_backup_init failed: %s",
-                 __FUNCTION__,
+      g_warning ("%s: sqlite3_backup_init failed: %s", __FUNCTION__,
                  sqlite3_errmsg (backup_db));
       goto fail;
     }
@@ -4899,8 +4607,7 @@ backup_db (const gchar *database, gchar **backup_file_arg)
           sqlite3_sleep (250);
           continue;
         }
-      g_warning ("%s: sqlite3_backup_step failed: %s",
-                 __FUNCTION__,
+      g_warning ("%s: sqlite3_backup_step failed: %s", __FUNCTION__,
                  sqlite3_errmsg (backup_db));
       sqlite3_backup_finish (backup);
       goto fail;
@@ -4914,7 +4621,7 @@ backup_db (const gchar *database, gchar **backup_file_arg)
     g_free (backup_file);
   return 0;
 
- fail:
+fail:
   sqlite3_close (backup_db);
   g_free (backup_file);
   return -1;
@@ -4942,7 +4649,6 @@ manage_backup_db (const gchar *database)
   return ret;
 }
 
-
 /* Migrator helper. */
 
 /**
@@ -4956,7 +4662,7 @@ manage_backup_db (const gchar *database)
  */
 void
 migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
-                              sqlite3_value** argv)
+                              sqlite3_value **argv)
 {
   const unsigned char *text_time;
   int epoch_time;
@@ -4969,7 +4675,8 @@ migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
     {
       /* Scanner uses ctime: "Wed Jun 30 21:49:08 1993".
        *
-       * The dates being converted are in the timezone that the Scanner was using.
+       * The dates being converted are in the timezone that the Scanner was
+       * using.
        *
        * As a special case for this migrator, gvmd.c uses the timezone
        * from the environment, instead of forcing UTC.  This allows the user
@@ -4978,10 +4685,11 @@ migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
        * the user just leaves the timezone as is, it is likely to be the same
        * timezone she/he is running the Scanner under.
        */
-      if (text_time && (strlen ((char*) text_time) > 0))
+      if (text_time && (strlen ((char *) text_time) > 0))
         {
           memset (&tm, 0, sizeof (struct tm));
-          if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
+          if (strptime ((char *) text_time, "%a %b %d %H:%M:%S %Y", &tm)
+              == NULL)
             {
               sqlite3_result_error (context, "Failed to parse time", -1);
               return;
@@ -5009,14 +4717,10 @@ migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
 int
 manage_create_migrate_51_to_52_convert ()
 {
-  if (sqlite3_create_function (gvmd_db,
-                               "convert",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               migrate_51_to_52_sql_convert,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
+  if (sqlite3_create_function (gvmd_db, "convert", 1, /* Number of args. */
+                               SQLITE_UTF8, NULL,     /* Callback data. */
+                               migrate_51_to_52_sql_convert, NULL, /* xStep. */
+                               NULL)                               /* xFinal. */
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create convert", __FUNCTION__);

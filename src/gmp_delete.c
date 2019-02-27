@@ -31,6 +31,7 @@
  */
 
 #include "gmp_delete.h"
+
 #include "gmp_base.h"
 #include "manage_sql.h"
 
@@ -48,11 +49,11 @@
  */
 typedef struct
 {
-  char *id;             ///< ID of resource to delete.
-  gchar *type;          ///< Type of resource.
-  gchar *type_capital;  ///< Type of resource, as a capital.
-  gchar *command;       ///< Command name.
-  int ultimate;         ///< Boolean.  Whether to remove entirely or to trashcan.
+  char *id;            ///< ID of resource to delete.
+  gchar *type;         ///< Type of resource.
+  gchar *type_capital; ///< Type of resource, as a capital.
+  gchar *command;      ///< Command name.
+  int ultimate;        ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_t;
 
 /**
@@ -83,21 +84,18 @@ delete_reset ()
  * @param[in]  attribute_values  All attribute values.
  */
 void
-delete_start (const gchar *type,
-              const gchar *type_capital,
-              const gchar **attribute_names,
-              const gchar **attribute_values)
+delete_start (const gchar *type, const gchar *type_capital,
+              const gchar **attribute_names, const gchar **attribute_values)
 {
-  const gchar* attribute;
+  const gchar *attribute;
   gchar *id_name, *command;
 
   id_name = g_strdup_printf ("%s_id", type);
-  append_attribute (attribute_names, attribute_values, id_name,
-                    &delete.id);
+  append_attribute (attribute_names, attribute_values, id_name, &delete.id);
   g_free (id_name);
 
-  if (find_attribute (attribute_names, attribute_values,
-                      "ultimate", &attribute))
+  if (find_attribute (attribute_names, attribute_values, "ultimate",
+                      &attribute))
     delete.ultimate = strcmp (attribute, "0");
   else
     delete.ultimate = 0;
@@ -120,9 +118,8 @@ delete_run (gmp_parser_t *gmp_parser, GError **error)
 {
   if (delete.id == NULL)
     {
-      SENDF_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("%s",
-                          "DELETE command requires an id attribute"),
+      SENDF_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("%s", "DELETE command requires an id attribute"),
         delete.command);
       delete_reset ();
       return;
@@ -130,53 +127,37 @@ delete_run (gmp_parser_t *gmp_parser, GError **error)
 
   switch (delete_resource (delete.type, delete.id, delete.ultimate))
     {
-      case 0:
-        SENDF_TO_CLIENT_OR_FAIL (XML_OK ("%s"),
-                                 delete.command);
-        log_event (delete.type, delete.type_capital, delete.id, "deleted");
-        break;
-      case 1:
-        SENDF_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("%s",
-                            "Resource is in use"),
-          delete.command);
-        log_event_fail (delete.type, delete.type_capital,
-                        delete.id,
-                        "deleted");
-        break;
-      case 2:
-        if (send_find_error_to_client
-             (delete.command, delete.type, delete.id, gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        log_event_fail (delete.type, delete.type_capital,
-                        delete.id,
-                        "deleted");
-        break;
-      case 3:
-        SENDF_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("%s",
-                            "Attempt to delete a predefined resource"),
-          delete.command);
-        break;
-      case 99:
-        SENDF_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("%s",
-                            "Permission denied"),
-          delete.command);
-        log_event_fail (delete.type, delete.type_capital,
-                        delete.id,
-                        "deleted");
-        break;
-      default:
-        SENDF_TO_CLIENT_OR_FAIL
-         (XML_INTERNAL_ERROR ("%s"),
-          delete.command);
-        log_event_fail (delete.type, delete.type_capital,
-                        delete.id,
-                        "deleted");
+    case 0:
+      SENDF_TO_CLIENT_OR_FAIL (XML_OK ("%s"), delete.command);
+      log_event (delete.type, delete.type_capital, delete.id, "deleted");
+      break;
+    case 1:
+      SENDF_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("%s", "Resource is in use"),
+                               delete.command);
+      log_event_fail (delete.type, delete.type_capital, delete.id, "deleted");
+      break;
+    case 2:
+      if (send_find_error_to_client (delete.command, delete.type, delete.id,
+                                     gmp_parser))
+        {
+          error_send_to_client (error);
+          return;
+        }
+      log_event_fail (delete.type, delete.type_capital, delete.id, "deleted");
+      break;
+    case 3:
+      SENDF_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("%s", "Attempt to delete a predefined resource"),
+        delete.command);
+      break;
+    case 99:
+      SENDF_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("%s", "Permission denied"),
+                               delete.command);
+      log_event_fail (delete.type, delete.type_capital, delete.id, "deleted");
+      break;
+    default:
+      SENDF_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("%s"), delete.command);
+      log_event_fail (delete.type, delete.type_capital, delete.id, "deleted");
     }
   delete_reset ();
 }

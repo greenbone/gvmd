@@ -25,22 +25,22 @@
  */
 
 #include "scanner.h"
+
+#include "comm.h"
 #include "gmpd.h"
 #include "otp.h"
-#include "comm.h"
 #include "utils.h"
 
-#include <dirent.h>
 #include <assert.h>
-#include <errno.h>  /* for errno */
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <sys/un.h>
+#include <dirent.h>
+#include <errno.h> /* for errno */
 #include <fcntl.h>
-
 #include <gvm/util/serverutils.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -132,10 +132,10 @@ extern int to_server_start;
  *         when the server accepted fewer bytes than given in string.
  */
 static int
-write_string_to_server (char* const string)
+write_string_to_server (char *const string)
 {
-  char* point = string;
-  char* end = string + strlen (string);
+  char *point = string;
+  char *end = string + strlen (string);
   while (point < end)
     {
       ssize_t count;
@@ -159,8 +159,8 @@ write_string_to_server (char* const string)
         }
       else
         {
-          count = gnutls_record_send (openvas_scanner_session,
-                                      point, (size_t) (end - point));
+          count = gnutls_record_send (openvas_scanner_session, point,
+                                      (size_t) (end - point));
           if (count < 0)
             {
               if (count == GNUTLS_E_AGAIN)
@@ -172,8 +172,7 @@ write_string_to_server (char* const string)
               if (count == GNUTLS_E_REHANDSHAKE)
                 /** @todo Rehandshake. */
                 continue;
-              g_warning ("%s: failed to write to server: %s",
-                         __FUNCTION__,
+              g_warning ("%s: failed to write to server: %s", __FUNCTION__,
                          gnutls_strerror ((int) count));
               return -1;
             }
@@ -234,8 +233,7 @@ write_to_server_buffer ()
               if (count == GNUTLS_E_REHANDSHAKE)
                 /** @todo Rehandshake. */
                 continue;
-              g_warning ("%s: failed to write to server: %s",
-                         __FUNCTION__,
+              g_warning ("%s: failed to write to server: %s", __FUNCTION__,
                          gnutls_strerror ((int) count));
               return -1;
             }
@@ -279,8 +277,8 @@ openvas_scanner_read ()
                 return 0;
               else
                 {
-                  g_warning ("%s: Failed to read from scanner: %s", __FUNCTION__,
-                             strerror (errno));
+                  g_warning ("%s: Failed to read from scanner: %s",
+                             __FUNCTION__, strerror (errno));
                   return -1;
                 }
             }
@@ -309,7 +307,7 @@ openvas_scanner_read ()
                       || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
                 {
                   int alert = gnutls_alert_get (openvas_scanner_session);
-                  const char* alert_name = gnutls_alert_get_name (alert);
+                  const char *alert_name = gnutls_alert_get_name (alert);
                   g_warning ("%s: TLS Alert %d: %s", __FUNCTION__, alert,
                              alert_name);
                 }
@@ -371,107 +369,111 @@ openvas_scanner_write (int nvt_cache_mode)
     return -1;
   switch (scanner_init_state)
     {
-      case SCANNER_INIT_TOP:
-        if (!openvas_scanner_unix_path)
-          return -1;
-        else
-          {
-            set_scanner_init_state (SCANNER_INIT_CONNECTED);
-            /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-             * error" removes the data between `select' and `read'. */
-            if (fcntl (openvas_scanner_socket, F_SETFL, O_NONBLOCK) == -1)
-              {
-                g_warning ("%s: failed to set scanner socket flag: %s",
-                           __FUNCTION__, strerror (errno));
-                return -1;
-              }
-            /* Fall through to SCANNER_INIT_CONNECTED case below, to write
-             * version string. */
-          }
-        /* fallthrough */
-      case SCANNER_INIT_CONNECTED:
+    case SCANNER_INIT_TOP:
+      if (!openvas_scanner_unix_path)
+        return -1;
+      else
         {
-          char* string = "< OTP/2.0 >\n";
-
-          scanner_init_offset = write_string_to_server
-                                 (string + scanner_init_offset);
-          if (scanner_init_offset == 0)
-            set_scanner_init_state (SCANNER_INIT_SENT_VERSION);
-          else if (scanner_init_offset == -1)
+          set_scanner_init_state (SCANNER_INIT_CONNECTED);
+          /* The socket must have O_NONBLOCK set, in case an "asynchronous
+           * network error" removes the data between `select' and `read'. */
+          if (fcntl (openvas_scanner_socket, F_SETFL, O_NONBLOCK) == -1)
             {
-              scanner_init_offset = 0;
+              g_warning ("%s: failed to set scanner socket flag: %s",
+                         __FUNCTION__, strerror (errno));
               return -1;
             }
-          if (nvt_cache_mode)
-            {
-              string = "CLIENT <|> NVT_INFO <|> CLIENT\n";
-              scanner_init_offset = write_string_to_server
-                                     (string + scanner_init_offset);
-              if (scanner_init_offset == -1)
-                {
-                  scanner_init_offset = 0;
-                  return -1;
-                }
-            }
-          break;
+          /* Fall through to SCANNER_INIT_CONNECTED case below, to write
+           * version string. */
         }
-      case SCANNER_INIT_SENT_VERSION:
-        return 0;
-      case SCANNER_INIT_SENT_COMPLETE_LIST:
-      case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
-        return 0;
-      case SCANNER_INIT_GOT_FEED_VERSION:
+      /* fallthrough */
+    case SCANNER_INIT_CONNECTED:
+      {
+        char *string = "< OTP/2.0 >\n";
+
+        scanner_init_offset =
+          write_string_to_server (string + scanner_init_offset);
+        if (scanner_init_offset == 0)
+          set_scanner_init_state (SCANNER_INIT_SENT_VERSION);
+        else if (scanner_init_offset == -1)
+          {
+            scanner_init_offset = 0;
+            return -1;
+          }
         if (nvt_cache_mode)
           {
-            static char* const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
-            scanner_init_offset = write_string_to_server
-                                   (ack + scanner_init_offset);
-            if (scanner_init_offset == 0)
-              set_scanner_init_state (nvt_cache_mode == -1
-                                      ? SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
-                                      : SCANNER_INIT_SENT_COMPLETE_LIST);
-            else if (scanner_init_offset == -1)
+            string = "CLIENT <|> NVT_INFO <|> CLIENT\n";
+            scanner_init_offset =
+              write_string_to_server (string + scanner_init_offset);
+            if (scanner_init_offset == -1)
               {
                 scanner_init_offset = 0;
                 return -1;
               }
-            break;
           }
-        /* fallthrough */
-      case SCANNER_INIT_GOT_PLUGINS:
+        break;
+      }
+    case SCANNER_INIT_SENT_VERSION:
+      return 0;
+    case SCANNER_INIT_SENT_COMPLETE_LIST:
+    case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
+      return 0;
+    case SCANNER_INIT_GOT_FEED_VERSION:
+      if (nvt_cache_mode)
         {
-          static char* const ack = "\n";
-          scanner_init_offset = write_string_to_server
-                                 (ack + scanner_init_offset);
+          static char *const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
+          scanner_init_offset =
+            write_string_to_server (ack + scanner_init_offset);
           if (scanner_init_offset == 0)
-            {
-              if (nvt_cache_mode == -1)
-                set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE_UPDATE);
-              else if (nvt_cache_mode == -2)
-                set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE);
-              else
-                set_scanner_init_state (SCANNER_INIT_DONE);
-            }
+            set_scanner_init_state (nvt_cache_mode == -1
+                                      ? SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
+                                      : SCANNER_INIT_SENT_COMPLETE_LIST);
           else if (scanner_init_offset == -1)
             {
               scanner_init_offset = 0;
               return -1;
             }
-          else
-            break;
+          break;
         }
-        /* fallthrough */
-      case SCANNER_INIT_DONE:
-      case SCANNER_INIT_DONE_CACHE_MODE:
-      case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
-        while (1)
-          switch (write_to_server_buffer ())
-            {
-              case  0: return 0;
-              case -1: return -1;
-              case -2: return -2;
-              case -3: continue;  /* Interrupted. */
-            }
+      /* fallthrough */
+    case SCANNER_INIT_GOT_PLUGINS:
+      {
+        static char *const ack = "\n";
+        scanner_init_offset =
+          write_string_to_server (ack + scanner_init_offset);
+        if (scanner_init_offset == 0)
+          {
+            if (nvt_cache_mode == -1)
+              set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE_UPDATE);
+            else if (nvt_cache_mode == -2)
+              set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE);
+            else
+              set_scanner_init_state (SCANNER_INIT_DONE);
+          }
+        else if (scanner_init_offset == -1)
+          {
+            scanner_init_offset = 0;
+            return -1;
+          }
+        else
+          break;
+      }
+      /* fallthrough */
+    case SCANNER_INIT_DONE:
+    case SCANNER_INIT_DONE_CACHE_MODE:
+    case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
+      while (1)
+        switch (write_to_server_buffer ())
+          {
+          case 0:
+            return 0;
+          case -1:
+            return -1;
+          case -2:
+            return -2;
+          case -3:
+            continue; /* Interrupted. */
+          }
     }
   return -3;
 }
@@ -498,7 +500,8 @@ openvas_scanner_wait ()
       FD_ZERO (&writefds);
       FD_SET (openvas_scanner_socket, &writefds);
 
-      ret = select (1 + openvas_scanner_socket, NULL, &writefds, NULL, &timeout);
+      ret =
+        select (1 + openvas_scanner_socket, NULL, &writefds, NULL, &timeout);
       if (ret < 0)
         {
           if (errno == EINTR)
@@ -537,28 +540,31 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
           return -1;
         }
     }
-  else while ((ent = readdir (dir)))
-    {
-      gchar *name;
-      struct stat state;
+  else
+    while ((ent = readdir (dir)))
+      {
+        gchar *name;
+        struct stat state;
 
-      if ((strcmp (ent->d_name, ".") == 0) || (strcmp (ent->d_name, "..") == 0))
-        continue;
+        if ((strcmp (ent->d_name, ".") == 0)
+            || (strcmp (ent->d_name, "..") == 0))
+          continue;
 
-      name = g_build_filename (CA_DIR, ent->d_name, NULL);
-      stat (name, &state);
-      if (S_ISREG (state.st_mode)
-          && (gnutls_certificate_set_x509_trust_file
-               (*scanner_credentials, name, GNUTLS_X509_FMT_PEM) < 0))
-        {
-          g_warning ("%s: gnutls_certificate_set_x509_trust_file failed: %s",
-                     __FUNCTION__, name);
-          g_free (name);
-          closedir (dir);
-          return -1;
-        }
-      g_free (name);
-    }
+        name = g_build_filename (CA_DIR, ent->d_name, NULL);
+        stat (name, &state);
+        if (S_ISREG (state.st_mode)
+            && (gnutls_certificate_set_x509_trust_file (
+                  *scanner_credentials, name, GNUTLS_X509_FMT_PEM)
+                < 0))
+          {
+            g_warning ("%s: gnutls_certificate_set_x509_trust_file failed: %s",
+                       __FUNCTION__, name);
+            g_free (name);
+            closedir (dir);
+            return -1;
+          }
+        g_free (name);
+      }
   if (dir != NULL)
     closedir (dir);
   return 0;
@@ -659,10 +665,10 @@ openvas_scanner_connect ()
     }
 
   /* Make the scanner socket. */
-  if (gvm_server_new_mem
-       (GNUTLS_CLIENT, openvas_scanner_ca_pub, openvas_scanner_key_pub,
-        openvas_scanner_key_priv, &openvas_scanner_session,
-        &openvas_scanner_credentials))
+  if (gvm_server_new_mem (GNUTLS_CLIENT, openvas_scanner_ca_pub,
+                          openvas_scanner_key_pub, openvas_scanner_key_priv,
+                          &openvas_scanner_session,
+                          &openvas_scanner_credentials))
     {
       close (openvas_scanner_socket);
       openvas_scanner_socket = -1;
@@ -913,18 +919,18 @@ openvas_scanner_is_loading ()
       attempts = attempts - 1;
       gvm_usleep (500000);
       openvas_scanner_read ();
-      
+
       switch (process_otp_scanner_input (NULL))
         {
-          case 3:
-            /* Still loading. */
-            return 1;
-          case 5:
-            /* Empty message. Try again. */
-            ret = 1;
-            break;
-          default:
-            return 0;
+        case 3:
+          /* Still loading. */
+          return 1;
+        case 5:
+          /* Empty message. Try again. */
+          ret = 1;
+          break;
+        default:
+          return 0;
         }
     }
   return ret;

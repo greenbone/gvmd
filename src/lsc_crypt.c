@@ -24,16 +24,15 @@
  * This file provides support for encrypting LSC credentials.
  */
 
+#include "lsc_crypt.h"
+
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <gvm/util/gpgmeutils.h>
 #include <stdarg.h>
 #include <stdint.h>
-
-#include <gvm/util/gpgmeutils.h>
-
-#include "lsc_crypt.h"
+#include <stdlib.h>
+#include <string.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -56,14 +55,13 @@
  * To avoid excessive memory allocations we put a limit on the size of
  * values stored in a name/value pair.
  */
-#define MAX_VALUE_LENGTH  (128 * 1024)
-
+#define MAX_VALUE_LENGTH (128 * 1024)
 
 #ifndef GPG_ERR_AMBIGUOUS
 /**
  * @brief Replacement for an error code in libgpg-error > 1.10.
  */
-# define  GPG_ERR_AMBIGUOUS GPG_ERR_AMBIGUOUS_NAME
+#define GPG_ERR_AMBIGUOUS GPG_ERR_AMBIGUOUS_NAME
 #endif
 
 /**
@@ -72,11 +70,11 @@
 struct namelist_s
 {
   struct namelist_s *next; ///< Next element in list
-  size_t valoff;      /**< Offset to the value in the plaintext buffer
-                         or 0 if VALUE below is used instead.  Note
-                         that a value will never be at the begin of
-                         the plaintext buffer.  VALOFF and VALUE
-                         0/NULL indicates a NULL value. */
+  size_t valoff;           /**< Offset to the value in the plaintext buffer
+                              or 0 if VALUE below is used instead.  Note
+                              that a value will never be at the begin of
+                              the plaintext buffer.  VALOFF and VALUE
+                              0/NULL indicates a NULL value. */
   char *value;             ///< The value.
   char name[1];            ///< The name.
 };
@@ -96,7 +94,6 @@ struct lsc_crypt_ctx_s
   struct namelist_s *namelist; ///< Info describing PLAINTEXT.
 };
 
-
 /* Simple helper functions  */
 
 /**
@@ -114,9 +111,8 @@ struct lsc_crypt_ctx_s
 static G_GNUC_CONST const char *
 nonnull (const char *s)
 {
-  return s? s :"[none]";
+  return s ? s : "[none]";
 }
-
 
 /**
  * @brief Append a 32 bit unsigned integer to a GString.
@@ -135,9 +131,8 @@ put32 (GString *buffer, uint32_t value)
   tmp[1] = value >> 16;
   tmp[2] = value >> 8;
   tmp[3] = value;
-  g_string_append_len (buffer, (char*)tmp, 4);
+  g_string_append_len (buffer, (char *) tmp, 4);
 }
-
 
 /**
  * @brief Extract a 32 bit unsigned integer from a buffer
@@ -155,7 +150,7 @@ get32 (const void *buffer)
   const unsigned char *s = buffer;
   uint32_t value;
 
-  value  = s[0] << 24;
+  value = s[0] << 24;
   value |= s[1] << 16;
   value |= s[2] << 8;
   value |= s[3];
@@ -163,9 +158,7 @@ get32 (const void *buffer)
   return value;
 }
 
-
 /* Local functions. */
-
 
 /**
  * @brief Create the credential encryption key
@@ -179,31 +172,29 @@ get32 (const void *buffer)
 static int
 create_the_key (lsc_crypt_ctx_t ctx)
 {
-  const char parms[] =
-    "<GnupgKeyParms format=\"internal\">\n"
-    "Key-Type: RSA\n"
-    "Key-Length: 2048\n"
-    "Key-Usage: encrypt\n"
-    "Name-Real: " ENCRYPTION_KEY_UID "\n"
-    "Expire-Date: 0\n"
-    "%no-protection\n"
-    "%no-ask-passphrase\n"
-    "</GnupgKeyParms>\n";
+  const char parms[] = "<GnupgKeyParms format=\"internal\">\n"
+                       "Key-Type: RSA\n"
+                       "Key-Length: 2048\n"
+                       "Key-Usage: encrypt\n"
+                       "Name-Real: " ENCRYPTION_KEY_UID "\n"
+                       "Expire-Date: 0\n"
+                       "%no-protection\n"
+                       "%no-ask-passphrase\n"
+                       "</GnupgKeyParms>\n";
   gpg_error_t err;
 
   log_gpgme (G_LOG_LEVEL_INFO, 0, "starting key generation ...");
   err = gpgme_op_genkey (ctx->encctx, parms, NULL, NULL);
   if (err)
     {
-      log_gpgme(G_LOG_LEVEL_WARNING, err, "error creating OpenPGP key '%s'",
-                ENCRYPTION_KEY_UID);
+      log_gpgme (G_LOG_LEVEL_WARNING, err, "error creating OpenPGP key '%s'",
+                 ENCRYPTION_KEY_UID);
       return -1;
     }
-  log_gpgme (G_LOG_LEVEL_INFO, 0,
-             "OpenPGP key '%s' has been generated", ENCRYPTION_KEY_UID);
+  log_gpgme (G_LOG_LEVEL_INFO, 0, "OpenPGP key '%s' has been generated",
+             ENCRYPTION_KEY_UID);
   return 0;
 }
-
 
 /**
  * @brief Locate the encryption key
@@ -223,10 +214,10 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
   int nfound, any_skipped;
   gpgme_key_t found, key;
 
- again:
+again:
   /* Search for the public key.  Note that the "=" prefix flag enables
      an exact search.  */
-  err = gpgme_op_keylist_start (ctx->encctx, "="ENCRYPTION_KEY_UID, 0);
+  err = gpgme_op_keylist_start (ctx->encctx, "=" ENCRYPTION_KEY_UID, 0);
   if (err)
     {
       log_gpgme (G_LOG_LEVEL_WARNING, err,
@@ -239,11 +230,11 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
   found = NULL;
   while (!(err = gpgme_op_keylist_next (ctx->encctx, &key)))
     {
-      if (!key->can_encrypt || key->revoked || key->expired
-          || key->disabled || key->invalid)
+      if (!key->can_encrypt || key->revoked || key->expired || key->disabled
+          || key->invalid)
         {
           log_gpgme (G_LOG_LEVEL_MESSAGE, 0, "skipping unusable OpenPGP key %s",
-                     key->subkeys? nonnull (key->subkeys->keyid):"?");
+                     key->subkeys ? nonnull (key->subkeys->keyid) : "?");
           any_skipped = 1;
           continue;
         }
@@ -261,7 +252,7 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
 
   if (err)
     {
-      char * path = g_build_filename (GVMD_STATE_DIR, "gnupg", NULL);
+      char *path = g_build_filename (GVMD_STATE_DIR, "gnupg", NULL);
 
       /* We better reset the gpgme context after an error.  */
       gpgme_release (ctx->encctx);
@@ -294,15 +285,13 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
   if (err)
     {
       log_gpgme (G_LOG_LEVEL_MESSAGE, err,
-                 "error searching for OpenPGP key '%s'",
-                 ENCRYPTION_KEY_UID);
+                 "error searching for OpenPGP key '%s'", ENCRYPTION_KEY_UID);
       gpgme_key_unref (found);
       found = NULL;
     }
 
   return found;
 }
-
 
 /**
  * @brief Encrypt data using the standard key
@@ -338,8 +327,7 @@ do_encrypt (lsc_crypt_ctx_t ctx, const void *plaintext, size_t plaintextlen)
   if (err)
     {
       log_gpgme (G_LOG_LEVEL_WARNING, err,
-                 "%s: error creating data object from plaintext",
-                 G_STRFUNC);
+                 "%s: error creating data object from plaintext", G_STRFUNC);
       return NULL;
     }
 
@@ -347,8 +335,7 @@ do_encrypt (lsc_crypt_ctx_t ctx, const void *plaintext, size_t plaintextlen)
   if (err)
     {
       log_gpgme (G_LOG_LEVEL_WARNING, err,
-                 "%s: error creating data object for ciphertext",
-                 G_STRFUNC);
+                 "%s: error creating data object for ciphertext", G_STRFUNC);
       gpgme_data_release (in);
       return NULL;
     }
@@ -356,13 +343,12 @@ do_encrypt (lsc_crypt_ctx_t ctx, const void *plaintext, size_t plaintextlen)
   gpgme_set_armor (ctx->encctx, 0);
   keyarray[0] = ctx->enckey;
   keyarray[1] = NULL;
-  err = gpgme_op_encrypt (ctx->encctx, keyarray,
-                          GPGME_ENCRYPT_ALWAYS_TRUST, in, out);
+  err = gpgme_op_encrypt (ctx->encctx, keyarray, GPGME_ENCRYPT_ALWAYS_TRUST, in,
+                          out);
   gpgme_data_release (in);
   if (err)
     {
-      log_gpgme (G_LOG_LEVEL_WARNING, err,
-                 "%s: error encrypting credential",
+      log_gpgme (G_LOG_LEVEL_WARNING, err, "%s: error encrypting credential",
                  G_STRFUNC);
       gpgme_data_release (out);
       return NULL;
@@ -374,12 +360,11 @@ do_encrypt (lsc_crypt_ctx_t ctx, const void *plaintext, size_t plaintextlen)
       exit (EXIT_FAILURE);
     }
 
-  result = g_base64_encode ((unsigned char *)ciphertext, ciphertextlen);
+  result = g_base64_encode ((unsigned char *) ciphertext, ciphertextlen);
   gpgme_free (ciphertext);
 
   return result;
 }
-
 
 /**
  * @brief Decrypt data encrypted to the standard key
@@ -410,16 +395,15 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
   char *result;
 
   /* Unfortunately GPGME does not yet support plain base64 encoding.  */
-  ciphertext = (char *)g_base64_decode (cipherstring, &ciphertextlen);
+  ciphertext = (char *) g_base64_decode (cipherstring, &ciphertextlen);
   if (!ciphertext || !ciphertextlen)
-    return NULL;  /* Empty or bad encoding.  */
+    return NULL; /* Empty or bad encoding.  */
 
   err = gpgme_data_new_from_mem (&in, ciphertext, ciphertextlen, 0);
   if (err)
     {
       log_gpgme (G_LOG_LEVEL_WARNING, err,
-                 "%s: error creating data object from ciphertext",
-                 G_STRFUNC);
+                 "%s: error creating data object from ciphertext", G_STRFUNC);
       g_free (ciphertext);
       return NULL;
     }
@@ -429,8 +413,7 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
   if (err)
     {
       log_gpgme (G_LOG_LEVEL_WARNING, err,
-                 "%s: error creating data object for plaintext",
-                 G_STRFUNC);
+                 "%s: error creating data object for plaintext", G_STRFUNC);
       gpgme_data_release (in);
       g_free (ciphertext);
       return NULL;
@@ -454,8 +437,8 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
         log_gpgme (G_LOG_LEVEL_INFO, 0, "   wrong key usage");
       for (recp = decres->recipients; recp; recp = recp->next)
         log_gpgme (G_LOG_LEVEL_INFO, recp->status,
-                   "   encrypted to keyid %s, algo=%d",
-                   recp->keyid, recp->pubkey_algo);
+                   "   encrypted to keyid %s, algo=%d", recp->keyid,
+                   recp->pubkey_algo);
       return NULL;
     }
   result = gpgme_data_release_and_get_mem (out, r_plaintextlen);
@@ -468,8 +451,6 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
   return result;
 }
 
-
-
 /* API */
 
 /**
@@ -481,7 +462,7 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
 lsc_crypt_ctx_t
 lsc_crypt_new ()
 {
-  char * path = g_build_filename (GVMD_STATE_DIR, "gnupg", NULL);
+  char *path = g_build_filename (GVMD_STATE_DIR, "gnupg", NULL);
   lsc_crypt_ctx_t ctx;
 
   ctx = g_malloc0 (sizeof *ctx);
@@ -512,7 +493,6 @@ lsc_crypt_release (lsc_crypt_ctx_t ctx)
   g_free (ctx);
 }
 
-
 /**
  * @brief Flush an LSC encryption context
  *
@@ -538,7 +518,6 @@ lsc_crypt_flush (lsc_crypt_ctx_t ctx)
   g_free (ctx->plaintext);
   ctx->plaintext = NULL;
 }
-
 
 /**
  * @brief Encrypt a list of name/value pairs
@@ -579,7 +558,7 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
       if (!value)
         value = "";
       len = strlen (name);
-      if (len)  /* We skip pairs with an empty name. */
+      if (len) /* We skip pairs with an empty name. */
         {
           put32 (stringbuf, len);
           g_string_append (stringbuf, name);
@@ -596,8 +575,7 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
           g_string_append (stringbuf, value);
         }
     }
-  while ((name = va_arg (arg_ptr, const char *)))
-    ;
+  while ((name = va_arg (arg_ptr, const char *)));
   va_end (arg_ptr);
   plaintext = stringbuf->str;
   plaintextlen = stringbuf->len;
@@ -609,7 +587,6 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
 
   return ciphertext;
 }
-
 
 /**
  * @brief Return an encrypted value in the clear.
@@ -668,29 +645,34 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
     if (!strcmp (nl->name, name))
       {
         return (nl->value
-                ? nl->value
-                : (nl->valoff ? (ctx->plaintext + nl->valoff) : NULL));
+                  ? nl->value
+                  : (nl->valoff ? (ctx->plaintext + nl->valoff) : NULL));
       }
 
   /* Cache miss: Parse the data, cache the result, and return it.  */
   /* Fixme: Cache a not found status.  */
   namelen = strlen (name);
-  p   = ctx->plaintext;
+  p = ctx->plaintext;
   len = ctx->plaintextlen;
   found = 0;
   while (len)
     {
       if (len < 4)
         goto failed;
-      n = get32 (p); p += 4; len -= 4;
+      n = get32 (p);
+      p += 4;
+      len -= 4;
       if (n > len)
         goto failed;
       if (n == namelen && !memcmp (p, name, namelen))
         found = 1;
-      p += n; len -= n;
+      p += n;
+      len -= n;
       if (len < 4)
         goto failed;
-      n = get32 (p); p += 4; len -= 4;
+      n = get32 (p);
+      p += 4;
+      len -= 4;
       if (n > len)
         goto failed;
       if (found)
@@ -717,7 +699,7 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
                  to take a copy because that length byte acts as the
                  string terminator.  */
               nl->valoff = (p - ctx->plaintext);
-              nl->value  = NULL;
+              nl->value = NULL;
             }
           else
             {
@@ -730,18 +712,19 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
             }
           nl->next = ctx->namelist;
           ctx->namelist = nl;
-          return nl->value? nl->value : (ctx->plaintext + nl->valoff);
+          return nl->value ? nl->value : (ctx->plaintext + nl->valoff);
         }
-      p += n; len -= n;
+      p += n;
+      len -= n;
     }
   if (!len)
     goto not_found;
 
- failed:
+failed:
   g_warning ("%s: decrypted credential data block is inconsistent;"
              " %zu bytes remaining at offset %zu",
-             G_STRFUNC, len, (size_t)(p - ctx->plaintext));
- not_found:
+             G_STRFUNC, len, (size_t) (p - ctx->plaintext));
+not_found:
   /* Cache a NULL value.  */
   nl = g_malloc (sizeof *nl + namelen);
 #if 0
@@ -752,12 +735,11 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
   strcpy (((char *) nl) + (nl->name - (char *) nl), name);
 #endif
   nl->valoff = 0;
-  nl->value  = NULL;
+  nl->value = NULL;
   nl->next = ctx->namelist;
   ctx->namelist = nl;
   return NULL;
 }
-
 
 /**
  * @brief Return an encrypted password in the clear.
