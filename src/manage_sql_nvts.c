@@ -1393,6 +1393,32 @@ get_tag (entity_t vt)
         g_string_append_printf (tag, "|solution_type=%s", type);
     }
 
+  child = entity_child (vt, "severities");
+  if (child)
+    {
+      entity_t severity;
+
+      severity = entity_child (child, "severity");
+      if (severity
+          && entity_attribute (severity, "type")
+          && (strcmp (entity_attribute (severity, "type"),
+                      "cvss_base_v2")
+              == 0))
+        {
+          g_warning ("%s: severity: %s", __FUNCTION__, entity_text (severity));
+          g_string_append_printf (tag,
+                                  "%scvss_base_vector=%s",
+                                  first ? "" : "|",
+                                  entity_text (severity));
+          first = 0;
+        }
+      else
+        g_warning ("%s: no severity", __FUNCTION__);
+    }
+  else
+    g_warning ("%s: no severities", __FUNCTION__);
+
+
   child = entity_child (vt, "detection");
   if (child)
     {
@@ -1462,6 +1488,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
 {
   entity_t vts, vt;
   entities_t children;
+  gchar *cvss_base, *parsed_tags;
 
   vts = entity_child (*get_vts_response, "vts");
   if (vts == NULL)
@@ -1572,17 +1599,21 @@ update_nvts_from_vts (entity_t *get_vts_response,
           return;
         }
 
+      parse_tags (tag, &parsed_tags, &cvss_base);
+
       insert_nvt (entity_text (name),
                   cve,
                   bid,
                   xref,
-                  tag,
-                  "0.0", // FIX cvss_base
+                  parsed_tags,
+                  cvss_base,
                   entity_text (family),
                   id,
                   atoi (entity_text (category)));
 
 
+      g_free (parsed_tags);
+      g_free (cvss_base);
       g_free (cve);
       g_free (bid);
       g_free (xref);
