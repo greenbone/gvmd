@@ -3901,7 +3901,7 @@ create_credential_privacy_password
 create_credential_type
  = element type
      {
-       xsd:token { pattern = "cc|snmp|up|usk" }
+       xsd:token { pattern = "cc|pw|snmp|up|usk" }
      }
 
 ## Command create_filter
@@ -5541,6 +5541,8 @@ get_assets
        attribute filt_id { uuid }?
        & # Whether to ignore info used to split the report into pages like the filter terms "first" and "rows".
        attribute ignore_pagination { boolean }?
+       & # Type of assets to get.
+       attribute type { xsd:token { pattern = "host|os" } }?
      }
 
 ## Command get_credentials
@@ -7120,11 +7122,11 @@ modify_setting_name
        text
      }
 
-# The value of the setting.
+# The Base64 encoded value of the setting.
 modify_setting_value
  = element value
      {
-       text
+       base64
      }
 
 ## Command modify_target
@@ -10672,7 +10674,7 @@ get_credentials_response_credential_user_tags_tag_comment
 get_credentials_response_credential_type
  = element type
      {
-       xsd:token { pattern = "up|usk" }
+       xsd:token { pattern = "cc|pw|smime|snmp|up|usk" }
      }
 
 # The type of the credential written out.
