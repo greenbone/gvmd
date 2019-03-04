@@ -7122,7 +7122,7 @@ modify_setting_name
        text
      }
 
-# The Base64 encoded value of the setting.
+# The value of the setting, in base64 encoding.
 modify_setting_value
  = element value
      {
