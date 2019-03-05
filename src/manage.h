@@ -4189,7 +4189,7 @@ gboolean
 gvm_get_sync_script_feed_version (const gchar *, gchar **);
 
 int
-manage_update_nvts_osp ();
+manage_update_nvts_osp (const gchar *);
 
 
 /* Wizards. */

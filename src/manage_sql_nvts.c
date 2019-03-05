@@ -1636,15 +1636,15 @@ update_nvts_from_vts (entity_t *get_vts_response,
  *
  * Expect to be called in the child after a fork.
  *
+ * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
+ *
  * @return 0 success, -1 error, 2 scanner still loading.
  */
 int
-manage_update_nvt_cache_osp ()
+manage_update_nvt_cache_osp (const gchar *update_socket)
 {
   osp_connection_t *connection;
   gchar *db_feed_version, *scanner_feed_version;
-  gchar *host, *ca_pub, *key_pub, *key_priv;
-  int port;
 
   /* Re-open DB after fork. */
 
@@ -1653,19 +1653,13 @@ manage_update_nvt_cache_osp ()
 
   /* Try update VTs. */
 
-  if (get_openvas_osp_scanner (&host, &port, &ca_pub, &key_pub, &key_priv))
-    {
-      g_warning ("%s: No OSP OpenVAS scanner", __FUNCTION__);
-      exit (EXIT_FAILURE);
-    }
-
   db_feed_version = nvts_feed_version ();
   g_debug ("%s: db_feed_version: %s", __FUNCTION__, db_feed_version);
 
-  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
-      g_warning ("%s: failed to connect to %s:%d", __FUNCTION__, host, port);
+      g_warning ("%s: failed to connect to %s", __FUNCTION__, update_socket);
       return -1;
     }
 
@@ -1683,10 +1677,11 @@ manage_update_nvt_cache_osp ()
     {
       entity_t vts;
 
-      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+      connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
       if (!connection)
         {
-          g_warning ("%s: failed to connect to %s:%d (2)", __FUNCTION__, host, port);
+          g_warning ("%s: failed to connect to %s (2)", __FUNCTION__,
+                     update_socket);
           return -1;
         }
 

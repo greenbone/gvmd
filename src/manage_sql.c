@@ -47311,46 +47311,6 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 /**
  * @brief Create the given scanner.
  *
- * @param[out]  host      Host.
- * @param[out]  port      Port.
- * @param[out]  ca_pub    CACert.
- * @param[out]  key_pub   Public key.
- * @param[out]  key_priv  Private key.
- *
- * @return 0 success, -1 error.
- */
-gchar *
-get_openvas_osp_scanner (gchar **host, int *port, gchar **ca_pub,
-                         gchar **key_pub, gchar **key_priv)
-{
-  scanner_t scanner;
-
-  scanner = sql_int64_0 ("SELECT id FROM scanners"
-                         " WHERE uuid = '96011a22-bc60-4576-966c-2ac0cf7e703c';");
-  if (scanner == 0)
-    abort ();
-
-  if (host)
-    *host = scanner_host (scanner);
-
-  if (port)
-    *port = scanner_port (scanner);
-
-  if (ca_pub)
-    *ca_pub = scanner_ca_pub (scanner);
-
-  if (key_pub)
-    *key_pub = scanner_key_pub (scanner);
-
-  if (key_priv)
-    *key_priv = scanner_key_priv (scanner);
-
-  return 0;
-}
-
-/**
- * @brief Create the given scanner.
- *
  * @param[in]  log_config       Log configuration.
  * @param[in]  database         Location of manage database.
  * @param[in]  name             Name of scanner.
