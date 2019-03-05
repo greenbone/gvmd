@@ -1174,6 +1174,8 @@ update_nvt_cache (int register_cleanup)
 /**
  * @brief Update the NVT Cache using OSP.
  *
+ * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
+ *
  * @return 0 success.
  */
 static int
