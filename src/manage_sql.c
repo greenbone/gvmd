@@ -15404,12 +15404,12 @@ setup_full_config_prefs (config_t config, int safe_checks,
 
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " '" OID_PING_HOST ":checkbox:Mark unrechable Hosts as dead (not scanning)',"
+       " '" OID_PING_HOST ":5:checkbox:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " '" OID_LOGINS ":checkbox:NTLMSSP',"
+       " '" OID_LOGINS ":1:checkbox:NTLMSSP',"
        " 'yes');",
        config);
 }
@@ -16758,15 +16758,14 @@ check_db_nvt_selectors ()
   if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-               " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.100315';")
+               " AND family_or_nvt = '" OID_PING_HOST "';")
       == 0)
     {
       sql ("INSERT into nvt_selectors"
            " (name, exclude, type, family_or_nvt, family)"
            " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 0, "
            G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-           /* OID of the "Ping Host" NVT. */
-           " '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');");
+           " '" OID_PING_HOST "', 'Port scanners');");
     }
 
   if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
