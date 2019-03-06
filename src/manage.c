@@ -3239,6 +3239,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
                                      "<name>%s</name>"
                                      "</nvt>"
                                      "<name>Timeout</name>"
+                                     "<id>0</id>"
                                      "<type>entry</type>"
                                      "<value>%s</value>"
                                      "</preference>",
