@@ -1621,15 +1621,11 @@ nvt_selector_plugins (config_t config)
 static gchar*
 preference_value (const char* name, const char* full_value)
 {
-  char *bracket = strchr (name, ':');
-  if (bracket)
+  if (g_strrstr (name, ":radio:"))
     {
-      if (strncmp (bracket, ":radio:", strlen (":radio:")) == 0)
-        {
-          char *semicolon = strchr (full_value, ';');
-          if (semicolon)
-            return g_strndup (full_value, semicolon - full_value);
-        }
+      char *semicolon = strchr (full_value, ';');
+      if (semicolon)
+        return g_strndup (full_value, semicolon - full_value);
     }
   return g_strdup (full_value);
 }
@@ -1678,10 +1674,10 @@ send_config_preferences (config_t config, const char* section_name,
         {
           char **splits;
           int is_file = 0;
-          /* OID:PrefType:PrefName value */
-          splits = g_strsplit (pref_name, ":", 3);
-          if (splits && g_strv_length (splits) == 3
-              && strcmp (splits[1], "file") == 0)
+          /* OID:PrefID:PrefType:PrefName value */
+          splits = g_strsplit (pref_name, ":", 4);
+          if (splits && g_strv_length (splits) == 4
+              && strcmp (splits[2], "file") == 0)
             is_file = 1;
           g_strfreev (splits);
           if (is_file)

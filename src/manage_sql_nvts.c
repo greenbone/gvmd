@@ -907,9 +907,7 @@ char *
 nvt_default_timeout (const char* oid)
 {
   return sql_string ("SELECT value FROM nvt_preferences"
-                     " WHERE name = (SELECT name FROM nvts"
-                     "               WHERE oid = '%s')"
-                     "              || ':entry:Timeout'",
+                     " WHERE name = '%s:0:entry:Timeout'",
                      oid);
 }
 

@@ -15100,8 +15100,8 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
 
                 if (get_nvts_data->preference_count)
                   {
-                    const char *nvt_name = nvt_iterator_name (&nvts);
-                    pref_count = nvt_preference_count (nvt_name);
+                    const char *nvt_oid = nvt_iterator_oid (&nvts);
+                    pref_count = nvt_preference_count (nvt_oid);
                   }
                 if (send_nvt (&nvts, 1, get_nvts_data->preferences,
                               pref_count, timeout, config,
