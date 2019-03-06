@@ -24131,10 +24131,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>value</name>
-      <summary>The value of the setting</summary>
-      <pattern>
-        text
-      </pattern>
+      <summary>The value of the setting, in base64 encoding</summary>
+      <pattern><t>base64</t></pattern>
     </ele>
     <response>
       <pattern>
@@ -24155,7 +24153,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <modify_setting>
           <name>Timezone</name>
-          <value>Africa/Johannesburg</value>
+          <value>QWZyaWNhL0pvaGFubmVzYnVyZw==</value>
         </modify_setting>
       </request>
       <response>
