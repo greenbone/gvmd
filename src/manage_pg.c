@@ -1354,8 +1354,8 @@ manage_create_sql_functions ()
            "                   $1);"
            "$$ LANGUAGE SQL;");
 
-       /* min_qod column was added in version 147 */
-      if (current_db_version >= 147)
+      /* result_nvt column (in OVERRIDES_SQL) was added in version 189 */
+      if (current_db_version >= 189)
         sql ("CREATE OR REPLACE FUNCTION report_severity (report integer,"
              "                                            overrides integer,"
              "                                            min_qod integer)"
@@ -1438,8 +1438,8 @@ manage_create_sql_functions ()
            "  ORDER BY coalesce (owner, 0) DESC LIMIT 1;"
            "$$ LANGUAGE SQL;");
 
-      /* min_qod column was added in version 147 */
-      if (current_db_version >= 147)
+      /* result_nvt column (in OVERRIDES_SQL) was added in version 189 */
+      if (current_db_version >= 189)
         sql ("CREATE OR REPLACE FUNCTION"
              " report_severity_count (report integer, overrides integer,"
              "                        min_qod integer, level text)"
@@ -1863,7 +1863,7 @@ manage_create_sql_functions ()
            "$$ LANGUAGE SQL"
            " IMMUTABLE;");
 
-      /* result_nvt column was added in version 189. */
+      /* result_nvt column (in task_severity) was added in version 189. */
       if (current_db_version >= 189)
         sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer,"
              "                                              integer)"
