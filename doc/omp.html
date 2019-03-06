@@ -7904,7 +7904,7 @@ create_alert_filter
      }
 </pre></div>
 </div>
-<h4>7.4.3 Example: Create an alert</h4>
+<h4>7.4.3 Example: Create an email alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_alert&gt;
    &lt;name&gt;emergency&lt;/name&gt;
@@ -7933,6 +7933,68 @@ create_alert_filter
        &lt;name&gt;from_address&lt;/name&gt;
      &lt;/data&gt;
    &lt;/method&gt;
+ &lt;/create_alert&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_alert_response status="201"
+                        status_text="OK, resource created"
+                        id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre></div>
+</div>
+<h4>7.4.3 Example: Create an Alemba vFire alert</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_alert&gt;
+   &lt;name&gt;Alemba test&lt;/name&gt;
+   &lt;method&gt;
+     Alemba vFire
+     &lt;data&gt;
+       https://alemba.example.com/vfire
+       &lt;name&gt;vfire_base_url&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       9431b46f-8491-45d8-81c3-efea92abb47b
+       &lt;name&gt;vfire_credential&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       5a52a4ff-6f5d-430d-b70a-d5329b6cbbd3
+       &lt;name&gt;vfire_client_id&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       This an automatically created call for the GVM task %n.
+       &lt;name&gt;vfire_call_description&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       IT
+       &lt;name&gt;vfire_call_partition_name&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       GVM Report
+       &lt;name&gt;vfire_call_type_name&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       GVM Scan Report
+       &lt;name&gt;vfire_call_template_name&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       3 - Team (2-10)
+       &lt;name&gt;vfire_call_impact_name&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       3 - Normal
+       &lt;name&gt;vfire_call_urgency_name&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       a3810a62-1f62-11e1-9219-406186ea4fc5, c402cc3e-b531-11e1-9163-406186ea4fc5
+       &lt;name&gt;report_formats&lt;/name&gt;
+     &lt;/data&gt;
+   &lt;/method&gt;
+   &lt;condition&gt;always&lt;/condition&gt;
+   &lt;event&gt;
+     Task run status changed
+     &lt;data&gt;
+       Done
+       &lt;name&gt;status&lt;/name&gt;
+     &lt;/data&gt;
+   &lt;/event&gt;
  &lt;/create_alert&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_alert_response status="201"
@@ -8448,7 +8510,7 @@ create_credential_privacy_password
 create_credential_type
  = element type
      {
-       xsd:token { pattern = "cc|snmp|up|usk" }
+       xsd:token { pattern = "cc|pw|snmp|up|usk" }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_credential_response
@@ -16299,6 +16361,11 @@ get_alerts_response_alert_count_page
           (<a href="#type_boolean">boolean</a>)
           Whether to ignore info used to split the report into pages like the filter terms "first" and "rows".
           </li>
+<li>
+          @<b>type</b>
+          ("host" or "os")
+          Type of assets to get.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -16723,6 +16790,7 @@ get_alerts_response_alert_count_page
        &amp; attribute filter { text }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute ignore_pagination { boolean }?
+       &amp; attribute type { xsd:token { pattern = "host|os" } }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_assets_response
@@ -17839,7 +17907,7 @@ get_credentials_response_credential_user_tags_tag_comment
 get_credentials_response_credential_type
  = element type
      {
-       xsd:token { pattern = "up|usk" }
+       xsd:token { pattern = "cc|pw|smime|snmp|up|usk" }
      }
 
 get_credentials_response_credential_full_type
@@ -36180,7 +36248,7 @@ modify_schedule_period_unit
 </li>
 <li>
               &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The value of the setting.</div>
+              <div style="margin-left: 15px; display: inline;">The value of the setting, in base64 encoding.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -36217,7 +36285,7 @@ modify_setting_name
 modify_setting_value
  = element value
      {
-       text
+       base64
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>modify_setting_response
@@ -36232,7 +36300,7 @@ modify_setting_value
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_setting&gt;
    &lt;name&gt;Timezone&lt;/name&gt;
-   &lt;value&gt;Africa/Johannesburg&lt;/value&gt;
+   &lt;value&gt;QWZyaWNhL0pvaGFubmVzYnVyZw==&lt;/value&gt;
  &lt;/modify_setting&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_setting_response status="200"
