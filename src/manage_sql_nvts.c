@@ -1405,7 +1405,6 @@ get_tag (entity_t vt)
                       "cvss_base_v2")
               == 0))
         {
-          g_warning ("%s: severity: %s", __FUNCTION__, entity_text (severity));
           g_string_append_printf (tag,
                                   "%scvss_base_vector=%s",
                                   first ? "" : "|",
@@ -1417,7 +1416,6 @@ get_tag (entity_t vt)
     }
   else
     g_warning ("%s: no severities", __FUNCTION__);
-
 
   child = entity_child (vt, "detection");
   if (child)
