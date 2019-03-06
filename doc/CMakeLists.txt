@@ -122,6 +122,11 @@ if (XMLTOMAN_EXECUTABLE)
 					  COMMAND sh
 					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/openvas-portnames-update.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/openvas-portnames-update.8\;\"
 					  DEPENDS openvas-portnames-update.8.xml)
+
+  add_custom_command (OUTPUT openvas-verify-secinfo.8
+            COMMAND sh
+            ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/openvas-verify-secinfo.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/openvas-verify-secinfo.8\;\"
+            DEPENDS openvas-verify-secinfo.8.xml)
 else (XMLTOMAN_EXECUTABLE)
   message (STATUS "WARNING: xmltoman is required to generate manpage.")
   add_custom_command (OUTPUT openvasmd.8
