@@ -99,12 +99,13 @@ add_executable (${BINARY_NAME}
                 manage_acl.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
-                manage_sql_tickets.c
+                manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_migrators.c scanner.c
                 ${BACKEND_FILES}
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c)
+                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c
+                gmp_tls_certificates.c)
 
 if (BACKEND STREQUAL SQLITE3)
   target_link_libraries (${BINARY_NAME} m
@@ -277,6 +278,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tickets.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tls_certificates.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/otp.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
@@ -294,6 +296,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/comm.c"

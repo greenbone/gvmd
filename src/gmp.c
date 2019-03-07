@@ -89,6 +89,7 @@
 #include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_tickets.h"
+#include "gmp_tls_certificates.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "utils.h"
@@ -5245,6 +5246,7 @@ typedef enum
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
   CLIENT_GET_TICKETS,
+  CLIENT_GET_TLS_CERTIFICATES,
   CLIENT_GET_USERS,
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
@@ -6681,6 +6683,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_TASKS);
           }
         ELSE_GET_START (tickets, TICKETS)
+        ELSE_GET_START (tls_certificates, TLS_CERTIFICATES)
         else if (strcasecmp ("GET_USERS", element_name) == 0)
           {
             get_data_parse_attributes (&get_users_data->get, "user",
@@ -20872,6 +20875,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       CASE_GET_END (TICKETS, tickets);
+
+      CASE_GET_END (TLS_CERTIFICATES, tls_certificates);
 
       case CLIENT_GET_USERS:
         handle_get_users (gmp_parser, error);

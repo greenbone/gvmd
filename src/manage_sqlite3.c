@@ -3817,6 +3817,16 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
        " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
        "  result_uuid, report);");
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificates"
+       " (id INTEGER PRIMARY KEY, uuid text UNIQUE, owner integer,"
+       "  name text, comment text, creation_time integer,"
+       "  modification_time integer, certificate text, subject_dn text,"
+       "  issuer_dn text, trust integer);");
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificates_trash"
+       " (id INTEGER PRIMARY KEY, uuid text UNIQUE, owner integer,"
+       "  name text, comment text, creation_time integer,"
+       "  modification_time integer, certificate text, subject_dn text,"
+       "  issuer_dn text, trust integer);");
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  host, port, type, ca_pub, credential INTEGER,"

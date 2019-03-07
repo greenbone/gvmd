@@ -331,6 +331,7 @@ typedef long long int tag_t;
 typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int ticket_t;
+typedef long long int tls_certificate_t;
 typedef long long int result_t;
 typedef long long int report_t;
 typedef long long int report_host_t;

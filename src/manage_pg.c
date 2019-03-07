@@ -2490,6 +2490,32 @@ create_tables ()
        "  result_uuid text,"
        "  report integer);"); // REFERENCES reports_trash (id) ON DELETE RESTRICT
 
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificates"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  certificate text,"
+       "  subject_dn text,"
+       "  issuer_dn text,"
+       "  trust integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificates_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  certificate text,"
+       "  subject_dn text,"
+       "  issuer_dn text,"
+       "  trust integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
