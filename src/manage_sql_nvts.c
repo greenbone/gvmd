@@ -1693,6 +1693,9 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
       update_nvts_from_vts (&vts, scanner_feed_version);
       free_entity (vts);
+
+      g_info ("Updating NVT cache... done (%i NVTs).",
+              sql_int ("SELECT count (*) FROM nvts;"));
     }
 
   return 0;
