@@ -33,6 +33,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Filter columns for tls_certificate iterator.
  */
@@ -238,4 +244,102 @@ int
 trash_tls_certificate_writable (tls_certificate_t tls_certificate)
 {
   return trash_tls_certificate_in_use (tls_certificate) == 0;
+}
+
+/**
+ * @brief Create a TLS certificate.
+ *
+ * @param[in]   name            Name of new TLS certificate.
+ * @param[in]   comment         Comment of TLS certificate.
+ * @param[in]   base64_data     Base64 encoded certificate file content.
+ * @param[out]  ticket          Created TLS certificate.
+ *
+ * @return 0 success, 1 invalid certificate, 99 permission denied, -1 error.
+ */
+int
+create_tls_certificate (const char *name,
+                        const char *comment,
+                        const char *certificate,
+                        tls_certificate_t *tls_certificate)
+{
+  int ret;
+  char *md5_fingerprint, *subject_dn, *issuer_dn;
+  time_t activation_time, expiration_time;
+
+  subject_dn = NULL; // TODO add to get_certificate_info
+
+  ret = get_certificate_info (certificate,
+                              &activation_time,
+                              &expiration_time,
+                              &md5_fingerprint,
+                              &issuer_dn);
+
+  if (ret)
+    return 1;
+
+  sql ("INSERT INTO tls_certificates"
+       " (uuid, owner, name, comment, creation_time, modification_time,"
+       "  certificate, subject_dn, issuer_dn, trust)"
+       " SELECT make_uuid(), (SELECT id FROM users WHERE users.uuid = '%s'),"
+       "        '%s', '%s', m_now(), m_now(), '%s', '%s', '%s', 0;",
+       current_credentials.uuid,
+       name ? name : md5_fingerprint,
+       comment ? comment : "",
+       certificate ? certificate : "",
+       subject_dn ? subject_dn : "",
+       issuer_dn ? issuer_dn : "");
+
+  if (tls_certificate)
+    *tls_certificate = sql_last_insert_id ();
+
+  return 0;
+}
+
+/**
+ * @brief Create a TLS certificate from an existing TLS certificate.
+ *
+ * @param[in]  name        Name. NULL to copy from existing TLS certificate.
+ * @param[in]  comment     Comment. NULL to copy from existing TLS certificate.
+ * @param[in]  ticket_id   UUID of existing TLS certificate.
+ * @param[out] new_ticket  New TLS certificate.
+ *
+ * @return 0 success,
+ *         1 TLS certificate exists already,
+ *         2 failed to find existing TLS certificate,
+ *         99 permission denied,
+ *         -1 error.
+ */
+int
+copy_tls_certificate (const char *name,
+                      const char *comment,
+                      const char *tls_certificate_id,
+                      tls_certificate_t *new_tls_certificate)
+{
+  int ret;
+  tls_certificate_t old_tls_certificate;
+
+  assert (new_tls_certificate);
+
+  ret = copy_resource ("tls_certificate", name, comment, tls_certificate_id,
+                       "certificate, subject_dn, issuer_dn, trust",
+                       0, new_tls_certificate, &old_tls_certificate);
+  if (ret)
+    return ret;
+
+  return 0;
+}
+
+
+/**
+ * @brief Return the UUID of a TLS certificate.
+ *
+ * @param[in]  tls_certificate  TLS certificate.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+tls_certificate_uuid (tls_certificate_t tls_certificate)
+{
+  return sql_string ("SELECT uuid FROM tls_certificates WHERE id = %llu;",
+                     tls_certificate);
 }

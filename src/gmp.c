@@ -5178,6 +5178,7 @@ typedef enum
   CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_CREATE_TICKET,
+  CLIENT_CREATE_TLS_CERTIFICATE,
   CLIENT_CREATE_USER,
   CLIENT_CREATE_USER_COMMENT,
   CLIENT_CREATE_USER_COPY,
@@ -5788,6 +5789,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_ticket_start (gmp_parser, attribute_names,
                                  attribute_values);
             set_client_state (CLIENT_CREATE_TICKET);
+          }
+        else if (strcasecmp ("CREATE_TLS_CERTIFICATE", element_name) == 0)
+          {
+            create_tls_certificate_start (gmp_parser, attribute_names,
+                                          attribute_values);
+            set_client_state (CLIENT_CREATE_TLS_CERTIFICATE);
           }
         else if (strcasecmp ("CREATE_USER", element_name) == 0)
           {
@@ -9222,6 +9229,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         create_ticket_element_start (gmp_parser, element_name,
                                      attribute_names,
                                      attribute_values);
+        break;
+
+      case CLIENT_CREATE_TLS_CERTIFICATE:
+        create_tls_certificate_element_start (gmp_parser, element_name,
+                                              attribute_names,
+                                              attribute_values);
         break;
 
       case CLIENT_CREATE_USER:
@@ -25048,6 +25061,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_CREATE_TLS_CERTIFICATE:
+        if (create_tls_certificate_element_end (gmp_parser, error,
+                                                element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_CREATE_USER:
         {
           gchar *errdesc;
@@ -29675,6 +29694,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_TICKET:
         create_ticket_element_text (text, text_len);
+        break;
+
+      case CLIENT_CREATE_TLS_CERTIFICATE:
+        create_tls_certificate_element_text (text, text_len);
         break;
 
 

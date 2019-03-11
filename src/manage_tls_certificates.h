@@ -60,4 +60,14 @@ tls_certificate_writable (tls_certificate_t);
 int
 trash_tls_certificate_writable (tls_certificate_t);
 
+int
+create_tls_certificate (const char *, const char *, const char *,
+                        tls_certificate_t *);
+
+int
+copy_tls_certificate (const char* name, const char* comment, const char* tls_certificate_id, ticket_t* new_ticket);
+
+char*
+tls_certificate_uuid (tls_certificate_t);
+
 #endif /* not _GVMD_MANAGE_TLS_CERTIFICATES_H */
