@@ -63590,7 +63590,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       gsize value_size;
       gchar *quoted_timezone, *value;
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL))
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -63615,7 +63625,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       assert (current_credentials.username);
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL))
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -63659,7 +63679,17 @@ modify_setting (const gchar *uuid, const gchar *name,
         }
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL))
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -63824,7 +63854,17 @@ modify_setting (const gchar *uuid, const gchar *name,
         return -1;
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL))
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -64074,7 +64114,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       assert (current_credentials.username);
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL))
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
