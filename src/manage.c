@@ -4346,9 +4346,20 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       name = otp_pref_iterator_name (&scanner_prefs_iter);
       value = otp_pref_iterator_value (&scanner_prefs_iter);
       if (name && value)
-        g_hash_table_replace (scanner_options,
-                              g_strdup (name),
-                              g_strdup (value));
+        {
+          const char *osp_value;
+
+          // Workaround for boolean scanner preferences
+          if (strcmp (value, "yes") == 0)
+            osp_value = "1";
+          else if (strcmp (value, "no") == 0)
+            osp_value = "0";
+          else
+            osp_value = value;
+          g_hash_table_replace (scanner_options,
+                                g_strdup (name),
+                                g_strdup (osp_value));
+        }
     }
 
   /* Setup vulnerability tests (without preferences) */
@@ -4396,11 +4407,30 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       if (split_name && split_name[0] && split_name[1] && split_name[2])
         {
           const char *oid = split_name[0];
+          const char *type = split_name[1];
           const char *pref_id = split_name[2];
-          g_message ("full:\"%s\" - id:\"%s\"", full_name, pref_id);
+          gchar *osp_value = NULL;
+
+          if (strcmp (type, "checkbox") == 0)
+            {
+              if (strcmp (value, "yes") == 0)
+                osp_value = g_strdup ("1");
+              else
+                osp_value = g_strdup ("0");
+            }
+          else if (strcmp (type, "radio") == 0)
+            {
+              gchar** split_value;
+              split_value = g_strsplit (value, ";", 2);
+              osp_value = g_strdup (split_value[0]);
+              g_strfreev (split_value);
+            }
+
           osp_vt = g_hash_table_lookup (vts_hash_table, oid);
           if (osp_vt)
-            osp_vt_single_add_value (osp_vt, pref_id, value);
+            osp_vt_single_add_value (osp_vt, pref_id,
+                                     osp_value ? osp_value : value);
+          g_free (osp_value);
         }
 
       g_strfreev (split_name);
