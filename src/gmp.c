@@ -13654,7 +13654,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           gchar *fingerprint, *issuer;
           get_certificate_info (cert,
                                 &activation_time, &expiration_time,
-                                &fingerprint, &issuer);
+                                &fingerprint, NULL, &issuer);
           activation_time_str = certificate_iso_time (activation_time);
           expiration_time_str = certificate_iso_time (expiration_time);
           SENDF_TO_CLIENT_OR_FAIL
@@ -17015,7 +17015,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
               gchar *fingerprint, *issuer;
               get_certificate_info (scanner_iterator_ca_pub (&scanners),
                                     &activation_time, &expiration_time,
-                                    &fingerprint, &issuer);
+                                    &fingerprint, NULL, &issuer);
               activation_time_str = certificate_iso_time (activation_time);
               expiration_time_str = certificate_iso_time (expiration_time);
               SENDF_TO_CLIENT_OR_FAIL
@@ -17060,7 +17060,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
               gchar *fingerprint, *issuer;
               get_certificate_info (scanner_iterator_key_pub (&scanners),
                                     &activation_time, &expiration_time,
-                                    &fingerprint, &issuer);
+                                    &fingerprint, NULL, &issuer);
               activation_time_str = certificate_iso_time (activation_time);
               expiration_time_str = certificate_iso_time (expiration_time);
               SENDF_TO_CLIENT_OR_FAIL
@@ -17938,7 +17938,7 @@ handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
           get_certificate_info (setting_iterator_value (&settings),
                                 &activation_time,
                                 &expiration_time, &fingerprint,
-                                &issuer);
+                                NULL, &issuer);
           activation_time_str = certificate_iso_time (activation_time);
           expiration_time_str = certificate_iso_time (expiration_time);
           SENDF_TO_CLIENT_OR_FAIL
@@ -20710,7 +20710,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
                   get_certificate_info (ldap_cacert, &activation_time,
                                         &expiration_time, &fingerprint,
-                                        &issuer);
+                                        NULL, &issuer);
                   activation_time_str = certificate_iso_time (activation_time);
                   expiration_time_str = certificate_iso_time (expiration_time);
                   SENDF_TO_CLIENT_OR_FAIL

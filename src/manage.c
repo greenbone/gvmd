@@ -309,7 +309,7 @@ truncate_private_key (const gchar* private_key)
 int
 get_certificate_info (const gchar* certificate,
                       time_t* activation_time, time_t* expiration_time,
-                      gchar** fingerprint, gchar** issuer)
+                      gchar** fingerprint, gchar **subject, gchar** issuer)
 {
   gchar *cert_truncated;
 
@@ -320,6 +320,8 @@ get_certificate_info (const gchar* certificate,
     *expiration_time = -1;
   if (fingerprint)
     *fingerprint = NULL;
+  if (subject)
+    *subject = NULL;
   if (issuer)
     *issuer = NULL;
 
@@ -381,6 +383,17 @@ get_certificate_info (const gchar* certificate,
 
           *fingerprint = string->str;
           g_string_free (string, FALSE);
+        }
+
+      if (subject)
+        {
+          size_t buffer_size;
+          gchar *buffer;
+          gnutls_x509_crt_get_dn (gnutls_cert, NULL, &buffer_size);
+          buffer = g_malloc (buffer_size);
+          gnutls_x509_crt_get_dn (gnutls_cert, buffer, &buffer_size);
+
+          *subject = buffer;
         }
 
       if (issuer)

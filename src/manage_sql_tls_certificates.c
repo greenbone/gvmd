@@ -383,6 +383,7 @@ create_tls_certificate (const char *name,
                               &activation_time,
                               &expiration_time,
                               &md5_fingerprint,
+                              &subject_dn,
                               &issuer_dn);
 
   if (ret)

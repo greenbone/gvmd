@@ -158,7 +158,12 @@ gchar*
 truncate_private_key (const gchar*);
 
 int
-get_certificate_info (const gchar*, time_t*, time_t*, gchar**, gchar**);
+get_certificate_info (const gchar *,
+                      time_t *,
+                      time_t *,
+                      gchar **,
+                      gchar **,
+                      gchar **);
 
 gchar *
 certificate_iso_time (time_t);
