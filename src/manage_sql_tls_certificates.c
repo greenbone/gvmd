@@ -43,7 +43,8 @@
  * @brief Filter columns for tls_certificate iterator.
  */
 #define TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS                               \
- { GET_ITERATOR_FILTER_COLUMNS, "subject_dn", "issuer_dn", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "subject_dn", "issuer_dn", "md5_fingerprint", \
+   "activates", "expires", "valid", NULL }
 
 /**
  * @brief TLS Certificate iterator columns.
@@ -69,6 +70,38 @@
    {                                                                          \
      "trust",                                                                 \
      NULL,                                                                    \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "md5_fingerprint",                                                       \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "iso_time (activation_time)",                                            \
+     "activation_time",                                                       \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "iso_time (expiration_time)",                                            \
+     "expiration_time",                                                       \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "(CASE WHEN (expiration_time >= m_now() OR expiration_time = -1)"        \
+     "       AND (activation_time <= m_now() OR activation_time = -1)"        \
+     "      THEN 1 ELSE 0 END)",                                              \
+     "valid",                                                                 \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "activation_time",                                                       \
+     "activates",                                                             \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "expiration_time",                                                       \
+     "expires",                                                               \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
@@ -98,6 +131,38 @@
    {                                                                          \
      "trust",                                                                 \
      NULL,                                                                    \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "md5_fingerprint",                                                       \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "iso_time (activation_time)",                                            \
+     "activation_time",                                                       \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "iso_time (expiration_time)",                                            \
+     "expiration_time",                                                       \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "(CASE WHEN (expiration_time >= m_now() OR expiration_time = -1)"        \
+     "       AND (activation_time <= m_now() OR activation_time = -1)"        \
+     "      THEN 1 ELSE 0 END)",                                              \
+     "valid",                                                                 \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "activation_time",                                                       \
+     "activates",                                                             \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "expiration_time",                                                       \
+     "expires",                                                               \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
@@ -195,6 +260,52 @@ tls_certificate_iterator_trust (iterator_t *iterator)
 }
 
 /**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_iterator_md5_fingerprint,
+            GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_iterator_activation_time,
+            GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_iterator_expiration_time,
+            GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+int
+tls_certificate_iterator_valid (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+}
+
+/**
  * @brief Return whether a tls_certificate is in use.
  *
  * @param[in]  tls_certificate  TLS Certificate.
@@ -279,15 +390,20 @@ create_tls_certificate (const char *name,
 
   sql ("INSERT INTO tls_certificates"
        " (uuid, owner, name, comment, creation_time, modification_time,"
-       "  certificate, subject_dn, issuer_dn, trust)"
+       "  certificate, subject_dn, issuer_dn, trust,"
+       "  activation_time, expiration_time, md5_fingerprint)"
        " SELECT make_uuid(), (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "        '%s', '%s', m_now(), m_now(), '%s', '%s', '%s', 0;",
+       "        '%s', '%s', m_now(), m_now(), '%s', '%s', '%s', 0,"
+       "        %ld, %ld, '%s';",
        current_credentials.uuid,
        name ? name : md5_fingerprint,
        comment ? comment : "",
        certificate ? certificate : "",
        subject_dn ? subject_dn : "",
-       issuer_dn ? issuer_dn : "");
+       issuer_dn ? issuer_dn : "",
+       activation_time,
+       expiration_time,
+       md5_fingerprint);
 
   if (tls_certificate)
     *tls_certificate = sql_last_insert_id ();
@@ -321,7 +437,8 @@ copy_tls_certificate (const char *name,
   assert (new_tls_certificate);
 
   ret = copy_resource ("tls_certificate", name, comment, tls_certificate_id,
-                       "certificate, subject_dn, issuer_dn, trust",
+                       "certificate, subject_dn, issuer_dn, trust,"
+                       "activation_time, expiration_time, md5_fingerprint",
                        0, new_tls_certificate, &old_tls_certificate);
   if (ret)
     return ret;

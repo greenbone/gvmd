@@ -184,12 +184,20 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
       /* Send tls_certificate info. */
       SENDF_TO_CLIENT_OR_FAIL 
         ("<certificate>%s</certificate>"
+         "<md5_fingerprint>%s</md5_fingerprint>"
          "<trust>%d</trust>"
+         "<valid>%d</valid>"
+         "<activation_time>%s</activation_time>"
+         "<expiration_time>%s</expiration_time>"
          "<subject_dn>%s</subject_dn>"
          "<issuer_dn>%s</issuer_dn>"
          "</tls_certificate>",
          tls_certificate_iterator_certificate (&tls_certificates),
+         tls_certificate_iterator_md5_fingerprint (&tls_certificates),
          tls_certificate_iterator_trust (&tls_certificates),
+         tls_certificate_iterator_valid (&tls_certificates),
+         tls_certificate_iterator_activation_time (&tls_certificates),
+         tls_certificate_iterator_expiration_time (&tls_certificates),
          tls_certificate_iterator_subject_dn (&tls_certificates),
          tls_certificate_iterator_issuer_dn (&tls_certificates));
       count++;

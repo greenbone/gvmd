@@ -48,6 +48,18 @@ tls_certificate_iterator_issuer_dn (iterator_t*);
 int
 tls_certificate_iterator_trust (iterator_t *);
 
+const char*
+tls_certificate_iterator_md5_fingerprint (iterator_t*);
+
+const char*
+tls_certificate_iterator_activation_time (iterator_t*);
+
+const char*
+tls_certificate_iterator_expiration_time (iterator_t*);
+
+int
+tls_certificate_iterator_valid (iterator_t *);
+
 int
 tls_certificate_in_use (tls_certificate_t);
 
