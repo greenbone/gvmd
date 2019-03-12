@@ -4204,6 +4204,238 @@ launch_osp_task (task_t task, target_t target, const char *scan_id,
 }
 
 /**
+ * @brief Get the SSH credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_ssh_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_ssh_credential (target);
+  if (credential)
+    {
+      iterator_t iter;
+      char *ssh_port;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: SSH Credential not found.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (strcmp (credential_iterator_type (&iter), "up"))
+        {
+          g_warning ("%s: SSH Credential not a user/pass pair.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      ssh_port = target_ssh_port (target);
+      osp_credential
+        = osp_credential_new ("up",
+                              "ssh",
+                              ssh_port,
+                              credential_iterator_login (&iter),
+                              credential_iterator_password (&iter));
+      cleanup_iterator (&iter);
+      g_free (ssh_port);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Get the SMB credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_smb_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_smb_credential (target);
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: SMB Credential not found.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (strcmp (credential_iterator_type (&iter), "up"))
+        {
+          g_warning ("%s: SMB Credential not a user/pass pair.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      osp_credential
+        = osp_credential_new ("up",
+                              "smb",
+                              NULL,
+                              credential_iterator_login (&iter),
+                              credential_iterator_password (&iter));
+      cleanup_iterator (&iter);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Launch an OpenVAS via OSP task.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   target      The target.
+ * @param[out]  scan_id     The new scan uuid.
+ * @param[out]  error       Error return.
+ *
+ * @return 0 success, -1 if scanner is down.
+ */
+static int
+launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
+                         char **error)
+{
+  osp_connection_t *connection;
+  char *hosts_str, *ports_str;
+  osp_target_t *osp_target;
+  GSList *osp_targets, *vts;
+  GHashTable *vts_hash_table;
+  osp_credential_t *ssh_credential, *smb_credential;
+  GHashTable *scanner_options;
+  int ret;
+  config_t config;
+  iterator_t scanner_prefs_iter, families, prefs;
+
+  config = task_config (task);
+
+  connection = NULL;
+
+  /* Set up target(s) */
+  hosts_str = target_hosts (target);
+  ports_str = target_port_range (target);
+
+  osp_target = osp_target_new (hosts_str, ports_str);
+  osp_targets = g_slist_append (NULL, osp_target);
+
+  ssh_credential = target_osp_ssh_credential (target);
+  if (ssh_credential)
+    osp_target_add_credential (osp_target, ssh_credential);
+
+  smb_credential = target_osp_smb_credential (target);
+  if (smb_credential)
+    osp_target_add_credential (osp_target, smb_credential);
+
+  /* Setup general scanner preferences */
+  scanner_options
+    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+  init_otp_pref_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
+  while (next (&scanner_prefs_iter))
+    {
+      const char *name, *value;
+      name = otp_pref_iterator_name (&scanner_prefs_iter);
+      value = otp_pref_iterator_value (&scanner_prefs_iter);
+      if (name && value)
+        g_hash_table_replace (scanner_options,
+                              g_strdup (name),
+                              g_strdup (value));
+    }
+
+  /* Setup vulnerability tests (without preferences) */
+  vts = NULL;
+  vts_hash_table
+    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+  init_family_iterator (&families, 0, NULL, 1);
+  while (next (&families))
+    {
+      const char *family = family_iterator_name (&families);
+      if (family)
+        {
+          iterator_t nvts;
+          init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);
+          while (next (&nvts))
+            {
+              const char *oid;
+              osp_vt_single_t *new_vt;
+
+              oid = nvt_iterator_oid (&nvts);
+              new_vt = osp_vt_single_new (oid);
+
+              vts = g_slist_prepend (vts, new_vt);
+              g_hash_table_replace (vts_hash_table, g_strdup (oid), new_vt);
+            }
+          cleanup_iterator (&nvts);
+        }
+    }
+  cleanup_iterator (&families);
+
+  /* Setup VT preferences */
+  init_otp_pref_iterator (&prefs, config, "PLUGINS_PREFS");
+  while (next (&prefs))
+    {
+      const char *full_name, *value;
+      osp_vt_single_t *osp_vt;
+      gchar **split_name;
+
+      full_name = otp_pref_iterator_name (&prefs);
+      value = otp_pref_iterator_value (&prefs);
+      split_name = g_strsplit (full_name, ":", 3);
+
+      osp_vt = NULL;
+      if (split_name && split_name[0] && split_name[1] && split_name[2])
+        {
+          const char *oid = split_name[0];
+          const char *pref_id = split_name[2];
+          g_message ("full:\"%s\" - id:\"%s\"", full_name, pref_id);
+          osp_vt = g_hash_table_lookup (vts_hash_table, oid);
+          if (osp_vt)
+            osp_vt_single_add_value (osp_vt, pref_id, value);
+        }
+
+      g_strfreev (split_name);
+    }
+  cleanup_iterator (&prefs);
+
+  /* Start the scan */
+  connection = osp_scanner_connect (task_scanner (task));
+  if (!connection)
+    {
+      if (error)
+        *error = g_strdup ("Could not connect to Scanner");
+      return -1;
+    }
+
+  ret = osp_start_scan_ext (connection,
+                            osp_targets,
+                            NULL, /* vt_groups */
+                            vts,
+                            scanner_options,
+                            1,    /* parallel */
+                            scan_id,
+                            error);
+
+  osp_connection_close (connection);
+  g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
+  // Credentials are freed with target
+  g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
+  g_hash_table_destroy (scanner_options);
+  free (hosts_str);
+  free (ports_str);
+  return ret;
+}
+
+/**
  * @brief Fork a child to handle an OSP scan's fetching and inserting.
  *
  * @param[in]   task        The task.
@@ -4256,7 +4488,17 @@ fork_osp_scan_handler (task_t task, target_t target)
    */
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
-  if (launch_osp_task (task, target, report_id, &error))
+
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_OPENVAS)
+    {
+      rc = launch_osp_openvas_task (task, target, report_id, &error);
+    }
+  else
+    {
+      rc = launch_osp_task (task, target, report_id, &error);
+    }
+
+  if (rc)
     {
       result_t result;
 
@@ -4301,7 +4543,7 @@ fork_osp_scan_handler (task_t task, target_t target)
 }
 
 /**
- * @brief Start a task on an OSP scanner.
+ * @brief Start a task on an OSP or OpenVAS via OSP scanner.
  *
  * @param[in]   task       The task.
  *

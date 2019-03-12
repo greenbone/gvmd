@@ -36922,7 +36922,8 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
   ctype = config_type (config);
   stype = scanner_type (scanner);
 
-  if (ctype == 0 && stype == SCANNER_TYPE_OPENVAS)
+  if (ctype == 0
+      && (stype == SCANNER_TYPE_OPENVAS || stype == SCANNER_TYPE_OSP_OPENVAS))
     return 1;
   if (ctype == 0 && stype == SCANNER_TYPE_GMP)
     return 1;
@@ -36995,7 +36996,8 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
     return 0;
 
   /* OpenVAS Scanner with OpenVAS config. */
-  if (stype == SCANNER_TYPE_OPENVAS && ctype == 0)
+  if ((stype == SCANNER_TYPE_OPENVAS || stype == SCANNER_TYPE_OSP_OPENVAS)
+      && ctype == 0)
     return 0;
 
   /* GMP Scanner with OpenVAS config. */
@@ -49232,7 +49234,8 @@ verify_scanner (const char *scanner_id, char **version)
       cleanup_iterator (&scanner);
       return 0;
     }
-  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP)
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_OPENVAS)
     {
       int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
                                                NULL, NULL, NULL);

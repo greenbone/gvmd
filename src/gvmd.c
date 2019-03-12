@@ -2155,6 +2155,8 @@ main (int argc, char** argv)
         type = SCANNER_TYPE_OPENVAS;
       else if (!strcasecmp (scanner_type, "OSP"))
         type = SCANNER_TYPE_OSP;
+      else if (!strcasecmp (scanner_type, "OSP-OpenVAS"))
+        type = SCANNER_TYPE_OSP_OPENVAS;
       else
         {
           printf ("Invalid scanner type value.\n");
@@ -2192,6 +2194,8 @@ main (int argc, char** argv)
             type = SCANNER_TYPE_OPENVAS;
           else if (strcasecmp (scanner_type, "OSP") == 0)
             type = SCANNER_TYPE_OSP;
+          else if (strcasecmp (scanner_type, "OSP-OpenVAS") == 0)
+            type = SCANNER_TYPE_OSP_OPENVAS;
           else
             {
               g_warning ("Invalid scanner type value");
