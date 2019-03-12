@@ -1084,6 +1084,41 @@ refresh_nvt_cves ()
 }
 
 /**
+ * @brief Update config preferences that don't have a preference ID.
+ */
+static void
+update_old_config_preferences ()
+{
+  iterator_t nvt_prefs;
+
+  init_iterator (&nvt_prefs, "SELECT name FROM nvt_preferences;");
+  while (next (&nvt_prefs))
+    {
+      char **splits, *quoted_name, *quoted_pref_name;
+      const char *pref_name = iterator_string (&nvt_prefs, 0);
+
+      if (!strstr (pref_name, ":"))
+        continue;
+      splits = g_strsplit (pref_name, ":", 4);
+      if (!splits || !splits[0] || !splits[1] || !splits[2] || !splits[3])
+        {
+          g_warning ("%s: Erroneous NVT preference '%s'", __FUNCTION__, pref_name);
+          g_strfreev (splits);
+          continue;
+        }
+      quoted_pref_name = sql_quote (pref_name);
+      quoted_name = sql_quote (splits[3]);
+      sql ("UPDATE config_preferences SET name = '%s'"
+           " WHERE name = '%s:%s:%s';",
+           quoted_pref_name, splits[0], splits[2], quoted_name);
+      g_free (quoted_pref_name);
+      g_free (quoted_name);
+      g_strfreev (splits);
+    }
+  cleanup_iterator (&nvt_prefs);
+}
+
+/**
  * @brief Complete an update of the NVT cache.
  *
  * @param[in]  nvts_list             List of nvti_t to insert.
@@ -1118,7 +1153,9 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
   sql_begin_immediate ();
 
   /* Remove preferences from configs where the preference has vanished from
-   * the associated NVT. */
+   * the associated NVT. Update the ones that don't have a preference ID before
+   * that. */
+  update_old_config_preferences ();
   init_iterator (&configs, "SELECT id FROM configs;");
   while (next (&configs))
     sql ("DELETE FROM config_preferences"
