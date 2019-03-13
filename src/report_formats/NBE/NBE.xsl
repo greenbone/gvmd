@@ -11,7 +11,7 @@
   <xsl:strip-space elements="*"/>
 
 <!--
-Copyright (C) 2010-2018 Greenbone Networks GmbH
+Copyright (C) 2010-2019 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -140,23 +140,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 </xsl:template>
 
 <xsl:template name="ref_cert_list">
-  <xsl:param name="certlist"/>
+  <xsl:param name="reflist"/>
 
-  <xsl:variable name="certcount" select="count($certlist/cert_ref)"/>
+  <xsl:variable name="refcount" select="count($reflist/ref)"/>
 
-  <xsl:if test="count($certlist/warning)">
-    <xsl:for-each select="$certlist/warning">
+  <xsl:if test="count($reflist/warning)">
+    <xsl:for-each select="$reflist/warning">
       <xsl:text>CERT: Warning: </xsl:text>
       <xsl:value-of select="str:replace (text(), '&#10;', '\n')"/>
       <xsl:text>\n</xsl:text>
     </xsl:for-each>
   </xsl:if>
 
-  <xsl:if test="$certcount &gt; 0">
-    <xsl:text>CERT: </xsl:text>
-    <xsl:for-each select="$certlist/cert_ref">
+  <xsl:if test="$refcount &gt; 0">
+    <xsl:text>References: </xsl:text>
+    <xsl:for-each select="$reflist/ref">
       <xsl:value-of select="@id"/>
-      <xsl:if test="position() &lt; $certcount">
+      <xsl:if test="position() &lt; $refcount">
         <xsl:text>, </xsl:text>
       </xsl:if>
     </xsl:for-each>
@@ -341,7 +341,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:value-of select="nvt/bid/text()"/>
     </xsl:if>
   </xsl:variable>
-  <xsl:variable name="cert_ref" select="nvt/cert"/>
+  <xsl:variable name="refs" select="nvt/refs"/>
   <xsl:variable name="xref">
     <xsl:if test="nvt/xref != '' and nvt/xref != 'NOXREF'">
       <xsl:value-of select="nvt/xref/text()"/>
@@ -364,7 +364,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:text>)\n</xsl:text>
   </xsl:if>
 
-  <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref != '' or count($cert_ref/cert_ref) > 0">
+  <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref != '' or count($refs/ref) > 0">
     <xsl:text>References:</xsl:text>
     <xsl:text>\n</xsl:text>
     <xsl:call-template name="ref_cve_list">
@@ -374,7 +374,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:with-param name="bidlist" select="$bid_ref"/>
     </xsl:call-template>
     <xsl:call-template name="ref_cert_list">
-      <xsl:with-param name="certlist" select="$cert_ref"/>
+      <xsl:with-param name="reflist" select="$refs"/>
     </xsl:call-template>
     <xsl:call-template name="ref_xref_list">
       <xsl:with-param name="xreflist" select="$xref"/>
