@@ -322,25 +322,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:value-of select="openvas:formula_quote ($new_bidlist)"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
-  <xsl:if test="count(nvt/cert/cert_ref) &gt; 0">
-    <xsl:variable name="certlist" select="nvt/cert"/>
-    <xsl:variable name="certcount" select="count ($certlist/cert_ref)"/>
-    <xsl:variable name="new_certlist">
-      <xsl:for-each select="$certlist/warning">
+  <xsl:if test="count(nvt/refs/ref) &gt; 0">
+    <xsl:variable name="reflist" select="nvt/refs"/>
+    <xsl:variable name="refcount" select="count ($reflist/ref)"/>
+    <xsl:variable name="new_reflist">
+      <xsl:for-each select="$reflist/warning">
         <xsl:text>Warning: </xsl:text>
         <xsl:value-of select="str:replace (text(), $quote, $two-quotes)"/>
         <xsl:call-template name="newline"/>
       </xsl:for-each>
-      <xsl:if test="$certcount &gt; 0">
-        <xsl:for-each select="$certlist/cert_ref">
+      <xsl:if test="$refcount &gt; 0">
+        <xsl:for-each select="$reflist/ref">
           <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
-          <xsl:if test="position() &lt; $certcount">
+          <xsl:if test="position() &lt; $refcount">
             <xsl:text>, </xsl:text>
           </xsl:if>
         </xsl:for-each>
       </xsl:if>
     </xsl:variable>
-    <xsl:value-of select="openvas:formula_quote ($new_certlist)"/>
+    <xsl:value-of select="openvas:formula_quote ($new_reflist)"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
   <xsl:if test="nvt/xref != '' and nvt/xref != 'NOXREF'">
