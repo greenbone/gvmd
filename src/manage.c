@@ -8093,7 +8093,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
   if (details)
     {
       int tag_count;
-      GString *cert_refs_str, *tags_str, *buffer;
+      GString *refs_str, *tags_str, *buffer;
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
       char *default_timeout = nvt_default_timeout (oid);
@@ -8104,14 +8104,15 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
 #undef DEF
 
-      cert_refs_str = g_string_new ("");
+      refs_str = g_string_new ("");
+
       if (manage_cert_loaded())
         {
           init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
-              g_string_append_printf (cert_refs_str,
-                                      "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+              g_string_append_printf (refs_str,
+                                      "<ref type=\"cert-bund\" id=\"%s\"/>",
                                       get_iterator_name (&cert_refs_iterator));
           }
           cleanup_iterator (&cert_refs_iterator);
@@ -8119,15 +8120,15 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
           init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
-              g_string_append_printf (cert_refs_str,
-                                      "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+              g_string_append_printf (refs_str,
+                                      "<ref type=\"dfn-cert\" id=\"%s\"/>",
                                       get_iterator_name (&cert_refs_iterator));
           }
           cleanup_iterator (&cert_refs_iterator);
         }
       else
         {
-          g_string_append (cert_refs_str, "<warning>database not available</warning>");
+          g_string_append (refs_str, "<warning>database not available</warning>");
         }
 
       tags_str = g_string_new ("");
@@ -8190,9 +8191,9 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<value>%s</value>"
                               "<type>%s</type>"
                               "</qod>"
+                              "<refs>%s</refs>"
                               "<cve_id>%s</cve_id>"
                               "<bugtraq_id>%s</bugtraq_id>"
-                              "<cert_refs>%s</cert_refs>"
                               "<xrefs>%s</xrefs>"
                               "<tags>%s</tags>"
                               "<preference_count>%i</preference_count>"
@@ -8214,9 +8215,9 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                                : "",
                               nvt_iterator_qod (nvts),
                               nvt_iterator_qod_type (nvts),
+                              refs_str->str,
                               nvt_iterator_cve (nvts),
                               nvt_iterator_bid (nvts),
-                              cert_refs_str->str,
                               xref_text,
                               tag_text,
                               pref_count,
@@ -8225,7 +8226,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       g_free (family_text);
       g_free (xref_text);
       g_free (tag_text);
-      g_string_free(cert_refs_str, 1);
+      g_string_free(refs_str, 1);
       g_string_free(tags_str, 1);
 
       if (preferences)
