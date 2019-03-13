@@ -1435,10 +1435,10 @@ const char*
 result_iterator_nvt_cve (iterator_t *);
 
 const char*
-result_iterator_nvt_bid (iterator_t *);
-
-const char*
 result_iterator_nvt_xref (iterator_t *);
+
+void
+result_iterator_nvt_refs_append (GString *, iterator_t *);
 
 const char*
 result_iterator_nvt_tag (iterator_t *);

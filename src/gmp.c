@@ -10452,7 +10452,6 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
 {
   iterator_t cert_refs_iterator;
 
-  buffer_xml_append_printf (buffer, "<refs>");
   if (cert_loaded)
     {
       if (has_cert_bunds)
@@ -10482,7 +10481,6 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
   else
     g_string_append_printf (buffer,
                             "<warning>database not available</warning>");
-  buffer_xml_append_printf (buffer, "</refs>");
 }
 
 /**
@@ -10556,6 +10554,12 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     g_free (cves);
           g_free (get.id);
           cleanup_iterator (&iterator);
+
+          buffer_xml_append_printf (buffer, "<refs>");
+          results_xml_append_cert (buffer, oid, cert_loaded,
+                                   result_iterator_has_cert_bunds (results),
+                                   result_iterator_has_dfn_certs (results));
+          buffer_xml_append_printf (buffer, "</refs>");
         }
       else
         {
@@ -10571,7 +10575,6 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<family>%s</family>"
                                     "<cvss_base>%s</cvss_base>"
                                     "<cve>%s</cve>"
-                                    "<bid>%s</bid>"
                                     "<xref>%s</xref>"
                                     "<tags>%s</tags>",
                                     oid,
@@ -10579,14 +10582,17 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
                                     result_iterator_nvt_cve (results) ?: "",
-                                    result_iterator_nvt_bid (results) ?: "",
                                     result_iterator_nvt_xref (results) ?: "",
                                     result_iterator_nvt_tag (results) ?: "");
+
+          buffer_xml_append_printf (buffer, "<refs>");
+          result_iterator_nvt_refs_append (buffer, results);
+          results_xml_append_cert (buffer, oid, cert_loaded,
+                                   result_iterator_has_cert_bunds (results),
+                                   result_iterator_has_dfn_certs (results));
+          buffer_xml_append_printf (buffer, "</refs>");
         }
 
-      results_xml_append_cert (buffer, oid, cert_loaded,
-                               result_iterator_has_cert_bunds (results),
-                               result_iterator_has_dfn_certs (results));
     }
 
   buffer_xml_append_printf (buffer, "</nvt>");

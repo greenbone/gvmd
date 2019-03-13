@@ -24580,24 +24580,6 @@ result_iterator_nvt_cve (iterator_t *iterator)
 }
 
 /**
- * @brief Get the NVT BID from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The BID of the NVT that produced the result, or NULL on error.
- */
-const char*
-result_iterator_nvt_bid (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_bid (nvti);
-  return NULL;
-}
-
-/**
  * @brief Get the NVT XREF from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -24613,6 +24595,48 @@ result_iterator_nvt_xref (iterator_t *iterator)
   if (nvti)
     return nvti_xref (nvti);
   return NULL;
+}
+
+/**
+ * @brief Get the NVT's references in XML format from a result iterator.
+ *
+ * @param[in]  xml       The buffer where to append to
+ * @param[in]  iterator  Iterator.
+ */
+void
+result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
+{
+  nvti_t *nvti;
+  gchar **split, **item, *bid;
+
+  if (iterator->done) return;
+  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  if (!nvti)
+    return;
+
+  bid = nvti_bid (nvti);
+
+  split = g_strsplit (bid, ",", 0);
+  item = split;
+  while (*item)
+    {
+      gchar *id;
+
+      id = *item;
+      g_strstrip (id);
+
+      if ((strcmp (id, "") == 0) || (strcmp (id, "NOBID")) == 0)
+        {
+          item++;
+          continue;
+        }
+
+      xml_string_append (xml, "<ref type=\"bid\" id=\"%s\"/>", id);
+
+      item++;
+    }
+
+  g_strfreev (split);
 }
 
 /**
