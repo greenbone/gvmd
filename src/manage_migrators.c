@@ -15363,6 +15363,46 @@ migrate_205_to_206 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 206 to version 207.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_206_to_207 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 206. */
+
+  if (manage_db_version () != 206)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* User are now able to see themselves by default. */
+
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " SELECT make_uuid (), id, 'get_users',"
+       "        'Automatically created when adding user', 'user', uuid, id, 0,"
+       "        'user', id, 0, m_now (), m_now ()"
+       " FROM users;");
+
+  /* Set the database version to 207. */
+
+  set_db_version (207);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_CHART_SETTINGS
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -15588,6 +15628,7 @@ static migrator_t database_migrators[]
     {204, migrate_203_to_204},
     {205, migrate_204_to_205}, // v8.0: rev 205
     {206, migrate_205_to_206},
+    {207, migrate_206_to_207},
     /* End marker. */
     {-1, NULL}};
 
