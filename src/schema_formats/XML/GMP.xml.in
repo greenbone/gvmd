@@ -1410,7 +1410,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>cpe</e>
         <e>bid</e>
         <e>tags</e>
-        <e>cert</e>
+        <e>refs</e>
         <e>xref</e>
       </pattern>
       <ele>
@@ -1454,23 +1454,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <pattern>text</pattern>
       </ele>
       <ele>
-        <name>cert</name>
-        <summary>List of CERT advisories referencing this NVT via CVEs</summary>
+        <name>refs</name>
+        <summary>List of references of various types for this vulnerability test</summary>
         <pattern>
-          <any><e>cert_ref</e></any>
+          <any><e>ref</e></any>
         </pattern>
         <ele>
-          <name>cert_ref</name>
-          <summary>A CERT advisory reference</summary>
+          <name>ref</name>
+          <summary>A reference</summary>
           <pattern>
             <attrib>
               <name>id</name>
-              <summary>ID of the advisory</summary>
+              <summary>ID of the reference</summary>
               <type>text</type>
             </attrib>
             <attrib>
               <name>type</name>
-              <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
+              <summary>Type of the reference, for example "dfn-cert", "cert-bund"</summary>
               <type>text</type>
             </attrib>
           </pattern>
@@ -13868,7 +13868,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>refs</name>
-          <summary>List of references of various type for this vulnerability test</summary>
+          <summary>List of references of various types for this vulnerability test</summary>
           <pattern>
             <any><e>ref</e></any>
             <o><e>warning</e></o>
@@ -13884,7 +13884,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </attrib>
               <attrib>
                 <name>type</name>
-                <summary>Type of the advisory, for example "dfn-cert", "cert-bund"</summary>
+                <summary>Type of the reference, for example "dfn-cert", "cert-bund"</summary>
                 <type>text</type>
               </attrib>
             </pattern>
@@ -16402,9 +16402,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                     <cve>CVE-2013-1406</cve>
                     <bid>51702</bid>
                     <tags>NOTAGS</tags>
-                    <cert>
-                      <cert_ref id="DFN-CERT-2013-0246" type="DFN-CERT"/>
-                    </cert>
+                    <refs>
+                      <ref id="DFN-CERT-2013-0246" type="dfn-cert"/>
+                    </refs>
                     <xref>NOXREF</xref>
                   </nvt>
                   <threat>Medium</threat>
@@ -17454,7 +17454,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <cve>CVE-2009-3095</cve>
               <bid>36254</bid>
               <tags>NOTAGS</tags>
-              <cert></cert>
+              <refs></refs>
               <xref>NOXREF</xref>
             </nvt>
             <threat>Medium</threat>
@@ -17512,7 +17512,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <cve>CVE-2009-3095</cve>
               <bid>36254</bid>
               <tags>NOTAGS</tags>
-              <cert></cert>
+              <refs></refs>
               <xref>NOXREF</xref>
             </nvt>
             <threat>High</threat>
@@ -26342,6 +26342,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <version>9.0</version>
   </change>
+  <change>
+    <command>GET_REPORTS, GET_RESULTS</command>
+    <summary>New element RESULT/NVT/REFS replaces RESULT/NVT/CERT</summary>
+    <version>@GMP_VERSION@</version>
+    <description>
+      <p>
+        The former element CERT is now named REFS and the id's for the type
+        are now lower case, ie. "cert-bund" and "dfn-cert" instead of "CERT-Bund" and "DFN-CERT".
+      </p>
+    </description>
+  </change>
+
   <change>
     <command>CREATE_FILTER, CREATE_TARGET</command>
     <summary>NAME MAKE_UNIQUE removed</summary>
