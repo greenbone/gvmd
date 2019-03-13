@@ -13755,8 +13755,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>family</e>
               <e>cvss_base</e>
               <e>qod</e>
+              <e>refs</e>
               <e>cve_id</e>
-              <e>cert_refs</e>
               <e>bugtraq_id</e>
               <e>xrefs</e>
               <e>tags</e>
@@ -13867,6 +13867,37 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
+          <name>refs</name>
+          <summary>List of references of various type for this vulnerability test</summary>
+          <pattern>
+            <any><e>ref</e></any>
+            <o><e>warning</e></o>
+          </pattern>
+          <ele>
+            <name>ref</name>
+            <summary>A reference</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <summary>ID of the reference</summary>
+                <type>text</type>
+              </attrib>
+              <attrib>
+                <name>type</name>
+                <summary>Type of the advisory, for example "dfn-cert", "cert-bund"</summary>
+                <type>text</type>
+              </attrib>
+            </pattern>
+          </ele>
+          <ele>
+            <name>warning</name>
+            <summary>A warning message, e.g. when the CERT database is not available</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
           <name>cve_id</name>
           <summary>IDs of the CVEs the NVT addresses</summary>
           <pattern>text</pattern>
@@ -13875,37 +13906,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>bugtraq_id</name>
           <summary>List of Bugtraq IDs of the NVT</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>cert_refs</name>
-          <summary>List of CERT advisories referencing this NVT via CVEs</summary>
-          <pattern>
-            <any><e>cert_ref</e></any>
-            <o><e>warning</e></o>
-          </pattern>
-          <ele>
-            <name>cert_ref</name>
-            <summary>A CERT advisory reference</summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <summary>ID of the advisory</summary>
-                <type>text</type>
-              </attrib>
-              <attrib>
-                <name>type</name>
-                <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
-                <type>text</type>
-              </attrib>
-            </pattern>
-          </ele>
-          <ele>
-            <name>warning</name>
-            <summary>A warning message, e.g. when the database is not</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
         </ele>
         <ele>
           <name>xrefs</name>
@@ -14025,7 +14025,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <cvss_base></cvss_base>
             <cve_id>NOCVE</cve_id>
             <bugtraq_id>NOBID</bugtraq_id>
-            <cert_refs/>
+            <refs/>
             <xrefs>NOXREF</xrefs>
             <tags>NOTAG</tags>
             <preference_count>-1</preference_count>
