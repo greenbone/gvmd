@@ -10438,7 +10438,7 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
 }
 
 /**
- * @brief Append a CERT element to an XML buffer.
+ * @brief Append a REFS element to an XML buffer.
  *
  * @param[in]  buffer       Buffer.
  * @param[in]  oid          OID.
@@ -10452,7 +10452,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
 {
   iterator_t cert_refs_iterator;
 
-  buffer_xml_append_printf (buffer, "<cert>");
+  buffer_xml_append_printf (buffer, "<refs>");
   if (cert_loaded)
     {
       if (has_cert_bunds)
@@ -10461,7 +10461,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           while (next (&cert_refs_iterator))
             {
               g_string_append_printf
-               (buffer, "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+               (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
@@ -10473,7 +10473,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           while (next (&cert_refs_iterator))
             {
               g_string_append_printf
-               (buffer, "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+               (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
@@ -10482,7 +10482,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
   else
     g_string_append_printf (buffer,
                             "<warning>database not available</warning>");
-  buffer_xml_append_printf (buffer, "</cert>");
+  buffer_xml_append_printf (buffer, "</refs>");
 }
 
 /**
