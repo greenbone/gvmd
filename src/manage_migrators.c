@@ -15392,7 +15392,14 @@ migrate_206_to_207 ()
        " SELECT make_uuid (), id, 'get_users',"
        "        'Automatically created when adding user', 'user', uuid, id, 0,"
        "        'user', id, 0, m_now (), m_now ()"
-       " FROM users;");
+       " FROM users"
+       " WHERE NOT"
+       "       EXISTS (SELECT * FROM permissions"
+       "               WHERE name = 'get_users'"
+       "               AND resource = users.id"
+       "               AND subject = users.id"
+       "               AND comment"
+       "                   = 'Automatically created when adding user');");
 
   /* Set the database version to 207. */
 
