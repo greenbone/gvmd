@@ -17648,6 +17648,30 @@ check_db_permissions ()
   add_permissions_on_globals (ROLE_UUID_GUEST);
   add_permissions_on_globals (ROLE_UUID_OBSERVER);
   add_permissions_on_globals (ROLE_UUID_USER);
+
+  /* Once only, ensure that all existing users have permission to see
+   * themselves.  From Manager 9.0 this will be done in a migrator. */
+
+  if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
+               "                   WHERE name = 'self-awareness-checked');"))
+    {
+      sql ("INSERT INTO permissions"
+           " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
+           "  resource_location, subject_type, subject, subject_location,"
+           "  creation_time, modification_time)"
+           " SELECT make_uuid (), id, 'get_users',"
+           "        'Automatically created when adding user', 'user', uuid, id, 0,"
+           "        'user', id, 0, m_now (), m_now ()"
+           " FROM users"
+           " WHERE NOT"
+           "       EXISTS (SELECT * FROM PERMISSIONS"
+           "               WHERE name = 'get_users'"
+           "               AND resource = users.id"
+           "               AND subject = users.id"
+           "               AND comment"
+           "                   = 'Automatically created when adding user');");
+      sql ("INSERT INTO meta (name, value) VALUES ('self-awareness-checked', 1);");
+    }
 }
 
 /**
