@@ -65098,6 +65098,15 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   if (new_user)
     *new_user = user;
 
+  /* Every user can see themself. */
+  create_permission_internal ("GET_USERS",
+                              "Automatically created when adding user",
+                              NULL,
+                              user_uuid (user),
+                              "user",
+                              user_uuid (user),
+                              NULL);
+
   cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
   g_array_append_val (cache_users, user);
   cache_all_permissions_for_users (cache_users);
@@ -65159,6 +65168,15 @@ copy_user (const char* name, const char* comment, const char *user_id,
        quoted_uuid);
 
   g_free (quoted_uuid);
+
+  /* Every user can see themself. */
+  create_permission_internal ("GET_USERS",
+                              "Automatically created when adding user",
+                              NULL,
+                              user_uuid (user),
+                              "user",
+                              user_uuid (user),
+                              NULL);
 
   cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
   g_array_append_val (cache_users, user);
