@@ -754,7 +754,7 @@ create_config_data_reset (create_config_data_t *data)
   g_free (import->preference_alt);
   g_free (import->preference_id);
   g_free (import->preference_name);
-  g_free (import->preference_name);
+  g_free (import->preference_hr_name);
   g_free (import->preference_nvt_name);
   g_free (import->preference_nvt_oid);
   g_free (import->preference_type);
