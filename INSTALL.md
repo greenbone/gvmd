@@ -509,6 +509,12 @@ Certain features of the Manager also require some programs at run time:
 Prerequisites for generating PDF reports:
 * pdflatex
 
+  On Debian GNU/Linux 'Stretch' 9 the following packages can be installed to
+  fulfill this prerequisite:
+
+      apt-get install texlive-latex-extra --no-install-recommends
+      apt-get install texlive-fonts-recommended
+
 Prerequisites for generating HTML reports:
 * xsltproc
 
