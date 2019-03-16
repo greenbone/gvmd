@@ -64862,7 +64862,7 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
              gchar **r_errdesc, user_t *new_user, int forbid_super_admin)
 {
-  char *errstr;
+  char *errstr, *uuid;
   gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
   gchar *quoted_comment, *clean, *generated;
   int index, max;
@@ -65067,14 +65067,27 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   if (new_user)
     *new_user = user;
 
-  /* Every user can see themself. */
+  /* Ensure the user can see themself. */
+
+  uuid = user_uuid (user);
+  if (uuid == NULL)
+    {
+      g_warning ("%s: Failed to allocate UUID", __FUNCTION__);
+      sql_rollback ();
+      return -1;
+    }
+
   create_permission_internal ("GET_USERS",
                               "Automatically created when adding user",
                               NULL,
-                              user_uuid (user),
+                              uuid,
                               "user",
-                              user_uuid (user),
+                              uuid,
                               NULL);
+
+  free (uuid);
+
+  /* Cache permissions. */
 
   cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
   g_array_append_val (cache_users, user);
@@ -65104,6 +65117,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   int ret;
   gchar *quoted_uuid;
   GArray *cache_users;
+  char *uuid;
 
   if (acl_user_can_super_everyone (user_id))
     return 99;
@@ -65138,14 +65152,27 @@ copy_user (const char* name, const char* comment, const char *user_id,
 
   g_free (quoted_uuid);
 
-  /* Every user can see themself. */
+  /* Ensure the user can see themself. */
+
+  uuid = user_uuid (user);
+  if (uuid == NULL)
+    {
+      g_warning ("%s: Failed to allocate UUID", __FUNCTION__);
+      sql_rollback ();
+      return -1;
+    }
+
   create_permission_internal ("GET_USERS",
                               "Automatically created when adding user",
                               NULL,
-                              user_uuid (user),
+                              uuid,
                               "user",
-                              user_uuid (user),
+                              uuid,
                               NULL);
+
+  free (uuid);
+
+  /* Cache permissions. */
 
   cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
   g_array_append_val (cache_users, user);
