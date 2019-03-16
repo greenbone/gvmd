@@ -10543,7 +10543,6 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<family/>"
                                     "<cvss_base>%s</cvss_base>"
                                     "<cve>%s</cve>"
-                                    "<bid/>"
                                     "<tags>summary=%s</tags>"
                                     "<xref/>",
                                     oid,
