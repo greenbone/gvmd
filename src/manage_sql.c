@@ -24607,16 +24607,15 @@ void
 result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
 {
   nvti_t *nvti;
-  gchar **split, **item, *bid;
+  gchar **split, **item, *str;
 
   if (iterator->done) return;
   nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
   if (!nvti)
     return;
 
-  bid = nvti_bid (nvti);
-
-  split = g_strsplit (bid, ",", 0);
+  str = nvti_bid (nvti);
+  split = g_strsplit (str, ",", 0);
   item = split;
   while (*item)
     {
@@ -24635,7 +24634,28 @@ result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
 
       item++;
     }
+  g_strfreev (split);
 
+  str = nvti_cve (nvti);
+  split = g_strsplit (str, ",", 0);
+  item = split;
+  while (*item)
+    {
+      gchar *id;
+
+      id = *item;
+      g_strstrip (id);
+
+      if ((strcmp (id, "") == 0) || (strcmp (id, "NOCVE")) == 0)
+        {
+          item++;
+          continue;
+        }
+
+      xml_string_append (xml, "<ref type=\"cve\" id=\"%s\"/>", id);
+
+      item++;
+    }
   g_strfreev (split);
 }
 
