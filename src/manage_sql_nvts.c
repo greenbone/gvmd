@@ -134,9 +134,6 @@ set_nvts_feed_version (const char *feed_version)
        sql_schema (),
        quoted);
   g_free (quoted);
-
-  sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
-       sql_schema ());
 }
 
 /**
@@ -1175,6 +1172,10 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
     }
 
   sql_commit ();
+
+  /* Tell the main process to update its NVTi cache. */
+  sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
+       sql_schema ());
 
   count = sql_int ("SELECT count (*) FROM nvts;");
   g_info ("Updating NVT cache... done (%i NVTs).", count);
