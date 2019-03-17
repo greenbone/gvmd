@@ -552,26 +552,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:call-template name="newline"/>
     </xsl:if>
 
-    <xsl:variable name="cve_ref">
-      <xsl:if test="nvt/cve != '' and nvt/cve != 'NOCVE'">
-        <xsl:value-of select="nvt/cve/text()"/>
-      </xsl:if>
-    </xsl:variable>
-    <xsl:variable name="bid_ref">
-      <xsl:if test="nvt/bid != '' and nvt/bid != 'NOBID'">
-        <xsl:value-of select="nvt/bid/text()"/>
-      </xsl:if>
-    </xsl:variable>
-    <xsl:variable name="refs" select="nvt/refs"/>
-    <xsl:variable name="xref">
-      <xsl:if test="nvt/xref != '' and nvt/xref != 'NOXREF'">
-        <xsl:value-of select="nvt/xref/text()"/>
-      </xsl:if>
-    </xsl:variable>
-
-    <xsl:if test="count($refs/ref) > 0">
+    <xsl:if test="count(nvt/refs/ref) > 0">
       <xsl:call-template name="refs_list">
-        <xsl:with-param name="refs" select="$refs"/>
+        <xsl:with-param name="refs" select="nvt/refs"/>
       </xsl:call-template>
     </xsl:if>
 
