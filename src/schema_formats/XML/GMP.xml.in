@@ -12211,7 +12211,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>cve</name>
             <type>text</type>
-            <summary>List of BIDs of the NVT</summary>
+            <summary>List of CVEs of the NVT</summary>
           </column>
           <column>
             <name>xref</name>
@@ -13739,9 +13739,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>cvss_base</e>
               <e>qod</e>
               <e>refs</e>
-              <e>cve_id</e>
-              <e>bugtraq_id</e>
-              <e>xrefs</e>
               <e>tags</e>
               <o><e>preference_count</e></o>
               <o><e>timeout</e></o>
@@ -13867,7 +13864,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </attrib>
               <attrib>
                 <name>type</name>
-                <summary>Type of the reference, for example "dfn-cert", "cert-bund"</summary>
+                <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"</summary>
                 <type>text</type>
               </attrib>
             </pattern>
@@ -13879,21 +13876,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               text
             </pattern>
           </ele>
-        </ele>
-        <ele>
-          <name>cve_id</name>
-          <summary>IDs of the CVEs the NVT addresses</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>bugtraq_id</name>
-          <summary>List of Bugtraq IDs of the NVT</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>xrefs</name>
-          <summary>List of other references of the NVT</summary>
-          <pattern>text</pattern>
         </ele>
         <ele>
           <name>tags</name>
@@ -14006,10 +13988,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
             <cvss_base></cvss_base>
-            <cve_id>NOCVE</cve_id>
-            <bugtraq_id>NOBID</bugtraq_id>
             <refs/>
-            <xrefs>NOXREF</xrefs>
             <tags>NOTAG</tags>
             <preference_count>-1</preference_count>
             <timeout></timeout>
@@ -26320,6 +26299,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         contains an ID subelement. The ID should help in identifying
         preferences within the same nvt instead of using the preference name
         which may be changed.
+      </p>
+      <p>
+        The content of the elements CVE_ID, BUGTRAQ_ID and XREFS is now integrated
+        into the REFS element.
       </p>
     </description>
     <version>9.0</version>
