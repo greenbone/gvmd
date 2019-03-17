@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -8099,7 +8099,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       char *default_timeout = nvt_default_timeout (oid);
 
       DEF (family);
-      DEF (xref);
       DEF (tag);
 
 #undef DEF
@@ -8130,6 +8129,8 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
         {
           g_string_append (refs_str, "<warning>database not available</warning>");
         }
+
+      nvti_refs_append_xml (refs_str, oid);
 
       tags_str = g_string_new ("");
       tag_count = resource_tag_count ("nvt",
@@ -8192,9 +8193,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<type>%s</type>"
                               "</qod>"
                               "<refs>%s</refs>"
-                              "<cve_id>%s</cve_id>"
-                              "<bugtraq_id>%s</bugtraq_id>"
-                              "<xrefs>%s</xrefs>"
                               "<tags>%s</tags>"
                               "<preference_count>%i</preference_count>"
                               "<timeout>%s</timeout>"
@@ -8216,15 +8214,11 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               nvt_iterator_qod (nvts),
                               nvt_iterator_qod_type (nvts),
                               refs_str->str,
-                              nvt_iterator_cve (nvts),
-                              nvt_iterator_bid (nvts),
-                              xref_text,
                               tag_text,
                               pref_count,
                               timeout ? timeout : "",
                               default_timeout ? default_timeout : "");
       g_free (family_text);
-      g_free (xref_text);
       g_free (tag_text);
       g_string_free(refs_str, 1);
       g_string_free(tags_str, 1);
