@@ -24657,6 +24657,31 @@ result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
       item++;
     }
   g_strfreev (split);
+
+  str = nvti_xref (nvti);
+  split = g_strsplit (str, ",", 0);
+  item = split;
+  while (*item)
+    {
+      gchar *type_and_id;
+      gchar **split2;
+
+      type_and_id = *item;
+      g_strstrip (type_and_id);
+
+      if ((strcmp (type_and_id, "") == 0) || (strcmp (type_and_id, "NOXREF")) == 0)
+        {
+          item++;
+          continue;
+        }
+
+      split2 = g_strsplit (type_and_id, ":", 2);
+      if (split2[0] && split2[1])
+        xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", split2[0], split2[1]);
+
+      item++;
+    }
+  g_strfreev (split);
 }
 
 /**

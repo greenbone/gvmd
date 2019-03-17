@@ -10543,8 +10543,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<family/>"
                                     "<cvss_base>%s</cvss_base>"
                                     "<cve>%s</cve>"
-                                    "<tags>summary=%s</tags>"
-                                    "<xref/>",
+                                    "<tags>summary=%s</tags>",
                                     oid,
                                     ovaldef_info_iterator_title (&iterator),
                                     ovaldef_info_iterator_max_cvss (&iterator),
@@ -10573,13 +10572,11 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<name>%s</name>"
                                     "<family>%s</family>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<xref>%s</xref>"
                                     "<tags>%s</tags>",
                                     oid,
                                     result_iterator_nvt_name (results) ?: oid,
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
-                                    result_iterator_nvt_xref (results) ?: "",
                                     result_iterator_nvt_tag (results) ?: "");
 
           buffer_xml_append_printf (buffer, "<refs>");
