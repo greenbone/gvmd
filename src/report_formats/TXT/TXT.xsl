@@ -311,38 +311,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template name="ref_cve_list">
-    <xsl:param name="cvelist"/>
-
-    <xsl:variable name="cvecount" select="count(str:split($cvelist, ','))"/>
-    <xsl:if test="$cvecount &gt; 0">
-      <xsl:text>CVE: </xsl:text>
-      <xsl:for-each select="str:split($cvelist, ',')">
-        <xsl:value-of select="normalize-space(.)"/>
-        <xsl:if test="position() &lt; $cvecount">
-          <xsl:text>, </xsl:text>
-        </xsl:if>
-      </xsl:for-each>
-      <xsl:call-template name="newline"/>
-    </xsl:if>
-  </xsl:template>
-
-  <xsl:template name="ref_bid_list">
-    <xsl:param name="bidlist"/>
-
-    <xsl:variable name="bidcount" select="count(str:split($bidlist, ','))"/>
-    <xsl:if test="$bidcount &gt; 0">
-      <xsl:text>BID: </xsl:text>
-      <xsl:for-each select="str:split($bidlist, ',')">
-        <xsl:value-of select="."/>
-        <xsl:if test="position() &lt; $bidcount">
-          <xsl:text>, </xsl:text>
-        </xsl:if>
-      </xsl:for-each>
-      <xsl:call-template name="newline"/>
-    </xsl:if>
-  </xsl:template>
-
   <xsl:template name="refs_list">
     <xsl:param name="refs"/>
 
@@ -361,34 +329,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:call-template name="newline"/>
       <xsl:for-each select="$refs/ref">
         <xsl:text> </xsl:text>
+        <xsl:value-of select="@type"/>
+        <xsl:text>: </xsl:text>
         <xsl:value-of select="@id"/>
         <xsl:call-template name="newline"/>
       </xsl:for-each>
       <xsl:call-template name="newline"/>
-    </xsl:if>
-  </xsl:template>
-
-  <xsl:template name="ref_xref_list">
-    <xsl:param name="xreflist"/>
-
-    <xsl:variable name="xrefcount" select="count(str:split($xreflist, ','))"/>
-    <xsl:if test="$xrefcount &gt; 0">
-      <xsl:for-each select="str:split($xreflist, ',')">
-        <xsl:if test="position()=1">
-          <xsl:text>Other:</xsl:text>
-          <xsl:call-template name="newline"/>
-        </xsl:if>
-        <xsl:text>    </xsl:text>
-        <xsl:choose>
-          <xsl:when test="contains(., 'URL:')">
-            <xsl:value-of select="substring-after(., 'URL:')"/>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:value-of select="."/>
-          </xsl:otherwise>
-        </xsl:choose>
-        <xsl:call-template name="newline"/>
-      </xsl:for-each>
     </xsl:if>
   </xsl:template>
 
@@ -623,22 +569,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:if>
     </xsl:variable>
 
-    <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref != '' or count($refs/ref) > 0">
-      <xsl:text>References:</xsl:text>
-      <xsl:call-template name="newline"/>
-      <xsl:call-template name="ref_cve_list">
-        <xsl:with-param name="cvelist" select="$cve_ref"/>
-      </xsl:call-template>
-      <xsl:call-template name="ref_bid_list">
-        <xsl:with-param name="bidlist" select="$bid_ref"/>
-      </xsl:call-template>
+    <xsl:if test="count($refs/ref) > 0">
       <xsl:call-template name="refs_list">
         <xsl:with-param name="refs" select="$refs"/>
       </xsl:call-template>
-      <xsl:call-template name="ref_xref_list">
-        <xsl:with-param name="xreflist" select="$xref"/>
-      </xsl:call-template>
-      <xsl:call-template name="newline"/>
     </xsl:if>
 
     <xsl:if test="delta">
