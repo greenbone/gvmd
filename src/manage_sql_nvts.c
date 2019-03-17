@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -796,36 +796,6 @@ DEF_ACCESS (nvt_iterator_oid, GET_ITERATOR_COLUMN_COUNT);
  *         cleanup_iterator.
  */
 DEF_ACCESS (nvt_iterator_name, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the cve from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Cve, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_cve, GET_ITERATOR_COLUMN_COUNT + 3);
-
-/**
- * @brief Get the bid from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Bid, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_bid, GET_ITERATOR_COLUMN_COUNT + 4);
-
-/**
- * @brief Get the xref from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Xref, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_xref, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the tag from an NVT iterator.

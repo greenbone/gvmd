@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -1984,15 +1984,6 @@ nvt_iterator_description (iterator_t*);
 
 const char*
 nvt_iterator_copyright (iterator_t*);
-
-const char*
-nvt_iterator_cve (iterator_t*);
-
-const char*
-nvt_iterator_bid (iterator_t*);
-
-const char*
-nvt_iterator_xref (iterator_t*);
 
 const char*
 nvt_iterator_tag (iterator_t*);
