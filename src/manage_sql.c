@@ -24598,19 +24598,17 @@ result_iterator_nvt_xref (iterator_t *iterator)
 }
 
 /**
- * @brief Get the NVT's references in XML format from a result iterator.
+ * @brief Get the NVT's references in XML format from a nvti object via oid.
  *
  * @param[in]  xml       The buffer where to append to
- * @param[in]  iterator  Iterator.
+ * @param[in]  oid       The oid of the nvti object from where to collect the refs.
  */
 void
-result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
+nvti_refs_append_xml (GString *xml, const char *oid)
 {
-  nvti_t *nvti;
   gchar **split, **item, *str;
+  nvti_t *nvti = nvtis_lookup (nvti_cache, oid);
 
-  if (iterator->done) return;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
   if (!nvti)
     return;
 
@@ -24682,6 +24680,20 @@ result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
       item++;
     }
   g_strfreev (split);
+}
+
+/**
+ * @brief Get the NVT's references in XML format from a result iterator.
+ *
+ * @param[in]  xml       The buffer where to append to
+ * @param[in]  iterator  Iterator.
+ */
+void
+result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
+{
+  if (iterator->done) return;
+
+  nvti_refs_append_xml (xml, result_iterator_nvt_oid (iterator));
 }
 
 /**
