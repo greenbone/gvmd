@@ -17648,6 +17648,30 @@ check_db_permissions ()
   add_permissions_on_globals (ROLE_UUID_GUEST);
   add_permissions_on_globals (ROLE_UUID_OBSERVER);
   add_permissions_on_globals (ROLE_UUID_USER);
+
+  /* Once only, ensure that all existing users have permission to see
+   * themselves.  From Manager 9.0 this will be done in a migrator. */
+
+  if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
+               "                   WHERE name = 'self-awareness-checked');"))
+    {
+      sql ("INSERT INTO permissions"
+           " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
+           "  resource_location, subject_type, subject, subject_location,"
+           "  creation_time, modification_time)"
+           " SELECT make_uuid (), id, 'get_users',"
+           "        'Automatically created when adding user', 'user', uuid, id, 0,"
+           "        'user', id, 0, m_now (), m_now ()"
+           " FROM users"
+           " WHERE NOT"
+           "       EXISTS (SELECT * FROM PERMISSIONS"
+           "               WHERE name = 'get_users'"
+           "               AND resource = users.id"
+           "               AND subject = users.id"
+           "               AND comment"
+           "                   = 'Automatically created when adding user');");
+      sql ("INSERT INTO meta (name, value) VALUES ('self-awareness-checked', 1);");
+    }
 }
 
 /**
@@ -64869,7 +64893,7 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
              gchar **r_errdesc, user_t *new_user, int forbid_super_admin)
 {
-  char *errstr;
+  char *errstr, *uuid;
   gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
   gchar *quoted_comment, *clean, *generated;
   int index, max;
@@ -65074,6 +65098,28 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   if (new_user)
     *new_user = user;
 
+  /* Ensure the user can see themself. */
+
+  uuid = user_uuid (user);
+  if (uuid == NULL)
+    {
+      g_warning ("%s: Failed to allocate UUID", __FUNCTION__);
+      sql_rollback ();
+      return -1;
+    }
+
+  create_permission_internal ("GET_USERS",
+                              "Automatically created when adding user",
+                              NULL,
+                              uuid,
+                              "user",
+                              uuid,
+                              NULL);
+
+  free (uuid);
+
+  /* Cache permissions. */
+
   cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
   g_array_append_val (cache_users, user);
   cache_all_permissions_for_users (cache_users);
@@ -65102,6 +65148,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   int ret;
   gchar *quoted_uuid;
   GArray *cache_users;
+  char *uuid;
 
   if (acl_user_can_super_everyone (user_id))
     return 99;
@@ -65135,6 +65182,28 @@ copy_user (const char* name, const char* comment, const char *user_id,
        quoted_uuid);
 
   g_free (quoted_uuid);
+
+  /* Ensure the user can see themself. */
+
+  uuid = user_uuid (user);
+  if (uuid == NULL)
+    {
+      g_warning ("%s: Failed to allocate UUID", __FUNCTION__);
+      sql_rollback ();
+      return -1;
+    }
+
+  create_permission_internal ("GET_USERS",
+                              "Automatically created when adding user",
+                              NULL,
+                              uuid,
+                              "user",
+                              uuid,
+                              NULL);
+
+  free (uuid);
+
+  /* Cache permissions. */
 
   cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
   g_array_append_val (cache_users, user);
