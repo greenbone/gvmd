@@ -191,7 +191,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:template match="result">
   <xsl:variable name="netmask">
     <xsl:call-template name="substring-before-last">
-      <xsl:with-param name="string" select="host"/>
+      <xsl:with-param name="string" select="host/text()"/>
       <xsl:with-param name="delimiter" select="'.'"/>
     </xsl:call-template>
   </xsl:variable>
@@ -201,7 +201,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>|</xsl:text>
   <xsl:value-of select="$netmask"/>
   <xsl:text>|</xsl:text>
-  <xsl:value-of select="host"/>
+  <xsl:value-of select="host/text()"/>
   <xsl:text>|</xsl:text>
   <xsl:value-of select="port"/>
   <xsl:text>|</xsl:text>
