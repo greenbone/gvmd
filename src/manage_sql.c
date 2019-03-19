@@ -63617,7 +63617,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       if (value_64 && strlen (value_64))
         {
           value = (gchar*) g_base64_decode (value_64, &value_size);
-          if (g_utf8_validate (value, value_size, NULL))
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
             {
               if (r_errdesc)
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
@@ -63652,7 +63652,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       if (value_64 && strlen (value_64))
         {
           value = (gchar*) g_base64_decode (value_64, &value_size);
-          if (g_utf8_validate (value, value_size, NULL))
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
             {
               if (r_errdesc)
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
@@ -63706,7 +63706,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       if (value_64 && strlen (value_64))
         {
           value = (gchar*) g_base64_decode (value_64, &value_size);
-          if (g_utf8_validate (value, value_size, NULL))
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
             {
               if (r_errdesc)
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
@@ -63881,7 +63881,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       if (value_64 && strlen (value_64))
         {
           value = (gchar*) g_base64_decode (value_64, &value_size);
-          if (g_utf8_validate (value, value_size, NULL))
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
             {
               if (r_errdesc)
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
@@ -64141,7 +64141,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       if (value_64 && strlen (value_64))
         {
           value = (gchar*) g_base64_decode (value_64, &value_size);
-          if (g_utf8_validate (value, value_size, NULL))
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
             {
               if (r_errdesc)
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
