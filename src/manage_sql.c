@@ -28599,7 +28599,7 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
              "<scan_nvt_version>%s</scan_nvt_version>"                     \
              "<severity>%s</severity>"                                     \
              "</error>",                                                   \
-             report_errors_iterator_host (errors),                         \
+             report_errors_iterator_host (errors) ?: "",                   \
              asset_id ? asset_id : "",                                     \
              report_errors_iterator_port (errors),                         \
              report_errors_iterator_desc (errors),                         \
