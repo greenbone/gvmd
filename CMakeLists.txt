@@ -281,6 +281,7 @@ configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @
 configure_file (tools/openvas-portnames-update.in tools/openvas-portnames-update @ONLY)
 configure_file (tools/openvas-migrate-to-postgres.in tools/openvas-migrate-to-postgres @ONLY)
 configure_file (tools/openvas-manage-certs.in tools/openvas-manage-certs @ONLY)
+configure_file (tools/openvas-verify-secinfo.in tools/openvas-verify-secinfo @ONLY)
 
 ## Program
 
@@ -679,5 +680,10 @@ install (FILES ${CMAKE_SOURCE_DIR}/doc/openvas-manage-certs.1
 
 install (FILES ${CMAKE_BINARY_DIR}/doc/example-openvas-manage-certs.conf
          DESTINATION ${DATADIR}/doc/openvas-manager/ )
+
+install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-verify-secinfo
+         DESTINATION ${BINDIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 ## End
