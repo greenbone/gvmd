@@ -30193,8 +30193,13 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
   xml_parser.text = gmp_xml_handle_text;
   xml_parser.passthrough = NULL;
   xml_parser.error = gmp_xml_handle_error;
+#if 0
+  /* Don't free the context because we likely are inside the parser that is
+   * the context, which would cause Glib to freak out.  Just leak, the process
+   * is going to exit after this anyway. */
   if (xml_context)
     g_markup_parse_context_free (xml_context);
+#endif
   xml_context = g_markup_parse_context_new
                  (&xml_parser,
                   0,
