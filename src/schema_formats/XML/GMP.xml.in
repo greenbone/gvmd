@@ -26308,9 +26308,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <version>9.0</version>
   </change>
   <change>
+    <command>GET_NVTS, GET_INFO</command>
+    <summary>New element REFS replaces CVE_ID, BUGTRAQ_ID, XREFS and CERT_REFS</summary>
+    <version>9.0</version>
+    <description>
+      <p>
+        The former element CERT_REFS is now named REFS and the id's for the type
+        are now lower case, ie. "cert-bund" and "dfn-cert" instead of "CERT-Bund" and "DFN-CERT".
+      </p>
+      <p>
+        The content of the elements CVE_ID, BUGTRAQ_ID and XREFS is now integrated
+        into the REFS element.
+      </p>
+    </description>
+  </change>
+  <change>
     <command>GET_REPORTS, GET_RESULTS</command>
     <summary>New element RESULT/NVT/REFS replaces RESULT/NVT/CERT</summary>
-    <version>@GMP_VERSION@</version>
+    <version>9.0</version>
     <description>
       <p>
         The former element CERT is now named REFS and the id's for the type
@@ -26321,7 +26336,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <change>
     <command>GET_REPORTS, GET_RESULTS</command>
     <summary>Elements RESULT/NVT/CVE, RESULT/NVT/BID and RESULT/NVT/XREF consolidated into RESULT/NVT/REFS</summary>
-    <version>@GMP_VERSION@</version>
+    <version>9.0</version>
     <description>
       <p>
         The content of former elements CVE and BID are now also part of REFS and the
