@@ -1347,10 +1347,10 @@ process_otp_scanner_input ()
 
                   {
                     char **splits;
-                    /* OID:PrefType:PrefName value */
+                    /* OID:PrefID:PrefType:PrefName value */
 
-                    splits = g_strsplit (field, ":", 3);
-                    if (splits && g_strv_length (splits) == 3
+                    splits = g_strsplit (field, ":", 4);
+                    if (splits && g_strv_length (splits) == 4
                         && ((strcmp (splits[0], OID_SSH_AUTH) == 0)
                             || (strcmp (splits[0], OID_SNMP_AUTH) == 0)
                             || (strcmp (splits[0], OID_ESXI_AUTH) == 0)

@@ -262,7 +262,7 @@ transformation with the tool xsltproc.
         </syncAttribute>
         <extId><xsl:value-of select="$task_id"/>-<xsl:value-of select="$addr"/>-results</extId>
         <extObjectType>gsm_itg_result_group</extObjectType>
-        <xsl:for-each select="/report/results/result[port='general/IT-Grundschutz-T'][host=$addr]">
+        <xsl:for-each select="/report/results/result[port='general/IT-Grundschutz-T'][host/text()=$addr]">
           <xsl:apply-templates select="description">
             <xsl:with-param name="task_id">
               <xsl:value-of select="$task_id"/>

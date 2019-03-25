@@ -15404,12 +15404,12 @@ setup_full_config_prefs (config_t config, int safe_checks,
 
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " '" OID_PING_HOST ":checkbox:Mark unrechable Hosts as dead (not scanning)',"
+       " '" OID_PING_HOST ":5:checkbox:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
-       " '" OID_LOGINS ":checkbox:NTLMSSP',"
+       " '" OID_LOGINS ":1:checkbox:NTLMSSP',"
        " 'yes');",
        config);
 }
@@ -16758,15 +16758,14 @@ check_db_nvt_selectors ()
   if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-               " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.100315';")
+               " AND family_or_nvt = '" OID_PING_HOST "';")
       == 0)
     {
       sql ("INSERT into nvt_selectors"
            " (name, exclude, type, family_or_nvt, family)"
            " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 0, "
            G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-           /* OID of the "Ping Host" NVT. */
-           " '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');");
+           " '" OID_PING_HOST "', 'Port scanners');");
     }
 
   if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
@@ -36465,12 +36464,12 @@ config_insert_preferences (config_t config,
           }
         else if (preference->type)
           {
-            gchar *quoted_type, *quoted_nvt_name, *quoted_preference_name;
+            gchar *quoted_type, *quoted_nvt_oid, *quoted_preference_name;
             gchar *quoted_default, *quoted_preference_hr_name;
 
             /* Presume NVT or OSP preference. */
 
-            if (preference->nvt_name == NULL
+            if (preference->nvt_oid == NULL
                 && (config_type == NULL || strcmp (config_type, "0") == 0))
               return -4;
 
@@ -36478,8 +36477,7 @@ config_insert_preferences (config_t config,
             while ((alt = (gchar*) g_ptr_array_index (preference->alts, alt_index++)))
               g_string_append_printf (value, ";%s", alt);
 
-            quoted_nvt_name = preference->nvt_name
-                                ? sql_quote (preference->nvt_name) : NULL;
+            quoted_nvt_oid = sql_quote (preference->nvt_oid ?: "");
             quoted_preference_name = sql_quote (preference->name);
             quoted_preference_hr_name
               = preference->hr_name
@@ -36498,12 +36496,13 @@ config_insert_preferences (config_t config,
             if (config_type == NULL || strcmp (config_type, "0") == 0)
               {
                 /* NVT preference */
-                /* OID:PrefType:PrefName value */
+                /* OID:PrefID:PrefType:PrefName value */
                 sql ("INSERT INTO config_preferences"
                      " (config, type, name, value)"
-                     " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s', '%s');",
+                     " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s:%s', '%s');",
                      config,
-                     quoted_nvt_name,
+                     quoted_nvt_oid,
+                     preference->id,
                      quoted_type,
                      quoted_preference_name,
                      quoted_value);
@@ -36522,7 +36521,7 @@ config_insert_preferences (config_t config,
                      quoted_preference_hr_name
                       ? quoted_preference_name : quoted_preference_hr_name);
               }
-            g_free (quoted_nvt_name);
+            g_free (quoted_nvt_oid);
             g_free (quoted_preference_name);
             g_free (quoted_type);
             g_free (quoted_value);
@@ -37853,7 +37852,7 @@ init_otp_pref_iterator (iterator_t* iterator,
                  config,
                  quoted_section,
                  strcmp (quoted_section, "SERVER_PREFS") == 0
-                  ? "NOT LIKE '%:%:%'" : "LIKE '%:%:%'",
+                  ? "NOT LIKE '%:%:%:%'" : "LIKE '%:%:%:%'",
                  config);
   g_free (quoted_section);
 }
@@ -37938,14 +37937,14 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
 
       quoted_name = sql_quote (name);
 
-      /* OID:scanner:PrefType */
-      splits = g_strsplit (name, ":", 3);
-      if (splits && g_strv_length (splits) == 3
-          && strcmp (splits[1], "scanner") == 0)
+      /* OID:PrefID:scanner:PrefName */
+      splits = g_strsplit (name, ":", 4);
+      if (splits && g_strv_length (splits) == 4
+          && strcmp (splits[2], "scanner") == 0)
         {
           /* A scanner preference.  Remove type decoration from name. */
           g_free (quoted_name);
-          quoted_name = sql_quote (splits[2]);
+          quoted_name = sql_quote (splits[3]);
         }
       g_strfreev (splits);
 
@@ -37992,11 +37991,11 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
   else
     value = g_strdup ("");
 
-  /* OID:PrefType:PrefName value */
-  splits = g_strsplit (name, ":", 3);
-  if (splits && g_strv_length (splits) == 3)
+  /* OID:PrefID:PrefType:PrefName value */
+  splits = g_strsplit (name, ":", 4);
+  if (splits && g_strv_length (splits) == 4)
     {
-      if (strcmp (splits[1], "radio") == 0)
+      if (strcmp (splits[2], "radio") == 0)
         {
           char *old_value;
           gchar **split, **point;
@@ -38053,12 +38052,12 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
               value = g_string_free (string, FALSE);
             }
         }
-      else if (strcmp (splits[1], "scanner") == 0)
+      else if (strcmp (splits[2], "scanner") == 0)
         {
           /* A scanner preference.  Remove type decoration from name. */
 
           g_free (quoted_name);
-          quoted_name = sql_quote (splits[2]);
+          quoted_name = sql_quote (splits[3]);
         }
     }
   g_strfreev (splits);
@@ -41084,7 +41083,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name != '%s:entry:Timeout'"
+                     " AND name != '%s:0:entry:Timeout'"
                      " AND name NOT %s 'server_info_%%'"
                      /* Task preferences. */
                      " AND name != 'max_checks'"
@@ -41104,7 +41103,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT %s '%%:entry:Timeout'"
+                   " AND name NOT %s '%%:0:entry:Timeout'"
                    " AND name NOT %s 'server_info_%%'"
                    /* Task preferences. */
                    " AND name != 'max_checks'"
@@ -41150,9 +41149,9 @@ nvt_preference_iterator_real_name (iterator_t* iterator)
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      char **splits = g_strsplit (ret, ":", 3);
-      if (splits && g_strv_length (splits) == 3)
-        real_name = g_strdup (splits[2]);
+      char **splits = g_strsplit (ret, ":", 4);
+      if (splits && g_strv_length (splits) == 4)
+        real_name = g_strdup (splits[3]);
       g_strfreev (splits);
       return real_name ?: g_strdup (ret);
     }
@@ -41171,17 +41170,17 @@ nvt_preference_iterator_type (iterator_t* iterator)
 {
   const char *ret;
   char *type = NULL;
-  if (iterator->done) return NULL;
+  if (iterator->done)
+    return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      char **splits = g_strsplit (ret, ":", 3);
-      if (splits && g_strv_length (splits) == 3)
-        type = g_strdup (splits[1]);
+      char **splits = g_strsplit (ret, ":", 4);
+      if (splits && g_strv_length (splits) == 4)
+        type = g_strdup (splits[2]);
       g_strfreev (splits);
-      return type ?: NULL;
     }
-  return NULL;
+  return type;
 }
 
 /**
@@ -41196,17 +41195,43 @@ nvt_preference_iterator_oid (iterator_t* iterator)
 {
   const char *ret;
   char *oid = NULL;
-  if (iterator->done) return NULL;
+  if (iterator->done)
+    return NULL;
   ret = iterator_string (iterator, 0);
   if (ret)
     {
-      char **splits = g_strsplit (ret, ":", 3);
-      if (splits && g_strv_length (splits) == 3)
+      char **splits = g_strsplit (ret, ":", 4);
+      if (splits && g_strv_length (splits) == 4)
         oid = g_strdup (splits[0]);
       g_strfreev (splits);
-      return oid ?: NULL;
     }
-  return NULL;
+  return oid;
+}
+
+/**
+ * @brief Get the ID from an NVT preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT.
+ */
+char*
+nvt_preference_iterator_id (iterator_t* iterator)
+{
+  const char *ret;
+  char *id = NULL;
+
+  if (iterator->done)
+    return NULL;
+  ret = iterator_string (iterator, 0);
+  if (ret)
+    {
+      char **splits = g_strsplit (ret, ":", 4);
+      if (splits && g_strv_length (splits) == 4)
+        id = g_strdup (splits[1]);
+      g_strfreev (splits);
+    }
+  return id;
 }
 
 /**
@@ -41245,21 +41270,21 @@ nvt_preference_iterator_config_value (iterator_t* iterator, config_t config)
 /**
  * @brief Get the number preferences available for an NVT.
  *
- * @param[in]  name  Name of NVT.
+ * @param[in]  oid  OID of NVT.
  *
  * @return Number of possible preferences on NVT.
  */
 int
-nvt_preference_count (const char *name)
+nvt_preference_count (const char *oid)
 {
-  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_oid = sql_quote (oid);
   int ret = sql_int ("SELECT COUNT(*) FROM nvt_preferences"
-                     " WHERE name != '%s:entry:Timeout'"
-                     "   AND name %s '%s[%%';",
-                     quoted_name,
+                     " WHERE name != '%s:0:entry:Timeout'"
+                     "   AND name %s '%s:%%';",
+                     quoted_oid,
                      sql_ilike_op (),
-                     quoted_name);
-  g_free (quoted_name);
+                     quoted_oid);
+  g_free (quoted_oid);
   return ret;
 }
 
@@ -63590,7 +63615,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       gsize value_size;
       gchar *quoted_timezone, *value;
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -63615,7 +63650,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       assert (current_credentials.username);
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -63659,7 +63704,17 @@ modify_setting (const gchar *uuid, const gchar *name,
         }
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -63824,7 +63879,17 @@ modify_setting (const gchar *uuid, const gchar *name,
         return -1;
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -64074,7 +64139,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       assert (current_credentials.username);
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -64812,7 +64887,7 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
              gchar **r_errdesc, user_t *new_user, int forbid_super_admin)
 {
-  char *errstr;
+  char *errstr, *uuid;
   gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
   gchar *quoted_comment, *clean, *generated;
   int index, max;
@@ -65017,6 +65092,28 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   if (new_user)
     *new_user = user;
 
+  /* Ensure the user can see themself. */
+
+  uuid = user_uuid (user);
+  if (uuid == NULL)
+    {
+      g_warning ("%s: Failed to allocate UUID", __FUNCTION__);
+      sql_rollback ();
+      return -1;
+    }
+
+  create_permission_internal ("GET_USERS",
+                              "Automatically created when adding user",
+                              NULL,
+                              uuid,
+                              "user",
+                              uuid,
+                              NULL);
+
+  free (uuid);
+
+  /* Cache permissions. */
+
   cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
   g_array_append_val (cache_users, user);
   cache_all_permissions_for_users (cache_users);
@@ -65045,6 +65142,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   int ret;
   gchar *quoted_uuid;
   GArray *cache_users;
+  char *uuid;
 
   if (acl_user_can_super_everyone (user_id))
     return 99;
@@ -65078,6 +65176,28 @@ copy_user (const char* name, const char* comment, const char *user_id,
        quoted_uuid);
 
   g_free (quoted_uuid);
+
+  /* Ensure the user can see themself. */
+
+  uuid = user_uuid (user);
+  if (uuid == NULL)
+    {
+      g_warning ("%s: Failed to allocate UUID", __FUNCTION__);
+      sql_rollback ();
+      return -1;
+    }
+
+  create_permission_internal ("GET_USERS",
+                              "Automatically created when adding user",
+                              NULL,
+                              uuid,
+                              "user",
+                              uuid,
+                              NULL);
+
+  free (uuid);
+
+  /* Cache permissions. */
 
   cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
   g_array_append_val (cache_users, user);

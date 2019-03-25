@@ -556,6 +556,7 @@ command_disabled (gmp_parser_t *gmp_parser, const gchar *name)
 /**
  * @brief Create a new preference.
  *
+ * @param[in]  id        ID of preference.
  * @param[in]  name      Name of preference.
  * @param[in]  type      Type of preference.
  * @param[in]  value     Value of preference.
@@ -568,13 +569,14 @@ command_disabled (gmp_parser_t *gmp_parser, const gchar *name)
  * @return Newly allocated preference.
  */
 static gpointer
-preference_new (char *name, char *type, char *value, char *nvt_name,
+preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
                 char *nvt_oid, array_t *alts, char* default_value,
                 char *hr_name)
 {
   preference_t *preference;
 
   preference = (preference_t*) g_malloc0 (sizeof (preference_t));
+  preference->id = id;
   preference->name = name;
   preference->type = type;
   preference->value = value;
@@ -693,6 +695,7 @@ typedef struct
   char *preference_alt;              ///< Single radio alternative in PREFERENCE.
   char *preference_default;          ///< Default value in PREFERENCE.
   char *preference_hr_name;          ///< Human readable name in PREFERENCE.
+  char *preference_id;               ///< ID in PREFERENCE.
   char *preference_name;             ///< Name in PREFERENCE.
   char *preference_nvt_name;         ///< NVT name in PREFERENCE.
   char *preference_nvt_oid;          ///< NVT OID in PREFERENCE.
@@ -749,8 +752,9 @@ create_config_data_reset (create_config_data_t *data)
     }
 
   g_free (import->preference_alt);
+  g_free (import->preference_id);
   g_free (import->preference_name);
-  g_free (import->preference_name);
+  g_free (import->preference_hr_name);
   g_free (import->preference_nvt_name);
   g_free (import->preference_nvt_oid);
   g_free (import->preference_type);
@@ -2879,6 +2883,7 @@ typedef struct
   array_t *nvt_selection;              ///< OID array. New NVT set for config.
   char *nvt_selection_family;          ///< Family of NVT selection.
   char *nvt_selection_nvt_oid;         ///< OID during NVT_selection/NVT.
+  char *preference_id;                 ///< Config preference to modify.
   char *preference_name;               ///< Config preference to modify.
   char *preference_nvt_oid;            ///< OID of NVT of preference.
   char *preference_value;              ///< New value for preference.
@@ -3112,6 +3117,7 @@ modify_config_data_reset (modify_config_data_t *data)
   array_free (data->nvt_selection);
   free (data->nvt_selection_family);
   free (data->nvt_selection_nvt_oid);
+  free (data->preference_id);
   free (data->preference_name);
   free (data->preference_nvt_oid);
   free (data->preference_value);
@@ -4914,6 +4920,7 @@ typedef enum
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_DEFAULT,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_HR_NAME,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME,
+  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ID,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE,
@@ -5288,6 +5295,7 @@ typedef enum
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT,
   CLIENT_MODIFY_CONFIG_PREFERENCE,
+  CLIENT_MODIFY_CONFIG_PREFERENCE_ID,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NVT,
   CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
@@ -7235,6 +7243,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PREFERENCE", element_name) == 0)
           {
+            gvm_free_string_var (&modify_config_data->preference_id);
             gvm_free_string_var (&modify_config_data->preference_name);
             gvm_free_string_var (&modify_config_data->preference_nvt_oid);
             gvm_free_string_var (&modify_config_data->preference_value);
@@ -8084,6 +8093,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("HR_NAME", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_HR_NAME);
+        else if (strcasecmp ("ID", element_name) == 0)
+          set_client_state
+           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ID);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME);
@@ -10120,7 +10132,7 @@ void
 buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
                               config_t config, int hide_passwords)
 {
-  char *real_name, *type, *value, *oid, *nvt = NULL;
+  char *real_name, *type, *value, *oid, *id, *nvt = NULL;
   const char *default_value;
 
   oid = nvt_preference_iterator_oid (prefs);
@@ -10128,17 +10140,20 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
   real_name = nvt_preference_iterator_real_name (prefs);
   default_value = nvt_preference_iterator_value (prefs);
   value = nvt_preference_iterator_config_value (prefs, config);
+  id = nvt_preference_iterator_id (prefs);
 
   if (oid)
     nvt = nvt_name (oid);
   buffer_xml_append_printf (buffer,
                             "<preference>"
                             "<nvt oid=\"%s\"><name>%s</name></nvt>"
+                            "<id>%s</id>"
                             "<hr_name>%s</hr_name>"
                             "<name>%s</name>"
                             "<type>%s</type>",
                             oid ? oid : "",
                             nvt ? nvt : "",
+                            id ? id : "",
                             real_name ? real_name : "",
                             real_name ? real_name : "",
                             type ? type : "");
@@ -13369,6 +13384,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                ("<preference>"
                 "<nvt oid=\"\"><name/></nvt>"
                 "<hr_name>%s</hr_name>"
+                "<id/>"
                 "<name>%s</name>"
                 "<type>osp_%s</type>"
                 "<value>%s</value>"
@@ -13404,6 +13420,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                   "<nvt oid=\"%s\">"
                   "<name>%s</name>"
                   "</nvt>"
+                  "<id>0</id>"
                   "<name>Timeout</name>"
                   "<type>entry</type>"
                   "<value>%s</value>"
@@ -15100,8 +15117,8 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
 
                 if (get_nvts_data->preference_count)
                   {
-                    const char *nvt_name = nvt_iterator_name (&nvts);
-                    pref_count = nvt_preference_count (nvt_name);
+                    const char *nvt_oid = nvt_iterator_oid (&nvts);
+                    pref_count = nvt_preference_count (nvt_oid);
                   }
                 if (send_nvt (&nvts, 1, get_nvts_data->preferences,
                               pref_count, timeout, config,
@@ -21529,7 +21546,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           }
 
         array_add (import_config_data->preferences,
-                   preference_new (import_config_data->preference_name,
+                   preference_new (import_config_data->preference_id,
+                                   import_config_data->preference_name,
                                    import_config_data->preference_type,
                                    import_config_data->preference_value,
                                    import_config_data->preference_nvt_name,
@@ -21537,6 +21555,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                    import_config_data->preference_alts,
                                    import_config_data->preference_default,
                                    preference_hr_name));
+        import_config_data->preference_id = NULL;
         import_config_data->preference_name = NULL;
         import_config_data->preference_type = NULL;
         import_config_data->preference_value = NULL;
@@ -21556,6 +21575,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, DEFAULT);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, HR_NAME);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, NAME);
+      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, ID);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, NVT);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT, NAME);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, TYPE);
@@ -28963,6 +28983,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
               &modify_config_data->preference_name);
 
+      APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_ID,
+              &modify_config_data->preference_id);
+
       APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
               &modify_config_data->preference_value);
 
@@ -29120,6 +29143,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_HR_NAME,
               &import_config_data->preference_hr_name);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ID,
+              &import_config_data->preference_id);
 
       APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME,
               &import_config_data->preference_name);

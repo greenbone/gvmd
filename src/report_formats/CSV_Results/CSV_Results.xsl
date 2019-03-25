@@ -182,7 +182,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- MATCH RESULT -->
 <xsl:template match="result">
-  <xsl:variable name="ip" select="host"/>
+  <xsl:variable name="ip" select="host/text()"/>
   <xsl:variable name="summary-tag" select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
   <xsl:variable name="summary">
     <xsl:choose>

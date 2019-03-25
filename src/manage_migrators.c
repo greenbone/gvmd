@@ -1230,6 +1230,101 @@ migrate_201_to_202 ()
 
   /* Update the database. */
 
+  /* Ensure the various tickets tables exist */
+  if (sql_is_sqlite3 ())
+    {
+      sql ("CREATE TABLE IF NOT EXISTS tickets"
+           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+           "  comment, nvt, task, report, severity, host, location,"
+           "  solution_type, assigned_to, status, open_time, solved_time,"
+           "  solved_comment, confirmed_time, confirmed_report, closed_time,"
+           "  closed_comment, orphaned_time, creation_time,"
+           "  modification_time);");
+      sql ("CREATE TABLE IF NOT EXISTS ticket_results"
+           " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
+           "  result_uuid, report);");
+      sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
+           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+           "  comment, nvt, task, report, severity, host, location,"
+           "  solution_type, assigned_to, status, open_time, solved_time,"
+           "  solved_comment, confirmed_time, confirmed_report, closed_time,"
+           "  closed_comment, orphaned_time, creation_time,"
+           "  modification_time);");
+      sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
+           " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
+           "  result_uuid, report);");
+    }
+  else
+    {
+      sql ("CREATE TABLE IF NOT EXISTS tickets"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE NOT NULL,"
+           "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+           "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
+           "  comment text,"
+           "  nvt text,"
+           "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+           "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+           "  severity real,"
+           "  host text,"
+           "  location text,"
+           "  solution_type text,"
+           "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
+           "  status integer,"
+           "  open_time integer,"
+           "  solved_time integer,"
+           "  solved_comment text,"
+           "  confirmed_time integer,"
+           "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+           "  closed_time integer,"
+           "  closed_comment text,"
+           "  orphaned_time integer,"
+           "  creation_time integer,"
+           "  modification_time integer);");
+
+      sql ("CREATE TABLE IF NOT EXISTS ticket_results"
+           " (id SERIAL PRIMARY KEY,"
+           "  ticket integer REFERENCES tickets (id) ON DELETE RESTRICT,"
+           "  result integer,"    // REFERENCES results (id) ON DELETE RESTRICT
+           "  result_location integer,"
+           "  result_uuid text,"
+           "  report integer);"); // REFERENCES reports (id) ON DELETE RESTRICT
+
+      sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE NOT NULL,"
+           "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+           "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
+           "  comment text,"
+           "  nvt text,"
+           "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+           "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+           "  severity real,"
+           "  host text,"
+           "  location text,"
+           "  solution_type text,"
+           "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
+           "  status integer,"
+           "  open_time integer,"
+           "  solved_time integer,"
+           "  solved_comment text,"
+           "  confirmed_time integer,"
+           "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+           "  closed_time integer,"
+           "  closed_comment text,"
+           "  orphaned_time integer,"
+           "  creation_time integer,"
+          "  modification_time integer);");
+
+      sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
+          " (id SERIAL PRIMARY KEY,"
+          "  ticket integer REFERENCES tickets_trash (id) ON DELETE RESTRICT,"
+          "  result integer,"    // REFERENCES results_trash (id) ON DELETE RESTRICT
+          "  result_location integer,"
+          "  result_uuid text,"
+          "  report integer);"); // REFERENCES reports_trash (id) ON DELETE RESTRICT
+    }
+
   /* Ticket orphan state was removed. */
 
   sql ("UPDATE tickets SET status = 3 WHERE status = 4;");
@@ -1525,6 +1620,53 @@ migrate_205_to_206 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 206 to version 207.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_206_to_207 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 206. */
+
+  if (manage_db_version () != 206)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* User are now able to see themselves by default. */
+
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " SELECT make_uuid (), id, 'get_users',"
+       "        'Automatically created when adding user', 'user', uuid, id, 0,"
+       "        'user', id, 0, m_now (), m_now ()"
+       " FROM users"
+       " WHERE NOT"
+       "       EXISTS (SELECT * FROM permissions"
+       "               WHERE name = 'get_users'"
+       "               AND resource = users.id"
+       "               AND subject = users.id"
+       "               AND comment"
+       "                   = 'Automatically created when adding user');");
+
+  /* Set the database version to 207. */
+
+  set_db_version (207);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1553,6 +1695,7 @@ static migrator_t database_migrators[] = {
   {204, migrate_203_to_204},
   {205, migrate_204_to_205}, // v8.0: rev 205
   {206, migrate_205_to_206},
+  {207, migrate_206_to_207},
   /* End marker. */
   {-1, NULL}};
 

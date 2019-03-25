@@ -133,7 +133,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <report id="{concat('report_', $ip)}">
     <content>
       <xsl:copy>
-        <xsl:for-each select="openvas:report()/results/result[host = $ip]">
+        <xsl:for-each select="openvas:report()/results/result[host/text() = $ip]">
           <xsl:copy-of select="."/>
         </xsl:for-each>
       </xsl:copy>
