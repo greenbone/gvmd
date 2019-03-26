@@ -10785,7 +10785,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                             "<asset asset_id=\"%s\"/>"
                             "<hostname>%s</hostname>"
                             "</host>",
-                            result_iterator_host (results),
+                            result_iterator_host (results) ?: "",
                             asset_id ? asset_id : "",
                             result_iterator_hostname (results) ?: "");
 
