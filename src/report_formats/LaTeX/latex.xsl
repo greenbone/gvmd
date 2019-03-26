@@ -568,15 +568,15 @@ advice given in each description, in order to rectify the issue.
       <xsl:with-param name="text" select="$host"/>
     </xsl:call-template>
     <xsl:text>&amp;</xsl:text>
-    <xsl:value-of select="count(../results/result[host=$host][threat/text()='High'])"/>
+    <xsl:value-of select="count(../results/result[host/text()=$host][threat/text()='High'])"/>
     <xsl:text>&amp;</xsl:text>
-    <xsl:value-of select="count(../results/result[host=$host][threat/text()='Medium'])"/>
+    <xsl:value-of select="count(../results/result[host/text()=$host][threat/text()='Medium'])"/>
     <xsl:text>&amp;</xsl:text>
-    <xsl:value-of select="count(../results/result[host=$host][threat/text()='Low'])"/>
+    <xsl:value-of select="count(../results/result[host/text()=$host][threat/text()='Low'])"/>
     <xsl:text>&amp;</xsl:text>
-    <xsl:value-of select="count(../results/result[host=$host][threat/text()='Log'])"/>
+    <xsl:value-of select="count(../results/result[host/text()=$host][threat/text()='Log'])"/>
     <xsl:text>&amp;</xsl:text>
-    <xsl:value-of select="count(../results/result[host=$host][threat/text()='False Positive'])"/>
+    <xsl:value-of select="count(../results/result[host/text()=$host][threat/text()='False Positive'])"/>
     <xsl:call-template name="latex-newline"/>
     <xsl:choose>
       <xsl:when test="$hostname">
@@ -914,9 +914,9 @@ advice given in each description, in order to rectify the issue.
   <xsl:template name="single-host-overview-table-row">
     <xsl:param name="threat"/>
     <xsl:param name="host"/>
-    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
       <xsl:variable name="port_service" select="text()"/>
-        <xsl:if test="openvas:report()/results/result[host=$host][threat/text()=$threat][port=$port_service]">
+        <xsl:if test="openvas:report()/results/result[host/text()=$host][threat/text()=$threat][port=$port_service]">
           <xsl:call-template name="latex-hyperref">
             <xsl:with-param name="target" select="concat('port:', $host, ' ', $port_service, ' ', $threat)"/>
             <xsl:with-param name="text" select="$port_service"/>
@@ -1155,11 +1155,11 @@ advice given in each description, in order to rectify the issue.
     <xsl:param name="host"/>
     <xsl:param name="port_service"/>
     <xsl:param name="threat"/>
-    <xsl:if test="openvas:report()/results/result[host=$host][threat/text()=$threat][port=$port_service]">
+    <xsl:if test="openvas:report()/results/result[host/text()=$host][threat/text()=$threat][port=$port_service]">
       <xsl:call-template name="latex-subsubsection"><xsl:with-param name="subsubsection_string" select="concat ($threat, ' ', $port_service)"/></xsl:call-template>
       <xsl:call-template name="latex-label"><xsl:with-param name="label_string" select="concat('port:', $host, ' ', $port_service, ' ', $threat)"/></xsl:call-template>
       <xsl:call-template name="newline"/>
-      <xsl:for-each select="openvas:report()/results/result[host=$host][threat/text()=$threat][port=$port_service]">
+      <xsl:for-each select="openvas:report()/results/result[host/text()=$host][threat/text()=$threat][port=$port_service]">
         <xsl:text>\begin{longtable}{|p{\textwidth * 1}|}</xsl:text><xsl:call-template name="newline"/>
         <xsl:call-template name="latex-hline"/>
         <xsl:text>\rowcolor{</xsl:text>
@@ -1457,7 +1457,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:param name="host"/>
 
     <!-- TODO Solve other sorting possibilities. -->
-    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">High</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1465,7 +1465,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Medium</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1473,7 +1473,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Low</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1481,7 +1481,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Log</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1489,7 +1489,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Debug</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1497,7 +1497,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">False Positive</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
