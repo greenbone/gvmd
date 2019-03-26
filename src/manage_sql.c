@@ -9046,7 +9046,7 @@ email_write_content (FILE *content_file,
                    "Content-Type: multipart/mixed;"
                    " boundary=\""
                  : "Content-Type: text/plain; charset=utf-8\n"
-                   "Content-Transfer-Encoding: 8bit"),
+                   "Content-Transfer-Encoding: 8bit\n"),
                /* @todo Future callers may give email containing this string. */
                (attachment ? "=-=-=-=-=" : ""),
                (attachment ? "\"\n" : ""),
