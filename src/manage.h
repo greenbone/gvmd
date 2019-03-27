@@ -1969,6 +1969,9 @@ config_timeout_iterator_nvt_name (iterator_t *);
 const char *
 config_timeout_iterator_value (iterator_t *);
 
+void update_config_preference (const char *, const char *, const char *,
+                               const char *, gboolean);
+
 /* NVT's. */
 
 char *manage_nvt_name (nvt_t);
