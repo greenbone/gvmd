@@ -970,7 +970,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
 int
 check_config_discovery (const char *uuid)
 {
-  /* Check new preference. */
+  /* Check preferences. */
 
   sql ("UPDATE config_preferences SET value = 'no'"
        " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
@@ -978,6 +978,13 @@ check_config_discovery (const char *uuid)
        " AND name = '" OID_PING_HOST ":6:checkbox:Report about unrechable Hosts'"
        " AND value = 'yes';",
        uuid);
+
+  update_config_preference (uuid,
+                            "PLUGINS_PREFS",
+                            OID_PING_HOST ":5:checkbox:"
+                            "Mark unrechable Hosts as dead (not scanning)",
+                            "yes",
+                            TRUE);
 
   return 0;
 }
