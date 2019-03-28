@@ -1784,6 +1784,7 @@ trash_target_login_port (target_t, const char*);
 typedef struct
 {
   char *name;      ///< Name of preference.
+  char *id;        ///< ID of preference.
   char *type;      ///< Type of preference (radio, password, ...).
   char *value;     ///< Value of preference.
   char *nvt_name;  ///< Name of NVT preference affects.
@@ -2108,6 +2109,9 @@ nvt_preference_iterator_type (iterator_t*);
 
 char*
 nvt_preference_iterator_oid (iterator_t*);
+
+char*
+nvt_preference_iterator_id (iterator_t*);
 
 int
 nvt_preference_count (const char *);
