@@ -54422,10 +54422,10 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
         }
       hosts = next_entities (hosts);
 
-      current_commit_size ++;
+      current_commit_size++;
       if (slave_commit_size && current_commit_size >= slave_commit_size)
         {
-          sql_commit();
+          sql_commit ();
           sql_begin_immediate ();
           current_commit_size = 0;
         }
@@ -54482,10 +54482,10 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
                                   entity_text (description));
             if (current_report) report_add_result (current_report, result);
 
-            current_commit_size ++;
+            current_commit_size++;
             if (slave_commit_size && current_commit_size >= slave_commit_size)
               {
-                sql_commit();
+                sql_commit ();
                 sql_begin_immediate ();
                 current_commit_size = 0;
               }
