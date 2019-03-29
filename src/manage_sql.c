@@ -360,6 +360,11 @@ void (*progress) () = NULL;
 static int max_hosts = MANAGE_MAX_HOSTS;
 
 /**
+ * @brief Maximum number of SQL queries per transaction in slave updates.
+ */
+static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
+
+/**
  * @brief Default max number of bytes of reports included in email alerts.
  */
 #define MAX_CONTENT_LENGTH 20000
@@ -54336,6 +54341,20 @@ check_report_format (const gchar *uuid)
 /* OMP slave scanners. */
 
 /**
+ * @brief Set the slave update commit size.
+ *
+ * @param new_commit_size The new slave update commit size.
+ */
+void
+set_slave_commit_size (int new_commit_size)
+{
+  if (new_commit_size < 0)
+    slave_commit_size = 0;
+  else
+    slave_commit_size = new_commit_size;
+}
+
+/**
  * @brief Update the local task from the slave task.
  *
  * @param[in]   task         The local task.
@@ -54351,6 +54370,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 {
   entity_t entity, host_start, start;
   entities_t results, hosts, entities;
+  int current_commit_size;
 
   entity = entity_child (get_report, "report");
   if (entity == NULL)
@@ -54379,6 +54399,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
   sql_begin_immediate ();
   hosts = (*report)->entities;
+  current_commit_size = 0;
   while ((host_start = first_entity (hosts)))
     {
       if (strcmp (entity_name (host_start), "host_start") == 0)
@@ -54400,6 +54421,14 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
                                     entity_text (host_start));
         }
       hosts = next_entities (hosts);
+
+      current_commit_size ++;
+      if (slave_commit_size && current_commit_size >= slave_commit_size)
+        {
+          sql_commit();
+          sql_begin_immediate ();
+          current_commit_size = 0;
+        }
     }
   sql_commit ();
 
@@ -54411,6 +54440,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
   sql_begin_immediate ();
   results = entity->entities;
+  current_commit_size = 0;
   while ((entity = first_entity (results)))
     {
       if (strcmp (entity_name (entity), "result") == 0)
@@ -54451,6 +54481,14 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
                                   threat_message_type (entity_text (threat)),
                                   entity_text (description));
             if (current_report) report_add_result (current_report, result);
+
+            current_commit_size ++;
+            if (slave_commit_size && current_commit_size >= slave_commit_size)
+              {
+                sql_commit();
+                sql_begin_immediate ();
+                current_commit_size = 0;
+              }
           }
 
           (*next_result)++;
