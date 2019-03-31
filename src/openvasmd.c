@@ -1725,6 +1725,7 @@ main (int argc, char** argv)
   static gchar *scanner_key_pub = NULL;
   static gchar *scanner_key_priv = NULL;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
+  static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
@@ -1797,6 +1798,7 @@ main (int argc, char** argv)
         { "delete-scanner", '\0', 0, G_OPTION_ARG_STRING, &delete_scanner, "Delete scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
         { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
         { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT, &schedule_timeout, "Time out tasks that are more than <time> minutes overdue. -1 to disable, 0 for minimum time, default: " G_STRINGIFY (SCHEDULE_TIMEOUT_DEFAULT), "<time>" },
+        { "slave-commit-size", '\0', 0, G_OPTION_ARG_INT, &slave_commit_size, "Number of updates per transaction during slave updates, 0 for unlimited" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "inheritor", '\0', 0, G_OPTION_ARG_STRING, &inheritor, "Have <username> inherit from deleted user.", "<username>" },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
@@ -1880,6 +1882,9 @@ main (int argc, char** argv)
   /* Set schedule_timeout */
 
   set_schedule_timeout (schedule_timeout);
+
+  /* Set slave commit size */
+  set_slave_commit_size (slave_commit_size);
 
   /* Check which type of socket to use. */
 
