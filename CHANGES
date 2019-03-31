@@ -23,6 +23,8 @@ Main changes since 7.0.3:
   HTML and LaTeX report formats.
 * A new password-only credential type has been added
 * The Sourcefire alert now accepts a password credential for PKCS12 decryption.
+* The GET_TASKS command now only returns the progress of individual hosts
+  when details are requested.
 
 openvas-manager 7.0.3 (2018-03-29)
 
