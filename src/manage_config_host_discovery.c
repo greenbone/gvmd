@@ -155,5 +155,14 @@ check_config_host_discovery (const char *uuid)
   if (update)
     update_config_cache_init (uuid);
 
+  /* Check preferences. */
+
+  update_config_preference (uuid,
+                            "PLUGINS_PREFS",
+                            OID_PING_HOST ":5:checkbox:"
+                            "Mark unrechable Hosts as dead (not scanning)",
+                            "yes",
+                            TRUE);
+
   return 0;
 }
