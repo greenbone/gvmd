@@ -743,7 +743,7 @@ hosts_str_contains (const char* hosts_str, const char* find_host_str,
       return 0;
     }
 
-  int ret = gvm_host_in_hosts (find_hosts->hosts->data, NULL, hosts);
+  int ret = gvm_host_in_hosts (find_hosts->hosts[0], NULL, hosts);
   gvm_hosts_free (hosts);
   gvm_hosts_free (find_hosts);
   return ret;
