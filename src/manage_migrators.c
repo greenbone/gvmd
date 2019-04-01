@@ -1670,6 +1670,11 @@ migrate_206_to_207 ()
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
+ * @brief The oldest version for which migration is supported
+ */
+#define MIGRATE_MIN_OLD_VERSION 184
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[] = {
@@ -1732,7 +1737,10 @@ migrate_is_available (int old_version, int new_version)
 {
   migrator_t *migrators;
 
-  migrators = database_migrators + old_version + 1;
+  if (old_version < MIGRATE_MIN_OLD_VERSION)
+    return 0;
+
+  migrators = database_migrators + old_version - MIGRATE_MIN_OLD_VERSION;
 
   while ((migrators->version >= 0) && (migrators->version <= new_version))
     {
@@ -1804,7 +1812,7 @@ manage_migrate (GSList *log_config, const gchar *database)
 
       /* Call the migrators to take the DB from the old version to the new. */
 
-      migrators = database_migrators + old_version + 1;
+      migrators = database_migrators + old_version - MIGRATE_MIN_OLD_VERSION;
 
       while ((migrators->version >= 0) && (migrators->version <= new_version))
         {
