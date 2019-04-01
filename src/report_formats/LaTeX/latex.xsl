@@ -750,7 +750,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:for-each select="host"><xsl:call-template name="results-overview-table-single-host-row"/></xsl:for-each>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>Total: </xsl:text>
-    <xsl:value-of select="count(openvas:report()/host_start)"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
+    <xsl:value-of select="count(openvas:report()/host)"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
 
