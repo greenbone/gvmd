@@ -12903,17 +12903,17 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  INIT_GET (asset, Asset);
-
   /* Set type specific functions. */
   if (g_strcmp0 ("host", get_assets_data->type) == 0)
     {
+      INIT_GET (asset, Host);
       init_asset_iterator = init_asset_host_iterator;
       asset_count = asset_host_count;
       get_assets_data->get.subtype = g_strdup ("host");
     }
   else if (g_strcmp0 ("os", get_assets_data->type) == 0)
     {
+      INIT_GET (asset, Operating System);
       init_asset_iterator = init_asset_os_iterator;
       asset_count = asset_os_count;
       get_assets_data->get.subtype = g_strdup ("os");

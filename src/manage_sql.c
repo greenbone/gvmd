@@ -64010,8 +64010,12 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Credentials Filter");
       else if (strcmp (uuid, "f9691163-976c-47e7-ad9a-38f2d5c81649") == 0)
         setting_name = g_strdup ("Filters Filter");
+      else if (strcmp (uuid, "37562dfe-1f7e-4cae-a7c0-fa95e6f194c5") == 0)
+        setting_name = g_strdup ("Hosts Filter");
       else if (strcmp (uuid, "96abcd5a-9b6d-456c-80b8-c3221bfa499d") == 0)
         setting_name = g_strdup ("Notes Filter");
+      else if (strcmp (uuid, "f608c3ec-ce73-4ff6-8e04-7532749783af") == 0)
+        setting_name = g_strdup ("Operating Systems Filter");
       else if (strcmp (uuid, "eaaaebf1-01ef-4c49-b7bb-955461c78e0a") == 0)
         setting_name = g_strdup ("Overrides Filter");
       else if (strcmp (uuid, "ffb16b28-538c-11e3-b8f9-406186ea4fc5") == 0)
