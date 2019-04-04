@@ -20733,7 +20733,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
           <ele>
             <name>host_progress</name>
-            <summary>Percentage complete for a particular host</summary>
+            <summary>
+              Percentage complete for a particular host,
+              only shown when details are active</summary>
             <pattern>
               <t>integer</t>
               <e>host</e>
@@ -26491,6 +26493,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_TASKS</command>
+    <summary>HOST_PROGRESS only shown with active details</summary>
+    <description>
+      <p>
+        The GET_TASKS command will only return the progress of individual hosts
+        in HOST_PROGRESS elements when details are requested.
+      </p>
+    </description>
+    <version>8.0</version>
+  </change>
   <change>
     <command>CREATE_FILTER, CREATE_TARGET</command>
     <summary>NAME MAKE_UNIQUE removed</summary>
