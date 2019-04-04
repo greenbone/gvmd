@@ -24,7 +24,7 @@ Main changes compared to gvm 8.0+beta3:
 * An issue with alert emails missing a line break has been addressed.
 * MODIFY_SETTING now checks if text values can be decoded to valid UTF-8.
 * Issues with the database migration have been addressed.
-* Users will automatically get read persmission for themselves.
+* Users will automatically get read permission for themselves.
 * An issue with incomplete NVT info after feed updates has been addressed.
 * Issues with the predefined report formats not handling hosts and hostnames
   correctly have been addressed.
