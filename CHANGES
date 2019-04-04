@@ -33,7 +33,10 @@ Main changes compared to gvm 8.0+beta3:
   mark unreachable hosts as dead.
 * Some compiler issues with the remediation and report functions have been
   addressed.
-
+* The GET_TASKS command now only returns the progress of individual hosts
+  when details are requested.
+* The --slave-commit-size option has been added, which can help prevent large
+  updates from GMP scanners blocking the database for a long time.
 
 gvmd 8.0+beta3 (2019-02-06)
 
