@@ -18826,11 +18826,18 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               int progress;
               gchar *host_xml;
 
+              host_xml = NULL;
               running_report = task_iterator_current_report (&tasks);
-              progress
-                = report_progress (running_report, index, &host_xml);
+
+              if ((&get_tasks_data->get)->details)
+                progress
+                  = report_progress (running_report, index, &host_xml);
+              else
+                progress
+                  = report_progress (running_report, index, NULL);
+
               progress_xml
-                = g_strdup_printf ("%i%s", progress, host_xml);
+                = g_strdup_printf ("%i%s", progress, host_xml ? host_xml : "");
               g_free (host_xml);
             }
 
