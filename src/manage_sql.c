@@ -50582,7 +50582,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update basic data */
   quoted_comment = comment ? sql_quote (comment) : NULL;
-  quoted_timezone = timezone ? sql_quote (zone) : NULL;
+  quoted_timezone = zone ? sql_quote (zone) : NULL;
 
   sql ("UPDATE schedules SET"
        " name = %s%s%s,"
