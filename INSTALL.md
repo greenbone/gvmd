@@ -18,7 +18,7 @@ Prerequisites:
 * cmake >= 3.0
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
-* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 1.0.0
+* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 10.0.0
 * sqlite3 library >= 3.8.3 or PostgreSQL database
 * pkg-config
 * libical >= 1.0.0
