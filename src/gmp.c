@@ -12916,17 +12916,17 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  INIT_GET (asset, Asset);
-
   /* Set type specific functions. */
   if (g_strcmp0 ("host", get_assets_data->type) == 0)
     {
+      INIT_GET (asset, Host);
       init_asset_iterator = init_asset_host_iterator;
       asset_count = asset_host_count;
       get_assets_data->get.subtype = g_strdup ("host");
     }
   else if (g_strcmp0 ("os", get_assets_data->type) == 0)
     {
+      INIT_GET (asset, Operating System);
       init_asset_iterator = init_asset_os_iterator;
       asset_count = asset_os_count;
       get_assets_data->get.subtype = g_strdup ("os");
@@ -30115,8 +30115,9 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
   xml_parser.text = gmp_xml_handle_text;
   xml_parser.passthrough = NULL;
   xml_parser.error = gmp_xml_handle_error;
-  if (xml_context)
-    g_markup_parse_context_free (xml_context);
+  /* Don't free xml_context because we likely are inside the parser that is
+   * the context, which would cause Glib to freak out.  Just leak, the process
+   * is going to exit after this anyway. */
   xml_context = g_markup_parse_context_new
                  (&xml_parser,
                   0,

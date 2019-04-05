@@ -372,8 +372,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
       /* Or the user has Admin rights and the resource is a permission or a
        * report format... */
       || (current_credentials.uuid
-          && (((strcmp (type, "permission") == 0)
-               || (strcmp (type, "report_format") == 0))
+          && ((strcmp (type, "permission") == 0)
               && get_iterator_uuid (iterator)
               /* ... but not the special Admin permission. */
               && permission_is_admin (get_iterator_uuid (iterator)))
