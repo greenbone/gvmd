@@ -37681,11 +37681,11 @@ config_iterator_scanner_trash (iterator_t* iterator)
 int
 config_in_use (config_t config)
 {
-  return sql_int ("SELECT count(*) FROM tasks"
-                  " WHERE config = %llu"
-                  " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
-                  " AND hidden = 0;",
-                  config);
+  return !!sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE config = %llu"
+                    " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
+                    " AND hidden = 0;",
+                    config);
 }
 
 /**
@@ -37724,10 +37724,10 @@ config_writable (config_t config)
 int
 trash_config_in_use (config_t config)
 {
-  return sql_int ("SELECT count(*) FROM tasks"
-                  " WHERE config = %llu"
-                  " AND config_location = " G_STRINGIFY (LOCATION_TRASH),
-                  config);
+  return !!sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE config = %llu"
+                    " AND config_location = " G_STRINGIFY (LOCATION_TRASH),
+                    config);
 }
 
 /**
@@ -57790,9 +57790,9 @@ port_list_in_use (port_list_t port_list)
   if (port_list_is_predefined (port_list))
     return 1;
 
-  return sql_int ("SELECT count(*) FROM targets"
-                  " WHERE port_list = %llu",
-                  port_list);
+  return !!sql_int ("SELECT count(*) FROM targets"
+                    " WHERE port_list = %llu",
+                    port_list);
 }
 
 /**
@@ -57805,11 +57805,11 @@ port_list_in_use (port_list_t port_list)
 int
 trash_port_list_in_use (port_list_t port_list)
 {
-  return (sql_int ("SELECT count (*) FROM targets_trash"
-                   " WHERE port_list = %llu"
-                   " AND port_list_location = "
-                   G_STRINGIFY (LOCATION_TRASH) ";",
-                   port_list) > 0);
+  return !!sql_int ("SELECT count (*) FROM targets_trash"
+                    " WHERE port_list = %llu"
+                    " AND port_list_location = "
+                    G_STRINGIFY (LOCATION_TRASH) ";",
+                    port_list);
 }
 
 /**
