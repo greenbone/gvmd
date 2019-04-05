@@ -7,40 +7,9 @@ or get the entire source code repository and view log history:
 $ git clone https://github.com/greenbone/gvmd.git
 $ cd gvmd && git log
 
-gvmd 8.0.0 (2019-04-04)
+gvmd 8.0.0 (2019-04-05)
 
 This is the first release of the gvmd module 8.0 for the Greenbone
-Vulnerability Management (GVM) framework.
-
-Many thanks to everyone who has contributed to this release.
-
-Main changes compared to gvm 8.0+beta3:
-* Targets now use TCP-SYN without TCP-ACK when pinging hosts when configured
-  to do so.
-* Performance of GET_REPORTS retrieving the results has been improved.
-* GET_REPORTS will only return Tags of results if requested with the new
-  result_tags attribute.
-* Updates of the NVTs will now ignore duplicate preferences instead of failing.
-* An issue with alert emails missing a line break has been addressed.
-* MODIFY_SETTING now checks if text values can be decoded to valid UTF-8.
-* Issues with the database migration have been addressed.
-* Users will automatically get read permission for themselves.
-* An issue with incomplete NVT info after feed updates has been addressed.
-* Issues with the predefined report formats not handling hosts and hostnames
-  correctly have been addressed.
-* Settings "Hosts Filter" and "Operating Systems Filter" have been added.
-* The predefined "Discovery", "Host Discovery" and "System Discovery" now
-  mark unreachable hosts as dead.
-* Some compiler issues with the remediation and report functions have been
-  addressed.
-* The GET_TASKS command now only returns the progress of individual hosts
-  when details are requested.
-* The --slave-commit-size option has been added, which can help prevent large
-  updates from GMP scanners blocking the database for a long time.
-
-gvmd 8.0+beta3 (2019-02-06)
-
-This is the third beta release of the gvmd module 8.0 for the Greenbone
 Vulnerability Management (GVM) framework.
 
 Many thanks to everyone who has contributed to this release.
@@ -73,6 +42,26 @@ Main changes compared to gvm 8.0+beta2:
 * The Sourcefire alert now accepts a password credential for PKCS12 decryption.
 * The source code and GMP documentation have been cleaned up.
 * A section about deprecated GMP elements has been added to the documentation.
+* Targets now use TCP-SYN without TCP-ACK when pinging hosts when configured
+  to do so.
+* Performance of GET_REPORTS retrieving the results has been improved.
+* GET_REPORTS will only return Tags of results if requested with the new
+  result_tags attribute.
+* Updates of the NVTs will now ignore duplicate preferences instead of failing.
+* An issue with alert emails missing a line break has been addressed.
+* MODIFY_SETTING now checks if text values can be decoded to valid UTF-8.
+* Users will automatically get read permission for themselves.
+* An issue with incomplete NVT info after feed updates has been addressed.
+* Issues with the predefined report formats not handling hosts and hostnames
+  correctly have been addressed.
+* Settings "Hosts Filter" and "Operating Systems Filter" have been added.
+* The predefined "Discovery", "Host Discovery" and "System Discovery" now
+  mark unreachable hosts as dead.
+* The GET_TASKS command now only returns the progress of individual hosts
+  when details are requested.
+* The --slave-commit-size option has been added, which can help prevent large
+  updates from GMP scanners blocking the database for a long time.
+* An issue with GET_FEEDS returning the wrong feed types has been addressed.
 * Various other code cleanups and improvements.
 
 
