@@ -161,8 +161,8 @@ properly.
    If the `gsf-access-key` file was already migrated for the `openvas-scanner`
    module it can be removed from the `$prefix/etc/openvas/` directory.
 
- - move ´$prefix/var/lib/openvas/scap-data`` to
-   $prefix/var/lib/gvm/scap-data
+ - move `$prefix/var/lib/openvas/scap-data` to
+   `$prefix/var/lib/gvm/scap-data`
 
  - move `$prefix/var/lib/openvas/cert-data` to
    `$prefix/var/lib/gvm/cert-data`
@@ -180,8 +180,10 @@ properly.
    `$prefix/var/lib/gvm/gvmd/gvmd.db`
 
  - (Postgres backend only) rename database to `gvmd`:
-       sudo -u postgres sh
-       psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
+    ```
+    sudo -u postgres sh
+    psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
+    ```
 
 
 Migrating the Database
