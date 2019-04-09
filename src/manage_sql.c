@@ -20715,10 +20715,17 @@ result_nvt_notice (const gchar *nvt)
 {
   if (nvt == NULL)
     return;
-  sql ("INSERT into result_nvts (nvt)"
-       " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts WHERE nvt = '%s');",
-       nvt,
-       nvt);
+  if (sql_is_sqlite3 ()
+      || (sql_int ("SELECT current_setting ('server_version_num')::integer;")
+          < 90500))
+    sql ("INSERT into result_nvts (nvt)"
+         " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts"
+         "                               WHERE nvt = '%s');",
+         nvt,
+         nvt);
+  else
+    sql ("INSERT INTO result_nvts (nvt) VALUES ('%s') ON CONFLICT DO NOTHING;",
+         nvt);
 }
 
 /**
