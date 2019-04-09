@@ -19226,11 +19226,18 @@ handle_get_tasks (omp_parser_t *omp_parser, GError **error)
               int progress;
               gchar *host_xml;
 
+              host_xml = NULL;
               running_report = task_iterator_current_report (&tasks);
-              progress
-                = report_progress (running_report, index, &host_xml);
+
+              if ((&get_tasks_data->get)->details)
+                progress
+                  = report_progress (running_report, index, &host_xml);
+              else
+                progress
+                  = report_progress (running_report, index, NULL);
+
               progress_xml
-                = g_strdup_printf ("%i%s", progress, host_xml);
+                = g_strdup_printf ("%i%s", progress, host_xml ? host_xml : "");
               g_free (host_xml);
             }
 
@@ -22204,8 +22211,9 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 43:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
-                                        "SMB file path type must be either"
-                                        " 'full' or 'directory'"));
+                                        "SMB file path must not contain"
+                                        " any file or subdirectory ending in"
+                                        " a dot (.)."));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
                   case 50:
@@ -22248,6 +22256,23 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                      (XML_ERROR_SYNTAX ("create_alert",
                                         "vFire credential must have"
                                         " type 'up'"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 80:
+                    {
+                      SEND_TO_CLIENT_OR_FAIL
+                        ("<create_alert_response"
+                         " status=\"" STATUS_ERROR_MISSING "\""
+                         " status_text=\"Credential for Sourcefire"
+                         " PKCS12 password not found\"/>");
+                      log_event_fail ("alert", "Alert", NULL, "created");
+                    }
+                    break;
+                  case 81:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Sourcefire credential must have"
+                                        " type 'pw' or 'up'"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
                   case 99:
@@ -25954,8 +25979,9 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 43:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
-                                    "SMB file path type must be either"
-                                    " 'full' or 'directory'"));
+                                    "SMB file path must not contain"
+                                    " any file or subdirectory ending in"
+                                    " a dot (.)."));
                 log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 50:
@@ -25999,6 +26025,23 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "vFire credential must have"
                                     " type 'up'"));
                 log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 80:
+                {
+                  SEND_TO_CLIENT_OR_FAIL
+                     ("<create_alert_response"
+                      " status=\"" STATUS_ERROR_MISSING "\""
+                      " status_text=\"Credential for Sourcefire"
+                      " PKCS12 password not found\"/>");
+                  log_event_fail ("alert", "Alert", NULL, "modified");
+                }
+                break;
+              case 81:
+                SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_alert",
+                                      "Sourcefire credential must have"
+                                      " type 'up'"));
+                log_event_fail ("alert", "Alert", NULL, "modified");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL

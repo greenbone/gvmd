@@ -1933,6 +1933,9 @@ config_timeout_iterator_nvt_name (iterator_t *);
 const char*
 config_timeout_iterator_value (iterator_t *);
 
+void update_config_preference (const char *, const char *, const char *,
+                               const char *, gboolean);
+
 
 
 /* NVT's. */
@@ -2696,6 +2699,14 @@ int
 manage_system_report (const char *, const char *, const char *, const char *,
                       const char *, char **);
 
+
+/* Scanners. */
+
+/**
+ * @brief Default for slave update commit size.
+ */
+#define SLAVE_COMMIT_SIZE_DEFAULT 0
+
 int
 manage_create_scanner (GSList *, const char *, const char *, const char *,
                        const char *, const char *, const char *, const char *,
@@ -2843,6 +2854,9 @@ osp_scanner_connect (scanner_t);
 
 int
 verify_scanner (const char *, char **);
+
+void
+set_slave_commit_size (int);
 
 /* Scheduling. */
 

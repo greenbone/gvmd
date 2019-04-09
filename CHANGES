@@ -19,6 +19,14 @@ Main changes since 7.0.3:
   SMB alerts.
 * Missing data in credentials no longer prevents slave tasks from starting.
   Instead the scan will start without the credential.
+* Handling of failed/successful SNMP Authentication has been added to the
+  HTML and LaTeX report formats.
+* A new password-only credential type has been added
+* The Sourcefire alert now accepts a password credential for PKCS12 decryption.
+* The GET_TASKS command now only returns the progress of individual hosts
+  when details are requested.
+* The --slave-commit-size option has been added, which can help prevent large
+  updates from GMP scanners blocking the database for a long time.
 
 openvas-manager 7.0.3 (2018-03-29)
 

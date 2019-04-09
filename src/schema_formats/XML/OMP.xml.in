@@ -4050,6 +4050,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <t>
           <alts>
             <alt>cc</alt>
+            <alt>pw</alt>
             <alt>snmp</alt>
             <alt>up</alt>
             <alt>usk</alt>
@@ -10583,6 +10584,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <t>
               <alts>
+                <alt>cc</alt>
+                <alt>pw</alt>
+                <alt>smime</alt>
+                <alt>snmp</alt>
                 <alt>up</alt>
                 <alt>usk</alt>
               </alts>
@@ -20541,7 +20546,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
           <ele>
             <name>host_progress</name>
-            <summary>Percentage complete for a particular host</summary>
+            <summary>
+              Percentage complete for a particular host,
+              only shown when details are active</summary>
             <pattern>
               <t>integer</t>
               <e>host</e>
@@ -24126,10 +24133,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>value</name>
-      <summary>The value of the setting</summary>
-      <pattern>
-        text
-      </pattern>
+      <summary>The value of the setting, in base64 encoding</summary>
+      <pattern><t>base64</t></pattern>
     </ele>
     <response>
       <pattern>
@@ -24150,7 +24155,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <modify_setting>
           <name>Timezone</name>
-          <value>Africa/Johannesburg</value>
+          <value>QWZyaWNhL0pvaGFubmVzYnVyZw==</value>
         </modify_setting>
       </request>
       <response>
@@ -25374,6 +25379,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_TASKS</command>
+    <summary>HOST_PROGRESS only shown with active details</summary>
+    <description>
+      <p>
+        The GET_TASKS command will only return the progress of individual hosts
+        in HOST_PROGRESS elements when details are requested.
+      </p>
+    </description>
+    <version>7.0</version>
+  </change>
   <change>
     <command>GET_NVT_FEED_VERSION</command>
     <summary>Command removed</summary>

@@ -360,6 +360,11 @@ void (*progress) () = NULL;
 static int max_hosts = MANAGE_MAX_HOSTS;
 
 /**
+ * @brief Maximum number of SQL queries per transaction in slave updates.
+ */
+static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
+
+/**
  * @brief Default max number of bytes of reports included in email alerts.
  */
 #define MAX_CONTENT_LENGTH 20000
@@ -7356,7 +7361,7 @@ validate_send_data (alert_method_t method, const gchar *name, gchar **data)
  * @param[in]  data            The data.
  *
  * @return 0 valid, 40 invalid credential, 41 invalid SMB share path,
- *         42 invalid SMB file path, 43 invalid SMB file path type, -1 error.
+ *         42 invalid SMB file path, 43 SMB file path contains dot, -1 error.
  */
 int
 validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
@@ -7394,6 +7399,8 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
 
       if (strcmp (name, "smb_share_path") == 0)
         {
+          /* Check if share path has the correct format
+           *  "\\<host>\<share>" */
           if (g_regex_match_simple ("^(?>\\\\\\\\|\\/\\/)[^:?<>|]+"
                                     "(?>\\\\|\\/)[^:?<>|]+$", *data, 0, 0)
               == FALSE)
@@ -7404,10 +7411,19 @@ validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
 
       if (strcmp (name, "smb_file_path") == 0)
         {
+          /* Check if file path contains invalid characters:
+           *  ":", "?", "<", ">", "|" */
           if (g_regex_match_simple ("^[^:?<>|]+$", *data, 0, 0)
               == FALSE)
             {
               return 42;
+            }
+          /* Check if a file or directory name ends with a dot,
+           *  e.g. "../a", "abc/../xyz" or "abc/..". */
+          else if (g_regex_match_simple ("^(?:.*\\.)(?:[\\/\\\\].*)*$",
+                                         *data, 0, 0))
+            {
+              return 43;
             }
         }
 
@@ -7515,6 +7531,47 @@ validate_vfire_data (alert_method_t method, const gchar *name,
 }
 
 /**
+ * @brief Validate method data for the Sourcefire method.
+ *
+ * @param[in]  method          Method that data corresponds to.
+ * @param[in]  name            Name of data.
+ * @param[in]  data            The data.
+ *
+ * @return 0 valid, 80 credential not found, 81 invalid credential type
+ */
+static int
+validate_sourcefire_data (alert_method_t method, const gchar *name,
+                          gchar **data)
+{
+  if (method == ALERT_METHOD_SOURCEFIRE)
+    {
+      if (strcmp (name, "pkcs12_credential") == 0)
+        {
+          credential_t credential;
+          if (find_credential_with_permission (*data, &credential,
+                                               "get_credentials"))
+            return -1;
+          else if (credential == 0)
+            return 80;
+          else
+            {
+              char *sourcefire_credential_type;
+              sourcefire_credential_type = credential_type (credential);
+              if (strcmp (sourcefire_credential_type, "up")
+                  && strcmp (sourcefire_credential_type, "pw"))
+                {
+                  free (sourcefire_credential_type);
+                  return 81;
+                }
+              free (sourcefire_credential_type);
+            }
+        }
+    }
+
+  return 0;
+}
+
+/**
  * @brief Check alert params.
  *
  * @param[in]  event           Type of event.
@@ -7569,7 +7626,7 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
- *         43 invalid SMB file path type,
+ *         43 SMB file path contains dot,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting. 70 vFire credential not found,
@@ -7810,6 +7867,15 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           return ret;
         }
 
+      ret = validate_sourcefire_data (method, name, &data);
+      if (ret)
+        {
+          g_free (name);
+          g_free (data);
+          sql_rollback ();
+          return ret;
+        }
+
       ret = validate_tippingpoint_data (method, name, &data);
       if (ret)
         {
@@ -7929,7 +7995,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
  *       , 41 invalid SMB share path, 42 invalid SMB file path,
- *         43 invalid SMB file path type,
+ *         43 SMB file path contains dot,
  *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
  *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
  *         workaround setting, 70 vFire credential not found, 71 invalid vFire
@@ -8196,6 +8262,15 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
             }
 
           ret = validate_smb_data (method, name, &data);
+          if (ret)
+            {
+              g_free (name);
+              g_free (data);
+              sql_rollback ();
+              return ret;
+            }
+
+          ret = validate_sourcefire_data (method, name, &data);
           if (ret)
             {
               g_free (name);
@@ -9033,7 +9108,7 @@ email (const char *to_address, const char *from_address, const char *subject,
                    "Content-Type: multipart/mixed;"
                    " boundary=\""
                  : "Content-Type: text/plain; charset=utf-8\n"
-                   "Content-Transfer-Encoding: 8bit"),
+                   "Content-Transfer-Encoding: 8bit\n"),
                /* @todo Future callers may give email containing this string. */
                (attachment ? "=-=-=-=-=" : ""),
                (attachment ? "\"\n" : ""),
@@ -9975,19 +10050,20 @@ smb_send_to_host (const char *password, const char *username,
 /**
  * @brief Send a report to a Sourcefire Defense Center.
  *
- * @param[in]  ip         IP of center.
- * @param[in]  port       Port of center.
- * @param[in]  pkcs12_64  PKCS12 content in base64.
- * @param[in]  report     Report in "Sourcefire" format.
+ * @param[in]  ip               IP of center.
+ * @param[in]  port             Port of center.
+ * @param[in]  pkcs12_64        PKCS12 content in base64.
+ * @param[in]  pkcs12_password  Password for encrypted PKCS12.
+ * @param[in]  report           Report in "Sourcefire" format.
  *
  * @return 0 success, -1 error.
  */
 static int
 send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
-                    const char *report)
+                    const char *pkcs12_password, const char *report)
 {
   gchar *script, *script_dir;
-  gchar *report_file, *pkcs12_file, *pkcs12;
+  gchar *report_file, *pkcs12_file, *pkcs12, *clean_password;
   gchar *clean_ip, *clean_port;
   char report_dir[] = "/tmp/openvasmd_escalate_XXXXXX";
   GError *error;
@@ -10040,6 +10116,8 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
       return -1;
     }
 
+  clean_password = g_shell_quote (pkcs12_password ? pkcs12_password : "");
+
   /* Setup file names. */
 
   script_dir = g_build_filename (OPENVAS_DATA_DIR,
@@ -10054,6 +10132,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
     {
       g_free (report_file);
       g_free (pkcs12_file);
+      g_free (clean_password);
       g_free (script);
       g_free (script_dir);
       return -1;
@@ -10075,6 +10154,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                    strerror (errno));
         g_free (report_file);
         g_free (pkcs12_file);
+        g_free (clean_password);
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
@@ -10088,6 +10168,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                    strerror (errno));
         g_free (report_file);
         g_free (pkcs12_file);
+        g_free (clean_password);
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
@@ -10100,16 +10181,18 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
     clean_ip = g_shell_quote (ip);
     clean_port = g_shell_quote (port);
 
-    command = g_strdup_printf ("%s %s %s %s %s > /dev/null"
+    command = g_strdup_printf ("%s %s %s %s %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
                                clean_ip,
                                clean_port,
                                pkcs12_file,
-                               report_file);
+                               report_file,
+                               clean_password);
     g_free (script);
     g_free (clean_ip);
     g_free (clean_port);
+    g_free (clean_password);
 
     g_debug ("   command: %s\n", command);
 
@@ -13092,7 +13175,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (file_path_format == NULL)
             file_path_format = alert_data (alert, "method", "smb_file_path");
 
-          file_path_is_dir = g_str_has_suffix (file_path_format, "\\");
+          file_path_is_dir = (g_str_has_suffix (file_path_format, "\\")
+                              || g_str_has_suffix (file_path_format, "/"));
 
           report_content = NULL;
           extension = NULL;
@@ -13230,8 +13314,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_SOURCEFIRE:
         {
-          char *ip, *port, *pkcs12, *filt_id;
-          gchar *report_content;
+          char *ip, *port, *pkcs12, *pkcs12_credential_id, *filt_id;
+          credential_t pkcs12_credential;
+          gchar *pkcs12_password, *report_content;
           gsize content_length;
           report_format_t report_format;
           int ret;
@@ -13320,18 +13405,52 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           if (port == NULL)
             port = g_strdup ("8307");
           pkcs12 = alert_data (alert, "method", "pkcs12");
+          pkcs12_credential_id = alert_data (alert, "method",
+                                             "pkcs12_credential");
+
+          if (pkcs12_credential_id == NULL
+              || strcmp (pkcs12_credential_id, "") == 0)
+            {
+              pkcs12_password = g_strdup ("");
+            }
+          else if (find_credential_with_permission (pkcs12_credential_id,
+                                               &pkcs12_credential,
+                                               "get_credentials"))
+            {
+              g_free (ip);
+              g_free (port);
+              g_free (pkcs12);
+              g_free (pkcs12_credential_id);
+              return -1;
+            }
+          else if (pkcs12_credential == 0)
+            {
+              g_free (ip);
+              g_free (port);
+              g_free (pkcs12);
+              g_free (pkcs12_credential_id);
+              return -4;
+            }
+          else
+            {
+              g_free (pkcs12_credential_id);
+              pkcs12_password = credential_encrypted_value (pkcs12_credential,
+                                                            "password");
+            }
 
           g_debug ("  sourcefire   ip: %s", ip);
           g_debug ("  sourcefire port: %s", port);
           g_debug ("sourcefire pkcs12: %s", pkcs12);
 
-          ret = send_to_sourcefire (ip, port, pkcs12, report_content);
+          ret = send_to_sourcefire (ip, port, pkcs12, pkcs12_password,
+                                    report_content);
 
           free (filt_id);
           free (ip);
           g_free (port);
           free (pkcs12);
           g_free (report_content);
+          g_free (pkcs12_password);
 
           return ret;
         }
@@ -38209,6 +38328,56 @@ DEF_ACCESS (config_timeout_iterator_nvt_name, 2);
  */
 DEF_ACCESS (config_timeout_iterator_value, 3);
 
+/**
+ * @brief Update or optionally insert a NVT preference.
+ *
+ * @param[in]  config_id        UUID of the config to set the preference in
+ * @param[in]  type             Type of the preference, e.g. "PLUGINS_PREFS"
+ * @param[in]  preference_name  Full name of the preference
+ * @param[in]  new_value        The new value to set
+ * @param[in]  insert           Whether to insert the preference if missing
+ */
+void
+update_config_preference (const char *config_id,
+                          const char *type,
+                          const char *preference_name,
+                          const char *new_value,
+                          gboolean insert)
+{
+  gchar *quoted_config_id = sql_quote (config_id);
+  gchar *quoted_type = sql_quote (type);
+  gchar *quoted_name = sql_quote (preference_name);
+  gchar *quoted_value = sql_quote (new_value);
+
+  if (sql_int ("SELECT count (*) FROM config_preferences"
+               " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
+               "   AND type = '%s'"
+               "   AND name = '%s';",
+               quoted_config_id, quoted_type, quoted_name) == 0)
+    {
+      if (insert)
+        {
+          sql ("INSERT INTO config_preferences (config, type, name, value)"
+               " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
+               "         '%s', '%s', '%s');",
+               quoted_config_id, quoted_type, quoted_name, quoted_value);
+        }
+    }
+  else
+    {
+      sql ("UPDATE config_preferences SET value = '%s'"
+           " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
+           "   AND type = '%s'"
+           "   AND name = '%s';",
+           quoted_value, quoted_config_id, quoted_type, quoted_name);
+    }
+
+  g_free (quoted_config_id);
+  g_free (quoted_type);
+  g_free (quoted_name);
+  g_free (quoted_value);
+}
+
 
 /* NVT's. */
 
@@ -42483,6 +42652,7 @@ create_credential (const char* name, const char* comment, const char* login,
   if (given_type && strcmp (given_type, ""))
     {
       if (strcmp (given_type, "cc")
+          && strcmp (given_type, "pw")
           && strcmp (given_type, "snmp")
           && strcmp (given_type, "up")
           && strcmp (given_type, "usk"))
@@ -42523,11 +42693,13 @@ create_credential (const char* name, const char* comment, const char* login,
 
   if (login == NULL
       && strcmp (quoted_type, "cc")
+      && strcmp (quoted_type, "pw")
       && strcmp (quoted_type, "snmp"))
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
-           && strcmp (quoted_type, "up") == 0)
-      // username password requires a password
+           && (strcmp (quoted_type, "up") == 0
+               || strcmp (quoted_type, "pw") == 0))
+      // (username) password requires a password
     ret = 6;
   else if (key_private == NULL && auto_generate == 0
            && (strcmp (quoted_type, "cc") == 0
@@ -43115,7 +43287,8 @@ modify_credential (const char *credential_id,
                                         key_private_to_use,
                                         NULL);
         }
-      else if (strcmp (type, "up") == 0)
+      else if (strcmp (type, "up") == 0
+               || strcmp (type, "pw") == 0)
         {
           if (password)
             set_credential_password (credential, password);
@@ -43479,7 +43652,8 @@ credential_in_use (credential_t credential)
                        " WHERE (name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
                        "        OR name = 'tp_sms_credential'"
-                       "        OR name = 'verinice_server_credential')"
+                       "        OR name = 'verinice_server_credential'"
+                       "        OR name = 'pkcs12_credential')"
                        " AND data = '%s'",
                        uuid));
 
@@ -43514,7 +43688,8 @@ trash_credential_in_use (credential_t credential)
                        " WHERE (name = 'scp_credential'"
                        "        OR name = 'smb_credential'"
                        "        OR name = 'tp_sms_credential'"
-                       "        OR name = 'verinice_server_credential')"
+                       "        OR name = 'verinice_server_credential'"
+                       "        OR name = 'pkcs12_credential')"
                        " AND data = '%s'",
                        uuid));
 
@@ -54216,6 +54391,20 @@ check_report_format (const gchar *uuid)
 /* OMP slave scanners. */
 
 /**
+ * @brief Set the slave update commit size.
+ *
+ * @param new_commit_size The new slave update commit size.
+ */
+void
+set_slave_commit_size (int new_commit_size)
+{
+  if (new_commit_size < 0)
+    slave_commit_size = 0;
+  else
+    slave_commit_size = new_commit_size;
+}
+
+/**
  * @brief Update the local task from the slave task.
  *
  * @param[in]   task         The local task.
@@ -54231,6 +54420,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 {
   entity_t entity, host_start, start;
   entities_t results, hosts, entities;
+  int current_commit_size;
 
   entity = entity_child (get_report, "report");
   if (entity == NULL)
@@ -54259,6 +54449,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
   sql_begin_immediate ();
   hosts = (*report)->entities;
+  current_commit_size = 0;
   while ((host_start = first_entity (hosts)))
     {
       if (strcmp (entity_name (host_start), "host_start") == 0)
@@ -54280,6 +54471,14 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
                                     entity_text (host_start));
         }
       hosts = next_entities (hosts);
+
+      current_commit_size++;
+      if (slave_commit_size && current_commit_size >= slave_commit_size)
+        {
+          sql_commit ();
+          sql_begin_immediate ();
+          current_commit_size = 0;
+        }
     }
   sql_commit ();
 
@@ -54291,6 +54490,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
   sql_begin_immediate ();
   results = entity->entities;
+  current_commit_size = 0;
   while ((entity = first_entity (results)))
     {
       if (strcmp (entity_name (entity), "result") == 0)
@@ -54331,6 +54531,14 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
                                   threat_message_type (entity_text (threat)),
                                   entity_text (description));
             if (current_report) report_add_result (current_report, result);
+
+            current_commit_size++;
+            if (slave_commit_size && current_commit_size >= slave_commit_size)
+              {
+                sql_commit ();
+                sql_begin_immediate ();
+                current_commit_size = 0;
+              }
           }
 
           (*next_result)++;
@@ -63547,7 +63755,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       gsize value_size;
       gchar *quoted_timezone, *value;
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -63572,7 +63790,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       assert (current_credentials.username);
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -63616,7 +63844,17 @@ modify_setting (const gchar *uuid, const gchar *name,
         }
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -63781,7 +64019,17 @@ modify_setting (const gchar *uuid, const gchar *name,
         return -1;
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");
@@ -64015,7 +64263,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       assert (current_credentials.username);
 
       if (value_64 && strlen (value_64))
-        value = (gchar*) g_base64_decode (value_64, &value_size);
+        {
+          value = (gchar*) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+            {
+              if (r_errdesc)
+                *r_errdesc = g_strdup ("Value cannot be decoded to"
+                                       " valid UTF-8");
+              g_free (value);
+              return -1;
+            }
+        }
       else
         {
           value = g_strdup ("");

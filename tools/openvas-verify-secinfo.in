@@ -1,0 +1,220 @@
+#!/bin/sh
+# Copyright (C) 2019 Greenbone Networks GmbH
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+CERT_DIR="@OPENVAS_CERT_DATA_DIR@"
+SCAP_DIR="@OPENVAS_SCAP_DATA_DIR@"
+GPG_HOMEDIR="@OPENVAS_SYSCONF_DIR@/gnupg/"
+
+CHECKSUM_FILE="sha256sums"
+CHECKSUM_CMD="sha256sum"
+SIGNATURE_FILE="$CHECKSUM_FILE.asc"
+
+CHECK_SIGNATURE="1"
+VERBOSE="0"
+
+#
+# Print help text
+#
+do_help () {
+  echo "Usage:"
+  echo "  $0 [OPTIONS] - Verify OpenVAS security info feed contents."
+  echo
+  echo "Options:"
+  echo "  --help                 Print help"
+  echo "  --cert-dir CERT_DIR    Use CERT_DIR as the location of the CERT feed"
+  echo "  --scap-dir SCAP_DIR    Use SCAP_DIR as the location of the SCAP feed"
+  echo "  --integrity_only       Do only integrity (checksum) check"
+  echo "  --self-check           Only do self-checks and exit"
+  echo "  --verbose              Enables intermediate status messages"
+  echo
+  echo "Exit codes:"
+  echo "  0 on success"
+  echo "  1 on error"
+  echo "  2 if integrity check failed"
+  echo "  3 if signature check failed"
+}
+
+#
+# Check if tools are available
+#
+do_self_check () {
+  if [ "0" -ne "$VERBOSE" ]; then
+    echo "Checking for $CHECKSUM_CMD and gpg"
+  fi
+
+  CHECKSUM_CMD_PATH=$(which "$CHECKSUM_CMD")
+  if [ ! -x "$CHECKSUM_CMD_PATH" ]; then
+    echo "Error: Checksum command '$CHECKSUM_CMD' not found"
+    exit 1
+  fi
+
+  if [ "0" -ne "$CHECK_SIGNATURE" ]; then
+    GPG_CMD_PATH=$(which "gpg")
+    if [ ! -x "$CHECKSUM_CMD_PATH" ]; then
+      echo "Error: GnuPG command 'gpg' not found"
+      exit 1
+    fi
+  fi
+}
+
+#
+# Check if directory, checksum file and signature exist
+#
+do_check_directory () {
+  TYPE="$1"
+  DIRECTORY="$2"
+  CHECKSUM_PATH="$DIRECTORY/$CHECKSUM_FILE"
+
+  if [ "0" -ne "$VERBOSE" ]; then
+    echo "Checking if $TYPE directory and checksums are available..."
+  fi
+
+  if [ -z "$DIRECTORY" ]; then
+    echo "Error: No $TYPE directory given"
+    exit 1
+  fi
+
+  if [ ! -d "$DIRECTORY" ]; then
+    echo "Error: $TYPE directory '$DIRECTORY' not found or not a directory"
+    exit 1
+  elif [ ! -r "$DIRECTORY" ]; then
+    echo "Error: $TYPE directory '$DIRECTORY' not readable"
+    exit 1
+  fi
+
+  if [ ! -r "$CHECKSUM_PATH" ]; then
+    echo "Error: $TYPE checksum file '$CHECKSUM_PATH' not found or not readable"
+    exit 1
+  fi
+
+  if [ "0" -ne "$VERBOSE" ]; then
+    echo "Using '$DIRECTORY' with checksum file '$CHECKSUM_FILE'"
+  fi
+}
+
+#
+# Do the main verification
+#
+do_verification () {
+  TYPE="$1"
+  DIRECTORY="$2"
+  CHECKSUM_PATH="$DIRECTORY/$CHECKSUM_FILE"
+  SIGNATURE_PATH="$DIRECTORY/$SIGNATURE_FILE"
+
+  # Signature check
+  if [ "0" -ne "$CHECK_SIGNATURE" ]; then
+    if [ "0" -ne "$VERBOSE" ]; then
+      echo "Verifying signature of $TYPE feed checksums..."
+    fi
+    if [ ! -r "$SIGNATURE_PATH" ]; then
+      echo "$TYPE feed signature verification failed:"
+      echo "Error: Signature file '$SIGNATURE_PATH' not found or not readable"
+      exit 3
+    fi
+    GPG_OUTPUT=$(gpg -q --homedir "$GPG_HOMEDIR" --verify "$SIGNATURE_PATH" "$CHECKSUM_PATH" 2>&1)
+    GPG_EXIT=$?
+    if [ "0" -ne "$GPG_EXIT" ]; then
+      echo "$TYPE feed signature verification failed:"
+      echo "$GPG_OUTPUT"
+      exit 3
+    fi
+
+    if [ "0" -ne "$VERBOSE" ]; then
+      echo "$TYPE signature check successful:"
+      echo "$GPG_OUTPUT"
+    fi
+  fi
+
+  # Checksums check
+  if [ "0" -ne "$VERBOSE" ]; then
+    echo "Verifying integrity of $TYPE feed..."
+  fi
+  OLD_PWD=$(pwd)
+
+  cd "$DIRECTORY"
+  if [ "0" -ne "$VERBOSE" ]; then
+    CHECKSUM_OUT=$($CHECKSUM_CMD --check "$CHECKSUM_PATH" 2>&1)
+  else
+    CHECKSUM_OUT=$($CHECKSUM_CMD --quiet --check "$CHECKSUM_PATH" 2>&1)
+  fi
+  CHECKSUM_EXIT="$?"
+  cd "$OLD_PWD"
+
+  if [ "0" != "$CHECKSUM_EXIT" ]; then
+    echo "$TYPE feed integrity check failed:"
+    echo "$CHECKSUM_OUT"
+    exit 2
+  elif [ "0" -ne "$VERBOSE" ]; then
+    echo "$TYPE feed integrity check successful:"
+    echo "$CHECKSUM_OUT"
+  fi
+}
+
+#
+# Parse arguments and call main function
+#
+while test $# -gt 0; do
+ case "$1" in
+    --help)
+      do_help
+      exit 0
+      ;;
+    --cert-dir)
+      shift
+      if [ $# -gt 0 ]; then
+        CERT_DIR="$1"
+      else
+        echo "Error: --cert-dir argument missing"
+        exit 1
+      fi
+      ;;
+    --scap-dir)
+      shift
+      if [ $# -gt 0 ]; then
+        CERT_DIR="$1"
+      else
+        echo "Error: --cert-dir argument missing"
+        exit 1
+      fi
+      ;;
+    --integrity-only)
+      CHECK_SIGNATURE="0"
+      ;;
+    --verbose)
+      VERBOSE="1"
+      ;;
+    --self-check)
+      do_self_check
+      exit 0
+      ;;
+  esac
+  shift
+done
+
+
+
+do_self_check
+
+do_check_directory "SCAP" "$SCAP_DIR"
+do_check_directory "CERT" "$CERT_DIR"
+
+do_verification "SCAP" "$SCAP_DIR"
+do_verification "CERT" "$CERT_DIR"
+
+echo "Security info feed verification successful"
