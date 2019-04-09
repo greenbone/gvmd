@@ -127,28 +127,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
 </xsl:template>
 
-<!-- Ensure NOCVE is removed -->
-<xsl:template name="cve">
-  <xsl:variable name="cve_list" select="translate(nvt/cve, ',', '')" />
-  <xsl:choose>
-    <xsl:when test="$cve_list = 'NOCVE'"/>
-    <xsl:otherwise>
-      <xsl:value-of select="$cve_list"/>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<!-- Ensure NOBID is removed -->
-<xsl:template name="bid">
-  <xsl:variable name="bid_list" select="translate(nvt/bid, ',', '')" />
-  <xsl:choose>
-    <xsl:when test="$bid_list = 'NOBID'"/>
-    <xsl:otherwise>
-      <xsl:value-of select="$bid_list"/>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
 <!-- Substitute "Open Port" if the NVT name is empty -->
 <xsl:template name="nvt_name">
   <xsl:variable name="name_without_single_quotes"
@@ -232,9 +210,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
   <xsl:text>",</xsl:text>
   <xsl:value-of select="openvas:formula_quote (nvt/@oid)"/>
-  <xsl:text>,"</xsl:text>
-  <xsl:value-of select="openvas:formula_quote (nvt/cve)"/>
+
+  <xsl:text>,"</xsl:text> <!-- column "CVEs" -->
+
+  <xsl:variable name="cell_cves">
+    <xsl:for-each select="nvt/refs/ref[@type = 'cve']">
+      <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
+      <xsl:call-template name="newline"/>
+    </xsl:for-each>
+  </xsl:variable>
+  <xsl:value-of select="openvas:formula_quote ($cell_cves)"/>
+
   <xsl:text>",</xsl:text>
+
   <xsl:value-of select="openvas:formula_quote (../../task/@id)"/>
   <xsl:text>,"</xsl:text>
   <xsl:value-of select="openvas:formula_quote (str:replace (../../task/name, $quote, $two-quotes))"/>
@@ -307,62 +295,41 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:text>)</xsl:text>
     <xsl:call-template name="newline"/>
   </xsl:if>
-  <xsl:text>","</xsl:text>
-  <xsl:if test="nvt/bid != '' and nvt/bid != 'NOBID'">
-    <xsl:variable name="bidlist" select="nvt/bid/text()"/>
-    <xsl:variable name="bidcount" select="count (str:split($bidlist, ','))"/>
-    <xsl:variable name="new_bidlist">
-      <xsl:for-each select="str:split ($bidlist, ',')">
-        <xsl:value-of select="str:replace (., $quote, $two-quotes)"/>
-        <xsl:if test="position() &lt; $bidcount">
-          <xsl:text>, </xsl:text>
-        </xsl:if>
-      </xsl:for-each>
-    </xsl:variable>
-    <xsl:value-of select="openvas:formula_quote ($new_bidlist)"/>
-  </xsl:if>
-  <xsl:text>","</xsl:text>
-  <xsl:if test="count(nvt/refs/ref) &gt; 0">
-    <xsl:variable name="reflist" select="nvt/refs"/>
-    <xsl:variable name="refcount" select="count ($reflist/ref)"/>
-    <xsl:variable name="new_reflist">
-      <xsl:for-each select="$reflist/warning">
-        <xsl:text>Warning: </xsl:text>
-        <xsl:value-of select="str:replace (text(), $quote, $two-quotes)"/>
-        <xsl:call-template name="newline"/>
-      </xsl:for-each>
-      <xsl:if test="$refcount &gt; 0">
-        <xsl:for-each select="$reflist/ref">
-          <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
-          <xsl:if test="position() &lt; $refcount">
-            <xsl:text>, </xsl:text>
-          </xsl:if>
-        </xsl:for-each>
-      </xsl:if>
-    </xsl:variable>
-    <xsl:value-of select="openvas:formula_quote ($new_reflist)"/>
-  </xsl:if>
-  <xsl:text>","</xsl:text>
-  <xsl:if test="nvt/xref != '' and nvt/xref != 'NOXREF'">
-    <xsl:variable name="xreflist" select="nvt/xref/text()"/>
-    <xsl:variable name="xrefcount" select="count (str:split ($xreflist, ','))"/>
-    <xsl:variable name="new_xreflist">
-      <xsl:for-each select="str:split ($xreflist, ',')">
-        <xsl:choose>
-          <xsl:when test="contains(., 'URL:')">
-            <xsl:value-of select="str:replace (substring-after (., 'URL:'), $quote, $two-quotes)"/>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:value-of select="str:replace (., $quote, $two-quotes)"/>
-          </xsl:otherwise>
-        </xsl:choose>
-        <xsl:if test="position() &lt; $xrefcount">
-          <xsl:text>, </xsl:text>
-        </xsl:if>
-      </xsl:for-each>
-    </xsl:variable>
-    <xsl:value-of select="openvas:formula_quote ($new_xreflist)"/>
-  </xsl:if>
+
+  <xsl:text>","</xsl:text> <!-- column "BIDs" -->
+
+  <xsl:variable name="cell_bids">
+    <xsl:for-each select="nvt/refs/ref[@type = 'bid']">
+      <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
+      <xsl:call-template name="newline"/>
+    </xsl:for-each>
+  </xsl:variable>
+  <xsl:value-of select="openvas:formula_quote ($cell_bids)"/>
+
+  <xsl:text>","</xsl:text> <!-- column "CERTs" -->
+
+  <xsl:variable name="cell_certs">
+    <xsl:for-each select="nvt/refs/ref[@type = 'dfn-cert']">
+      <xsl:value-of select="@id"/>
+      <xsl:call-template name="newline"/>
+    </xsl:for-each>
+    <xsl:for-each select="nvt/refs/ref[@type = 'cert-bund']">
+      <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
+      <xsl:call-template name="newline"/>
+    </xsl:for-each>
+  </xsl:variable>
+  <xsl:value-of select="openvas:formula_quote ($cell_certs)"/>
+
+  <xsl:text>","</xsl:text> <!-- column "Other References" -->
+
+  <xsl:variable name="cell_urls">
+    <xsl:for-each select="nvt/refs/ref[@type = 'URL']">
+      <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
+      <xsl:call-template name="newline"/>
+    </xsl:for-each>
+  </xsl:variable>
+  <xsl:value-of select="openvas:formula_quote ($cell_urls)"/>
+
   <xsl:text>"</xsl:text>
   <xsl:text>
 </xsl:text>
