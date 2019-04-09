@@ -22262,12 +22262,15 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       count++;
       if (count == CREATE_REPORT_CHUNK_SIZE)
         {
+          report_cache_counts (report, 1, 1, NULL);
           sql_commit ();
           openvas_usleep (CREATE_REPORT_CHUNK_SLEEP);
           sql_begin_immediate ();
           count = 0;
         }
     }
+
+  report_cache_counts (report, 1, 1, NULL);
 
   g_debug ("%s: add host ends", __FUNCTION__);
   index = 0;
