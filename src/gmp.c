@@ -14134,15 +14134,15 @@ handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
   if ((get_feeds_data->type == NULL)
-      || strcmp (get_feeds_data->type, "nvt"))
+      || (strcasecmp (get_feeds_data->type, "nvt") == 0))
     get_feed (gmp_parser, error, NVT_FEED);
 
   if ((get_feeds_data->type == NULL)
-      || strcmp (get_feeds_data->type, "scap"))
+      || (strcasecmp (get_feeds_data->type, "scap") == 0))
     get_feed (gmp_parser, error, SCAP_FEED);
 
   if ((get_feeds_data->type == NULL)
-      || strcmp (get_feeds_data->type, "cert"))
+      || (strcasecmp (get_feeds_data->type, "cert") == 0))
     get_feed (gmp_parser, error, CERT_FEED);
 
   SEND_TO_CLIENT_OR_FAIL ("</get_feeds_response>");
