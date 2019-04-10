@@ -22481,7 +22481,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
           if (count == CREATE_REPORT_CHUNK_SIZE)
             {
-              report_cache_counts (report, 0, 0, NULL);
+              report_cache_counts (report, 1, 1, NULL);
               sql_commit ();
               gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
               sql_begin_immediate ();
@@ -22500,6 +22500,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       g_free (quoted_qod);
       g_free (quoted_qod_type);
     }
+
+  report_cache_counts (report, 1, 1, NULL);
 
   if (first == 0)
     {
