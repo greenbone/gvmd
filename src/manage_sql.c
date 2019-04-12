@@ -41878,6 +41878,10 @@ create_credential (const char* name, const char* comment, const char* login,
       set_credential_data (new_credential,
                            "username", login);
     }
+
+  if (key_public)
+    set_credential_data (new_credential, "public_key", key_public);
+
   if (certificate)
     {
       gchar *certificate_truncated;
