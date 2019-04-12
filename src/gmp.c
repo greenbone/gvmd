@@ -23558,6 +23558,32 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_REPORT_RR_H:
         {
+          if (create_report_data->host_start)
+            {
+              create_report_result_t *result;
+
+              result = g_malloc (sizeof (create_report_result_t));
+              result->description = create_report_data->host_start;
+              result->host = strdup (create_report_data->ip);
+
+              array_add (create_report_data->host_starts, result);
+
+              create_report_data->host_start = NULL;
+            }
+
+          if (create_report_data->host_end)
+            {
+              create_report_result_t *result;
+
+              result = g_malloc (sizeof (create_report_result_t));
+              result->description = create_report_data->host_end;
+              result->host = strdup (create_report_data->ip);
+
+              array_add (create_report_data->host_ends, result);
+
+              create_report_data->host_end = NULL;
+            }
+
           gvm_free_string_var (&create_report_data->ip);
           set_client_state (CLIENT_CREATE_REPORT_RR);
           break;
@@ -29473,8 +29499,14 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_TYPE,
               &create_report_data->detail_source_type);
 
+      APPEND (CLIENT_CREATE_REPORT_RR_H_END,
+              &create_report_data->host_end);
+
       APPEND (CLIENT_CREATE_REPORT_RR_H_IP,
               &create_report_data->ip);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_H_START,
+              &create_report_data->host_start);
 
 
       APPEND (CLIENT_CREATE_REPORT_TASK_NAME,
