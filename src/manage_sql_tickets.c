@@ -1502,6 +1502,7 @@ check_tickets (task_t task)
     TICKET_STATUS_OPEN,
     TICKET_STATUS_FIXED,
     report,
+    report,
     LOCATION_TABLE,
     report,
     report);
