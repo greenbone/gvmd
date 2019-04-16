@@ -1489,22 +1489,24 @@ check_tickets (task_t task)
     "                                        WHERE ticket = tickets.id"
     "                                        AND result_location = %i"
     "                                        LIMIT 1)))"
-    /* Only if there were no login failures. */
-    " AND NOT EXISTS (SELECT * FROM results"
-    "                 WHERE report = %llu"
-    /*                SSH Login Failed For Authenticated Checks. */
-    "                 AND nvt = '1.3.6.1.4.1.25623.1.0.105936')"
-    " AND NOT EXISTS (SELECT * FROM results"
-    "                 WHERE report = %llu"
-    /*                SMB Login Failed For Authenticated Checks. */
-    "                 AND nvt = '1.3.6.1.4.1.25623.1.0.106091');",
+    /* Only if there were no login failures on the host. */
+    " AND NOT EXISTS (SELECT * FROM report_host_details"
+    "                 WHERE report_host = (SELECT id"
+    "                                      FROM report_hosts"
+    "                                      WHERE report = %llu"
+    "                                      AND report_hosts.host"
+    "                                          = tickets.host"
+    "                                      LIMIT 1)"
+    "                 AND (name = 'Auth-SSH-Failure'"
+    "                      OR name = 'Auth-SMB-Failure'"
+    "                      OR name = 'Auth-SNMP-Failure'"
+    "                      OR name = 'Auth-ESXi-Failure'));",
     task,
     TICKET_STATUS_OPEN,
     TICKET_STATUS_FIXED,
     report,
     report,
     LOCATION_TABLE,
-    report,
     report);
   while (next (&tickets))
     {
