@@ -8016,6 +8016,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>boolean</type>
             <summary>Whether new NVTs will be added</summary>
           </column>
+          <column>
+            <name>type</name>
+            <type>
+              <alts>
+                <alt>0</alt>
+                <alt>1</alt>
+              </alts></type>
+            <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -8160,9 +8169,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>type</name>
-          <summary>The type the config.</summary>
+          <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
           <pattern>
-            text
+            <t>
+              <alts>
+                <alt>0</alt>
+                <alt>1</alt>
+              </alts>
+            </t>
           </pattern>
         </ele>
         <ele>
