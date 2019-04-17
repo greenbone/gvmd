@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 #
 # OpenVAS
@@ -9,7 +9,7 @@
 # Timo Pollmeier <timo.pollmeier@greenbone.net>
 #
 # Copyright:
-# Copyright (C) 2018 Greenbone Networks GmbH
+# Copyright (C) 2018-2019 Greenbone Networks GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
