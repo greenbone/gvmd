@@ -37428,7 +37428,7 @@ sync_config (const char *config_id)
  */
 #define CONFIG_ITERATOR_FILTER_COLUMNS                                        \
  { GET_ITERATOR_FILTER_COLUMNS, "nvt_selector", "families_total",             \
-   "nvts_total", "families_trend", "nvts_trend", NULL }
+   "nvts_total", "families_trend", "nvts_trend", "type", NULL }
 
 /**
  * @brief Scan config iterator columns.
