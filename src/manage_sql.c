@@ -34583,7 +34583,8 @@ create_target (const char* name, const char* asset_hosts_filter,
                target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
-  gchar *port_list_comment, *quoted_ssh_port, *clean, *chosen_hosts;
+  gchar *port_list_comment, *quoted_ssh_port, *clean, *clean_exclude;
+  gchar *chosen_hosts;
   port_list_t port_list;
   int ret, alive_test, max;
   target_t new_target;
@@ -34638,40 +34639,44 @@ create_target (const char* name, const char* asset_hosts_filter,
         }
       cleanup_iterator (&asset_hosts);
       chosen_hosts = g_string_free (buffer, FALSE);
-      quoted_exclude_hosts = g_strdup ("");
 
       g_debug ("asset chosen_hosts: %s", chosen_hosts);
     }
   else
     {
       chosen_hosts = g_strdup (hosts);
-      quoted_exclude_hosts = exclude_hosts ? sql_quote (exclude_hosts)
-                                           : g_strdup ("");
-
       g_debug ("manual chosen_hosts: %s", chosen_hosts);
     }
 
-  max = manage_count_hosts (chosen_hosts, quoted_exclude_hosts);
+
+  clean = clean_hosts (chosen_hosts, &max);
+  g_free (chosen_hosts);
+  if (exclude_hosts)
+    clean_exclude = clean_hosts (exclude_hosts, NULL);
+  else
+    clean_exclude = g_strdup ("");
+
+  max = manage_count_hosts (clean, clean_exclude);
   if (max <= 0)
     {
-      g_free (chosen_hosts);
-      g_free (quoted_exclude_hosts);
       g_free (quoted_name);
+      g_free (clean);
+      g_free (clean_exclude);
       sql_rollback ();
       return 2;
     }
-  clean = clean_hosts (chosen_hosts, &max);
-  g_free (chosen_hosts);
   if (max > max_hosts)
     {
-      g_free (quoted_exclude_hosts);
       g_free (quoted_name);
       g_free (clean);
+      g_free (clean_exclude);
       sql_rollback ();
       return 3;
     }
   quoted_hosts = sql_quote (clean);
+  quoted_exclude_hosts = sql_quote (clean_exclude);
   g_free (clean);
+  g_free (clean_exclude);
 
   if (port_list_id)
     {
@@ -35331,7 +35336,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (exclude_hosts)
     {
-      gchar *quoted_exclude_hosts, *quoted_hosts, *clean;
+      gchar *quoted_exclude_hosts, *quoted_hosts, *clean, *clean_exclude;
       int max;
 
       if (target_in_use (target))
@@ -35340,39 +35345,41 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           return 15;
         }
 
-      quoted_exclude_hosts = sql_quote (exclude_hosts);
-
       if (hosts == NULL)
         {
-          g_free (quoted_exclude_hosts);
           sql_rollback ();
           return 12;
         }
 
       if (strlen (hosts) == 0)
         {
-          g_free (quoted_exclude_hosts);
           sql_rollback ();
           return 14;
         }
 
-      max = manage_count_hosts (hosts, quoted_exclude_hosts);
+      clean = clean_hosts (hosts, &max);
+      clean_exclude = clean_hosts (exclude_hosts, NULL);
+
+      max = manage_count_hosts (clean, clean_exclude);
       if (max <= 0)
         {
-          g_free (quoted_exclude_hosts);
+          g_free (clean);
+          g_free (clean_exclude);
           sql_rollback ();
           return 2;
         }
-      clean = clean_hosts (hosts, &max);
+
       if (max > max_hosts)
         {
-          g_free (quoted_exclude_hosts);
           g_free (clean);
+          g_free (clean_exclude);
           sql_rollback ();
           return 3;
         }
       quoted_hosts = sql_quote (clean);
+      quoted_exclude_hosts = sql_quote (clean_exclude);
       g_free (clean);
+      g_free (clean_exclude);
 
       sql ("UPDATE targets SET"
            " hosts = '%s',"
