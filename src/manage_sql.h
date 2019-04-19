@@ -223,6 +223,11 @@
 #define SETTING_UUID_DEFAULT_CA_CERT "9ac801ea-39f8-11e6-bbaa-28d24461215b"
 
 /**
+ * @brief UUID of 'OMP Slave Check Period' setting.
+ */
+#define SETTING_UUID_SLAVE_CHECK_PERIOD "63adb79a-62ae-11e9-91ba-28d24461215b"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0
