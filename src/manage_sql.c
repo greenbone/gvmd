@@ -17748,6 +17748,7 @@ check_db (int check_encryption_key)
   create_tables ();
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
+  check_db_roles ();
   check_db_nvt_selectors ();
   check_db_nvts ();
   check_db_configs ();
@@ -17759,7 +17760,6 @@ check_db (int check_encryption_key)
     goto fail;
   if (check_db_report_formats_trash ())
     goto fail;
-  check_db_roles ();
   check_db_permissions ();
   check_db_settings ();
   cleanup_schedule_times ();
