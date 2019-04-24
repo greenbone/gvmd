@@ -137,6 +137,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="scan/task/slave/name">
   </xsl:template>
 
+  <xsl:template match="filters/term" >
+    <xsl:copy>
+      <xsl:for-each select="str:tokenize(text (), ' ')">
+        <xsl:choose>
+          <xsl:when test="substring (., 1, 5) = 'host='">
+            <xsl:choose>
+              <xsl:when test="position() = 1">
+                <xsl:value-of select="concat ('host=', openvas:host (substring-after (., 'host=')))"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="concat (' host=', openvas:host (substring-after (., 'host=')))"/>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:choose>
+              <xsl:when test="position() = 1">
+                <xsl:value-of select="."/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="concat (' ', .)"/>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:for-each>
+    </xsl:copy>
+  </xsl:template>
+
   <xsl:template match="filters/keywords/keyword[column = 'host']/value" >
     <xsl:copy>
       <xsl:value-of select="openvas:host (text ())"/>
