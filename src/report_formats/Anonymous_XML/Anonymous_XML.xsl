@@ -104,6 +104,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:copy>
   </xsl:template>
 
+  <xsl:template match="host/hostname" >
+    <xsl:copy>
+      <xsl:value-of select="openvas:hostname (text ())"/>
+    </xsl:copy>
+  </xsl:template>
+
   <xsl:template match="host/detail[name = 'traceroute']" >
   </xsl:template>
 
