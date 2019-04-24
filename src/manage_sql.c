@@ -24600,7 +24600,7 @@ result_iterator_nvt_xref (iterator_t *iterator)
 /**
  * @brief Get the NVT's references in XML format from a nvti object via oid.
  *
- * @param[in]  xml       The buffer where to append to
+ * @param[in]  xml       The buffer where to append to.
  * @param[in]  oid       The oid of the nvti object from where to collect the refs.
  */
 void
@@ -24685,7 +24685,7 @@ nvti_refs_append_xml (GString *xml, const char *oid)
 /**
  * @brief Get the NVT's references in XML format from a result iterator.
  *
- * @param[in]  xml       The buffer where to append to
+ * @param[in]  xml       The buffer where to append to.
  * @param[in]  iterator  Iterator.
  */
 void

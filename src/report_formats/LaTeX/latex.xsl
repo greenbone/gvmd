@@ -1024,7 +1024,7 @@ advice given in each description, in order to rectify the issue.
 
       <xsl:for-each select="nvt/refs/ref">
         <xsl:call-template name="text-to-escaped-row">
-		<xsl:with-param name="string" select="concat(@type, ': ', @id)"/>
+          <xsl:with-param name="string" select="concat(@type, ': ', @id)"/>
         </xsl:call-template>
       </xsl:for-each>
     </xsl:if>
