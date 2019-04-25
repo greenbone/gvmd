@@ -10525,6 +10525,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
         {
           int ret;
           char *cves;
+          gchar **split, **item;
           get_data_t get;
           iterator_t iterator;
 
@@ -10535,28 +10536,49 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             assert (0);
           if (!next (&iterator))
             abort ();
-          cves = ovaldef_cves (oid);
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
                                     "<type>ovaldef</type>"
                                     "<name>%s</name>"
                                     "<family/>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<cve>%s</cve>"
                                     "<tags>summary=%s</tags>",
                                     oid,
                                     ovaldef_info_iterator_title (&iterator),
                                     ovaldef_info_iterator_max_cvss (&iterator),
-                                    cves ?: "",
                                     ovaldef_info_iterator_description (&iterator));
-                                    g_free (cves);
           g_free (get.id);
           cleanup_iterator (&iterator);
 
           buffer_xml_append_printf (buffer, "<refs>");
+
+          cves = ovaldef_cves (oid);
+          split = g_strsplit (cves, ",", 0);
+          item = split;
+          while (*item)
+            {
+              gchar *id;
+
+              id = *item;
+              g_strstrip (id);
+
+              if (strcmp (id, "") == 0)
+                {
+                  item++;
+                  continue;
+                }
+
+              buffer_xml_append_printf (buffer, "<ref type=\"cve\" id=\"%s\"/>", id);
+
+              item++;
+            }
+          g_strfreev (split);
+          g_free (cves);
+
           results_xml_append_cert (buffer, oid, cert_loaded,
                                    result_iterator_has_cert_bunds (results),
                                    result_iterator_has_dfn_certs (results));
+
           buffer_xml_append_printf (buffer, "</refs>");
         }
       else
