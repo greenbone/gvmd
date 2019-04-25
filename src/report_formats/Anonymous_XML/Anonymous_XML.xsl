@@ -151,6 +151,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </xsl:otherwise>
             </xsl:choose>
           </xsl:when>
+          <xsl:when test="substring (., 1, 9) = 'hostname='">
+            <xsl:choose>
+              <xsl:when test="position() = 1">
+                <xsl:value-of select="concat ('host=', openvas:hostname (substring-after (., 'hostname=')))"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="concat (' host=', openvas:hostname (substring-after (., 'hostname=')))"/>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:when>
           <xsl:otherwise>
             <xsl:choose>
               <xsl:when test="position() = 1">
