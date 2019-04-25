@@ -64083,6 +64083,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Credentials Filter");
       else if (strcmp (uuid, "f9691163-976c-47e7-ad9a-38f2d5c81649") == 0)
         setting_name = g_strdup ("Filters Filter");
+      else if (strcmp (uuid, "f722e5a4-88d8-475f-95b9-e4dcafbc075b") == 0)
+        setting_name = g_strdup ("Groups Filter");
       else if (strcmp (uuid, "37562dfe-1f7e-4cae-a7c0-fa95e6f194c5") == 0)
         setting_name = g_strdup ("Hosts Filter");
       else if (strcmp (uuid, "96abcd5a-9b6d-456c-80b8-c3221bfa499d") == 0)
@@ -64103,6 +64105,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Results Filter");
       else if (strcmp (uuid, "f38e673a-bcd1-11e2-a19a-406186ea4fc5") == 0)
         setting_name = g_strdup ("Roles Filter");
+      else if (strcmp (uuid, "ba00fe91-bdce-483c-b8df-2372e9774ad6") == 0)
+        setting_name = g_strdup ("Scanners Filter");
       else if (strcmp (uuid, "a83e321b-d994-4ae8-beec-bfb5fe3e7336") == 0)
         setting_name = g_strdup ("Schedules Filter");
       else if (strcmp (uuid, "108eea3b-fc61-483c-9da9-046762f137a8") == 0)
@@ -64111,6 +64115,12 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Targets Filter");
       else if (strcmp (uuid, "1c981851-8244-466c-92c4-865ffe05e721") == 0)
         setting_name = g_strdup ("Tasks Filter");
+      else if (strcmp (uuid, "801544de-f06d-4377-bb77-bbb23369bad4") == 0)
+        setting_name = g_strdup ("Tickets Filter");
+      else if (strcmp (uuid, "a33635be-7263-4549-bd80-c04d2dba89b4") == 0)
+        setting_name = g_strdup ("Users Filter");
+      else if (strcmp (uuid, "17c9d269-95e7-4bfa-b1b2-bc106a2175c7") == 0)
+        setting_name = g_strdup ("Vulnerabilities Filter");
       else if (strcmp (uuid, "3414a107-ae46-4dea-872d-5c4479a48e8f") == 0)
         setting_name = g_strdup ("CPE Filter");
       else if (strcmp (uuid, "def63b5a-41ef-43f4-b9ef-03ef1665db5d") == 0)
