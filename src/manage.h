@@ -2882,7 +2882,13 @@ char *
 schedule_uuid (schedule_t);
 
 char *
+trash_schedule_uuid (schedule_t);
+
+char *
 schedule_name (schedule_t);
+
+char *
+trash_schedule_name (schedule_t);
 
 int
 schedule_duration (schedule_t);
