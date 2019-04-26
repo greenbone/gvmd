@@ -49888,6 +49888,20 @@ schedule_uuid (schedule_t schedule)
 }
 
 /**
+ * @brief Return the UUID of a trash schedule.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return Newly allocated UUID.
+ */
+char *
+trash_schedule_uuid (schedule_t schedule)
+{
+  return sql_string ("SELECT uuid FROM schedules_trash WHERE id = %llu;",
+                     schedule);
+}
+
+/**
  * @brief Return the name of a schedule.
  *
  * @param[in]  schedule  Schedule.
@@ -49898,6 +49912,20 @@ char *
 schedule_name (schedule_t schedule)
 {
   return sql_string ("SELECT name FROM schedules WHERE id = %llu;",
+                     schedule);
+}
+
+/**
+ * @brief Return the name of a trash schedule.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return Newly allocated name.
+ */
+char *
+trash_schedule_name (schedule_t schedule)
+{
+  return sql_string ("SELECT name FROM schedules_trash WHERE id = %llu;",
                      schedule);
 }
 

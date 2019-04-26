@@ -18582,8 +18582,8 @@ get_task_schedule_xml (task_t task)
       schedule_in_trash = task_schedule_in_trash (task);
       if (schedule_in_trash)
         {
-          task_schedule_uuid = schedule_uuid (schedule);
-          task_schedule_name = schedule_name (schedule);
+          task_schedule_uuid = trash_schedule_uuid (schedule);
+          task_schedule_name = trash_schedule_name (schedule);
           schedule_available = trash_schedule_readable (schedule);
         }
       else
