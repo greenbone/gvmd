@@ -3902,6 +3902,9 @@ manage_modify_setting (GSList *, const gchar *, const gchar *, const gchar *, co
 char *
 manage_default_ca_cert ();
 
+int
+manage_slave_check_period ();
+
 
 /* Users. */
 
