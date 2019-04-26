@@ -216,10 +216,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:variable name="cell_cves">
     <xsl:for-each select="nvt/refs/ref[@type = 'cve']">
       <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
-      <xsl:call-template name="newline"/>
+      <xsl:text>,</xsl:text>
     </xsl:for-each>
   </xsl:variable>
-  <xsl:value-of select="openvas:formula_quote ($cell_cves)"/>
+  <xsl:value-of select="openvas:formula_quote (substring ($cell_cves, 0, string-length($cell_cves)))"/>
 
   <xsl:text>",</xsl:text>
 
@@ -301,34 +301,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:variable name="cell_bids">
     <xsl:for-each select="nvt/refs/ref[@type = 'bid']">
       <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
-      <xsl:call-template name="newline"/>
+      <xsl:text>,</xsl:text>
     </xsl:for-each>
   </xsl:variable>
-  <xsl:value-of select="openvas:formula_quote ($cell_bids)"/>
+  <xsl:value-of select="openvas:formula_quote (substring ($cell_bids, 0, string-length($cell_bids)))"/>
 
   <xsl:text>","</xsl:text> <!-- column "CERTs" -->
 
   <xsl:variable name="cell_certs">
     <xsl:for-each select="nvt/refs/ref[@type = 'dfn-cert']">
       <xsl:value-of select="@id"/>
-      <xsl:call-template name="newline"/>
+      <xsl:text>,</xsl:text>
     </xsl:for-each>
     <xsl:for-each select="nvt/refs/ref[@type = 'cert-bund']">
       <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
-      <xsl:call-template name="newline"/>
+      <xsl:text>,</xsl:text>
     </xsl:for-each>
   </xsl:variable>
-  <xsl:value-of select="openvas:formula_quote ($cell_certs)"/>
+  <xsl:value-of select="openvas:formula_quote (substring ($cell_certs, 0, string-length($cell_certs)))"/>
 
   <xsl:text>","</xsl:text> <!-- column "Other References" -->
 
   <xsl:variable name="cell_urls">
     <xsl:for-each select="nvt/refs/ref[@type = 'URL']">
       <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
-      <xsl:call-template name="newline"/>
+      <xsl:text>,</xsl:text>
     </xsl:for-each>
   </xsl:variable>
-  <xsl:value-of select="openvas:formula_quote ($cell_urls)"/>
+  <xsl:value-of select="openvas:formula_quote (substring ($cell_urls, 0, string-length($cell_urls)))"/>
 
   <xsl:text>"</xsl:text>
   <xsl:text>
