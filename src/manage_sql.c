@@ -4527,7 +4527,9 @@ find_resource_with_permission (const char* type, const char* uuid,
   switch (sql_int64 (resource,
                      "SELECT id FROM %ss%s WHERE uuid = '%s'%s%s;",
                      type,
-                     (strcmp (type, "task") && trash) ? "_trash" : "",
+                     (trash && strcmp (type, "task") && strcmp (type, "report"))
+                      ? "_trash"
+                      : "",
                      quoted_uuid,
                      strcmp (type, "task")
                       ? ""
