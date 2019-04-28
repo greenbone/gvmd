@@ -18594,6 +18594,137 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Gets task schedule data of a task as XML.
+ *
+ * @param[in]  task  The task to get schedule data for.
+ *
+ * @return Newly allocated XML string.
+ */
+static gchar*
+get_task_schedule_xml (task_t task)
+{
+  schedule_t schedule;
+  time_t next_time;
+  int schedule_in_trash, schedule_available;
+  char *task_schedule_uuid, *task_schedule_name;
+  GString *xml;
+
+  xml = g_string_new ("");
+
+  schedule_available = 1;
+  schedule = task_schedule (task);
+  if (schedule)
+    {
+      schedule_in_trash = task_schedule_in_trash (task);
+      if (schedule_in_trash)
+        {
+          task_schedule_uuid = trash_schedule_uuid (schedule);
+          task_schedule_name = trash_schedule_name (schedule);
+          schedule_available = trash_schedule_readable (schedule);
+        }
+      else
+        {
+          schedule_t found;
+          task_schedule_uuid = schedule_uuid (schedule);
+          task_schedule_name = schedule_name (schedule);
+          if (find_schedule_with_permission (task_schedule_uuid,
+                                            &found,
+                                            "get_schedules"))
+            g_error ("%s: GET_TASKS: error finding"
+                      " task schedule, aborting",
+                      __FUNCTION__);
+          schedule_available = (found > 0);
+        }
+    }
+  else
+    {
+      task_schedule_uuid = (char*) g_strdup ("");
+      task_schedule_name = (char*) g_strdup ("");
+      schedule_in_trash = 0;
+    }
+
+  if (schedule_available && schedule)
+    {
+      time_t first_time, info_next_time;
+      int period, period_months, duration;
+      gchar *icalendar, *zone;
+
+      icalendar = zone = NULL;
+
+      if (schedule_info (schedule, schedule_in_trash,
+                          &first_time, &info_next_time, &period,
+                          &period_months, &duration,
+                          &icalendar, &zone) == 0)
+        {
+          gchar *first_time_str, *next_time_str;
+
+          // Copy ISO time strings to avoid one overwriting the other
+          first_time_str = g_strdup (first_time
+                                      ? iso_time (&first_time)
+                                      : "");
+          next_time_str = g_strdup (info_next_time
+                                      ? iso_time (&info_next_time)
+                                      : "over");
+
+          xml_string_append (xml,
+                             "<schedule id=\"%s\">"
+                             "<name>%s</name>"
+                             "<trash>%d</trash>"
+                             "<first_time>%s</first_time>"
+                             "<next_time>%s</next_time>"
+                             "<icalendar>%s</icalendar>"
+                             "<period>%d</period>"
+                             "<period_months>"
+                             "%d"
+                             "</period_months>"
+                             "<duration>%d</duration>"
+                             "<timezone>%s</timezone>"
+                             "</schedule>"
+                             "<schedule_periods>"
+                             "%d"
+                             "</schedule_periods>",
+                             task_schedule_uuid,
+                             task_schedule_name,
+                             schedule_in_trash,
+                             first_time_str,
+                             next_time_str,
+                             icalendar ? icalendar : "",
+                             period,
+                             period_months,
+                             duration,
+                             zone ? zone : "",
+                             task_schedule_periods (task));
+
+          g_free (first_time_str);
+          g_free (next_time_str);
+        }
+
+      g_free (icalendar);
+      g_free (zone);
+    }
+  else
+    {
+      next_time = task_schedule_next_time (task);
+
+      xml_string_append (xml,
+                         "<schedule id=\"%s\">"
+                         "<name>%s</name>"
+                         "<next_time>%s</next_time>"
+                         "<trash>%d</trash>"
+                         "</schedule>",
+                         task_schedule_uuid,
+                         task_schedule_name,
+                         next_time
+                            ? iso_time (&next_time)
+                            : "over",
+                         schedule_in_trash);
+    }
+
+  return g_string_free (xml, FALSE);
+}
+
+
+/**
  * @brief Handle end of GET_TASKS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -18690,22 +18821,19 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       gchar *config_name_escaped;
       char *task_target_uuid, *task_target_name;
       gchar *task_target_name_escaped;
-      char *task_schedule_uuid, *task_schedule_name;
-      gchar *task_schedule_name_escaped;
+      gchar *task_schedule_xml;
       char *task_scanner_uuid, *task_scanner_name;
       gchar *task_scanner_name_escaped;
       gchar *last_report;
       gchar *second_last_report_id;
       gchar *current_report;
       report_t running_report;
-      schedule_t schedule;
-      time_t next_time;
       char *owner, *observers;
-      int target_in_trash, schedule_in_trash, scanner_in_trash;
+      int target_in_trash, scanner_in_trash;
       int debugs, holes = 0, infos = 0, logs, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
       int false_positives, task_scanner_type;
-      int schedule_available, target_available, config_available;
+      int target_available, config_available;
       int scanner_available;
       double severity = 0, severity_2 = 0;
       gchar *response;
@@ -18727,6 +18855,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       index = get_iterator_resource (&tasks);
       target = task_target (index);
 
+      task_schedule_xml = get_task_schedule_xml (index);
+
       if (get_tasks_data->schedules_only)
         {
           SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
@@ -18734,112 +18864,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                    get_iterator_uuid (&tasks),
                                    get_iterator_name (&tasks));
 
-          schedule_available = 1;
-          schedule = task_schedule (index);
-          if (schedule)
-            {
-              schedule_in_trash = task_schedule_in_trash (index);
-              if (schedule_in_trash)
-                {
-                  task_schedule_uuid = schedule_uuid (schedule);
-                  task_schedule_name = schedule_name (schedule);
-                  schedule_available = trash_schedule_readable (schedule);
-                }
-              else
-                {
-                  schedule_t found;
-                  task_schedule_uuid = schedule_uuid (schedule);
-                  task_schedule_name = schedule_name (schedule);
-                  if (find_schedule_with_permission (task_schedule_uuid,
-                                                    &found,
-                                                    "get_schedules"))
-                    g_error ("%s: GET_TASKS: error finding"
-                             " task schedule, aborting",
-                             __FUNCTION__);
-                  schedule_available = (found > 0);
-                }
-            }
-          else
-            {
-              task_schedule_uuid = (char*) g_strdup ("");
-              task_schedule_name = (char*) g_strdup ("");
-              schedule_in_trash = 0;
-            }
-
-          if (schedule_available && schedule)
-            {
-              time_t first_time, info_next_time;
-              int period, period_months, duration;
-              gchar *icalendar, *zone;
-
-              icalendar = zone = NULL;
-
-              if (schedule_info (schedule, schedule_in_trash,
-                                 &first_time, &info_next_time, &period,
-                                 &period_months, &duration,
-                                 &icalendar, &zone) == 0)
-                {
-                  gchar *first_time_str, *next_time_str;
-
-                  // Copy ISO time strings to avoid one overwriting the other
-                  first_time_str = g_strdup (first_time
-                                              ? iso_time (&first_time)
-                                              : "");
-                  next_time_str = g_strdup (info_next_time
-                                              ? iso_time (&info_next_time)
-                                              : "over");
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%d</trash>"
-                                           "<first_time>%s</first_time>"
-                                           "<next_time>%s</next_time>"
-                                           "<icalendar>%s</icalendar>"
-                                           "<period>%d</period>"
-                                           "<period_months>"
-                                           "%d"
-                                           "</period_months>"
-                                           "<duration>%d</duration>"
-                                           "<timezone>%s</timezone>"
-                                           "</schedule>"
-                                           "<schedule_periods>"
-                                           "%d"
-                                           "</schedule_periods>",
-                                           task_schedule_uuid,
-                                           task_schedule_name,
-                                           schedule_in_trash,
-                                           first_time_str,
-                                           next_time_str,
-                                           icalendar ? icalendar : "",
-                                           period,
-                                           period_months,
-                                           duration,
-                                           zone ? zone : "",
-                                           task_schedule_periods (index));
-
-                  g_free (first_time_str);
-                  g_free (next_time_str);
-                }
-
-              g_free (icalendar);
-              g_free (zone);
-            }
-          else
-            {
-              next_time = task_schedule_next_time (index);
-
-              SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                       "<name>%s</name>"
-                                       "<next_time>%s</next_time>"
-                                       "<trash>%d</trash>"
-                                       "</schedule>",
-                                       task_schedule_uuid,
-                                       task_schedule_name,
-                                       next_time
-                                        ? iso_time (&next_time)
-                                        : "over",
-                                       schedule_in_trash);
-            }
+          SEND_TO_CLIENT_OR_FAIL (task_schedule_xml);
+          g_free (task_schedule_xml);
 
           SENDF_TO_CLIENT_OR_FAIL ("</task>");
 
@@ -19094,37 +19120,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                          __FUNCTION__);
               config_available = (found > 0);
             }
-          schedule_available = 1;
-          schedule = task_schedule (index);
-          if (schedule)
-            {
-              schedule_in_trash = task_schedule_in_trash (index);
-              if (schedule_in_trash)
-                {
-                  task_schedule_uuid = schedule_uuid (schedule);
-                  task_schedule_name = schedule_name (schedule);
-                  schedule_available = trash_schedule_readable (schedule);
-                }
-              else
-                {
-                  schedule_t found;
-                  task_schedule_uuid = schedule_uuid (schedule);
-                  task_schedule_name = schedule_name (schedule);
-                  if (find_schedule_with_permission (task_schedule_uuid,
-                                                     &found,
-                                                     "get_schedules"))
-                    g_error ("%s: GET_TASKS: error finding"
-                             " task schedule, aborting",
-                             __FUNCTION__);
-                  schedule_available = (found > 0);
-                }
-            }
-          else
-            {
-              task_schedule_uuid = (char*) g_strdup ("");
-              task_schedule_name = (char*) g_strdup ("");
-              schedule_in_trash = 0;
-            }
           scanner_available = 1;
           scanner = task_iterator_scanner (&tasks);
           if (scanner)
@@ -19156,7 +19151,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               task_scanner_type = 0;
               scanner_in_trash = 0;
             }
-          next_time = task_schedule_next_time (index);
+
           config_name_escaped
             = config_name
                 ? g_markup_escape_text (config_name, -1)
@@ -19169,10 +19164,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             = task_scanner_name
                 ? g_markup_escape_text (task_scanner_name, -1)
                 : NULL;
-          task_schedule_name_escaped
-            = task_schedule_name
-                ? g_markup_escape_text (task_schedule_name, -1)
-                : NULL;
+
           response = g_strdup_printf
                       ("<alterable>%i</alterable>"
                        "<config id=\"%s\">"
@@ -19199,13 +19191,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        "%u<finished>%u</finished>"
                        "</report_count>"
                        "<trend>%s</trend>"
-                       "<schedule id=\"%s\">"
-                       "<name>%s</name>"
-                       "<next_time>%s</next_time>"
-                       "<trash>%i</trash>"
-                       "%s"
-                       "</schedule>"
-                       "<schedule_periods>%i</schedule_periods>"
+                       "%s" // Schedule XML
                        "%s%s",
                        get_tasks_data->get.trash
                         ? 0
@@ -19234,12 +19220,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                         : task_iterator_trend_counts
                            (&tasks, holes, warnings, infos, severity,
                             holes_2, warnings_2, infos_2, severity_2),
-                       task_schedule_uuid,
-                       task_schedule_name_escaped,
-                       (next_time == 0 ? "over" : iso_time (&next_time)),
-                       schedule_in_trash,
-                       schedule_available ? "" : "<permissions/>",
-                       task_schedule_periods (index),
+                       task_schedule_xml,
                        current_report,
                        last_report);
           g_free (config_name);
@@ -19251,9 +19232,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (progress_xml);
           g_free (current_report);
           g_free (last_report);
-          g_free (task_schedule_uuid);
-          g_free (task_schedule_name);
-          g_free (task_schedule_name_escaped);
+          g_free (task_schedule_xml);
           g_free (task_scanner_uuid);
           g_free (task_scanner_name);
           g_free (task_scanner_name_escaped);
