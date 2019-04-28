@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -1435,10 +1435,10 @@ const char*
 result_iterator_nvt_cve (iterator_t *);
 
 const char*
-result_iterator_nvt_bid (iterator_t *);
-
-const char*
 result_iterator_nvt_xref (iterator_t *);
+
+void
+result_iterator_nvt_refs_append (GString *, iterator_t *);
 
 const char*
 result_iterator_nvt_tag (iterator_t *);
@@ -1986,15 +1986,6 @@ const char*
 nvt_iterator_copyright (iterator_t*);
 
 const char*
-nvt_iterator_cve (iterator_t*);
-
-const char*
-nvt_iterator_bid (iterator_t*);
-
-const char*
-nvt_iterator_xref (iterator_t*);
-
-const char*
 nvt_iterator_tag (iterator_t*);
 
 int
@@ -2112,6 +2103,9 @@ nvt_preference_iterator_id (iterator_t*);
 
 int
 nvt_preference_count (const char *);
+
+void
+nvti_refs_append_xml (GString *, const char *);
 
 gchar*
 get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);

@@ -10438,7 +10438,7 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
 }
 
 /**
- * @brief Append a CERT element to an XML buffer.
+ * @brief Append a REFS element to an XML buffer.
  *
  * @param[in]  buffer       Buffer.
  * @param[in]  oid          OID.
@@ -10452,7 +10452,6 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
 {
   iterator_t cert_refs_iterator;
 
-  buffer_xml_append_printf (buffer, "<cert>");
   if (cert_loaded)
     {
       if (has_cert_bunds)
@@ -10461,7 +10460,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           while (next (&cert_refs_iterator))
             {
               g_string_append_printf
-               (buffer, "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+               (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
@@ -10473,7 +10472,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           while (next (&cert_refs_iterator))
             {
               g_string_append_printf
-               (buffer, "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+               (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
@@ -10482,7 +10481,6 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
   else
     g_string_append_printf (buffer,
                             "<warning>database not available</warning>");
-  buffer_xml_append_printf (buffer, "</cert>");
 }
 
 /**
@@ -10527,6 +10525,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
         {
           int ret;
           char *cves;
+          gchar **split, **item;
           get_data_t get;
           iterator_t iterator;
 
@@ -10537,25 +10536,50 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             assert (0);
           if (!next (&iterator))
             abort ();
-          cves = ovaldef_cves (oid);
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
                                     "<type>ovaldef</type>"
                                     "<name>%s</name>"
                                     "<family/>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<cve>%s</cve>"
-                                    "<bid/>"
-                                    "<tags>summary=%s</tags>"
-                                    "<xref/>",
+                                    "<tags>summary=%s</tags>",
                                     oid,
                                     ovaldef_info_iterator_title (&iterator),
                                     ovaldef_info_iterator_max_cvss (&iterator),
-                                    cves ?: "",
                                     ovaldef_info_iterator_description (&iterator));
-                                    g_free (cves);
           g_free (get.id);
           cleanup_iterator (&iterator);
+
+          buffer_xml_append_printf (buffer, "<refs>");
+
+          cves = ovaldef_cves (oid);
+          split = g_strsplit (cves, ",", 0);
+          item = split;
+          while (*item)
+            {
+              gchar *id;
+
+              id = *item;
+              g_strstrip (id);
+
+              if (strcmp (id, "") == 0)
+                {
+                  item++;
+                  continue;
+                }
+
+              buffer_xml_append_printf (buffer, "<ref type=\"cve\" id=\"%s\"/>", id);
+
+              item++;
+            }
+          g_strfreev (split);
+          g_free (cves);
+
+          results_xml_append_cert (buffer, oid, cert_loaded,
+                                   result_iterator_has_cert_bunds (results),
+                                   result_iterator_has_dfn_certs (results));
+
+          buffer_xml_append_printf (buffer, "</refs>");
         }
       else
         {
@@ -10570,23 +10594,21 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<name>%s</name>"
                                     "<family>%s</family>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<cve>%s</cve>"
-                                    "<bid>%s</bid>"
-                                    "<xref>%s</xref>"
                                     "<tags>%s</tags>",
                                     oid,
                                     result_iterator_nvt_name (results) ?: oid,
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
-                                    result_iterator_nvt_cve (results) ?: "",
-                                    result_iterator_nvt_bid (results) ?: "",
-                                    result_iterator_nvt_xref (results) ?: "",
                                     result_iterator_nvt_tag (results) ?: "");
+
+          buffer_xml_append_printf (buffer, "<refs>");
+          result_iterator_nvt_refs_append (buffer, results);
+          results_xml_append_cert (buffer, oid, cert_loaded,
+                                   result_iterator_has_cert_bunds (results),
+                                   result_iterator_has_dfn_certs (results));
+          buffer_xml_append_printf (buffer, "</refs>");
         }
 
-      results_xml_append_cert (buffer, oid, cert_loaded,
-                               result_iterator_has_cert_bunds (results),
-                               result_iterator_has_dfn_certs (results));
     }
 
   buffer_xml_append_printf (buffer, "</nvt>");

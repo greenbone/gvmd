@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -8093,25 +8093,25 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
   if (details)
     {
       int tag_count;
-      GString *cert_refs_str, *tags_str, *buffer;
+      GString *refs_str, *tags_str, *buffer;
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
       char *default_timeout = nvt_default_timeout (oid);
 
       DEF (family);
-      DEF (xref);
       DEF (tag);
 
 #undef DEF
 
-      cert_refs_str = g_string_new ("");
+      refs_str = g_string_new ("");
+
       if (manage_cert_loaded())
         {
           init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
-              g_string_append_printf (cert_refs_str,
-                                      "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+              g_string_append_printf (refs_str,
+                                      "<ref type=\"cert-bund\" id=\"%s\"/>",
                                       get_iterator_name (&cert_refs_iterator));
           }
           cleanup_iterator (&cert_refs_iterator);
@@ -8119,16 +8119,18 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
           init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
-              g_string_append_printf (cert_refs_str,
-                                      "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+              g_string_append_printf (refs_str,
+                                      "<ref type=\"dfn-cert\" id=\"%s\"/>",
                                       get_iterator_name (&cert_refs_iterator));
           }
           cleanup_iterator (&cert_refs_iterator);
         }
       else
         {
-          g_string_append (cert_refs_str, "<warning>database not available</warning>");
+          g_string_append (refs_str, "<warning>database not available</warning>");
         }
+
+      nvti_refs_append_xml (refs_str, oid);
 
       tags_str = g_string_new ("");
       tag_count = resource_tag_count ("nvt",
@@ -8190,10 +8192,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<value>%s</value>"
                               "<type>%s</type>"
                               "</qod>"
-                              "<cve_id>%s</cve_id>"
-                              "<bugtraq_id>%s</bugtraq_id>"
-                              "<cert_refs>%s</cert_refs>"
-                              "<xrefs>%s</xrefs>"
+                              "<refs>%s</refs>"
                               "<tags>%s</tags>"
                               "<preference_count>%i</preference_count>"
                               "<timeout>%s</timeout>"
@@ -8214,18 +8213,14 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                                : "",
                               nvt_iterator_qod (nvts),
                               nvt_iterator_qod_type (nvts),
-                              nvt_iterator_cve (nvts),
-                              nvt_iterator_bid (nvts),
-                              cert_refs_str->str,
-                              xref_text,
+                              refs_str->str,
                               tag_text,
                               pref_count,
                               timeout ? timeout : "",
                               default_timeout ? default_timeout : "");
       g_free (family_text);
-      g_free (xref_text);
       g_free (tag_text);
-      g_string_free(cert_refs_str, 1);
+      g_string_free(refs_str, 1);
       g_string_free(tags_str, 1);
 
       if (preferences)

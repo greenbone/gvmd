@@ -1016,47 +1016,17 @@ advice given in each description, in order to rectify the issue.
 
   <!-- References box. -->
   <xsl:template name="references">
-    <xsl:variable name="cve_ref">
-      <xsl:if test="nvt/cve != '' and nvt/cve != 'NOCVE'">
-        <xsl:value-of select="nvt/cve/text()"/>
-      </xsl:if>
-    </xsl:variable>
-    <xsl:variable name="bid_ref">
-      <xsl:if test="nvt/bid != '' and nvt/bid != 'NOBID'">
-        <xsl:value-of select="nvt/bid/text()"/>
-      </xsl:if>
-    </xsl:variable>
-    <xsl:variable name="xref_ref">
-      <xsl:if test="nvt/xref != '' and nvt/xref != 'NOXREF'">
-        <xsl:value-of select="nvt/xref/text()"/>
-      </xsl:if>
-    </xsl:variable>
-
-    <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref_ref != ''">
+    <xsl:if test="count(nvt/refs/ref) &gt; 0">
       \hline
       <xsl:call-template name="latex-newline"/>
       <xsl:text>\textbf{References}</xsl:text>
       <xsl:call-template name="latex-newline"/>
-      <xsl:if test="$cve_ref != ''">
+
+      <xsl:for-each select="nvt/refs/ref">
         <xsl:call-template name="text-to-escaped-row">
-          <xsl:with-param name="string" select="concat('CVE: ', $cve_ref)"/>
+          <xsl:with-param name="string" select="concat(@type, ': ', @id)"/>
         </xsl:call-template>
-      </xsl:if>
-      <xsl:if test="$bid_ref != ''">
-        <xsl:call-template name="text-to-escaped-row">
-          <xsl:with-param name="string" select="concat('BID:', $bid_ref)"/>
-        </xsl:call-template>
-      </xsl:if>
-      <xsl:if test="$xref_ref != ''">
-        <xsl:call-template name="text-to-escaped-row">
-          <xsl:with-param name="string" select="'Other:'"/>
-        </xsl:call-template>
-        <xsl:for-each select="str:split($xref_ref, ',')">
-          <xsl:call-template name="text-to-escaped-row">
-            <xsl:with-param name="string" select="concat('  ', .)"/>
-          </xsl:call-template>
-        </xsl:for-each>
-      </xsl:if>
+      </xsl:for-each>
     </xsl:if>
   </xsl:template>
 
