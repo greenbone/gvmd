@@ -15951,6 +15951,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>details</name>
+        <summary>
+          Whether to get the details of the reports including the
+          results, hosts, ports etc.
+        </summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>type</name>
         <summary>Type of report to get</summary>
         <type>
