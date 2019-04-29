@@ -2842,6 +2842,13 @@ create_tables ()
        "  name text,"
        "  value text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS vt_refs"
+       " (id SERIAL PRIMARY KEY,"
+       "  vt_oid text UNIQUE NOT NULL,"
+       "  type text NOT NULL,"
+       "  ref_id text NOT NULL,"
+       "  ref_text text);");
+
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
        " (id SERIAL PRIMARY KEY,"
        "  name text UNIQUE NOT NULL,"
