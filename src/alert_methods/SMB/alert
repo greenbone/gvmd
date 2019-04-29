@@ -34,7 +34,7 @@ def smb_error_print(message, stdout, stderr):
 
 
 def smb_call(auth_path, share, command):
-    args = ["smbclient", "-m", "SMB3", "-A", auth_path, share, "-c", command]
+    args = ["smbclient", "-A", auth_path, share, "-c", command]
     retries = 10
     stdout = ''
     stderr = ''
