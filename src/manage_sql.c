@@ -17198,7 +17198,7 @@ check_db_report_formats ()
   GDir *dir;
   gchar *path;
   const gchar *report_format_path;
-  iterator_t report_formats;
+  iterator_t report_formats, alert_data;
 
   if (check_db_trash_report_formats ())
     return -1;
@@ -17253,18 +17253,40 @@ check_db_report_formats ()
                  " AND (EXISTS (SELECT * FROM alert_method_data_trash"
                  "              WHERE data = report_formats.uuid"
                  "              AND (name = 'notice_attach_format'"
-                 "                   OR name = 'notice_report_format'))"
+                 "                   OR name = 'notice_report_format'"
+                 "                   OR name = 'send_report_format'))"
                  "      OR EXISTS (SELECT * FROM alert_method_data"
                  "                 WHERE data = report_formats.uuid"
                  "                 AND (name = 'notice_attach_format'"
-                 "                      OR name = 'notice_report_format')));");
+                 "                      OR name = 'notice_report_format'"
+                 "                      OR name = 'send_report_format')));");
   while (next (&report_formats))
-    g_warning
-     ("Removing old report format %s (%s) which is in use by an alert.\n"
-      "Alert will fallback to TXT report format (%s), if TXT exists.",
-      iterator_string (&report_formats, 2),
-      iterator_string (&report_formats, 1),
-      "a3810a62-1f62-11e1-9219-406186ea4fc5");
+    {
+      g_warning ("Removing old report format %s (%s) which is in use by"
+                 " at least one alert.\n"
+                 "Alerts will fall back to the TXT report format (%s),"
+                 " if TXT exists.",
+                 iterator_string (&report_formats, 2),
+                 iterator_string (&report_formats, 1),
+                 "a3810a62-1f62-11e1-9219-406186ea4fc5");
+
+      sql ("UPDATE alert_method_data SET data = '%s'"
+           " WHERE data = '%s'"
+           "   AND (name = 'notice_attach_format'"
+           "        OR name = 'notice_report_format'"
+           "        OR name = 'send_report_format')",
+           "a3810a62-1f62-11e1-9219-406186ea4fc5",
+           iterator_string (&report_formats, 1));
+
+      sql ("UPDATE alert_method_data_trash SET data = '%s'"
+           " WHERE data = '%s'"
+           "   AND (name = 'notice_attach_format'"
+           "        OR name = 'notice_report_format'"
+           "        OR name = 'send_report_format')",
+           "a3810a62-1f62-11e1-9219-406186ea4fc5",
+           iterator_string (&report_formats, 1));
+    }
+
   cleanup_iterator (&report_formats);
 
   sql ("DELETE FROM report_format_param_options"
@@ -17291,6 +17313,61 @@ check_db_report_formats ()
 
   sql ("DROP TABLE report_format_params_check;");
   sql ("DROP TABLE report_formats_check;");
+
+  /* Clean up alerts with missing report formats */
+
+  init_iterator (&alert_data,
+                 "SELECT id, data,"
+                 "       (SELECT uuid FROM alerts WHERE id = alert)"
+                 "  FROM alert_method_data"
+                 " WHERE (name = 'notice_attach_format'"
+                 "        OR name = 'notice_report_format'"
+                 "        OR name = 'send_report_format')"
+                 "   AND data NOT IN (SELECT uuid FROM report_formats)"
+                 "   AND data NOT IN (SELECT uuid FROM report_formats_trash)");
+  while (next (&alert_data))
+    {
+      g_warning ("Alert %s uses a non-existent report format (%s) and"
+                 " will fall back to the TXT report format (%s)"
+                 " if TXT exists.",
+                 iterator_string (&alert_data, 2),
+                 iterator_string (&alert_data, 1),
+                 "a3810a62-1f62-11e1-9219-406186ea4fc5");
+
+      sql ("UPDATE alert_method_data SET data = '%s'"
+           " WHERE data = '%s'"
+           "   AND (name = 'notice_attach_format'"
+           "        OR name = 'notice_report_format'"
+           "        OR name = 'send_report_format')",
+           "a3810a62-1f62-11e1-9219-406186ea4fc5",
+           iterator_int64 (&alert_data, 0));
+    }
+  cleanup_iterator(&alert_data);
+
+  init_iterator (&alert_data,
+                 "SELECT id, data,"
+                 "       (SELECT uuid FROM alerts_trash WHERE id = alert)"
+                 "  FROM alert_method_data_trash"
+                 " WHERE (name = 'notice_attach_format'"
+                 "        OR name = 'notice_report_format'"
+                 "        OR name = 'send_report_format')"
+                 "   AND data NOT IN (SELECT uuid FROM report_formats)"
+                 "   AND data NOT IN (SELECT uuid FROM report_formats_trash)");
+  while (next (&alert_data))
+    {
+      g_warning ("Alert %s uses a non-existent report format (%s) and"
+                 " will fall back to the TXT report format (%s)"
+                 " if TXT exists.",
+                 iterator_string (&alert_data, 2),
+                 iterator_string (&alert_data, 1),
+                 "a3810a62-1f62-11e1-9219-406186ea4fc5");
+
+      sql ("UPDATE alert_method_data_trash SET data = '%s'"
+           " WHERE id = %llu",
+           "a3810a62-1f62-11e1-9219-406186ea4fc5",
+           iterator_int64 (&alert_data, 0));
+    }
+  cleanup_iterator(&alert_data);
 
   return 0;
 }
