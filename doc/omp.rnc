@@ -5779,6 +5779,8 @@ get_reports
        attribute report_filter { text }?
        & # ID of filter to use to filter reports.
        attribute report_filt_id { uuid }?
+       & # Whether to get the details of the reports including the results, hosts, ports etc..
+       attribute details { boolean }?
        & # Type of report to get.
        attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        & # ID of required report format.

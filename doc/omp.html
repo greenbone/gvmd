@@ -24500,6 +24500,11 @@ get_preferences_response_preference_default
           ID of filter to use to filter reports.
           </li>
 <li>
+          @<b>details</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to get the details of the reports including the results, hosts, ports etc..
+          </li>
+<li>
           @<b>type</b>
           ("scan", "assets" or "prognostic")
           Type of report to get.
@@ -24723,6 +24728,7 @@ get_preferences_response_preference_default
        &amp; attribute filt_id { uuid }?
        &amp; attribute report_filter { text }?
        &amp; attribute report_filt_id { uuid }?
+       &amp; attribute details { boolean }?
        &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; attribute format_id { uuid }?
        &amp; attribute alert_id { uuid }?
