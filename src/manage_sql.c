@@ -13859,6 +13859,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           auth_opts = gmp_authenticate_info_opts_defaults;
           auth_opts.username = current_credentials.username;
+          auth_opts.password = "dummy";
           if (gmp_authenticate_info_ext_c (&connection, auth_opts))
             {
               gvm_connection_free (&connection);
