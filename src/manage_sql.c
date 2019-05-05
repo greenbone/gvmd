@@ -15439,9 +15439,9 @@ update_nvti_cache ()
       nvti_set_name (nvti, iterator_string (&nvts, 1));
       nvti_set_family (nvti, iterator_string (&nvts, 2));
       nvti_set_cvss_base (nvti, iterator_string (&nvts, 3));
-      nvti_set_cve (nvti, iterator_string (&nvts, 4));
-      nvti_set_bid (nvti, iterator_string (&nvts, 5));
-      nvti_set_xref (nvti, iterator_string (&nvts, 6));
+      nvti_add_refs (nvti, "cve", iterator_string (&nvts, 4), "");
+      nvti_add_refs (nvti, "bid", iterator_string (&nvts, 5), "");
+      nvti_add_refs (nvti, NULL, iterator_string (&nvts, 6), "");
       nvti_set_tag (nvti, iterator_string (&nvts, 7));
       nvtis_add (nvti_cache, nvti);
     }
@@ -24574,11 +24574,12 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
 const char*
 result_iterator_nvt_cve (iterator_t *iterator)
 {
+  // @todo the returned string actually needs to be free'ed, but where?
   nvti_t *nvti;
   if (iterator->done) return NULL;
   nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
   if (nvti)
-    return nvti_cve (nvti);
+    return nvti_refs (nvti, "cve", "", 0);
   return NULL;
 }
 
@@ -24592,11 +24593,12 @@ result_iterator_nvt_cve (iterator_t *iterator)
 const char*
 result_iterator_nvt_xref (iterator_t *iterator)
 {
+  // @todo the returned string actually needs to be free'ed, but where?
   nvti_t *nvti;
   if (iterator->done) return NULL;
   nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
   if (nvti)
-    return nvti_xref (nvti);
+    return nvti_refs (nvti, NULL, "cve,bid", 1);
   return NULL;
 }
 
@@ -24615,7 +24617,7 @@ nvti_refs_append_xml (GString *xml, const char *oid)
   if (!nvti)
     return;
 
-  str = nvti_bid (nvti);
+  str = nvti_refs (nvti, "bid", "", 0);
   split = g_strsplit (str, ",", 0);
   item = split;
   while (*item)
@@ -24636,8 +24638,9 @@ nvti_refs_append_xml (GString *xml, const char *oid)
       item++;
     }
   g_strfreev (split);
+  g_free (str);
 
-  str = nvti_cve (nvti);
+  str = nvti_refs (nvti, "cve", "", 0);
   split = g_strsplit (str, ",", 0);
   item = split;
   while (*item)
@@ -24658,8 +24661,9 @@ nvti_refs_append_xml (GString *xml, const char *oid)
       item++;
     }
   g_strfreev (split);
+  g_free (str);
 
-  str = nvti_xref (nvti);
+  str = nvti_refs (nvti, NULL, "cve,bid", 1);
   split = g_strsplit (str, ",", 0);
   item = split;
   while (*item)
@@ -24683,6 +24687,7 @@ nvti_refs_append_xml (GString *xml, const char *oid)
       item++;
     }
   g_strfreev (split);
+  g_free (str);
 }
 
 /**

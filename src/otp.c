@@ -1260,19 +1260,19 @@ process_otp_scanner_input ()
                 }
               case SCANNER_PLUGIN_LIST_CVE_ID:
                 {
-                  nvti_set_cve (current_plugin, field);
+                  nvti_add_refs (current_plugin, "cve", field, "");
                   set_scanner_state (SCANNER_PLUGIN_LIST_BUGTRAQ_ID);
                   break;
                 }
               case SCANNER_PLUGIN_LIST_BUGTRAQ_ID:
                 {
-                  nvti_set_bid (current_plugin, field);
+                  nvti_add_refs (current_plugin, "bid", field, "");
                   set_scanner_state (SCANNER_PLUGIN_LIST_XREFS);
                   break;
                 }
               case SCANNER_PLUGIN_LIST_XREFS:
                 {
-                  nvti_set_xref (current_plugin, field);
+                  nvti_add_refs (current_plugin, NULL, field, "");
                   set_scanner_state (SCANNER_PLUGIN_LIST_TAGS);
                   switch (parse_scanner_plugin_list_tags (&messages))
                     {
