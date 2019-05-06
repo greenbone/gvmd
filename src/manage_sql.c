@@ -68750,38 +68750,62 @@ column_is_timestamp (const char* column)
 static column_t *
 type_select_columns (const char *type)
 {
+  static column_t agent_columns[] = AGENT_ITERATOR_COLUMNS;
   static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
   static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
+  static column_t config_columns[] = CONFIG_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
+  static column_t credential_columns[] = CREDENTIAL_ITERATOR_COLUMNS;
   static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
   static column_t dfn_cert_adv_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+  static column_t filter_columns[] = FILTER_ITERATOR_COLUMNS;
+  static column_t group_columns[] = GROUP_ITERATOR_COLUMNS;
   static column_t host_columns[] = HOST_ITERATOR_COLUMNS;
   static column_t note_columns[] = NOTE_ITERATOR_COLUMNS;
   static column_t nvt_columns[] = NVT_ITERATOR_COLUMNS;
   static column_t os_columns[] = OS_ITERATOR_COLUMNS;
   static column_t ovaldef_columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
   static column_t override_columns[] = OVERRIDE_ITERATOR_COLUMNS;
+  static column_t permission_columns[] = PERMISSION_ITERATOR_COLUMNS;
+  static column_t port_list_columns[] = PORT_LIST_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
+  static column_t report_format_columns[] = REPORT_FORMAT_ITERATOR_COLUMNS;
   static column_t result_columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t result_columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
+  static column_t role_columns[] = ROLE_ITERATOR_COLUMNS;
+  static column_t scanner_columns[] = SCANNER_ITERATOR_COLUMNS;
+  static column_t schedule_columns[] = SCHEDULE_ITERATOR_COLUMNS;
+  static column_t tag_columns[] = TAG_ITERATOR_COLUMNS;
+  static column_t target_columns[] = TARGET_ITERATOR_COLUMNS;
   static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
+  static column_t user_columns[] = USER_ITERATOR_COLUMNS;
   static column_t vuln_columns[] = VULN_ITERATOR_COLUMNS;
 
   if (type == NULL)
     return NULL;
+  if (strcasecmp (type, "AGENT") == 0)
+    return agent_columns;
   if (strcasecmp (type, "ALERT") == 0)
     return alert_columns;
   if (strcasecmp (type, "ALLINFO") == 0)
     return allinfo_columns;
   if (strcasecmp (type, "CERT_BUND_ADV") == 0)
     return cert_bund_adv_columns;
+  if (strcasecmp (type, "CONFIG") == 0)
+    return config_columns;
   if (strcasecmp (type, "CPE") == 0)
     return cpe_columns;
+  if (strcasecmp (type, "CREDENTIAL") == 0)
+    return credential_columns;
   if (strcasecmp (type, "CVE") == 0)
     return cve_columns;
   if (strcasecmp (type, "DFN_CERT_ADV") == 0)
     return dfn_cert_adv_columns;
+  if (strcasecmp (type, "FILTER") == 0)
+    return filter_columns;
+  if (strcasecmp (type, "GROUP") == 0)
+    return group_columns;
   if (strcasecmp (type, "HOST") == 0)
     return host_columns;
   if (strcasecmp (type, "NOTE") == 0)
@@ -68794,16 +68818,34 @@ type_select_columns (const char *type)
     return ovaldef_columns;
   if (strcasecmp (type, "OVERRIDE") == 0)
     return override_columns;
+  if (strcasecmp (type, "PERMISSION") == 0)
+    return permission_columns;
+  if (strcasecmp (type, "PORT_LIST") == 0)
+    return port_list_columns;
   if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
+  if (strcasecmp (type, "REPORT_FORMAT") == 0)
+    return report_format_columns;
   if (strcasecmp (type, "RESULT") == 0)
     {
       if (manage_cert_loaded ())
         return result_columns;
       return result_columns_no_cert;
     }
+  if (strcasecmp (type, "ROLE") == 0)
+    return role_columns;
+  if (strcasecmp (type, "SCANNER") == 0)
+    return scanner_columns;
+  if (strcasecmp (type, "SCHEDULE") == 0)
+    return schedule_columns;
+  if (strcasecmp (type, "TAG") == 0)
+    return tag_columns;
+  if (strcasecmp (type, "TARGET") == 0)
+    return target_columns;
   if (strcasecmp (type, "TASK") == 0)
     return task_columns;
+  if (strcasecmp (type, "USER") == 0)
+    return user_columns;
   if (strcasecmp (type, "VULN") == 0)
     return vuln_columns;
   return NULL;
