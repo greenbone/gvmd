@@ -68713,23 +68713,23 @@ column_is_timestamp (const char* column)
 static column_t *
 type_select_columns (const char *type)
 {
-  static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
+  static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
+  static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
+  static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
+  static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
+  static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
+  static column_t dfn_cert_adv_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+  static column_t host_columns[] = HOST_ITERATOR_COLUMNS;
+  static column_t note_columns[] = NOTE_ITERATOR_COLUMNS;
+  static column_t nvt_columns[] = NVT_ITERATOR_COLUMNS;
+  static column_t os_columns[] = OS_ITERATOR_COLUMNS;
+  static column_t ovaldef_columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
+  static column_t override_columns[] = OVERRIDE_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
   static column_t result_columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t result_columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
+  static column_t task_columns[] = TASK_ITERATOR_COLUMNS;
   static column_t vuln_columns[] = VULN_ITERATOR_COLUMNS;
-  static column_t host_columns[] = HOST_ITERATOR_COLUMNS;
-  static column_t os_columns[] = OS_ITERATOR_COLUMNS;
-  static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
-  static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
-  static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
-  static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
-  static column_t dfn_cert_adv_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
-  static column_t nvt_columns[] = NVT_ITERATOR_COLUMNS;
-  static column_t ovaldef_columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
-  static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
-  static column_t note_columns[] = NOTE_ITERATOR_COLUMNS;
-  static column_t override_columns[] = OVERRIDE_ITERATOR_COLUMNS;
 
   if (type == NULL)
     return NULL;
