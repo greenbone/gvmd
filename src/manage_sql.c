@@ -69133,6 +69133,9 @@ type_build_select (const char *type, const char *columns_str,
   where_columns = type_where_columns (type);
   filter_columns = type_filter_columns (type);
 
+  if (filter_columns == NULL)
+    return -1;
+
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           select_columns, where_columns, get->trash,
                           &filter_order, &first, &max, &permissions,
