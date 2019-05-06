@@ -68771,41 +68771,41 @@ type_select_columns (const char *type)
 
   if (type == NULL)
     return NULL;
-  else if (strcasecmp (type, "TASK") == 0)
+  if (strcasecmp (type, "TASK") == 0)
     return task_columns;
-  else if (strcasecmp (type, "REPORT") == 0)
+  if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
-  else if (strcasecmp (type, "RESULT") == 0)
+  if (strcasecmp (type, "RESULT") == 0)
     {
       if (manage_cert_loaded ())
         return result_columns;
       return result_columns_no_cert;
     }
-  else if (strcasecmp (type, "VULN") == 0)
+  if (strcasecmp (type, "VULN") == 0)
     return vuln_columns;
-  else if (strcasecmp (type, "HOST") == 0)
+  if (strcasecmp (type, "HOST") == 0)
     return host_columns;
-  else if (strcasecmp (type, "OS") == 0)
+  if (strcasecmp (type, "OS") == 0)
     return os_columns;
-  else if (strcasecmp (type, "ALLINFO") == 0)
+  if (strcasecmp (type, "ALLINFO") == 0)
     return allinfo_columns;
-  else if (strcasecmp (type, "CPE") == 0)
+  if (strcasecmp (type, "CPE") == 0)
     return cpe_columns;
-  else if (strcasecmp (type, "CVE") == 0)
+  if (strcasecmp (type, "CVE") == 0)
     return cve_columns;
-  else if (strcasecmp (type, "CERT_BUND_ADV") == 0)
+  if (strcasecmp (type, "CERT_BUND_ADV") == 0)
     return cert_bund_adv_columns;
-  else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
+  if (strcasecmp (type, "DFN_CERT_ADV") == 0)
     return dfn_cert_adv_columns;
-  else if (strcasecmp (type, "NVT") == 0)
+  if (strcasecmp (type, "NVT") == 0)
     return nvt_columns;
-  else if (strcasecmp (type, "OVALDEF") == 0)
+  if (strcasecmp (type, "OVALDEF") == 0)
     return ovaldef_columns;
-  else if (strcasecmp (type, "ALERT") == 0)
+  if (strcasecmp (type, "ALERT") == 0)
     return alert_columns;
-  else if (strcasecmp (type, "NOTE") == 0)
+  if (strcasecmp (type, "NOTE") == 0)
     return note_columns;
-  else if (strcasecmp (type, "OVERRIDE") == 0)
+  if (strcasecmp (type, "OVERRIDE") == 0)
     return override_columns;
   return NULL;
 }
@@ -68827,13 +68827,13 @@ type_where_columns (const char *type)
 
   if (type == NULL)
     return NULL;
-  else if (strcasecmp (type, "TASK") == 0)
+  if (strcasecmp (type, "TASK") == 0)
     return task_columns;
-  else if (strcasecmp (type, "REPORT") == 0)
+  if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
-  else if (strcasecmp (type, "HOST") == 0)
+  if (strcasecmp (type, "HOST") == 0)
     return host_columns;
-  else if (strcasecmp (type, "OS") == 0)
+  if (strcasecmp (type, "OS") == 0)
     return os_columns;
   return NULL;
 }
@@ -69017,23 +69017,17 @@ type_opts_table (const char *type, const char *filter)
 {
   if (type == NULL)
     return NULL;
-  else if (strcasecmp (type, "TASK") == 0)
-    {
-      return task_iterator_opts_table (filter_term_apply_overrides (filter),
-                                       filter_term_min_qod (filter), 0);
-    }
-  else if (strcasecmp (type, "REPORT") == 0)
-    {
-      return report_iterator_opts_table (filter_term_apply_overrides (filter),
-                                         filter_term_min_qod (filter));
-    }
-  else if (strcasecmp (type, "RESULT") == 0)
-    {
-      return result_iterator_opts_table (filter_term_autofp (filter),
-                                         filter_term_apply_overrides (filter),
-                                         setting_dynamic_severity_int ());
-    }
-  else if (strcasecmp (type, "VULN") == 0)
+  if (strcasecmp (type, "TASK") == 0)
+    return task_iterator_opts_table (filter_term_apply_overrides (filter),
+                                     filter_term_min_qod (filter), 0);
+  if (strcasecmp (type, "REPORT") == 0)
+    return report_iterator_opts_table (filter_term_apply_overrides (filter),
+                                       filter_term_min_qod (filter));
+  if (strcasecmp (type, "RESULT") == 0)
+    return result_iterator_opts_table (filter_term_autofp (filter),
+                                       filter_term_apply_overrides (filter),
+                                       setting_dynamic_severity_int ());
+  if (strcasecmp (type, "VULN") == 0)
     {
       gchar *task_id, *report_id, *host;
       gchar *ret;
@@ -69051,8 +69045,7 @@ type_opts_table (const char *type, const char *filter)
 
       return ret;
     }
-  else
-    return NULL;
+  return NULL;
 }
 
 /**
@@ -69068,20 +69061,13 @@ type_table (const char *type, int trash)
 {
   if (type == NULL)
     return NULL;
-  else if (strcasecmp (type, "ALLINFO") == 0)
-    {
-      return g_strdup (ALL_INFO_UNION_COLUMNS);
-    }
-  else if (trash && type_trash_in_table (type) == 0)
-    {
-      return g_strdup_printf ("%ss_trash", type);
-    }
-  else if (trash == 0 || type_trash_in_table (type))
-    {
-      return g_strdup_printf ("%ss", type);
-    }
-  else
-    return NULL;
+  if (strcasecmp (type, "ALLINFO") == 0)
+    return g_strdup (ALL_INFO_UNION_COLUMNS);
+  if (trash && type_trash_in_table (type) == 0)
+    return g_strdup_printf ("%ss_trash", type);
+  if (trash == 0 || type_trash_in_table (type))
+    return g_strdup_printf ("%ss", type);
+  return NULL;
 }
 
 /**
@@ -69105,7 +69091,7 @@ type_extra_where (const char *type, int trash, const char *filter)
       else
         extra_where = g_strdup (" AND hidden = 0");
     }
-  else if (strcasecmp (type, "REPORT") == 0)
+  if (strcasecmp (type, "REPORT") == 0)
     {
       if (trash)
         extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
@@ -69116,7 +69102,7 @@ type_extra_where (const char *type, int trash, const char *filter)
                                 "      WHERE tasks.id = task)"
                                 "     = 0");
     }
-  else if (strcasecmp (type, "RESULT") == 0)
+  if (strcasecmp (type, "RESULT") == 0)
     {
       int autofp, apply_overrides;
 
@@ -69128,7 +69114,7 @@ type_extra_where (const char *type, int trash, const char *filter)
                                          setting_dynamic_severity_int (),
                                          filter);
     }
-  else if (strcasecmp (type, "VULN") == 0)
+  if (strcasecmp (type, "VULN") == 0)
     {
       extra_where = vulns_extra_where ();
     }
