@@ -68771,8 +68771,30 @@ type_select_columns (const char *type)
 
   if (type == NULL)
     return NULL;
-  if (strcasecmp (type, "TASK") == 0)
-    return task_columns;
+  if (strcasecmp (type, "ALERT") == 0)
+    return alert_columns;
+  if (strcasecmp (type, "ALLINFO") == 0)
+    return allinfo_columns;
+  if (strcasecmp (type, "CERT_BUND_ADV") == 0)
+    return cert_bund_adv_columns;
+  if (strcasecmp (type, "CPE") == 0)
+    return cpe_columns;
+  if (strcasecmp (type, "CVE") == 0)
+    return cve_columns;
+  if (strcasecmp (type, "DFN_CERT_ADV") == 0)
+    return dfn_cert_adv_columns;
+  if (strcasecmp (type, "HOST") == 0)
+    return host_columns;
+  if (strcasecmp (type, "NOTE") == 0)
+    return note_columns;
+  if (strcasecmp (type, "NVT") == 0)
+    return nvt_columns;
+  if (strcasecmp (type, "OS") == 0)
+    return os_columns;
+  if (strcasecmp (type, "OVALDEF") == 0)
+    return ovaldef_columns;
+  if (strcasecmp (type, "OVERRIDE") == 0)
+    return override_columns;
   if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
   if (strcasecmp (type, "RESULT") == 0)
@@ -68781,32 +68803,10 @@ type_select_columns (const char *type)
         return result_columns;
       return result_columns_no_cert;
     }
+  if (strcasecmp (type, "TASK") == 0)
+    return task_columns;
   if (strcasecmp (type, "VULN") == 0)
     return vuln_columns;
-  if (strcasecmp (type, "HOST") == 0)
-    return host_columns;
-  if (strcasecmp (type, "OS") == 0)
-    return os_columns;
-  if (strcasecmp (type, "ALLINFO") == 0)
-    return allinfo_columns;
-  if (strcasecmp (type, "CPE") == 0)
-    return cpe_columns;
-  if (strcasecmp (type, "CVE") == 0)
-    return cve_columns;
-  if (strcasecmp (type, "CERT_BUND_ADV") == 0)
-    return cert_bund_adv_columns;
-  if (strcasecmp (type, "DFN_CERT_ADV") == 0)
-    return dfn_cert_adv_columns;
-  if (strcasecmp (type, "NVT") == 0)
-    return nvt_columns;
-  if (strcasecmp (type, "OVALDEF") == 0)
-    return ovaldef_columns;
-  if (strcasecmp (type, "ALERT") == 0)
-    return alert_columns;
-  if (strcasecmp (type, "NOTE") == 0)
-    return note_columns;
-  if (strcasecmp (type, "OVERRIDE") == 0)
-    return override_columns;
   return NULL;
 }
 
