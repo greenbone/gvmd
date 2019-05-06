@@ -67627,18 +67627,66 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   get_data_t resources_get;
   int ret;
 
+  memset (&resources_get, '\0', sizeof (resources_get));
   resources_get.filter = g_strdup (filter);
   resources_get.filt_id = FILT_ID_NONE;
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
 
   ignore_max_rows_per_page = 1;
-  switch (type_build_select (type,
-                             "id, uuid",
-                             &resources_get, 0, 1, NULL, NULL, NULL,
-                             &filtered_select))
+  filtered_select = NULL;
+
+  if (strcasecmp (type, "TICKET") == 0)
+    {
+      /* TODO This is how it should be done for all types, in order
+       * to contain each per-resource implementation in its own file. */
+      if (init_ticket_iterator (&resources, &resources_get))
+        {
+          g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
+          sql_rollback ();
+          g_free (resources_get.filter);
+          g_free (resources_get.type);
+          return -1;
+        }
+    }
+  else switch (type_build_select (type,
+                                  "id, uuid",
+                                  &resources_get, 0, 1, NULL, NULL, NULL,
+                                  &filtered_select))
     {
       case 0:
+        if (sql_int ("SELECT count(*) FROM (%s) AS filter_selection",
+                     filtered_select) == 0)
+          {
+            g_free (filtered_select);
+            return 2;
+          }
+
+        if (type_is_info_subtype (type))
+          init_iterator (&resources,
+                         "SELECT id, uuid FROM (%s) AS filter_selection"
+                         " WHERE NOT EXISTS"
+                         "  (SELECT * FROM tag_resources"
+                         "    WHERE resource_type = '%s'"
+                         "      AND resource_uuid = filter_selection.uuid"
+                         "      AND tag = %llu)",
+                         filtered_select,
+                         type,
+                         tag);
+        else
+          init_iterator (&resources,
+                         "SELECT id, uuid FROM (%s) AS filter_selection"
+                         " WHERE NOT EXISTS"
+                         "  (SELECT * FROM tag_resources"
+                         "    WHERE resource_type = '%s'"
+                         "      AND resource = filter_selection.id"
+                         "      AND resource_location = %d"
+                         "      AND tag = %llu)",
+                         filtered_select,
+                         type,
+                         LOCATION_TABLE,
+                         tag);
+
         break;
       default:
         ignore_max_rows_per_page = 0;
@@ -67653,49 +67701,24 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   g_free (resources_get.filter);
   g_free (resources_get.type);
 
-  if (sql_int ("SELECT count(*) FROM (%s) AS filter_selection",
-               filtered_select) == 0)
-    {
-      g_free (filtered_select);
-      return 2;
-    }
-
-  if (type_is_info_subtype (type))
-    init_iterator (&resources,
-                   "SELECT id, uuid FROM (%s) AS filter_selection"
-                   " WHERE NOT EXISTS"
-                   "  (SELECT * FROM tag_resources"
-                   "    WHERE resource_type = '%s'"
-                   "      AND resource_uuid = filter_selection.uuid"
-                   "      AND tag = %llu)",
-                   filtered_select,
-                   type,
-                   tag);
-  else
-    init_iterator (&resources,
-                   "SELECT id, uuid FROM (%s) AS filter_selection"
-                   " WHERE NOT EXISTS"
-                   "  (SELECT * FROM tag_resources"
-                   "    WHERE resource_type = '%s'"
-                   "      AND resource = filter_selection.id"
-                   "      AND resource_location = %d"
-                   "      AND tag = %llu)",
-                   filtered_select,
-                   type,
-                   LOCATION_TABLE,
-                   tag);
-
-  ret = 0;
-  while (next (&resources) && ret == 0)
+  ret = 2;
+  while (next (&resources))
     {
       resource_t resource;
       const char *current_uuid;
+      int add_ret;
 
       resource = iterator_int64 (&resources, 0);
       current_uuid = iterator_string (&resources, 1);
 
-     ret = tag_add_resource (tag, type, current_uuid, resource,
-                             LOCATION_TABLE, 0);
+      add_ret = tag_add_resource (tag, type, current_uuid, resource,
+                                  LOCATION_TABLE, 0);
+      if (add_ret)
+        {
+          ret = add_ret;
+          break;
+        }
+      ret = 0;
     }
   cleanup_iterator (&resources);
 
@@ -67762,18 +67785,36 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
   get_data_t resources_get;
   int ret;
 
+  memset (&resources_get, '\0', sizeof (resources_get));
   resources_get.filter = g_strdup (filter);
   resources_get.filt_id = FILT_ID_NONE;
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
 
   ignore_max_rows_per_page = 1;
-  switch (type_build_select (type,
-                             "id",
-                             &resources_get, 0, 1, NULL, NULL, NULL,
-                             &iterator_select))
+  iterator_select = NULL;
+
+  if (strcasecmp (type, "TICKET") == 0)
+    {
+      /* TODO This is how it should be done for all types, in order
+       * to contain each per-resource implementation in its own file. */
+      if (init_ticket_iterator (&resources, &resources_get))
+        {
+          ignore_max_rows_per_page = 0;
+          g_warning ("%s: Failed to init ticket iterator", __FUNCTION__);
+          sql_rollback ();
+          g_free (resources_get.filter);
+          g_free (resources_get.type);
+          return -1;
+        }
+    }
+  else switch (type_build_select (type,
+                                  "id",
+                                  &resources_get, 0, 1, NULL, NULL, NULL,
+                                  &iterator_select))
     {
       case 0:
+        init_iterator (&resources, "%s", iterator_select);
         break;
       default:
         ignore_max_rows_per_page = 0;
@@ -67788,7 +67829,6 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
   g_free (resources_get.filter);
   g_free (resources_get.type);
 
-  init_iterator (&resources, "%s", iterator_select);
   ret = 2;
   while (next (&resources))
     {
@@ -68807,6 +68847,8 @@ type_select_columns (const char *type)
     return target_columns;
   if (strcasecmp (type, "TASK") == 0)
     return task_columns;
+  /* Tickets don't use this. */
+  assert (strcasecmp (type, "ticket"));
   if (strcasecmp (type, "USER") == 0)
     return user_columns;
   if (strcasecmp (type, "VULN") == 0)
@@ -68994,6 +69036,8 @@ type_filter_columns (const char *type)
       static const char *ret[] = TASK_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
+  /* Tickets don't use this. */
+  assert (strcasecmp (type, "ticket"));
   if (strcasecmp (type, "USER") == 0)
     {
       static const char *ret[] = USER_ITERATOR_FILTER_COLUMNS;
