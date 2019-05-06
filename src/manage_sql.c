@@ -68740,7 +68740,6 @@ column_is_timestamp (const char* column)
               || strcmp (column, "updated") == 0));
 }
 
-// FIX
 /**
  * @brief Return the columns for a resource iterator.
  *
