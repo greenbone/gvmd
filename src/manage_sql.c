@@ -68813,88 +68813,87 @@ type_filter_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
-  else if (strcasecmp (type, "ALERT") == 0)
+  if (strcasecmp (type, "ALERT") == 0)
     {
       static const char *ret[] = ALERT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "ALLINFO") == 0)
+  if (strcasecmp (type, "ALLINFO") == 0)
     {
       static const char *ret[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "CERT_BUND_ADV") == 0)
+  if (strcasecmp (type, "CERT_BUND_ADV") == 0)
     {
       static const char *ret[] = CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "CPE") == 0)
+  if (strcasecmp (type, "CPE") == 0)
     {
       static const char *ret[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "CVE") == 0)
+  if (strcasecmp (type, "CVE") == 0)
     {
       static const char *ret[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
+  if (strcasecmp (type, "DFN_CERT_ADV") == 0)
     {
       static const char *ret[] = DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "HOST") == 0)
+  if (strcasecmp (type, "HOST") == 0)
     {
       static const char *ret[] = HOST_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "NOTE") == 0)
+  if (strcasecmp (type, "NOTE") == 0)
     {
       static const char *ret[] = NOTE_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "NVT") == 0)
+  if (strcasecmp (type, "NVT") == 0)
     {
       static const char *ret[] = NVT_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "OS") == 0)
+  if (strcasecmp (type, "OS") == 0)
     {
       static const char *ret[] = OS_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "OVALDEF") == 0)
+  if (strcasecmp (type, "OVALDEF") == 0)
     {
       static const char *ret[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "OVERRIDE") == 0)
+  if (strcasecmp (type, "OVERRIDE") == 0)
     {
       static const char *ret[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "REPORT") == 0)
+  if (strcasecmp (type, "REPORT") == 0)
     {
       static const char *ret[] = REPORT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "RESULT") == 0)
+  if (strcasecmp (type, "RESULT") == 0)
     {
       static const char *ret[] = RESULT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "TASK") == 0)
+  if (strcasecmp (type, "TASK") == 0)
     {
       static const char *ret[] = TASK_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else if (strcasecmp (type, "VULN") == 0)
+  if (strcasecmp (type, "VULN") == 0)
     {
       static const char *ret[] = VULN_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
-  else
-    return NULL;
+  return NULL;
 
 }
 
