@@ -24301,6 +24301,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       }
                     g_free (error_extra);
                     log_event_fail ("tag", "Tag", NULL, "created");
+                    break;
                   case 2:
                     SEND_TO_CLIENT_OR_FAIL 
                       ("<create_tag_response"
@@ -27156,6 +27157,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "A tag_id is required"));
                 log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
                                 "modified");
+                break;
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_tag",
@@ -27164,6 +27166,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " or empty."));
                 log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
                                 "modified");
+                break;
               case 4:
                 if (send_find_error_to_client ("modify_tag", "resource",
                                                 error_extra,
@@ -27175,6 +27178,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   }
                 g_free (error_extra);
                 log_event_fail ("tag", "Tag", NULL, "modified");
+                break;
               case 5:
                 SEND_TO_CLIENT_OR_FAIL 
                   ("<create_tag_response"
