@@ -69132,7 +69132,7 @@ type_extra_where (const char *type, int trash, const char *filter)
       else
         extra_where = g_strdup (" AND hidden = 0");
     }
-  if (strcasecmp (type, "REPORT") == 0)
+  else if (strcasecmp (type, "REPORT") == 0)
     {
       if (trash)
         extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
@@ -69143,7 +69143,7 @@ type_extra_where (const char *type, int trash, const char *filter)
                                 "      WHERE tasks.id = task)"
                                 "     = 0");
     }
-  if (strcasecmp (type, "RESULT") == 0)
+  else if (strcasecmp (type, "RESULT") == 0)
     {
       int autofp, apply_overrides;
 
@@ -69155,7 +69155,7 @@ type_extra_where (const char *type, int trash, const char *filter)
                                          setting_dynamic_severity_int (),
                                          filter);
     }
-  if (strcasecmp (type, "VULN") == 0)
+  else if (strcasecmp (type, "VULN") == 0)
     {
       extra_where = vulns_extra_where ();
     }
