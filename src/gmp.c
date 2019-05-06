@@ -27181,7 +27181,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 break;
               case 5:
                 SEND_TO_CLIENT_OR_FAIL 
-                  ("<create_tag_response"
+                  ("<modify_tag_response"
                     " status=\"" STATUS_ERROR_MISSING "\""
                     " status_text=\"No resources found for filter\"/>");
                 log_event_fail ("tag", "Tag", NULL, "modified");
