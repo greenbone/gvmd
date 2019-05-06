@@ -68813,6 +68813,11 @@ type_filter_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
+  if (strcasecmp (type, "AGENT") == 0)
+    {
+      static const char *ret[] = AGENT_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
   if (strcasecmp (type, "ALERT") == 0)
     {
       static const char *ret[] = ALERT_ITERATOR_FILTER_COLUMNS;
@@ -68828,6 +68833,16 @@ type_filter_columns (const char *type)
       static const char *ret[] = CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
+  if (strcasecmp (type, "CONFIG") == 0)
+    {
+      static const char *ret[] = CONFIG_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "CREDENTIAL") == 0)
+    {
+      static const char *ret[] = CREDENTIAL_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
   if (strcasecmp (type, "CPE") == 0)
     {
       static const char *ret[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
@@ -68841,6 +68856,16 @@ type_filter_columns (const char *type)
   if (strcasecmp (type, "DFN_CERT_ADV") == 0)
     {
       static const char *ret[] = DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "FILTER") == 0)
+    {
+      static const char *ret[] = FILTER_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "GROUP") == 0)
+    {
+      static const char *ret[] = GROUP_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   if (strcasecmp (type, "HOST") == 0)
@@ -68873,9 +68898,24 @@ type_filter_columns (const char *type)
       static const char *ret[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
+  if (strcasecmp (type, "PERMISSION") == 0)
+    {
+      static const char *ret[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "PORT_LIST") == 0)
+    {
+      static const char *ret[] = PORT_LIST_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
   if (strcasecmp (type, "REPORT") == 0)
     {
       static const char *ret[] = REPORT_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "REPORT_FORMAT") == 0)
+    {
+      static const char *ret[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   if (strcasecmp (type, "RESULT") == 0)
@@ -68883,9 +68923,39 @@ type_filter_columns (const char *type)
       static const char *ret[] = RESULT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
+  if (strcasecmp (type, "ROLE") == 0)
+    {
+      static const char *ret[] = ROLE_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "SCANNER") == 0)
+    {
+      static const char *ret[] = SCANNER_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "SCHEDULE") == 0)
+    {
+      static const char *ret[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "TAG") == 0)
+    {
+      static const char *ret[] = TAG_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "TARGET") == 0)
+    {
+      static const char *ret[] = TARGET_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
   if (strcasecmp (type, "TASK") == 0)
     {
       static const char *ret[] = TASK_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "USER") == 0)
+    {
+      static const char *ret[] = USER_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   if (strcasecmp (type, "VULN") == 0)
