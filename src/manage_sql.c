@@ -24565,44 +24565,6 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
 }
 
 /**
- * @brief Get the NVT CVE from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The CVE of the NVT that produced the result, or NULL on error.
- */
-const char*
-result_iterator_nvt_cve (iterator_t *iterator)
-{
-  // @todo the returned string actually needs to be free'ed, but where?
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_refs (nvti, "cve", "", 0);
-  return NULL;
-}
-
-/**
- * @brief Get the NVT XREF from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The XREF of the NVT that produced the result, or NULL on error.
- */
-const char*
-result_iterator_nvt_xref (iterator_t *iterator)
-{
-  // @todo the returned string actually needs to be free'ed, but where?
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_refs (nvti, NULL, "cve,bid", 1);
-  return NULL;
-}
-
-/**
  * @brief Get the NVT's references in XML format from a nvti object via oid.
  *
  * @param[in]  xml       The buffer where to append to.
