@@ -67067,11 +67067,15 @@ vuln_iterator_opts_from_filter (const gchar *filter)
   int min_qod;
   gchar *ret;
 
-  assert (filter);
+  if (filter)
+    {
+      task_id = filter_term_value (filter, "task_id");
+      report_id = filter_term_value (filter, "report_id");
+      host = filter_term_value (filter, "host");
+    }
+  else
+    task_id = report_id = host = NULL;
 
-  task_id = filter_term_value (filter, "task_id");
-  report_id = filter_term_value (filter, "report_id");
-  host = filter_term_value (filter, "host");
   min_qod = filter_term_min_qod (filter);
 
   ret = vuln_iterator_opts_table (task_id, report_id, host, min_qod);
