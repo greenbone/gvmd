@@ -25326,7 +25326,7 @@ init_report_host_details_iterator (iterator_t* iterator,
                  " UNION SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
                  "              nvts.name, cvss_base"
                  "       FROM nvts, report_host_details"
-                 "       WHERE cve != 'NOCVE'"
+                 "       WHERE cve != ''"
                  "       AND family IN (" LSC_FAMILY_LIST ")"
                  "       AND nvts.oid = report_host_details.source_name"
                  "       AND report_host = %llu"
@@ -28390,7 +28390,7 @@ static int
 report_closed_cve_count (report_t report)
 {
   return sql_int (" SELECT count(id) FROM nvts"
-                  " WHERE cve != 'NOCVE'"
+                  " WHERE cve != ''"
                   " AND family IN (" LSC_FAMILY_LIST ")"
                   " AND oid IN"
                   " (SELECT source_name FROM report_host_details"
