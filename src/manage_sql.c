@@ -12854,7 +12854,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                            "a3810a62-1f62-11e1-9219-406186ea4fc5",
                            notes_details, overrides_details,
                            &report_content, &content_length, &extension,
-                           NULL, &term, &report_zone, &host_summary,
+                           &type, &term, &report_zone, &host_summary,
                            &report_format, &filter);
                   if (ret || report_content == NULL)
                     {
@@ -13859,6 +13859,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           auth_opts = gmp_authenticate_info_opts_defaults;
           auth_opts.username = current_credentials.username;
+          auth_opts.password = "dummy";
           if (gmp_authenticate_info_ext_c (&connection, auth_opts))
             {
               gvm_connection_free (&connection);
@@ -67104,11 +67105,15 @@ vuln_iterator_opts_from_filter (const gchar *filter)
   int min_qod;
   gchar *ret;
 
-  assert (filter);
+  if (filter)
+    {
+      task_id = filter_term_value (filter, "task_id");
+      report_id = filter_term_value (filter, "report_id");
+      host = filter_term_value (filter, "host");
+    }
+  else
+    task_id = report_id = host = NULL;
 
-  task_id = filter_term_value (filter, "task_id");
-  report_id = filter_term_value (filter, "report_id");
-  host = filter_term_value (filter, "host");
   min_qod = filter_term_min_qod (filter);
 
   ret = vuln_iterator_opts_table (task_id, report_id, host, min_qod);
