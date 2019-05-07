@@ -24611,83 +24611,17 @@ result_iterator_nvt_xref (iterator_t *iterator)
 void
 nvti_refs_append_xml (GString *xml, const char *oid)
 {
-  gchar **split, **item, *str;
   nvti_t *nvti = nvtis_lookup (nvti_cache, oid);
+  int i;
 
   if (!nvti)
     return;
 
-  str = nvti_refs (nvti, "bid", "", 0);
-  split = g_strsplit (str, ",", 0);
-  item = split;
-  while (*item)
+  for (i = 0;i < nvti_ref_len (nvti);i ++)
     {
-      gchar *id;
-
-      id = *item;
-      g_strstrip (id);
-
-      if ((strcmp (id, "") == 0) || (strcmp (id, "NOBID")) == 0)
-        {
-          item++;
-          continue;
-        }
-
-      xml_string_append (xml, "<ref type=\"bid\" id=\"%s\"/>", id);
-
-      item++;
+      vtref_t *ref = nvti_ref (nvti, i);
+      xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", vtref_type(ref), vtref_id(ref));
     }
-  g_strfreev (split);
-  g_free (str);
-
-  str = nvti_refs (nvti, "cve", "", 0);
-  split = g_strsplit (str, ",", 0);
-  item = split;
-  while (*item)
-    {
-      gchar *id;
-
-      id = *item;
-      g_strstrip (id);
-
-      if ((strcmp (id, "") == 0) || (strcmp (id, "NOCVE")) == 0)
-        {
-          item++;
-          continue;
-        }
-
-      xml_string_append (xml, "<ref type=\"cve\" id=\"%s\"/>", id);
-
-      item++;
-    }
-  g_strfreev (split);
-  g_free (str);
-
-  str = nvti_refs (nvti, NULL, "cve,bid", 1);
-  split = g_strsplit (str, ",", 0);
-  item = split;
-  while (*item)
-    {
-      gchar *type_and_id;
-      gchar **split2;
-
-      type_and_id = *item;
-      g_strstrip (type_and_id);
-
-      if ((strcmp (type_and_id, "") == 0) || (strcmp (type_and_id, "NOXREF")) == 0)
-        {
-          item++;
-          continue;
-        }
-
-      split2 = g_strsplit (type_and_id, ":", 2);
-      if (split2[0] && split2[1])
-        xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", split2[0], split2[1]);
-
-      item++;
-    }
-  g_strfreev (split);
-  g_free (str);
 }
 
 /**
