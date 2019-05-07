@@ -12854,7 +12854,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                            "a3810a62-1f62-11e1-9219-406186ea4fc5",
                            notes_details, overrides_details,
                            &report_content, &content_length, &extension,
-                           NULL, &term, &report_zone, &host_summary,
+                           &type, &term, &report_zone, &host_summary,
                            &report_format, &filter);
                   if (ret || report_content == NULL)
                     {
