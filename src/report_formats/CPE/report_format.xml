@@ -1,8 +1,8 @@
 <report_format id="5ceff8ba-1f62-11e1-ab9f-406186ea4fc5">
   <name>CPE</name>
-  <summary>Common Product Enumeration CSV table.</summary>
+  <summary>Common Platform Enumeration CSV table.</summary>
   <description>
-CPE stands for Common Product Enumeration.  It is a structured naming scheme for
+CPE stands for Common Platform Enumeration.  It is a structured naming scheme for
 information technology systems, platforms, and packages.  In other words: CPE
 provides a unique identifier for virtually any software product that is known for
 a vulnerability.
