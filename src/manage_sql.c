@@ -7737,7 +7737,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       data_name = sql_quote (item);
       data = sql_quote (item + strlen (item) + 1);
 
-      ret = validate_email_data (method, name, &data, 0);
+      ret = validate_email_data (method, data_name, &data, 0);
       if (ret)
         {
           g_free (data_name);
