@@ -20541,7 +20541,7 @@ auto_delete_reports ()
 
       /* As in delete_report, this prevents other processes from getting the
        * report ID. */
-      if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE NOWAIT;"))
+      if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
         {
           sql_rollback ();
           return;
