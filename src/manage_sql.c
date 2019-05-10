@@ -8113,7 +8113,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
           data_name = sql_quote (item);
           data = sql_quote (item + strlen (item) + 1);
 
-          ret = validate_email_data (method, name, &data, 1);
+          ret = validate_email_data (method, data_name, &data, 1);
           if (ret)
             {
               g_free (data_name);
