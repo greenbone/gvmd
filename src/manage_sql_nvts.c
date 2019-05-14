@@ -209,7 +209,7 @@ make_nvt_from_nvti (const nvti_t *nvti)
 
   cve = nvti_refs (nvti, "cve", "", 0);
   bid = nvti_refs (nvti, "bid", "", 0);
-  xref = nvti_refs(nvti, NULL, "cve,bid", 1);
+  xref = nvti_refs (nvti, NULL, "cve,bid", 1);
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
   quoted_cve = sql_quote (cve ? cve : "");
   quoted_bid = sql_quote (bid ? bid : "");
