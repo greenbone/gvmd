@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -4828,7 +4828,7 @@ static GMarkupParser xml_parser;
 /**
  * @brief The nvt synchronization script for this daemon.
  */
-static const gchar *nvt_sync_script = SBINDIR "/greenbone-nvt-sync";
+static const gchar *nvt_sync_script = BINDIR "/greenbone-nvt-sync";
 
 
 /* Client state. */
