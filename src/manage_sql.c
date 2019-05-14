@@ -24473,8 +24473,8 @@ result_count (const get_data_t *get, report_t report, const char* host)
     filter = NULL;
 
   apply_overrides
-    = filter_term_apply_overrides (filter);
-  autofp = filter_term_autofp (filter);
+    = filter_term_apply_overrides (filter ? filter : get->filter);
+  autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
   extra_tables
