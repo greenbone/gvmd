@@ -66,7 +66,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
 
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
        " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');",
+       "         '" OID_PING_HOST "', 'Port scanners');",
        selector_name);
 
   /* Update number of families and nvts. */
@@ -84,21 +84,21 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         '" OID_PING_HOST ":checkbox:Mark unrechable Hosts as dead (not scanning)',"
+       "         '" OID_PING_HOST ":5:checkbox:Mark unrechable Hosts as dead (not scanning)',"
        "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         '" OID_PING_HOST ":checkbox:Report about reachable Hosts',"
+       "         '" OID_PING_HOST ":6:checkbox:Report about reachable Hosts',"
        "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         '" OID_PING_HOST ":checkbox:Report about unrechable Hosts',"
+       "         '" OID_PING_HOST ":6:checkbox:Report about unrechable Hosts',"
        "         'no');",
        config);
 }
@@ -122,14 +122,14 @@ check_config_host_discovery (const char *uuid)
   if (sql_int ("SELECT count (*) FROM config_preferences"
                " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
                "       AND type = 'PLUGINS_PREFS'"
-               "       AND name = '" OID_GLOBAL_SETTINGS ":checkbox:Strictly unauthenticated';",
+               "       AND name = '" OID_GLOBAL_SETTINGS ":1:checkbox:Strictly unauthenticated';",
                uuid)
       == 0)
     {
       sql ("INSERT INTO config_preferences (config, type, name, value)"
            " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
            "         'PLUGINS_PREFS',"
-           "         '" OID_GLOBAL_SETTINGS ":checkbox:Strictly unauthenticated',"
+           "         '" OID_GLOBAL_SETTINGS ":1:checkbox:Strictly unauthenticated',"
            "         'yes');",
            uuid);
       update = 1;
@@ -140,20 +140,29 @@ check_config_host_discovery (const char *uuid)
   if (sql_int ("SELECT count (*) FROM nvt_selectors"
                " WHERE name = (SELECT nvt_selector FROM configs"
                "               WHERE uuid = '%s')"
-               "       AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.12288';",
+               "       AND family_or_nvt = '" OID_GLOBAL_SETTINGS "';",
                uuid)
       == 0)
     {
       sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
            " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
            "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-           "         '1.3.6.1.4.1.25623.1.0.12288', 'Settings');",
+           "         '" OID_GLOBAL_SETTINGS "', 'Settings');",
            uuid);
       update = 1;
     }
 
   if (update)
     update_config_cache_init (uuid);
+
+  /* Check preferences. */
+
+  update_config_preference (uuid,
+                            "PLUGINS_PREFS",
+                            OID_PING_HOST ":5:checkbox:"
+                            "Mark unrechable Hosts as dead (not scanning)",
+                            "yes",
+                            TRUE);
 
   return 0;
 }

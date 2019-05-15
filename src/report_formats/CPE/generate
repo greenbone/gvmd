@@ -20,7 +20,7 @@
 # Report generator script: CPE.
 #
 # This report extracts the tables of identified
-# Common Product Enumerations from the given
+# Common Platform Enumerations from the given
 # XML scan report using a XSL transformation with
 # the tool xsltproc.
 

@@ -2,7 +2,7 @@
   <name>Anonymous XML</name>
   <summary>Anonymous version of the raw XML report</summary>
   <description>
-    Complete scan report in OpenVAS Manager XML format.
+    Complete scan report in GMP XML format.
   </description>
   <extension>xml</extension>
   <content_type>text/xml</content_type>

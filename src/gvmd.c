@@ -667,6 +667,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
   int pid, parent_client_socket, ret;
   int sockets[2];
   struct sigaction action;
+  gchar *auth_uuid;
 
   /* Fork a child to use as scheduler client and server. */
 
@@ -748,13 +749,19 @@ fork_connection_internal (gvm_connection_t *client_connection,
             exit (EXIT_FAILURE);
           }
 
+        /* Copy the given uuid, because the caller may have passed a
+         * reference to some session variable that will be reset by
+         * the process initialisation. */
+        auth_uuid = g_strdup (uuid);
+
         init_gmpd_process (database, disabled_commands);
 
         /* Make any further authentications to this process succeed.  This
          * enables the scheduler to login as the owner of the scheduled
          * task. */
         manage_auth_allow_all (scheduler);
-        set_scheduled_user_uuid (uuid);
+        set_scheduled_user_uuid (auth_uuid);
+        g_free (auth_uuid);
 
         /* For TLS, create a new session, because the parent may have been in
          * the middle of using the old one. */

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf-8
-# Copyright (C) 2018 Greenbone Networks GmbH
+# Copyright (C) 2019 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -135,9 +135,17 @@ def convert (xml_tree, out_file):
     ip = result_elem.find ('host').text
     description = result_elem.find ('description').text
 
+    nvt_cve = '';
     nvt_elem = result_elem.find ('nvt')
-    nvt_cve = nvt_elem.find ('cve').text;
-    if (nvt_cve == 'NOCVE' or nvt_cve == '' or nvt_cve is None):
+    nvt_refs = nvt_elem.find ('refs');
+    for ref in nvt_refs.findall('ref'):
+      if (ref.attrib['type'] == 'cve'):
+        if (nvt_cve == ''):
+          nvt_cve = ref.attrib['id'];
+        else:
+          nvt_cve = nvt_cve + ', ' + ref.attrib['id'];
+
+    if (nvt_cve == '' or nvt_cve is None):
       continue;
 
     nvt_oid = nvt_elem.attrib['oid']

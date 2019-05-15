@@ -18,7 +18,7 @@ Prerequisites:
 * cmake >= 3.0
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
-* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 1.0.0
+* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 11.0.0
 * sqlite3 library >= 3.8.3 or PostgreSQL database
 * pkg-config
 * libical >= 1.0.0
@@ -161,8 +161,8 @@ properly.
    If the `gsf-access-key` file was already migrated for the `openvas-scanner`
    module it can be removed from the `$prefix/etc/openvas/` directory.
 
- - move ´$prefix/var/lib/openvas/scap-data`` to
-   $prefix/var/lib/gvm/scap-data
+ - move `$prefix/var/lib/openvas/scap-data` to
+   `$prefix/var/lib/gvm/scap-data`
 
  - move `$prefix/var/lib/openvas/cert-data` to
    `$prefix/var/lib/gvm/cert-data`
@@ -180,8 +180,10 @@ properly.
    `$prefix/var/lib/gvm/gvmd/gvmd.db`
 
  - (Postgres backend only) rename database to `gvmd`:
-       sudo -u postgres sh
-       psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
+    ```
+    sudo -u postgres sh
+    psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
+    ```
 
 
 Migrating the Database
@@ -508,6 +510,12 @@ Certain features of the Manager also require some programs at run time:
 
 Prerequisites for generating PDF reports:
 * pdflatex
+
+  On Debian GNU/Linux 'Stretch' 9 the following packages can be installed to
+  fulfill this prerequisite:
+
+      apt-get install texlive-latex-extra --no-install-recommends
+      apt-get install texlive-fonts-recommended
 
 Prerequisites for generating HTML reports:
 * xsltproc

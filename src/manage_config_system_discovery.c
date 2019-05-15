@@ -66,7 +66,7 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
 
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
        " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-       "         '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');",
+       "         '" OID_PING_HOST "', 'Port scanners');",
        selector_name);
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
        " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
@@ -244,6 +244,15 @@ check_config_system_discovery (const char *uuid)
 
   if (update)
     update_config_cache_init (uuid);
+
+  /* Check preferences. */
+
+  update_config_preference (uuid,
+                            "PLUGINS_PREFS",
+                            OID_PING_HOST ":5:checkbox:"
+                            "Mark unrechable Hosts as dead (not scanning)",
+                            "yes",
+                            TRUE);
 
   return 0;
 }

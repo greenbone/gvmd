@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -1435,10 +1435,10 @@ const char*
 result_iterator_nvt_cve (iterator_t *);
 
 const char*
-result_iterator_nvt_bid (iterator_t *);
-
-const char*
 result_iterator_nvt_xref (iterator_t *);
+
+void
+result_iterator_nvt_refs_append (GString *, iterator_t *);
 
 const char*
 result_iterator_nvt_tag (iterator_t *);
@@ -1778,6 +1778,7 @@ trash_target_login_port (target_t, const char*);
 typedef struct
 {
   char *name;      ///< Name of preference.
+  char *id;        ///< ID of preference.
   char *type;      ///< Type of preference (radio, password, ...).
   char *value;     ///< Value of preference.
   char *nvt_name;  ///< Name of NVT preference affects.
@@ -1934,6 +1935,9 @@ config_timeout_iterator_nvt_name (iterator_t *);
 const char*
 config_timeout_iterator_value (iterator_t *);
 
+void
+update_config_preference (const char *, const char *, const char *,
+                          const char *, gboolean);
 
 
 /* NVT's. */
@@ -1980,15 +1984,6 @@ nvt_iterator_description (iterator_t*);
 
 const char*
 nvt_iterator_copyright (iterator_t*);
-
-const char*
-nvt_iterator_cve (iterator_t*);
-
-const char*
-nvt_iterator_bid (iterator_t*);
-
-const char*
-nvt_iterator_xref (iterator_t*);
 
 const char*
 nvt_iterator_tag (iterator_t*);
@@ -2103,8 +2098,14 @@ nvt_preference_iterator_type (iterator_t*);
 char*
 nvt_preference_iterator_oid (iterator_t*);
 
+char*
+nvt_preference_iterator_id (iterator_t*);
+
 int
 nvt_preference_count (const char *);
+
+void
+nvti_refs_append_xml (GString *, const char *);
 
 gchar*
 get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);
@@ -2875,7 +2876,13 @@ char *
 schedule_uuid (schedule_t);
 
 char *
+trash_schedule_uuid (schedule_t);
+
+char *
 schedule_name (schedule_t);
+
+char *
+trash_schedule_name (schedule_t);
 
 int
 schedule_duration (schedule_t);
