@@ -24579,7 +24579,7 @@ nvti_refs_append_xml (GString *xml, const char *oid)
   if (!nvti)
     return;
 
-  for (i = 0; i < nvti_vtref_len (nvti); i ++)
+  for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
       vtref_t *ref = nvti_vtref (nvti, i);
       xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", vtref_type (ref), vtref_id (ref));
