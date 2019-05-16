@@ -193,6 +193,7 @@ make_nvt_from_nvti (const nvti_t *nvti)
   gchar *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
+  gchar *cve, *bid, *xref;
 
   int creation_time, modification_time, qod;
 
@@ -206,10 +207,16 @@ make_nvt_from_nvti (const nvti_t *nvti)
   else
     chunk_count++;
 
+  cve = nvti_refs (nvti, "cve", "", 0);
+  bid = nvti_refs (nvti, "bid", "", 0);
+  xref = nvti_refs (nvti, NULL, "cve,bid", 1);
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
-  quoted_cve = sql_quote (nvti_cve (nvti) ? nvti_cve (nvti) : "");
-  quoted_bid = sql_quote (nvti_bid (nvti) ? nvti_bid (nvti) : "");
-  quoted_xref = sql_quote (nvti_xref (nvti) ? nvti_xref (nvti) : "");
+  quoted_cve = sql_quote (cve ? cve : "");
+  quoted_bid = sql_quote (bid ? bid : "");
+  quoted_xref = sql_quote (xref ? xref : "");
+  g_free (cve);
+  g_free (bid);
+  g_free (xref);
   if (nvti_tag (nvti))
     {
       const char *tags;
