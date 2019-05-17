@@ -1667,6 +1667,43 @@ migrate_206_to_207 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 207 to version 208.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_207_to_208 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 207. */
+
+  if (manage_db_version () != 207)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove NOBID, NOCVE and NOXREF entries. An empty string will
+   * from now on indicate that there is no reference of the
+   * respective type. */
+
+  sql ("UPDATE nvts SET bid = '' WHERE bid LIKE 'NOBID';");
+  sql ("UPDATE nvts SET cve = '' WHERE cve LIKE 'NOCVE';");
+  sql ("UPDATE nvts SET xref = '' WHERE xref LIKE 'NOXREF';");
+
+  /* Set the database version to 208. */
+
+  set_db_version (208);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1701,6 +1738,7 @@ static migrator_t database_migrators[] = {
   {205, migrate_204_to_205}, // v8.0: rev 205
   {206, migrate_205_to_206},
   {207, migrate_206_to_207},
+  {208, migrate_207_to_208},
   /* End marker. */
   {-1, NULL}};
 

@@ -363,6 +363,8 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
 static void
 make_nvt_from_nvti (const nvti_t *nvti)
 {
+  gchar *cve, *bid, *xref;
+
   if (chunk_count == 0)
     {
       sql_begin_immediate ();
@@ -373,15 +375,23 @@ make_nvt_from_nvti (const nvti_t *nvti)
   else
     chunk_count++;
 
+  cve = nvti_refs (nvti, "cve", "", 0);
+  bid = nvti_refs (nvti, "bid", "", 0);
+  xref = nvti_refs (nvti, NULL, "cve,bid", 1);
+
   insert_nvt (nvti_name (nvti),
-              nvti_cve (nvti),
-              nvti_bid (nvti),
-              nvti_xref (nvti),
+              cve,
+              bid,
+              xref,
               nvti_tag (nvti),
               nvti_cvss_base (nvti),
               nvti_family (nvti),
               nvti_oid (nvti),
               nvti_category (nvti));
+
+  g_free (cve);
+  g_free (bid);
+  g_free (xref);
 
   if (chunk_count == 0)
     sql_commit ();
