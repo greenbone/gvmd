@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2018 Greenbone Networks GmbH
+# Copyright (C) 2009-2019 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -237,9 +237,9 @@ if (GVM_NVT_DIR)
         add_definitions (-DGVM_NVT_DIR="${GVM_NVT_DIR}")
 endif (GVM_NVT_DIR)
 
-if (SBINDIR)
-  add_definitions (-DSBINDIR="${SBINDIR}")
-endif (SBINDIR)
+if (BINDIR)
+  add_definitions (-DBINDIR="${BINDIR}")
+endif (BINDIR)
 
 if (DEFINED GVM_SQLITE_SLEEP_MAX)
         add_definitions (-DGVM_SQLITE_SLEEP_MAX=${GVM_SQLITE_SLEEP_MAX})

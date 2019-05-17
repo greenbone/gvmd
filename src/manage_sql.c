@@ -8113,7 +8113,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
           data_name = sql_quote (item);
           data = sql_quote (item + strlen (item) + 1);
 
-          ret = validate_email_data (method, name, &data, 1);
+          ret = validate_email_data (method, data_name, &data, 1);
           if (ret)
             {
               g_free (data_name);
@@ -15439,9 +15439,9 @@ update_nvti_cache ()
       nvti_set_name (nvti, iterator_string (&nvts, 1));
       nvti_set_family (nvti, iterator_string (&nvts, 2));
       nvti_set_cvss_base (nvti, iterator_string (&nvts, 3));
-      nvti_set_cve (nvti, iterator_string (&nvts, 4));
-      nvti_set_bid (nvti, iterator_string (&nvts, 5));
-      nvti_set_xref (nvti, iterator_string (&nvts, 6));
+      nvti_add_refs (nvti, "cve", iterator_string (&nvts, 4), "");
+      nvti_add_refs (nvti, "bid", iterator_string (&nvts, 5), "");
+      nvti_add_refs (nvti, NULL, iterator_string (&nvts, 6), "");
       nvti_set_tag (nvti, iterator_string (&nvts, 7));
       nvtis_add (nvti_cache, nvti);
     }
@@ -20541,7 +20541,7 @@ auto_delete_reports ()
 
       /* As in delete_report, this prevents other processes from getting the
        * report ID. */
-      if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE NOWAIT;"))
+      if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
         {
           sql_rollback ();
           return;
@@ -24443,8 +24443,8 @@ result_count (const get_data_t *get, report_t report, const char* host)
     filter = NULL;
 
   apply_overrides
-    = filter_term_apply_overrides (filter);
-  autofp = filter_term_autofp (filter);
+    = filter_term_apply_overrides (filter ? filter : get->filter);
+  autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
   extra_tables
@@ -24565,42 +24565,6 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
 }
 
 /**
- * @brief Get the NVT CVE from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The CVE of the NVT that produced the result, or NULL on error.
- */
-const char*
-result_iterator_nvt_cve (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_cve (nvti);
-  return NULL;
-}
-
-/**
- * @brief Get the NVT XREF from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The XREF of the NVT that produced the result, or NULL on error.
- */
-const char*
-result_iterator_nvt_xref (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_xref (nvti);
-  return NULL;
-}
-
-/**
  * @brief Get the NVT's references in XML format from a nvti object via oid.
  *
  * @param[in]  xml       The buffer where to append to.
@@ -24609,80 +24573,17 @@ result_iterator_nvt_xref (iterator_t *iterator)
 void
 nvti_refs_append_xml (GString *xml, const char *oid)
 {
-  gchar **split, **item, *str;
   nvti_t *nvti = nvtis_lookup (nvti_cache, oid);
+  int i;
 
   if (!nvti)
     return;
 
-  str = nvti_bid (nvti);
-  split = g_strsplit (str, ",", 0);
-  item = split;
-  while (*item)
+  for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
-      gchar *id;
-
-      id = *item;
-      g_strstrip (id);
-
-      if ((strcmp (id, "") == 0) || (strcmp (id, "NOBID")) == 0)
-        {
-          item++;
-          continue;
-        }
-
-      xml_string_append (xml, "<ref type=\"bid\" id=\"%s\"/>", id);
-
-      item++;
+      vtref_t *ref = nvti_vtref (nvti, i);
+      xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", vtref_type (ref), vtref_id (ref));
     }
-  g_strfreev (split);
-
-  str = nvti_cve (nvti);
-  split = g_strsplit (str, ",", 0);
-  item = split;
-  while (*item)
-    {
-      gchar *id;
-
-      id = *item;
-      g_strstrip (id);
-
-      if ((strcmp (id, "") == 0) || (strcmp (id, "NOCVE")) == 0)
-        {
-          item++;
-          continue;
-        }
-
-      xml_string_append (xml, "<ref type=\"cve\" id=\"%s\"/>", id);
-
-      item++;
-    }
-  g_strfreev (split);
-
-  str = nvti_xref (nvti);
-  split = g_strsplit (str, ",", 0);
-  item = split;
-  while (*item)
-    {
-      gchar *type_and_id;
-      gchar **split2;
-
-      type_and_id = *item;
-      g_strstrip (type_and_id);
-
-      if ((strcmp (type_and_id, "") == 0) || (strcmp (type_and_id, "NOXREF")) == 0)
-        {
-          item++;
-          continue;
-        }
-
-      split2 = g_strsplit (type_and_id, ":", 2);
-      if (split2[0] && split2[1])
-        xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", split2[0], split2[1]);
-
-      item++;
-    }
-  g_strfreev (split);
 }
 
 /**
@@ -25425,7 +25326,7 @@ init_report_host_details_iterator (iterator_t* iterator,
                  " UNION SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
                  "              nvts.name, cvss_base"
                  "       FROM nvts, report_host_details"
-                 "       WHERE cve != 'NOCVE'"
+                 "       WHERE cve != ''"
                  "       AND family IN (" LSC_FAMILY_LIST ")"
                  "       AND nvts.oid = report_host_details.source_name"
                  "       AND report_host = %llu"
@@ -28489,7 +28390,7 @@ static int
 report_closed_cve_count (report_t report)
 {
   return sql_int (" SELECT count(id) FROM nvts"
-                  " WHERE cve != 'NOCVE'"
+                  " WHERE cve != ''"
                   " AND family IN (" LSC_FAMILY_LIST ")"
                   " AND oid IN"
                   " (SELECT source_name FROM report_host_details"
