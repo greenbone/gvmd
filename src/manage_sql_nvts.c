@@ -30,6 +30,7 @@
 #define _GNU_SOURCE
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,6 +52,20 @@
 
 static void
 refresh_nvt_cves ();
+
+
+/* Helper functions. */
+
+/** @brief Replace any control characters in string with spaces.
+ *
+ * @param[in,out]  string  String to replace in.
+ */
+static void
+blank_control_chars (char *string)
+{
+  for (; *string; string++)
+    if (iscntrl (*string) && *string != '\n') *string = ' ';
+}
 
 
 /* NVT's. */
@@ -1482,17 +1497,111 @@ get_tag (entity_t vt)
 /**
  * @brief Update NVT from VT XML.
  *
- * @param[in]  vt      OSP GET_VTS VT element.
+ * @param[in]  vt           OSP GET_VTS VT element.
+ * @param[in]  oid          OID of NVT.
+ * @param[in]  preferences  All NVT preferences.
  *
  * @return 0 success, -1 error.
  */
 static int
-update_nvt_from_vt (entity_t vt)
+update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
+{
+  entity_t vt_params, vt_param;
+  entities_t children;
+
+  assert (preferences);
+
+  vt_params = entity_child (vt, "vt_params");
+  if (vt_params == NULL)
+    return 0;
+
+  children = vt_params->entities;
+  while ((vt_param = first_entity (children)))
+    {
+      if (strcasecmp (entity_name (vt_param), "vt_param") == 0)
+        {
+          const gchar *type, *id;
+          entity_t name, def;
+
+          type = entity_attribute (vt_param, "type");
+          id = entity_attribute (vt_param, "id");
+          name = entity_child (vt_param, "name");
+          def = entity_child (vt_param, "default");
+
+          if (type == NULL)
+            {
+              GString *debug = g_string_new ("");
+              g_warning ("%s: VT_PARAM missing type attribute", __FUNCTION__);
+              print_entity_to_string (vt_param, debug);
+              g_warning ("%s: VT_PARAM: %s", __FUNCTION__, debug->str);
+              g_string_free (debug, TRUE);
+            }
+          else if (id == NULL)
+            {
+              GString *debug = g_string_new ("");
+              g_warning ("%s: VT_PARAM missing id attribute", __FUNCTION__);
+              print_entity_to_string (vt_param, debug);
+              g_warning ("%s: VT_PARAM: %s", __FUNCTION__, debug->str);
+              g_string_free (debug, TRUE);
+            }
+          else if (name == NULL)
+            {
+              GString *debug = g_string_new ("");
+              g_warning ("%s: VT_PARAM missing NAME", __FUNCTION__);
+              print_entity_to_string (vt_param, debug);
+              g_warning ("%s: VT_PARAM: %s", __FUNCTION__, debug->str);
+              g_string_free (debug, TRUE);
+            }
+          else if (def == NULL)
+            {
+              GString *debug = g_string_new ("");
+              g_warning ("%s: VT_PARAM missing DEFAULT", __FUNCTION__);
+              print_entity_to_string (vt_param, debug);
+              g_warning ("%s: VT_PARAM: %s", __FUNCTION__, debug->str);
+              g_string_free (debug, TRUE);
+            }
+          else
+            {
+              gchar *full_name;
+              preference_t *preference;
+
+              full_name = g_strdup_printf ("%s:%s:%s:%s",
+                                           oid,
+                                           id,
+                                           type,
+                                           entity_text (name));
+
+              blank_control_chars (full_name);
+              preference = g_malloc0 (sizeof (preference_t));
+              preference->name = full_name;
+              preference->value = g_strdup (entity_text (def));
+              *preferences = g_list_prepend (*preferences, preference);
+            }
+        }
+
+      children = next_entities (children);
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Update NVT from VT XML.
+ *
+ * @param[in]  vt           OSP GET_VTS VT element.
+ * @param[in]  preferences  All NVT preferences.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_nvt_from_vt (entity_t vt, GList **preferences)
 {
   const char *id;
   entity_t name, vt_refs, custom, family, category;
   gchar *cve, *bid, *xref, *tag;
   gchar *cvss_base, *parsed_tags;
+
+  assert (preferences);
 
   id = entity_attribute (vt, "id");
   if (id == NULL)
@@ -1560,7 +1669,7 @@ update_nvt_from_vt (entity_t vt)
   g_free (xref);
   g_free (tag);
 
-  return 0;
+  return update_preferences_from_vt (vt, id, preferences);
 }
 
 /**
@@ -1575,6 +1684,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
 {
   entity_t vts, vt;
   entities_t children;
+  GList *preferences;
 
   vts = entity_child (*get_vts_response, "vts");
   if (vts == NULL)
@@ -1602,10 +1712,11 @@ update_nvts_from_vts (entity_t *get_vts_response,
       sql ("TRUNCATE nvt_preferences;");
     }
 
+  preferences = NULL;
   children = vts->entities;
   while ((vt = first_entity (children)))
     {
-      if (update_nvt_from_vt (vt))
+      if (update_nvt_from_vt (vt, &preferences))
         {
           sql_rollback ();
           return;
@@ -1613,6 +1724,9 @@ update_nvts_from_vts (entity_t *get_vts_response,
 
       children = next_entities (children);
     }
+
+  insert_nvt_preferences_list (preferences);
+  g_list_free_full (preferences, g_free);
 
   set_nvts_check_time ();
 
