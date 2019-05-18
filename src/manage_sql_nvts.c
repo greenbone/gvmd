@@ -1211,7 +1211,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
  * @param[in]  vt_refs  VT refs.
  * @param[in]  type     Type to get.
  *
- * @return Freshly allocated string for ref field, or NULL on error.
+ * @return Freshly allocated string for ref field.
  */
 static gchar *
 get_ref (entity_t vt_refs, const gchar *type)
@@ -1270,7 +1270,7 @@ get_ref (entity_t vt_refs, const gchar *type)
  *
  * @param[in]  vt_refs  VT refs.
  *
- * @return Freshly allocated string for CVE field, or NULL on error.
+ * @return Freshly allocated string for CVE field.
  */
 static gchar *
 get_cve (entity_t vt_refs)
@@ -1283,7 +1283,7 @@ get_cve (entity_t vt_refs)
  *
  * @param[in]  vt_refs  VT refs.
  *
- * @return Freshly allocated string for BID field, or NULL on error.
+ * @return Freshly allocated string for BID field.
  */
 static gchar *
 get_bid (entity_t vt_refs)
@@ -1296,7 +1296,7 @@ get_bid (entity_t vt_refs)
  *
  * @param[in]  vt_refs  VT refs.
  *
- * @return Freshly allocated string for XREF field, or NULL on error.
+ * @return Freshly allocated string for XREF field.
  */
 static gchar *
 get_xref (entity_t vt_refs)
@@ -1348,7 +1348,7 @@ get_xref (entity_t vt_refs)
  *
  * @param[in]  vt  VT.
  *
- * @return Freshly allocated string for tag field, or NULL on error.
+ * @return Freshly allocated string for tag field.
  */
 static gchar *
 get_tag (entity_t vt)
@@ -1516,28 +1516,9 @@ update_nvt_from_vt (entity_t vt)
     }
 
   cve = get_cve (vt_refs);
-  if (cve == NULL)
-    {
-      return -1;
-    }
-
   bid = get_bid (vt_refs);
-  if (bid == NULL)
-    {
-      return -1;
-    }
-
   xref = get_xref (vt_refs);
-  if (xref == NULL)
-    {
-      return -1;
-    }
-
   tag = get_tag (vt);
-  if (tag == NULL)
-    {
-      return -1;
-    }
 
   custom = entity_child (vt, "custom");
   if (custom == NULL)
