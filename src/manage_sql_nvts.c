@@ -1487,6 +1487,109 @@ get_tag (entity_t vt)
 }
 
 /**
+ * @brief Update NVT from VT XML.
+ *
+ * @param[in]  vt      OSP GET_VTS VT element.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_nvt_from_vt (entity_t vt)
+{
+  const char *id;
+  entity_t name, vt_refs, custom, family, category;
+  gchar *cve, *bid, *xref, *tag;
+  gchar *cvss_base, *parsed_tags;
+
+  id = entity_attribute (vt, "id");
+  if (id == NULL)
+    {
+      g_warning ("%s: VT missing id attribute", __FUNCTION__);
+      return -1;
+    }
+
+  name = entity_child (vt, "name");
+  if (name == NULL)
+    {
+      g_warning ("%s: VT missing NAME", __FUNCTION__);
+      return -1;
+    }
+
+  vt_refs = entity_child (vt, "vt_refs");
+  if (vt_refs == NULL)
+    {
+      g_warning ("%s: VT missing VT_REFS", __FUNCTION__);
+      return -1;
+    }
+
+  cve = get_cve (vt_refs);
+  if (cve == NULL)
+    {
+      return -1;
+    }
+
+  bid = get_bid (vt_refs);
+  if (bid == NULL)
+    {
+      return -1;
+    }
+
+  xref = get_xref (vt_refs);
+  if (xref == NULL)
+    {
+      return -1;
+    }
+
+  tag = get_tag (vt);
+  if (tag == NULL)
+    {
+      return -1;
+    }
+
+  custom = entity_child (vt, "custom");
+  if (custom == NULL)
+    {
+      g_warning ("%s: VT missing CUSTOM", __FUNCTION__);
+      return -1;
+    }
+
+  family = entity_child (custom, "family");
+  if (family == NULL)
+    {
+      g_warning ("%s: VT/CUSTOM missing FAMILY", __FUNCTION__);
+      return -1;
+    }
+
+  category = entity_child (custom, "category");
+  if (category == NULL)
+    {
+      g_warning ("%s: VT/CUSTOM missing CATEGORY", __FUNCTION__);
+      return -1;
+    }
+
+  parse_tags (tag, &parsed_tags, &cvss_base);
+
+  insert_nvt (entity_text (name),
+              cve,
+              bid,
+              xref,
+              parsed_tags,
+              cvss_base,
+              entity_text (family),
+              id,
+              atoi (entity_text (category)));
+
+  g_free (parsed_tags);
+  g_free (cvss_base);
+  g_free (cve);
+  g_free (bid);
+  g_free (xref);
+  g_free (tag);
+
+  return 0;
+}
+
+/**
  * @brief Update NVTs from VTs XML.
  *
  * @param[in]  get_vts_response      OSP GET_VTS response.
@@ -1498,7 +1601,6 @@ update_nvts_from_vts (entity_t *get_vts_response,
 {
   entity_t vts, vt;
   entities_t children;
-  gchar *cvss_base, *parsed_tags;
 
   vts = entity_child (*get_vts_response, "vts");
   if (vts == NULL)
@@ -1529,105 +1631,11 @@ update_nvts_from_vts (entity_t *get_vts_response,
   children = vts->entities;
   while ((vt = first_entity (children)))
     {
-      const char *id;
-      entity_t name, vt_refs, custom, family, category;
-      gchar *cve, *bid, *xref, *tag;
-
-      id = entity_attribute (vt, "id");
-      if (id == NULL)
-        {
-          g_warning ("%s: VT missing id attribute", __FUNCTION__);
-          sql_rollback ();
-          return;
-        }
-
-      name = entity_child (vt, "name");
-      if (name == NULL)
-        {
-          g_warning ("%s: VT missing NAME", __FUNCTION__);
-          sql_rollback ();
-          return;
-        }
-
-      vt_refs = entity_child (vt, "vt_refs");
-      if (vt_refs == NULL)
-        {
-          g_warning ("%s: VT missing VT_REFS", __FUNCTION__);
-          sql_rollback ();
-          return;
-        }
-
-      cve = get_cve (vt_refs);
-      if (cve == NULL)
+      if (update_nvt_from_vt (vt))
         {
           sql_rollback ();
           return;
         }
-
-      bid = get_bid (vt_refs);
-      if (bid == NULL)
-        {
-          sql_rollback ();
-          return;
-        }
-
-      xref = get_xref (vt_refs);
-      if (xref == NULL)
-        {
-          sql_rollback ();
-          return;
-        }
-
-      tag = get_tag (vt);
-      if (tag == NULL)
-        {
-          sql_rollback ();
-          return;
-        }
-
-      custom = entity_child (vt, "custom");
-      if (custom == NULL)
-        {
-          g_warning ("%s: VT missing CUSTOM", __FUNCTION__);
-          sql_rollback ();
-          return;
-        }
-
-      family = entity_child (custom, "family");
-      if (family == NULL)
-        {
-          g_warning ("%s: VT/CUSTOM missing FAMILY", __FUNCTION__);
-          sql_rollback ();
-          return;
-        }
-
-      category = entity_child (custom, "category");
-      if (category == NULL)
-        {
-          g_warning ("%s: VT/CUSTOM missing CATEGORY", __FUNCTION__);
-          sql_rollback ();
-          return;
-        }
-
-      parse_tags (tag, &parsed_tags, &cvss_base);
-
-      insert_nvt (entity_text (name),
-                  cve,
-                  bid,
-                  xref,
-                  parsed_tags,
-                  cvss_base,
-                  entity_text (family),
-                  id,
-                  atoi (entity_text (category)));
-
-
-      g_free (parsed_tags);
-      g_free (cvss_base);
-      g_free (cve);
-      g_free (bid);
-      g_free (xref);
-      g_free (tag);
 
       children = next_entities (children);
     }
