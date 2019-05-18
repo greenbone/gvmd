@@ -2844,7 +2844,7 @@ create_tables ()
 
   sql ("CREATE TABLE IF NOT EXISTS vt_refs"
        " (id SERIAL PRIMARY KEY,"
-       "  vt_oid text UNIQUE NOT NULL,"
+       "  vt_oid text NOT NULL,"
        "  type text NOT NULL,"
        "  ref_id text NOT NULL,"
        "  ref_text text);");
