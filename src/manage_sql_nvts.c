@@ -1210,12 +1210,11 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
  *
  * @param[in]  vt_refs  VT refs.
  * @param[in]  type     Type to get.
- * @param[in]  empty    String to return if empty.
  *
  * @return Freshly allocated string for ref field, or NULL on error.
  */
 static gchar *
-get_ref (entity_t vt_refs, const gchar *type, const gchar *empty)
+get_ref (entity_t vt_refs, const gchar *type)
 {
   entities_t children;
   entity_t ref;
@@ -1263,9 +1262,6 @@ get_ref (entity_t vt_refs, const gchar *type, const gchar *empty)
       children = next_entities (children);
     }
 
-  if (first == 1)
-    g_string_append (refs, empty);
-
   return g_string_free (refs, FALSE);
 }
 
@@ -1279,7 +1275,7 @@ get_ref (entity_t vt_refs, const gchar *type, const gchar *empty)
 static gchar *
 get_cve (entity_t vt_refs)
 {
-  return get_ref (vt_refs, "cve", "NOCVE");
+  return get_ref (vt_refs, "cve");
 }
 
 /**
@@ -1292,7 +1288,7 @@ get_cve (entity_t vt_refs)
 static gchar *
 get_bid (entity_t vt_refs)
 {
-  return get_ref (vt_refs, "bid", "NOBID");
+  return get_ref (vt_refs, "bid");
 }
 
 /**
@@ -1343,9 +1339,6 @@ get_xref (entity_t vt_refs)
 
       children = next_entities (children);
     }
-
-  if (first == 1)
-    g_string_append (refs, "NOXREF");
 
   return g_string_free (refs, FALSE);
 }
