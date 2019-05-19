@@ -213,8 +213,8 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
             const gchar *xref, const gchar *tags, const gchar *cvss_base,
             const gchar *family, const gchar *oid, int category)
 {
-  gchar *qod_str, *qod_type;
-  gchar *quoted_name, *quoted_tag;
+  gchar *qod_str, *qod_type, *cve;
+  gchar *quoted_name, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
 <<<<<<< HEAD
@@ -239,7 +239,10 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
   else
     chunk_count++;
 
+  cve = nvti_refs (nvti, "cve", "", 0);
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
+  quoted_cve = sql_quote (cve ? cve : "");
+  g_free (cve);
 
   if (nvti_tag (nvti))
 >>>>>>> Do not insert cve, bid and xref anymore into db.
@@ -369,12 +372,12 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
       int i;
 
       sql ("INSERT into nvts (oid, name,"
-           " tag, category, family, cvss_base,"
+           " cve, tag, category, family, cvss_base,"
            " creation_time, modification_time, uuid, solution_type,"
            " qod, qod_type)"
-           " VALUES ('%s', '%s', '%s', '%s', '%s',"
+           " VALUES ('%s', '%s', '%s', '%s', '%s', '%s',"
            " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-           oid, quoted_name, quoted_tag,
+           oid, quoted_name, quoted_cve, quoted_tag,
            category, quoted_family, quoted_cvss_base, creation_time,
            modification_time, oid, quoted_solution_type,
            qod, quoted_qod_type);
@@ -397,6 +400,7 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
     }
 
   g_free (quoted_name);
+  g_free (quoted_cve);
   g_free (quoted_tag);
   g_free (quoted_cvss_base);
   g_free (quoted_family);
