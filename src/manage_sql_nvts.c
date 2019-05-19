@@ -214,10 +214,10 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
             const gchar *family, const gchar *oid, int category)
 {
   gchar *qod_str, *qod_type;
-  gchar *quoted_name;
-  gchar *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
+  gchar *quoted_name, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
+<<<<<<< HEAD
   int creation_time, modification_time, qod;
 
   quoted_name = sql_quote (name ? name : "");
@@ -225,6 +225,24 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
   quoted_bid = sql_quote (bid ? bid : "");
   quoted_xref = sql_quote (xref ? xref : "");
   if (tags)
+=======
+
+  int creation_time, modification_time, qod;
+
+  if (chunk_count == 0)
+    {
+      sql_begin_immediate ();
+      chunk_count++;
+    }
+  else if (chunk_count == CHUNK_SIZE)
+    chunk_count = 0;
+  else
+    chunk_count++;
+
+  quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
+
+  if (nvti_tag (nvti))
+>>>>>>> Do not insert cve, bid and xref anymore into db.
     {
       gchar **split, **point;
       GString *tag;
@@ -351,13 +369,12 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
       int i;
 
       sql ("INSERT into nvts (oid, name,"
-           " cve, bid, xref, tag, category, family, cvss_base,"
+           " tag, category, family, cvss_base,"
            " creation_time, modification_time, uuid, solution_type,"
            " qod, qod_type)"
            " VALUES ('%s', '%s', '%s', '%s', '%s',"
            " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-           oid, quoted_name,
-           quoted_cve, quoted_bid, quoted_xref, quoted_tag,
+           oid, quoted_name, quoted_tag,
            category, quoted_family, quoted_cvss_base, creation_time,
            modification_time, oid, quoted_solution_type,
            qod, quoted_qod_type);
@@ -380,9 +397,6 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
     }
 
   g_free (quoted_name);
-  g_free (quoted_cve);
-  g_free (quoted_bid);
-  g_free (quoted_xref);
   g_free (quoted_tag);
   g_free (quoted_cvss_base);
   g_free (quoted_family);
