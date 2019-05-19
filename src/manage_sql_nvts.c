@@ -48,12 +48,6 @@
 #define G_LOG_DOMAIN "md manage"
 
 
-/* Static headers. */
-
-static void
-refresh_nvt_cves ();
-
-
 /* Helper functions. */
 
 /** @brief Replace any control characters in string with spaces.
@@ -86,10 +80,6 @@ check_db_nvts ()
     sql ("INSERT INTO %s.meta (name, value)"
          " VALUES ('update_nvti_cache', 0);",
          sql_schema ());
-
-  /* Ensure the NVT CVE table is filled. */
-  if (sql_int ("SELECT count (*) FROM nvt_cves;") == 0)
-    refresh_nvt_cves ();
 }
 
 /**
@@ -209,43 +199,20 @@ static int chunk_count = 0;
  * @param[in]  category   NVT category.
  */
 static void
-insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
-            const gchar *xref, const gchar *tags, const gchar *cvss_base,
-            const gchar *family, const gchar *oid, int category)
+insert_nvt (const gchar *name, const gchar *cve, const gchar *tags,
+            const gchar *cvss_base, const gchar *family, const gchar *oid,
+            int category, GSList *refs)
 {
-  gchar *qod_str, *qod_type, *cve;
+  gchar *qod_str, *qod_type;
   gchar *quoted_name, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
-<<<<<<< HEAD
   int creation_time, modification_time, qod;
 
   quoted_name = sql_quote (name ? name : "");
   quoted_cve = sql_quote (cve ? cve : "");
-  quoted_bid = sql_quote (bid ? bid : "");
-  quoted_xref = sql_quote (xref ? xref : "");
+
   if (tags)
-=======
-
-  int creation_time, modification_time, qod;
-
-  if (chunk_count == 0)
-    {
-      sql_begin_immediate ();
-      chunk_count++;
-    }
-  else if (chunk_count == CHUNK_SIZE)
-    chunk_count = 0;
-  else
-    chunk_count++;
-
-  cve = nvti_refs (nvti, "cve", "", 0);
-  quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
-  quoted_cve = sql_quote (cve ? cve : "");
-  g_free (cve);
-
-  if (nvti_tag (nvti))
->>>>>>> Do not insert cve, bid and xref anymore into db.
     {
       gchar **split, **point;
       GString *tag;
@@ -382,17 +349,17 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
            modification_time, oid, quoted_solution_type,
            qod, quoted_qod_type);
 
-      sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
+      sql ("DELETE FROM vt_refs where vt_oid = '%s';", oid);
 
-      for (i = 0; i < nvti_vtref_len (nvti); i++)
+      for (i = 0; i < g_slist_length (refs); i++)
         {
-          vtref_t *ref = nvti_vtref (nvti, i);
+          vtref_t *ref = g_slist_nth_data (refs, i);
           gchar *quoted_id = sql_quote (vtref_id (ref));
           gchar *quoted_text = sql_quote (vtref_text (ref));
 
           sql ("INSERT into vt_refs (vt_oid, type, ref_id, ref_text)"
                " VALUES ('%s', '%s', '%s', '%s');",
-               nvti_oid (nvti), vtref_type (ref), quoted_id, quoted_text);
+               oid, vtref_type (ref), quoted_id, quoted_text);
 
           g_free (quoted_id);
           g_free (quoted_text);
@@ -416,7 +383,7 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
 static void
 make_nvt_from_nvti (const nvti_t *nvti)
 {
-  gchar *cve, *bid, *xref;
+  gchar *cve;
 
   if (chunk_count == 0)
     {
@@ -429,22 +396,17 @@ make_nvt_from_nvti (const nvti_t *nvti)
     chunk_count++;
 
   cve = nvti_refs (nvti, "cve", "", 0);
-  bid = nvti_refs (nvti, "bid", "", 0);
-  xref = nvti_refs (nvti, NULL, "cve,bid", 1);
 
   insert_nvt (nvti_name (nvti),
               cve,
-              bid,
-              xref,
               nvti_tag (nvti),
               nvti_cvss_base (nvti),
               nvti_family (nvti),
               nvti_oid (nvti),
-              nvti_category (nvti));
+              nvti_category (nvti),
+              nvti_vtrefs (nvti));
 
   g_free (cve);
-  g_free (bid);
-  g_free (xref);
 
   if (chunk_count == 0)
     sql_commit ();
@@ -1088,53 +1050,6 @@ check_for_updated_nvts ()
 }
 
 /**
- * @brief Refresh nvt_cves table.
- *
- * Caller must organise transaction.
- */
-static void
-refresh_nvt_cves ()
-{
-  iterator_t nvts;
-
-  sql ("DELETE FROM nvt_cves;");
-
-  init_iterator (&nvts, "SELECT id, oid, cve FROM nvts;");
-  while (next (&nvts))
-    {
-      gchar **split, **point;
-
-      split = g_strsplit_set (iterator_string (&nvts, 2), " ,", 0);
-
-      point = split;
-      while (*point)
-        {
-          g_strstrip (*point);
-          if (strlen (*point))
-            {
-              gchar *quoted_cve, *quoted_oid;
-
-              quoted_cve = sql_insert (*point);
-              quoted_oid = sql_insert (iterator_string (&nvts, 1));
-              sql ("INSERT INTO nvt_cves (nvt, oid, cve_name)"
-                   " VALUES (%llu, %s, %s);",
-                   iterator_int64 (&nvts, 0),
-                   quoted_oid,
-                   quoted_cve);
-              g_free (quoted_cve);
-              g_free (quoted_oid);
-            }
-          point++;
-        }
-      g_strfreev (split);
-    }
-  cleanup_iterator (&nvts);
-
-  if (sql_is_sqlite3 ())
-    sql ("REINDEX nvt_cves_by_oid;");
-}
-
-/**
  * @brief Set the NVT update check time in the meta table.
  */
 static void
@@ -1210,7 +1125,6 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
   sql_begin_immediate ();
   if (sql_is_sqlite3 ())
     {
-      sql ("DELETE FROM nvt_cves;");
       sql ("DELETE FROM nvts;");
       sql ("DELETE FROM nvt_preferences;");
     }
@@ -1248,14 +1162,66 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
                __FUNCTION__);
   update_all_config_caches ();
 
-  refresh_nvt_cves ();
-
   set_nvts_check_time ();
 
   sql_commit ();
 
   count = sql_int ("SELECT count (*) FROM nvts;");
   g_info ("Updating NVT cache... done (%i NVTs).", count);
+}
+
+/**
+ * @brief Get vt_refs list from VT.
+ *
+ * @param[in]  vt_refs  VT refs.
+ *
+ * @return Freshly allocated string for ref field.
+ */
+static GSList *
+get_refs (entity_t vt_refs)
+{
+  entities_t children;
+  entity_t ref;
+  GSList *vtrefs;
+
+  vtrefs = NULL;
+  children = vt_refs->entities;
+  while ((ref = first_entity (children)))
+    {
+      const gchar *ref_type;
+
+      ref_type = entity_attribute (ref, "type");
+      if (ref_type == NULL)
+        {
+          GString *debug = g_string_new ("");
+          g_warning ("%s: REF missing type attribute", __FUNCTION__);
+          print_entity_to_string (ref, debug);
+          g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+          g_string_free (debug, TRUE);
+        }
+      else
+        {
+          const gchar *id;
+
+          id = entity_attribute (ref, "id");
+          if (id == NULL)
+            {
+              GString *debug = g_string_new ("");
+              g_warning ("%s: REF missing id attribute", __FUNCTION__);
+              print_entity_to_string (ref, debug);
+              g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+              g_string_free (debug, TRUE);
+            }
+          else
+            {
+              vtrefs = g_slist_append (vtrefs, vtref_new (ref_type, id, NULL));
+            }
+        }
+
+      children = next_entities (children);
+    }
+
+  return vtrefs;
 }
 
 /**
@@ -1329,71 +1295,6 @@ static gchar *
 get_cve (entity_t vt_refs)
 {
   return get_ref (vt_refs, "cve");
-}
-
-/**
- * @brief Get BID field from VT.
- *
- * @param[in]  vt_refs  VT refs.
- *
- * @return Freshly allocated string for BID field.
- */
-static gchar *
-get_bid (entity_t vt_refs)
-{
-  return get_ref (vt_refs, "bid");
-}
-
-/**
- * @brief Get XREF field from VT.
- *
- * @param[in]  vt_refs  VT refs.
- *
- * @return Freshly allocated string for XREF field.
- */
-static gchar *
-get_xref (entity_t vt_refs)
-{
-  entities_t children;
-  entity_t ref;
-  int first;
-  GString *refs;
-
-  first = 1;
-  refs = g_string_new ("");
-  children = vt_refs->entities;
-  while ((ref = first_entity (children)))
-    {
-      const gchar *type;
-
-      type = entity_attribute (ref, "type");
-      if (type == NULL)
-        g_warning ("%s: REF missing type attribute", __FUNCTION__);
-      else if (strcasecmp (type, "cve")
-               && strcasecmp (type, "bid"))
-        {
-          const gchar *id;
-          gchar *type_up;
-
-          type_up = g_ascii_strup (type, -1);
-          id = entity_attribute (ref, "id");
-          if (id == NULL)
-            g_warning ("%s: REF missing id attribute", __FUNCTION__);
-          else if (first)
-            {
-              g_string_append_printf (refs, "%s:%s", type_up, id);
-              first = 0;
-            }
-          else
-            g_string_append_printf (refs, ", %s:%s", type_up, id);
-
-          g_free (type_up);
-        }
-
-      children = next_entities (children);
-    }
-
-  return g_string_free (refs, FALSE);
 }
 
 /**
@@ -1631,8 +1532,9 @@ update_nvt_from_vt (entity_t vt, GList **preferences)
 {
   const char *id;
   entity_t name, refs, custom, family, category;
-  gchar *cve, *bid, *xref, *tag;
+  gchar *cve, *tag;
   gchar *cvss_base, *parsed_tags;
+  GSList *vtrefs;
 
   assert (preferences);
 
@@ -1656,10 +1558,9 @@ update_nvt_from_vt (entity_t vt, GList **preferences)
       g_warning ("%s: VT missing REFS", __FUNCTION__);
       return -1;
     }
+  vtrefs = get_refs (refs);
 
   cve = get_cve (refs);
-  bid = get_bid (refs);
-  xref = get_xref (refs);
   tag = get_tag (vt);
 
   custom = entity_child (vt, "custom");
@@ -1687,19 +1588,16 @@ update_nvt_from_vt (entity_t vt, GList **preferences)
 
   insert_nvt (entity_text (name),
               cve,
-              bid,
-              xref,
               parsed_tags,
               cvss_base,
               entity_text (family),
               id,
-              atoi (entity_text (category)));
+              atoi (entity_text (category)),
+              vtrefs);
 
   g_free (parsed_tags);
   g_free (cvss_base);
   g_free (cve);
-  g_free (bid);
-  g_free (xref);
   g_free (tag);
 
   return update_preferences_from_vt (vt, id, preferences);
