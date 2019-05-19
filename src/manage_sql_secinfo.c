@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -918,9 +918,10 @@ init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid,
                  "SELECT %s"
                  " FROM cert_bund_advs"
                  " WHERE id IN (SELECT adv_id FROM cert_bund_cves"
-                 "              WHERE cve_name IN (SELECT cve_name"
-                 "                                 FROM nvt_cves"
-                 "                                 WHERE oid = '%s'))"
+                 "              WHERE cve_name IN (SELECT ref_id"
+                 "                                 FROM vt_refs"
+                 "                                 WHERE oid = '%s'"
+		 "                                   AND type = 'cve'))"
                  " ORDER BY %s %s;",
                  columns,
                  oid,
@@ -1098,9 +1099,10 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
                  "SELECT %s"
                  " FROM dfn_cert_advs"
                  " WHERE id IN (SELECT adv_id FROM dfn_cert_cves"
-                 "              WHERE cve_name IN (SELECT cve_name"
-                 "                                 FROM nvt_cves"
-                 "                                 WHERE oid = '%s'))"
+                 "              WHERE cve_name IN (SELECT ref_id"
+                 "                                 FROM vt_refs"
+                 "                                 WHERE oid = '%s'"
+		 "                                   AND type = 'cve'))"
                  " ORDER BY %s %s;",
                  columns,
                  oid,
