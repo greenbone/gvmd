@@ -2861,8 +2861,6 @@ create_tables ()
        "  name text,"
        "  comment text,"
        "  cve text,"
-       "  bid text,"
-       "  xref text,"
        "  tag text,"
        "  category text,"
        "  family text,"
