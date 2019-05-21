@@ -342,8 +342,8 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *tags,
            " cve, tag, category, family, cvss_base,"
            " creation_time, modification_time, uuid, solution_type,"
            " qod, qod_type)"
-           " VALUES ('%s', '%s', '%s', '%s', '%s', '%s',"
-           " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
+           " VALUES ('%s', '%s', '%s', '%s',"
+           " %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
            oid, quoted_name, quoted_cve, quoted_tag,
            category, quoted_family, quoted_cvss_base, creation_time,
            modification_time, oid, quoted_solution_type,
