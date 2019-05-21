@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2018 Greenbone Networks GmbH
+# Copyright (C) 2009-2019 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -117,7 +117,7 @@ include (CPack)
 
 ## Variables
 
-set (GVMD_DATABASE_VERSION 206)
+set (GVMD_DATABASE_VERSION 208)
 
 set (GVMD_SCAP_DATABASE_VERSION 15)
 

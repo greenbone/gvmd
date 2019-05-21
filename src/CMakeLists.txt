@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2018 Greenbone Networks GmbH
+# Copyright (C) 2009-2019 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -27,10 +27,10 @@ find_package (Threads)
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=1.0.0)
-pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=1.0.0)
-pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=1.0.0)
-pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=1.0.0)
+pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=11.0.0)
+pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=11.0.0)
+pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=11.0.0)
+pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=11.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBICAL REQUIRED libical>=1.00)
@@ -237,9 +237,9 @@ if (GVM_NVT_DIR)
         add_definitions (-DGVM_NVT_DIR="${GVM_NVT_DIR}")
 endif (GVM_NVT_DIR)
 
-if (SBINDIR)
-  add_definitions (-DSBINDIR="${SBINDIR}")
-endif (SBINDIR)
+if (BINDIR)
+  add_definitions (-DBINDIR="${BINDIR}")
+endif (BINDIR)
 
 if (DEFINED GVM_SQLITE_SLEEP_MAX)
         add_definitions (-DGVM_SQLITE_SLEEP_MAX=${GVM_SQLITE_SLEEP_MAX})

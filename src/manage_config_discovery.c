@@ -919,7 +919,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.104143", "Nmap NSE net");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.104021", "Nmap NSE net");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.104098", "Nmap NSE net");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100315", "Port scanners");
+  NVT_SELECTOR (selector_name, OID_PING_HOST, "Port scanners");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14259", "Port scanners");
 
   /* Add the Product Detection family. */
@@ -941,13 +941,13 @@ make_config_discovery (char *const uuid, char *const selector_name)
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
-       "         '" OID_PING_HOST ":checkbox:Mark unrechable Hosts as dead (not scanning)',"
+       "         '" OID_PING_HOST ":5:checkbox:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        uuid);
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
-       "         '" OID_PING_HOST ":checkbox:Report about unrechable Hosts',"
+       "         '" OID_PING_HOST ":6:checkbox:Report about unrechable Hosts',"
        "         'no');",
        uuid);
 
@@ -955,7 +955,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
-       "         '" OID_SERVICES ":radio:Test SSL based services',"
+       "         '" OID_SERVICES ":1:radio:Test SSL based services',"
        "         'All;Known SSL ports;None');",
        uuid);
 }
@@ -970,14 +970,21 @@ make_config_discovery (char *const uuid, char *const selector_name)
 int
 check_config_discovery (const char *uuid)
 {
-  /* Check new preference. */
+  /* Check preferences. */
 
   sql ("UPDATE config_preferences SET value = 'no'"
        " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
        " AND type = 'PLUGINS_PREFS'"
-       " AND name = '" OID_PING_HOST ":checkbox:Report about unrechable Hosts'"
+       " AND name = '" OID_PING_HOST ":6:checkbox:Report about unrechable Hosts'"
        " AND value = 'yes';",
        uuid);
+
+  update_config_preference (uuid,
+                            "PLUGINS_PREFS",
+                            OID_PING_HOST ":5:checkbox:"
+                            "Mark unrechable Hosts as dead (not scanning)",
+                            "yes",
+                            TRUE);
 
   return 0;
 }

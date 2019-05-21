@@ -1260,19 +1260,25 @@ process_otp_scanner_input ()
                 }
               case SCANNER_PLUGIN_LIST_CVE_ID:
                 {
-                  nvti_set_cve (current_plugin, field);
+                  if (strcmp (field, "NOCVE"))
+                    nvti_add_refs (current_plugin, "cve", field, "");
+
                   set_scanner_state (SCANNER_PLUGIN_LIST_BUGTRAQ_ID);
                   break;
                 }
               case SCANNER_PLUGIN_LIST_BUGTRAQ_ID:
                 {
-                  nvti_set_bid (current_plugin, field);
+                  if (strcmp (field, "NOBID"))
+                    nvti_add_refs (current_plugin, "bid", field, "");
+
                   set_scanner_state (SCANNER_PLUGIN_LIST_XREFS);
                   break;
                 }
               case SCANNER_PLUGIN_LIST_XREFS:
                 {
-                  nvti_set_xref (current_plugin, field);
+                  if (strcmp (field, "NOXREF"))
+                    nvti_add_refs (current_plugin, NULL, field, "");
+
                   set_scanner_state (SCANNER_PLUGIN_LIST_TAGS);
                   switch (parse_scanner_plugin_list_tags (&messages))
                     {
@@ -1347,10 +1353,10 @@ process_otp_scanner_input ()
 
                   {
                     char **splits;
-                    /* OID:PrefType:PrefName value */
+                    /* OID:PrefID:PrefType:PrefName value */
 
-                    splits = g_strsplit (field, ":", 3);
-                    if (splits && g_strv_length (splits) == 3
+                    splits = g_strsplit (field, ":", 4);
+                    if (splits && g_strv_length (splits) == 4
                         && ((strcmp (splits[0], OID_SSH_AUTH) == 0)
                             || (strcmp (splits[0], OID_SNMP_AUTH) == 0)
                             || (strcmp (splits[0], OID_ESXI_AUTH) == 0)

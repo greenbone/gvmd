@@ -649,6 +649,21 @@ manage_create_sql_functions ()
 
   /* Functions in pl/pgsql. */
 
+  /* Wrapping the "LOCK TABLE ... NOWAIT" like this will prevent
+   *  error messages in the PostgreSQL log if the lock is not available.
+   */
+  sql ("CREATE OR REPLACE FUNCTION try_exclusive_lock (regclass)"
+       " RETURNS integer AS $$"
+       " BEGIN"
+       "   EXECUTE 'LOCK TABLE \"'"
+       "           || $1"
+       "           || '\" IN ACCESS EXCLUSIVE MODE NOWAIT;';"
+       "   RETURN 1;"
+       " EXCEPTION WHEN lock_not_available THEN"
+       "   RETURN 0;"
+       " END;"
+       "$$ language 'plpgsql';");
+
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'public'"
@@ -3084,7 +3099,7 @@ create_tables ()
        "              (SELECT id FROM nvts"
        "               WHERE oid = results.nvt"
        "               AND"
-       "                (cve = 'NOCVE'"
+       "                (cve = ''"
        "                 OR cve NOT IN (SELECT cve FROM nvts"
        "                                WHERE oid"
        "                                      IN (SELECT source_name"
@@ -3110,7 +3125,7 @@ create_tables ()
        "             (SELECT id FROM nvts AS outer_nvts"
        "              WHERE oid = results.nvt"
        "              AND"
-       "              (cve = 'NOCVE'"
+       "              (cve = ''"
        "               OR NOT EXISTS"
        "                  (SELECT cve FROM nvts"
        "                   WHERE oid IN (SELECT source_name"
