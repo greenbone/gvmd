@@ -3216,6 +3216,9 @@ create_tables ()
   sql ("SELECT create_index ('nvts_by_solution_type',"
        "                     'nvts', 'solution_type');");
 
+  sql ("SELECT create_index ('vt_refs_by_vt_oid',"
+       "                     'vt_refs', 'vt_oid');");
+
   sql ("SELECT create_index ('permissions_by_name',"
        "                     'permissions', 'name');");
   sql ("SELECT create_index ('permissions_by_resource',"
