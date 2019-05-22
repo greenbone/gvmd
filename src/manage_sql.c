@@ -32598,9 +32598,25 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       qod_int = atoi (qod);
       if (qod_int <= 0 || qod_int > 100)
         qod_int = QOD_DEFAULT;
-      result = make_osp_result (task, host, nvt_id, type, desc, port ?: "",
-                                severity_str ?: severity, qod_int);
-      report_add_result (report, result);
+      if (port && strcmp (port, "general/Host_Details") == 0)
+        {
+          /* TODO: This should probably be handled by the "Host Detail"
+           *        result type with extra source info in OSP.
+           */
+          if (manage_report_host_detail (global_current_report,
+                                         host,
+                                         desc))
+            g_warning ("%s: Failed to add report detail for host '%s': %s",
+                      __FUNCTION__,
+                      host,
+                      desc);
+        }
+      else
+        {
+          result = make_osp_result (task, host, nvt_id, type, desc, port ?: "",
+                                    severity_str ?: severity, qod_int);
+          report_add_result (report, result);
+        }
       g_free (nvt_id);
       g_free (desc);
       g_free (severity_str);
