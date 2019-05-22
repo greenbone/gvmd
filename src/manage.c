@@ -3998,6 +3998,7 @@ delete_osp_scan (const char *report_id, const char *host, int port,
  * @param[in]   key_pub     Certificate.
  * @param[in]   key_priv    Private key.
  * @param[in]   details     1 for detailed report, 0 otherwise.
+ * @param[in]   pop_results 1 to pop results, 0 to leave results intact.
  * @param[out]  report_xml  Scan report.
  *
  * @return -1 on error, progress value between 0 and 100 on success.
@@ -4005,7 +4006,8 @@ delete_osp_scan (const char *report_id, const char *host, int port,
 static int
 get_osp_scan_report (const char *scan_id, const char *host, int port,
                      const char *ca_pub, const char *key_pub, const char
-                     *key_priv, int details, char **report_xml)
+                     *key_priv, int details, int pop_results,
+                     char **report_xml)
 {
   osp_connection_t *connection;
   int progress;
@@ -4017,7 +4019,8 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
       g_warning ("Couldn't connect to OSP scanner on %s:%d", host, port);
       return -1;
     }
-  progress = osp_get_scan (connection, scan_id, report_xml, details, &error);
+  progress = osp_get_scan_pop (connection, scan_id, report_xml, details,
+                               pop_results, &error);
   if (progress > 100 || progress < 0)
     {
       g_warning ("OSP get_scan %s: %s", scan_id, error);
@@ -4064,8 +4067,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           break;
         }
       int progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 0, NULL);
-      if (progress == -1)
+                                          key_priv, 0, 0, &report_xml);
+      if (progress < 0 || progress > 100)
         {
           result_t result = make_osp_result
                              (task, "", "", threat_message_type ("Error"),
@@ -4075,17 +4078,12 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           rc = -1;
           break;
         }
-      else if (progress < 100)
-        {
-          set_report_slave_progress (report, progress);
-          gvm_sleep (10);
-        }
-      else if (progress == 100)
+      else
         {
           /* Get the full OSP report. */
           progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 1, &report_xml);
-          if (progress != 100)
+                                          key_priv, 1, 1, &report_xml);
+          if (progress < 0 || progress > 100)
             {
               result_t result = make_osp_result
                                  (task, "", "", threat_message_type ("Error"),
@@ -4095,11 +4093,18 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               rc = -1;
               break;
             }
-          parse_osp_report (task, report, report_xml);
-          g_free (report_xml);
-          delete_osp_scan (scan_id, host, port, ca_pub, key_pub, key_priv);
-          rc = 0;
-          break;
+          else
+            {
+              set_report_slave_progress (report, progress);
+              parse_osp_report (task, report, report_xml);
+              g_free (report_xml);
+              if (progress == 100)
+                {
+                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                   key_priv);
+                  break;
+                }
+            }
         }
     }
 

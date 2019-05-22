@@ -32514,21 +32514,18 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   sql_begin_immediate ();
   /* Set the report's start and end times. */
   str = entity_attribute (entity, "start_time");
-  if (!str)
+  if (str)
     {
-      g_warning ("Missing start_time in OSP report %s", report_xml);
-      goto end_parse_osp_report;
+      start_time = atoi (str);
+      set_scan_start_time_epoch (report, start_time);
     }
-  start_time = atoi (str);
-  set_scan_start_time_epoch (report, start_time);
+
   str = entity_attribute (entity, "end_time");
-  if (!str)
+  if (str)
     {
-      g_warning ("Missing end_time in OSP report %s", report_xml);
-      goto end_parse_osp_report;
+      end_time = atoi (str);
+      set_scan_end_time_epoch (report, end_time);
     }
-  end_time = atoi (str);
-  set_scan_end_time_epoch (report, end_time);
 
   /* Insert results. */
   child = entity_child (entity, "results");
