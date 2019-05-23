@@ -4757,13 +4757,15 @@ run_task_setup (task_t task, config_t *config, target_t *target,
  *                          continue if stopped else start from beginning.
  * @param[in]   run_status  The task's run status.
  * @param[in]   last_stopped_report  Last stopped report of task.
+ * @param[in]   for_slave_scan  If the report is for a slave scan.
  *
  * @return 0 success, -1 error, -3 creating the report failed.
  */
 static int
 run_task_prepare_report (task_t task, char **report_id, int from,
                          task_status_t run_status,
-                         report_t *last_stopped_report)
+                         report_t *last_stopped_report,
+                         gboolean for_slave_scan)
 {
   if ((from == 1)
       || ((from == 2)
@@ -4781,7 +4783,10 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 
       /* Remove partial host information from the report. */
 
-      trim_partial_report (*last_stopped_report);
+      if (for_slave_scan)
+        trim_report (*last_stopped_report);
+      else
+        trim_partial_report (*last_stopped_report);
 
       /* Ensure the report is marked as requested. */
 
@@ -4863,7 +4868,7 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
   /* Prepare the report. */
 
   ret = run_task_prepare_report (task, report_id, from, run_status,
-                                 &last_stopped_report);
+                                 &last_stopped_report, TRUE);
   if (ret)
     {
       set_task_run_status (task, run_status);
@@ -5119,7 +5124,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
   /* Prepare the report. */
 
   ret = run_task_prepare_report (task, report_id, from, run_status,
-                                 &last_stopped_report);
+                                 &last_stopped_report, FALSE);
   if (ret)
     {
       set_task_run_status (task, run_status);
