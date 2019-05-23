@@ -631,20 +631,6 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
-  sql ("CREATE OR REPLACE FUNCTION regexp (text, text)"
-       " RETURNS boolean"
-       " AS '%s/libgvm-pg-server', 'sql_regexp'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
-
-  if (sql_int ("SELECT count(*) FROM pg_operator"
-               " WHERE oprname = '?~#';")
-      == 0)
-    {
-      sql ("CREATE OPERATOR ?~#"
-          " (PROCEDURE = regexp, LEFTARG = text, RIGHTARG = text);");
-    }
-
   sql ("RESET role;");
 
   /* Functions in pl/pgsql. */
