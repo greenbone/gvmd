@@ -1506,58 +1506,58 @@ get_tag (entity_t vt)
 static int
 update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
 {
-  entity_t vt_params, vt_param;
+  entity_t params, param;
   entities_t children;
 
   assert (preferences);
 
-  vt_params = entity_child (vt, "vt_params");
-  if (vt_params == NULL)
+  params = entity_child (vt, "params");
+  if (params == NULL)
     return 0;
 
-  children = vt_params->entities;
-  while ((vt_param = first_entity (children)))
+  children = params->entities;
+  while ((param = first_entity (children)))
     {
-      if (strcasecmp (entity_name (vt_param), "vt_param") == 0)
+      if (strcasecmp (entity_name (param), "param") == 0)
         {
           const gchar *type, *id;
           entity_t name, def;
 
-          type = entity_attribute (vt_param, "type");
-          id = entity_attribute (vt_param, "id");
-          name = entity_child (vt_param, "name");
-          def = entity_child (vt_param, "default");
+          type = entity_attribute (param, "type");
+          id = entity_attribute (param, "id");
+          name = entity_child (param, "name");
+          def = entity_child (param, "default");
 
           if (type == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: VT_PARAM missing type attribute", __FUNCTION__);
-              print_entity_to_string (vt_param, debug);
-              g_warning ("%s: VT_PARAM: %s", __FUNCTION__, debug->str);
+              g_warning ("%s: PARAM missing type attribute", __FUNCTION__);
+              print_entity_to_string (param, debug);
+              g_warning ("%s: PARAM: %s", __FUNCTION__, debug->str);
               g_string_free (debug, TRUE);
             }
           else if (id == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: VT_PARAM missing id attribute", __FUNCTION__);
-              print_entity_to_string (vt_param, debug);
-              g_warning ("%s: VT_PARAM: %s", __FUNCTION__, debug->str);
+              g_warning ("%s: PARAM missing id attribute", __FUNCTION__);
+              print_entity_to_string (param, debug);
+              g_warning ("%s: PARAM: %s", __FUNCTION__, debug->str);
               g_string_free (debug, TRUE);
             }
           else if (name == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: VT_PARAM missing NAME", __FUNCTION__);
-              print_entity_to_string (vt_param, debug);
-              g_warning ("%s: VT_PARAM: %s", __FUNCTION__, debug->str);
+              g_warning ("%s: PARAM missing NAME", __FUNCTION__);
+              print_entity_to_string (param, debug);
+              g_warning ("%s: PARAM: %s", __FUNCTION__, debug->str);
               g_string_free (debug, TRUE);
             }
           else if (def == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: VT_PARAM missing DEFAULT", __FUNCTION__);
-              print_entity_to_string (vt_param, debug);
-              g_warning ("%s: VT_PARAM: %s", __FUNCTION__, debug->str);
+              g_warning ("%s: PARAM missing DEFAULT", __FUNCTION__);
+              print_entity_to_string (param, debug);
+              g_warning ("%s: PARAM: %s", __FUNCTION__, debug->str);
               g_string_free (debug, TRUE);
             }
           else
