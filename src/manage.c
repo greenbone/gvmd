@@ -77,6 +77,7 @@
 #include <gvm/base/cvss.h>
 #include <gvm/base/hosts.h>
 #include <gvm/base/proctitle.h>
+#include <gvm/osp/osp.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
@@ -4220,7 +4221,7 @@ target_osp_ssh_credential (target_t target)
   if (credential)
     {
       iterator_t iter;
-      char *ssh_port;
+      const char *type, *ssh_port;
       osp_credential_t *osp_credential;
 
       init_credential_iterator_one (&iter, credential);
@@ -4230,22 +4231,23 @@ target_osp_ssh_credential (target_t target)
           cleanup_iterator (&iter);
           return NULL;
         }
-      if (strcmp (credential_iterator_type (&iter), "up"))
+      type = credential_iterator_type (&iter);
+      if (strcmp (type, "up"))
         {
           g_warning ("%s: SSH Credential not a user/pass pair.", __FUNCTION__);
           cleanup_iterator (&iter);
           return NULL;
         }
 
-      ssh_port = target_ssh_port (target);
-      osp_credential
-        = osp_credential_new ("up",
-                              "ssh",
-                              ssh_port,
-                              credential_iterator_login (&iter),
-                              credential_iterator_password (&iter));
+      ssh_port = target_iterator_ssh_port (&iter);
+      osp_credential = osp_credential_new (type, "ssh", ssh_port);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter));
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter));
       cleanup_iterator (&iter);
-      g_free (ssh_port);
       return osp_credential;
     }
   return NULL;
@@ -4282,12 +4284,13 @@ target_osp_smb_credential (target_t target)
           return NULL;
         }
 
-      osp_credential
-        = osp_credential_new ("up",
-                              "smb",
-                              NULL,
-                              credential_iterator_login (&iter),
-                              credential_iterator_password (&iter));
+      osp_credential = osp_credential_new ("up", "smb", NULL);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter));
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter));
       cleanup_iterator (&iter);
       return osp_credential;
     }
