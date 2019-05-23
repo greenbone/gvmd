@@ -1597,7 +1597,7 @@ static int
 update_nvt_from_vt (entity_t vt, GList **preferences)
 {
   const char *id;
-  entity_t name, vt_refs, custom, family, category;
+  entity_t name, refs, custom, family, category;
   gchar *cve, *bid, *xref, *tag;
   gchar *cvss_base, *parsed_tags;
 
@@ -1617,16 +1617,16 @@ update_nvt_from_vt (entity_t vt, GList **preferences)
       return -1;
     }
 
-  vt_refs = entity_child (vt, "vt_refs");
-  if (vt_refs == NULL)
+  refs = entity_child (vt, "refs");
+  if (refs == NULL)
     {
-      g_warning ("%s: VT missing VT_REFS", __FUNCTION__);
+      g_warning ("%s: VT missing REFS", __FUNCTION__);
       return -1;
     }
 
-  cve = get_cve (vt_refs);
-  bid = get_bid (vt_refs);
-  xref = get_xref (vt_refs);
+  cve = get_cve (refs);
+  bid = get_bid (refs);
+  xref = get_xref (refs);
   tag = get_tag (vt);
 
   custom = entity_child (vt, "custom");
