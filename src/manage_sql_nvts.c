@@ -1408,7 +1408,7 @@ get_tag (entity_t vt)
 
       type = entity_attribute (child, "type");
       if (type == NULL)
-        g_warning ("%s: SOLUTION missing type", __FUNCTION__);
+        g_debug ("%s: SOLUTION missing type", __FUNCTION__);
       else
         g_string_append_printf (tag, "|solution_type=%s", type);
     }
@@ -1453,7 +1453,7 @@ get_tag (entity_t vt)
 
       qod_type = entity_attribute (child, "qod_type");
       if (qod_type == NULL)
-        g_warning ("%s: DETECTION missing qod_type", __FUNCTION__);
+        g_debug ("%s: DETECTION missing qod_type", __FUNCTION__);
       else
         {
           g_string_append_printf (tag,
