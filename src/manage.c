@@ -4232,9 +4232,10 @@ target_osp_ssh_credential (target_t target)
           return NULL;
         }
       type = credential_iterator_type (&iter);
-      if (strcmp (type, "up"))
+      if (strcmp (type, "up") && strcmp (type, "usk"))
         {
-          g_warning ("%s: SSH Credential not a user/pass pair.", __FUNCTION__);
+          g_warning ("%s: SSH Credential not a user/pass pair"
+                     " or user/ssh key.", __FUNCTION__);
           cleanup_iterator (&iter);
           return NULL;
         }
@@ -4247,6 +4248,13 @@ target_osp_ssh_credential (target_t target)
       osp_credential_set_auth_data (osp_credential,
                                     "password",
                                     credential_iterator_password (&iter));
+      if (strcmp (type, "usk") == 0)
+        {
+          const char *private_key = credential_iterator_private_key (&iter);
+          osp_credential_set_auth_data (osp_credential,
+                                        "private",
+                                        private_key);
+        }
       cleanup_iterator (&iter);
       return osp_credential;
     }
