@@ -4306,6 +4306,114 @@ target_osp_smb_credential (target_t target)
 }
 
 /**
+ * @brief Get the SMB credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_esxi_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_esxi_credential (target);
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: ESXi Credential not found.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (strcmp (credential_iterator_type (&iter), "up"))
+        {
+          g_warning ("%s: ESXi Credential not a user/pass pair.",
+                     __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      osp_credential = osp_credential_new ("up", "esxi", NULL);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter));
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter));
+      cleanup_iterator (&iter);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Get the SMB credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_snmp_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_credential (target, "snmp");
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: SNMP Credential not found.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (strcmp (credential_iterator_type (&iter), "snmp"))
+        {
+          g_warning ("%s: SNMP Credential not of type 'snmp'.",
+                     __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      osp_credential = osp_credential_new ("snmp", "snmp", NULL);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "community",
+                                    credential_iterator_community (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "auth_algorithm",
+                                    credential_iterator_auth_algorithm (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "privacy_algorithm",
+                                    credential_iterator_privacy_algorithm
+                                      (&iter) ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "privacy_password",
+                                    credential_iterator_privacy_password
+                                      (&iter) ?: "");
+      cleanup_iterator (&iter);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
  * @brief Launch an OpenVAS via OSP task.
  *
  * @param[in]   task        The task.
@@ -4324,7 +4432,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   osp_target_t *osp_target;
   GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
-  osp_credential_t *ssh_credential, *smb_credential;
+  osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+  osp_credential_t *snmp_credential;
   GHashTable *scanner_options;
   int ret;
   config_t config;
@@ -4348,6 +4457,14 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   smb_credential = target_osp_smb_credential (target);
   if (smb_credential)
     osp_target_add_credential (osp_target, smb_credential);
+
+  esxi_credential = target_osp_esxi_credential (target);
+  if (esxi_credential)
+    osp_target_add_credential (osp_target, esxi_credential);
+
+  snmp_credential = target_osp_snmp_credential (target);
+  if (snmp_credential)
+    osp_target_add_credential (osp_target, snmp_credential);
 
   /* Setup general scanner preferences */
   scanner_options
