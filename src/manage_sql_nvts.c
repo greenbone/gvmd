@@ -1552,14 +1552,6 @@ update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
               g_warning ("%s: PARAM: %s", __FUNCTION__, debug->str);
               g_string_free (debug, TRUE);
             }
-          else if (def == NULL)
-            {
-              GString *debug = g_string_new ("");
-              g_warning ("%s: PARAM missing DEFAULT", __FUNCTION__);
-              print_entity_to_string (param, debug);
-              g_warning ("%s: PARAM: %s", __FUNCTION__, debug->str);
-              g_string_free (debug, TRUE);
-            }
           else
             {
               gchar *full_name;
@@ -1574,7 +1566,10 @@ update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
               blank_control_chars (full_name);
               preference = g_malloc0 (sizeof (preference_t));
               preference->name = full_name;
-              preference->value = g_strdup (entity_text (def));
+              if (def)
+                preference->value = g_strdup (entity_text (def));
+              else
+                preference->value = g_strdup ("");
               *preferences = g_list_prepend (*preferences, preference);
             }
         }
