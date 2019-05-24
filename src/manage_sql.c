@@ -49143,10 +49143,20 @@ osp_scanner_connect (scanner_t scanner)
 
   assert (scanner);
   host = scanner_host (scanner);
-  port = scanner_port (scanner);
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
+  if (host && *host == '/')
+    {
+      port = 0;
+      ca_pub = NULL;
+      key_pub = NULL;
+      key_priv = NULL;
+    }
+  else
+    {
+      port = scanner_port (scanner);
+      ca_pub = scanner_ca_pub (scanner);
+      key_pub = scanner_key_pub (scanner);
+      key_priv = scanner_key_priv (scanner);
+    }
   connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
 
   g_free (host);
