@@ -762,6 +762,7 @@ valid_db_resource_type (const char* type)
   if (type == NULL)
     return 0;
 
+  /* These must match the Postgres function valid_db_resource_type. */
   return (strcasecmp (type, "agent") == 0)
          || (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "config") == 0)

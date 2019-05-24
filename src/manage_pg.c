@@ -625,13 +625,48 @@ manage_create_sql_functions ()
        " IMMUTABLE;",
        GVM_LIB_INSTALL_DIR);
 
-  sql ("CREATE OR REPLACE FUNCTION valid_db_resource_type (text)"
-       " RETURNS boolean"
-       " AS '%s/libgvm-pg-server', 'sql_valid_db_resource_type'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
-
   sql ("RESET role;");
+
+  /* Functions in SQL used by pl/pgsql functions. */
+
+  sql ("CREATE OR REPLACE FUNCTION valid_db_resource_type (text)"
+       " RETURNS boolean AS $$"
+       "  SELECT CASE"
+       /* These must match the C function valid_db_resource_type. */
+       "         WHEN $1 = 'agent'"
+       "              OR $1 = 'alert'"
+       "              OR $1 = 'config'"
+       "              OR $1 = 'cpe'"
+       "              OR $1 = 'credential'"
+       "              OR $1 = 'cve'"
+       "              OR $1 = 'cert'"
+       "              OR $1 = 'dfn'"
+       "              OR $1 = 'filter'"
+       "              OR $1 = 'group'"
+       "              OR $1 = 'host'"
+       "              OR $1 = 'os'"
+       "              OR $1 = 'note'"
+       "              OR $1 = 'nvt'"
+       "              OR $1 = 'ovaldef'"
+       "              OR $1 = 'override'"
+       "              OR $1 = 'port'"
+       "              OR $1 = 'permission'"
+       "              OR $1 = 'report'"
+       "              OR $1 = 'report'"
+       "              OR $1 = 'result'"
+       "              OR $1 = 'role'"
+       "              OR $1 = 'scanner'"
+       "              OR $1 = 'schedule'"
+       "              OR $1 = 'slave'"
+       "              OR $1 = 'tag'"
+       "              OR $1 = 'target'"
+       "              OR $1 = 'task'"
+       "              OR $1 = 'ticket'"
+       "              OR $1 = 'user'"
+       "         THEN true"
+       "         ELSE false"
+       "         END;"
+       "$$ LANGUAGE SQL;");
 
   /* Functions in pl/pgsql. */
 
