@@ -32603,13 +32603,19 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           /* TODO: This should probably be handled by the "Host Detail"
            *        result type with extra source info in OSP.
            */
-          if (manage_report_host_detail (global_current_report,
-                                         host,
-                                         desc))
+          if (manage_report_host_detail (report, host, desc))
             g_warning ("%s: Failed to add report detail for host '%s': %s",
                       __FUNCTION__,
                       host,
                       desc);
+        }
+      else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_START") == 0))
+        {
+          set_scan_host_start_time_otp (report, host, desc);
+        }
+      else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_END") == 0))
+        {
+          set_scan_host_end_time_otp (report, host, desc);
         }
       else
         {
