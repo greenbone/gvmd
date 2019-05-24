@@ -96,4 +96,7 @@ check_config_families ();
 void
 manage_sync_nvts (int (*) ());
 
+int
+manage_update_nvt_cache_osp (const gchar *);
+
 #endif /* not _GVMD_MANAGE_SQL_NVTS_H */
