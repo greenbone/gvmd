@@ -1898,7 +1898,7 @@ main (int argc, char **argv)
      '\0',
      0,
      G_OPTION_ARG_INT,
-     &secinfo_commit_size,
+     &slave_commit_size,
      "During slave updates, commit after every <number> updated results and"
      " hosts, 0 for unlimited",
      "<number>"},
