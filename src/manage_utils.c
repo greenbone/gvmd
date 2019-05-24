@@ -1545,7 +1545,7 @@ icalendar_next_time_from_rdates (GPtrArray *rdates,
       iter_time = icaltime_as_timet_with_zone (*iter_time_ical, tz);
       time_diff = iter_time - ref_time;
 
-      // Cases: previous (offset -1): lastest before reference
+      // Cases: previous (offset -1): latest before reference
       //        next     (offset  0): earliest after reference
       if ((periods_offset == -1 && time_diff < 0 && time_diff > old_diff)
           || (periods_offset == 0 && time_diff > 0 && time_diff < old_diff))

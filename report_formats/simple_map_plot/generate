@@ -21,7 +21,7 @@
 #
 # This mapgenerator creates a PNG image showing hosts on a worldmap.
 # The first step is to create a CSV file from the GMP report using xsltproc.
-# Then the file is merged with the file contianing the location information.
+# Then the file is merged with the file containing the location information.
 # To generate the map, the resulting CSV file is converted into the shape format
 # used by MapServer and then drawn to the image file using shp2img.
 
