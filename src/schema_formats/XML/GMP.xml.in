@@ -26355,7 +26355,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         respective REF type is the former prefix of the XREF, for example "URL".
       </p>
       <p>
-        The "NOCVE", "NOXREF" and "NOBID" strings that previously indicated the absense
+        The "NOCVE", "NOXREF" and "NOBID" strings that previously indicated the absence
         of a CVE, XREF or BID are not applied anymore.
       </p>
     </description>
