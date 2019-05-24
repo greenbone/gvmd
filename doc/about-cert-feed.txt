@@ -14,7 +14,7 @@ Response Teams (CERTs). Many CERTs act regional and publish the advisories
 in local languages. The regional focus is a helpful complementation of
 the english CVE publications. In most cases, CERT advisories are
 referring to one or more CVEs and therfore can be linked
-into the vulerability management, for example into scan results.
+into the vulnerability management, for example into scan results.
 
 In the following, relevant aspects on format and structure are documented
 for the integrated CERTs.
