@@ -1581,6 +1581,127 @@ update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
 }
 
 /**
+ * @brief Create NVTI structure from VT XML.
+ *
+ * @param[in]  vt           OSP GET_VTS VT element.
+ *
+ * @return The NVTI object on success (needs to be free'd), NULL on error.
+ */
+static nvti_t *
+nvti_from_vt (entity_t vt)
+{
+  nvti_t *nvti = nvti_new ();
+  const char *id;
+  entity_t name, refs, ref, custom, family, category;
+  entities_t children;
+  gchar *tag, *cvss_base, *parsed_tags;
+
+  id = entity_attribute (vt, "id");
+  if (id == NULL)
+    {
+      g_warning ("%s: VT missing id attribute", __FUNCTION__);
+      nvti_free (nvti);
+      return NULL;
+    }
+  nvti_set_oid (nvti, id);
+
+  name = entity_child (vt, "name");
+  if (name == NULL)
+    {
+      g_warning ("%s: VT missing NAME", __FUNCTION__);
+      nvti_free (nvti);
+      return NULL;
+    }
+  nvti_set_name (nvti, entity_text (name));
+
+  refs = entity_child (vt, "refs");
+  if (refs == NULL)
+    {
+      g_warning ("%s: VT missing REFS", __FUNCTION__);
+      nvti_free (nvti);
+      return NULL;
+    }
+
+  children = refs->entities;
+  while ((ref = first_entity (children)))
+    {
+      const gchar *ref_type;
+
+      ref_type = entity_attribute (ref, "type");
+      if (ref_type == NULL)
+        {
+          GString *debug = g_string_new ("");
+          g_warning ("%s: REF missing type attribute", __FUNCTION__);
+          print_entity_to_string (ref, debug);
+          g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+          g_string_free (debug, TRUE);
+        }
+      else
+        {
+          const gchar *ref_id;
+
+          ref_id = entity_attribute (ref, "id");
+          if (ref_id == NULL)
+            {
+              GString *debug = g_string_new ("");
+              g_warning ("%s: REF missing id attribute", __FUNCTION__);
+              print_entity_to_string (ref, debug);
+              g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+              g_string_free (debug, TRUE);
+            }
+          else
+            {
+              nvti_add_vtref (nvti, vtref_new (ref_type, ref_id, NULL));
+            }
+        }
+
+      children = next_entities (children);
+    }
+
+  tag = get_tag (vt);
+  nvti_set_tag (nvti, tag);
+
+  custom = entity_child (vt, "custom");
+  if (custom == NULL)
+    {
+      g_warning ("%s: VT missing CUSTOM", __FUNCTION__);
+      nvti_free (nvti);
+      g_free (tag);
+      return NULL;
+    }
+
+  family = entity_child (custom, "family");
+  if (family == NULL)
+    {
+      g_warning ("%s: VT/CUSTOM missing FAMILY", __FUNCTION__);
+      nvti_free (nvti);
+      g_free (tag);
+      return NULL;
+    }
+  nvti_set_family (nvti, entity_text (family));
+
+  category = entity_child (custom, "category");
+  if (category == NULL)
+    {
+      g_warning ("%s: VT/CUSTOM missing CATEGORY", __FUNCTION__);
+      nvti_free (nvti);
+      g_free (tag);
+      return NULL;
+    }
+  nvti_set_category (nvti, atoi (entity_text (category)));
+
+  parse_tags (tag, &parsed_tags, &cvss_base);
+
+  nvti_set_cvss_base (nvti, cvss_base);
+
+  g_free (parsed_tags);
+  g_free (cvss_base);
+  g_free (tag);
+
+  return nvti;
+}
+
+/**
  * @brief Update NVT from VT XML.
  *
  * @param[in]  vt           OSP GET_VTS VT element.
@@ -1711,12 +1832,15 @@ update_nvts_from_vts (entity_t *get_vts_response,
   children = vts->entities;
   while ((vt = first_entity (children)))
     {
+      nvti_t *nvti = nvti_from_vt (vt);
+
       if (update_nvt_from_vt (vt, &preferences))
         {
           sql_rollback ();
           return;
         }
 
+      nvti_free (nvti);
       children = next_entities (children);
     }
 
