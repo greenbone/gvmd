@@ -29,7 +29,6 @@
 
 #include <glib.h>
 
-
 /* Helpers. */
 
 int
@@ -87,22 +86,22 @@ gchar *
 sql_insert (const char *);
 
 void
-sql (char * sql, ...);
+sql (char *sql, ...);
 
 void
 sqli (resource_t *, char *, ...);
 
 int
-sql_error (char* sql, ...);
+sql_error (char *sql, ...);
 
 int
-sql_giveup (char * sql, ...);
+sql_giveup (char *sql, ...);
 
 void
-sql_quiet (char * sql, ...);
+sql_quiet (char *sql, ...);
 
 double
-sql_double (char* sql, ...);
+sql_double (char *sql, ...);
 
 int
 sql_int (char *, ...);
@@ -111,15 +110,14 @@ char *
 sql_string (char *, ...);
 
 int
-sql_int64 (long long int * ret, char *, ...);
+sql_int64 (long long int *ret, char *, ...);
 
 long long int
-sql_int64_0 (char* sql, ...);
+sql_int64_0 (char *sql, ...);
 
 void
 sql_rename_column (const char *, const char *, const char *, const char *);
 
-
 /* Transactions. */
 
 void
@@ -140,44 +138,42 @@ sql_commit ();
 void
 sql_rollback ();
 
-
 /* Iterators. */
 
 /* These functions are for "internal" use.  They may only be accessed by code
  * that is allowed to run SQL statements directly. */
 
 void
-init_prepared_iterator (iterator_t*, sql_stmt_t*);
+init_prepared_iterator (iterator_t *, sql_stmt_t *);
 
 void
-init_iterator (iterator_t*, const char*, ...);
+init_iterator (iterator_t *, const char *, ...);
 
 double
-iterator_double (iterator_t*, int);
+iterator_double (iterator_t *, int);
 
 int
-iterator_int (iterator_t*, int);
+iterator_int (iterator_t *, int);
 
 long long int
-iterator_int64 (iterator_t*, int);
+iterator_int64 (iterator_t *, int);
 
 int
-iterator_null (iterator_t*, int);
+iterator_null (iterator_t *, int);
 
-const char*
-iterator_string (iterator_t*, int);
+const char *
+iterator_string (iterator_t *, int);
 
-const char*
-iterator_column_name (iterator_t*, int);
+const char *
+iterator_column_name (iterator_t *, int);
 
 int
-iterator_column_count (iterator_t*);
+iterator_column_count (iterator_t *);
 
-
 /* Prepared statements. */
 
 sql_stmt_t *
-sql_prepare (const char* sql, ...);
+sql_prepare (const char *sql, ...);
 
 int
 sql_bind_blob (sql_stmt_t *, int, const void *, int);
