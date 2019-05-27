@@ -57,6 +57,31 @@ Migrating from SQLite to PostgreSQL
 3 Run "greenbone-certdata-sync".
 
 
+Switching between releases
+--------------------------
+
+There are two factors for developers to consider when switching between
+releases if they are using Postgres as the backend:
+
+1 gvmd uses C server-side extensions that link to gvm-libs, so Postgres
+  needs to be able to find the version of gvm-libs that goes with gvmd.
+
+  One way to do this is to modify ld.so.conf and run ldconfig after
+  installing the desired gvmd version.
+
+2 The Postgres database "gvmd" must be the version that is supported by
+  gvmd.  If it is too high, gvmd will refuse to run.  If it is too low
+  gvmd will only run if the database is migrated to the higher version.
+
+  One way to handle this is to switch between different versions of the
+  database using RENAME:
+
+     sudo -u postgres psql -q --command='ALTER DATABASE gvmd RENAME TO gvmd_10;'
+     sudo -u postgres psql -q --command='ALTER DATABASE gvmd_master RENAME TO gvmd;'
+
+  Note that for OpenVAS-9 the database name is "tasks", so this step is not
+  necessary.
+
 Analyzing the size of the tables
 --------------------------------
 
