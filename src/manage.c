@@ -9259,6 +9259,19 @@ gvm_migrate_secinfo (int feed_type)
   return ret;
 }
 
+/**
+ * @brief Update NVT cache using OSP.
+ *
+ * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
+ *
+ * @return 0 success, -1 error, 2 scanner still loading.
+ */
+int
+manage_update_nvts_osp (const gchar *update_socket)
+{
+  return manage_update_nvt_cache_osp (update_socket);
+}
+
 
 /* Wizards. */
 

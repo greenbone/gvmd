@@ -297,7 +297,7 @@ is_feed_current () {
     fi
     remove_tmp_key
   else
-    log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
     eval "$RSYNC -ltvrP \"$COMMUNITY_SCAP_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
     if [ $? -ne 0 ]
     then
@@ -432,7 +432,7 @@ sync_scapdata(){
     done
     log_notice "Synchronization with the Greenbone SCAP data Repository successful."
   else
-    log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
     do_sync_community_feed
   fi
 

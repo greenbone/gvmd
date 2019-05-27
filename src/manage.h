@@ -2658,6 +2658,14 @@ int
 manage_system_report (const char *, const char *, const char *, const char *,
                       const char *, char **);
 
+
+/* Scanners. */
+
+/**
+ * @brief Default for slave update commit size.
+ */
+#define SLAVE_COMMIT_SIZE_DEFAULT 0
+
 int
 manage_create_scanner (GSList *, const char *, const char *, const char *,
                        const char *, const char *, const char *, const char *,
@@ -2817,6 +2825,9 @@ osp_scanner_connect (scanner_t);
 
 int
 verify_scanner (const char *, char **);
+
+void
+set_slave_commit_size (int);
 
 /* Scheduling. */
 
@@ -4189,6 +4200,9 @@ gvm_get_sync_script_description (const gchar *, gchar **);
 
 gboolean
 gvm_get_sync_script_feed_version (const gchar *, gchar **);
+
+int
+manage_update_nvts_osp (const gchar *);
 
 
 /* Wizards. */

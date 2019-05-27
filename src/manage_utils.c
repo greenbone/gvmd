@@ -786,7 +786,6 @@ valid_db_resource_type (const char* type)
          || (strcasecmp (type, "role") == 0)
          || (strcasecmp (type, "scanner") == 0)
          || (strcasecmp (type, "schedule") == 0)
-         || (strcasecmp (type, "slave") == 0)
          || (strcasecmp (type, "tag") == 0)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
@@ -1545,7 +1544,7 @@ icalendar_next_time_from_rdates (GPtrArray *rdates,
       iter_time = icaltime_as_timet_with_zone (*iter_time_ical, tz);
       time_diff = iter_time - ref_time;
 
-      // Cases: previous (offset -1): lastest before reference
+      // Cases: previous (offset -1): latest before reference
       //        next     (offset  0): earliest after reference
       if ((periods_offset == -1 && time_diff < 0 && time_diff > old_diff)
           || (periods_offset == 0 && time_diff > 0 && time_diff < old_diff))

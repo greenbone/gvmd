@@ -299,6 +299,11 @@ static int update_in_progress = 0;
  */
 GSList *log_config = NULL;
 
+/**
+ * @brief File socket for OSP NVT update.  NULL to update via OTP.
+ */
+static gchar *osp_update_socket = NULL;
+
 
 /* Helpers. */
 
@@ -1174,6 +1179,21 @@ update_nvt_cache (int register_cleanup)
 }
 
 /**
+ * @brief Update the NVT Cache using OSP.
+ *
+ * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
+ *
+ * @return 0 success.
+ */
+static int
+update_nvt_cache_osp (const gchar *update_socket)
+{
+  proctitle_set ("gvmd: OSP: Updating NVT cache");
+
+  return manage_update_nvts_osp (update_socket);
+}
+
+/**
  * @brief Update NVT cache in forked child, retrying if scanner loading.
  *
  * Forks a child process to rebuild the nvt cache, retrying again if the
@@ -1204,9 +1224,10 @@ update_nvt_cache_retry ()
       else if (child_pid == 0)
         {
           /* Child: Try reload. */
-          int ret = update_nvt_cache (0);
-
-          exit (ret);
+          if (osp_update_socket)
+            exit (update_nvt_cache_osp (osp_update_socket));
+          else
+            exit (update_nvt_cache (0));
         }
     }
 }
@@ -1696,6 +1717,7 @@ main (int argc, char** argv)
   static gchar *scanner_key_priv = NULL;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
+  static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
@@ -1705,6 +1727,7 @@ main (int argc, char** argv)
   static gchar *listen_mode = NULL;
   static gchar *new_password = NULL;
   static gchar *optimize = NULL;
+  static gchar *osp_vt_update = NULL;
   static gchar *password = NULL;
   static gchar *manager_address_string = NULL;
   static gchar *manager_address_string_2 = NULL;
@@ -1768,6 +1791,14 @@ main (int argc, char** argv)
         { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
         { "secinfo-commit-size", '\0', 0, G_OPTION_ARG_INT, &secinfo_commit_size, "During CERT and SCAP sync, commit updates to the database every <number> items, 0 for unlimited, default: " G_STRINGIFY (SECINFO_COMMIT_SIZE_DEFAULT), "<number>" },
         { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT, &schedule_timeout, "Time out tasks that are more than <time> minutes overdue. -1 to disable, 0 for minimum time, default: " G_STRINGIFY (SCHEDULE_TIMEOUT_DEFAULT), "<time>" },
+        {"slave-commit-size",
+         '\0',
+         0,
+         G_OPTION_ARG_INT,
+         &slave_commit_size,
+         "During slave updates, commit after every <number> updated results and"
+         " hosts, 0 for unlimited",
+         "<number>"},
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "inheritor", '\0', 0, G_OPTION_ARG_STRING, &inheritor, "Have <username> inherit from deleted user.", "<username>" },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
@@ -1791,6 +1822,9 @@ main (int argc, char** argv)
           G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,
           &decrypt_all_credentials, NULL, NULL },
         { "new-password", '\0', 0, G_OPTION_ARG_STRING, &new_password, "Modify user's password and exit.", "<password>" },
+        { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING, &osp_vt_update,
+          "Unix socket for OSP NVT update.  Default is to do an OTP update.",
+          "<scanner-socket>" },
         { "optimize", '\0', 0, G_OPTION_ARG_STRING, &optimize, "Run an optimization: vacuum, analyze, cleanup-config-prefs, cleanup-port-names, cleanup-result-severities, cleanup-schedule-times, rebuild-report-cache or update-report-cache.", "<name>" },
         { "password", '\0', 0, G_OPTION_ARG_STRING, &password, "Password, for --create-user.", "<password>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
@@ -1848,6 +1882,9 @@ main (int argc, char** argv)
   /* Set schedule_timeout */
 
   set_schedule_timeout (schedule_timeout);
+
+  /* Set slave commit size */
+  set_slave_commit_size (slave_commit_size);
 
   /* Set SecInfo update commit size */
 
@@ -2075,6 +2112,9 @@ main (int argc, char** argv)
    *
    * These can run concurrently, so they set the shared lock gvm-helping, and
    * release gvm-checking, via option_lock. */
+
+  if (osp_vt_update)
+    osp_update_socket = osp_vt_update;
 
   if (backup_database)
     {
