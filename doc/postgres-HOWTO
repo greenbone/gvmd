@@ -82,6 +82,7 @@ releases if they are using Postgres as the backend:
   Note that for OpenVAS-9 the database name is "tasks", so this step is not
   necessary.
 
+
 Analyzing the size of the tables
 --------------------------------
 
