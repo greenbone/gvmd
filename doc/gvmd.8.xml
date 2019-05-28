@@ -48,6 +48,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <options>
     <option>
+      <p><opt>-h, --help</opt></p>
+      <optdesc>
+        <p>Show help options.</p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--backup</opt></p>
       <optdesc>
         <p>Backup the database.</p>
