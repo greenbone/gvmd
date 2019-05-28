@@ -20741,6 +20741,7 @@ result_nvt_notice (const gchar *nvt)
  *
  * @param[in]  task         The task associated with the result.
  * @param[in]  host         Target host of result.
+ * @param[in]  hostname     Hostname of the result.
  * @param[in]  nvt          The uuid of oval definition that produced the
  *                          result, a title for the result otherwise.
  * @param[in]  type         Type of result.  "Alarm", etc.
@@ -20752,12 +20753,12 @@ result_nvt_notice (const gchar *nvt)
  * @return A result descriptor for the new result, 0 if error.
  */
 result_t
-make_osp_result (task_t task, const char *host, const char *nvt,
-                 const char *type, const char *description,
+make_osp_result (task_t task, const char *host, const char *hostname,
+                 const char *nvt, const char *type, const char *description,
                  const char *port, const char *severity, int qod)
 {
   char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
-  char *quoted_port;
+  char *quoted_port, *quoted_hostname;
 
   assert (task);
   assert (type);
@@ -20767,6 +20768,7 @@ make_osp_result (task_t task, const char *host, const char *nvt,
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
+  quoted_hostname = sql_quote (hostname ? hostname : "");
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -20803,17 +20805,18 @@ make_osp_result (task_t task, const char *host, const char *nvt,
     result_severity = sql_quote (severity);
   result_nvt_notice (quoted_nvt);
   sql ("INSERT into results"
-       " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
-       "  qod, qod_type, description, uuid)"
-       " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
-       "         %d, '', '%s', make_uuid ());",
-       task, host ?: "", quoted_port, quoted_nvt, nvt_revision ?: "",
-       result_severity ?: "0", type, qod, quoted_desc);
+       " (owner, date, task, host, hostname, port, nvt,"
+       "  nvt_version, severity, type, qod, qod_type, description, uuid)"
+       " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s',"
+       "         '%s', '%s', '%s', %d, '', '%s', make_uuid ());",
+       task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
+       nvt_revision ?: "", result_severity ?: "0", type, qod, quoted_desc);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
   g_free (quoted_nvt);
   g_free (quoted_port);
+  g_free (quoted_hostname);
 
   return sql_last_insert_id ();
 }
@@ -32544,7 +32547,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   while (results)
     {
       result_t result;
-      const char *type, *name, *severity, *host, *test_id, *port, *qod;
+      const char *type, *name, *severity, *host, *hostname, *test_id, *port;
+      const char *qod;
       char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
       entity_t r_entity = results->data;
       int qod_int;
@@ -32561,6 +32565,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       severity = entity_attribute (r_entity, "severity");
       test_id = entity_attribute (r_entity, "test_id");
       host = entity_attribute (r_entity, "host");
+      hostname = entity_attribute (r_entity, "hostname");
       port = entity_attribute (r_entity, "port") ?: "";
       qod = entity_attribute (r_entity, "qod") ?: "";
       if (!name || !type || !severity || !test_id || !host)
@@ -32624,8 +32629,15 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
         }
       else
         {
-          result = make_osp_result (task, host, nvt_id, type, desc, port ?: "",
-                                    severity_str ?: severity, qod_int);
+          result = make_osp_result (task,
+                                    host,
+                                    hostname,
+                                    nvt_id,
+                                    type,
+                                    desc,
+                                    port ?: "",
+                                    severity_str ?: severity,
+                                    qod_int);
           report_add_result (report, result);
         }
       g_free (nvt_id);

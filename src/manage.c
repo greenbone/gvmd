@@ -4072,7 +4072,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
       if (progress < 0 || progress > 100)
         {
           result_t result = make_osp_result
-                             (task, "", "", threat_message_type ("Error"),
+                             (task, "", "", "",
+                              threat_message_type ("Error"),
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT);
           report_add_result (report, result);
@@ -4087,7 +4088,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           if (progress < 0 || progress > 100)
             {
               result_t result = make_osp_result
-                                 (task, "", "", threat_message_type ("Error"),
+                                 (task, "", "", "",
+                                  threat_message_type ("Error"),
                                   "Erroneous scan progress value", "", "",
                                   QOD_DEFAULT);
               report_add_result (report, result);
@@ -4665,7 +4667,8 @@ fork_osp_scan_handler (task_t task, target_t target)
       result_t result;
 
       g_warning ("OSP start_scan %s: %s", report_id, error);
-      result = make_osp_result (task, "", "", threat_message_type ("Error"),
+      result = make_osp_result (task, "", "", "",
+                                threat_message_type ("Error"),
                                 error, "", "", QOD_DEFAULT);
       report_add_result (global_current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
