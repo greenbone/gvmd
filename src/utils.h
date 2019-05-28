@@ -25,8 +25,8 @@
 #ifndef _GVMD_UTILS_H
 #define _GVMD_UTILS_H
 
-#include <time.h>
 #include <glib.h>
+#include <time.h>
 
 int
 gvm_usleep (unsigned int);
@@ -57,8 +57,8 @@ iso_time_tz (time_t *, const char *, const char **);
  */
 typedef struct
 {
-  int fd;         ///< File descriptor.
-  gchar *name;    ///< Name.
+  int fd;      ///< File descriptor.
+  gchar *name; ///< Name.
 } lockfile_t;
 
 int

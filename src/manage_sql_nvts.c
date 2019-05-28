@@ -198,40 +198,39 @@ static int chunk_count = 0;
 /**
  * @brief Insert an NVT.
  *
- * @param[in]  name       NVT name.
- * @param[in]  cve        NVT CVE.
- * @param[in]  bid        NVT BID.
- * @param[in]  xref       NVT XREF.
- * @param[in]  tags       NVT tags.
- * @param[in]  cvss_base  NVT CVSS base.
- * @param[in]  family     NVT family.
- * @param[in]  oid        NVT OID.
- * @param[in]  category   NVT category.
+ * @param[in]  nvti       NVT Information.
  */
 static void
-insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
-            const gchar *xref, const gchar *tags, const gchar *cvss_base,
-            const gchar *family, const gchar *oid, int category)
+insert_nvt (const nvti_t *nvti)
 {
-  gchar *qod_str, *qod_type;
+  gchar *qod_str, *qod_type, *cve, *bid, *xref;
   gchar *quoted_name;
   gchar *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
   int creation_time, modification_time, qod;
 
-  quoted_name = sql_quote (name ? name : "");
+  cve = nvti_refs (nvti, "cve", "", 0);
+  bid = nvti_refs (nvti, "bid", "", 0);
+  xref = nvti_refs (nvti, NULL, "cve,bid", 1);
+
+  quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
   quoted_cve = sql_quote (cve ? cve : "");
   quoted_bid = sql_quote (bid ? bid : "");
   quoted_xref = sql_quote (xref ? xref : "");
-  if (tags)
+
+  g_free (cve);
+  g_free (bid);
+  g_free (xref);
+
+  if (nvti_tag (nvti))
     {
       gchar **split, **point;
       GString *tag;
 
       /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
 
-      split = g_strsplit (tags, "|", 0);
+      split = g_strsplit (nvti_tag (nvti), "|", 0);
       point = split;
 
       while (*point)
@@ -276,10 +275,11 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
     }
   else
     quoted_tag = g_strdup ("");
-  quoted_cvss_base = sql_quote (cvss_base ? cvss_base : "");
 
-  qod_str = tag_value (tags, "qod");
-  qod_type = tag_value (tags, "qod_type");
+  quoted_cvss_base = sql_quote (nvti_cvss_base (nvti) ? nvti_cvss_base (nvti) : "");
+
+  qod_str = tag_value (nvti_tag (nvti), "qod");
+  qod_type = tag_value (nvti_tag (nvti), "qod_type");
 
   if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
     qod = qod_from_type (qod_type);
@@ -289,14 +289,14 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
   g_free (qod_str);
   g_free (qod_type);
 
-  quoted_family = sql_quote (family ? family : "");
+  quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
-  value = tag_value (tags, "creation_date");
+  value = tag_value (nvti_tag (nvti), "creation_date");
   switch (parse_time (value, &creation_time))
     {
       case -1:
         g_warning ("%s: Failed to parse creation time of %s: %s",
-                   __FUNCTION__, oid, value);
+                   __FUNCTION__, nvti_oid (nvti), value);
         creation_time = 0;
         break;
       case -2:
@@ -312,12 +312,12 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
     }
   g_free (value);
 
-  value = tag_value (tags, "last_modification");
+  value = tag_value (nvti_tag (nvti), "last_modification");
   switch (parse_time (value, &modification_time))
     {
       case -1:
         g_warning ("%s: Failed to parse last_modification time of %s: %s",
-                   __FUNCTION__, oid, value);
+                   __FUNCTION__, nvti_oid (nvti), value);
         modification_time = 0;
         break;
       case -2:
@@ -333,7 +333,7 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
     }
   g_free (value);
 
-  value = tag_value (tags, "solution_type");
+  value = tag_value (nvti_tag (nvti), "solution_type");
   if (value)
     {
       quoted_solution_type = sql_quote (value);
@@ -343,9 +343,9 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
     quoted_solution_type = g_strdup ("");
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
-               oid))
+               nvti_oid (nvti)))
     g_warning ("%s: NVT with OID %s exists already, ignoring", __FUNCTION__,
-               oid);
+               nvti_oid (nvti));
   else
     sql ("INSERT into nvts (oid, name,"
          " cve, bid, xref, tag, category, family, cvss_base,"
@@ -353,10 +353,10 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
          " qod, qod_type)"
          " VALUES ('%s', '%s', '%s', '%s', '%s',"
          " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-         oid, quoted_name,
+         nvti_oid (nvti), quoted_name,
          quoted_cve, quoted_bid, quoted_xref, quoted_tag,
-         category, quoted_family, quoted_cvss_base, creation_time,
-         modification_time, oid, quoted_solution_type,
+         nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
+         modification_time, nvti_oid (nvti), quoted_solution_type,
          qod, quoted_qod_type);
 
   g_free (quoted_name);
@@ -378,8 +378,6 @@ insert_nvt (const gchar *name, const gchar *cve, const gchar *bid,
 static void
 make_nvt_from_nvti (const nvti_t *nvti)
 {
-  gchar *cve, *bid, *xref;
-
   if (chunk_count == 0)
     {
       sql_begin_immediate ();
@@ -390,23 +388,7 @@ make_nvt_from_nvti (const nvti_t *nvti)
   else
     chunk_count++;
 
-  cve = nvti_refs (nvti, "cve", "", 0);
-  bid = nvti_refs (nvti, "bid", "", 0);
-  xref = nvti_refs (nvti, NULL, "cve,bid", 1);
-
-  insert_nvt (nvti_name (nvti),
-              cve,
-              bid,
-              xref,
-              nvti_tag (nvti),
-              nvti_cvss_base (nvti),
-              nvti_family (nvti),
-              nvti_oid (nvti),
-              nvti_category (nvti));
-
-  g_free (cve);
-  g_free (bid);
-  g_free (xref);
+  insert_nvt (nvti);
 
   if (chunk_count == 0)
     sql_commit ();
@@ -1221,144 +1203,6 @@ manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
 }
 
 /**
- * @brief Get CVE field from VT.
- *
- * @param[in]  vt_refs  VT refs.
- * @param[in]  type     Type to get.
- *
- * @return Freshly allocated string for ref field.
- */
-static gchar *
-get_ref (entity_t vt_refs, const gchar *type)
-{
-  entities_t children;
-  entity_t ref;
-  int first;
-  GString *refs;
-
-  first = 1;
-  refs = g_string_new ("");
-  children = vt_refs->entities;
-  while ((ref = first_entity (children)))
-    {
-      const gchar *ref_type;
-
-      ref_type = entity_attribute (ref, "type");
-      if (ref_type == NULL)
-        {
-          GString *debug = g_string_new ("");
-          g_warning ("%s: REF missing type attribute", __FUNCTION__);
-          print_entity_to_string (ref, debug);
-          g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
-          g_string_free (debug, TRUE);
-        }
-      else if (strcasecmp (ref_type, type) == 0)
-        {
-          const gchar *id;
-
-          id = entity_attribute (ref, "id");
-          if (id == NULL)
-            {
-              GString *debug = g_string_new ("");
-              g_warning ("%s: REF missing id attribute", __FUNCTION__);
-              print_entity_to_string (ref, debug);
-              g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
-              g_string_free (debug, TRUE);
-            }
-          else if (first)
-            {
-              g_string_append (refs, id);
-              first = 0;
-            }
-          else
-            g_string_append_printf (refs, ", %s", id);
-        }
-
-      children = next_entities (children);
-    }
-
-  return g_string_free (refs, FALSE);
-}
-
-/**
- * @brief Get CVE field from VT.
- *
- * @param[in]  vt_refs  VT refs.
- *
- * @return Freshly allocated string for CVE field.
- */
-static gchar *
-get_cve (entity_t vt_refs)
-{
-  return get_ref (vt_refs, "cve");
-}
-
-/**
- * @brief Get BID field from VT.
- *
- * @param[in]  vt_refs  VT refs.
- *
- * @return Freshly allocated string for BID field.
- */
-static gchar *
-get_bid (entity_t vt_refs)
-{
-  return get_ref (vt_refs, "bid");
-}
-
-/**
- * @brief Get XREF field from VT.
- *
- * @param[in]  vt_refs  VT refs.
- *
- * @return Freshly allocated string for XREF field.
- */
-static gchar *
-get_xref (entity_t vt_refs)
-{
-  entities_t children;
-  entity_t ref;
-  int first;
-  GString *refs;
-
-  first = 1;
-  refs = g_string_new ("");
-  children = vt_refs->entities;
-  while ((ref = first_entity (children)))
-    {
-      const gchar *type;
-
-      type = entity_attribute (ref, "type");
-      if (type == NULL)
-        g_warning ("%s: REF missing type attribute", __FUNCTION__);
-      else if (strcasecmp (type, "cve")
-               && strcasecmp (type, "bid"))
-        {
-          const gchar *id;
-          gchar *type_up;
-
-          type_up = g_ascii_strup (type, -1);
-          id = entity_attribute (ref, "id");
-          if (id == NULL)
-            g_warning ("%s: REF missing id attribute", __FUNCTION__);
-          else if (first)
-            {
-              g_string_append_printf (refs, "%s:%s", type_up, id);
-              first = 0;
-            }
-          else
-            g_string_append_printf (refs, ", %s:%s", type_up, id);
-
-          g_free (type_up);
-        }
-
-      children = next_entities (children);
-    }
-
-  return g_string_free (refs, FALSE);
-}
-
-/**
  * @brief Get tag field from VT.
  *
  * @param[in]  vt  VT.
@@ -1581,90 +1425,124 @@ update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
 }
 
 /**
- * @brief Update NVT from VT XML.
+ * @brief Create NVTI structure from VT XML.
  *
  * @param[in]  vt           OSP GET_VTS VT element.
- * @param[in]  preferences  All NVT preferences.
  *
- * @return 0 success, -1 error.
+ * @return The NVTI object on success (needs to be free'd), NULL on error.
  */
-static int
-update_nvt_from_vt (entity_t vt, GList **preferences)
+static nvti_t *
+nvti_from_vt (entity_t vt)
 {
+  nvti_t *nvti = nvti_new ();
   const char *id;
-  entity_t name, refs, custom, family, category;
-  gchar *cve, *bid, *xref, *tag;
-  gchar *cvss_base, *parsed_tags;
-
-  assert (preferences);
+  entity_t name, refs, ref, custom, family, category;
+  entities_t children;
+  gchar *tag, *cvss_base, *parsed_tags;
 
   id = entity_attribute (vt, "id");
   if (id == NULL)
     {
       g_warning ("%s: VT missing id attribute", __FUNCTION__);
-      return -1;
+      nvti_free (nvti);
+      return NULL;
     }
+  nvti_set_oid (nvti, id);
 
   name = entity_child (vt, "name");
   if (name == NULL)
     {
       g_warning ("%s: VT missing NAME", __FUNCTION__);
-      return -1;
+      nvti_free (nvti);
+      return NULL;
     }
+  nvti_set_name (nvti, entity_text (name));
 
   refs = entity_child (vt, "refs");
   if (refs == NULL)
     {
       g_warning ("%s: VT missing REFS", __FUNCTION__);
-      return -1;
+      nvti_free (nvti);
+      return NULL;
     }
 
-  cve = get_cve (refs);
-  bid = get_bid (refs);
-  xref = get_xref (refs);
+  children = refs->entities;
+  while ((ref = first_entity (children)))
+    {
+      const gchar *ref_type;
+
+      ref_type = entity_attribute (ref, "type");
+      if (ref_type == NULL)
+        {
+          GString *debug = g_string_new ("");
+          g_warning ("%s: REF missing type attribute", __FUNCTION__);
+          print_entity_to_string (ref, debug);
+          g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+          g_string_free (debug, TRUE);
+        }
+      else
+        {
+          const gchar *ref_id;
+
+          ref_id = entity_attribute (ref, "id");
+          if (ref_id == NULL)
+            {
+              GString *debug = g_string_new ("");
+              g_warning ("%s: REF missing id attribute", __FUNCTION__);
+              print_entity_to_string (ref, debug);
+              g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+              g_string_free (debug, TRUE);
+            }
+          else
+            {
+              nvti_add_vtref (nvti, vtref_new (ref_type, ref_id, NULL));
+            }
+        }
+
+      children = next_entities (children);
+    }
+
   tag = get_tag (vt);
+  nvti_set_tag (nvti, tag);
 
   custom = entity_child (vt, "custom");
   if (custom == NULL)
     {
       g_warning ("%s: VT missing CUSTOM", __FUNCTION__);
-      return -1;
+      nvti_free (nvti);
+      g_free (tag);
+      return NULL;
     }
 
   family = entity_child (custom, "family");
   if (family == NULL)
     {
       g_warning ("%s: VT/CUSTOM missing FAMILY", __FUNCTION__);
-      return -1;
+      nvti_free (nvti);
+      g_free (tag);
+      return NULL;
     }
+  nvti_set_family (nvti, entity_text (family));
 
   category = entity_child (custom, "category");
   if (category == NULL)
     {
       g_warning ("%s: VT/CUSTOM missing CATEGORY", __FUNCTION__);
-      return -1;
+      nvti_free (nvti);
+      g_free (tag);
+      return NULL;
     }
+  nvti_set_category (nvti, atoi (entity_text (category)));
 
   parse_tags (tag, &parsed_tags, &cvss_base);
 
-  insert_nvt (entity_text (name),
-              cve,
-              bid,
-              xref,
-              parsed_tags,
-              cvss_base,
-              entity_text (family),
-              id,
-              atoi (entity_text (category)));
+  nvti_set_cvss_base (nvti, cvss_base);
 
   g_free (parsed_tags);
   g_free (cvss_base);
-  g_free (cve);
-  g_free (bid);
-  g_free (xref);
   g_free (tag);
 
-  return update_preferences_from_vt (vt, id, preferences);
+  return nvti;
 }
 
 /**
@@ -1711,12 +1589,16 @@ update_nvts_from_vts (entity_t *get_vts_response,
   children = vts->entities;
   while ((vt = first_entity (children)))
     {
-      if (update_nvt_from_vt (vt, &preferences))
+      nvti_t *nvti = nvti_from_vt (vt);
+
+      insert_nvt (nvti);
+      if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
         {
           sql_rollback ();
           return;
         }
 
+      nvti_free (nvti);
       children = next_entities (children);
     }
 
