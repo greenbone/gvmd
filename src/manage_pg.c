@@ -2842,6 +2842,13 @@ create_tables ()
        "  name text,"
        "  value text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS vt_refs"
+       " (id SERIAL PRIMARY KEY,"
+       "  vt_oid text NOT NULL,"
+       "  type text NOT NULL,"
+       "  ref_id text NOT NULL,"
+       "  ref_text text);");
+
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
        " (id SERIAL PRIMARY KEY,"
        "  name text UNIQUE NOT NULL,"
@@ -3217,6 +3224,9 @@ create_tables ()
        "                     'nvts', 'cvss_base');");
   sql ("SELECT create_index ('nvts_by_solution_type',"
        "                     'nvts', 'solution_type');");
+
+  sql ("SELECT create_index ('vt_refs_by_vt_oid',"
+       "                     'vt_refs', 'vt_oid');");
 
   sql ("SELECT create_index ('permissions_by_name',"
        "                     'permissions', 'name');");
