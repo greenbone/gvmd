@@ -28,15 +28,15 @@
 #define _GVMD_COMM_H
 
 #include <glib.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 
 int
 send_to_server (const char *);
 
 int
-sendf_to_server (const char*, ...);
+sendf_to_server (const char *, ...);
 
 int
 sendn_to_server (const void *, size_t);

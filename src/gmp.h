@@ -27,9 +27,10 @@
 
 #include "manage.h"
 #include "types.h"
-#include <gvm/util/serverutils.h>
+
 #include <glib.h>
 #include <gnutls/gnutls.h>
+#include <gvm/util/serverutils.h>
 #include <sys/types.h>
 
 /**
@@ -48,11 +49,11 @@
 #define TRUNCATE_TEXT_SUFFIX "[...]\n(text truncated)"
 
 int
-init_gmp (GSList*, int, const gchar*, int, int, int, int,
+init_gmp (GSList *, int, const gchar *, int, int, int, int,
           manage_connection_forker_t, int);
 
 void
-init_gmp_process (int, const gchar*, int (*) (const char*, void*), void*,
+init_gmp_process (int, const gchar *, int (*) (const char *, void *), void *,
                   gchar **);
 
 int
