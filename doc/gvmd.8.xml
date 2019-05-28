@@ -48,162 +48,342 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <options>
     <option>
-      <p><opt>-a, --listen=<arg>ADDRESS</arg></opt></p>
-      <optdesc><p>Listen on ADDRESS.</p></optdesc>
+      <p><opt>--backup</opt></p>
+      <optdesc>
+        <p>Backup the database.</p>
+      </optdesc>
     </option>
-
+    <option>
+      <p><opt>--check-alerts</opt></p>
+      <optdesc>
+        <p>Check SecInfo alerts.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--client-watch-interval=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>Check if client connection was closed every NUMBER seconds.
+           0 to disable. Defaults to 1 second.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--create-scanner=<arg>SCANNER</arg></opt></p>
+      <optdesc>
+        <p>Create global scanner SCANNER and exit.</p>
+      </optdesc>
+    </option>
     <option>
       <p><opt>--create-user=<arg>USERNAME</arg></opt></p>
-      <optdesc><p>Create admin user USERNAME and exit.</p></optdesc>
+      <optdesc>
+        <p>Create admin user USERNAME and exit.</p>
+      </optdesc>
     </option>
-
     <option>
-      <p><opt>--role=<arg>ROLE</arg></opt></p>
-      <optdesc><p>Role for --create-user option.</p></optdesc>
+      <p><opt>-d, --database=<arg>FILE/NAME</arg></opt></p>
+      <optdesc>
+        <p>Use FILE/NAME as database for SQLite/Postgres.</p>
+      </optdesc>
     </option>
-
+    <option>
+      <p><opt>--delete-scanner=<arg>SCANNER-UUID</arg></opt></p>
+      <optdesc>
+        <p>Delete scanner SCANNER-UUID and exit.</p>
+      </optdesc>
+    </option>
     <option>
       <p><opt>--delete-user=<arg>USERNAME</arg></opt></p>
-      <optdesc><p>Delete user USERNAME and exit.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--get-users</opt></p>
-      <optdesc><p>List users and exit.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--create-scanner=<arg>NAME</arg></opt></p>
-      <optdesc><p>Create scanner NAME and exit.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--scanner-host=<arg>HOST</arg></opt></p>
       <optdesc>
-        <p>Scanner host for --create-scanner, --rebuild and --update. Default is 127.0.0.1.</p>
+        <p>Delete user USERNAME and exit.</p>
       </optdesc>
     </option>
-
-    <option>
-      <p><opt>--scanner-port=<arg>PORT</arg></opt></p>
-      <optdesc>
-        <p>Scanner port for --create-scanner, --rebuild and --update. Default is 9391.</p>
-      </optdesc>
-    </option>
-
-    <option>
-      <p><opt>--scanner-type=<arg>TYPE</arg></opt></p>
-      <optdesc><p>Type for --create-scanner option.
-                  Could be "OpenVAS Scanner" or "OSP Ovaldi".</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--scanner-ca-pub=<arg>CAPUB</arg></opt></p>
-      <optdesc><p>Scanner CA public key path for --create-scanner.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--scanner-key-pub=<arg>KEYPUB</arg></opt></p>
-      <optdesc><p>Scanner public key path for --create-scanner.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--scanner-key-priv=<arg>KEYPRIV</arg></opt></p>
-      <optdesc><p>Scanner private key path for --create-scanner.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--delete-scanner=<arg>UUID</arg></opt></p>
-      <optdesc><p>Delete scanner with UUID and exit.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--get-scanners</opt></p>
-      <optdesc><p>List scanners and exit.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--gnutls-priorities=<arg>PRIORITY</arg></opt></p>
-      <optdesc><p>Set the GnuTLS priority string to PRIORITY.</p></optdesc>
-    </option>
-
     <option>
       <p><opt>--dh-params=<arg>FILE</arg></opt></p>
-      <optdesc><p>Path to file containing Diffie-Hellman parameters which
-                  are needed for DHE-RSA. This file could be generated using
-                  openssl or certtool.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>--max-email-attachment-size=<arg>SIZE</arg></opt></p>
       <optdesc>
-        <p>
-          Maximum number of bytes permitted in alert email attachments.
-        </p>
-        <p>
-          0 to use the default, negative to allow any size.
-        </p>
+        <p>Diffie-Hellman parameters file</p>
       </optdesc>
     </option>
-
     <option>
-      <p><opt>--max-email-include-size=<arg>SIZE</arg></opt></p>
+      <p><opt>--disable-cmds=<arg>COMMANDS</arg></opt></p>
       <optdesc>
-        <p>
-          Maximum number of bytes permitted in reports inlined in alert email
-          attachments.
-        </p>
-        <p>
-          0 to use the default, negative to allow any size.
-        </p>
+        <p>Disable comma-separated COMMANDS.</p>
       </optdesc>
     </option>
-
     <option>
-      <p><opt>--max-ips-per-target=<arg>SIZE</arg></opt></p>
+      <p><opt>--disable-encrypted-credentials</opt></p>
       <optdesc>
-        <p>
-          Maximum number of IPs per target.
-        </p>
+        <p>Do not encrypt or decrypt credentials.</p>
       </optdesc>
     </option>
-
     <option>
-      <p><opt>-u, --update</opt></p>
+      <p><opt>--disable-password-policy</opt></p>
       <optdesc>
-        <p>Updates the database with information from a running
-           scanner (openvassd) and exits.</p>
+        <p>Do not restrict passwords to the policy.</p>
       </optdesc>
     </option>
-
+    <option>
+      <p><opt>--disable-scheduling</opt></p>
+      <optdesc>
+        <p>Disable task scheduling.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--encrypt-all-credentials</opt></p>
+      <optdesc>
+        <p>(Re-)Encrypt all credentials.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>-f, --foreground</opt></p>
+      <optdesc>
+        <p>Run in foreground.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--get-scanners</opt></p>
+      <optdesc>
+        <p>List scanners and exit.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--get-users</opt></p>
+      <optdesc>
+        <p>List users and exit.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--gnutls-priorities=<arg>PRIORITIES-STRING</arg></opt></p>
+      <optdesc>
+        <p>Sets the GnuTLS priorities for the Manager socket.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--inheritor=<arg>USERNAME</arg></opt></p>
+      <optdesc>
+        <p>Have USERNAME inherit from deleted user.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>-a, --listen=<arg>ADDRESS</arg></opt></p>
+      <optdesc>
+        <p>Listen on ADDRESS.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--listen2=<arg>ADDRESS</arg></opt></p>
+      <optdesc>
+        <p>Listen also on ADDRESS.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--listen-group=<arg>STRING</arg></opt></p>
+      <optdesc>
+        <p>Group of the unix socket</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--listen-mode=<arg>STRING</arg></opt></p>
+      <optdesc>
+        <p>File mode of the unix socket</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--listen-owner=<arg>STRING</arg></opt></p>
+      <optdesc>
+        <p>Owner of the unix socket</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--max-email-attachment-size=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>Maximum size of alert email attachments, in bytes.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--max-email-include-size=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>Maximum size of inlined content in alert emails, in bytes.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--max-email-message-size=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>Maximum size of user-defined message text in alert emails,
+           in bytes.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--max-ips-per-target=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>Maximum number of IPs per target.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>-m, --migrate</opt></p>
+      <optdesc>
+        <p>Migrate the database and exit.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--modify-scanner=<arg>SCANNER-UUID</arg></opt></p>
+      <optdesc>
+        <p>Modify scanner SCANNER-UUID and exit.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--modify-setting=<arg>UUID</arg></opt></p>
+      <optdesc>
+        <p>Modify setting UUID and exit.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--new-password=<arg>PASSWORD</arg></opt></p>
+      <optdesc>
+        <p>Modify user's password and exit.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--new-password=<arg>PASSWORD</arg></opt></p>
+      <optdesc>
+        <p>Modify user's password and exit.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--optimize=<arg>NAME</arg></opt></p>
+      <optdesc>
+        <p>Run an optimization: vacuum, analyze, cleanup-config-prefs,
+           cleanup-port-names, cleanup-result-severities,
+           cleanup-schedule-times, rebuild-report-cache or
+           update-report-cache.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--osp-vt-update=<arg>SCANNER-SOCKET</arg></opt></p>
+      <optdesc>
+        <p>Unix socket for OSP NVT update.  Default is to do an OTP update.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--password=<arg>PASSWORD</arg></opt></p>
+      <optdesc>
+        <p>Password, for --create-user.</p>
+      </optdesc>
+    </option>
     <option>
       <p><opt>-p, --port=<arg>NUMBER</arg></opt></p>
       <optdesc>
-        <p>Listen on port number <arg>NUMBER</arg>.</p>
+        <p>Use port number NUMBER.</p>
       </optdesc>
     </option>
-
-        <option>
-      <p><opt>--rebuild</opt></p>
+    <option>
+      <p><opt>--port2=<arg>NUMBER</arg></opt></p>
       <optdesc>
-        <p>Rebuild the database with information from a running
-           scanner (openvassd) and exits.</p>
+        <p>Use port number NUMBER for address 2.</p>
       </optdesc>
     </option>
-
+    <option>
+      <p><opt>--role=<arg>ROLE</arg></opt></p>
+      <optdesc>
+        <p>Role for --create-user and --get-users.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-ca-pub=<arg>SCANNER-CA-PUB</arg></opt></p>
+      <optdesc>
+        <p>Scanner CA Certificate path for --[create|modify]-scanner.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-host=<arg>SCANNER-HOST</arg></opt></p>
+      <optdesc>
+        <p>Scanner host for --create-scanner and --modify-scanner.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-key-priv=<arg>SCANNER-KEY-PRIVATE</arg></opt></p>
+      <optdesc>
+        <p>Scanner private key path for --[create|modify]-scanner.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-key-pub=<arg>SCANNER-KEY-PUBLIC</arg></opt></p>
+      <optdesc>
+        <p>Scanner Certificate path for --[create|modify]-scanner.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-name=<arg>NAME</arg></opt></p>
+      <optdesc>
+        <p>Name for --modify-scanner.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-port=<arg>SCANNER-PORT</arg></opt></p>
+      <optdesc>
+        <p>Scanner port for --create-scanner and --modify-scanner.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-type=<arg>SCANNER-TYPE</arg></opt></p>
+      <optdesc>
+        <p>Scanner type for --create-scanner and --modify-scanner.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--schedule-timeout=<arg>TIME</arg></opt></p>
+      <optdesc>
+        <p>Time out tasks that are more than TIME minutes overdue.
+           -1 to disable, 0 for minimum time.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--secinfo-commit-size=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>During CERT and SCAP sync, commit updates to the database every
+           NUMBER items, 0 for unlimited.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--slave-commit-size=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>During slave updates, commit after every NUMBER updated results and
+           hosts, 0 for unlimited.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>-c, --unix-socket=<arg>FILENAME</arg></opt></p>
+      <optdesc>
+        <p>Listen on UNIX socket at FILENAME.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--user=<arg>USERNAME</arg></opt></p>
+      <optdesc>
+        <p>User for --new-password.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--value=<arg>VALUE</arg></opt></p>
+      <optdesc>
+        <p>User for --new-password.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--verbose</opt></p>
+      <optdesc>
+        <p>Has no effect.  See INSTALL.md for logging config.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--verify-scanner=<arg>SCANNER-UUID</arg></opt></p>
+      <optdesc>
+        <p>Verify scanner SCANNER-UUID and exit.</p>
+      </optdesc>
+    </option>
     <option>
       <p><opt>--version</opt></p>
-      <optdesc><p>Print version.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>-v, --verbose</opt></p>
-      <optdesc><p>Print progress messages.</p></optdesc>
-    </option>
-
-    <option>
-      <p><opt>-?, --help</opt></p>
-      <optdesc><p>Show help.</p></optdesc>
+      <optdesc>
+        <p>Print version and exit.</p>
+      </optdesc>
     </option>
   </options>
 
