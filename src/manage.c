@@ -4428,7 +4428,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
                          char **error)
 {
   osp_connection_t *connection;
-  char *hosts_str, *ports_str;
+  char *hosts_str, *ports_str, *exclude_hosts_str;
   osp_target_t *osp_target;
   GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
@@ -4446,8 +4446,9 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   /* Set up target(s) */
   hosts_str = target_hosts (target);
   ports_str = target_port_range (target);
+  exclude_hosts_str = target_exclude_hosts (target);
 
-  osp_target = osp_target_new (hosts_str, ports_str);
+  osp_target = osp_target_new (hosts_str, ports_str, exclude_hosts_str);
   osp_targets = g_slist_append (NULL, osp_target);
 
   ssh_credential = target_osp_ssh_credential (target);
@@ -4592,6 +4593,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   g_hash_table_destroy (scanner_options);
   free (hosts_str);
   free (ports_str);
+  free (exclude_hosts_str);
   return ret;
 }
 
