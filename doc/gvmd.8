@@ -10,84 +10,170 @@ The Greenbone Vulnerability Manager is the central management service between se
 It manages the storage of any vulnerability management configurations and of the scan results. Access to data, control commands and workflows is offered via the XML-based Greenbone Management Protocol (GMP). The primary scanner 'OpenVAS Scanner' is controlled directly via protocol OTP while any other remote scanner is coupled with the Open Scanner Protocol (OSP). 
 .SH OPTIONS
 .TP
-\fB-a, --listen=\fIADDRESS\fB\f1
-Listen on ADDRESS.
+\fB--backup\f1
+Backup the database.
+.TP
+\fB--check-alerts\f1
+Check SecInfo alerts.
+.TP
+\fB--client-watch-interval=\fINUMBER\fB\f1
+Check if client connection was closed every NUMBER seconds. 0 to disable. Defaults to 1 second.
+.TP
+\fB--create-scanner=\fISCANNER\fB\f1
+Create global scanner SCANNER and exit.
 .TP
 \fB--create-user=\fIUSERNAME\fB\f1
 Create admin user USERNAME and exit.
 .TP
-\fB--role=\fIROLE\fB\f1
-Role for --create-user option.
+\fB-d, --database=\fIFILE/NAME\fB\f1
+Use FILE/NAME as database for SQLite/Postgres.
+.TP
+\fB--delete-scanner=\fISCANNER-UUID\fB\f1
+Delete scanner SCANNER-UUID and exit.
 .TP
 \fB--delete-user=\fIUSERNAME\fB\f1
 Delete user USERNAME and exit.
 .TP
-\fB--get-users\f1
-List users and exit.
+\fB--dh-params=\fIFILE\fB\f1
+Diffie-Hellman parameters file
 .TP
-\fB--create-scanner=\fINAME\fB\f1
-Create scanner NAME and exit.
+\fB--disable-cmds=\fICOMMANDS\fB\f1
+Disable comma-separated COMMANDS.
 .TP
-\fB--scanner-host=\fIHOST\fB\f1
-Scanner host for --create-scanner, --rebuild and --update. Default is 127.0.0.1.
+\fB--disable-encrypted-credentials\f1
+Do not encrypt or decrypt credentials.
 .TP
-\fB--scanner-port=\fIPORT\fB\f1
-Scanner port for --create-scanner, --rebuild and --update. Default is 9391.
+\fB--disable-password-policy\f1
+Do not restrict passwords to the policy.
 .TP
-\fB--scanner-type=\fITYPE\fB\f1
-Type for --create-scanner option. Could be "OpenVAS Scanner" or "OSP Ovaldi".
+\fB--disable-scheduling\f1
+Disable task scheduling.
 .TP
-\fB--scanner-ca-pub=\fICAPUB\fB\f1
-Scanner CA public key path for --create-scanner.
+\fB--encrypt-all-credentials\f1
+(Re-)Encrypt all credentials.
 .TP
-\fB--scanner-key-pub=\fIKEYPUB\fB\f1
-Scanner public key path for --create-scanner.
-.TP
-\fB--scanner-key-priv=\fIKEYPRIV\fB\f1
-Scanner private key path for --create-scanner.
-.TP
-\fB--delete-scanner=\fIUUID\fB\f1
-Delete scanner with UUID and exit.
+\fB-f, --foreground\f1
+Run in foreground.
 .TP
 \fB--get-scanners\f1
 List scanners and exit.
 .TP
-\fB--gnutls-priorities=\fIPRIORITY\fB\f1
-Set the GnuTLS priority string to PRIORITY.
+\fB--get-users\f1
+List users and exit.
 .TP
-\fB--dh-params=\fIFILE\fB\f1
-Path to file containing Diffie-Hellman parameters which are needed for DHE-RSA. This file could be generated using openssl or certtool.
+\fB--gnutls-priorities=\fIPRIORITIES-STRING\fB\f1
+Sets the GnuTLS priorities for the Manager socket.
 .TP
-\fB--max-email-attachment-size=\fISIZE\fB\f1
-Maximum number of bytes permitted in alert email attachments. 
-
-0 to use the default, negative to allow any size. 
+\fB--inheritor=\fIUSERNAME\fB\f1
+Have USERNAME inherit from deleted user.
 .TP
-\fB--max-email-include-size=\fISIZE\fB\f1
-Maximum number of bytes permitted in reports inlined in alert email attachments. 
-
-0 to use the default, negative to allow any size. 
+\fB-a, --listen=\fIADDRESS\fB\f1
+Listen on ADDRESS.
 .TP
-\fB--max-ips-per-target=\fISIZE\fB\f1
-Maximum number of IPs per target. 
+\fB--listen2=\fIADDRESS\fB\f1
+Listen also on ADDRESS.
 .TP
-\fB-u, --update\f1
-Updates the database with information from a running scanner (openvassd) and exits.
+\fB--listen-group=\fISTRING\fB\f1
+Group of the unix socket
+.TP
+\fB--listen-mode=\fISTRING\fB\f1
+File mode of the unix socket
+.TP
+\fB--listen-owner=\fISTRING\fB\f1
+Owner of the unix socket
+.TP
+\fB--max-email-attachment-size=\fINUMBER\fB\f1
+Maximum size of alert email attachments, in bytes.
+.TP
+\fB--max-email-include-size=\fINUMBER\fB\f1
+Maximum size of inlined content in alert emails, in bytes.
+.TP
+\fB--max-email-message-size=\fINUMBER\fB\f1
+Maximum size of user-defined message text in alert emails, in bytes.
+.TP
+\fB--max-ips-per-target=\fINUMBER\fB\f1
+Maximum number of IPs per target.
+.TP
+\fB-m, --migrate\f1
+Migrate the database and exit.
+.TP
+\fB--modify-scanner=\fISCANNER-UUID\fB\f1
+Modify scanner SCANNER-UUID and exit.
+.TP
+\fB--modify-setting=\fIUUID\fB\f1
+Modify setting UUID and exit.
+.TP
+\fB--new-password=\fIPASSWORD\fB\f1
+Modify user's password and exit.
+.TP
+\fB--new-password=\fIPASSWORD\fB\f1
+Modify user's password and exit.
+.TP
+\fB--optimize=\fINAME\fB\f1
+Run an optimization: vacuum, analyze, cleanup-config-prefs, cleanup-port-names, cleanup-result-severities, cleanup-schedule-times, rebuild-report-cache or update-report-cache.
+.TP
+\fB--osp-vt-update=\fISCANNER-SOCKET\fB\f1
+Unix socket for OSP NVT update. Default is to do an OTP update.
+.TP
+\fB--password=\fIPASSWORD\fB\f1
+Password, for --create-user.
 .TP
 \fB-p, --port=\fINUMBER\fB\f1
-Listen on port number \fINUMBER\f1.
+Use port number NUMBER.
 .TP
-\fB--rebuild\f1
-Rebuild the database with information from a running scanner (openvassd) and exits.
+\fB--port2=\fINUMBER\fB\f1
+Use port number NUMBER for address 2.
+.TP
+\fB--role=\fIROLE\fB\f1
+Role for --create-user and --get-users.
+.TP
+\fB--scanner-ca-pub=\fISCANNER-CA-PUB\fB\f1
+Scanner CA Certificate path for --[create|modify]-scanner.
+.TP
+\fB--scanner-host=\fISCANNER-HOST\fB\f1
+Scanner host for --create-scanner and --modify-scanner.
+.TP
+\fB--scanner-key-priv=\fISCANNER-KEY-PRIVATE\fB\f1
+Scanner private key path for --[create|modify]-scanner.
+.TP
+\fB--scanner-key-pub=\fISCANNER-KEY-PUBLIC\fB\f1
+Scanner Certificate path for --[create|modify]-scanner.
+.TP
+\fB--scanner-name=\fINAME\fB\f1
+Name for --modify-scanner.
+.TP
+\fB--scanner-port=\fISCANNER-PORT\fB\f1
+Scanner port for --create-scanner and --modify-scanner.
+.TP
+\fB--scanner-type=\fISCANNER-TYPE\fB\f1
+Scanner type for --create-scanner and --modify-scanner.
+.TP
+\fB--schedule-timeout=\fITIME\fB\f1
+Time out tasks that are more than TIME minutes overdue. -1 to disable, 0 for minimum time.
+.TP
+\fB--secinfo-commit-size=\fINUMBER\fB\f1
+During CERT and SCAP sync, commit updates to the database every NUMBER items, 0 for unlimited.
+.TP
+\fB--slave-commit-size=\fINUMBER\fB\f1
+During slave updates, commit after every NUMBER updated results and hosts, 0 for unlimited.
+.TP
+\fB-c, --unix-socket=\fIFILENAME\fB\f1
+Listen on UNIX socket at FILENAME.
+.TP
+\fB--user=\fIUSERNAME\fB\f1
+User for --new-password.
+.TP
+\fB--value=\fIVALUE\fB\f1
+User for --new-password.
+.TP
+\fB--verbose\f1
+Has no effect. See INSTALL.md for logging config.
+.TP
+\fB--verify-scanner=\fISCANNER-UUID\fB\f1
+Verify scanner SCANNER-UUID and exit.
 .TP
 \fB--version\f1
-Print version.
-.TP
-\fB-v, --verbose\f1
-Print progress messages.
-.TP
-\fB-?, --help\f1
-Show help.
+Print version and exit.
 .SH SIGNALS
 SIGHUP causes gvmd to rebuild the database with information from the Scanner (openvassd).
 .SH EXAMPLES
