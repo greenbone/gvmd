@@ -1520,6 +1520,9 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
     {
       entity_t vts;
 
+      g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
+              scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
+
       connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
       if (!connection)
         {
@@ -1543,7 +1546,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
            sql_schema ());
 
-      g_info ("Updating NVT cache... done (%i NVTs).",
+      g_info ("Updating VTs in database ... done (%i VTs).",
               sql_int ("SELECT count (*) FROM nvts;"));
     }
 
