@@ -31,162 +31,348 @@
   <h2>Options</h2>
 
     
-      <p><b>-a, --listen=<em>ADDRESS</em></b></p>
-      <p>Listen on ADDRESS.</p>
+      <p><b>-h, --help</b></p>
+      
+        <p>Show help options.</p>
+      
     
-
+    
+      <p><b>--backup</b></p>
+      
+        <p>Backup the database.</p>
+      
+    
+    
+      <p><b>--check-alerts</b></p>
+      
+        <p>Check SecInfo alerts.</p>
+      
+    
+    
+      <p><b>--client-watch-interval=<em>NUMBER</em></b></p>
+      
+        <p>Check if client connection was closed every NUMBER seconds.
+           0 to disable. Defaults to 1 second.</p>
+      
+    
+    
+      <p><b>--create-scanner=<em>SCANNER</em></b></p>
+      
+        <p>Create global scanner SCANNER and exit.</p>
+      
+    
     
       <p><b>--create-user=<em>USERNAME</em></b></p>
-      <p>Create admin user USERNAME and exit.</p>
+      
+        <p>Create admin user USERNAME and exit.</p>
+      
     
-
     
-      <p><b>--role=<em>ROLE</em></b></p>
-      <p>Role for --create-user option.</p>
+      <p><b>-d, --database=<em>FILE/NAME</em></b></p>
+      
+        <p>Use FILE/NAME as database for SQLite/Postgres.</p>
+      
     
-
+    
+      <p><b>--delete-scanner=<em>SCANNER-UUID</em></b></p>
+      
+        <p>Delete scanner SCANNER-UUID and exit.</p>
+      
+    
     
       <p><b>--delete-user=<em>USERNAME</em></b></p>
-      <p>Delete user USERNAME and exit.</p>
-    
-
-    
-      <p><b>--get-users</b></p>
-      <p>List users and exit.</p>
-    
-
-    
-      <p><b>--create-scanner=<em>NAME</em></b></p>
-      <p>Create scanner NAME and exit.</p>
-    
-
-    
-      <p><b>--scanner-host=<em>HOST</em></b></p>
       
-        <p>Scanner host for --create-scanner, --rebuild and --update. Default is 127.0.0.1.</p>
+        <p>Delete user USERNAME and exit.</p>
       
     
-
-    
-      <p><b>--scanner-port=<em>PORT</em></b></p>
-      
-        <p>Scanner port for --create-scanner, --rebuild and --update. Default is 9391.</p>
-      
-    
-
-    
-      <p><b>--scanner-type=<em>TYPE</em></b></p>
-      <p>Type for --create-scanner option.
-                  Could be &quot;OpenVAS Scanner&quot; or &quot;OSP Ovaldi&quot;.</p>
-    
-
-    
-      <p><b>--scanner-ca-pub=<em>CAPUB</em></b></p>
-      <p>Scanner CA public key path for --create-scanner.</p>
-    
-
-    
-      <p><b>--scanner-key-pub=<em>KEYPUB</em></b></p>
-      <p>Scanner public key path for --create-scanner.</p>
-    
-
-    
-      <p><b>--scanner-key-priv=<em>KEYPRIV</em></b></p>
-      <p>Scanner private key path for --create-scanner.</p>
-    
-
-    
-      <p><b>--delete-scanner=<em>UUID</em></b></p>
-      <p>Delete scanner with UUID and exit.</p>
-    
-
-    
-      <p><b>--get-scanners</b></p>
-      <p>List scanners and exit.</p>
-    
-
-    
-      <p><b>--gnutls-priorities=<em>PRIORITY</em></b></p>
-      <p>Set the GnuTLS priority string to PRIORITY.</p>
-    
-
     
       <p><b>--dh-params=<em>FILE</em></b></p>
-      <p>Path to file containing Diffie-Hellman parameters which
-                  are needed for DHE-RSA. This file could be generated using
-                  openssl or certtool.</p>
-    
-
-    
-      <p><b>--max-email-attachment-size=<em>SIZE</em></b></p>
       
-        <p>
-          Maximum number of bytes permitted in alert email attachments.
-        </p>
-        <p>
-          0 to use the default, negative to allow any size.
-        </p>
+        <p>Diffie-Hellman parameters file</p>
       
     
-
     
-      <p><b>--max-email-include-size=<em>SIZE</em></b></p>
+      <p><b>--disable-cmds=<em>COMMANDS</em></b></p>
       
-        <p>
-          Maximum number of bytes permitted in reports inlined in alert email
-          attachments.
-        </p>
-        <p>
-          0 to use the default, negative to allow any size.
-        </p>
+        <p>Disable comma-separated COMMANDS.</p>
       
     
-
     
-      <p><b>--max-ips-per-target=<em>SIZE</em></b></p>
+      <p><b>--disable-encrypted-credentials</b></p>
       
-        <p>
-          Maximum number of IPs per target.
-        </p>
+        <p>Do not encrypt or decrypt credentials.</p>
       
     
-
     
-      <p><b>-u, --update</b></p>
+      <p><b>--disable-password-policy</b></p>
       
-        <p>Updates the database with information from a running
-           scanner (openvassd) and exits.</p>
+        <p>Do not restrict passwords to the policy.</p>
       
     
-
+    
+      <p><b>--disable-scheduling</b></p>
+      
+        <p>Disable task scheduling.</p>
+      
+    
+    
+      <p><b>--encrypt-all-credentials</b></p>
+      
+        <p>(Re-)Encrypt all credentials.</p>
+      
+    
+    
+      <p><b>-f, --foreground</b></p>
+      
+        <p>Run in foreground.</p>
+      
+    
+    
+      <p><b>--get-scanners</b></p>
+      
+        <p>List scanners and exit.</p>
+      
+    
+    
+      <p><b>--get-users</b></p>
+      
+        <p>List users and exit.</p>
+      
+    
+    
+      <p><b>--gnutls-priorities=<em>PRIORITIES-STRING</em></b></p>
+      
+        <p>Sets the GnuTLS priorities for the Manager socket.</p>
+      
+    
+    
+      <p><b>--inheritor=<em>USERNAME</em></b></p>
+      
+        <p>Have USERNAME inherit from deleted user.</p>
+      
+    
+    
+      <p><b>-a, --listen=<em>ADDRESS</em></b></p>
+      
+        <p>Listen on ADDRESS.</p>
+      
+    
+    
+      <p><b>--listen2=<em>ADDRESS</em></b></p>
+      
+        <p>Listen also on ADDRESS.</p>
+      
+    
+    
+      <p><b>--listen-group=<em>STRING</em></b></p>
+      
+        <p>Group of the unix socket</p>
+      
+    
+    
+      <p><b>--listen-mode=<em>STRING</em></b></p>
+      
+        <p>File mode of the unix socket</p>
+      
+    
+    
+      <p><b>--listen-owner=<em>STRING</em></b></p>
+      
+        <p>Owner of the unix socket</p>
+      
+    
+    
+      <p><b>--max-email-attachment-size=<em>NUMBER</em></b></p>
+      
+        <p>Maximum size of alert email attachments, in bytes.</p>
+      
+    
+    
+      <p><b>--max-email-include-size=<em>NUMBER</em></b></p>
+      
+        <p>Maximum size of inlined content in alert emails, in bytes.</p>
+      
+    
+    
+      <p><b>--max-email-message-size=<em>NUMBER</em></b></p>
+      
+        <p>Maximum size of user-defined message text in alert emails,
+           in bytes.</p>
+      
+    
+    
+      <p><b>--max-ips-per-target=<em>NUMBER</em></b></p>
+      
+        <p>Maximum number of IPs per target.</p>
+      
+    
+    
+      <p><b>-m, --migrate</b></p>
+      
+        <p>Migrate the database and exit.</p>
+      
+    
+    
+      <p><b>--modify-scanner=<em>SCANNER-UUID</em></b></p>
+      
+        <p>Modify scanner SCANNER-UUID and exit.</p>
+      
+    
+    
+      <p><b>--modify-setting=<em>UUID</em></b></p>
+      
+        <p>Modify setting UUID and exit.</p>
+      
+    
+    
+      <p><b>--new-password=<em>PASSWORD</em></b></p>
+      
+        <p>Modify user's password and exit.</p>
+      
+    
+    
+      <p><b>--new-password=<em>PASSWORD</em></b></p>
+      
+        <p>Modify user's password and exit.</p>
+      
+    
+    
+      <p><b>--optimize=<em>NAME</em></b></p>
+      
+        <p>Run an optimization: vacuum, analyze, cleanup-config-prefs,
+           cleanup-port-names, cleanup-result-severities,
+           cleanup-schedule-times, rebuild-report-cache or
+           update-report-cache.</p>
+      
+    
+    
+      <p><b>--osp-vt-update=<em>SCANNER-SOCKET</em></b></p>
+      
+        <p>Unix socket for OSP NVT update.  Default is to do an OTP update.</p>
+      
+    
+    
+      <p><b>--password=<em>PASSWORD</em></b></p>
+      
+        <p>Password, for --create-user.</p>
+      
+    
     
       <p><b>-p, --port=<em>NUMBER</em></b></p>
       
-        <p>Listen on port number <em>NUMBER</em>.</p>
+        <p>Use port number NUMBER.</p>
       
     
-
-        
-      <p><b>--rebuild</b></p>
+    
+      <p><b>--port2=<em>NUMBER</em></b></p>
       
-        <p>Rebuild the database with information from a running
-           scanner (openvassd) and exits.</p>
+        <p>Use port number NUMBER for address 2.</p>
       
     
-
+    
+      <p><b>--role=<em>ROLE</em></b></p>
+      
+        <p>Role for --create-user and --get-users.</p>
+      
+    
+    
+      <p><b>--scanner-ca-pub=<em>SCANNER-CA-PUB</em></b></p>
+      
+        <p>Scanner CA Certificate path for --[create|modify]-scanner.</p>
+      
+    
+    
+      <p><b>--scanner-host=<em>SCANNER-HOST</em></b></p>
+      
+        <p>Scanner host for --create-scanner and --modify-scanner.</p>
+      
+    
+    
+      <p><b>--scanner-key-priv=<em>SCANNER-KEY-PRIVATE</em></b></p>
+      
+        <p>Scanner private key path for --[create|modify]-scanner.</p>
+      
+    
+    
+      <p><b>--scanner-key-pub=<em>SCANNER-KEY-PUBLIC</em></b></p>
+      
+        <p>Scanner Certificate path for --[create|modify]-scanner.</p>
+      
+    
+    
+      <p><b>--scanner-name=<em>NAME</em></b></p>
+      
+        <p>Name for --modify-scanner.</p>
+      
+    
+    
+      <p><b>--scanner-port=<em>SCANNER-PORT</em></b></p>
+      
+        <p>Scanner port for --create-scanner and --modify-scanner.</p>
+      
+    
+    
+      <p><b>--scanner-type=<em>SCANNER-TYPE</em></b></p>
+      
+        <p>Scanner type for --create-scanner and --modify-scanner.</p>
+      
+    
+    
+      <p><b>--schedule-timeout=<em>TIME</em></b></p>
+      
+        <p>Time out tasks that are more than TIME minutes overdue.
+           -1 to disable, 0 for minimum time.</p>
+      
+    
+    
+      <p><b>--secinfo-commit-size=<em>NUMBER</em></b></p>
+      
+        <p>During CERT and SCAP sync, commit updates to the database every
+           NUMBER items, 0 for unlimited.</p>
+      
+    
+    
+      <p><b>--slave-commit-size=<em>NUMBER</em></b></p>
+      
+        <p>During slave updates, commit after every NUMBER updated results and
+           hosts, 0 for unlimited.</p>
+      
+    
+    
+      <p><b>-c, --unix-socket=<em>FILENAME</em></b></p>
+      
+        <p>Listen on UNIX socket at FILENAME.</p>
+      
+    
+    
+      <p><b>--user=<em>USERNAME</em></b></p>
+      
+        <p>User for --new-password.</p>
+      
+    
+    
+      <p><b>--value=<em>VALUE</em></b></p>
+      
+        <p>User for --new-password.</p>
+      
+    
+    
+      <p><b>--verbose</b></p>
+      
+        <p>Has no effect.  See INSTALL.md for logging config.</p>
+      
+    
+    
+      <p><b>--verify-scanner=<em>SCANNER-UUID</em></b></p>
+      
+        <p>Verify scanner SCANNER-UUID and exit.</p>
+      
+    
     
       <p><b>--version</b></p>
-      <p>Print version.</p>
-    
-
-    
-      <p><b>-v, --verbose</b></p>
-      <p>Print progress messages.</p>
-    
-
-    
-      <p><b>-?, --help</b></p>
-      <p>Show help.</p>
+      
+        <p>Print version and exit.</p>
+      
     
   
 
@@ -200,7 +386,8 @@
   <h2>EXAMPLES</h2>
 
     <p>gvmd --port 1241</p>
-    <p>Serve GMP clients on port 1241 and connect to a OTP server on 7772.</p>
+    <p>Serve GMP clients on port 1241 and connect to an OpenVAS scanner via the
+       default OTP file socket.</p>
   
 
 
@@ -214,17 +401,23 @@
   
 
 
-  <h2>MORE INFORMATION ABOUT THE OpenVAS PROJECT</h2>
+  <h2>MORE INFORMATION ABOUT Greenbone Vulnerability Management</h2>
 
     <p>
       The canonical places where you will find more information
-      about the OpenVAS project are:
-
-      <a href = "http://www.openvas.org/">http://www.openvas.org/</a>
-        (Official site)
-
-      <a href = "http://wald.intevation.org/projects/openvas/">http://wald.intevation.org/projects/openvas/</a>
+      about the Greenbone Vulnerability Manager are:
+    </p>
+    <p>
+      <a href = "https://community.greenbone.net">https://community.greenbone.net</a>
+        (Community portal)
+    </p>
+    <p>
+      <a href = "https://github.com/greenbone">https://github.com/greenbone</a>
         (Development Platform)
+    </p>
+    <p>
+      <a href = "https://greenbone.net">https://greenbone.net</a>
+        (Greenbone website)
     </p>
   
 
@@ -232,8 +425,8 @@
   <h2>COPYRIGHT</h2>
 
     <p>
-      The Greenbone Vulnerability Manager is released under the GNU GPL, version 2,
-      or, at your option, any later version.
+      The Greenbone Vulnerability Manager is released under the GNU GPL,
+      version 2, or, at your option, any later version.
     </p>
   
 
