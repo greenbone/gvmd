@@ -48,12 +48,6 @@
 #define G_LOG_DOMAIN "md manage"
 
 
-/* Static headers. */
-
-static void
-refresh_nvt_cves ();
-
-
 /* Helper functions. */
 
 /** @brief Replace any control characters in string with spaces.
@@ -86,10 +80,6 @@ check_db_nvts ()
     sql ("INSERT INTO %s.meta (name, value)"
          " VALUES ('update_nvti_cache', 0);",
          sql_schema ());
-
-  /* Ensure the NVT CVE table is filled. */
-  if (sql_int ("SELECT count (*) FROM nvt_cves;") == 0)
-    refresh_nvt_cves ();
 }
 
 /**
@@ -992,53 +982,6 @@ check_for_updated_nvts ()
 }
 
 /**
- * @brief Refresh nvt_cves table.
- *
- * Caller must organise transaction.
- */
-static void
-refresh_nvt_cves ()
-{
-  iterator_t nvts;
-
-  sql ("DELETE FROM nvt_cves;");
-
-  init_iterator (&nvts, "SELECT id, oid, cve FROM nvts;");
-  while (next (&nvts))
-    {
-      gchar **split, **point;
-
-      split = g_strsplit_set (iterator_string (&nvts, 2), " ,", 0);
-
-      point = split;
-      while (*point)
-        {
-          g_strstrip (*point);
-          if (strlen (*point))
-            {
-              gchar *quoted_cve, *quoted_oid;
-
-              quoted_cve = sql_insert (*point);
-              quoted_oid = sql_insert (iterator_string (&nvts, 1));
-              sql ("INSERT INTO nvt_cves (nvt, oid, cve_name)"
-                   " VALUES (%llu, %s, %s);",
-                   iterator_int64 (&nvts, 0),
-                   quoted_oid,
-                   quoted_cve);
-              g_free (quoted_cve);
-              g_free (quoted_oid);
-            }
-          point++;
-        }
-      g_strfreev (split);
-    }
-  cleanup_iterator (&nvts);
-
-  if (sql_is_sqlite3 ())
-    sql ("REINDEX nvt_cves_by_oid;");
-}
-
-/**
  * @brief Set the NVT update check time in the meta table.
  */
 static void
@@ -1437,7 +1380,6 @@ update_nvts_from_vts (entity_t *get_vts_response,
 
   if (sql_is_sqlite3 ())
     {
-      sql ("DELETE FROM nvt_cves;");
       sql ("DELETE FROM nvts;");
       sql ("DELETE FROM nvt_preferences;");
     }
