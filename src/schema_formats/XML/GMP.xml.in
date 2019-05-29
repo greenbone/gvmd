@@ -13653,6 +13653,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         NVT information.  If the manager cannot access a list of available
         NVTs at that time, it will reply with the 503 response.
       </p>
+      <p>
+        NVT categories: 0 init, 1 scanner, 2 settings, 3 infos, 4 attack, 5 mixed,
+        6 destructive attack, 7 denial, 8 kill host, 9 flood, 10 end, and 11 unknown.
+      </p>
     </description>
     <pattern>
       <attrib>
@@ -13755,7 +13759,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>category</name>
           <summary>The category of the NVT</summary>
-      <pattern><t>integer</t></pattern>
+          <pattern><t>integer</t></pattern>
         </ele>
         <ele>
           <name>creation_time</name>
