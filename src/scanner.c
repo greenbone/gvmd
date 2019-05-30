@@ -404,24 +404,6 @@ openvas_scanner_write (void)
         }
       case SCANNER_INIT_SENT_VERSION:
         return 0;
-      case SCANNER_INIT_GOT_PLUGINS:
-        {
-          static char* const ack = "\n";
-          scanner_init_offset = write_string_to_server
-                                 (ack + scanner_init_offset);
-          if (scanner_init_offset == 0)
-            {
-              set_scanner_init_state (SCANNER_INIT_DONE);
-            }
-          else if (scanner_init_offset == -1)
-            {
-              scanner_init_offset = 0;
-              return -1;
-            }
-          else
-            break;
-        }
-        /* fallthrough */
       case SCANNER_INIT_DONE:
       case SCANNER_INIT_DONE_CACHE_MODE:
       case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
