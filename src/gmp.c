@@ -372,13 +372,13 @@ check_certificate_x509 (const char *cert_str)
  * @brief Check that a string represents a valid public key or certificate.
  *
  * @param[in]  key_str     Key string.
- * @param[in]  key_type    The data type to check for.
+ * @param[in]  key_types   GArray of the data types to check for.
  * @param[in]  protocol    The GPG protocol to check.
  *
  * @return 0 if valid, 1 otherwise.
  */
 static int
-try_gpgme_import (const char *key_str, gpgme_data_type_t key_type,
+try_gpgme_import (const char *key_str, GArray *key_types,
                   gpgme_protocol_t protocol)
 {
   int ret = 0;
@@ -395,7 +395,7 @@ try_gpgme_import (const char *key_str, gpgme_data_type_t key_type,
   gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
   gpgme_set_protocol (ctx, protocol);
 
-  ret = gvm_gpg_import_from_string (ctx, key_str, -1, key_type);
+  ret = gvm_gpg_import_many_types_from_string (ctx, key_str, -1, key_types);
 
   gpgme_release (ctx);
   gvm_file_remove_recurse (gpg_temp_dir);
@@ -413,8 +413,16 @@ try_gpgme_import (const char *key_str, gpgme_data_type_t key_type,
 static int
 check_certificate_smime (const char *cert_str)
 {
-  return try_gpgme_import (cert_str, GPGME_DATA_TYPE_CMS_OTHER,
-                           GPGME_PROTOCOL_CMS);
+  int ret;
+  const gpgme_data_type_t types_ptr[2] = {GPGME_DATA_TYPE_X509_CERT,
+                                          GPGME_DATA_TYPE_CMS_OTHER};
+  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
+
+  g_array_append_vals (key_types, types_ptr, 2);
+  ret = try_gpgme_import (cert_str, key_types, GPGME_PROTOCOL_CMS);
+  g_array_free (key_types, TRUE);
+
+  return ret;
 }
 
 /**
@@ -481,8 +489,15 @@ check_private_key (const char *key_str, const char *key_phrase)
 static int
 check_public_key (const char *key_str)
 {
-  return try_gpgme_import (key_str, GPGME_DATA_TYPE_PGP_KEY,
-                           GPGME_PROTOCOL_OPENPGP);
+  int ret;
+  const gpgme_data_type_t types_ptr[1] = {GPGME_DATA_TYPE_PGP_KEY};
+  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
+
+  g_array_append_vals (key_types, types_ptr, 1);
+  ret = try_gpgme_import (key_str, key_types, GPGME_PROTOCOL_OPENPGP);
+  g_array_free (key_types, TRUE);
+
+  return ret;
 }
 
 
