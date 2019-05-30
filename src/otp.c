@@ -356,7 +356,6 @@ typedef enum
   SCANNER_LOG_HOSTNAME,
   SCANNER_LOG_NUMBER,
   SCANNER_LOG_OID,
-  SCANNER_NVT_INFO,
   SCANNER_PLUGIN_LIST_BUGTRAQ_ID,
   SCANNER_PLUGIN_LIST_CATEGORY,
   SCANNER_PLUGIN_LIST_CVE_ID,
@@ -1289,38 +1288,6 @@ process_otp_scanner_input ()
                     }
                   break;
                 }
-              case SCANNER_NVT_INFO:
-                {
-                  char *feed_version, *db_feed_version;
-
-                  feed_version = g_strdup (field);
-                  g_debug ("   scanner got nvti_info: %s", feed_version);
-                  if (plugins_feed_version)
-                    g_free (plugins_feed_version);
-                  plugins_feed_version = feed_version;
-                  db_feed_version = nvts_feed_version ();
-                  if (db_feed_version
-                      && (strcmp (plugins_feed_version, db_feed_version) == 0))
-                    /* NVTs are at this version already. */
-                    return 4;
-                  g_info ("   Updating NVT cache");
-                  set_scanner_state (SCANNER_DONE);
-                  switch (parse_scanner_done (&messages))
-                    {
-                      case  0:
-                        if (scanner_init_state == SCANNER_INIT_DONE)
-                          set_scanner_init_state (SCANNER_INIT_GOT_FEED_VERSION);
-                        else if (acknowledge_feed_version_info ())
-                          goto return_error;
-                        break;
-                      case -1: goto return_error;
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                    }
-                  break;
-                }
               case SCANNER_PREFERENCE_NAME:
                 {
                   /* Use match[1] instead of field[1] for UTF-8 hack. */
@@ -1399,8 +1366,6 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_ALARM_HOST);
                 else if (strcasecmp ("LOG", field) == 0)
                   set_scanner_state (SCANNER_LOG_HOST);
-                else if (strcasecmp ("NVT_INFO", field) == 0)
-                  set_scanner_state (SCANNER_NVT_INFO);
                 else if (strcasecmp ("PLUGIN_LIST", field) == 0)
                   {
                     set_scanner_state (SCANNER_PLUGIN_LIST_OID);
