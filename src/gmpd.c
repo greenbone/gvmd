@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -505,7 +505,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
       ret = manage_scanner_set_default ();
       if (ret)
         return ret;
-      if (openvas_scanner_connect () || openvas_scanner_init (1))
+      if (openvas_scanner_connect () || openvas_scanner_init ())
         {
           openvas_scanner_close ();
           return -1;
@@ -828,7 +828,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
         {
           /* Write as much as possible to the scanner. */
 
-          switch (openvas_scanner_write (gmpd_nvt_cache_mode))
+          switch (openvas_scanner_write ())
             {
               case  0:      /* Wrote everything in to_scanner. */
                 break;
@@ -952,7 +952,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               /* Received scanner BYE.  Write out the rest of to_scanner (the
                * BYE ACK).
                */
-              openvas_scanner_write (gmpd_nvt_cache_mode);
+              openvas_scanner_write ();
               set_scanner_init_state (SCANNER_INIT_TOP);
               if (client_active == 0)
                 return 0;

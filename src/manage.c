@@ -5105,7 +5105,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
     }
 
   if (!openvas_scanner_connected ()
-      && (openvas_scanner_connect () || openvas_scanner_init (0)))
+      && (openvas_scanner_connect () || openvas_scanner_init ()))
     return -5;
 
   if (openvas_scanner_is_loading ())
@@ -5821,7 +5821,7 @@ stop_task_internal (task_t task)
                 return -5;
             }
           if (!openvas_scanner_connected ()
-              && (openvas_scanner_connect () || openvas_scanner_init (0)))
+              && (openvas_scanner_connect () || openvas_scanner_init ()))
             return -5;
           if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
             return -1;

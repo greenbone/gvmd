@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -49465,7 +49465,7 @@ verify_scanner (const char *scanner_id, char **version)
       cleanup_iterator (&scanner);
       if (openvas_scanner_connected ())
         openvas_scanner_close ();
-      if (openvas_scanner_connect () || openvas_scanner_init (0)
+      if (openvas_scanner_connect () || openvas_scanner_init ()
           || openvas_scanner_close ())
         return 2;
       if (version)

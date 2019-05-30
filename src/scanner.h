@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2018 Greenbone Networks GmbH
+/* Copyright (C) 2014-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -31,7 +31,7 @@ int
 openvas_scanner_read ();
 
 int
-openvas_scanner_write (int);
+openvas_scanner_write (void);
 
 int
 openvas_scanner_close ();
@@ -70,7 +70,7 @@ int
 openvas_scanner_connected ();
 
 int
-openvas_scanner_init (int);
+openvas_scanner_init (void);
 
 int
 openvas_scanner_is_loading ();
