@@ -356,7 +356,6 @@ typedef enum
   SCANNER_LOG_HOSTNAME,
   SCANNER_LOG_NUMBER,
   SCANNER_LOG_OID,
-  SCANNER_PLUGIN_LIST_CATEGORY,
   SCANNER_PLUGIN_LIST_NAME,
   SCANNER_PLUGIN_LIST_OID,
   SCANNER_PLUGIN_LIST_TAGS,
@@ -1221,12 +1220,6 @@ process_otp_scanner_input ()
               case SCANNER_PLUGIN_LIST_NAME:
                 {
                   nvti_set_name (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_CATEGORY);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_CATEGORY:
-                {
-                  nvti_set_category (current_plugin, atoi (field));
                   set_scanner_state (SCANNER_PLUGIN_LIST_XREFS);
                   break;
                 }
