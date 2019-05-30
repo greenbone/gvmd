@@ -186,12 +186,12 @@ find_nvt (const char* oid, nvt_t* nvt)
 }
 
 /**
- * @brief Counter for chunking in insert_nvts_list.
+ * @brief Counter for chunking in make_nvt_from_nvti.
  */
 static int chunk_count = 0;
 
 /**
- * @brief Size of chunk for insert_nvts_list.
+ * @brief Size of chunk for make_nvt_from_nvti.
  */
 #define CHUNK_SIZE 100
 
@@ -371,13 +371,16 @@ insert_nvt (const nvti_t *nvti)
 }
 
 /**
- * @brief Make an nvt from an nvti.
+ * @brief Insert nvtis into database in chunks.
  *
  * @param[in]  nvti    NVTI.
  */
 static void
 make_nvt_from_nvti (const nvti_t *nvti)
 {
+  if (nvti == NULL)
+    return;
+
   if (chunk_count == 0)
     {
       sql_begin_immediate ();
@@ -947,21 +950,6 @@ family_count ()
 }
 
 /**
- * @brief Insert an NVT from an nvti structure.
- *
- * @param[in] nvti   nvti_t to insert in nvts table.
- * @param[in] dummy  Dummy arg for g_list_foreach.
- */
-static void
-insert_nvt_from_nvti (gpointer nvti, gpointer dummy)
-{
-  if (nvti == NULL)
-    return;
-
-  make_nvt_from_nvti (nvti);
-}
-
-/**
  * @brief Insert a NVT preferences.
  *
  * @param[in] nvt_preference  Preference.
@@ -978,20 +966,6 @@ insert_nvt_preference (gpointer nvt_preference, gpointer dummy)
 
   preference = (preference_t*) nvt_preference;
   manage_nvt_preference_add (preference->name, preference->value);
-}
-
-/**
- * @brief Inserts NVTs in DB from a list of nvti_t structures.
- *
- * @param[in]  nvts_list     List of nvts to be inserted.
- */
-static void
-insert_nvts_list (GList *nvts_list)
-{
-  chunk_count = 0;
-  g_list_foreach (nvts_list, insert_nvt_from_nvti, NULL);
-  if (chunk_count > 0)
-    sql_commit ();
 }
 
 /**
@@ -1102,104 +1076,6 @@ set_nvts_check_time ()
       sql ("UPDATE meta SET value = m_now ()"
            " WHERE name = 'nvts_check_time';");
     }
-}
-
-/**
- * @brief Update config preferences that don't have a preference ID.
- */
-static void
-update_old_config_preferences ()
-{
-  iterator_t nvt_prefs;
-
-  init_iterator (&nvt_prefs, "SELECT name FROM nvt_preferences;");
-  while (next (&nvt_prefs))
-    {
-      char **splits, *quoted_name, *quoted_pref_name;
-      const char *pref_name = iterator_string (&nvt_prefs, 0);
-
-      if (!strstr (pref_name, ":"))
-        continue;
-      splits = g_strsplit (pref_name, ":", 4);
-      if (!splits || !splits[0] || !splits[1] || !splits[2] || !splits[3])
-        {
-          g_warning ("%s: Erroneous NVT preference '%s'", __FUNCTION__, pref_name);
-          g_strfreev (splits);
-          continue;
-        }
-      quoted_pref_name = sql_quote (pref_name);
-      quoted_name = sql_quote (splits[3]);
-      sql ("UPDATE config_preferences SET name = '%s'"
-           " WHERE name = '%s:%s:%s';",
-           quoted_pref_name, splits[0], splits[2], quoted_name);
-      g_free (quoted_pref_name);
-      g_free (quoted_name);
-      g_strfreev (splits);
-    }
-  cleanup_iterator (&nvt_prefs);
-}
-
-/**
- * @brief Complete an update of the NVT cache.
- *
- * @param[in]  nvts_list             List of nvti_t to insert.
- * @param[in]  nvt_preferences_list  List of preference_t to insert.
- */
-void
-manage_complete_nvt_cache_update (GList *nvts_list, GList *nvt_preferences_list)
-{
-  iterator_t configs;
-  int count;
-
-  sql_begin_immediate ();
-  if (sql_is_sqlite3 ())
-    {
-      sql ("DELETE FROM nvt_cves;");
-      sql ("DELETE FROM nvts;");
-      sql ("DELETE FROM nvt_preferences;");
-    }
-  else
-    {
-      sql ("TRUNCATE nvts CASCADE;");
-      sql ("TRUNCATE nvt_preferences;");
-    }
-  sql_commit ();
-
-  /* NVTs and preferences are buffered, insert them into DB. */
-  insert_nvts_list (nvts_list);
-  sql_begin_immediate ();
-  insert_nvt_preferences_list (nvt_preferences_list);
-  sql_commit ();
-
-  sql_begin_immediate ();
-
-  /* Remove preferences from configs where the preference has vanished from
-   * the associated NVT. Update the ones that don't have a preference ID before
-   * that. */
-  update_old_config_preferences ();
-  init_iterator (&configs, "SELECT id FROM configs;");
-  while (next (&configs))
-    sql ("DELETE FROM config_preferences"
-         " WHERE config = %llu"
-         " AND type = 'PLUGINS_PREFS'"
-         " AND name NOT IN (SELECT nvt_preferences.name FROM nvt_preferences);",
-         get_iterator_resource (&configs));
-  cleanup_iterator (&configs);
-
-  if (check_config_families ())
-    g_warning ("%s: Error updating config families."
-               "  One or more configs refer to an outdated family of an NVT.",
-               __FUNCTION__);
-  update_all_config_caches ();
-
-  refresh_nvt_cves ();
-
-  set_nvts_check_time ();
-
-  sql_commit ();
-
-  count = sql_int ("SELECT count (*) FROM nvts;");
-  g_info ("Updating NVT cache... done (%i NVTs).", count);
 }
 
 /**
@@ -1592,6 +1468,10 @@ update_nvts_from_vts (entity_t *get_vts_response,
       nvti_t *nvti = nvti_from_vt (vt);
 
       insert_nvt (nvti);
+// TODO: perhaps use chunked inserts? The next line is simply
+// to call the function so that compiler does not complain.
+      make_nvt_from_nvti (NULL);
+
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
         {
           sql_rollback ();

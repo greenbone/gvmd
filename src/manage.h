@@ -2006,9 +2006,6 @@ nvt_default_timeout (const char *);
 int
 family_nvt_count (const char *);
 
-void
-manage_complete_nvt_cache_update (GList *, GList *);
-
 
 /* NVT selectors. */
 
