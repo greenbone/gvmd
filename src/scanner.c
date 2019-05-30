@@ -404,7 +404,6 @@ openvas_scanner_write (void)
         }
       case SCANNER_INIT_SENT_VERSION:
         return 0;
-      case SCANNER_INIT_SENT_COMPLETE_LIST:
       case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
         return 0;
       case SCANNER_INIT_GOT_PLUGINS:

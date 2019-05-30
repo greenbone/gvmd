@@ -2620,9 +2620,6 @@ int
 acknowledge_bye ();
 
 int
-acknowledge_feed_version_info ();
-
-int
 manage_check_current_task ();
 
 

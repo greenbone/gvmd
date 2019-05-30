@@ -591,7 +591,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           && (scanner_init_state == SCANNER_INIT_DONE
               || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
               || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE
-              || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST
               || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
               || scanner_init_state == SCANNER_INIT_SENT_VERSION)
           && !openvas_scanner_full ())

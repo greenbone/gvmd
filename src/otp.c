@@ -848,7 +848,6 @@ process_otp_scanner_input ()
       case SCANNER_INIT_CONNECTED:
         /* Input from scanner before version string sent. */
         return -1;
-      case SCANNER_INIT_SENT_COMPLETE_LIST:
       case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
       case SCANNER_INIT_DONE:
       case SCANNER_INIT_DONE_CACHE_MODE:
@@ -1213,8 +1212,6 @@ process_otp_scanner_input ()
                         {
                           case  0:
                             if (scanner_init_state
-                                == SCANNER_INIT_SENT_COMPLETE_LIST
-                                || scanner_init_state
                                    == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE)
                               {
                                 set_scanner_init_state (SCANNER_INIT_GOT_PLUGINS);
