@@ -846,7 +846,6 @@ process_otp_scanner_input ()
         /* Input from scanner before version string sent. */
         return -1;
       case SCANNER_INIT_DONE:
-      case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
       case SCANNER_INIT_TOP:
         if (scanner_state == SCANNER_TOP)
           switch (parse_scanner_bad_login (&messages))
@@ -1284,18 +1283,6 @@ process_otp_scanner_input ()
                             /* Need more input. */
                             if (sync_buffer ()) goto return_error;
                             goto return_need_more;
-                        }
-                      if (scanner_init_state
-                             == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
-                        {
-                          manage_complete_nvt_cache_update
-                           (scanner_plugins_list,
-                            scanner_preferences_list);
-                          set_scanner_init_state (SCANNER_INIT_DONE);
-                          manage_nvt_preferences_enable ();
-                          /* Return 1, as though the scanner sent BYE. */
-                          /** @todo Exit more formally with Scanner? */
-                          goto return_bye;
                         }
                       break;
                     }

@@ -589,7 +589,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
       /* See whether we need to read from the scannner.  */
       if (openvas_scanner_connected ()
           && (scanner_init_state == SCANNER_INIT_DONE
-              || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE
               || scanner_init_state == SCANNER_INIT_SENT_VERSION)
           && !openvas_scanner_full ())
         openvas_scanner_fd_set (&readfds);
@@ -597,8 +596,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
       /* See whether we need to write to the scanner.  */
       if (openvas_scanner_connected ()
           && (((scanner_init_state == SCANNER_INIT_TOP
-                || scanner_init_state == SCANNER_INIT_DONE
-                || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
+                || scanner_init_state == SCANNER_INIT_DONE)
                && to_server_buffer_space () > 0)
               || scanner_init_state == SCANNER_INIT_CONNECTED))
         openvas_scanner_fd_set (&writefds);

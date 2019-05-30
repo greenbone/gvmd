@@ -405,7 +405,6 @@ openvas_scanner_write (void)
       case SCANNER_INIT_SENT_VERSION:
         return 0;
       case SCANNER_INIT_DONE:
-      case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
         while (1)
           switch (write_to_server_buffer ())
             {
