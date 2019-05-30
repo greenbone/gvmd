@@ -846,7 +846,6 @@ process_otp_scanner_input ()
         /* Input from scanner before version string sent. */
         return -1;
       case SCANNER_INIT_DONE:
-      case SCANNER_INIT_DONE_CACHE_MODE:
       case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
       case SCANNER_INIT_TOP:
         if (scanner_state == SCANNER_TOP)
@@ -1286,8 +1285,7 @@ process_otp_scanner_input ()
                             if (sync_buffer ()) goto return_error;
                             goto return_need_more;
                         }
-                      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
-                          || scanner_init_state
+                      if (scanner_init_state
                              == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
                         {
                           manage_complete_nvt_cache_update

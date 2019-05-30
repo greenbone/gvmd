@@ -43,7 +43,6 @@ typedef enum
 {
   SCANNER_INIT_CONNECTED,
   SCANNER_INIT_DONE,
-  SCANNER_INIT_DONE_CACHE_MODE,        /* Done, when in NVT cache rebuild. */
   SCANNER_INIT_DONE_CACHE_MODE_UPDATE, /* Done, when in NVT cache update. */
   SCANNER_INIT_SENT_VERSION,
   SCANNER_INIT_TOP
