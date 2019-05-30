@@ -605,7 +605,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                 || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
                && to_server_buffer_space () > 0)
               || scanner_init_state == SCANNER_INIT_CONNECTED
-              || scanner_init_state == SCANNER_INIT_GOT_FEED_VERSION
               || scanner_init_state == SCANNER_INIT_GOT_PLUGINS))
         openvas_scanner_fd_set (&writefds);
 

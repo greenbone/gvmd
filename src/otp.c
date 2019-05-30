@@ -842,9 +842,6 @@ process_otp_scanner_input ()
         from_scanner_start += ver_len;
         set_scanner_init_state (SCANNER_INIT_DONE);
         return 0;
-      case SCANNER_INIT_GOT_FEED_VERSION:
-        /* Nothing to parse. */
-        return 0;
       case SCANNER_INIT_GOT_PLUGINS:
         /* Nothing to parse. */
         return 0;
