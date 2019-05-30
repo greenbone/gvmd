@@ -356,7 +356,6 @@ typedef enum
   SCANNER_LOG_HOSTNAME,
   SCANNER_LOG_NUMBER,
   SCANNER_LOG_OID,
-  SCANNER_PLUGIN_LIST_BUGTRAQ_ID,
   SCANNER_PLUGIN_LIST_CATEGORY,
   SCANNER_PLUGIN_LIST_CVE_ID,
   SCANNER_PLUGIN_LIST_FAMILY,
@@ -1243,14 +1242,6 @@ process_otp_scanner_input ()
                 {
                   if (strcmp (field, "NOCVE"))
                     nvti_add_refs (current_plugin, "cve", field, "");
-
-                  set_scanner_state (SCANNER_PLUGIN_LIST_BUGTRAQ_ID);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_BUGTRAQ_ID:
-                {
-                  if (strcmp (field, "NOBID"))
-                    nvti_add_refs (current_plugin, "bid", field, "");
 
                   set_scanner_state (SCANNER_PLUGIN_LIST_XREFS);
                   break;
