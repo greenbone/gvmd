@@ -848,7 +848,6 @@ process_otp_scanner_input ()
       case SCANNER_INIT_CONNECTED:
         /* Input from scanner before version string sent. */
         return -1;
-      case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
       case SCANNER_INIT_DONE:
       case SCANNER_INIT_DONE_CACHE_MODE:
       case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
@@ -1211,12 +1210,6 @@ process_otp_scanner_input ()
                       switch (parse_scanner_done (&messages))
                         {
                           case  0:
-                            if (scanner_init_state
-                                   == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE)
-                              {
-                                set_scanner_init_state (SCANNER_INIT_GOT_PLUGINS);
-                                set_nvts_feed_version (plugins_feed_version);
-                              }
                             break;
                           case -1: goto return_error;
                           case -2:
