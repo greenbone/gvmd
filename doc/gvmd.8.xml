@@ -48,6 +48,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <options>
     <option>
+      <p><opt>-h, --help</opt></p>
+      <optdesc>
+        <p>Show help options.</p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--backup</opt></p>
       <optdesc>
         <p>Backup the database.</p>
@@ -394,7 +400,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <section name="EXAMPLES">
     <p>gvmd --port 1241</p>
-    <p>Serve GMP clients on port 1241 and connect to a OTP server on 7772.</p>
+    <p>Serve GMP clients on port 1241 and connect to an OpenVAS scanner via the
+       default OTP file socket.</p>
   </section>
 
   <section name="SEE ALSO">
@@ -405,23 +412,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </p>
   </section>
 
-  <section name="MORE INFORMATION ABOUT THE OpenVAS PROJECT">
+  <section name="MORE INFORMATION ABOUT Greenbone Vulnerability Management">
     <p>
       The canonical places where you will find more information
-      about the OpenVAS project are:
-
-      <url href="http://www.openvas.org/"/>
-        (Official site)
-
-      <url href="http://wald.intevation.org/projects/openvas/"/>
+      about the Greenbone Vulnerability Manager are:
+    </p>
+    <p>
+      <url href="https://community.greenbone.net"/>
+        (Community portal)
+    </p>
+    <p>
+      <url href="https://github.com/greenbone"/>
         (Development Platform)
+    </p>
+    <p>
+      <url href="https://greenbone.net"/>
+        (Greenbone website)
     </p>
   </section>
 
   <section name="COPYRIGHT">
     <p>
-      The Greenbone Vulnerability Manager is released under the GNU GPL, version 2,
-      or, at your option, any later version.
+      The Greenbone Vulnerability Manager is released under the GNU GPL,
+      version 2, or, at your option, any later version.
     </p>
   </section>
 
