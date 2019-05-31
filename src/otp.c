@@ -358,7 +358,6 @@ typedef enum
   SCANNER_LOG_OID,
   SCANNER_PLUGIN_LIST_OID,
   SCANNER_PLUGIN_LIST_TAGS,
-  SCANNER_PLUGIN_LIST_XREFS,
   SCANNER_PREFERENCE_NAME,
   SCANNER_PREFERENCE_VALUE,
   SCANNER_SERVER,
@@ -1213,22 +1212,7 @@ process_otp_scanner_input ()
                   current_plugin = nvti_new ();
                   if (current_plugin == NULL) abort ();
                   nvti_set_oid (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_XREFS);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_XREFS:
-                {
-                  if (strcmp (field, "NOXREF"))
-                    nvti_add_refs (current_plugin, NULL, field, "");
-
                   set_scanner_state (SCANNER_PLUGIN_LIST_TAGS);
-                  switch (parse_scanner_plugin_list_tags (&messages))
-                    {
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                    }
                   break;
                 }
               case SCANNER_PREFERENCE_NAME:
