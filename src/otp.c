@@ -311,11 +311,6 @@ static char* current_scanner_preference = NULL;
 static nvti_t* current_plugin = NULL;
 
 /**
- * @brief The full plugins list, during reading of scanner plugin list.
- */
-static GList* scanner_plugins_list = NULL;
-
-/**
  * @brief The full preferences list, during reading of scanner plugin list.
  */
 static GList* scanner_preferences_list = NULL;
@@ -357,7 +352,6 @@ typedef enum
   SCANNER_LOG_NUMBER,
   SCANNER_LOG_OID,
   SCANNER_PLUGIN_LIST_OID,
-  SCANNER_PLUGIN_LIST_TAGS,
   SCANNER_PREFERENCE_NAME,
   SCANNER_PREFERENCE_VALUE,
   SCANNER_SERVER,
@@ -587,62 +581,6 @@ parse_scanner_preference_value (char** messages)
 }
 
 /**
- * @brief Parse the tags of a plugin list.
- *
- * @param  messages  A pointer into the OTP input buffer.
- *
- * @return 0 success, -2 too few characters (need more input).
- */
-static int
-parse_scanner_plugin_list_tags (char** messages)
-{
-  char *value, *end, *match;
-  assert (current_plugin != NULL);
-  end = *messages + from_scanner_end - from_scanner_start;
-  while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_scanner_start++; }
-  if ((match = memchr (*messages,
-                       (int) '\n',
-                       from_scanner_end - from_scanner_start)))
-    {
-      match[0] = '\0';
-      value = g_strdup (*messages);
-      blank_control_chars (value);
-      if (value != NULL)
-        {
-          char* pos = value;
-          while (*pos)
-            {
-              if (*pos == ';')
-                *pos = '\n';
-              pos++;
-            }
-        }
-      if (current_plugin)
-        {
-          gchar *tags, *cvss_base;
-          parse_tags (value, &tags, &cvss_base);
-          nvti_set_tag (current_plugin, tags);
-          nvti_set_cvss_base (current_plugin, cvss_base);
-          g_free (tags);
-          g_free (cvss_base);
-
-          /* Add the plugin to scanner_plugins_list which will be bulk-inserted
-           * in DB later in manage_complete_nvt_cache_update. */
-          scanner_plugins_list = g_list_prepend (scanner_plugins_list,
-                                                 current_plugin);
-          current_plugin = NULL;
-        }
-      set_scanner_state (SCANNER_PLUGIN_LIST_OID);
-      from_scanner_start += match + 1 - *messages;
-      *messages = match + 1;
-      g_free (value);
-      return 0;
-    }
-  return -2;
-}
-
-/**
  * @brief Parse the field following "SERVER <|>".
  *
  * @param  messages  A pointer into the OTP input buffer.
@@ -851,14 +789,6 @@ process_otp_scanner_input ()
           switch (parse_scanner_done (&messages))
             {
               case -1: return -1;
-              case -2:
-                /* Need more input. */
-                if (sync_buffer ()) return -1;
-                return 0;
-            }
-        else if (scanner_state == SCANNER_PLUGIN_LIST_TAGS)
-          switch (parse_scanner_plugin_list_tags (&messages))
-            {
               case -2:
                 /* Need more input. */
                 if (sync_buffer ()) return -1;
@@ -1212,7 +1142,7 @@ process_otp_scanner_input ()
                   current_plugin = nvti_new ();
                   if (current_plugin == NULL) abort ();
                   nvti_set_oid (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_TAGS);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_OID);
                   break;
                 }
               case SCANNER_PREFERENCE_NAME:
