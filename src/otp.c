@@ -306,11 +306,6 @@ static char* current_scanner_preference = NULL;
 /* Scanner plugins. */
 
 /**
- * @brief The current plugin, during reading of scanner plugin list.
- */
-static nvti_t* current_plugin = NULL;
-
-/**
  * @brief The full preferences list, during reading of scanner plugin list.
  */
 static GList* scanner_preferences_list = NULL;
@@ -351,7 +346,6 @@ typedef enum
   SCANNER_LOG_HOSTNAME,
   SCANNER_LOG_NUMBER,
   SCANNER_LOG_OID,
-  SCANNER_PLUGIN_LIST_OID,
   SCANNER_PREFERENCE_NAME,
   SCANNER_PREFERENCE_VALUE,
   SCANNER_SERVER,
@@ -1120,31 +1114,6 @@ process_otp_scanner_input ()
                     }
                   break;
                 }
-              case SCANNER_PLUGIN_LIST_OID:
-                {
-                  /* Use match[1] instead of field[1] for UTF-8 hack. */
-                  if (strlen (field) == 0 && match[1] == '|')
-                    {
-                      set_scanner_state (SCANNER_DONE);
-                      switch (parse_scanner_done (&messages))
-                        {
-                          case  0:
-                            break;
-                          case -1: goto return_error;
-                          case -2:
-                            /* Need more input. */
-                            if (sync_buffer ()) goto return_error;
-                            goto return_need_more;
-                        }
-                      break;
-                    }
-                  assert (current_plugin == NULL);
-                  current_plugin = nvti_new ();
-                  if (current_plugin == NULL) abort ();
-                  nvti_set_oid (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_OID);
-                  break;
-                }
               case SCANNER_PREFERENCE_NAME:
                 {
                   /* Use match[1] instead of field[1] for UTF-8 hack. */
@@ -1212,7 +1181,6 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_LOG_HOST);
                 else if (strcasecmp ("PLUGIN_LIST", field) == 0)
                   {
-                    set_scanner_state (SCANNER_PLUGIN_LIST_OID);
                   }
                 else if (strcasecmp ("PREFERENCES", field) == 0)
                   {
