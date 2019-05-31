@@ -16686,19 +16686,20 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
  * @return 0 success, -1 error, -2 database is wrong version.
  */
 static int
-check_db_versions (int nvt_cache_mode)
+check_db_versions ()
 {
   char *database_version;
   int scap_db_version, cert_db_version;
+  long long int count;
 
   database_version = sql_string ("SELECT value FROM %s.meta"
                                  " WHERE name = 'database_version';",
                                  sql_schema ());
-  if (nvt_cache_mode)
+
+  if (database_version)
     {
-      if (database_version
-          && strcmp (database_version,
-                     G_STRINGIFY (GVMD_DATABASE_VERSION)))
+      if (strcmp (database_version,
+                  G_STRINGIFY (GVMD_DATABASE_VERSION)))
         {
           g_message ("%s: database version of database: %s",
                      __FUNCTION__,
@@ -16711,47 +16712,23 @@ check_db_versions (int nvt_cache_mode)
         }
       g_free (database_version);
 
-      /* If database_version was NULL then meta was missing, so assume
-       * that the database is missing, which is OK. */
-    }
-  else
-    {
-      long long int count;
+      /* Check that the database was initialised from the scanner.
+       *
+       * This can also fail after a migration, for example if the database
+       * was created before NVT preferences were cached in the database.
+       */
 
-      if (database_version)
-        {
-          if (strcmp (database_version,
-                      G_STRINGIFY (GVMD_DATABASE_VERSION)))
-            {
-              g_message ("%s: database version of database: %s",
-                         __FUNCTION__,
-                         database_version);
-              g_message ("%s: database version supported by manager: %s",
-                         __FUNCTION__,
-                         G_STRINGIFY (GVMD_DATABASE_VERSION));
-              g_free (database_version);
-              return -2;
-            }
-          g_free (database_version);
-
-          /* Check that the database was initialised from the scanner.
-           *
-           * This can also fail after a migration, for example if the database
-           * was created before NVT preferences were cached in the database.
-           */
-
-          if (sql_int64 (&count,
-                         "SELECT count(*) FROM %s.meta"
-                         " WHERE name = 'nvts_feed_version'"
-                         " OR name = 'nvt_preferences_enabled';",
-                         sql_schema ())
-              || count < 2)
-            g_warning ("database must be initialised from scanner");
-        }
-      else
-        /* Assume database is missing. */
+      if (sql_int64 (&count,
+                     "SELECT count(*) FROM %s.meta"
+                     " WHERE name = 'nvts_feed_version'"
+                     " OR name = 'nvt_preferences_enabled';",
+                     sql_schema ())
+          || count < 2)
         g_warning ("database must be initialised from scanner");
     }
+  else
+    /* Assume database is missing. */
+    g_warning ("database must be initialised from scanner");
 
   /* Check SCAP database version. */
 
@@ -18161,7 +18138,7 @@ init_manage_internal (GSList *log_config,
 
   /* Check that the versions of the databases are correct. */
 
-  ret = check_db_versions (0);
+  ret = check_db_versions ();
   if (ret)
     return ret;
 
