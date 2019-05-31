@@ -2542,7 +2542,7 @@ main (int argc, char** argv)
 
   /* Initialise GMP daemon. */
 
-  switch (init_gmpd (log_config, 0, database, max_ips_per_target,
+  switch (init_gmpd (log_config, database, max_ips_per_target,
                      max_email_attachment_size, max_email_include_size,
                      max_email_message_size,
                      fork_connection_for_event, 0))

@@ -105,12 +105,12 @@ static int gmpd_nvt_cache_mode = 0;
  *         -4 max_ips_per_target out of range.
  */
 int
-init_gmpd (GSList *log_config, int nvt_cache_mode, const gchar *database,
+init_gmpd (GSList *log_config, const gchar *database,
            int max_ips_per_target, int max_email_attachment_size,
            int max_email_include_size, int max_email_message_size,
            manage_connection_forker_t fork_connection, int skip_db_check)
 {
-  return init_gmp (log_config, nvt_cache_mode, database, max_ips_per_target,
+  return init_gmp (log_config, 0, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
                    max_email_message_size,
                    fork_connection, skip_db_check);
