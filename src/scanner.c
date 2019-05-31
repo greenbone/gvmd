@@ -363,7 +363,7 @@ openvas_scanner_realloc ()
  *         -3 did an initialisation step.
  */
 int
-openvas_scanner_write (void)
+openvas_scanner_write ()
 {
   if (openvas_scanner_socket == -1)
     return -1;
@@ -742,7 +742,7 @@ openvas_scanner_connected ()
  * @return 0 success, -1 error.
  */
 int
-openvas_scanner_init (void)
+openvas_scanner_init ()
 {
   int ret;
 
