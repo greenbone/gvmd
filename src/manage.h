@@ -113,7 +113,7 @@ typedef int (*manage_connection_forker_t) (gvm_connection_t * conn,
                                            const gchar* uuid);
 
 int
-init_manage (GSList*, int, const gchar *, int, int, int, int,
+init_manage (GSList*, const gchar *, int, int, int, int,
              manage_connection_forker_t, int);
 
 int

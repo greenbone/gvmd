@@ -30134,7 +30134,7 @@ init_gmp (GSList *log_config, const gchar *database,
                      (GLogFunc) gvm_log_func,
                      log_config);
   command_data_init (&command_data);
-  return init_manage (log_config, 0, database, max_ips_per_target,
+  return init_manage (log_config, database, max_ips_per_target,
                       max_email_attachment_size, max_email_include_size,
                       max_email_message_size,
                       fork_connection, skip_db_check);
