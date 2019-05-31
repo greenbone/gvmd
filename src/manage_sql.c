@@ -1707,7 +1707,7 @@ cleanup_keyword (keyword_t *keyword)
     }
   else if (strcasecmp (keyword->column, "autofp") == 0)
     {
-      /* min_qod must be a percentage (between 0 and 2) */
+      /* autofp must be either 0, 1 or 2) */
       if (keyword->integer_value < 0)
         {
           g_free (keyword->string);
