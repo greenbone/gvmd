@@ -186,16 +186,6 @@ find_nvt (const char* oid, nvt_t* nvt)
 }
 
 /**
- * @brief Counter for chunking in make_nvt_from_nvti.
- */
-static int chunk_count = 0;
-
-/**
- * @brief Size of chunk for make_nvt_from_nvti.
- */
-#define CHUNK_SIZE 100
-
-/**
  * @brief Insert an NVT.
  *
  * @param[in]  nvti       NVT Information.
@@ -368,33 +358,6 @@ insert_nvt (const nvti_t *nvti)
   g_free (quoted_family);
   g_free (quoted_solution_type);
   g_free (quoted_qod_type);
-}
-
-/**
- * @brief Insert nvtis into database in chunks.
- *
- * @param[in]  nvti    NVTI.
- */
-static void
-make_nvt_from_nvti (const nvti_t *nvti)
-{
-  if (nvti == NULL)
-    return;
-
-  if (chunk_count == 0)
-    {
-      sql_begin_immediate ();
-      chunk_count++;
-    }
-  else if (chunk_count == CHUNK_SIZE)
-    chunk_count = 0;
-  else
-    chunk_count++;
-
-  insert_nvt (nvti);
-
-  if (chunk_count == 0)
-    sql_commit ();
 }
 
 /**
@@ -1468,9 +1431,6 @@ update_nvts_from_vts (entity_t *get_vts_response,
       nvti_t *nvti = nvti_from_vt (vt);
 
       insert_nvt (nvti);
-// TODO: perhaps use chunked inserts? The next line is simply
-// to call the function so that compiler does not complain.
-      make_nvt_from_nvti (NULL);
 
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
         {
