@@ -18070,7 +18070,6 @@ cleanup_tables ()
  * Optionally also stop active tasks.
  *
  * @param[in]  log_config      Log configuration.
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
@@ -18088,7 +18087,6 @@ cleanup_tables ()
  */
 static int
 init_manage_internal (GSList *log_config,
-                      int nvt_cache_mode,
                       const gchar *database,
                       int max_ips_per_target,
                       int max_email_attachment_size,
@@ -18163,7 +18161,7 @@ init_manage_internal (GSList *log_config,
 
   /* Check that the versions of the databases are correct. */
 
-  ret = check_db_versions (nvt_cache_mode);
+  ret = check_db_versions (0);
   if (ret)
     return ret;
 
@@ -18190,7 +18188,7 @@ init_manage_internal (GSList *log_config,
       sql ("INSERT INTO meta (name, value) VALUES ('max_hosts', %i);", max_hosts);
     }
 
-  if (stop_tasks && (nvt_cache_mode == 0))
+  if (stop_tasks)
     /* Stop any active tasks. */
     stop_active_tasks ();
 
@@ -18238,7 +18236,6 @@ init_manage (GSList *log_config, const gchar *database,
              int skip_db_check)
 {
   return init_manage_internal (log_config,
-                               0,
                                database,
                                max_ips_per_target,
                                max_email_attachment_size,
@@ -18269,7 +18266,6 @@ init_manage_helper (GSList *log_config, const gchar *database,
                     int max_ips_per_target)
 {
   return init_manage_internal (log_config,
-                               0,   /* Run daemon in NVT cache mode. */
                                database,
                                max_ips_per_target,
                                0,   /* Default max_email_attachment_size. */
