@@ -1096,89 +1096,6 @@ handle_sigabrt_simple (int signal)
 }
 
 /**
- * @brief Updates the NVT Cache and exits or returns exit code.
- *
- * @param[in]  register_cleanup        Whether to register cleanup with atexit.
- *
- * @return If this function did not exit itself, returns exit code.
- */
-static int
-update_nvt_cache (int register_cleanup)
-{
-  int ret;
-  gvm_connection_t connection;
-
-  /* Initialise GMP daemon. */
-
-  proctitle_set ("gvmd: Updating NVT cache");
-
-  switch (init_gmpd (log_config,
-                     -1,
-                     database,
-                     manage_max_hosts (),
-                     0, /* Max email attachment size. */
-                     0, /* Max email include size. */
-                     0, /* Max email message size. */
-                     NULL,
-                     1  /* Skip DB check (including table creation). */))
-    {
-      case 0:
-        break;
-      case -2:
-        g_critical ("%s: database is wrong version", __FUNCTION__);
-        log_config_free ();
-        exit (EXIT_FAILURE);
-        break;
-      case -1:
-      default:
-        g_critical ("%s: failed to initialise GMP daemon", __FUNCTION__);
-        log_config_free ();
-        exit (EXIT_FAILURE);
-    }
-
-  /* Register the `cleanup' function. */
-
-  if (register_cleanup && atexit (&cleanup))
-    {
-      g_critical ("%s: failed to register `atexit' cleanup function",
-                  __FUNCTION__);
-      log_config_free ();
-      exit (EXIT_FAILURE);
-    }
-
-  /* Register the signal handlers. */
-
-  setup_signal_handler (SIGTERM, handle_termination_signal, 0);
-  setup_signal_handler (SIGABRT, handle_sigabrt, 1);
-  setup_signal_handler (SIGINT, handle_termination_signal, 0);
-  setup_signal_handler (SIGHUP, SIG_IGN, 0);
-  setup_signal_handler (SIGQUIT, handle_termination_signal, 0);
-  setup_signal_handler (SIGSEGV, handle_sigsegv, 1);
-  setup_signal_handler (SIGCHLD, SIG_IGN, 0);
-
-  /* Call the GMP client serving function with a special client socket
-   * value.  This invokes a scanner-only manager loop which will
-   * request and cache the plugins, then exit. */
-
-  connection.socket = -1;
-  ret = serve_gmp (&connection, database, NULL);
-  openvas_scanner_close ();
-  switch (ret)
-    {
-      case 0:
-        return EXIT_SUCCESS;
-      case 1:
-        return 2;
-      case -2:
-        g_critical ("%s: scanner OpenVAS Default has no cert", __FUNCTION__);
-        return EXIT_FAILURE;
-      default:
-      case -1:
-        return EXIT_FAILURE;
-    }
-}
-
-/**
  * @brief Update the NVT Cache using OSP.
  *
  * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
@@ -1223,11 +1140,8 @@ update_nvt_cache_retry ()
         }
       else if (child_pid == 0)
         {
-          /* Child: Try reload. */
           if (osp_update_socket)
             exit (update_nvt_cache_osp (osp_update_socket));
-          else
-            exit (update_nvt_cache (0));
         }
     }
 }
