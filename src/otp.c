@@ -1179,9 +1179,6 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_ALARM_HOST);
                 else if (strcasecmp ("LOG", field) == 0)
                   set_scanner_state (SCANNER_LOG_HOST);
-                else if (strcasecmp ("PLUGIN_LIST", field) == 0)
-                  {
-                  }
                 else if (strcasecmp ("PREFERENCES", field) == 0)
                   {
                     assert (current_scanner_preference == NULL);
