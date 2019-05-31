@@ -1653,6 +1653,100 @@ parse_keyword (keyword_t* keyword)
 }
 
 /**
+ * @brief Cleans up keywords with special conditions and relations.
+ *
+ * @param[in]  keyword  Keyword to clean up.
+ */
+static void
+cleanup_keyword (keyword_t *keyword)
+{
+  if (strcasecmp (keyword->column, "first") == 0)
+    {
+      /* "first" must be >= 1 */
+      if (keyword->integer_value <= 0)
+        {
+          g_free (keyword->string);
+          keyword->integer_value = 1;
+          keyword->string = g_strdup ("1");
+        }
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+    }
+  else if (strcasecmp (keyword->column, "rows") == 0)
+    {
+      /* rows must be >= 1 or a special value (-1 or -2) */
+      if (keyword->integer_value == 0)
+        {
+          g_free (keyword->string);
+          keyword->integer_value = 1;
+          keyword->string = g_strdup ("1");
+        }
+      else if (keyword->integer_value < -2)
+        {
+          g_free (keyword->string);
+          keyword->integer_value = -1;
+          keyword->string = g_strdup ("-1");
+        }
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+    }
+  else if (strcasecmp (keyword->column, "min_qod") == 0)
+    {
+      /* min_qod must be a percentage (between 0 and 100) */
+      if (keyword->integer_value < 0)
+        {
+          g_free (keyword->string);
+          keyword->integer_value = 0;
+          keyword->string = g_strdup ("0");
+        }
+      else if (keyword->integer_value > 100)
+        {
+          g_free (keyword->string);
+          keyword->integer_value = 100;
+          keyword->string = g_strdup ("100");
+        }
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+    }
+  else if (strcasecmp (keyword->column, "autofp") == 0)
+    {
+      /* autofp must be either 0, 1 or 2) */
+      if (keyword->integer_value < 0)
+        {
+          g_free (keyword->string);
+          keyword->integer_value = 0;
+          keyword->string = g_strdup ("0");
+        }
+      else if (keyword->integer_value > 2)
+        {
+          g_free (keyword->string);
+          keyword->integer_value = 0;
+          keyword->string = g_strdup ("0");
+        }
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+    }
+  else if (strcasecmp (keyword->column, "apply_overrides") == 0
+           || strcasecmp (keyword->column, "overrides") == 0
+           || strcasecmp (keyword->column, "notes") == 0
+           || strcasecmp (keyword->column, "result_hosts_only") == 0)
+    {
+      /* Boolean options (0 or 1) */
+      if (keyword->integer_value != 0 && keyword->integer_value != 1)
+        {
+          g_free (keyword->string);
+          keyword->integer_value = 1;
+          keyword->string = g_strdup ("1");
+        }
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+    }
+  else if (strcasecmp (keyword->column, "delta_states") == 0
+           || strcasecmp (keyword->column, "levels") == 0
+           || strcasecmp (keyword->column, "sort") == 0
+           || strcasecmp (keyword->column, "sort-reverse") == 0)
+    {
+      /* Text options */
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+    }
+}
+
+/**
  * @brief Check whether a keyword has any effect in the filter.
  *
  * Some keywords are redundant, like a second sort= keyword.
@@ -2030,6 +2124,7 @@ split_filter (const gchar* given_filter)
               }
             keyword->string = g_strndup (current_part, filter - current_part);
             parse_keyword (keyword);
+            cleanup_keyword (keyword);
             if (keyword_applies (parts, keyword))
               array_add (parts, keyword);
             keyword = NULL;
@@ -2049,6 +2144,7 @@ split_filter (const gchar* given_filter)
                 keyword->string = g_strndup (current_part,
                                              filter - current_part);
                 parse_keyword (keyword);
+                cleanup_keyword (keyword);
                 if (keyword_applies (parts, keyword))
                   array_add (parts, keyword);
                 keyword = NULL;
@@ -2099,6 +2195,7 @@ split_filter (const gchar* given_filter)
           keyword->quoted = in_quote;
           keyword->string = g_strdup (current_part);
           parse_keyword (keyword);
+          cleanup_keyword (keyword);
           if (keyword_applies (parts, keyword))
             array_add (parts, keyword);
           keyword = NULL;
