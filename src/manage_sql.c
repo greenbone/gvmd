@@ -16681,8 +16681,6 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
 /**
  * @brief Ensure that the databases are the right versions.
  *
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
- *
  * @return 0 success, -1 error, -2 database is wrong version.
  */
 static int

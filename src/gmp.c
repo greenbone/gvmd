@@ -30110,7 +30110,6 @@ extern buffer_size_t from_client_end;
  * @brief Initialise GMP library.
  *
  * @param[in]  log_config      Logging configuration list.
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of manage database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
