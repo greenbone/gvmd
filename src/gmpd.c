@@ -110,7 +110,7 @@ init_gmpd (GSList *log_config, const gchar *database,
            int max_email_include_size, int max_email_message_size,
            manage_connection_forker_t fork_connection, int skip_db_check)
 {
-  return init_gmp (log_config, 0, database, max_ips_per_target,
+  return init_gmp (log_config, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
                    max_email_message_size,
                    fork_connection, skip_db_check);
