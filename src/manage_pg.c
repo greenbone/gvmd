@@ -2842,6 +2842,13 @@ create_tables ()
        "  name text,"
        "  value text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS vt_refs"
+       " (id SERIAL PRIMARY KEY,"
+       "  vt_oid text NOT NULL,"
+       "  type text NOT NULL,"
+       "  ref_id text NOT NULL,"
+       "  ref_text text);");
+
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
        " (id SERIAL PRIMARY KEY,"
        "  name text UNIQUE NOT NULL,"
@@ -3240,6 +3247,9 @@ create_tables ()
 
   sql ("SELECT create_index ('tag_resources_trash_by_tag',"
        "                     'tag_resources_trash', 'tag');");
+
+  sql ("SELECT create_index ('vt_refs_by_vt_oid',"
+       "                     'vt_refs', 'vt_oid');");
 
 
 #if 0
