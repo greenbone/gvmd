@@ -80,8 +80,8 @@ Ensure (manage, truncate_certificate_given_truncated)
 
 /* Test suite. */
 
-TestSuite *
-manage_tests ()
+int
+main (int argc, char **argv)
 {
   TestSuite *suite;
 
@@ -89,5 +89,8 @@ manage_tests ()
 
   add_test_with_context (suite, manage, truncate_certificate_given_truncated);
 
-  return suite;
+  if (argc > 1)
+    return run_single_test (suite, argv[1], create_text_reporter ());
+
+  return run_test_suite (suite, create_text_reporter ());
 }

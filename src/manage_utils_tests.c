@@ -53,8 +53,8 @@ Ensure (manage_utils, current_offset_returns_correct_values)
 
 /* Test suite. */
 
-TestSuite *
-manage_utils_tests ()
+int
+main (int argc, char **argv)
 {
   TestSuite *suite;
 
@@ -66,5 +66,8 @@ manage_utils_tests ()
 
   add_test_with_context (suite, manage_utils, current_offset_returns_correct_values);
 
-  return suite;
+  if (argc > 1)
+    return run_single_test (suite, argv[1], create_text_reporter ());
+
+  return run_test_suite (suite, create_text_reporter ());
 }
