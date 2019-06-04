@@ -1660,6 +1660,9 @@ parse_keyword (keyword_t* keyword)
 static void
 cleanup_keyword (keyword_t *keyword)
 {
+  if (keyword->column == NULL)
+    return;
+
   if (strcasecmp (keyword->column, "first") == 0)
     {
       /* "first" must be >= 1 */
