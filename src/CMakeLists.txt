@@ -129,7 +129,7 @@ add_executable (gmp-tickets-test
                 gmp.c gmp_base.c gmp_delete.c gmp_get.c)
 
 add_executable (${BINARY_NAME}
-                gvmd.c gmpd.c
+                main.c gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_ranges_all_tcp_nmap_5_51_top_100.c
                 manage_ranges_all_tcp_nmap_5_51_top_1000.c
