@@ -89,7 +89,5 @@ manage_tests ()
 
   add_test_with_context (suite, manage, truncate_certificate_given_truncated);
 
-  add_test_with_context (suite, manage, delete_reports_deletes_each_report);
-
   return suite;
 }
