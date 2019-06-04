@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -49,7 +49,7 @@
 #define TRUNCATE_TEXT_SUFFIX "[...]\n(text truncated)"
 
 int
-init_gmp (GSList *, int, const gchar *, int, int, int, int,
+init_gmp (GSList *, const gchar *, int, int, int, int,
           manage_connection_forker_t, int);
 
 void
