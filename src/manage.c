@@ -4653,7 +4653,7 @@ fork_osp_scan_handler (task_t task, target_t target)
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_OPENVAS)
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS)
     {
       rc = launch_osp_openvas_task (task, target, report_id, &error);
     }
@@ -6127,9 +6127,11 @@ run_task (const char *task_id, char **report_id, int from)
   if (scanner_type (scanner) == SCANNER_TYPE_GMP)
     return run_gmp_task (task, scanner, from, report_id);
 
-  if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
+  if (scanner_type (scanner) == SCANNER_TYPE_OPENVAS
+      || scanner_type (scanner) == SCANNER_TYPE_OSP)
     return run_osp_task (task);
 
+  // TODO: Remove OTP task handling
   return run_otp_task (task, scanner, from, report_id);
 }
 
@@ -6288,7 +6290,8 @@ stop_task (const char *task_id)
   if (task == 0)
     return 3;
 
-  if (config_type (task_config (task)) != 0)
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
+      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP)
     return stop_osp_task (task);
 
   return stop_task_internal (task);

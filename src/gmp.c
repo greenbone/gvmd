@@ -17178,7 +17178,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL ("</tasks>");
         }
       if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
-           || scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP_OPENVAS)
+           || scanner_iterator_type (&scanners) == SCANNER_TYPE_OPENVAS)
           && get_scanners_data->get.details)
         {
           char *s_name = NULL, *s_ver = NULL;

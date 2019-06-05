@@ -317,7 +317,6 @@ typedef enum scanner_type
   SCANNER_TYPE_OPENVAS,
   SCANNER_TYPE_CVE,
   SCANNER_TYPE_GMP,
-  SCANNER_TYPE_OSP_OPENVAS,
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 

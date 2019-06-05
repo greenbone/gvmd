@@ -37053,8 +37053,7 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
   ctype = config_type (config);
   stype = scanner_type (scanner);
 
-  if (ctype == 0
-      && (stype == SCANNER_TYPE_OPENVAS || stype == SCANNER_TYPE_OSP_OPENVAS))
+  if (ctype == 0 && stype == SCANNER_TYPE_OPENVAS)
     return 1;
   if (ctype == 0 && stype == SCANNER_TYPE_GMP)
     return 1;
@@ -37127,7 +37126,7 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
     return 0;
 
   /* OpenVAS Scanner with OpenVAS config. */
-  if ((stype == SCANNER_TYPE_OPENVAS || stype == SCANNER_TYPE_OSP_OPENVAS)
+  if ((stype == SCANNER_TYPE_OPENVAS)
       && ctype == 0)
     return 0;
 
@@ -49473,7 +49472,7 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP
-           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_OPENVAS)
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
     {
       int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
                                                NULL, NULL, NULL);
@@ -49482,44 +49481,10 @@ verify_scanner (const char *scanner_id, char **version)
         return 2;
       return 0;
     }
-  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
-    {
-      const char *host = scanner_iterator_host (&scanner);
-
-      if (host && *host == '/')
-        openvas_scanner_set_unix (host);
-      else
-        {
-          if (openvas_scanner_set_address (scanner_iterator_host (&scanner),
-                                           scanner_iterator_port (&scanner))
-              == -1)
-            {
-              cleanup_iterator (&scanner);
-              return 2;
-            }
-
-          if (set_certs (scanner_iterator_ca_pub (&scanner),
-                         scanner_iterator_key_pub (&scanner),
-                         scanner_iterator_key_priv (&scanner)))
-            {
-              cleanup_iterator (&scanner);
-              return 3;
-            }
-        }
-      cleanup_iterator (&scanner);
-      if (openvas_scanner_connected ())
-        openvas_scanner_close ();
-      if (openvas_scanner_connect () || openvas_scanner_init (0)
-          || openvas_scanner_close ())
-        return 2;
-      if (version)
-        *version = g_strdup ("OTP/2.0");
-      return 0;
-    }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CVE)
     {
       if (version)
-        *version = g_strdup ("OTP/2.0");
+        *version = g_strdup ("GVM/" GVMD_VERSION);
       cleanup_iterator (&scanner);
       return 0;
     }
