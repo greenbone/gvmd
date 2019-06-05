@@ -34,8 +34,6 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include (FindPkgConfig)
 
-enable_testing ()
-
 if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Debug)
 endif (NOT CMAKE_BUILD_TYPE)
@@ -291,6 +289,10 @@ endif (NOT SKIP_SRC)
 ## Documentation
 
 add_subdirectory (doc)
+
+## Testing
+
+enable_testing ()
 
 ## Install
 

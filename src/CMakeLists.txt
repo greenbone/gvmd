@@ -90,6 +90,7 @@ else (BACKEND STREQUAL SQLITE3)
 endif (BACKEND STREQUAL SQLITE3)
 
 add_executable (manage-utils-test
+                EXCLUDE_FROM_ALL
                 manage_utils_tests.c
 
                 gvmd.c gmpd.c
@@ -111,6 +112,7 @@ add_executable (manage-utils-test
 add_test (manage-utils-test manage-utils-test)
 
 add_executable (manage-test
+                EXCLUDE_FROM_ALL
                 manage_tests.c
 
                 gvmd.c gmpd.c
@@ -132,6 +134,7 @@ add_executable (manage-test
 add_test (manage-test manage-test)
 
 add_executable (gmp-tickets-test
+                EXCLUDE_FROM_ALL
                 gmp_tickets_tests.c
 
                 gvmd.c gmpd.c
@@ -151,6 +154,9 @@ add_executable (gmp-tickets-test
                 gmp.c gmp_base.c gmp_delete.c gmp_get.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
+
+add_custom_target (tests
+                   DEPENDS gmp-tickets-test manage-test manage-utils-test)
 
 add_executable (${BINARY_NAME}
                 main.c gvmd.c gmpd.c
