@@ -113,7 +113,7 @@ internal_error_send_to_client (GError **);
 
 void
 log_event (const char *, const char *, const char *, const char *)
-  __attribute__((weak));
+  __attribute__ ((weak));
 
 void
 log_event_fail (const char *, const char *, const char *, const char *);
