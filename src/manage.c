@@ -5105,7 +5105,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
     }
 
   if (!openvas_scanner_connected ()
-      && (openvas_scanner_connect () || openvas_scanner_init (0)))
+      && (openvas_scanner_connect () || openvas_scanner_init ()))
     return -5;
 
   if (openvas_scanner_is_loading ())
@@ -5821,7 +5821,7 @@ stop_task_internal (task_t task)
                 return -5;
             }
           if (!openvas_scanner_connected ()
-              && (openvas_scanner_connect () || openvas_scanner_init (0)))
+              && (openvas_scanner_connect () || openvas_scanner_init ()))
             return -5;
           if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
             return -1;
@@ -6060,20 +6060,6 @@ int
 acknowledge_bye ()
 {
   if (send_to_server ("CLIENT <|> BYE <|> ACK\n"))
-    return -1;
-  return 0;
-}
-
-/**
- * @brief Acknowledge scanner PLUGINS_FEED_VERSION message,
- * @brief requesting all plugin info.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer.
- */
-int
-acknowledge_feed_version_info ()
-{
-  if (send_to_server ("CLIENT <|> COMPLETE_LIST <|> CLIENT\n"))
     return -1;
   return 0;
 }

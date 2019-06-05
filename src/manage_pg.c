@@ -2842,6 +2842,13 @@ create_tables ()
        "  name text,"
        "  value text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS vt_refs"
+       " (id SERIAL PRIMARY KEY,"
+       "  vt_oid text NOT NULL,"
+       "  type text NOT NULL,"
+       "  ref_id text NOT NULL,"
+       "  ref_text text);");
+
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
        " (id SERIAL PRIMARY KEY,"
        "  name text UNIQUE NOT NULL,"
@@ -2865,12 +2872,6 @@ create_tables ()
        "  solution_type text,"
        "  qod integer,"
        "  qod_type text);");
-
-  sql ("CREATE TABLE IF NOT EXISTS nvt_cves"
-       " (id SERIAL PRIMARY KEY,"
-       "  nvt integer REFERENCES nvts (id) ON DELETE RESTRICT,"
-       "  oid text,"
-       "  cve_name text);");
 
   sql ("CREATE TABLE IF NOT EXISTS notes"
        " (id SERIAL PRIMARY KEY,"
@@ -3199,7 +3200,6 @@ create_tables ()
   sql ("SELECT create_index ('host_oss_by_host',"
        "                     'host_oss', 'host');");
 
-  sql ("SELECT create_index ('nvt_cves_by_oid', 'nvt_cves', 'oid');");
   sql ("SELECT create_index ('nvt_selectors_by_family_or_nvt',"
        "                     'nvt_selectors',"
        "                     'type, family_or_nvt');");
@@ -3240,6 +3240,9 @@ create_tables ()
 
   sql ("SELECT create_index ('tag_resources_trash_by_tag',"
        "                     'tag_resources_trash', 'tag');");
+
+  sql ("SELECT create_index ('vt_refs_by_vt_oid',"
+       "                     'vt_refs', 'vt_oid');");
 
 
 #if 0

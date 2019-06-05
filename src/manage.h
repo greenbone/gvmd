@@ -113,7 +113,7 @@ typedef int (*manage_connection_forker_t) (gvm_connection_t * conn,
                                            const gchar* uuid);
 
 int
-init_manage (GSList*, int, const gchar *, int, int, int, int,
+init_manage (GSList*, const gchar *, int, int, int, int,
              manage_connection_forker_t, int);
 
 int
@@ -2006,9 +2006,6 @@ nvt_default_timeout (const char *);
 int
 family_nvt_count (const char *);
 
-void
-manage_complete_nvt_cache_update (GList *, GList *);
-
 
 /* NVT selectors. */
 
@@ -2618,9 +2615,6 @@ override_iterator_new_severity (iterator_t *);
 
 int
 acknowledge_bye ();
-
-int
-acknowledge_feed_version_info ();
 
 int
 manage_check_current_task ();
