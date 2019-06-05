@@ -1,4 +1,4 @@
-/* Copyright (C) 2010-2018 Greenbone Networks GmbH
+/* Copyright (C) 2010-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -30,18 +30,20 @@
  */
 #define SECINFO_SQL_RESULT_HAS_CERT_BUNDS                          \
  "(SELECT EXISTS (SELECT * FROM cert_bund_cves"                    \
- "                WHERE cve_name IN (SELECT cve_name"              \
- "                                   FROM nvt_cves"                \
- "                                   WHERE oid = results.nvt)))"
+ "                WHERE cve_name IN (SELECT ref_id"                \
+ "                                   FROM vt_refs"                 \
+ "                                   WHERE vt_oid = results.nvt"   \
+ "                                     AND type = 'cve')))"
 
 /**
  * @brief SQL to check if a result has CERT Bunds.
  */
 #define SECINFO_SQL_RESULT_HAS_DFN_CERTS                           \
  "(SELECT EXISTS (SELECT * FROM dfn_cert_cves"                     \
- "                WHERE cve_name IN (SELECT cve_name"              \
- "                                   FROM nvt_cves"                \
- "                                   WHERE oid = results.nvt)))"
+ "                WHERE cve_name IN (SELECT ref_id"                \
+ "                                   FROM vt_refs"                 \
+ "                                   WHERE vt_oid = results.nvt"   \
+ "                                     AND type = 'cve')))"
 
 /**
  * @brief Filter columns for CVE iterator.

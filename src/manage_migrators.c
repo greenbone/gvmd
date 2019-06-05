@@ -1704,6 +1704,39 @@ migrate_207_to_208 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 208 to version 209.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_208_to_209 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 208. */
+
+  if (manage_db_version () != 208)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Drop the now-unused table "nvt_cves". */
+
+  sql ("DROP TABLE IF EXISTS nvt_cves;");
+
+  /* Set the database version to 209. */
+
+  set_db_version (209);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1739,6 +1772,7 @@ static migrator_t database_migrators[] = {
   {206, migrate_205_to_206},
   {207, migrate_206_to_207},
   {208, migrate_207_to_208},
+  {209, migrate_208_to_209},
   /* End marker. */
   {-1, NULL}};
 
