@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -1660,6 +1660,9 @@ parse_keyword (keyword_t* keyword)
 static void
 cleanup_keyword (keyword_t *keyword)
 {
+  if (keyword->column == NULL)
+    return;
+
   if (strcasecmp (keyword->column, "first") == 0)
     {
       /* "first" must be >= 1 */
@@ -16681,24 +16684,23 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
 /**
  * @brief Ensure that the databases are the right versions.
  *
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
- *
  * @return 0 success, -1 error, -2 database is wrong version.
  */
 static int
-check_db_versions (int nvt_cache_mode)
+check_db_versions ()
 {
   char *database_version;
   int scap_db_version, cert_db_version;
+  long long int count;
 
   database_version = sql_string ("SELECT value FROM %s.meta"
                                  " WHERE name = 'database_version';",
                                  sql_schema ());
-  if (nvt_cache_mode)
+
+  if (database_version)
     {
-      if (database_version
-          && strcmp (database_version,
-                     G_STRINGIFY (GVMD_DATABASE_VERSION)))
+      if (strcmp (database_version,
+                  G_STRINGIFY (GVMD_DATABASE_VERSION)))
         {
           g_message ("%s: database version of database: %s",
                      __FUNCTION__,
@@ -16711,47 +16713,23 @@ check_db_versions (int nvt_cache_mode)
         }
       g_free (database_version);
 
-      /* If database_version was NULL then meta was missing, so assume
-       * that the database is missing, which is OK. */
-    }
-  else
-    {
-      long long int count;
+      /* Check that the database was initialised from the scanner.
+       *
+       * This can also fail after a migration, for example if the database
+       * was created before NVT preferences were cached in the database.
+       */
 
-      if (database_version)
-        {
-          if (strcmp (database_version,
-                      G_STRINGIFY (GVMD_DATABASE_VERSION)))
-            {
-              g_message ("%s: database version of database: %s",
-                         __FUNCTION__,
-                         database_version);
-              g_message ("%s: database version supported by manager: %s",
-                         __FUNCTION__,
-                         G_STRINGIFY (GVMD_DATABASE_VERSION));
-              g_free (database_version);
-              return -2;
-            }
-          g_free (database_version);
-
-          /* Check that the database was initialised from the scanner.
-           *
-           * This can also fail after a migration, for example if the database
-           * was created before NVT preferences were cached in the database.
-           */
-
-          if (sql_int64 (&count,
-                         "SELECT count(*) FROM %s.meta"
-                         " WHERE name = 'nvts_feed_version'"
-                         " OR name = 'nvt_preferences_enabled';",
-                         sql_schema ())
-              || count < 2)
-            g_warning ("database must be initialised from scanner");
-        }
-      else
-        /* Assume database is missing. */
+      if (sql_int64 (&count,
+                     "SELECT count(*) FROM %s.meta"
+                     " WHERE name = 'nvts_feed_version'"
+                     " OR name = 'nvt_preferences_enabled';",
+                     sql_schema ())
+          || count < 2)
         g_warning ("database must be initialised from scanner");
     }
+  else
+    /* Assume database is missing. */
+    g_warning ("database must be initialised from scanner");
 
   /* Check SCAP database version. */
 
@@ -18070,7 +18048,6 @@ cleanup_tables ()
  * Optionally also stop active tasks.
  *
  * @param[in]  log_config      Log configuration.
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
@@ -18088,7 +18065,6 @@ cleanup_tables ()
  */
 static int
 init_manage_internal (GSList *log_config,
-                      int nvt_cache_mode,
                       const gchar *database,
                       int max_ips_per_target,
                       int max_email_attachment_size,
@@ -18163,7 +18139,7 @@ init_manage_internal (GSList *log_config,
 
   /* Check that the versions of the databases are correct. */
 
-  ret = check_db_versions (nvt_cache_mode);
+  ret = check_db_versions ();
   if (ret)
     return ret;
 
@@ -18190,7 +18166,7 @@ init_manage_internal (GSList *log_config,
       sql ("INSERT INTO meta (name, value) VALUES ('max_hosts', %i);", max_hosts);
     }
 
-  if (stop_tasks && (nvt_cache_mode == 0))
+  if (stop_tasks)
     /* Stop any active tasks. */
     stop_active_tasks ();
 
@@ -18217,7 +18193,6 @@ init_manage_internal (GSList *log_config,
  * problems.
  *
  * @param[in]  log_config      Log configuration.
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
@@ -18232,14 +18207,13 @@ init_manage_internal (GSList *log_config,
  *         to be initialised from server, -4 max_ips_per_target out of range.
  */
 int
-init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
+init_manage (GSList *log_config, const gchar *database,
              int max_ips_per_target, int max_email_attachment_size,
              int max_email_include_size, int max_email_message_size,
              manage_connection_forker_t fork_connection,
              int skip_db_check)
 {
   return init_manage_internal (log_config,
-                               nvt_cache_mode,
                                database,
                                max_ips_per_target,
                                max_email_attachment_size,
@@ -18270,7 +18244,6 @@ init_manage_helper (GSList *log_config, const gchar *database,
                     int max_ips_per_target)
 {
   return init_manage_internal (log_config,
-                               0,   /* Run daemon in NVT cache mode. */
                                database,
                                max_ips_per_target,
                                0,   /* Default max_email_attachment_size. */

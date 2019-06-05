@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -91,7 +91,6 @@ static int gmpd_nvt_cache_mode = 0;
  * @brief Initialise the GMP library for the GMP daemon.
  *
  * @param[in]  log_config      Log configuration
- * @param[in]  nvt_cache_mode  0 operate normally, -1 just update NVT cache.
  * @param[in]  database        Location of manage database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
@@ -105,12 +104,12 @@ static int gmpd_nvt_cache_mode = 0;
  *         -4 max_ips_per_target out of range.
  */
 int
-init_gmpd (GSList *log_config, int nvt_cache_mode, const gchar *database,
+init_gmpd (GSList *log_config, const gchar *database,
            int max_ips_per_target, int max_email_attachment_size,
            int max_email_include_size, int max_email_message_size,
            manage_connection_forker_t fork_connection, int skip_db_check)
 {
-  return init_gmp (log_config, nvt_cache_mode, database, max_ips_per_target,
+  return init_gmp (log_config, database, max_ips_per_target,
                    max_email_attachment_size, max_email_include_size,
                    max_email_message_size,
                    fork_connection, skip_db_check);
@@ -505,7 +504,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
       ret = manage_scanner_set_default ();
       if (ret)
         return ret;
-      if (openvas_scanner_connect () || openvas_scanner_init (1))
+      if (openvas_scanner_connect () || openvas_scanner_init ())
         {
           openvas_scanner_close ();
           return -1;
@@ -589,10 +588,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
       /* See whether we need to read from the scannner.  */
       if (openvas_scanner_connected ()
           && (scanner_init_state == SCANNER_INIT_DONE
-              || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
-              || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE
-              || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST
-              || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
               || scanner_init_state == SCANNER_INIT_SENT_VERSION)
           && !openvas_scanner_full ())
         openvas_scanner_fd_set (&readfds);
@@ -600,13 +595,9 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
       /* See whether we need to write to the scanner.  */
       if (openvas_scanner_connected ()
           && (((scanner_init_state == SCANNER_INIT_TOP
-                || scanner_init_state == SCANNER_INIT_DONE
-                || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
-                || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
+                || scanner_init_state == SCANNER_INIT_DONE)
                && to_server_buffer_space () > 0)
-              || scanner_init_state == SCANNER_INIT_CONNECTED
-              || scanner_init_state == SCANNER_INIT_GOT_FEED_VERSION
-              || scanner_init_state == SCANNER_INIT_GOT_PLUGINS))
+              || scanner_init_state == SCANNER_INIT_CONNECTED))
         openvas_scanner_fd_set (&writefds);
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
@@ -828,7 +819,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
         {
           /* Write as much as possible to the scanner. */
 
-          switch (openvas_scanner_write (gmpd_nvt_cache_mode))
+          switch (openvas_scanner_write ())
             {
               case  0:      /* Wrote everything in to_scanner. */
                 break;
@@ -952,7 +943,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               /* Received scanner BYE.  Write out the rest of to_scanner (the
                * BYE ACK).
                */
-              openvas_scanner_write (gmpd_nvt_cache_mode);
+              openvas_scanner_write ();
               set_scanner_init_state (SCANNER_INIT_TOP);
               if (client_active == 0)
                 return 0;
@@ -973,12 +964,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               if (gmpd_nvt_cache_mode)
                 return 1;
               openvas_scanner_close ();
-            }
-          else if (ret == 4)
-            {
-              /* NVT update requested and NVTS are already at that version. */
-              assert (gmpd_nvt_cache_mode);
-              return 0;
             }
           else if (ret == -1)
             {
