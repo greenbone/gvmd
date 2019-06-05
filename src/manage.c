@@ -4440,6 +4440,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   int ret;
   config_t config;
   iterator_t scanner_prefs_iter, families, prefs;
+  osp_start_scan_opts_t start_scan_opts;
 
   config = task_config (task);
 
@@ -4579,13 +4580,15 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       return -1;
     }
 
+  start_scan_opts.targets = osp_targets;
+  start_scan_opts.vt_groups = NULL;
+  start_scan_opts.vts = vts;
+  start_scan_opts.scanner_params = scanner_options;
+  start_scan_opts.parallel = 1;
+  start_scan_opts.scan_id = scan_id;
+
   ret = osp_start_scan_ext (connection,
-                            osp_targets,
-                            NULL, /* vt_groups */
-                            vts,
-                            scanner_options,
-                            1,    /* parallel */
-                            scan_id,
+                            start_scan_opts,
                             error);
 
   osp_connection_close (connection);
