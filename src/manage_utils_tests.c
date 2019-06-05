@@ -19,36 +19,39 @@
 
 #include "manage_utils.c"
 
-#include <cgreen/cgreen.h>
-
-Describe (manage_utils);
-BeforeEach (manage_utils) {}
-AfterEach (manage_utils) {}
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 
 /* time_offset */
 
-Ensure (manage_utils, time_offset_returns_0_when_zone_is_null)
+static void
+time_offset_returns_0_when_zone_is_null (void **state)
 {
-  assert_that (time_offset (NULL, 1559561396), is_equal_to (0));
+  assert_int_equal (time_offset (NULL, 1559561396), 0);
 }
 
-Ensure (manage_utils, time_offset_returns_0_when_zone_is_utc)
+static void
+time_offset_returns_0_when_zone_is_utc (void **state)
 {
-  assert_that (time_offset ("UTC", 1559561396), is_equal_to (0));
+  assert_int_equal (time_offset ("UTC", 1559561396), 0);
 }
 
-Ensure (manage_utils, time_offset_returns_correct_value)
+static void
+time_offset_returns_correct_value (void **state)
 {
-  assert_that (time_offset ("Africa/Johannesburg", 1559561396), is_equal_to (7200));
+  assert_int_equal (time_offset ("Africa/Johannesburg", 1559561396), 7200);
 }
 
 /* current_offset */
 
-Ensure (manage_utils, current_offset_returns_correct_values)
+static void
+current_offset_returns_correct_values (void **state)
 {
-  assert_that (time_offset (NULL, 1559561396), is_equal_to (0));
-  assert_that (time_offset ("UTC", 1559561396), is_equal_to (0));
-  assert_that (time_offset ("Africa/Johannesburg", 1559561396), is_equal_to (7200));
+  assert_int_equal (time_offset (NULL, 1559561396), 0);
+  assert_int_equal (time_offset ("UTC", 1559561396), 0);
+  assert_int_equal (time_offset ("Africa/Johannesburg", 1559561396), 7200);
 }
 
 /* Test suite. */
@@ -56,18 +59,10 @@ Ensure (manage_utils, current_offset_returns_correct_values)
 int
 main (int argc, char **argv)
 {
-  TestSuite *suite;
+  const struct CMUnitTest tests[] = { cmocka_unit_test (time_offset_returns_0_when_zone_is_null),
+                                      cmocka_unit_test (time_offset_returns_0_when_zone_is_utc),
+                                      cmocka_unit_test (time_offset_returns_correct_value),
+                                      cmocka_unit_test (current_offset_returns_correct_values) };
 
-  suite = create_test_suite ();
-
-  add_test_with_context (suite, manage_utils, time_offset_returns_0_when_zone_is_null);
-  add_test_with_context (suite, manage_utils, time_offset_returns_0_when_zone_is_utc);
-  add_test_with_context (suite, manage_utils, time_offset_returns_correct_value);
-
-  add_test_with_context (suite, manage_utils, current_offset_returns_correct_values);
-
-  if (argc > 1)
-    return run_single_test (suite, argv[1], create_text_reporter ());
-
-  return run_test_suite (suite, create_text_reporter ());
+  return cmocka_run_group_tests (tests, NULL, NULL);
 }

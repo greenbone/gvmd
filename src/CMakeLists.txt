@@ -34,6 +34,7 @@ pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=11.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBICAL REQUIRED libical>=1.00)
+pkg_check_modules (CMOCKA REQUIRED cmocka>=1.00)
 
 if (BACKEND STREQUAL SQLITE3)
   # sqlite3 3.8.3 is required for WITH syntax
@@ -187,21 +188,21 @@ else (BACKEND STREQUAL SQLITE3)
                          ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                          ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                          ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-  target_link_libraries (manage-test cgreen m
+  target_link_libraries (manage-test m
                          ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                          ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                          ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-  target_link_libraries (manage-utils-test cgreen m
+                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${CMOCKA_LDFLAGS})
+  target_link_libraries (manage-utils-test m
                          ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                          ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                          ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-  target_link_libraries (gmp-tickets-test cgreen m
+                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${CMOCKA_LDFLAGS})
+  target_link_libraries (gmp-tickets-test m
                          ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                          ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                          ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${CMOCKA_LDFLAGS})
   target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 endif (BACKEND STREQUAL SQLITE3)
 
@@ -220,9 +221,9 @@ endif (GVMD_VERSION)
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options (${BINARY_NAME} PUBLIC ${C_FLAGS_DEBUG_GVMD})
-  target_compile_options (manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
-  target_compile_options (manage-utils-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
-  target_compile_options (gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
+  target_compile_options (manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD} ${CMOCKA_CFLAGS})
+  target_compile_options (manage-utils-test PUBLIC ${C_FLAGS_DEBUG_GVMD} ${CMOCKA_CFLAGS})
+  target_compile_options (gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD} ${CMOCKA_CFLAGS})
 
   # If we got GIT_REVISION at configure time,
   # assume we can get it at build time as well

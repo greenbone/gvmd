@@ -19,15 +19,15 @@
 
 #include "manage.c"
 
-#include <cgreen/cgreen.h>
-
-Describe (manage);
-BeforeEach (manage) {}
-AfterEach (manage) {}
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 
 /* truncate_certificate */
 
-Ensure (manage, truncate_certificate_given_truncated)
+static void
+truncate_certificate_given_truncated (void **state)
 {
   const gchar *given;
   gchar *truncated;
@@ -61,7 +61,7 @@ Ensure (manage, truncate_certificate_given_truncated)
           "-----END CERTIFICATE-----\n";
 
   truncated = truncate_certificate (given);
-  assert_that (truncated, is_equal_to_string (given));
+  assert_string_equal (truncated, given);
   g_free (truncated);
 }
 
@@ -83,14 +83,7 @@ Ensure (manage, truncate_certificate_given_truncated)
 int
 main (int argc, char **argv)
 {
-  TestSuite *suite;
+  const struct CMUnitTest tests[] = { cmocka_unit_test (truncate_certificate_given_truncated) };
 
-  suite = create_test_suite ();
-
-  add_test_with_context (suite, manage, truncate_certificate_given_truncated);
-
-  if (argc > 1)
-    return run_single_test (suite, argv[1], create_text_reporter ());
-
-  return run_test_suite (suite, create_text_reporter ());
+  return cmocka_run_group_tests (tests, NULL, NULL);
 }

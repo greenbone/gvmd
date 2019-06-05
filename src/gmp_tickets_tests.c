@@ -19,12 +19,10 @@
 
 #include "gmp_tickets.c"
 
-#include <cgreen/cgreen.h>
-#include <cgreen/mocks.h>
-
-Describe (gmp_tickets);
-BeforeEach (gmp_tickets) {}
-AfterEach (gmp_tickets) {}
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 
 /* create_ticket_run */
 
@@ -47,10 +45,12 @@ ticket_uuid (ticket_t ticket)
   return g_strdup ("9b5da19e-86b4-11e9-b0d2-28d24461215b");
 }
 
+int return_flag = 0;
+
 int
 copy_ticket (const char *comment, const char *ticket_id, ticket_t *new_ticket)
 {
-  mock ();
+  return_flag = mock ();
   return 0;
 }
 
@@ -59,11 +59,12 @@ create_ticket (const char *comment, const char *result_id,
                const char *user_id, const char *open_note,
                ticket_t *ticket)
 {
-  mock ();
+  return_flag = mock ();
   return 0;
 }
 
-Ensure (gmp_tickets, create_ticket_run_calls_copy_ticket_when_given_copy)
+static void
+create_ticket_run_calls_copy_ticket_when_given_copy (void **state)
 {
   gmp_parser_t gmp_parser;
   GError *error;
@@ -87,11 +88,12 @@ Ensure (gmp_tickets, create_ticket_run_calls_copy_ticket_when_given_copy)
 
   /* </CREATE_TICKET> */
   xml_handle_end_element (create_ticket_data.context, "create_ticket");
-  assert_that (create_ticket_data.context->done, is_not_equal_to (0));
+  assert_int_not_equal (create_ticket_data.context->done, 0);
 
-  expect (copy_ticket);
-  never_expect (create_ticket);
+  will_return_always (copy_ticket, 1);
+  will_return_maybe (create_ticket, 2);
   create_ticket_run (&gmp_parser, &error);
+  assert_int_equal (return_flag, 1);
 }
 
 /* Test suite. */
@@ -99,14 +101,7 @@ Ensure (gmp_tickets, create_ticket_run_calls_copy_ticket_when_given_copy)
 int
 main (int argc, char **argv)
 {
-  TestSuite *suite;
+  const struct CMUnitTest tests[] = { cmocka_unit_test (create_ticket_run_calls_copy_ticket_when_given_copy) };
 
-  suite = create_test_suite ();
-
-  add_test_with_context (suite, gmp_tickets, create_ticket_run_calls_copy_ticket_when_given_copy);
-
-  if (argc > 1)
-    return run_single_test (suite, argv[1], create_text_reporter ());
-
-  return run_test_suite (suite, create_text_reporter ());
+  return cmocka_run_group_tests (tests, NULL, NULL);
 }
