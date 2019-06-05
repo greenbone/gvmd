@@ -2873,12 +2873,6 @@ create_tables ()
        "  qod integer,"
        "  qod_type text);");
 
-  sql ("CREATE TABLE IF NOT EXISTS nvt_cves"
-       " (id SERIAL PRIMARY KEY,"
-       "  nvt integer REFERENCES nvts (id) ON DELETE RESTRICT,"
-       "  oid text,"
-       "  cve_name text);");
-
   sql ("CREATE TABLE IF NOT EXISTS notes"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -3206,7 +3200,6 @@ create_tables ()
   sql ("SELECT create_index ('host_oss_by_host',"
        "                     'host_oss', 'host');");
 
-  sql ("SELECT create_index ('nvt_cves_by_oid', 'nvt_cves', 'oid');");
   sql ("SELECT create_index ('nvt_selectors_by_family_or_nvt',"
        "                     'nvt_selectors',"
        "                     'type, family_or_nvt');");
