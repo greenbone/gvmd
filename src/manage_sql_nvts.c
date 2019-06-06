@@ -183,25 +183,18 @@ find_nvt (const char* oid, nvt_t* nvt)
 static void
 insert_nvt (const nvti_t *nvti)
 {
-  gchar *qod_str, *qod_type, *cve, *bid, *xref;
-  gchar *quoted_name;
-  gchar *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
+  gchar *qod_str, *qod_type, *cve;
+  gchar *quoted_name, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
   int creation_time, modification_time, qod;
 
   cve = nvti_refs (nvti, "cve", "", 0);
-  bid = nvti_refs (nvti, "bid", "", 0);
-  xref = nvti_refs (nvti, NULL, "cve,bid", 1);
 
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
   quoted_cve = sql_quote (cve ? cve : "");
-  quoted_bid = sql_quote (bid ? bid : "");
-  quoted_xref = sql_quote (xref ? xref : "");
 
   g_free (cve);
-  g_free (bid);
-  g_free (xref);
 
   if (nvti_tag (nvti))
     {
@@ -331,13 +324,12 @@ insert_nvt (const nvti_t *nvti)
       int i;
 
       sql ("INSERT into nvts (oid, name,"
-           " cve, bid, xref, tag, category, family, cvss_base,"
+           " cve, tag, category, family, cvss_base,"
            " creation_time, modification_time, uuid, solution_type,"
            " qod, qod_type)"
-           " VALUES ('%s', '%s', '%s', '%s', '%s',"
+           " VALUES ('%s', '%s', '%s',"
            " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-           nvti_oid (nvti), quoted_name,
-           quoted_cve, quoted_bid, quoted_xref, quoted_tag,
+           nvti_oid (nvti), quoted_name, quoted_cve, quoted_tag,
            nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
            modification_time, nvti_oid (nvti), quoted_solution_type,
            qod, quoted_qod_type);
@@ -364,8 +356,6 @@ insert_nvt (const nvti_t *nvti)
 
   g_free (quoted_name);
   g_free (quoted_cve);
-  g_free (quoted_bid);
-  g_free (quoted_xref);
   g_free (quoted_tag);
   g_free (quoted_cvss_base);
   g_free (quoted_family);
