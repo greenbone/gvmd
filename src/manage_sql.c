@@ -15535,8 +15535,7 @@ update_nvti_cache ()
   nvti_cache = nvtis_new ();
 
   init_iterator (&nvts,
-                 "SELECT oid, name, family, cvss_base, cve, tag"
-                 " FROM nvts;");
+                 "SELECT oid, name, family, cvss_base, tag FROM nvts;");
   while (next (&nvts))
     {
       iterator_t refs;
@@ -15546,8 +15545,7 @@ update_nvti_cache ()
       nvti_set_name (nvti, iterator_string (&nvts, 1));
       nvti_set_family (nvti, iterator_string (&nvts, 2));
       nvti_set_cvss_base (nvti, iterator_string (&nvts, 3));
-      nvti_add_refs (nvti, "cve", iterator_string (&nvts, 4), "");
-      nvti_set_tag (nvti, iterator_string (&nvts, 5));
+      nvti_set_tag (nvti, iterator_string (&nvts, 4));
 
       init_iterator (&refs,
                      "SELECT vt_oid, type, ref_id, ref_text"
