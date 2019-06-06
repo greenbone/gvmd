@@ -1687,7 +1687,7 @@ TABLES_186=$TABLES_185
 
 migrate_186_to_187 () {
   pg "ALTER TABLE alerts ADD COLUMN active INTEGER;"
-   pg "ALTER TABLE alerts_trash ADD COLUMN active INTEGER;"
+  pg "ALTER TABLE alerts_trash ADD COLUMN active INTEGER;"
 }
 
 TABLES_187=$TABLES_186
