@@ -32591,6 +32591,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
   sql_begin_immediate ();
   /* Set the report's start and end times. */
+  start_time = 0;
   str = entity_attribute (entity, "start_time");
   if (str)
     {
@@ -32598,6 +32599,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       set_scan_start_time_epoch (report, start_time);
     }
 
+  end_time = 0;
   str = entity_attribute (entity, "end_time");
   if (str)
     {
