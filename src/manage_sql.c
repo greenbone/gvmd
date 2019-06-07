@@ -49251,6 +49251,14 @@ osp_scanner_connect (scanner_t scanner)
     }
   connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
 
+  if (connection == NULL)
+    {
+      if (port)
+        g_warning ("Could not connect to Scanner at %s:%d", host, port);
+      else
+        g_warning ("Could not connect to Scanner at %s", host);
+    }
+
   g_free (host);
   g_free (ca_pub);
   g_free (key_pub);
