@@ -1107,9 +1107,9 @@ clean_fkey_columns () {
 
 copy_data () {
 
-  if [ $# -ne 1 ]
+  if [ $# -ne 1 -a $# -ne 2 ]
   then
-    log_notice "Internal Error: copy_data must have an arg"
+    log_notice "Internal Error: copy_data must have one or two args"
     exit 1
   fi
 
@@ -1130,7 +1130,7 @@ copy_data () {
   test_sql_exit "Failed get table list"
   log_debug "SQLITE_TABLES: $SQLITE_TABLES"
 
-  echo $SQLITE_TABLES | tr -s ' ' '\n' | sort - | grep --invert-match "^\(nvt_cves\|nvts\|report_counts\|auth_cache\)" > $TEMP_DIR/sqlite_tables_sorted
+  echo $SQLITE_TABLES | tr -s ' ' '\n' | sort - | grep --invert-match "^\(nvt_cves\|nvts\|report_counts\|result_nvts\|auth_cache\)" > $TEMP_DIR/sqlite_tables_sorted
   echo $TABLES | tr -s ' ' '\n' | sort - | diff - $TEMP_DIR/sqlite_tables_sorted
   if [ $? -ne 0 ]
   then
@@ -1186,6 +1186,16 @@ copy_data () {
   test_sql_exit "Could not generate reset SQL"
   $PSQL -f $TEMP_DIR/reset.sql | sed '/^\s*$/d'
   test_sql_exit "Could not run reset SQL"
+
+  if [ $# -eq 2 ]
+  then
+    # Some of the dev's SQLite databases have errors in result_nvts, so fill it by hand.
+    $SQLITE3 -csv $SQLITE_DB "SELECT distinct nvt FROM results WHERE nvt != '' AND nvt IS NOT NULL;" | pg "COPY result_nvts (nvt) FROM STDIN DELIMITER ',' CSV";
+    # Reset result_nvt references.
+    pg "UPDATE results SET result_nvt = (SELECT id FROM result_nvts WHERE result_nvts.nvt = results.nvt);"
+    pg "UPDATE overrides SET result_nvt = (SELECT id FROM result_nvts WHERE result_nvts.nvt = overrides.nvt);"
+    pg "UPDATE overrides_trash SET result_nvt = (SELECT id FROM result_nvts WHERE result_nvts.nvt = overrides_trash.nvt);"
+  fi
 
   rm -rf $TEMP_DIR
 }
@@ -1708,7 +1718,8 @@ migrate_188_to_189 () {
   pg "ALTER TABLE overrides_trash ADD COLUMN result_nvt integer;"
 }
 
-TABLES_189="$TABLES_188 result_nvts"
+# result_nvts not aded here as it is filled by hand after copying the data.
+TABLES_189=$TABLES_188
 
 migrate_189_to_190 () {
   pg "CREATE TABLE result_nvt_reports (result_nvt INTEGER, report INTEGER);"
@@ -2884,107 +2895,107 @@ create () {
 
     189)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_189"
+      copy_data "$TABLES_189" 1
       ;;
 
     190)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_190"
+      copy_data "$TABLES_190" 1
       ;;
 
     191)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_191"
+      copy_data "$TABLES_191" 1
       ;;
 
     192)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_192"
+      copy_data "$TABLES_192" 1
       ;;
 
     193)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_193"
+      copy_data "$TABLES_193" 1
       ;;
 
     194)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_194"
+      copy_data "$TABLES_194" 1
       ;;
 
     195)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_195"
+      copy_data "$TABLES_195" 1
       ;;
 
     196)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_196"
+      copy_data "$TABLES_196" 1
       ;;
 
     197)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_197"
+      copy_data "$TABLES_197" 1
       ;;
 
     198)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_198"
+      copy_data "$TABLES_198" 1
       ;;
 
     199)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_199"
+      copy_data "$TABLES_199" 1
       ;;
 
     200)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_200"
+      copy_data "$TABLES_200" 1
       ;;
 
     201)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_201"
+      copy_data "$TABLES_201" 1
       ;;
 
     202)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_202"
+      copy_data "$TABLES_202" 1
       ;;
 
     203)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_203"
+      copy_data "$TABLES_203" 1
       ;;
 
     204)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_204"
+      copy_data "$TABLES_204" 1
       ;;
 
     205)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_205"
+      copy_data "$TABLES_205" 1
       ;;
 
     206)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_206"
+      copy_data "$TABLES_206" 1
       ;;
 
     207)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_207"
+      copy_data "$TABLES_207" 1
       ;;
 
     208)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_208"
+      copy_data "$TABLES_208" 1
       ;;
 
     209)
       create_migrate_clean $DB_VERSION
-      copy_data "$TABLES_209"
+      copy_data "$TABLES_209" 1
       ;;
 
     *)
