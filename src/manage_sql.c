@@ -20811,6 +20811,7 @@ result_nvt_notice (const gchar *nvt)
  *
  * @param[in]  task         The task associated with the result.
  * @param[in]  host         Target host of result.
+ * @param[in]  hostname     Hostname of the result.
  * @param[in]  nvt          The uuid of oval definition that produced the
  *                          result, a title for the result otherwise.
  * @param[in]  type         Type of result.  "Alarm", etc.
@@ -20822,12 +20823,12 @@ result_nvt_notice (const gchar *nvt)
  * @return A result descriptor for the new result, 0 if error.
  */
 result_t
-make_osp_result (task_t task, const char *host, const char *nvt,
-                 const char *type, const char *description,
+make_osp_result (task_t task, const char *host, const char *hostname,
+                 const char *nvt, const char *type, const char *description,
                  const char *port, const char *severity, int qod)
 {
   char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
-  char *quoted_port;
+  char *quoted_port, *quoted_hostname;
 
   assert (task);
   assert (type);
@@ -20837,6 +20838,7 @@ make_osp_result (task_t task, const char *host, const char *nvt,
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
+  quoted_hostname = sql_quote (hostname ? hostname : "");
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -20873,17 +20875,18 @@ make_osp_result (task_t task, const char *host, const char *nvt,
     result_severity = sql_quote (severity);
   result_nvt_notice (quoted_nvt);
   sql ("INSERT into results"
-       " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
-       "  qod, qod_type, description, uuid)"
-       " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
-       "         %d, '', '%s', make_uuid ());",
-       task, host ?: "", quoted_port, quoted_nvt, nvt_revision ?: "",
-       result_severity ?: "0", type, qod, quoted_desc);
+       " (owner, date, task, host, hostname, port, nvt,"
+       "  nvt_version, severity, type, qod, qod_type, description, uuid)"
+       " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s',"
+       "         '%s', '%s', '%s', %d, '', '%s', make_uuid ());",
+       task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
+       nvt_revision ?: "", result_severity ?: "0", type, qod, quoted_desc);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
   g_free (quoted_nvt);
   g_free (quoted_port);
+  g_free (quoted_hostname);
 
   return sql_last_insert_id ();
 }
@@ -32588,22 +32591,21 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
   sql_begin_immediate ();
   /* Set the report's start and end times. */
+  start_time = 0;
   str = entity_attribute (entity, "start_time");
-  if (!str)
+  if (str)
     {
-      g_warning ("Missing start_time in OSP report %s", report_xml);
-      goto end_parse_osp_report;
+      start_time = atoi (str);
+      set_scan_start_time_epoch (report, start_time);
     }
-  start_time = atoi (str);
-  set_scan_start_time_epoch (report, start_time);
+
+  end_time = 0;
   str = entity_attribute (entity, "end_time");
-  if (!str)
+  if (str)
     {
-      g_warning ("Missing end_time in OSP report %s", report_xml);
-      goto end_parse_osp_report;
+      end_time = atoi (str);
+      set_scan_end_time_epoch (report, end_time);
     }
-  end_time = atoi (str);
-  set_scan_end_time_epoch (report, end_time);
 
   /* Insert results. */
   child = entity_child (entity, "results");
@@ -32617,7 +32619,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   while (results)
     {
       result_t result;
-      const char *type, *name, *severity, *host, *test_id, *port, *qod;
+      const char *type, *name, *severity, *host, *hostname, *test_id, *port;
+      const char *qod;
       char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
       entity_t r_entity = results->data;
       int qod_int;
@@ -32634,6 +32637,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       severity = entity_attribute (r_entity, "severity");
       test_id = entity_attribute (r_entity, "test_id");
       host = entity_attribute (r_entity, "host");
+      hostname = entity_attribute (r_entity, "hostname");
       port = entity_attribute (r_entity, "port") ?: "";
       qod = entity_attribute (r_entity, "qod") ?: "";
       if (!name || !type || !severity || !test_id || !host)
@@ -32676,9 +32680,38 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       qod_int = atoi (qod);
       if (qod_int <= 0 || qod_int > 100)
         qod_int = QOD_DEFAULT;
-      result = make_osp_result (task, host, nvt_id, type, desc, port ?: "",
-                                severity_str ?: severity, qod_int);
-      report_add_result (report, result);
+      if (port && strcmp (port, "general/Host_Details") == 0)
+        {
+          /* TODO: This should probably be handled by the "Host Detail"
+           *        result type with extra source info in OSP.
+           */
+          if (manage_report_host_detail (report, host, desc))
+            g_warning ("%s: Failed to add report detail for host '%s': %s",
+                      __FUNCTION__,
+                      host,
+                      desc);
+        }
+      else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_START") == 0))
+        {
+          set_scan_host_start_time_otp (report, host, desc);
+        }
+      else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_END") == 0))
+        {
+          set_scan_host_end_time_otp (report, host, desc);
+        }
+      else
+        {
+          result = make_osp_result (task,
+                                    host,
+                                    hostname,
+                                    nvt_id,
+                                    type,
+                                    desc,
+                                    port ?: "",
+                                    severity_str ?: severity,
+                                    qod_int);
+          report_add_result (report, result);
+        }
       g_free (nvt_id);
       g_free (desc);
       g_free (severity_str);
@@ -37068,7 +37101,8 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
     return 0;
 
   /* OpenVAS Scanner with OpenVAS config. */
-  if (stype == SCANNER_TYPE_OPENVAS && ctype == 0)
+  if ((stype == SCANNER_TYPE_OPENVAS)
+      && ctype == 0)
     return 0;
 
   /* GMP Scanner with OpenVAS config. */
@@ -49203,11 +49237,29 @@ osp_scanner_connect (scanner_t scanner)
 
   assert (scanner);
   host = scanner_host (scanner);
-  port = scanner_port (scanner);
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
+  if (host && *host == '/')
+    {
+      port = 0;
+      ca_pub = NULL;
+      key_pub = NULL;
+      key_priv = NULL;
+    }
+  else
+    {
+      port = scanner_port (scanner);
+      ca_pub = scanner_ca_pub (scanner);
+      key_pub = scanner_key_pub (scanner);
+      key_priv = scanner_key_priv (scanner);
+    }
   connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+
+  if (connection == NULL)
+    {
+      if (port)
+        g_warning ("Could not connect to Scanner at %s:%d", host, port);
+      else
+        g_warning ("Could not connect to Scanner at %s", host);
+    }
 
   g_free (host);
   g_free (ca_pub);
@@ -49402,7 +49454,8 @@ verify_scanner (const char *scanner_id, char **version)
       cleanup_iterator (&scanner);
       return 0;
     }
-  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP)
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
     {
       int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
                                                NULL, NULL, NULL);
@@ -49411,44 +49464,10 @@ verify_scanner (const char *scanner_id, char **version)
         return 2;
       return 0;
     }
-  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
-    {
-      const char *host = scanner_iterator_host (&scanner);
-
-      if (host && *host == '/')
-        openvas_scanner_set_unix (host);
-      else
-        {
-          if (openvas_scanner_set_address (scanner_iterator_host (&scanner),
-                                           scanner_iterator_port (&scanner))
-              == -1)
-            {
-              cleanup_iterator (&scanner);
-              return 2;
-            }
-
-          if (set_certs (scanner_iterator_ca_pub (&scanner),
-                         scanner_iterator_key_pub (&scanner),
-                         scanner_iterator_key_priv (&scanner)))
-            {
-              cleanup_iterator (&scanner);
-              return 3;
-            }
-        }
-      cleanup_iterator (&scanner);
-      if (openvas_scanner_connected ())
-        openvas_scanner_close ();
-      if (openvas_scanner_connect () || openvas_scanner_init ()
-          || openvas_scanner_close ())
-        return 2;
-      if (version)
-        *version = g_strdup ("OTP/2.0");
-      return 0;
-    }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CVE)
     {
       if (version)
-        *version = g_strdup ("OTP/2.0");
+        *version = g_strdup ("GVM/" GVMD_VERSION);
       cleanup_iterator (&scanner);
       return 0;
     }
