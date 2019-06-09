@@ -1737,6 +1737,60 @@ migrate_208_to_209 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 208 to version 209.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_209_to_210 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 209. */
+
+  if (manage_db_version () != 209)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove the fields "bid" and "xref" from table "nvts".
+   * This is done by dropping the entire table and
+   * unset the sync time stamps to force gvmd to refresh the content. */
+
+  sql ("DROP TABLE IF EXISTS nvts CASCADE;");
+
+  sql ("DELETE FROM meta where name = 'nvts_feed_version' OR name = 'nvts_check_time';");
+
+  sql ("CREATE TABLE IF NOT EXISTS nvts"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  oid text UNIQUE NOT NULL,"
+       "  name text,"
+       "  comment text,"
+       "  cve text,"
+       "  tag text,"
+       "  category text,"
+       "  family text,"
+       "  cvss_base text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  solution_type text,"
+       "  qod integer,"
+       "  qod_type text);");
+
+  /* Set the database version to 210. */
+
+  set_db_version (210);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1773,6 +1827,7 @@ static migrator_t database_migrators[] = {
   {207, migrate_206_to_207},
   {208, migrate_207_to_208},
   {209, migrate_208_to_209},
+  {210, migrate_209_to_210},
   /* End marker. */
   {-1, NULL}};
 

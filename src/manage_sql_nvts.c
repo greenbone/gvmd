@@ -802,7 +802,7 @@ DEF_ACCESS (nvt_iterator_name, GET_ITERATOR_COLUMN_COUNT + 2);
  * @return Tag, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_tag, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (nvt_iterator_tag, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the category from an NVT iterator.
@@ -816,7 +816,7 @@ nvt_iterator_category (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
   return ret;
 }
 
@@ -828,7 +828,7 @@ nvt_iterator_category (iterator_t* iterator)
  * @return Family, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 8);
+DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get the cvss_base from an NVT iterator.
@@ -838,7 +838,7 @@ DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 8);
  * @return Cvss_base, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 9);
+DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get the qod from an NVT iterator.
@@ -848,7 +848,7 @@ DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 9);
  * @return QoD, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 12);
+DEF_ACCESS (nvt_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 10);
 
 /**
  * @brief Get the qod_type from an NVT iterator.
@@ -858,7 +858,7 @@ DEF_ACCESS (nvt_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 12);
  * @return QoD type, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 13);
+DEF_ACCESS (nvt_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 11);
 
 /**
  * @brief Get the default timeout of an NVT.
