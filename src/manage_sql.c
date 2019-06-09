@@ -15554,9 +15554,9 @@ update_nvti_cache ()
 
       while (next (&refs))
         {
-          nvti_add_vtref (nvti, vtref_new (iterator_string (&refs, 0),
-                                           iterator_string (&refs, 1),
-                                           iterator_string (&refs, 2)));
+          nvti_add_vtref (nvti, vtref_new (iterator_string (&refs, 1),
+                                           iterator_string (&refs, 2),
+                                           iterator_string (&refs, 3)));
         }
 
       cleanup_iterator (&refs);
