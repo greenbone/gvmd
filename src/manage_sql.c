@@ -15548,15 +15548,16 @@ update_nvti_cache ()
       nvti_set_tag (nvti, iterator_string (&nvts, 4));
 
       init_iterator (&refs,
-                     "SELECT vt_oid, type, ref_id, ref_text"
+                     "SELECT type, ref_id, ref_text"
                      " FROM vt_refs"
-                     " WHERE vt_oid = '%s';", iterator_string (&nvts, 0));
+                     " WHERE vt_oid = '%s';",
+                     iterator_string (&nvts, 0));
 
       while (next (&refs))
         {
-          nvti_add_vtref (nvti, vtref_new (iterator_string (&refs, 1),
-                                           iterator_string (&refs, 2),
-                                           iterator_string (&refs, 3)));
+          nvti_add_vtref (nvti, vtref_new (iterator_string (&refs, 0),
+                                           iterator_string (&refs, 1),
+                                           iterator_string (&refs, 2)));
         }
 
       cleanup_iterator (&refs);
