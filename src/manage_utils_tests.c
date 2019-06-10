@@ -54,6 +54,22 @@ current_offset_returns_correct_values (void **state)
   assert_int_equal (time_offset ("Africa/Johannesburg", 1559561396), 7200);
 }
 
+/* next_time */
+
+time_t
+__wrap_time (time_t *tloc)
+{
+  return mock ();
+}
+
+static void
+next_time_returns_correct_value (void **state)
+{
+  will_return_always (__wrap_time, 1560176823);
+  assert_int_equal (next_time (1560176800, 40, 0, 0, "Africa/Johannesburg", 0),
+                    1560176840);
+}
+
 /* Test suite. */
 
 int
@@ -62,7 +78,8 @@ main (int argc, char **argv)
   const struct CMUnitTest tests[] = { cmocka_unit_test (time_offset_returns_0_when_zone_is_null),
                                       cmocka_unit_test (time_offset_returns_0_when_zone_is_utc),
                                       cmocka_unit_test (time_offset_returns_correct_value),
-                                      cmocka_unit_test (current_offset_returns_correct_values) };
+                                      cmocka_unit_test (current_offset_returns_correct_values),
+                                      cmocka_unit_test (next_time_returns_correct_value) };
 
   return cmocka_run_group_tests (tests, NULL, NULL);
 }
