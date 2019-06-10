@@ -196,7 +196,8 @@ else (BACKEND STREQUAL SQLITE3)
                          ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                          ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                          ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS}
+                         -Wl,--wrap=time)
   target_link_libraries (gmp-tickets-test cgreen m
                          ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                          ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
