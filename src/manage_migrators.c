@@ -1757,30 +1757,10 @@ migrate_209_to_210 ()
 
   /* Update the database. */
 
-  /* Remove the fields "bid" and "xref" from table "nvts".
-   * This is done by dropping the entire table and
-   * unset the sync time stamps to force gvmd to refresh the content. */
+  /* Remove the fields "bid" and "xref" from table "nvts". */
 
-  sql ("DROP TABLE IF EXISTS nvts CASCADE;");
-
-  sql ("DELETE FROM meta where name = 'nvts_feed_version' OR name = 'nvts_check_time';");
-
-  sql ("CREATE TABLE IF NOT EXISTS nvts"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  oid text UNIQUE NOT NULL,"
-       "  name text,"
-       "  comment text,"
-       "  cve text,"
-       "  tag text,"
-       "  category text,"
-       "  family text,"
-       "  cvss_base text,"
-       "  creation_time integer,"
-       "  modification_time integer,"
-       "  solution_type text,"
-       "  qod integer,"
-       "  qod_type text);");
+  sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN bid CASCADE;");
+  sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN xref CASCADE;");
 
   /* Set the database version to 210. */
 
