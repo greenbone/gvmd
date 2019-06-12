@@ -2,7 +2,7 @@
   <name>XML</name>
   <summary>Raw XML report.</summary>
   <description>
-    Complete scan report in OpenVAS Manager XML format.
+    Anonymized scan report in GMP XML format.
   </description>
   <extension>xml</extension>
   <content_type>text/xml</content_type>

@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -373,13 +373,13 @@ check_certificate_x509 (const char *cert_str)
  * @brief Check that a string represents a valid public key or certificate.
  *
  * @param[in]  key_str     Key string.
- * @param[in]  key_type    The data type to check for.
+ * @param[in]  key_types   GArray of the data types to check for.
  * @param[in]  protocol    The GPG protocol to check.
  *
  * @return 0 if valid, 1 otherwise.
  */
 static int
-try_gpgme_import (const char *key_str, gpgme_data_type_t key_type,
+try_gpgme_import (const char *key_str, GArray *key_types,
                   gpgme_protocol_t protocol)
 {
   int ret = 0;
@@ -396,7 +396,7 @@ try_gpgme_import (const char *key_str, gpgme_data_type_t key_type,
   gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
   gpgme_set_protocol (ctx, protocol);
 
-  ret = gvm_gpg_import_from_string (ctx, key_str, -1, key_type);
+  ret = gvm_gpg_import_many_types_from_string (ctx, key_str, -1, key_types);
 
   gpgme_release (ctx);
   gvm_file_remove_recurse (gpg_temp_dir);
@@ -414,8 +414,16 @@ try_gpgme_import (const char *key_str, gpgme_data_type_t key_type,
 static int
 check_certificate_smime (const char *cert_str)
 {
-  return try_gpgme_import (cert_str, GPGME_DATA_TYPE_CMS_OTHER,
-                           GPGME_PROTOCOL_CMS);
+  int ret;
+  const gpgme_data_type_t types_ptr[2] = {GPGME_DATA_TYPE_X509_CERT,
+                                          GPGME_DATA_TYPE_CMS_OTHER};
+  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
+
+  g_array_append_vals (key_types, types_ptr, 2);
+  ret = try_gpgme_import (cert_str, key_types, GPGME_PROTOCOL_CMS);
+  g_array_free (key_types, TRUE);
+
+  return ret;
 }
 
 /**
@@ -482,8 +490,15 @@ check_private_key (const char *key_str, const char *key_phrase)
 static int
 check_public_key (const char *key_str)
 {
-  return try_gpgme_import (key_str, GPGME_DATA_TYPE_PGP_KEY,
-                           GPGME_PROTOCOL_OPENPGP);
+  int ret;
+  const gpgme_data_type_t types_ptr[1] = {GPGME_DATA_TYPE_PGP_KEY};
+  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
+
+  g_array_append_vals (key_types, types_ptr, 1);
+  ret = try_gpgme_import (key_str, key_types, GPGME_PROTOCOL_OPENPGP);
+  g_array_free (key_types, TRUE);
+
+  return ret;
 }
 
 
@@ -4829,7 +4844,7 @@ static GMarkupParser xml_parser;
 /**
  * @brief The nvt synchronization script for this daemon.
  */
-static const gchar *nvt_sync_script = SBINDIR "/greenbone-nvt-sync";
+static const gchar *nvt_sync_script = BINDIR "/greenbone-nvt-sync";
 
 
 /* Client state. */
@@ -10454,7 +10469,7 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
 }
 
 /**
- * @brief Append a CERT element to an XML buffer.
+ * @brief Append a REFS element to an XML buffer.
  *
  * @param[in]  buffer       Buffer.
  * @param[in]  oid          OID.
@@ -10468,7 +10483,6 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
 {
   iterator_t cert_refs_iterator;
 
-  buffer_xml_append_printf (buffer, "<cert>");
   if (cert_loaded)
     {
       if (has_cert_bunds)
@@ -10477,7 +10491,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           while (next (&cert_refs_iterator))
             {
               g_string_append_printf
-               (buffer, "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+               (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
@@ -10489,7 +10503,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           while (next (&cert_refs_iterator))
             {
               g_string_append_printf
-               (buffer, "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+               (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
@@ -10498,7 +10512,6 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
   else
     g_string_append_printf (buffer,
                             "<warning>database not available</warning>");
-  buffer_xml_append_printf (buffer, "</cert>");
 }
 
 /**
@@ -10543,6 +10556,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
         {
           int ret;
           char *cves;
+          gchar **split, **item;
           get_data_t get;
           iterator_t iterator;
 
@@ -10553,25 +10567,50 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             assert (0);
           if (!next (&iterator))
             abort ();
-          cves = ovaldef_cves (oid);
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
                                     "<type>ovaldef</type>"
                                     "<name>%s</name>"
                                     "<family/>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<cve>%s</cve>"
-                                    "<bid/>"
-                                    "<tags>summary=%s</tags>"
-                                    "<xref/>",
+                                    "<tags>summary=%s</tags>",
                                     oid,
                                     ovaldef_info_iterator_title (&iterator),
                                     ovaldef_info_iterator_max_cvss (&iterator),
-                                    cves ?: "",
                                     ovaldef_info_iterator_description (&iterator));
-                                    g_free (cves);
           g_free (get.id);
           cleanup_iterator (&iterator);
+
+          buffer_xml_append_printf (buffer, "<refs>");
+
+          cves = ovaldef_cves (oid);
+          split = g_strsplit (cves, ",", 0);
+          item = split;
+          while (*item)
+            {
+              gchar *id;
+
+              id = *item;
+              g_strstrip (id);
+
+              if (strcmp (id, "") == 0)
+                {
+                  item++;
+                  continue;
+                }
+
+              buffer_xml_append_printf (buffer, "<ref type=\"cve\" id=\"%s\"/>", id);
+
+              item++;
+            }
+          g_strfreev (split);
+          g_free (cves);
+
+          results_xml_append_cert (buffer, oid, cert_loaded,
+                                   result_iterator_has_cert_bunds (results),
+                                   result_iterator_has_dfn_certs (results));
+
+          buffer_xml_append_printf (buffer, "</refs>");
         }
       else
         {
@@ -10586,23 +10625,21 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<name>%s</name>"
                                     "<family>%s</family>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<cve>%s</cve>"
-                                    "<bid>%s</bid>"
-                                    "<xref>%s</xref>"
                                     "<tags>%s</tags>",
                                     oid,
                                     result_iterator_nvt_name (results) ?: oid,
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
-                                    result_iterator_nvt_cve (results) ?: "",
-                                    result_iterator_nvt_bid (results) ?: "",
-                                    result_iterator_nvt_xref (results) ?: "",
                                     result_iterator_nvt_tag (results) ?: "");
+
+          buffer_xml_append_printf (buffer, "<refs>");
+          result_iterator_nvt_refs_append (buffer, results);
+          results_xml_append_cert (buffer, oid, cert_loaded,
+                                   result_iterator_has_cert_bunds (results),
+                                   result_iterator_has_dfn_certs (results));
+          buffer_xml_append_printf (buffer, "</refs>");
         }
 
-      results_xml_append_cert (buffer, oid, cert_loaded,
-                               result_iterator_has_cert_bunds (results),
-                               result_iterator_has_dfn_certs (results));
     }
 
   buffer_xml_append_printf (buffer, "</nvt>");
@@ -12932,17 +12969,17 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  INIT_GET (asset, Asset);
-
   /* Set type specific functions. */
   if (g_strcmp0 ("host", get_assets_data->type) == 0)
     {
+      INIT_GET (asset, Host);
       init_asset_iterator = init_asset_host_iterator;
       asset_count = asset_host_count;
       get_assets_data->get.subtype = g_strdup ("host");
     }
   else if (g_strcmp0 ("os", get_assets_data->type) == 0)
     {
+      INIT_GET (asset, Operating System);
       init_asset_iterator = init_asset_os_iterator;
       asset_count = asset_os_count;
       get_assets_data->get.subtype = g_strdup ("os");
@@ -14150,15 +14187,15 @@ handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
   if ((get_feeds_data->type == NULL)
-      || strcmp (get_feeds_data->type, "nvt"))
+      || (strcasecmp (get_feeds_data->type, "nvt") == 0))
     get_feed (gmp_parser, error, NVT_FEED);
 
   if ((get_feeds_data->type == NULL)
-      || strcmp (get_feeds_data->type, "scap"))
+      || (strcasecmp (get_feeds_data->type, "scap") == 0))
     get_feed (gmp_parser, error, SCAP_FEED);
 
   if ((get_feeds_data->type == NULL)
-      || strcmp (get_feeds_data->type, "cert"))
+      || (strcasecmp (get_feeds_data->type, "cert") == 0))
     get_feed (gmp_parser, error, CERT_FEED);
 
   SEND_TO_CLIENT_OR_FAIL ("</get_feeds_response>");
@@ -17156,7 +17193,8 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           cleanup_iterator (&tasks);
           SEND_TO_CLIENT_OR_FAIL ("</tasks>");
         }
-      if (scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
+      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
+           || scanner_iterator_type (&scanners) == SCANNER_TYPE_OPENVAS)
           && get_scanners_data->get.details)
         {
           char *s_name = NULL, *s_ver = NULL;
@@ -18588,6 +18626,137 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Gets task schedule data of a task as XML.
+ *
+ * @param[in]  task  The task to get schedule data for.
+ *
+ * @return Newly allocated XML string.
+ */
+static gchar*
+get_task_schedule_xml (task_t task)
+{
+  schedule_t schedule;
+  time_t next_time;
+  int schedule_in_trash, schedule_available;
+  char *task_schedule_uuid, *task_schedule_name;
+  GString *xml;
+
+  xml = g_string_new ("");
+
+  schedule_available = 1;
+  schedule = task_schedule (task);
+  if (schedule)
+    {
+      schedule_in_trash = task_schedule_in_trash (task);
+      if (schedule_in_trash)
+        {
+          task_schedule_uuid = trash_schedule_uuid (schedule);
+          task_schedule_name = trash_schedule_name (schedule);
+          schedule_available = trash_schedule_readable (schedule);
+        }
+      else
+        {
+          schedule_t found;
+          task_schedule_uuid = schedule_uuid (schedule);
+          task_schedule_name = schedule_name (schedule);
+          if (find_schedule_with_permission (task_schedule_uuid,
+                                            &found,
+                                            "get_schedules"))
+            g_error ("%s: GET_TASKS: error finding"
+                      " task schedule, aborting",
+                      __FUNCTION__);
+          schedule_available = (found > 0);
+        }
+    }
+  else
+    {
+      task_schedule_uuid = (char*) g_strdup ("");
+      task_schedule_name = (char*) g_strdup ("");
+      schedule_in_trash = 0;
+    }
+
+  if (schedule_available && schedule)
+    {
+      time_t first_time, info_next_time;
+      int period, period_months, duration;
+      gchar *icalendar, *zone;
+
+      icalendar = zone = NULL;
+
+      if (schedule_info (schedule, schedule_in_trash,
+                          &first_time, &info_next_time, &period,
+                          &period_months, &duration,
+                          &icalendar, &zone) == 0)
+        {
+          gchar *first_time_str, *next_time_str;
+
+          // Copy ISO time strings to avoid one overwriting the other
+          first_time_str = g_strdup (first_time
+                                      ? iso_time (&first_time)
+                                      : "");
+          next_time_str = g_strdup (info_next_time
+                                      ? iso_time (&info_next_time)
+                                      : "over");
+
+          xml_string_append (xml,
+                             "<schedule id=\"%s\">"
+                             "<name>%s</name>"
+                             "<trash>%d</trash>"
+                             "<first_time>%s</first_time>"
+                             "<next_time>%s</next_time>"
+                             "<icalendar>%s</icalendar>"
+                             "<period>%d</period>"
+                             "<period_months>"
+                             "%d"
+                             "</period_months>"
+                             "<duration>%d</duration>"
+                             "<timezone>%s</timezone>"
+                             "</schedule>"
+                             "<schedule_periods>"
+                             "%d"
+                             "</schedule_periods>",
+                             task_schedule_uuid,
+                             task_schedule_name,
+                             schedule_in_trash,
+                             first_time_str,
+                             next_time_str,
+                             icalendar ? icalendar : "",
+                             period,
+                             period_months,
+                             duration,
+                             zone ? zone : "",
+                             task_schedule_periods (task));
+
+          g_free (first_time_str);
+          g_free (next_time_str);
+        }
+
+      g_free (icalendar);
+      g_free (zone);
+    }
+  else
+    {
+      next_time = task_schedule_next_time (task);
+
+      xml_string_append (xml,
+                         "<schedule id=\"%s\">"
+                         "<name>%s</name>"
+                         "<next_time>%s</next_time>"
+                         "<trash>%d</trash>"
+                         "</schedule>",
+                         task_schedule_uuid,
+                         task_schedule_name,
+                         next_time
+                            ? iso_time (&next_time)
+                            : "over",
+                         schedule_in_trash);
+    }
+
+  return g_string_free (xml, FALSE);
+}
+
+
+/**
  * @brief Handle end of GET_TASKS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -18684,22 +18853,19 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       gchar *config_name_escaped;
       char *task_target_uuid, *task_target_name;
       gchar *task_target_name_escaped;
-      char *task_schedule_uuid, *task_schedule_name;
-      gchar *task_schedule_name_escaped;
+      gchar *task_schedule_xml;
       char *task_scanner_uuid, *task_scanner_name;
       gchar *task_scanner_name_escaped;
       gchar *last_report;
       gchar *second_last_report_id;
       gchar *current_report;
       report_t running_report;
-      schedule_t schedule;
-      time_t next_time;
       char *owner, *observers;
-      int target_in_trash, schedule_in_trash, scanner_in_trash;
+      int target_in_trash, scanner_in_trash;
       int debugs, holes = 0, infos = 0, logs, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
       int false_positives, task_scanner_type;
-      int schedule_available, target_available, config_available;
+      int target_available, config_available;
       int scanner_available;
       double severity = 0, severity_2 = 0;
       gchar *response;
@@ -18721,6 +18887,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       index = get_iterator_resource (&tasks);
       target = task_target (index);
 
+      task_schedule_xml = get_task_schedule_xml (index);
+
       if (get_tasks_data->schedules_only)
         {
           SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
@@ -18728,112 +18896,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                    get_iterator_uuid (&tasks),
                                    get_iterator_name (&tasks));
 
-          schedule_available = 1;
-          schedule = task_schedule (index);
-          if (schedule)
-            {
-              schedule_in_trash = task_schedule_in_trash (index);
-              if (schedule_in_trash)
-                {
-                  task_schedule_uuid = schedule_uuid (schedule);
-                  task_schedule_name = schedule_name (schedule);
-                  schedule_available = trash_schedule_readable (schedule);
-                }
-              else
-                {
-                  schedule_t found;
-                  task_schedule_uuid = schedule_uuid (schedule);
-                  task_schedule_name = schedule_name (schedule);
-                  if (find_schedule_with_permission (task_schedule_uuid,
-                                                    &found,
-                                                    "get_schedules"))
-                    g_error ("%s: GET_TASKS: error finding"
-                             " task schedule, aborting",
-                             __FUNCTION__);
-                  schedule_available = (found > 0);
-                }
-            }
-          else
-            {
-              task_schedule_uuid = (char*) g_strdup ("");
-              task_schedule_name = (char*) g_strdup ("");
-              schedule_in_trash = 0;
-            }
-
-          if (schedule_available && schedule)
-            {
-              time_t first_time, info_next_time;
-              int period, period_months, duration;
-              gchar *icalendar, *zone;
-
-              icalendar = zone = NULL;
-
-              if (schedule_info (schedule, schedule_in_trash,
-                                 &first_time, &info_next_time, &period,
-                                 &period_months, &duration,
-                                 &icalendar, &zone) == 0)
-                {
-                  gchar *first_time_str, *next_time_str;
-
-                  // Copy ISO time strings to avoid one overwriting the other
-                  first_time_str = g_strdup (first_time
-                                              ? iso_time (&first_time)
-                                              : "");
-                  next_time_str = g_strdup (info_next_time
-                                              ? iso_time (&info_next_time)
-                                              : "over");
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%d</trash>"
-                                           "<first_time>%s</first_time>"
-                                           "<next_time>%s</next_time>"
-                                           "<icalendar>%s</icalendar>"
-                                           "<period>%d</period>"
-                                           "<period_months>"
-                                           "%d"
-                                           "</period_months>"
-                                           "<duration>%d</duration>"
-                                           "<timezone>%s</timezone>"
-                                           "</schedule>"
-                                           "<schedule_periods>"
-                                           "%d"
-                                           "</schedule_periods>",
-                                           task_schedule_uuid,
-                                           task_schedule_name,
-                                           schedule_in_trash,
-                                           first_time_str,
-                                           next_time_str,
-                                           icalendar ? icalendar : "",
-                                           period,
-                                           period_months,
-                                           duration,
-                                           zone ? zone : "",
-                                           task_schedule_periods (index));
-
-                  g_free (first_time_str);
-                  g_free (next_time_str);
-                }
-
-              g_free (icalendar);
-              g_free (zone);
-            }
-          else
-            {
-              next_time = task_schedule_next_time (index);
-
-              SENDF_TO_CLIENT_OR_FAIL ("<schedule id=\"%s\">"
-                                       "<name>%s</name>"
-                                       "<next_time>%s</next_time>"
-                                       "<trash>%d</trash>"
-                                       "</schedule>",
-                                       task_schedule_uuid,
-                                       task_schedule_name,
-                                       next_time
-                                        ? iso_time (&next_time)
-                                        : "over",
-                                       schedule_in_trash);
-            }
+          SEND_TO_CLIENT_OR_FAIL (task_schedule_xml);
+          g_free (task_schedule_xml);
 
           SENDF_TO_CLIENT_OR_FAIL ("</task>");
 
@@ -19088,37 +19152,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                          __FUNCTION__);
               config_available = (found > 0);
             }
-          schedule_available = 1;
-          schedule = task_schedule (index);
-          if (schedule)
-            {
-              schedule_in_trash = task_schedule_in_trash (index);
-              if (schedule_in_trash)
-                {
-                  task_schedule_uuid = schedule_uuid (schedule);
-                  task_schedule_name = schedule_name (schedule);
-                  schedule_available = trash_schedule_readable (schedule);
-                }
-              else
-                {
-                  schedule_t found;
-                  task_schedule_uuid = schedule_uuid (schedule);
-                  task_schedule_name = schedule_name (schedule);
-                  if (find_schedule_with_permission (task_schedule_uuid,
-                                                     &found,
-                                                     "get_schedules"))
-                    g_error ("%s: GET_TASKS: error finding"
-                             " task schedule, aborting",
-                             __FUNCTION__);
-                  schedule_available = (found > 0);
-                }
-            }
-          else
-            {
-              task_schedule_uuid = (char*) g_strdup ("");
-              task_schedule_name = (char*) g_strdup ("");
-              schedule_in_trash = 0;
-            }
           scanner_available = 1;
           scanner = task_iterator_scanner (&tasks);
           if (scanner)
@@ -19150,7 +19183,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               task_scanner_type = 0;
               scanner_in_trash = 0;
             }
-          next_time = task_schedule_next_time (index);
+
           config_name_escaped
             = config_name
                 ? g_markup_escape_text (config_name, -1)
@@ -19163,10 +19196,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             = task_scanner_name
                 ? g_markup_escape_text (task_scanner_name, -1)
                 : NULL;
-          task_schedule_name_escaped
-            = task_schedule_name
-                ? g_markup_escape_text (task_schedule_name, -1)
-                : NULL;
+
           response = g_strdup_printf
                       ("<alterable>%i</alterable>"
                        "<config id=\"%s\">"
@@ -19193,13 +19223,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        "%u<finished>%u</finished>"
                        "</report_count>"
                        "<trend>%s</trend>"
-                       "<schedule id=\"%s\">"
-                       "<name>%s</name>"
-                       "<next_time>%s</next_time>"
-                       "<trash>%i</trash>"
-                       "%s"
-                       "</schedule>"
-                       "<schedule_periods>%i</schedule_periods>"
+                       "%s" // Schedule XML
                        "%s%s",
                        get_tasks_data->get.trash
                         ? 0
@@ -19228,12 +19252,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                         : task_iterator_trend_counts
                            (&tasks, holes, warnings, infos, severity,
                             holes_2, warnings_2, infos_2, severity_2),
-                       task_schedule_uuid,
-                       task_schedule_name_escaped,
-                       (next_time == 0 ? "over" : iso_time (&next_time)),
-                       schedule_in_trash,
-                       schedule_available ? "" : "<permissions/>",
-                       task_schedule_periods (index),
+                       task_schedule_xml,
                        current_report,
                        last_report);
           g_free (config_name);
@@ -19245,9 +19264,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (progress_xml);
           g_free (current_report);
           g_free (last_report);
-          g_free (task_schedule_uuid);
-          g_free (task_schedule_name);
-          g_free (task_schedule_name_escaped);
+          g_free (task_schedule_xml);
           g_free (task_scanner_uuid);
           g_free (task_scanner_name);
           g_free (task_scanner_name_escaped);
@@ -22191,8 +22208,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Login may only contain alphanumeric"
-                                    " characters if autogenerating"
-                                    " credential"));
+                                    " characters or the following:"
+                                    " - _ \\ . @"));
                 break;
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
@@ -23576,6 +23593,32 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_REPORT_RR_H:
         {
+          if (create_report_data->host_start)
+            {
+              create_report_result_t *result;
+
+              result = g_malloc (sizeof (create_report_result_t));
+              result->description = create_report_data->host_start;
+              result->host = strdup (create_report_data->ip);
+
+              array_add (create_report_data->host_starts, result);
+
+              create_report_data->host_start = NULL;
+            }
+
+          if (create_report_data->host_end)
+            {
+              create_report_result_t *result;
+
+              result = g_malloc (sizeof (create_report_result_t));
+              result->description = create_report_data->host_end;
+              result->host = strdup (create_report_data->ip);
+
+              array_add (create_report_data->host_ends, result);
+
+              create_report_data->host_end = NULL;
+            }
+
           gvm_free_string_var (&create_report_data->ip);
           set_client_state (CLIENT_CREATE_REPORT_RR);
           break;
@@ -24292,6 +24335,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       }
                     g_free (error_extra);
                     log_event_fail ("tag", "Tag", NULL, "created");
+                    break;
                   case 2:
                     SEND_TO_CLIENT_OR_FAIL 
                       ("<create_tag_response"
@@ -26094,8 +26138,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 4:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Login name must not be empty and contain"
-                                    " only alphanumeric characters"));
+                                    "Login name must not be empty and may"
+                                    " contain only alphanumeric characters"
+                                    " or the following: - _ \\ . @"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -27152,6 +27197,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "A tag_id is required"));
                 log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
                                 "modified");
+                break;
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_tag",
@@ -27160,6 +27206,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " or empty."));
                 log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
                                 "modified");
+                break;
               case 4:
                 if (send_find_error_to_client ("modify_tag", "resource",
                                                 error_extra,
@@ -27171,9 +27218,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   }
                 g_free (error_extra);
                 log_event_fail ("tag", "Tag", NULL, "modified");
+                break;
               case 5:
                 SEND_TO_CLIENT_OR_FAIL 
-                  ("<create_tag_response"
+                  ("<modify_tag_response"
                     " status=\"" STATUS_ERROR_MISSING "\""
                     " status_text=\"No resources found for filter\"/>");
                 log_event_fail ("tag", "Tag", NULL, "modified");
@@ -29496,8 +29544,14 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_TYPE,
               &create_report_data->detail_source_type);
 
+      APPEND (CLIENT_CREATE_REPORT_RR_H_END,
+              &create_report_data->host_end);
+
       APPEND (CLIENT_CREATE_REPORT_RR_H_IP,
               &create_report_data->ip);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_H_START,
+              &create_report_data->host_start);
 
 
       APPEND (CLIENT_CREATE_REPORT_TASK_NAME,
@@ -30085,7 +30139,6 @@ extern buffer_size_t from_client_end;
  * @brief Initialise GMP library.
  *
  * @param[in]  log_config      Logging configuration list.
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of manage database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  max_email_attachment_size  Max size of email attachments.
@@ -30099,7 +30152,7 @@ extern buffer_size_t from_client_end;
  *         -4 max_ips_per_target out of range.
  */
 int
-init_gmp (GSList *log_config, int nvt_cache_mode, const gchar *database,
+init_gmp (GSList *log_config, const gchar *database,
           int max_ips_per_target, int max_email_attachment_size,
           int max_email_include_size, int max_email_message_size,
           manage_connection_forker_t fork_connection, int skip_db_check)
@@ -30109,7 +30162,7 @@ init_gmp (GSList *log_config, int nvt_cache_mode, const gchar *database,
                      (GLogFunc) gvm_log_func,
                      log_config);
   command_data_init (&command_data);
-  return init_manage (log_config, nvt_cache_mode, database, max_ips_per_target,
+  return init_manage (log_config, database, max_ips_per_target,
                       max_email_attachment_size, max_email_include_size,
                       max_email_message_size,
                       fork_connection, skip_db_check);
@@ -30143,8 +30196,9 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
   xml_parser.text = gmp_xml_handle_text;
   xml_parser.passthrough = NULL;
   xml_parser.error = gmp_xml_handle_error;
-  if (xml_context)
-    g_markup_parse_context_free (xml_context);
+  /* Don't free xml_context because we likely are inside the parser that is
+   * the context, which would cause Glib to freak out.  Just leak, the process
+   * is going to exit after this anyway. */
   xml_context = g_markup_parse_context_new
                  (&xml_parser,
                   0,

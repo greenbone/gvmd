@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -77,6 +77,7 @@
 #include <gvm/base/cvss.h>
 #include <gvm/base/hosts.h>
 #include <gvm/base/proctitle.h>
+#include <gvm/osp/osp.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
@@ -4011,6 +4012,7 @@ delete_osp_scan (const char *report_id, const char *host, int port,
  * @param[in]   key_pub     Certificate.
  * @param[in]   key_priv    Private key.
  * @param[in]   details     1 for detailed report, 0 otherwise.
+ * @param[in]   pop_results 1 to pop results, 0 to leave results intact.
  * @param[out]  report_xml  Scan report.
  *
  * @return -1 on error, progress value between 0 and 100 on success.
@@ -4018,7 +4020,8 @@ delete_osp_scan (const char *report_id, const char *host, int port,
 static int
 get_osp_scan_report (const char *scan_id, const char *host, int port,
                      const char *ca_pub, const char *key_pub, const char
-                     *key_priv, int details, char **report_xml)
+                     *key_priv, int details, int pop_results,
+                     char **report_xml)
 {
   osp_connection_t *connection;
   int progress;
@@ -4030,7 +4033,8 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
       g_warning ("Couldn't connect to OSP scanner on %s:%d", host, port);
       return -1;
     }
-  progress = osp_get_scan (connection, scan_id, report_xml, details, &error);
+  progress = osp_get_scan_pop (connection, scan_id, report_xml, details,
+                               pop_results, &error);
   if (progress > 100 || progress < 0)
     {
       g_warning ("OSP get_scan %s: %s", scan_id, error);
@@ -4064,6 +4068,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
+  rc = -1;
+
   while (1)
     {
       char *report_xml = NULL;
@@ -4077,42 +4083,47 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           break;
         }
       int progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 0, NULL);
-      if (progress == -1)
+                                          key_priv, 0, 0, &report_xml);
+      if (progress < 0 || progress > 100)
         {
           result_t result = make_osp_result
-                             (task, "", "", threat_message_type ("Error"),
+                             (task, "", "", "",
+                              threat_message_type ("Error"),
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT);
           report_add_result (report, result);
           rc = -1;
           break;
         }
-      else if (progress < 100)
-        {
-          set_report_slave_progress (report, progress);
-          gvm_sleep (10);
-        }
-      else if (progress == 100)
+      else
         {
           /* Get the full OSP report. */
           progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 1, &report_xml);
-          if (progress != 100)
+                                          key_priv, 1, 1, &report_xml);
+          if (progress < 0 || progress > 100)
             {
               result_t result = make_osp_result
-                                 (task, "", "", threat_message_type ("Error"),
+                                 (task, "", "", "",
+                                  threat_message_type ("Error"),
                                   "Erroneous scan progress value", "", "",
                                   QOD_DEFAULT);
               report_add_result (report, result);
               rc = -1;
               break;
             }
-          parse_osp_report (task, report, report_xml);
-          g_free (report_xml);
-          delete_osp_scan (scan_id, host, port, ca_pub, key_pub, key_priv);
-          rc = 0;
-          break;
+          else
+            {
+              set_report_slave_progress (report, progress);
+              parse_osp_report (task, report, report_xml);
+              g_free (report_xml);
+              if (progress == 100)
+                {
+                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                   key_priv);
+                  break;
+                }
+              rc = 0;
+            }
         }
     }
 
@@ -4214,6 +4225,400 @@ launch_osp_task (task_t task, target_t target, const char *scan_id,
 }
 
 /**
+ * @brief Get the SSH credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_ssh_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_ssh_credential (target);
+  if (credential)
+    {
+      iterator_t iter;
+      const char *type, *ssh_port;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: SSH Credential not found.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      type = credential_iterator_type (&iter);
+      if (strcmp (type, "up") && strcmp (type, "usk"))
+        {
+          g_warning ("%s: SSH Credential not a user/pass pair"
+                     " or user/ssh key.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      ssh_port = target_iterator_ssh_port (&iter);
+      osp_credential = osp_credential_new (type, "ssh", ssh_port);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter));
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter));
+      if (strcmp (type, "usk") == 0)
+        {
+          const char *private_key = credential_iterator_private_key (&iter);
+          osp_credential_set_auth_data (osp_credential,
+                                        "private",
+                                        private_key);
+        }
+      cleanup_iterator (&iter);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Get the SMB credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_smb_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_smb_credential (target);
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: SMB Credential not found.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (strcmp (credential_iterator_type (&iter), "up"))
+        {
+          g_warning ("%s: SMB Credential not a user/pass pair.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      osp_credential = osp_credential_new ("up", "smb", NULL);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter));
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter));
+      cleanup_iterator (&iter);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Get the SMB credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_esxi_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_esxi_credential (target);
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: ESXi Credential not found.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (strcmp (credential_iterator_type (&iter), "up"))
+        {
+          g_warning ("%s: ESXi Credential not a user/pass pair.",
+                     __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      osp_credential = osp_credential_new ("up", "esxi", NULL);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter));
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter));
+      cleanup_iterator (&iter);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Get the SMB credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_snmp_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_credential (target, "snmp");
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: SNMP Credential not found.", __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (strcmp (credential_iterator_type (&iter), "snmp"))
+        {
+          g_warning ("%s: SNMP Credential not of type 'snmp'.",
+                     __FUNCTION__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      osp_credential = osp_credential_new ("snmp", "snmp", NULL);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "community",
+                                    credential_iterator_community (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "auth_algorithm",
+                                    credential_iterator_auth_algorithm (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "privacy_algorithm",
+                                    credential_iterator_privacy_algorithm
+                                      (&iter) ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "privacy_password",
+                                    credential_iterator_privacy_password
+                                      (&iter) ?: "");
+      cleanup_iterator (&iter);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Launch an OpenVAS via OSP task.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   target      The target.
+ * @param[out]  scan_id     The new scan uuid.
+ * @param[out]  error       Error return.
+ *
+ * @return 0 success, -1 if scanner is down.
+ */
+static int
+launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
+                         char **error)
+{
+  osp_connection_t *connection;
+  char *hosts_str, *ports_str, *exclude_hosts_str;
+  osp_target_t *osp_target;
+  GSList *osp_targets, *vts;
+  GHashTable *vts_hash_table;
+  osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+  osp_credential_t *snmp_credential;
+  GHashTable *scanner_options;
+  int ret;
+  config_t config;
+  iterator_t scanner_prefs_iter, families, prefs;
+  osp_start_scan_opts_t start_scan_opts;
+
+  config = task_config (task);
+
+  connection = NULL;
+
+  /* Set up target(s) */
+  hosts_str = target_hosts (target);
+  ports_str = target_port_range (target);
+  exclude_hosts_str = target_exclude_hosts (target);
+
+  osp_target = osp_target_new (hosts_str, ports_str, exclude_hosts_str);
+  osp_targets = g_slist_append (NULL, osp_target);
+
+  ssh_credential = target_osp_ssh_credential (target);
+  if (ssh_credential)
+    osp_target_add_credential (osp_target, ssh_credential);
+
+  smb_credential = target_osp_smb_credential (target);
+  if (smb_credential)
+    osp_target_add_credential (osp_target, smb_credential);
+
+  esxi_credential = target_osp_esxi_credential (target);
+  if (esxi_credential)
+    osp_target_add_credential (osp_target, esxi_credential);
+
+  snmp_credential = target_osp_snmp_credential (target);
+  if (snmp_credential)
+    osp_target_add_credential (osp_target, snmp_credential);
+
+  /* Setup general scanner preferences */
+  scanner_options
+    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+  init_otp_pref_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
+  while (next (&scanner_prefs_iter))
+    {
+      const char *name, *value;
+      name = otp_pref_iterator_name (&scanner_prefs_iter);
+      value = otp_pref_iterator_value (&scanner_prefs_iter);
+      if (name && value)
+        {
+          const char *osp_value;
+
+          // Workaround for boolean scanner preferences
+          if (strcmp (value, "yes") == 0)
+            osp_value = "1";
+          else if (strcmp (value, "no") == 0)
+            osp_value = "0";
+          else
+            osp_value = value;
+          g_hash_table_replace (scanner_options,
+                                g_strdup (name),
+                                g_strdup (osp_value));
+        }
+    }
+
+  /* Setup vulnerability tests (without preferences) */
+  vts = NULL;
+  vts_hash_table
+    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+  init_family_iterator (&families, 0, NULL, 1);
+  while (next (&families))
+    {
+      const char *family = family_iterator_name (&families);
+      if (family)
+        {
+          iterator_t nvts;
+          init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);
+          while (next (&nvts))
+            {
+              const char *oid;
+              osp_vt_single_t *new_vt;
+
+              oid = nvt_iterator_oid (&nvts);
+              new_vt = osp_vt_single_new (oid);
+
+              vts = g_slist_prepend (vts, new_vt);
+              g_hash_table_replace (vts_hash_table, g_strdup (oid), new_vt);
+            }
+          cleanup_iterator (&nvts);
+        }
+    }
+  cleanup_iterator (&families);
+
+  /* Setup VT preferences */
+  init_otp_pref_iterator (&prefs, config, "PLUGINS_PREFS");
+  while (next (&prefs))
+    {
+      const char *full_name, *value;
+      osp_vt_single_t *osp_vt;
+      gchar **split_name;
+
+      full_name = otp_pref_iterator_name (&prefs);
+      value = otp_pref_iterator_value (&prefs);
+      split_name = g_strsplit (full_name, ":", 3);
+
+      osp_vt = NULL;
+      if (split_name && split_name[0] && split_name[1] && split_name[2])
+        {
+          const char *oid = split_name[0];
+          const char *type = split_name[1];
+          const char *pref_id = split_name[2];
+          gchar *osp_value = NULL;
+
+          if (strcmp (type, "checkbox") == 0)
+            {
+              if (strcmp (value, "yes") == 0)
+                osp_value = g_strdup ("1");
+              else
+                osp_value = g_strdup ("0");
+            }
+          else if (strcmp (type, "radio") == 0)
+            {
+              gchar** split_value;
+              split_value = g_strsplit (value, ";", 2);
+              osp_value = g_strdup (split_value[0]);
+              g_strfreev (split_value);
+            }
+
+          osp_vt = g_hash_table_lookup (vts_hash_table, oid);
+          if (osp_vt)
+            osp_vt_single_add_value (osp_vt, pref_id,
+                                     osp_value ? osp_value : value);
+          g_free (osp_value);
+        }
+
+      g_strfreev (split_name);
+    }
+  cleanup_iterator (&prefs);
+
+  /* Start the scan */
+  connection = osp_scanner_connect (task_scanner (task));
+  if (!connection)
+    {
+      if (error)
+        *error = g_strdup ("Could not connect to Scanner");
+      return -1;
+    }
+
+  start_scan_opts.targets = osp_targets;
+  start_scan_opts.vt_groups = NULL;
+  start_scan_opts.vts = vts;
+  start_scan_opts.scanner_params = scanner_options;
+  start_scan_opts.parallel = 1;
+  start_scan_opts.scan_id = scan_id;
+
+  ret = osp_start_scan_ext (connection,
+                            start_scan_opts,
+                            error);
+
+  osp_connection_close (connection);
+  g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
+  // Credentials are freed with target
+  g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
+  g_hash_table_destroy (scanner_options);
+  free (hosts_str);
+  free (ports_str);
+  free (exclude_hosts_str);
+  return ret;
+}
+
+/**
  * @brief Fork a child to handle an OSP scan's fetching and inserting.
  *
  * @param[in]   task        The task.
@@ -4266,12 +4671,23 @@ fork_osp_scan_handler (task_t task, target_t target)
    */
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
-  if (launch_osp_task (task, target, report_id, &error))
+
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS)
+    {
+      rc = launch_osp_openvas_task (task, target, report_id, &error);
+    }
+  else
+    {
+      rc = launch_osp_task (task, target, report_id, &error);
+    }
+
+  if (rc)
     {
       result_t result;
 
       g_warning ("OSP start_scan %s: %s", report_id, error);
-      result = make_osp_result (task, "", "", threat_message_type ("Error"),
+      result = make_osp_result (task, "", "", "",
+                                threat_message_type ("Error"),
                                 error, "", "", QOD_DEFAULT);
       report_add_result (global_current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
@@ -4311,7 +4727,7 @@ fork_osp_scan_handler (task_t task, target_t target)
 }
 
 /**
- * @brief Start a task on an OSP scanner.
+ * @brief Start a task on an OSP or OpenVAS via OSP scanner.
  *
  * @param[in]   task       The task.
  *
@@ -4770,13 +5186,15 @@ run_task_setup (task_t task, config_t *config, target_t *target,
  *                          continue if stopped else start from beginning.
  * @param[in]   run_status  The task's run status.
  * @param[in]   last_stopped_report  Last stopped report of task.
+ * @param[in]   for_slave_scan  If the report is for a slave scan.
  *
  * @return 0 success, -1 error, -3 creating the report failed.
  */
 static int
 run_task_prepare_report (task_t task, char **report_id, int from,
                          task_status_t run_status,
-                         report_t *last_stopped_report)
+                         report_t *last_stopped_report,
+                         gboolean for_slave_scan)
 {
   if ((from == 1)
       || ((from == 2)
@@ -4794,7 +5212,10 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 
       /* Remove partial host information from the report. */
 
-      trim_partial_report (*last_stopped_report);
+      if (for_slave_scan)
+        trim_report (*last_stopped_report);
+      else
+        trim_partial_report (*last_stopped_report);
 
       /* Ensure the report is marked as requested. */
 
@@ -4876,7 +5297,7 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
   /* Prepare the report. */
 
   ret = run_task_prepare_report (task, report_id, from, run_status,
-                                 &last_stopped_report);
+                                 &last_stopped_report, TRUE);
   if (ret)
     {
       set_task_run_status (task, run_status);
@@ -5113,7 +5534,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
     }
 
   if (!openvas_scanner_connected ()
-      && (openvas_scanner_connect () || openvas_scanner_init (0)))
+      && (openvas_scanner_connect () || openvas_scanner_init ()))
     return -5;
 
   if (openvas_scanner_is_loading ())
@@ -5132,7 +5553,7 @@ run_otp_task (task_t task, scanner_t scanner, int from, char **report_id)
   /* Prepare the report. */
 
   ret = run_task_prepare_report (task, report_id, from, run_status,
-                                 &last_stopped_report);
+                                 &last_stopped_report, FALSE);
   if (ret)
     {
       set_task_run_status (task, run_status);
@@ -5725,9 +6146,11 @@ run_task (const char *task_id, char **report_id, int from)
   if (scanner_type (scanner) == SCANNER_TYPE_GMP)
     return run_gmp_task (task, scanner, from, report_id);
 
-  if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
+  if (scanner_type (scanner) == SCANNER_TYPE_OPENVAS
+      || scanner_type (scanner) == SCANNER_TYPE_OSP)
     return run_osp_task (task);
 
+  // TODO: Remove OTP task handling
   return run_otp_task (task, scanner, from, report_id);
 }
 
@@ -5771,13 +6194,15 @@ stop_osp_task (task_t task)
 {
   osp_connection_t *connection;
   int ret = -1;
+  report_t scan_report;
   char *scan_id;
 
+  scan_report = task_running_report (task);
+  scan_id = report_uuid (scan_report);
+  if (!scan_id)
+    goto end_stop_osp;
   connection = osp_scanner_connect (task_scanner (task));
   if (!connection)
-    goto end_stop_osp;
-  scan_id = report_uuid (task_running_report (task));
-  if (!scan_id)
     goto end_stop_osp;
   set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
   ret = osp_stop_scan (connection, scan_id, NULL);
@@ -5786,9 +6211,12 @@ stop_osp_task (task_t task)
 
 end_stop_osp:
   set_task_end_time_epoch (task, time (NULL));
-  set_scan_end_time_epoch (global_current_report, time (NULL));
   set_task_run_status (task, TASK_STATUS_STOPPED);
-  set_report_scan_run_status (global_current_report, TASK_STATUS_STOPPED);
+  if (scan_report)
+    {
+      set_scan_end_time_epoch (scan_report, time (NULL));
+      set_report_scan_run_status (scan_report, TASK_STATUS_STOPPED);
+    }
   if (ret)
     return -1;
   return 0;
@@ -5829,7 +6257,7 @@ stop_task_internal (task_t task)
                 return -5;
             }
           if (!openvas_scanner_connected ()
-              && (openvas_scanner_connect () || openvas_scanner_init (0)))
+              && (openvas_scanner_connect () || openvas_scanner_init ()))
             return -5;
           if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
             return -1;
@@ -5886,7 +6314,8 @@ stop_task (const char *task_id)
   if (task == 0)
     return 3;
 
-  if (config_type (task_config (task)) != 0)
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
+      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP)
     return stop_osp_task (task);
 
   return stop_task_internal (task);
@@ -6068,20 +6497,6 @@ int
 acknowledge_bye ()
 {
   if (send_to_server ("CLIENT <|> BYE <|> ACK\n"))
-    return -1;
-  return 0;
-}
-
-/**
- * @brief Acknowledge scanner PLUGINS_FEED_VERSION message,
- * @brief requesting all plugin info.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer.
- */
-int
-acknowledge_feed_version_info ()
-{
-  if (send_to_server ("CLIENT <|> COMPLETE_LIST <|> CLIENT\n"))
     return -1;
   return 0;
 }
@@ -8106,25 +8521,25 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
   if (details)
     {
       int tag_count;
-      GString *cert_refs_str, *tags_str, *buffer;
+      GString *refs_str, *tags_str, *buffer;
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
       char *default_timeout = nvt_default_timeout (oid);
 
       DEF (family);
-      DEF (xref);
       DEF (tag);
 
 #undef DEF
 
-      cert_refs_str = g_string_new ("");
+      refs_str = g_string_new ("");
+
       if (manage_cert_loaded())
         {
           init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
-              g_string_append_printf (cert_refs_str,
-                                      "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+              g_string_append_printf (refs_str,
+                                      "<ref type=\"cert-bund\" id=\"%s\"/>",
                                       get_iterator_name (&cert_refs_iterator));
           }
           cleanup_iterator (&cert_refs_iterator);
@@ -8132,16 +8547,18 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
           init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
-              g_string_append_printf (cert_refs_str,
-                                      "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+              g_string_append_printf (refs_str,
+                                      "<ref type=\"dfn-cert\" id=\"%s\"/>",
                                       get_iterator_name (&cert_refs_iterator));
           }
           cleanup_iterator (&cert_refs_iterator);
         }
       else
         {
-          g_string_append (cert_refs_str, "<warning>database not available</warning>");
+          g_string_append (refs_str, "<warning>database not available</warning>");
         }
+
+      nvti_refs_append_xml (refs_str, oid);
 
       tags_str = g_string_new ("");
       tag_count = resource_tag_count ("nvt",
@@ -8203,10 +8620,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<value>%s</value>"
                               "<type>%s</type>"
                               "</qod>"
-                              "<cve_id>%s</cve_id>"
-                              "<bugtraq_id>%s</bugtraq_id>"
-                              "<cert_refs>%s</cert_refs>"
-                              "<xrefs>%s</xrefs>"
+                              "<refs>%s</refs>"
                               "<tags>%s</tags>"
                               "<preference_count>%i</preference_count>"
                               "<timeout>%s</timeout>"
@@ -8227,18 +8641,14 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                                : "",
                               nvt_iterator_qod (nvts),
                               nvt_iterator_qod_type (nvts),
-                              nvt_iterator_cve (nvts),
-                              nvt_iterator_bid (nvts),
-                              cert_refs_str->str,
-                              xref_text,
+                              refs_str->str,
                               tag_text,
                               pref_count,
                               timeout ? timeout : "",
                               default_timeout ? default_timeout : "");
       g_free (family_text);
-      g_free (xref_text);
       g_free (tag_text);
-      g_string_free(cert_refs_str, 1);
+      g_string_free(refs_str, 1);
       g_string_free(tags_str, 1);
 
       if (preferences)
@@ -8865,6 +9275,19 @@ gvm_migrate_secinfo (int feed_type)
   g_free (lockfile_name);
 
   return ret;
+}
+
+/**
+ * @brief Update NVT cache using OSP.
+ *
+ * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
+ *
+ * @return 0 success, -1 error, 2 scanner still loading.
+ */
+int
+manage_update_nvts_osp (const gchar *update_socket)
+{
+  return manage_update_nvt_cache_osp (update_socket);
 }
 
 

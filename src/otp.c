@@ -306,16 +306,6 @@ static char* current_scanner_preference = NULL;
 /* Scanner plugins. */
 
 /**
- * @brief The current plugin, during reading of scanner plugin list.
- */
-static nvti_t* current_plugin = NULL;
-
-/**
- * @brief The full plugins list, during reading of scanner plugin list.
- */
-static GList* scanner_plugins_list = NULL;
-
-/**
  * @brief The full preferences list, during reading of scanner plugin list.
  */
 static GList* scanner_preferences_list = NULL;
@@ -356,15 +346,6 @@ typedef enum
   SCANNER_LOG_HOSTNAME,
   SCANNER_LOG_NUMBER,
   SCANNER_LOG_OID,
-  SCANNER_NVT_INFO,
-  SCANNER_PLUGIN_LIST_BUGTRAQ_ID,
-  SCANNER_PLUGIN_LIST_CATEGORY,
-  SCANNER_PLUGIN_LIST_CVE_ID,
-  SCANNER_PLUGIN_LIST_FAMILY,
-  SCANNER_PLUGIN_LIST_NAME,
-  SCANNER_PLUGIN_LIST_OID,
-  SCANNER_PLUGIN_LIST_TAGS,
-  SCANNER_PLUGIN_LIST_XREFS,
   SCANNER_PREFERENCE_NAME,
   SCANNER_PREFERENCE_VALUE,
   SCANNER_SERVER,
@@ -594,62 +575,6 @@ parse_scanner_preference_value (char** messages)
 }
 
 /**
- * @brief Parse the tags of a plugin list.
- *
- * @param  messages  A pointer into the OTP input buffer.
- *
- * @return 0 success, -2 too few characters (need more input).
- */
-static int
-parse_scanner_plugin_list_tags (char** messages)
-{
-  char *value, *end, *match;
-  assert (current_plugin != NULL);
-  end = *messages + from_scanner_end - from_scanner_start;
-  while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_scanner_start++; }
-  if ((match = memchr (*messages,
-                       (int) '\n',
-                       from_scanner_end - from_scanner_start)))
-    {
-      match[0] = '\0';
-      value = g_strdup (*messages);
-      blank_control_chars (value);
-      if (value != NULL)
-        {
-          char* pos = value;
-          while (*pos)
-            {
-              if (*pos == ';')
-                *pos = '\n';
-              pos++;
-            }
-        }
-      if (current_plugin)
-        {
-          gchar *tags, *cvss_base;
-          parse_tags (value, &tags, &cvss_base);
-          nvti_set_tag (current_plugin, tags);
-          nvti_set_cvss_base (current_plugin, cvss_base);
-          g_free (tags);
-          g_free (cvss_base);
-
-          /* Add the plugin to scanner_plugins_list which will be bulk-inserted
-           * in DB later in manage_complete_nvt_cache_update. */
-          scanner_plugins_list = g_list_prepend (scanner_plugins_list,
-                                                 current_plugin);
-          current_plugin = NULL;
-        }
-      set_scanner_state (SCANNER_PLUGIN_LIST_OID);
-      from_scanner_start += match + 1 - *messages;
-      *messages = match + 1;
-      g_free (value);
-      return 0;
-    }
-  return -2;
-}
-
-/**
  * @brief Parse the field following "SERVER <|>".
  *
  * @param  messages  A pointer into the OTP input buffer.
@@ -843,20 +768,10 @@ process_otp_scanner_input ()
         from_scanner_start += ver_len;
         set_scanner_init_state (SCANNER_INIT_DONE);
         return 0;
-      case SCANNER_INIT_GOT_FEED_VERSION:
-        /* Nothing to parse. */
-        return 0;
-      case SCANNER_INIT_GOT_PLUGINS:
-        /* Nothing to parse. */
-        return 0;
       case SCANNER_INIT_CONNECTED:
         /* Input from scanner before version string sent. */
         return -1;
-      case SCANNER_INIT_SENT_COMPLETE_LIST:
-      case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
       case SCANNER_INIT_DONE:
-      case SCANNER_INIT_DONE_CACHE_MODE:
-      case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
       case SCANNER_INIT_TOP:
         if (scanner_state == SCANNER_TOP)
           switch (parse_scanner_bad_login (&messages))
@@ -868,14 +783,6 @@ process_otp_scanner_input ()
           switch (parse_scanner_done (&messages))
             {
               case -1: return -1;
-              case -2:
-                /* Need more input. */
-                if (sync_buffer ()) return -1;
-                return 0;
-            }
-        else if (scanner_state == SCANNER_PLUGIN_LIST_TAGS)
-          switch (parse_scanner_plugin_list_tags (&messages))
-            {
               case -2:
                 /* Need more input. */
                 if (sync_buffer ()) return -1;
@@ -1207,114 +1114,6 @@ process_otp_scanner_input ()
                     }
                   break;
                 }
-              case SCANNER_PLUGIN_LIST_OID:
-                {
-                  /* Use match[1] instead of field[1] for UTF-8 hack. */
-                  if (strlen (field) == 0 && match[1] == '|')
-                    {
-                      set_scanner_state (SCANNER_DONE);
-                      switch (parse_scanner_done (&messages))
-                        {
-                          case  0:
-                            if (scanner_init_state
-                                == SCANNER_INIT_SENT_COMPLETE_LIST
-                                || scanner_init_state
-                                   == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE)
-                              {
-                                set_scanner_init_state (SCANNER_INIT_GOT_PLUGINS);
-                                set_nvts_feed_version (plugins_feed_version);
-                              }
-                            break;
-                          case -1: goto return_error;
-                          case -2:
-                            /* Need more input. */
-                            if (sync_buffer ()) goto return_error;
-                            goto return_need_more;
-                        }
-                      break;
-                    }
-                  assert (current_plugin == NULL);
-                  current_plugin = nvti_new ();
-                  if (current_plugin == NULL) abort ();
-                  nvti_set_oid (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_NAME);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_NAME:
-                {
-                  nvti_set_name (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_CATEGORY);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_CATEGORY:
-                {
-                  nvti_set_category (current_plugin, atoi (field));
-                  set_scanner_state (SCANNER_PLUGIN_LIST_FAMILY);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_FAMILY:
-                {
-                  nvti_set_family (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_CVE_ID);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_CVE_ID:
-                {
-                  nvti_set_cve (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_BUGTRAQ_ID);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_BUGTRAQ_ID:
-                {
-                  nvti_set_bid (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_XREFS);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_XREFS:
-                {
-                  nvti_set_xref (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_TAGS);
-                  switch (parse_scanner_plugin_list_tags (&messages))
-                    {
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                    }
-                  break;
-                }
-              case SCANNER_NVT_INFO:
-                {
-                  char *feed_version, *db_feed_version;
-
-                  feed_version = g_strdup (field);
-                  g_debug ("   scanner got nvti_info: %s", feed_version);
-                  if (plugins_feed_version)
-                    g_free (plugins_feed_version);
-                  plugins_feed_version = feed_version;
-                  db_feed_version = nvts_feed_version ();
-                  if (db_feed_version
-                      && (strcmp (plugins_feed_version, db_feed_version) == 0))
-                    /* NVTs are at this version already. */
-                    return 4;
-                  g_info ("   Updating NVT cache");
-                  set_scanner_state (SCANNER_DONE);
-                  switch (parse_scanner_done (&messages))
-                    {
-                      case  0:
-                        if (scanner_init_state == SCANNER_INIT_DONE)
-                          set_scanner_init_state (SCANNER_INIT_GOT_FEED_VERSION);
-                        else if (acknowledge_feed_version_info ())
-                          goto return_error;
-                        break;
-                      case -1: goto return_error;
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                    }
-                  break;
-                }
               case SCANNER_PREFERENCE_NAME:
                 {
                   /* Use match[1] instead of field[1] for UTF-8 hack. */
@@ -1328,19 +1127,6 @@ process_otp_scanner_input ()
                             /* Need more input. */
                             if (sync_buffer ()) goto return_error;
                             goto return_need_more;
-                        }
-                      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
-                          || scanner_init_state
-                             == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
-                        {
-                          manage_complete_nvt_cache_update
-                           (scanner_plugins_list,
-                            scanner_preferences_list);
-                          set_scanner_init_state (SCANNER_INIT_DONE);
-                          manage_nvt_preferences_enable ();
-                          /* Return 1, as though the scanner sent BYE. */
-                          /** @todo Exit more formally with Scanner? */
-                          goto return_bye;
                         }
                       break;
                     }
@@ -1393,12 +1179,6 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_ALARM_HOST);
                 else if (strcasecmp ("LOG", field) == 0)
                   set_scanner_state (SCANNER_LOG_HOST);
-                else if (strcasecmp ("NVT_INFO", field) == 0)
-                  set_scanner_state (SCANNER_NVT_INFO);
-                else if (strcasecmp ("PLUGIN_LIST", field) == 0)
-                  {
-                    set_scanner_state (SCANNER_PLUGIN_LIST_OID);
-                  }
                 else if (strcasecmp ("PREFERENCES", field) == 0)
                   {
                     assert (current_scanner_preference == NULL);

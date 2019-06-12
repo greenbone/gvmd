@@ -1406,12 +1406,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>type</e>
         <e>family</e>
         <e>cvss_base</e>
-        <e>cve</e>
         <e>cpe</e>
-        <e>bid</e>
         <e>tags</e>
-        <e>cert</e>
-        <e>xref</e>
+        <e>refs</e>
       </pattern>
       <ele>
         <name>name</name>
@@ -1434,18 +1431,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <pattern><t>integer</t></pattern>
       </ele>
       <ele>
-        <name>cve</name>
-        <summary>CVE associated with the NVT</summary>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
         <name>cpe</name>
         <summary>The CPE which produced the CVE (for "cve" results)</summary>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>bid</name>
-        <summary>BID associated with the NVT</summary>
         <pattern>text</pattern>
       </ele>
       <ele>
@@ -1454,32 +1441,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <pattern>text</pattern>
       </ele>
       <ele>
-        <name>cert</name>
-        <summary>List of CERT advisories referencing this NVT via CVEs</summary>
+        <name>refs</name>
+        <summary>List of references of various types for this vulnerability test</summary>
         <pattern>
-          <any><e>cert_ref</e></any>
+          <any><e>ref</e></any>
         </pattern>
         <ele>
-          <name>cert_ref</name>
-          <summary>A CERT advisory reference</summary>
+          <name>ref</name>
+          <summary>A reference</summary>
           <pattern>
             <attrib>
               <name>id</name>
-              <summary>ID of the advisory</summary>
+              <summary>ID of the reference</summary>
               <type>text</type>
             </attrib>
             <attrib>
               <name>type</name>
-              <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
+	      <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"
+	      </summary>
               <type>text</type>
             </attrib>
           </pattern>
         </ele>
-      </ele>
-      <ele>
-        <name>xref</name>
-        <summary>XREFs associated with the NVT</summary>
-        <pattern>text</pattern>
       </ele>
     </ele>
     <ele>
@@ -5099,9 +5082,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>CPE</name>
               <extension>csv</extension>
               <content_type>text/csv</content_type>
-              <summary>Common Product Enumeration CSV table.</summary>
+              <summary>Common Platform Enumeration CSV table.</summary>
               <description>
-                CPE stands for Common Product Enumeration.  It is a
+                CPE stands for Common Platform Enumeration.  It is a
                 <truncated>...</truncated>
               </description>
               <predefined>1</predefined>
@@ -8016,6 +7999,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>boolean</type>
             <summary>Whether new NVTs will be added</summary>
           </column>
+          <column>
+            <name>type</name>
+            <type>
+              <alts>
+                <alt>0</alt>
+                <alt>1</alt>
+              </alts></type>
+            <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -8160,9 +8152,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>type</name>
-          <summary>The type the config.</summary>
+          <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
           <pattern>
-            text
+            <t>
+              <alts>
+                <alt>0</alt>
+                <alt>1</alt>
+              </alts>
+            </t>
           </pattern>
         </ele>
         <ele>
@@ -12214,7 +12211,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <column>
             <name>cve</name>
             <type>text</type>
-            <summary>List of BIDs of the NVT</summary>
+            <summary>List of CVEs of the NVT</summary>
           </column>
           <column>
             <name>xref</name>
@@ -13656,6 +13653,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         NVT information.  If the manager cannot access a list of available
         NVTs at that time, it will reply with the 503 response.
       </p>
+      <p>
+        NVT categories: 0 init, 1 scanner, 2 settings, 3 infos, 4 attack, 5 mixed,
+        6 destructive attack, 7 denial, 8 kill host, 9 flood, 10 end, and 11 unknown.
+      </p>
     </description>
     <pattern>
       <attrib>
@@ -13741,10 +13742,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>family</e>
               <e>cvss_base</e>
               <e>qod</e>
-              <e>cve_id</e>
-              <e>cert_refs</e>
-              <e>bugtraq_id</e>
-              <e>xrefs</e>
+              <e>refs</e>
               <e>tags</e>
               <o><e>preference_count</e></o>
               <o><e>timeout</e></o>
@@ -13761,7 +13759,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>category</name>
           <summary>The category of the NVT</summary>
-      <pattern><t>integer</t></pattern>
+          <pattern><t>integer</t></pattern>
         </ele>
         <ele>
           <name>creation_time</name>
@@ -13853,50 +13851,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
-          <name>cve_id</name>
-          <summary>IDs of the CVEs the NVT addresses</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>bugtraq_id</name>
-          <summary>List of Bugtraq IDs of the NVT</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>cert_refs</name>
-          <summary>List of CERT advisories referencing this NVT via CVEs</summary>
+          <name>refs</name>
+          <summary>List of references of various types for this vulnerability test</summary>
           <pattern>
-            <any><e>cert_ref</e></any>
+            <any><e>ref</e></any>
             <o><e>warning</e></o>
           </pattern>
           <ele>
-            <name>cert_ref</name>
-            <summary>A CERT advisory reference</summary>
+            <name>ref</name>
+            <summary>A reference</summary>
             <pattern>
               <attrib>
                 <name>id</name>
-                <summary>ID of the advisory</summary>
+                <summary>ID of the reference</summary>
                 <type>text</type>
               </attrib>
               <attrib>
                 <name>type</name>
-                <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
+                <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"</summary>
                 <type>text</type>
               </attrib>
             </pattern>
           </ele>
           <ele>
             <name>warning</name>
-            <summary>A warning message, e.g. when the database is not</summary>
+            <summary>A warning message, e.g. when the CERT database is not available</summary>
             <pattern>
               text
             </pattern>
           </ele>
-        </ele>
-        <ele>
-          <name>xrefs</name>
-          <summary>List of other references of the NVT</summary>
-          <pattern>text</pattern>
         </ele>
         <ele>
           <name>tags</name>
@@ -14009,10 +13992,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
             <cvss_base></cvss_base>
-            <cve_id>NOCVE</cve_id>
-            <bugtraq_id>NOBID</bugtraq_id>
-            <cert_refs/>
-            <xrefs>NOXREF</xrefs>
+            <refs/>
             <tags>NOTAG</tags>
             <preference_count>-1</preference_count>
             <timeout></timeout>
@@ -15953,6 +15933,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>details</name>
+        <summary>
+          Whether to get the details of the reports including the
+          results, hosts, ports etc.
+        </summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>type</name>
         <summary>Type of report to get</summary>
         <type>
@@ -16385,13 +16373,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   <nvt oid="1.3.6.1.4.1.25623.1.0.74">
                     <name>Test NVT: fields with ISO-8859-1 chars ()</name>
                     <cvss_base>5.0</cvss_base>
-                    <cve>CVE-2013-1406</cve>
-                    <bid>51702</bid>
                     <tags>NOTAGS</tags>
-                    <cert>
-                      <cert_ref id="DFN-CERT-2013-0246" type="DFN-CERT"/>
-                    </cert>
-                    <xref>NOXREF</xref>
+                    <refs>
+                      <ref id="CVE-2013-1406" type="cve"/>
+                      <ref id="51702" type="bid"/>
+                      <ref id="DFN-CERT-2013-0246" type="dfn-cert"/>
+                    </refs>
                   </nvt>
                   <threat>Medium</threat>
                   <description>Test with  umlaut Warning Port 0.</description>
@@ -17437,11 +17424,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <nvt oid="1.3.6.1.4.1.25623.1.0.74">
               <name>Test NVT: fields with ISO-8859-1 chars</name>
               <cvss_base>5.0</cvss_base>
-              <cve>CVE-2009-3095</cve>
-              <bid>36254</bid>
               <tags>NOTAGS</tags>
-              <cert></cert>
-              <xref>NOXREF</xref>
+              <refs>
+                 <ref type="cve" id="CVE-2009-3095"/>
+                 <ref type="bid" id="36254"/>
+              </refs>
             </nvt>
             <threat>Medium</threat>
             <description>Test with umlaut.</description>
@@ -17495,11 +17482,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <nvt oid="1.3.6.1.4.1.25623.1.0.75">
               <name>Test NVT: long lines</name>
               <cvss_base>9</cvss_base>
-              <cve>CVE-2009-3095</cve>
-              <bid>36254</bid>
               <tags>NOTAGS</tags>
-              <cert></cert>
-              <xref>NOXREF</xref>
+              <refs>
+                 <ref type="cve" id="CVE-2009-3095"/>
+                 <ref type="bid" id="36254"/>
+              </refs>
             </nvt>
             <threat>High</threat>
             <description>Test with very long warning.</description>
@@ -26325,9 +26312,59 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         preferences within the same nvt instead of using the preference name
         which may be changed.
       </p>
+      <p>
+        The content of the elements CVE_ID, BUGTRAQ_ID and XREFS is now integrated
+        into the REFS element.
+      </p>
     </description>
     <version>9.0</version>
   </change>
+  <change>
+    <command>GET_NVTS, GET_INFO</command>
+    <summary>New element REFS replaces CVE_ID, BUGTRAQ_ID, XREFS and CERT_REFS</summary>
+    <version>9.0</version>
+    <description>
+      <p>
+        The former element CERT_REFS is now named REFS and the id's for the type
+        are now lower case, ie. "cert-bund" and "dfn-cert" instead of "CERT-Bund" and "DFN-CERT".
+      </p>
+      <p>
+        The content of the elements CVE_ID, BUGTRAQ_ID and XREFS is now integrated
+        into the REFS element.
+      </p>
+    </description>
+  </change>
+  <change>
+    <command>GET_REPORTS, GET_RESULTS</command>
+    <summary>New element RESULT/NVT/REFS replaces RESULT/NVT/CERT</summary>
+    <version>9.0</version>
+    <description>
+      <p>
+        The former element CERT is now named REFS and the id's for the type
+        are now lower case, ie. "cert-bund" and "dfn-cert" instead of "CERT-Bund" and "DFN-CERT".
+      </p>
+    </description>
+  </change>
+  <change>
+    <command>GET_REPORTS, GET_RESULTS</command>
+    <summary>Elements RESULT/NVT/CVE, RESULT/NVT/BID and RESULT/NVT/XREF consolidated into RESULT/NVT/REFS</summary>
+    <version>9.0</version>
+    <description>
+      <p>
+        The content of former elements CVE and BID are now also part of REFS and the
+	respective REF types are "cve" and "bid".
+      </p>
+      <p>
+        The content of former element XREF is now also part of REFS and the
+        respective REF type is the former prefix of the XREF, for example "URL".
+      </p>
+      <p>
+        The "NOCVE", "NOXREF" and "NOBID" strings that previously indicated the absence
+        of a CVE, XREF or BID are not applied anymore.
+      </p>
+    </description>
+  </change>
+
   <change>
     <command>CREATE_FILTER, CREATE_TARGET</command>
     <summary>NAME MAKE_UNIQUE removed</summary>

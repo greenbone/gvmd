@@ -299,6 +299,11 @@ static int update_in_progress = 0;
  */
 GSList *log_config = NULL;
 
+/**
+ * @brief File socket for OSP NVT update.  NULL to update via OTP.
+ */
+static gchar *osp_update_socket = NULL;
+
 
 /* Helpers. */
 
@@ -662,6 +667,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
   int pid, parent_client_socket, ret;
   int sockets[2];
   struct sigaction action;
+  gchar *auth_uuid;
 
   /* Fork a child to use as scheduler client and server. */
 
@@ -743,13 +749,19 @@ fork_connection_internal (gvm_connection_t *client_connection,
             exit (EXIT_FAILURE);
           }
 
+        /* Copy the given uuid, because the caller may have passed a
+         * reference to some session variable that will be reset by
+         * the process initialisation. */
+        auth_uuid = g_strdup (uuid);
+
         init_gmpd_process (database, disabled_commands);
 
         /* Make any further authentications to this process succeed.  This
          * enables the scheduler to login as the owner of the scheduled
          * task. */
         manage_auth_allow_all (scheduler);
-        set_scheduled_user_uuid (uuid);
+        set_scheduled_user_uuid (auth_uuid);
+        g_free (auth_uuid);
 
         /* For TLS, create a new session, because the parent may have been in
          * the middle of using the old one. */
@@ -1084,86 +1096,18 @@ handle_sigabrt_simple (int signal)
 }
 
 /**
- * @brief Updates the NVT Cache and exits or returns exit code.
+ * @brief Update the NVT Cache using OSP.
  *
- * @param[in]  register_cleanup        Whether to register cleanup with atexit.
+ * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
  *
- * @return If this function did not exit itself, returns exit code.
+ * @return 0 success.
  */
 static int
-update_nvt_cache (int register_cleanup)
+update_nvt_cache_osp (const gchar *update_socket)
 {
-  int ret;
-  gvm_connection_t connection;
+  proctitle_set ("gvmd: OSP: Updating NVT cache");
 
-  /* Initialise GMP daemon. */
-
-  proctitle_set ("gvmd: Updating NVT cache");
-
-  switch (init_gmpd (log_config,
-                     -1,
-                     database,
-                     manage_max_hosts (),
-                     0, /* Max email attachment size. */
-                     0, /* Max email include size. */
-                     0, /* Max email message size. */
-                     NULL,
-                     1  /* Skip DB check (including table creation). */))
-    {
-      case 0:
-        break;
-      case -2:
-        g_critical ("%s: database is wrong version", __FUNCTION__);
-        log_config_free ();
-        exit (EXIT_FAILURE);
-        break;
-      case -1:
-      default:
-        g_critical ("%s: failed to initialise GMP daemon", __FUNCTION__);
-        log_config_free ();
-        exit (EXIT_FAILURE);
-    }
-
-  /* Register the `cleanup' function. */
-
-  if (register_cleanup && atexit (&cleanup))
-    {
-      g_critical ("%s: failed to register `atexit' cleanup function",
-                  __FUNCTION__);
-      log_config_free ();
-      exit (EXIT_FAILURE);
-    }
-
-  /* Register the signal handlers. */
-
-  setup_signal_handler (SIGTERM, handle_termination_signal, 0);
-  setup_signal_handler (SIGABRT, handle_sigabrt, 1);
-  setup_signal_handler (SIGINT, handle_termination_signal, 0);
-  setup_signal_handler (SIGHUP, SIG_IGN, 0);
-  setup_signal_handler (SIGQUIT, handle_termination_signal, 0);
-  setup_signal_handler (SIGSEGV, handle_sigsegv, 1);
-  setup_signal_handler (SIGCHLD, SIG_IGN, 0);
-
-  /* Call the GMP client serving function with a special client socket
-   * value.  This invokes a scanner-only manager loop which will
-   * request and cache the plugins, then exit. */
-
-  connection.socket = -1;
-  ret = serve_gmp (&connection, database, NULL);
-  openvas_scanner_close ();
-  switch (ret)
-    {
-      case 0:
-        return EXIT_SUCCESS;
-      case 1:
-        return 2;
-      case -2:
-        g_critical ("%s: scanner OpenVAS Default has no cert", __FUNCTION__);
-        return EXIT_FAILURE;
-      default:
-      case -1:
-        return EXIT_FAILURE;
-    }
+  return manage_update_nvts_osp (update_socket);
 }
 
 /**
@@ -1196,10 +1140,8 @@ update_nvt_cache_retry ()
         }
       else if (child_pid == 0)
         {
-          /* Child: Try reload. */
-          int ret = update_nvt_cache (0);
-
-          exit (ret);
+          if (osp_update_socket)
+            exit (update_nvt_cache_osp (osp_update_socket));
         }
     }
 }
@@ -1689,6 +1631,7 @@ main (int argc, char** argv)
   static gchar *scanner_key_priv = NULL;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
+  static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
@@ -1698,6 +1641,7 @@ main (int argc, char** argv)
   static gchar *listen_mode = NULL;
   static gchar *new_password = NULL;
   static gchar *optimize = NULL;
+  static gchar *osp_vt_update = NULL;
   static gchar *password = NULL;
   static gchar *manager_address_string = NULL;
   static gchar *manager_address_string_2 = NULL;
@@ -1715,87 +1659,240 @@ main (int argc, char** argv)
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
-        { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
-        { "check-alerts", '\0', 0, G_OPTION_ARG_NONE, &check_alerts, "Check SecInfo alerts.", NULL },
+        { "backup", '\0', 0, G_OPTION_ARG_NONE,
+          &backup_database,
+          "Backup the database.",
+          NULL },
+        { "check-alerts", '\0', 0, G_OPTION_ARG_NONE,
+          &check_alerts,
+          "Check SecInfo alerts.",
+          NULL },
         { "client-watch-interval", '\0', 0, G_OPTION_ARG_INT,
           &client_watch_interval,
           "Check if client connection was closed every <number> seconds."
           " 0 to disable. Defaults to "
           G_STRINGIFY (DEFAULT_CLIENT_WATCH_INTERVAL) " seconds.",
           "<number>" },
-        { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file/name> as database for SQLite/Postgres.", "<file/name>" },
-        { "disable-cmds", '\0', 0, G_OPTION_ARG_STRING, &disable, "Disable comma-separated <commands>.", "<commands>" },
+        { "create-scanner", '\0', 0, G_OPTION_ARG_STRING,
+          &create_scanner,
+          "Create global scanner <scanner> and exit.",
+          "<scanner>" },
+        { "create-user", '\0', 0, G_OPTION_ARG_STRING,
+          &create_user,
+          "Create admin user <username> and exit.",
+          "<username>" },
+        { "database", 'd', 0, G_OPTION_ARG_STRING,
+          &database,
+          "Use <file/name> as database for SQLite/Postgres.",
+          "<file/name>" },
+        { "decrypt-all-credentials", '\0', G_OPTION_FLAG_HIDDEN,
+          G_OPTION_ARG_NONE,
+          &decrypt_all_credentials,
+          NULL,
+          NULL },
+        { "delete-scanner", '\0', 0, G_OPTION_ARG_STRING,
+          &delete_scanner,
+          "Delete scanner <scanner-uuid> and exit.",
+          "<scanner-uuid>" },
+        { "delete-user", '\0', 0, G_OPTION_ARG_STRING,
+          &delete_user,
+          "Delete user <username> and exit.",
+          "<username>" },
+        { "dh-params", '\0', 0, G_OPTION_ARG_STRING,
+          &dh_params,
+          "Diffie-Hellman parameters file",
+          "<file>" },
+        { "disable-cmds", '\0', 0, G_OPTION_ARG_STRING,
+          &disable,
+          "Disable comma-separated <commands>.",
+          "<commands>" },
         { "disable-encrypted-credentials", '\0', 0, G_OPTION_ARG_NONE,
           &disable_encrypted_credentials,
-          "Do not encrypt or decrypt credentials.", NULL },
-        {"disable-password-policy", '\0', 0, G_OPTION_ARG_NONE,
-         &disable_password_policy, "Do not restrict passwords to the policy.",
-         NULL},
-        { "disable-scheduling", '\0', 0, G_OPTION_ARG_NONE, &disable_scheduling, "Disable task scheduling.", NULL },
-        { "create-user", '\0', 0, G_OPTION_ARG_STRING, &create_user, "Create admin user <username> and exit.", "<username>" },
-        { "delete-user", '\0', 0, G_OPTION_ARG_STRING, &delete_user, "Delete user <username> and exit.", "<username>" },
-        { "get-users", '\0', 0, G_OPTION_ARG_NONE, &get_users, "List users and exit.", NULL },
-        { "create-scanner", '\0', 0, G_OPTION_ARG_STRING, &create_scanner,
-          "Create global scanner <scanner> and exit.", "<scanner>" },
-        { "modify-scanner", '\0', 0, G_OPTION_ARG_STRING, &modify_scanner,
-          "Modify scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
-        { "scanner-name", '\0', 0, G_OPTION_ARG_STRING, &scanner_name, "Name for --modify-scanner.", "<name>" },
-        { "scanner-host", '\0', 0, G_OPTION_ARG_STRING, &scanner_host,
-          "Scanner host for --create-scanner and --modify-scanner. Default is " OPENVASSD_ADDRESS ".",
-          "<scanner-host>" },
-        { "scanner-port", '\0', 0, G_OPTION_ARG_STRING, &scanner_port,
-          "Scanner port for --create-scanner and --modify-scanner. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
-          "<scanner-port>" },
-        { "scanner-type", '\0', 0, G_OPTION_ARG_STRING, &scanner_type,
-          "Scanner type for --create-scanner and --modify-scanner. Either 'OpenVAS' or 'OSP'.",
-          "<scanner-type>" },
-        { "scanner-ca-pub", '\0', 0, G_OPTION_ARG_STRING, &scanner_ca_pub,
-          "Scanner CA Certificate path for --[create|modify]-scanner.", "<scanner-ca-pub>" },
-        { "scanner-key-pub", '\0', 0, G_OPTION_ARG_STRING, &scanner_key_pub,
-          "Scanner Certificate path for --[create|modify]-scanner.", "<scanner-key-public>" },
-        { "scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING, &scanner_key_priv,
-          "Scanner private key path for --[create|modify]-scanner.", "<scanner-key-private>" },
-        { "verify-scanner", '\0', 0, G_OPTION_ARG_STRING, &verify_scanner,
-          "Verify scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
-        { "delete-scanner", '\0', 0, G_OPTION_ARG_STRING, &delete_scanner, "Delete scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
-        { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
-        { "secinfo-commit-size", '\0', 0, G_OPTION_ARG_INT, &secinfo_commit_size, "During CERT and SCAP sync, commit updates to the database every <number> items, 0 for unlimited, default: " G_STRINGIFY (SECINFO_COMMIT_SIZE_DEFAULT), "<number>" },
-        { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT, &schedule_timeout, "Time out tasks that are more than <time> minutes overdue. -1 to disable, 0 for minimum time, default: " G_STRINGIFY (SCHEDULE_TIMEOUT_DEFAULT), "<time>" },
-        { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
-        { "inheritor", '\0', 0, G_OPTION_ARG_STRING, &inheritor, "Have <username> inherit from deleted user.", "<username>" },
-        { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
-        { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
-        { "listen-owner", '\0', 0, G_OPTION_ARG_STRING, &listen_owner,
-          "Owner of the unix socket", "<string>" },
-        { "listen-group", '\0', 0, G_OPTION_ARG_STRING, &listen_group,
-          "Group of the unix socket", "<string>" },
-        { "listen-mode", '\0', 0, G_OPTION_ARG_STRING, &listen_mode,
-          "File mode of the unix socket", "<string>" },
-        { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
-        { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT, &max_email_attachment_size, "Maximum size of alert email attachments, in bytes.", "<number>"},
-        { "max-email-include-size", '\0', 0, G_OPTION_ARG_INT, &max_email_include_size, "Maximum size of inlined content in alert emails, in bytes.", "<number>"},
-        { "max-email-message-size", '\0', 0, G_OPTION_ARG_INT, &max_email_message_size, "Maximum size of user-defined message text in alert emails, in bytes.", "<number>"},
-        { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
-        { "modify-setting", '\0', 0, G_OPTION_ARG_STRING, &modify_setting,
-          "Modify setting <uuid> and exit.", "<uuid>" },
+          "Do not encrypt or decrypt credentials.",
+          NULL },
+        { "disable-password-policy", '\0', 0, G_OPTION_ARG_NONE,
+          &disable_password_policy,
+          "Do not restrict passwords to the policy.",
+          NULL },
+        { "disable-scheduling", '\0', 0, G_OPTION_ARG_NONE,
+          &disable_scheduling,
+          "Disable task scheduling.",
+          NULL },
         { "encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
-          &encrypt_all_credentials, "(Re-)Encrypt all credentials.", NULL },
-        { "decrypt-all-credentials", '\0',
-          G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,
-          &decrypt_all_credentials, NULL, NULL },
-        { "new-password", '\0', 0, G_OPTION_ARG_STRING, &new_password, "Modify user's password and exit.", "<password>" },
-        { "optimize", '\0', 0, G_OPTION_ARG_STRING, &optimize, "Run an optimization: vacuum, analyze, cleanup-config-prefs, cleanup-port-names, cleanup-result-severities, cleanup-schedule-times, rebuild-report-cache or update-report-cache.", "<name>" },
-        { "password", '\0', 0, G_OPTION_ARG_STRING, &password, "Password, for --create-user.", "<password>" },
-        { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
-        { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
-        { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
-        { "unix-socket", 'c', 0, G_OPTION_ARG_STRING, &manager_address_string_unix, "Listen on UNIX socket at <filename>.", "<filename>" },
-        { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
-        { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
-        { "dh-params", '\0', 0, G_OPTION_ARG_STRING, &dh_params, "Diffie-Hellman parameters file", "<file>" },
-        { "value", '\0', 0, G_OPTION_ARG_STRING, &value, "Value for --modify-setting.", "<value>" },
-        { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Has no effect.  See INSTALL.md for logging config.", NULL },
-        { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
+          &encrypt_all_credentials,
+          "(Re-)Encrypt all credentials.",
+          NULL },
+        { "foreground", 'f', 0, G_OPTION_ARG_NONE,
+          &foreground,
+          "Run in foreground.",
+          NULL },
+        { "get-scanners", '\0', 0, G_OPTION_ARG_NONE,
+          &get_scanners,
+          "List scanners and exit.",
+          NULL },
+        { "get-users", '\0', 0, G_OPTION_ARG_NONE,
+          &get_users,
+          "List users and exit.",
+          NULL },
+        { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING,
+          &priorities,
+          "Sets the GnuTLS priorities for the Manager socket.",
+          "<priorities-string>" },
+        { "inheritor", '\0', 0, G_OPTION_ARG_STRING,
+          &inheritor,
+          "Have <username> inherit from deleted user.",
+          "<username>" },
+        { "listen", 'a', 0, G_OPTION_ARG_STRING,
+          &manager_address_string,
+          "Listen on <address>.",
+          "<address>" },
+        { "listen2", '\0', 0, G_OPTION_ARG_STRING,
+          &manager_address_string_2,
+          "Listen also on <address>.",
+          "<address>" },
+        { "listen-group", '\0', 0, G_OPTION_ARG_STRING,
+          &listen_group,
+          "Group of the unix socket",
+          "<string>" },
+        { "listen-mode", '\0', 0, G_OPTION_ARG_STRING,
+          &listen_mode,
+          "File mode of the unix socket",
+          "<string>" },
+        { "listen-owner", '\0', 0, G_OPTION_ARG_STRING,
+          &listen_owner,
+          "Owner of the unix socket",
+          "<string>" },
+        { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT,
+          &max_email_attachment_size,
+          "Maximum size of alert email attachments, in bytes.",
+          "<number>" },
+        { "max-email-include-size", '\0', 0, G_OPTION_ARG_INT,
+          &max_email_include_size,
+          "Maximum size of inlined content in alert emails, in bytes.",
+          "<number>" },
+        { "max-email-message-size", '\0', 0, G_OPTION_ARG_INT,
+          &max_email_message_size,
+          "Maximum size of user-defined message text in alert emails,"
+          " in bytes.",
+          "<number>" },
+        { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT,
+          &max_ips_per_target,
+          "Maximum number of IPs per target.",
+          "<number>" },
+        { "migrate", 'm', 0, G_OPTION_ARG_NONE,
+          &migrate_database,
+          "Migrate the database and exit.",
+          NULL },
+        { "modify-scanner", '\0', 0, G_OPTION_ARG_STRING,
+          &modify_scanner,
+          "Modify scanner <scanner-uuid> and exit.",
+          "<scanner-uuid>" },
+        { "modify-setting", '\0', 0, G_OPTION_ARG_STRING,
+          &modify_setting,
+          "Modify setting <uuid> and exit.",
+          "<uuid>" },
+        { "new-password", '\0', 0, G_OPTION_ARG_STRING,
+          &new_password,
+          "Modify user's password and exit.",
+          "<password>" },
+        { "optimize", '\0', 0, G_OPTION_ARG_STRING,
+          &optimize,
+          "Run an optimization: vacuum, analyze, cleanup-config-prefs,"
+          " cleanup-port-names, cleanup-result-severities,"
+          " cleanup-schedule-times, rebuild-report-cache or"
+          " update-report-cache.",
+          "<name>" },
+        { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
+          &osp_vt_update,
+          "Unix socket for OSP NVT update.  Default is to do an OTP update.",
+          "<scanner-socket>" },
+        { "password", '\0', 0, G_OPTION_ARG_STRING,
+          &password,
+          "Password, for --create-user.",
+          "<password>" },
+        { "port", 'p', 0, G_OPTION_ARG_STRING,
+          &manager_port_string,
+          "Use port number <number>.",
+          "<number>" },
+        { "port2", '\0', 0, G_OPTION_ARG_STRING,
+          &manager_port_string_2,
+          "Use port number <number> for address 2.",
+          "<number>" },
+        { "role", '\0', 0, G_OPTION_ARG_STRING,
+          &role,
+          "Role for --create-user and --get-users.",
+          "<role>" },
+        { "scanner-ca-pub", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_ca_pub,
+          "Scanner CA Certificate path for --[create|modify]-scanner.",
+          "<scanner-ca-pub>" },
+        { "scanner-host", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_host,
+          "Scanner host for --create-scanner and --modify-scanner."
+          " Default is " OPENVASSD_ADDRESS ".",
+          "<scanner-host>" },
+        { "scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_key_priv,
+          "Scanner private key path for --[create|modify]-scanner.",
+          "<scanner-key-private>" },
+        { "scanner-key-pub", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_key_pub,
+          "Scanner Certificate path for --[create|modify]-scanner.",
+          "<scanner-key-public>" },
+        { "scanner-name", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_name,
+          "Name for --modify-scanner.",
+          "<name>" },
+        { "scanner-port", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_port,
+          "Scanner port for --create-scanner and --modify-scanner."
+          " Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
+          "<scanner-port>" },
+        { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_type,
+          "Scanner type for --create-scanner and --modify-scanner."
+          " Either 'OpenVAS' or 'OSP'.",
+          "<scanner-type>" },
+        { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT,
+          &schedule_timeout,
+          "Time out tasks that are more than <time> minutes overdue."
+          " -1 to disable, 0 for minimum time, default: "
+          G_STRINGIFY (SCHEDULE_TIMEOUT_DEFAULT),
+          "<time>" },
+        { "secinfo-commit-size", '\0', 0, G_OPTION_ARG_INT,
+          &secinfo_commit_size,
+          "During CERT and SCAP sync, commit updates to the database every"
+          " <number> items, 0 for unlimited, default: "
+          G_STRINGIFY (SECINFO_COMMIT_SIZE_DEFAULT), "<number>" },
+        { "slave-commit-size", '\0', 0, G_OPTION_ARG_INT,
+          &slave_commit_size,
+          "During slave updates, commit after every <number> updated results"
+          " and hosts, 0 for unlimited",
+          "<number>"},
+        { "unix-socket", 'c', 0, G_OPTION_ARG_STRING,
+          &manager_address_string_unix,
+          "Listen on UNIX socket at <filename>.",
+          "<filename>" },
+        { "user", '\0', 0, G_OPTION_ARG_STRING,
+          &user,
+          "User for --new-password.",
+          "<username>" },
+        { "value", '\0', 0, G_OPTION_ARG_STRING,
+          &value,
+          "Value for --modify-setting.",
+          "<value>" },
+        { "verbose", 'v', 0, G_OPTION_ARG_NONE,
+          &verbose,
+          "Has no effect.  See INSTALL.md for logging config.",
+          NULL },
+        { "verify-scanner", '\0', 0, G_OPTION_ARG_STRING,
+          &verify_scanner,
+          "Verify scanner <scanner-uuid> and exit.",
+          "<scanner-uuid>" },
+        { "version", '\0', 0, G_OPTION_ARG_NONE,
+          &print_version,
+          "Print version and exit.",
+          NULL },
         { NULL }
       };
 
@@ -1841,6 +1938,9 @@ main (int argc, char** argv)
   /* Set schedule_timeout */
 
   set_schedule_timeout (schedule_timeout);
+
+  /* Set slave commit size */
+  set_slave_commit_size (slave_commit_size);
 
   /* Set SecInfo update commit size */
 
@@ -2068,6 +2168,9 @@ main (int argc, char** argv)
    *
    * These can run concurrently, so they set the shared lock gvm-helping, and
    * release gvm-checking, via option_lock. */
+
+  if (osp_vt_update)
+    osp_update_socket = osp_vt_update;
 
   if (backup_database)
     {
@@ -2439,7 +2542,7 @@ main (int argc, char** argv)
 
   /* Initialise GMP daemon. */
 
-  switch (init_gmpd (log_config, 0, database, max_ips_per_target,
+  switch (init_gmpd (log_config, database, max_ips_per_target,
                      max_email_attachment_size, max_email_include_size,
                      max_email_message_size,
                      fork_connection_for_event, 0))

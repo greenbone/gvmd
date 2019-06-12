@@ -1667,7 +1667,82 @@ migrate_206_to_207 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 207 to version 208.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_207_to_208 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 207. */
+
+  if (manage_db_version () != 207)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove NOBID, NOCVE and NOXREF entries. An empty string will
+   * from now on indicate that there is no reference of the
+   * respective type. */
+
+  sql ("UPDATE nvts SET bid = '' WHERE bid LIKE 'NOBID';");
+  sql ("UPDATE nvts SET cve = '' WHERE cve LIKE 'NOCVE';");
+  sql ("UPDATE nvts SET xref = '' WHERE xref LIKE 'NOXREF';");
+
+  /* Set the database version to 208. */
+
+  set_db_version (208);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 208 to version 209.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_208_to_209 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 208. */
+
+  if (manage_db_version () != 208)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Drop the now-unused table "nvt_cves". */
+
+  sql ("DROP TABLE IF EXISTS nvt_cves;");
+
+  /* Set the database version to 209. */
+
+  set_db_version (209);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
+
+/**
+ * @brief The oldest version for which migration is supported
+ */
+#define MIGRATE_MIN_OLD_VERSION 184
 
 /**
  * @brief Array of database version migrators.
@@ -1696,6 +1771,8 @@ static migrator_t database_migrators[] = {
   {205, migrate_204_to_205}, // v8.0: rev 205
   {206, migrate_205_to_206},
   {207, migrate_206_to_207},
+  {208, migrate_207_to_208},
+  {209, migrate_208_to_209},
   /* End marker. */
   {-1, NULL}};
 
@@ -1732,7 +1809,10 @@ migrate_is_available (int old_version, int new_version)
 {
   migrator_t *migrators;
 
-  migrators = database_migrators + old_version + 1;
+  if (old_version < MIGRATE_MIN_OLD_VERSION)
+    return 0;
+
+  migrators = database_migrators + old_version - MIGRATE_MIN_OLD_VERSION;
 
   while ((migrators->version >= 0) && (migrators->version <= new_version))
     {
@@ -1804,7 +1884,7 @@ manage_migrate (GSList *log_config, const gchar *database)
 
       /* Call the migrators to take the DB from the old version to the new. */
 
-      migrators = database_migrators + old_version + 1;
+      migrators = database_migrators + old_version - MIGRATE_MIN_OLD_VERSION;
 
       while ((migrators->version >= 0) && (migrators->version <= new_version))
         {

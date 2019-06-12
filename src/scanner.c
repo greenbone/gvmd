@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2018 Greenbone Networks GmbH
+/* Copyright (C) 2014-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -359,13 +359,11 @@ openvas_scanner_realloc ()
 /**
  * @brief Write as much as possible from the to_scanner buffer to the scanner.
  *
- * @param[in]  nvt_cache_mode  NVT cache mode.
- *
  * @return 0 wrote everything, -1 error, -2 wrote as much as scanner accepted,
  *         -3 did an initialisation step.
  */
 int
-openvas_scanner_write (int nvt_cache_mode)
+openvas_scanner_write ()
 {
   if (openvas_scanner_socket == -1)
     return -1;
@@ -402,68 +400,11 @@ openvas_scanner_write (int nvt_cache_mode)
               scanner_init_offset = 0;
               return -1;
             }
-          if (nvt_cache_mode)
-            {
-              string = "CLIENT <|> NVT_INFO <|> CLIENT\n";
-              scanner_init_offset = write_string_to_server
-                                     (string + scanner_init_offset);
-              if (scanner_init_offset == -1)
-                {
-                  scanner_init_offset = 0;
-                  return -1;
-                }
-            }
           break;
         }
       case SCANNER_INIT_SENT_VERSION:
         return 0;
-      case SCANNER_INIT_SENT_COMPLETE_LIST:
-      case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
-        return 0;
-      case SCANNER_INIT_GOT_FEED_VERSION:
-        if (nvt_cache_mode)
-          {
-            static char* const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
-            scanner_init_offset = write_string_to_server
-                                   (ack + scanner_init_offset);
-            if (scanner_init_offset == 0)
-              set_scanner_init_state (nvt_cache_mode == -1
-                                      ? SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
-                                      : SCANNER_INIT_SENT_COMPLETE_LIST);
-            else if (scanner_init_offset == -1)
-              {
-                scanner_init_offset = 0;
-                return -1;
-              }
-            break;
-          }
-        /* fallthrough */
-      case SCANNER_INIT_GOT_PLUGINS:
-        {
-          static char* const ack = "\n";
-          scanner_init_offset = write_string_to_server
-                                 (ack + scanner_init_offset);
-          if (scanner_init_offset == 0)
-            {
-              if (nvt_cache_mode == -1)
-                set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE_UPDATE);
-              else if (nvt_cache_mode == -2)
-                set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE);
-              else
-                set_scanner_init_state (SCANNER_INIT_DONE);
-            }
-          else if (scanner_init_offset == -1)
-            {
-              scanner_init_offset = 0;
-              return -1;
-            }
-          else
-            break;
-        }
-        /* fallthrough */
       case SCANNER_INIT_DONE:
-      case SCANNER_INIT_DONE_CACHE_MODE:
-      case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
         while (1)
           switch (write_to_server_buffer ())
             {
@@ -798,20 +739,17 @@ openvas_scanner_connected ()
 /**
  * @brief Initializes the already setup connection with the Scanner.
  *
- * @param[in]  cache_mode   NVT Cache mode if true, which means sending NVT_INFO
- *                          command to scanner in initial negotiation.
- *
  * @return 0 success, -1 error.
  */
 int
-openvas_scanner_init (int cache_mode)
+openvas_scanner_init ()
 {
   int ret;
 
   if (openvas_scanner_socket == -1)
     return -1;
   from_scanner = g_malloc0 (from_scanner_size);
-  ret = openvas_scanner_write (cache_mode);
+  ret = openvas_scanner_write ();
   if (ret != -3)
     {
       openvas_scanner_free ();

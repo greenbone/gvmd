@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -113,7 +113,7 @@ typedef int (*manage_connection_forker_t) (gvm_connection_t * conn,
                                            const gchar* uuid);
 
 int
-init_manage (GSList*, int, const gchar *, int, int, int, int,
+init_manage (GSList*, const gchar *, int, int, int, int,
              manage_connection_forker_t, int);
 
 int
@@ -1220,7 +1220,7 @@ make_result (task_t, const char*, const char*, const char*, const char*,
 
 result_t
 make_osp_result (task_t, const char*, const char*, const char*, const char*,
-                 const char *, const char *, int);
+                 const char *, const char *, const char *, int);
 
 result_t
 make_cve_result (task_t, const char*, const char*, double, const char*);
@@ -1437,14 +1437,8 @@ result_iterator_nvt_family (iterator_t *);
 const char*
 result_iterator_nvt_cvss_base (iterator_t *);
 
-const char*
-result_iterator_nvt_cve (iterator_t *);
-
-const char*
-result_iterator_nvt_bid (iterator_t *);
-
-const char*
-result_iterator_nvt_xref (iterator_t *);
+void
+result_iterator_nvt_refs_append (GString *, iterator_t *);
 
 const char*
 result_iterator_nvt_tag (iterator_t *);
@@ -1941,6 +1935,9 @@ config_timeout_iterator_nvt_name (iterator_t *);
 const char*
 config_timeout_iterator_value (iterator_t *);
 
+void
+update_config_preference (const char *, const char *, const char *,
+                          const char *, gboolean);
 
 
 /* NVT's. */
@@ -1989,15 +1986,6 @@ const char*
 nvt_iterator_copyright (iterator_t*);
 
 const char*
-nvt_iterator_cve (iterator_t*);
-
-const char*
-nvt_iterator_bid (iterator_t*);
-
-const char*
-nvt_iterator_xref (iterator_t*);
-
-const char*
 nvt_iterator_tag (iterator_t*);
 
 int
@@ -2023,9 +2011,6 @@ nvt_default_timeout (const char *);
 
 int
 family_nvt_count (const char *);
-
-void
-manage_complete_nvt_cache_update (GList *, GList *);
 
 
 /* NVT selectors. */
@@ -2115,6 +2100,9 @@ nvt_preference_iterator_id (iterator_t*);
 
 int
 nvt_preference_count (const char *);
+
+void
+nvti_refs_append_xml (GString *, const char *);
 
 gchar*
 get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);
@@ -2635,9 +2623,6 @@ int
 acknowledge_bye ();
 
 int
-acknowledge_feed_version_info ();
-
-int
 manage_check_current_task ();
 
 
@@ -2671,6 +2656,14 @@ report_type_iterator_title (report_type_iterator_t*);
 int
 manage_system_report (const char *, const char *, const char *, const char *,
                       const char *, char **);
+
+
+/* Scanners. */
+
+/**
+ * @brief Default for slave update commit size.
+ */
+#define SLAVE_COMMIT_SIZE_DEFAULT 0
 
 int
 manage_create_scanner (GSList *, const char *, const char *, const char *,
@@ -2832,6 +2825,9 @@ osp_scanner_connect (scanner_t);
 int
 verify_scanner (const char *, char **);
 
+void
+set_slave_commit_size (int);
+
 /* Scheduling. */
 
 /**
@@ -2885,7 +2881,13 @@ char *
 schedule_uuid (schedule_t);
 
 char *
+trash_schedule_uuid (schedule_t);
+
+char *
 schedule_name (schedule_t);
+
+char *
+trash_schedule_name (schedule_t);
 
 int
 schedule_duration (schedule_t);
@@ -4197,6 +4199,9 @@ gvm_get_sync_script_description (const gchar *, gchar **);
 
 gboolean
 gvm_get_sync_script_feed_version (const gchar *, gchar **);
+
+int
+manage_update_nvts_osp (const gchar *);
 
 
 /* Wizards. */

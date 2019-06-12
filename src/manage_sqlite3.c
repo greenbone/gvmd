@@ -3674,8 +3674,6 @@ create_tables ()
        " ON nvts (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family"
        " ON nvts (family);");
-  sql ("CREATE TABLE IF NOT EXISTS nvt_cves"
-       " (nvt, oid, cve_name)");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_creation_time"
        " ON nvts (creation_time);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_modification_time"
@@ -3684,8 +3682,6 @@ create_tables ()
        " ON nvts (cvss_base);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_solution_type"
        " ON nvts (solution_type);");
-  sql ("CREATE INDEX IF NOT EXISTS nvt_cves_by_oid"
-       " ON nvt_cves (oid);");
   sql ("CREATE TABLE IF NOT EXISTS overrides"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, result_nvt,"
        "  creation_time, modification_time, text, hosts, port, severity,"
@@ -4021,7 +4017,7 @@ create_tables ()
        "              (SELECT id FROM nvts"
        "               WHERE oid = results.nvt"
        "               AND"
-       "               (cve = 'NOCVE'"
+       "               (cve = ''"
        "                 OR cve NOT IN (SELECT cve FROM nvts"
        "                                WHERE oid IN (SELECT source_name"
        "                                    FROM report_host_details"
@@ -4045,7 +4041,7 @@ create_tables ()
        "             (SELECT id FROM nvts AS outer_nvts"
        "              WHERE oid = results.nvt"
        "              AND"
-       "              (cve = 'NOCVE'"
+       "              (cve = ''"
        "               OR NOT EXISTS"
        "                  (SELECT cve FROM nvts"
        "                   WHERE oid IN (SELECT source_name"

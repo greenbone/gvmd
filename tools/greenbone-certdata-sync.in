@@ -413,7 +413,7 @@ sync_certdata(){
     log_notice "Synchronization with the Greenbone CERT data Repository successful."
     echo
   else
-    log_notice "No Greenbone Security Feed accees key found, falling back to Greenbone Community Feed"
+    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
     do_sync_community_feed
   fi
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -26,6 +26,7 @@
 #define _GVMD_OTP_H
 
 #include "manage.h"
+
 #include <glib.h>
 
 void
@@ -42,12 +43,6 @@ typedef enum
 {
   SCANNER_INIT_CONNECTED,
   SCANNER_INIT_DONE,
-  SCANNER_INIT_DONE_CACHE_MODE,        /* Done, when in NVT cache rebuild. */
-  SCANNER_INIT_DONE_CACHE_MODE_UPDATE, /* Done, when in NVT cache update. */
-  SCANNER_INIT_GOT_FEED_VERSION,
-  SCANNER_INIT_GOT_PLUGINS,
-  SCANNER_INIT_SENT_COMPLETE_LIST,
-  SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE,
   SCANNER_INIT_SENT_VERSION,
   SCANNER_INIT_TOP
 } scanner_init_state_t;

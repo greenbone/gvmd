@@ -27,10 +27,11 @@
 
 #include "manage.h"
 #include "types.h"
-#include <gvm/util/serverutils.h>
+
 #include <glib.h>
-#include <netinet/in.h>
 #include <gnutls/gnutls.h>
+#include <gvm/util/serverutils.h>
+#include <netinet/in.h>
 
 /**
  * @brief Maximum number of seconds spent trying to read the protocol.
@@ -45,13 +46,13 @@
 #define FROM_BUFFER_SIZE 1048576
 
 int
-init_gmpd (GSList*, int, const gchar*, int, int, int, int,
+init_gmpd (GSList *, const gchar *, int, int, int, int,
            manage_connection_forker_t, int);
 
 void
 init_gmpd_process (const gchar *, gchar **);
 
 int
-serve_gmp (gvm_connection_t*, const gchar*, gchar**);
+serve_gmp (gvm_connection_t *, const gchar *, gchar **);
 
 #endif /* not _GVMD_GMPD_H */
