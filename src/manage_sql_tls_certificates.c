@@ -447,6 +447,256 @@ copy_tls_certificate (const char *name,
   return 0;
 }
 
+/**
+ * @brief Delete a tls_certificate.
+ *
+ * @param[in]  tls_certificate_id  UUID of tls_certificate.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 fail because tls_certificate is in use,
+ *         2 failed to find tls_certificate,
+ *         3 predefined tls_certificate, 99 permission denied, -1 error.
+ */
+int
+delete_tls_certificate (const char *tls_certificate_id, int ultimate)
+{
+  tls_certificate_t tls_certificate = 0;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("delete_tls_certificate") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  /* Search in the regular table. */
+
+  if (find_resource_with_permission ("tls_certificate",
+                                     tls_certificate_id,
+                                     &tls_certificate,
+                                     "delete_tls_certificate",
+                                     0))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (tls_certificate == 0)
+    {
+      /* No such tls_certificate, check the trashcan. */
+
+      if (find_trash ("tls_certificate",
+                      tls_certificate_id,
+                      &tls_certificate))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (tls_certificate == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql_commit ();
+          return 0;
+        }
+
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'tls_certificate'"
+           " AND resource_location = %i"
+           " AND resource = %llu;",
+           LOCATION_TRASH,
+           tls_certificate);
+
+      tags_remove_resource ("tls_certificate",
+                            tls_certificate,
+                            LOCATION_TRASH);
+
+      sql ("DELETE FROM tls_certificates_trash WHERE id = %llu;",
+           tls_certificate);
+
+      sql_commit ();
+      return 0;
+    }
+
+  /* Ticket was found in regular table. */
+
+  if (ultimate == 0)
+    {
+      tls_certificate_t trash_tls_certificate;
+
+      /* Move to trash. */
+
+      sql ("INSERT INTO tls_certificates_trash"
+           " (uuid, owner, name, comment, creation_time, modification_time,"
+           "  certificate, subject_dn, issuer_dn, trust,"
+           "  activation_time, expiration_time, md5_fingerprint)"
+           " SELECT"
+           "  uuid, owner, name, comment, creation_time, modification_time,"
+           "  certificate, subject_dn, issuer_dn, trust,"
+           "  activation_time, expiration_time, md5_fingerprint"
+           " FROM tls_certificates WHERE id = %llu;",
+           tls_certificate);
+
+      trash_tls_certificate = sql_last_insert_id ();
+
+      permissions_set_locations ("tls_certificate",
+                                 tls_certificate,
+                                 trash_tls_certificate,
+                                 LOCATION_TRASH);
+      tags_set_locations ("tls_certificate",
+                          tls_certificate,
+                          trash_tls_certificate,
+                          LOCATION_TRASH);
+    }
+  else
+    {
+      /* Delete entirely. */
+
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'tls_certificate'"
+           " AND resource_location = %i"
+           " AND resource = %llu;",
+           LOCATION_TABLE,
+           tls_certificate);
+
+      tags_remove_resource ("tls_certificate",
+                            tls_certificate,
+                            LOCATION_TABLE);
+    }
+
+  sql ("DELETE FROM tls_certificates WHERE id = %llu;",
+       tls_certificate);
+
+  sql_commit ();
+  return 0;
+}
+
+/**
+ * @brief Try restore a tls_certificate.
+ *
+ * If success, ends transaction for caller before exiting.
+ *
+ * @param[in]  tls_certificate_id  UUID of resource.
+ *
+ * @return 0 success, 1 fail because tls_certificate is in use,
+ *         2 failed to find tls_certificate, -1 error.
+ */
+int
+restore_tls_certificate (const char *tls_certificate_id)
+{
+  tls_certificate_t trash_tls_certificate, tls_certificate;
+
+  if (find_trash ("tls_certificate",
+                  tls_certificate_id,
+                  &trash_tls_certificate))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (trash_tls_certificate == 0)
+    return 2;
+
+  /* Move the tls_certificate back to the regular table. */
+
+  sql ("INSERT INTO tls_certificates"
+       " (uuid, owner, name, comment, creation_time, modification_time,"
+       "  certificate, subject_dn, issuer_dn, trust,"
+       "  activation_time, expiration_time, md5_fingerprint)"
+       " SELECT"
+       "  uuid, owner, name, comment, creation_time, modification_time,"
+       "  certificate, subject_dn, issuer_dn, trust,"
+       "  activation_time, expiration_time, md5_fingerprint"
+       " FROM tls_certificates_trash WHERE id = %llu;",
+       trash_tls_certificate);
+
+  tls_certificate = sql_last_insert_id ();
+
+  /* Adjust references to the tls_certificate. */
+
+  permissions_set_locations ("tls_certificate",
+                             trash_tls_certificate,
+                             tls_certificate,
+                             LOCATION_TABLE);
+  tags_set_locations ("tls_certificate",
+                      trash_tls_certificate,
+                      tls_certificate,
+                      LOCATION_TABLE);
+
+  /* Clear out the trashcan tls_certificate. */
+
+  sql ("DELETE FROM tls_certificates_trash WHERE id = %llu;",
+       trash_tls_certificate);
+
+  sql_commit ();
+  return 0;
+}
+
+/**
+ * @brief Empty TLS certificate trashcans.
+ */
+void
+empty_trashcan_tls_certificates ()
+{
+  sql ("DELETE FROM permissions"
+       " WHERE resource_type = 'tls_certificate'"
+       " AND resource_location = %i"
+       " AND resource IN (SELECT id FROM tls_certificates_trash"
+       "                  WHERE owner = (SELECT id FROM users"
+       "                                 WHERE uuid = '%s'));",
+       LOCATION_TRASH,
+       current_credentials.uuid);
+
+  sql ("DELETE FROM tickets_trash"
+       " WHERE owner = (SELECT id FROM users WHERE uuid = '%s');",
+       current_credentials.uuid);
+}
+
+/**
+ * @brief Delete all TLS certificate owner by a user.
+ *
+ * Also delete trash TLS certificates.
+ *
+ * @param[in]  user  The user.
+ */
+void
+delete_tls_certificates_user (user_t user)
+{
+  /* Regular tls_certificate. */
+
+  sql ("DELETE FROM tls_certificate WHERE owner = %llu;", user);
+
+  /* Trash tls_certificate. */
+
+  sql ("DELETE FROM tls_certificate_trash WHERE owner = %llu;", user);
+}
+
+/**
+ * @brief Change ownership of tls_certificate, for user deletion.
+ *
+ * Also assign tls_certificate that are assigned to the user to the inheritor.
+ *
+ * @param[in]  user       Current owner.
+ * @param[in]  inheritor  New owner.
+ */
+void
+inherit_tls_certificates (user_t user, user_t inheritor)
+{
+  /* Regular tls_certificate. */
+
+  sql ("UPDATE tls_certificate SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
+
+  /* Trash tickets. */
+
+  sql ("UPDATE tls_certificate_trash SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
+}
 
 /**
  * @brief Return the UUID of a TLS certificate.

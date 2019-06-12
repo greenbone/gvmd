@@ -35,6 +35,7 @@
 #include "manage_sql_nvts.h"
 #include "manage_tickets.h"
 #include "manage_sql_tickets.h"
+#include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
 #include "lsc_user.h"
 #include "sql.h"
@@ -586,6 +587,7 @@ command_t gmp_commands[]
     {"CREATE_TARGET", "Create a target."},
     {"CREATE_TASK", "Create a task."},
     {"CREATE_TICKET", "Create a ticket."},
+    {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
     {"DELETE_AGENT", "Delete an agent."},
     {"DELETE_ALERT", "Delete an alert."},
@@ -608,6 +610,7 @@ command_t gmp_commands[]
     {"DELETE_TARGET", "Delete a target."},
     {"DELETE_TASK", "Delete a task."},
     {"DELETE_TICKET", "Delete a ticket."},
+    {"DELETE_TLS_CERTIFICATE", "Delete a TLS certificate."},
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
@@ -59951,7 +59954,13 @@ manage_restore (const char *id)
       return 99;
     }
 
+  /* Ticket. */
   ret = restore_ticket (id);
+  if (ret != 2)
+    return ret;
+
+  /* TLS Certificate. */
+  ret = restore_tls_certificate (id);
   if (ret != 2)
     return ret;
 
@@ -61156,6 +61165,7 @@ manage_empty_trashcan ()
        current_credentials.uuid);
   sql ("DELETE FROM configs_trash" WHERE_OWNER);
   empty_trashcan_tickets ();
+  empty_trashcan_tls_certificates();
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'group'"
        " AND subject IN (SELECT id from groups_trash"
@@ -65750,6 +65760,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
 
       inherit_tickets (user, inheritor);
+      inherit_tls_certificates (user, inheritor);
 
       sql ("UPDATE groups SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
@@ -65817,6 +65828,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
   delete_tickets_user (user);
+  delete_tls_certificates_user (user);
 
   /* Delete assets (not directly referenced). */
 

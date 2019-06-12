@@ -51,6 +51,7 @@
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
+#include "manage_sql_tls_certificates.h"
 #include "comm.h"
 #include "utils.h"
 
@@ -9972,6 +9973,8 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
 {
   if (strcasecmp (type, "ticket") == 0)
     return delete_ticket (resource_id, ultimate);
+  if (strcasecmp (type, "tls_certificate") == 0)
+    return delete_tls_certificate (resource_id, ultimate);
   assert (0);
   return -1;
 }

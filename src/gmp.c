@@ -5234,6 +5234,7 @@ typedef enum
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TICKET,
+  CLIENT_DELETE_TLS_CERTIFICATE,
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
@@ -6061,6 +6062,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             delete_start ("ticket", "Ticket",
                           attribute_names, attribute_values);
             set_client_state (CLIENT_DELETE_TICKET);
+          }
+        else if (strcasecmp ("DELETE_TLS_CERTIFICATE", element_name) == 0)
+          {
+            delete_start ("tls_certificate", "TLS Certificate",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_TLS_CERTIFICATE);
           }
         else if (strcasecmp ("DELETE_USER", element_name) == 0)
           {
@@ -20575,6 +20582,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TICKET:
+      case CLIENT_DELETE_TLS_CERTIFICATE:
         delete_run (gmp_parser, error);
         set_client_state (CLIENT_AUTHENTIC);
         break;

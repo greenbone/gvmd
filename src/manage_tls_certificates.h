@@ -77,7 +77,8 @@ create_tls_certificate (const char *, const char *, const char *,
                         tls_certificate_t *);
 
 int
-copy_tls_certificate (const char* name, const char* comment, const char* tls_certificate_id, ticket_t* new_ticket);
+copy_tls_certificate (const char*, const char*, const char*,
+                      tls_certificate_t*);
 
 char*
 tls_certificate_uuid (tls_certificate_t);
