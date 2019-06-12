@@ -303,6 +303,7 @@ truncate_private_key (const gchar* private_key)
  * @param[out] activation_time  Pointer to write activation time to.
  * @param[out] expiration_time  Pointer to write expiration time to.
  * @param[out] fingerprint      Pointer for newly allocated fingerprint.
+ * @param[out] subject          Pointer for newly allocated subject DN.
  * @param[out] issuer           Pointer for newly allocated issuer DN.
  *
  * @return 0 success, -1 error.

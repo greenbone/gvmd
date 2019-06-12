@@ -362,8 +362,8 @@ trash_tls_certificate_writable (tls_certificate_t tls_certificate)
  *
  * @param[in]   name            Name of new TLS certificate.
  * @param[in]   comment         Comment of TLS certificate.
- * @param[in]   base64_data     Base64 encoded certificate file content.
- * @param[out]  ticket          Created TLS certificate.
+ * @param[in]   certificate     Plain certificate file content.
+ * @param[out]  tls_certificate Created TLS certificate.
  *
  * @return 0 success, 1 invalid certificate, 99 permission denied, -1 error.
  */
@@ -417,8 +417,8 @@ create_tls_certificate (const char *name,
  *
  * @param[in]  name        Name. NULL to copy from existing TLS certificate.
  * @param[in]  comment     Comment. NULL to copy from existing TLS certificate.
- * @param[in]  ticket_id   UUID of existing TLS certificate.
- * @param[out] new_ticket  New TLS certificate.
+ * @param[in]  tls_certificate_id   UUID of existing TLS certificate.
+ * @param[out] new_tls_certificate  New TLS certificate.
  *
  * @return 0 success,
  *         1 TLS certificate exists already,
