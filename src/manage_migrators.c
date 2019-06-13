@@ -1755,12 +1755,19 @@ migrate_209_to_210 ()
       return -1;
     }
 
-  /* Update the database. */
+  /* Do nothing when SQLite is used. During a later
+   * migration the columns will automatically be removed.
+   */ 
+  if (! sql_is_sqlite3 ())
+    {
 
-  /* Remove the fields "bid" and "xref" from table "nvts". */
+      /* Update the database. */
 
-  sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN bid CASCADE;");
-  sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN xref CASCADE;");
+      /* Remove the fields "bid" and "xref" from table "nvts". */
+
+      sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN bid CASCADE;");
+      sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN xref CASCADE;");
+    }
 
   /* Set the database version to 210. */
 
