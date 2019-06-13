@@ -50,4 +50,18 @@ create_tls_certificate_element_end (gmp_parser_t *, GError **error,
 void
 create_tls_certificate_element_text (const gchar *, gsize);
 
+void
+modify_tls_certificate_start (gmp_parser_t *, const gchar **, const gchar **);
+
+void
+modify_tls_certificate_element_start (gmp_parser_t *, const gchar *,
+                                      const gchar **, const gchar **);
+
+int
+modify_tls_certificate_element_end (gmp_parser_t *, GError **error,
+                                    const gchar *);
+
+void
+modify_tls_certificate_element_text (const gchar *, gsize);
+
 #endif /* not _GVMD_GMP_TLS_CERTIFICATES_H */

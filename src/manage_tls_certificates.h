@@ -80,6 +80,10 @@ int
 copy_tls_certificate (const char*, const char*, const char*,
                       tls_certificate_t*);
 
+int
+modify_tls_certificate (const gchar *, const gchar *, const gchar *,
+                        const gchar *);
+
 char*
 tls_certificate_uuid (tls_certificate_t);
 

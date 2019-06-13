@@ -433,3 +433,211 @@ create_tls_certificate_element_text (const gchar *text, gsize text_len)
 {
   xml_handle_text (create_tls_certificate_data.context, text, text_len);
 }
+
+
+/* MODIFY_TLS_CERTIFICATE. */
+
+/**
+ * @brief The modify_tls_certificate command.
+ */
+typedef struct
+{
+  context_data_t *context;     ///< XML parser context.
+} modify_tls_certificate_t;
+
+/**
+ * @brief Parser callback data.
+ *
+ * This is initially 0 because it's a global variable.
+ */
+static modify_tls_certificate_t modify_tls_certificate_data;
+
+/**
+ * @brief Reset command data.
+ */
+static void
+modify_tls_certificate_reset ()
+{
+  if (modify_tls_certificate_data.context->first)
+    {
+      free_entity (modify_tls_certificate_data.context->first->data);
+      g_slist_free_1 (modify_tls_certificate_data.context->first);
+    }
+  g_free (modify_tls_certificate_data.context);
+  memset (&modify_tls_certificate_data, 0, sizeof (modify_tls_certificate_t));
+}
+
+/**
+ * @brief Start a command.
+ *
+ * @param[in]  gmp_parser        GMP parser.
+ * @param[in]  attribute_names   All attribute names.
+ * @param[in]  attribute_values  All attribute values.
+ */
+void
+modify_tls_certificate_start (gmp_parser_t *gmp_parser,
+                              const gchar **attribute_names,
+                              const gchar **attribute_values)
+{
+  memset (&modify_tls_certificate_data,
+          0,
+          sizeof (modify_tls_certificate_t));
+  modify_tls_certificate_data.context = g_malloc0 (sizeof (context_data_t));
+  modify_tls_certificate_element_start (gmp_parser,
+                                        "modify_tls_certificate",
+                                        attribute_names,
+                                        attribute_values);
+}
+
+/**
+ * @brief Start element.
+ *
+ * @param[in]  gmp_parser        GMP parser.
+ * @param[in]  name              Element name.
+ * @param[in]  attribute_names   All attribute names.
+ * @param[in]  attribute_values  All attribute values.
+ */
+void
+modify_tls_certificate_element_start (gmp_parser_t *gmp_parser,
+                                      const gchar *name,
+                                      const gchar **attribute_names,
+                                      const gchar **attribute_values)
+{
+  xml_handle_start_element (modify_tls_certificate_data.context,
+                            name,
+                            attribute_names,
+                            attribute_values);
+}
+
+/**
+ * @brief Execute command.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+void
+modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
+{
+  entity_t entity, comment, name, certificate;
+  const char *tls_certificate_id;
+
+  entity = (entity_t) modify_tls_certificate_data.context->first->data;
+
+  tls_certificate_id = entity_attribute (entity, "tls_certificate_id");
+
+  /* Check the given info. */
+
+  comment = entity_child (entity, "comment");
+  name = entity_child (entity, "name");
+  certificate = entity_child (entity, "certificate");
+
+  /* Modify the tls_certificate. */
+
+  if (tls_certificate_id == NULL)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("modify_tls_certificate",
+                        "MODIFY_TLS_CERTIFICATE requires a tls_certificate_id"
+                        " attribute"));
+  else switch (modify_tls_certificate
+                (tls_certificate_id,
+                 comment ? entity_text (comment) : NULL,
+                 name ? entity_text (name) : NULL,
+                 certificate ? entity_text (certificate) : NULL))
+    {
+      case 0:
+        SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_tls_certificate"));
+        log_event ("tls_certificate",
+                   "TLS Certificate",
+                   tls_certificate_id,
+                   "modified");
+        break;
+      case 1:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_tls_certificate",
+                            "TLS Certificate exists already"));
+        log_event_fail ("tls_certificate",
+                        "TLS certificate",
+                        tls_certificate_id,
+                        "modified");
+        break;
+      case 2:
+        log_event_fail ("tls_certificate",
+                        "TLS Certificate",
+                        tls_certificate_id,
+                        "modified");
+        if (send_find_error_to_client ("modify_tls_certificate",
+                                       "TLS certificate",
+                                       tls_certificate_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        break;
+      case 3:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_tls_certificate",
+                             "Invalid certificate content"));
+
+        log_event_fail ("tls_certificate",
+                        "TLS Certificate",
+                        tls_certificate_id,
+                        "modified");
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_tls_certificate",
+                            "Permission denied"));
+        log_event_fail ("tls_certificate",
+                        "TLS Certificate",
+                        tls_certificate_id,
+                        "modified");
+        break;
+      case -1:
+      default:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_INTERNAL_ERROR ("modify_tls_certificate"));
+        log_event_fail ("tls_certificate",
+                        "TLS Certificate",
+                        tls_certificate_id,
+                        "modified");
+        break;
+    }
+
+  modify_tls_certificate_reset ();
+}
+
+/**
+ * @brief End element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ * @param[in]  name         Element name.
+ *
+ * @return 0 success, 1 command finished.
+ */
+int
+modify_tls_certificate_element_end (gmp_parser_t *gmp_parser, GError **error,
+                                    const gchar *name)
+{
+  xml_handle_end_element (modify_tls_certificate_data.context, name);
+  if (modify_tls_certificate_data.context->done)
+    {
+      modify_tls_certificate_run (gmp_parser, error);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Add text to element.
+ *
+ * @param[in]  text         Text.
+ * @param[in]  text_len     Text length.
+ */
+void
+modify_tls_certificate_element_text (const gchar *text, gsize text_len)
+{
+  xml_handle_text (modify_tls_certificate_data.context, text, text_len);
+}
+

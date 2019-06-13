@@ -670,6 +670,7 @@ command_t gmp_commands[]
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
     {"MODIFY_TICKET", "Modify an existing ticket."},
+    {"MODIFY_TLS_CERTIFICATE", "Modify an existing TLS certificate."},
     {"MODIFY_USER", "Modify a user."},
     {"MOVE_TASK", "Assign task to another slave scanner, even while running."},
     {"RESTORE", "Restore a resource."},

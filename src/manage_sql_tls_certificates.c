@@ -699,6 +699,132 @@ inherit_tls_certificates (user_t user, user_t inheritor)
 }
 
 /**
+ * @brief Modify a TLS certificate.
+ *
+ * @param[in]   tls_certificate_id  UUID of TLS certificate.
+ * @param[in]   comment             New comment on TLS certificate.
+ * @param[in]   name                New name of TLS certificate.
+ * @param[in]   certificate         New certificate file content.
+ *
+ * @return 0 success, 1 TLS certificate exists already,
+ *         2 failed to find TLS certificate,
+ *         3 invalid certificate content, 99 permission denied, -1 error.
+ */
+int
+modify_tls_certificate (const gchar *tls_certificate_id,
+                        const gchar *comment,
+                        const gchar *name,
+                        const gchar *certificate)
+{
+  tls_certificate_t tls_certificate;
+
+  assert (tls_certificate_id);
+  assert (current_credentials.uuid);
+
+  sql_begin_immediate ();
+
+  /* Check permissions and get a handle on the TLS certificate. */
+
+  if (acl_user_may ("modify_tls_certificate") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  tls_certificate = 0;
+  if (find_resource_with_permission ("tls_certificate",
+                                     tls_certificate_id,
+                                     &tls_certificate,
+                                     "modify_tls_certificate",
+                                     0))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (tls_certificate == 0)
+    {
+      sql_rollback ();
+      return 2;
+    }
+
+  /* Update certificate if requested. */
+
+  if (certificate)
+    {
+      gchar *quoted_certificate;
+      int ret;
+      char *md5_fingerprint, *subject_dn, *issuer_dn;
+      time_t activation_time, expiration_time;
+
+      ret = get_certificate_info (certificate,
+                                  &activation_time,
+                                  &expiration_time,
+                                  &md5_fingerprint,
+                                  &subject_dn,
+                                  &issuer_dn);
+
+      if (ret)
+        return 3;
+
+      quoted_certificate = sql_quote (certificate);
+      sql ("UPDATE tls_certificates SET"
+           " certificate = '%s',"
+           " activation_time = %llu,"
+           " expiration_time = %llu,"
+           " md5_fingerprint = '%s',"
+           " subject_dn = '%s',"
+           " issuer_dn = '%s',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           quoted_certificate,
+           activation_time,
+           expiration_time,
+           md5_fingerprint,
+           subject_dn,
+           issuer_dn,
+           tls_certificate);
+      g_free (quoted_certificate);
+    }
+
+  /* Update comment if requested. */
+
+  if (comment)
+    {
+      gchar *quoted_comment;
+
+      quoted_comment = sql_quote (comment);
+      sql ("UPDATE tls_certificates SET"
+           " comment = '%s',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           quoted_comment,
+           tls_certificate);
+      g_free (quoted_comment);
+    }
+
+  /* Update name if requested. */
+
+  if (name)
+    {
+      gchar *quoted_name;
+
+      quoted_name = sql_quote (name);
+      sql ("UPDATE tls_certificates SET"
+           " name = '%s',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           quoted_name,
+           tls_certificate);
+      g_free (quoted_name);
+    }
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
  * @brief Return the UUID of a TLS certificate.
  *
  * @param[in]  tls_certificate  TLS certificate.
