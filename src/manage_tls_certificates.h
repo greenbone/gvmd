@@ -73,7 +73,7 @@ int
 trash_tls_certificate_writable (tls_certificate_t);
 
 int
-create_tls_certificate (const char *, const char *, const char *,
+create_tls_certificate (const char *, const char *, const char *, int,
                         tls_certificate_t *);
 
 int
@@ -82,7 +82,7 @@ copy_tls_certificate (const char*, const char*, const char*,
 
 int
 modify_tls_certificate (const gchar *, const gchar *, const gchar *,
-                        const gchar *);
+                        const gchar *, int);
 
 char*
 tls_certificate_uuid (tls_certificate_t);

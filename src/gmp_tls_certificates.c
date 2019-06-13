@@ -291,7 +291,8 @@ create_tls_certificate_element_start (gmp_parser_t *gmp_parser, const gchar *nam
 void
 create_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, copy, comment, name, certificate;
+  entity_t entity, copy, comment, name, certificate, trust;
+  int trust_int;
   tls_certificate_t new_tls_certificate;
 
   entity = (entity_t) create_tls_certificate_data.context->first->data;
@@ -368,11 +369,21 @@ create_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
   name = entity_child (entity, "name");
   comment = entity_child (entity, "comment");
   certificate = entity_child (entity, "certificate");
+  trust = entity_child (entity, "trust");
+
+  trust_int = 0;
+  if (trust)
+    {
+      if (strcmp (entity_text (trust), "")
+          && strcmp (entity_text (trust), "0"))
+        trust_int = 1;
+    }
 
   switch (create_tls_certificate
                 (name ? entity_text (comment) : NULL,
                  comment ? entity_text (comment) : "",
                  certificate ? entity_text (certificate) : NULL,
+                 trust_int,
                  &new_tls_certificate))
     {
       case 0:
@@ -529,8 +540,9 @@ modify_tls_certificate_element_start (gmp_parser_t *gmp_parser,
 void
 modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, comment, name, certificate;
+  entity_t entity, comment, name, certificate, trust;
   const char *tls_certificate_id;
+  int trust_int;
 
   entity = (entity_t) modify_tls_certificate_data.context->first->data;
 
@@ -541,6 +553,18 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
   comment = entity_child (entity, "comment");
   name = entity_child (entity, "name");
   certificate = entity_child (entity, "certificate");
+  trust = entity_child (entity, "trust");
+
+  trust_int = -1;
+  if (trust)
+    {
+      if (strcmp (entity_text (trust), "")
+          && strcmp (entity_text (trust), "0"))
+        trust_int = 1;
+      else
+        trust_int = 0;
+    }
+
 
   /* Modify the tls_certificate. */
 
@@ -553,7 +577,8 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
                 (tls_certificate_id,
                  comment ? entity_text (comment) : NULL,
                  name ? entity_text (name) : NULL,
-                 certificate ? entity_text (certificate) : NULL))
+                 certificate ? entity_text (certificate) : NULL,
+                 trust_int))
     {
       case 0:
         SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_tls_certificate"));

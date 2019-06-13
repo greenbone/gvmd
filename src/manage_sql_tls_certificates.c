@@ -363,6 +363,7 @@ trash_tls_certificate_writable (tls_certificate_t tls_certificate)
  * @param[in]   name            Name of new TLS certificate.
  * @param[in]   comment         Comment of TLS certificate.
  * @param[in]   certificate     Plain certificate file content.
+ * @param[in]   trust           Whether to trust the certificate.
  * @param[out]  tls_certificate Created TLS certificate.
  *
  * @return 0 success, 1 invalid certificate, 99 permission denied, -1 error.
@@ -371,13 +372,12 @@ int
 create_tls_certificate (const char *name,
                         const char *comment,
                         const char *certificate,
+                        int trust,
                         tls_certificate_t *tls_certificate)
 {
   int ret;
   char *md5_fingerprint, *subject_dn, *issuer_dn;
   time_t activation_time, expiration_time;
-
-  subject_dn = NULL; // TODO add to get_certificate_info
 
   ret = get_certificate_info (certificate,
                               &activation_time,
@@ -394,7 +394,7 @@ create_tls_certificate (const char *name,
        "  certificate, subject_dn, issuer_dn, trust,"
        "  activation_time, expiration_time, md5_fingerprint)"
        " SELECT make_uuid(), (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "        '%s', '%s', m_now(), m_now(), '%s', '%s', '%s', 0,"
+       "        '%s', '%s', m_now(), m_now(), '%s', '%s', '%s', %d,"
        "        %ld, %ld, '%s';",
        current_credentials.uuid,
        name ? name : md5_fingerprint,
@@ -402,6 +402,7 @@ create_tls_certificate (const char *name,
        certificate ? certificate : "",
        subject_dn ? subject_dn : "",
        issuer_dn ? issuer_dn : "",
+       trust,
        activation_time,
        expiration_time,
        md5_fingerprint);
@@ -705,6 +706,7 @@ inherit_tls_certificates (user_t user, user_t inheritor)
  * @param[in]   comment             New comment on TLS certificate.
  * @param[in]   name                New name of TLS certificate.
  * @param[in]   certificate         New certificate file content.
+ * @param[in]   trust               New trust value or -1 to keep old value.
  *
  * @return 0 success, 1 TLS certificate exists already,
  *         2 failed to find TLS certificate,
@@ -714,7 +716,8 @@ int
 modify_tls_certificate (const gchar *tls_certificate_id,
                         const gchar *comment,
                         const gchar *name,
-                        const gchar *certificate)
+                        const gchar *certificate,
+                        int trust)
 {
   tls_certificate_t tls_certificate;
 
@@ -817,6 +820,18 @@ modify_tls_certificate (const gchar *tls_certificate_id,
            quoted_name,
            tls_certificate);
       g_free (quoted_name);
+    }
+
+  /* Update trust if requested */
+
+  if (trust != -1)
+    {
+      sql ("UPDATE tls_certificates SET"
+           " trust = %d,"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           trust,
+           tls_certificate);
     }
 
   sql_commit ();
