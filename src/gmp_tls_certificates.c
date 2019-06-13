@@ -371,6 +371,19 @@ create_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
   certificate = entity_child (entity, "certificate");
   trust = entity_child (entity, "trust");
 
+  if (certificate == NULL
+      || strcmp (entity_text (certificate), "") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_tls_certificate",
+                           "CERTIFICATE is required and must not be empty."));
+      log_event_fail ("tls_certificate",
+                      "TLS Certificate",
+                      NULL,
+                      "created");
+      return;
+    }
+
   trust_int = 0;
   if (trust)
     {
@@ -555,6 +568,19 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
   certificate = entity_child (entity, "certificate");
   trust = entity_child (entity, "trust");
 
+  if (certificate
+      && strcmp (entity_text (certificate), "") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_tls_certificate",
+                           "New CERTIFICATE must not be empty if given."));
+      log_event_fail ("tls_certificate",
+                      "TLS Certificate",
+                      NULL,
+                      "created");
+      return;
+    }
+
   trust_int = -1;
   if (trust)
     {
@@ -564,7 +590,6 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
       else
         trust_int = 0;
     }
-
 
   /* Modify the tls_certificate. */
 
