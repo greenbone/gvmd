@@ -78,12 +78,12 @@
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
-     "iso_time (activation_time)",                                            \
+     "certificate_iso_time (activation_time)",                                \
      "activation_time",                                                       \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    {                                                                          \
-     "iso_time (expiration_time)",                                            \
+     "certificate_iso_time (expiration_time)",                                \
      "expiration_time",                                                       \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \

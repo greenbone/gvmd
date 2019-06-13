@@ -991,6 +991,17 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
+  sql ("CREATE OR REPLACE FUNCTION certificate_iso_time (integer)"
+       " RETURNS text AS $$"
+       " BEGIN"
+       "   RETURN CASE"
+       "     WHEN ($1 = 0) THEN 'unlimited'"
+       "     WHEN ($1 = -1) THEN 'unknown'"
+       "     ELSE iso_time($1)"
+       "     END;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
   sql ("CREATE OR REPLACE FUNCTION days_from_now (seconds integer)"
        " RETURNS integer AS $$"
        " DECLARE"
