@@ -22,4 +22,4 @@
 # This schema generator creates a single HTML file from the XML schema using
 # an XSL transformation via the tool xsltproc.
 
-xsltproc ./HTML.xsl $1
+xsltproc ./HTML.xsl $1 | sed 's/[ \t]*$//'
