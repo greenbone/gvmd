@@ -290,6 +290,10 @@ endif (NOT SKIP_SRC)
 
 add_subdirectory (doc)
 
+## Testing
+
+enable_testing ()
+
 ## Install
 
 install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${GVMD_DATA_DIR}/report_formats)")
