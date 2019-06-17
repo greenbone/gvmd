@@ -1737,6 +1737,47 @@ migrate_208_to_209 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 208 to version 209.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_209_to_210 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 209. */
+
+  if (manage_db_version () != 209)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Do nothing when SQLite is used. During a later
+   * migration the columns will automatically be removed.
+   */ 
+  if (! sql_is_sqlite3 ())
+    {
+
+      /* Update the database. */
+
+      /* Remove the fields "bid" and "xref" from table "nvts". */
+
+      sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN bid CASCADE;");
+      sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN xref CASCADE;");
+    }
+
+  /* Set the database version to 210. */
+
+  set_db_version (210);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1773,6 +1814,7 @@ static migrator_t database_migrators[] = {
   {207, migrate_206_to_207},
   {208, migrate_207_to_208},
   {209, migrate_208_to_209},
+  {210, migrate_209_to_210},
   /* End marker. */
   {-1, NULL}};
 

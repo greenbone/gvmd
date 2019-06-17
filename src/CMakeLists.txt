@@ -89,8 +89,77 @@ else (BACKEND STREQUAL SQLITE3)
   set (BINARY_NAME "gvmd-pg")
 endif (BACKEND STREQUAL SQLITE3)
 
-add_executable (${BINARY_NAME}
+add_executable (manage-utils-test
+                EXCLUDE_FROM_ALL
+                manage_utils_tests.c
+
                 gvmd.c gmpd.c
+                manage.c sql.c
+                manage_ranges_all_tcp_nmap_5_51_top_100.c
+                manage_ranges_all_tcp_nmap_5_51_top_1000.c
+                manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
+                manage_ranges_nmap_5_51_top_2000_top_100.c
+                manage_acl.c manage_config_discovery.c
+                manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_tickets.c
+                manage_migrators.c scanner.c
+                ${BACKEND_FILES}
+                lsc_user.c lsc_crypt.c utils.c comm.c
+                otp.c
+                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c)
+
+add_test (manage-utils-test manage-utils-test)
+
+add_executable (manage-test
+                EXCLUDE_FROM_ALL
+                manage_tests.c
+
+                gvmd.c gmpd.c
+                manage_utils.c sql.c
+                manage_ranges_all_tcp_nmap_5_51_top_100.c
+                manage_ranges_all_tcp_nmap_5_51_top_1000.c
+                manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
+                manage_ranges_nmap_5_51_top_2000_top_100.c
+                manage_acl.c manage_config_discovery.c
+                manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_tickets.c
+                manage_migrators.c scanner.c
+                ${BACKEND_FILES}
+                lsc_user.c lsc_crypt.c utils.c comm.c
+                otp.c
+                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c)
+
+add_test (manage-test manage-test)
+
+add_executable (gmp-tickets-test
+                EXCLUDE_FROM_ALL
+                gmp_tickets_tests.c
+
+                gvmd.c gmpd.c
+                manage_utils.c manage.c sql.c
+                manage_ranges_all_tcp_nmap_5_51_top_100.c
+                manage_ranges_all_tcp_nmap_5_51_top_1000.c
+                manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
+                manage_ranges_nmap_5_51_top_2000_top_100.c
+                manage_acl.c manage_config_discovery.c
+                manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_tickets.c
+                manage_migrators.c scanner.c
+                ${BACKEND_FILES}
+                lsc_user.c lsc_crypt.c utils.c comm.c
+                otp.c
+                gmp.c gmp_base.c gmp_delete.c gmp_get.c)
+
+add_test (gmp-tickets-test gmp-tickets-test)
+
+add_custom_target (tests
+                   DEPENDS gmp-tickets-test manage-test manage-utils-test)
+
+add_executable (${BINARY_NAME}
+                main.c gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_ranges_all_tcp_nmap_5_51_top_100.c
                 manage_ranges_all_tcp_nmap_5_51_top_1000.c
@@ -118,10 +187,29 @@ else (BACKEND STREQUAL SQLITE3)
                          ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                          ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                          ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+  target_link_libraries (manage-test cgreen m
+                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                         ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+  target_link_libraries (manage-utils-test cgreen m
+                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                         ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS}
+                         -Wl,--wrap=time)
+  target_link_libraries (gmp-tickets-test cgreen m
+                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                         ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
   target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 endif (BACKEND STREQUAL SQLITE3)
 
 set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
+set_target_properties (manage-test PROPERTIES LINKER_LANGUAGE C)
+set_target_properties (manage-utils-test PROPERTIES LINKER_LANGUAGE C)
+set_target_properties (gmp-tickets-test PROPERTIES LINKER_LANGUAGE C)
 
 if (DEBUG_FUNCTION_NAMES)
   add_definitions (-DDEBUG_FUNCTION_NAMES)
@@ -133,6 +221,9 @@ endif (GVMD_VERSION)
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options (${BINARY_NAME} PUBLIC ${C_FLAGS_DEBUG_GVMD})
+  target_compile_options (manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
+  target_compile_options (manage-utils-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
+  target_compile_options (gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
 
   # If we got GIT_REVISION at configure time,
   # assume we can get it at build time as well

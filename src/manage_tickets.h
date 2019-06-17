@@ -117,13 +117,13 @@ int
 trash_ticket_writable (ticket_t);
 
 int
-create_ticket (const char *, const char *, const char *, const char *, ticket_t *);
+create_ticket (const char *, const char *, const char *, const char *, ticket_t *) __attribute__((weak));
 
 int
-copy_ticket (const char *, const char *, ticket_t *);
+copy_ticket (const char *, const char *, ticket_t *) __attribute__((weak));
 
 char*
-ticket_uuid (ticket_t);
+ticket_uuid (ticket_t) __attribute__((weak));
 
 int
 modify_ticket (const gchar *, const gchar *, const gchar *,
