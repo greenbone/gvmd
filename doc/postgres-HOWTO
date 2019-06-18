@@ -33,9 +33,12 @@ Debian GNU/Linux 'Jessie' 8.
   in a ld-aware directory. For example create file /etc/ld.so.conf.d/gvm.conf
   with appropriate path and then run ldconfig.
 
-7 Run Manager as usual.
+7 If you wish to migrate from SQLite, follow the next section before running
+  Manager.
 
-8 To run SQL on the database.
+8 Run Manager as usual.
+
+9 To run SQL on the database.
 
 	psql gvmd
 
@@ -47,8 +50,8 @@ Migrating from SQLite to PostgreSQL
   PostgreSQL database like described above.
 
   If you accidentally already rebuilt the database or for other reasons
-  want to start from scratch, apply the dropping of all data as
-  described below.  It is essentially important that you do not start
+  want to start from scratch, drop the database and repeat the process
+  described above.  It is essentially important that you do not start
   Manager before the migration as it would create a fresh one and therefore
   prevent migration.
 

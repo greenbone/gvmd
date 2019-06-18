@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2018 Greenbone Networks GmbH
+/* Copyright (C) 2014-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -2904,8 +2904,6 @@ create_tables ()
        "  name text,"
        "  comment text,"
        "  cve text,"
-       "  bid text,"
-       "  xref text,"
        "  tag text,"
        "  category text,"
        "  family text,"
