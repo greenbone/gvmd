@@ -98,7 +98,7 @@ elif [ " - Status code 302" = "$HTTP_CODE" ]
 then
   echo "Host returned: $HTTP_CODE - credentials may be incorrect" >&2
   exit 1
-elif [ -n "$HTTP_CODE" ] && [ "- Status code 000" != "$HTTP_CODE" ]
+elif [ -n "$HTTP_CODE" ] && [ " - Status code 000" != "$HTTP_CODE" ]
 then
   echo "Host returned: $HTTP_CODE" >&2
   exit 1
