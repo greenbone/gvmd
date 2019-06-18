@@ -301,20 +301,24 @@ truncate_private_key (const gchar* private_key)
  * @brief Gathers info from a certificate.
  *
  * @param[in]  certificate      The certificate to get data from.
+ * @param[in]  certificate_len  Length of the certificate, -1: null-terminated
  * @param[out] activation_time  Pointer to write activation time to.
  * @param[out] expiration_time  Pointer to write expiration time to.
  * @param[out] fingerprint      Pointer for newly allocated fingerprint.
  * @param[out] subject          Pointer for newly allocated subject DN.
  * @param[out] issuer           Pointer for newly allocated issuer DN.
+ * @param[out] format           Pointer to certificate format.
  *
  * @return 0 success, -1 error.
  */
 int
-get_certificate_info (const gchar* certificate,
+get_certificate_info (const gchar* certificate, gssize certificate_len,
                       time_t* activation_time, time_t* expiration_time,
-                      gchar** fingerprint, gchar **subject, gchar** issuer)
+                      gchar** fingerprint, gchar **subject, gchar** issuer,
+                      gnutls_x509_crt_fmt_t *certificate_format)
 {
   gchar *cert_truncated;
+  gnutls_x509_crt_fmt_t certificate_format_internal;
 
   cert_truncated = NULL;
   if (activation_time)
@@ -327,29 +331,48 @@ get_certificate_info (const gchar* certificate,
     *subject = NULL;
   if (issuer)
     *issuer = NULL;
+  if (certificate_format)
+    *certificate_format = 0;
 
   if (certificate)
     {
       int err;
       gnutls_datum_t cert_datum;
       gnutls_x509_crt_t gnutls_cert;
+      static const gchar* begin_str = "-----BEGIN ";
 
-      cert_truncated = truncate_certificate (certificate);
-      if (cert_truncated == NULL)
+      if (certificate_len < 0)
+        cert_datum.size = strlen (cert_truncated);
+      else
+        cert_datum.size = certificate_len;
+
+      if (g_strrstr_len (certificate, cert_datum.size, begin_str))
         {
-          return -1;
+          cert_truncated = truncate_certificate (certificate);
+          if (cert_truncated == NULL)
+            {
+              return -1;
+            }
+          certificate_format_internal = GNUTLS_X509_FMT_PEM;
+        }
+      else
+        {
+          cert_truncated = g_memdup (certificate, cert_datum.size);
+          certificate_format_internal = GNUTLS_X509_FMT_DER;
         }
       cert_datum.data = (unsigned char*) cert_truncated;
-      cert_datum.size = strlen (cert_truncated);
 
       gnutls_x509_crt_init (&gnutls_cert);
       err = gnutls_x509_crt_import (gnutls_cert, &cert_datum,
-                                    GNUTLS_X509_FMT_PEM);
+                                    certificate_format_internal);
       if (err)
         {
           g_free (cert_truncated);
           return -1;
         }
+
+      if (certificate_format)
+        *certificate_format = certificate_format_internal;
 
       if (activation_time)
         {

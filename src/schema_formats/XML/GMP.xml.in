@@ -6136,7 +6136,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>certificate</name>
-      <summary>The certificate data</summary>
+      <summary>The Base64 encoded certificate data (x.509 DER or PEM)</summary>
       <pattern>
         text
       </pattern>
@@ -6165,9 +6165,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <create_tls_certificate>
           <name>Example Certificate</name>
-          <certificate>-----BEGIN CERTIFICATE-----
-          [...]
-          </certificate>
+          <certificate>MIIDNjCCAp+gAwIBAgIBATANBgkqhkiG9w0BAQQFADCBqTELM[...]</certificate>
         </create_tls_certificate>
       </request>
       <response>
@@ -22878,7 +22876,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>certificate</name>
-          <summary>The certificate file as plain text</summary>
+          <summary>The Base64 encoded certificate data (x.509 DER or PEM)</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -23058,10 +23056,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <name>Everything</name>
               </permission>
             </permissions>
-            <certificate>-----BEGIN CERTIFICATE-----
-              [...]
-            </certificate>
-            <md5_fingerprint>28:3d:7f:0a:15:82:f8:bb:9b:4e:93:97:95:59:d7:af</md5_fingerprint>
+            <certificate>MIIDNjCCAp+gAwIBAgIBATANBgkqhkiG9w0BAQQFADCBqTELM[...]</certificate>
+            <md5_fingerprint>ba:ec:16:30:27:ca:99:17:ff:df:a4:4c:bc:bf:1b:98</md5_fingerprint>
             <trust>1</trust>
             <valid>1</valid>
             <activation_time>2019-02-26T14:24:15Z</activation_time>
@@ -26135,7 +26131,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>certificate</name>
-      <summary>The certificate data</summary>
+      <summary>The Base64 encoded certificate data (x.509 DER or PEM)</summary>
       <pattern>
         text
       </pattern>
@@ -26162,8 +26158,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <modify_tls_certificate
             tls_certificate_id="8a925978-59d0-494b-a837-40b271569727">
           <name>Updated Example Certificate</name>
-          <certificate>-----BEGIN CERTIFICATE-----
-          [...]
+          <certificate>LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVrVENDQ[...]
           </certificate>
         </modify_tls_certificate>
       </request>

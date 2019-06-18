@@ -419,6 +419,17 @@ create_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
                           "created");
           break;
         }
+      case 2:
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_tls_certificate",
+                               "CERTIFICATE is not valid Base64."));
+          log_event_fail ("tls_certificate",
+                          "TLS Certificate",
+                          NULL,
+                          "created");
+          return;
+        }
       case 99:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_tls_certificate",
@@ -572,7 +583,7 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
       && strcmp (entity_text (certificate), "") == 0)
     {
       SEND_TO_CLIENT_OR_FAIL
-        (XML_ERROR_SYNTAX ("create_tls_certificate",
+        (XML_ERROR_SYNTAX ("modify_tls_certificate",
                            "New CERTIFICATE must not be empty if given."));
       log_event_fail ("tls_certificate",
                       "TLS Certificate",
@@ -645,6 +656,15 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
                         tls_certificate_id,
                         "modified");
         break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_tls_certificate",
+                              "CERTIFICATE is not valid Base64."));
+        log_event_fail ("tls_certificate",
+                        "TLS Certificate",
+                        NULL,
+                        "modified");
+        return;
       case 99:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_tls_certificate",

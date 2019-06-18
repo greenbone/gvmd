@@ -362,29 +362,41 @@ trash_tls_certificate_writable (tls_certificate_t tls_certificate)
  *
  * @param[in]   name            Name of new TLS certificate.
  * @param[in]   comment         Comment of TLS certificate.
- * @param[in]   certificate     Plain certificate file content.
+ * @param[in]   certificate_b64 Base64 certificate file content.
  * @param[in]   trust           Whether to trust the certificate.
  * @param[out]  tls_certificate Created TLS certificate.
  *
- * @return 0 success, 1 invalid certificate, 99 permission denied, -1 error.
+ * @return 0 success, 1 invalid certificate content, 2 certificate not Base64,
+ *         99 permission denied, -1 error.
  */
 int
 create_tls_certificate (const char *name,
                         const char *comment,
-                        const char *certificate,
+                        const char *certificate_b64,
                         int trust,
                         tls_certificate_t *tls_certificate)
 {
   int ret;
+  gchar *certificate_decoded;
+  gsize certificate_len;
   char *md5_fingerprint, *subject_dn, *issuer_dn;
   time_t activation_time, expiration_time;
+  gnutls_x509_crt_fmt_t certificate_format;
 
-  ret = get_certificate_info (certificate,
+  certificate_decoded
+      = (gchar*) g_base64_decode (certificate_b64, &certificate_len);
+
+  if (certificate_decoded == NULL || certificate_len == 0)
+    return 2;
+
+  ret = get_certificate_info (certificate_decoded,
+                              certificate_len,
                               &activation_time,
                               &expiration_time,
                               &md5_fingerprint,
                               &subject_dn,
-                              &issuer_dn);
+                              &issuer_dn,
+                              &certificate_format);
 
   if (ret)
     return 1;
@@ -399,7 +411,7 @@ create_tls_certificate (const char *name,
        current_credentials.uuid,
        name ? name : md5_fingerprint,
        comment ? comment : "",
-       certificate ? certificate : "",
+       certificate_b64 ? certificate_b64 : "",
        subject_dn ? subject_dn : "",
        issuer_dn ? issuer_dn : "",
        trust,
@@ -705,18 +717,19 @@ inherit_tls_certificates (user_t user, user_t inheritor)
  * @param[in]   tls_certificate_id  UUID of TLS certificate.
  * @param[in]   comment             New comment on TLS certificate.
  * @param[in]   name                New name of TLS certificate.
- * @param[in]   certificate         New certificate file content.
+ * @param[in]   certificate_b64     New Base64 certificate file content.
  * @param[in]   trust               New trust value or -1 to keep old value.
  *
  * @return 0 success, 1 TLS certificate exists already,
  *         2 failed to find TLS certificate,
- *         3 invalid certificate content, 99 permission denied, -1 error.
+ *         3 invalid certificate content, 4 certificate is not valid Base64,
+ *         99 permission denied, -1 error.
  */
 int
 modify_tls_certificate (const gchar *tls_certificate_id,
                         const gchar *comment,
                         const gchar *name,
-                        const gchar *certificate,
+                        const gchar *certificate_b64,
                         int trust)
 {
   tls_certificate_t tls_certificate;
@@ -753,24 +766,39 @@ modify_tls_certificate (const gchar *tls_certificate_id,
 
   /* Update certificate if requested. */
 
-  if (certificate)
+  if (certificate_b64)
     {
       gchar *quoted_certificate;
       int ret;
       char *md5_fingerprint, *subject_dn, *issuer_dn;
       time_t activation_time, expiration_time;
+      gnutls_x509_crt_fmt_t certificate_format;
 
-      ret = get_certificate_info (certificate,
+      gchar *certificate_decoded;
+      gsize certificate_len;
+
+      certificate_decoded
+          = (gchar*) g_base64_decode (certificate_b64, &certificate_len);
+
+      if (certificate_decoded == NULL || certificate_len == 0)
+        {
+          sql_rollback ();
+          return 4;
+        }
+
+      ret = get_certificate_info (certificate_decoded,
+                                  certificate_len,
                                   &activation_time,
                                   &expiration_time,
                                   &md5_fingerprint,
                                   &subject_dn,
-                                  &issuer_dn);
+                                  &issuer_dn,
+                                  &certificate_format);
 
       if (ret)
         return 3;
 
-      quoted_certificate = sql_quote (certificate);
+      quoted_certificate = sql_quote (certificate_b64);
       sql ("UPDATE tls_certificates SET"
            " certificate = '%s',"
            " activation_time = %llu,"
