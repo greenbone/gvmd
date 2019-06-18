@@ -257,6 +257,10 @@ configure_file (tools/gvm-portnames-update.in tools/gvm-portnames-update @ONLY)
 configure_file (tools/gvm-migrate-to-postgres.in tools/gvm-migrate-to-postgres @ONLY)
 configure_file (tools/gvm-manage-certs.in tools/gvm-manage-certs @ONLY)
 
+## Testing
+
+enable_testing ()
+
 ## Program
 
 if (ENABLE_COVERAGE)
@@ -289,10 +293,6 @@ endif (NOT SKIP_SRC)
 ## Documentation
 
 add_subdirectory (doc)
-
-## Testing
-
-enable_testing ()
 
 ## Install
 
