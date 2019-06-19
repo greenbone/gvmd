@@ -35,7 +35,7 @@ for development is Debian GNU/Linux 'Stretch' 9.
     sudo -u postgres bash  # if you logged out after step 4
     psql gvmd
     create role dba with superuser noinherit;
-    grant dba to mattm;
+    grant dba to mattm;    # mattm is the user created in step 4
     ```
 
 6.  Create DB extension (also necessary when the database got dropped).
