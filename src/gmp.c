@@ -16792,7 +16792,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                 NULL, /* No host restriction */
                                 NULL);  /* No extra order SQL. */
 
-      manage_report_filter_controls (filter,
+      manage_report_filter_controls (filter ? filter : "",
                                       NULL, /* first */
                                       NULL, /* max */
                                       NULL, /* sort_field */
@@ -16832,9 +16832,9 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
               buffer_results_xml (buffer,
                                   &results,
                                   task,
-                                  notes,
+                                  (notes || get_results_data->get.details),
                                   get_results_data->notes_details,
-                                  overrides,
+                                  (overrides || get_results_data->get.details),
                                   get_results_data->overrides_details,
                                   1,
                                   /* show tag details if selected by ID */
