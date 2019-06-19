@@ -1154,7 +1154,7 @@ copy_data () {
     # database.
     #
     log_info "Copying SQLite3 data: copying table $TABLE"
-    COLS=`pg "SELECT string_agg ('\"' || column_name || '\"', ',') from (select column_name from information_schema.columns where table_schema = 'public' and table_name = '$TABLE' order by ordinal_position) as sub;"`
+    COLS=`pg "SELECT string_agg ('\"' || column_name || '\"', ',') FROM (SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '$TABLE' AND column_name != 'orphaned_time' order by ordinal_position) as sub;"`
     log_debug "COLS: $COLS"
     # Pipe SQLite CSV output into Postgres COPY FROM.
     $SQLITE3 -csv $SQLITE_DB "SELECT $COLS FROM $TABLE;" | pg "COPY $TABLE ($COLS) FROM STDIN DELIMITER ',' CSV";
