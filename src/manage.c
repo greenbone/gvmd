@@ -300,14 +300,14 @@ truncate_private_key (const gchar* private_key)
 /**
  * @brief Gathers info from a certificate.
  *
- * @param[in]  certificate      The certificate to get data from.
- * @param[in]  certificate_len  Length of the certificate, -1: null-terminated
- * @param[out] activation_time  Pointer to write activation time to.
- * @param[out] expiration_time  Pointer to write expiration time to.
- * @param[out] fingerprint      Pointer for newly allocated fingerprint.
- * @param[out] subject          Pointer for newly allocated subject DN.
- * @param[out] issuer           Pointer for newly allocated issuer DN.
- * @param[out] format           Pointer to certificate format.
+ * @param[in]  certificate        The certificate to get data from.
+ * @param[in]  certificate_len    Length of certificate, -1: null-terminated
+ * @param[out] activation_time    Pointer to write activation time to.
+ * @param[out] expiration_time    Pointer to write expiration time to.
+ * @param[out] fingerprint        Pointer for newly allocated fingerprint.
+ * @param[out] subject            Pointer for newly allocated subject DN.
+ * @param[out] issuer             Pointer for newly allocated issuer DN.
+ * @param[out] certificate_format Pointer to certificate format.
  *
  * @return 0 success, -1 error.
  */
