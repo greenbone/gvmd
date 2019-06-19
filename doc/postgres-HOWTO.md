@@ -29,26 +29,33 @@ for development is Debian GNU/Linux 'Stretch' 9.
     createdb -O mattm gvmd
     ```
 
-5.  Setup DB extensions and permission.
+5.  Setup permissions.
 
     ```sh
     sudo -u postgres bash  # if you logged out after step 4
     psql gvmd
     create role dba with superuser noinherit;
     grant dba to mattm;
+    ```
+
+6.  Create DB extension (also necessary when the database got dropped).
+
+    ```sh
+    sudo -u postgres bash  # if you logged out after step 5
+    psql gvmd
     create extension "uuid-ossp";
     ```
 
-6.  Make Postgres aware of the gvm libraries if not installed
+7.  Make Postgres aware of the gvm libraries if not installed
     in a ld-aware directory. For example create file `/etc/ld.so.conf.d/gvm.conf`
     with appropriate path and then run `ldconfig`.
 
-7.  If you wish to migrate from SQLite, follow the next section before running
+8.  If you wish to migrate from SQLite, follow the next section before running
     Manager.
 
-8.  Run Manager as usual.
+9.  Run Manager as usual.
 
-9.  To run SQL on the database.
+10. To run SQL on the database.
 
     ```sh
     psql gvmd
