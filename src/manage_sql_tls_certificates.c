@@ -44,7 +44,7 @@
  */
 #define TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "subject_dn", "issuer_dn", "md5_fingerprint", \
-   "activates", "expires", "valid", NULL }
+   "activates", "expires", "valid", "certificate_format", NULL }
 
 /**
  * @brief TLS Certificate iterator columns.
@@ -93,6 +93,11 @@
      "      THEN 1 ELSE 0 END)",                                              \
      "valid",                                                                 \
      KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "certificate_format",                                                    \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
      "activation_time",                                                       \
@@ -154,6 +159,11 @@
      "      THEN 1 ELSE 0 END)",                                              \
      "valid",                                                                 \
      KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "certificate_format",                                                    \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
      "activation_time",                                                       \
@@ -306,6 +316,16 @@ tls_certificate_iterator_valid (iterator_t *iterator)
 }
 
 /**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_iterator_certificate_format,
+            GET_ITERATOR_COLUMN_COUNT + 8);
+
+/**
  * @brief Return whether a tls_certificate is in use.
  *
  * @param[in]  tls_certificate  TLS Certificate.
@@ -358,6 +378,27 @@ trash_tls_certificate_writable (tls_certificate_t tls_certificate)
 }
 
 /**
+ * @brief Get a string representation of a certificate format.
+ *
+ * @param[in]  certificate_format  The format as gnutls_x509_crt_fmt_t.
+ *
+ * @return A string representation of the format (e.g. "PEM" or "DER").
+ */
+static const char*
+tls_certificate_format_str (gnutls_x509_crt_fmt_t certificate_format)
+{
+  switch (certificate_format)
+    {
+      case GNUTLS_X509_FMT_DER:
+        return "DER";
+      case GNUTLS_X509_FMT_PEM:
+        return "PEM";
+      default:
+        return "unknown";
+    }
+}
+
+/**
  * @brief Create a TLS certificate.
  *
  * @param[in]   name            Name of new TLS certificate.
@@ -404,10 +445,11 @@ create_tls_certificate (const char *name,
   sql ("INSERT INTO tls_certificates"
        " (uuid, owner, name, comment, creation_time, modification_time,"
        "  certificate, subject_dn, issuer_dn, trust,"
-       "  activation_time, expiration_time, md5_fingerprint)"
+       "  activation_time, expiration_time, md5_fingerprint,"
+       "  certificate_format)"
        " SELECT make_uuid(), (SELECT id FROM users WHERE users.uuid = '%s'),"
        "        '%s', '%s', m_now(), m_now(), '%s', '%s', '%s', %d,"
-       "        %ld, %ld, '%s';",
+       "        %ld, %ld, '%s', '%s';",
        current_credentials.uuid,
        name ? name : md5_fingerprint,
        comment ? comment : "",
@@ -417,7 +459,8 @@ create_tls_certificate (const char *name,
        trust,
        activation_time,
        expiration_time,
-       md5_fingerprint);
+       md5_fingerprint,
+       tls_certificate_format_str (certificate_format));
 
   if (tls_certificate)
     *tls_certificate = sql_last_insert_id ();
@@ -452,7 +495,8 @@ copy_tls_certificate (const char *name,
 
   ret = copy_resource ("tls_certificate", name, comment, tls_certificate_id,
                        "certificate, subject_dn, issuer_dn, trust,"
-                       "activation_time, expiration_time, md5_fingerprint",
+                       "activation_time, expiration_time, md5_fingerprint,"
+                       "certificate_format",
                        0, new_tls_certificate, &old_tls_certificate);
   if (ret)
     return ret;
@@ -547,11 +591,13 @@ delete_tls_certificate (const char *tls_certificate_id, int ultimate)
       sql ("INSERT INTO tls_certificates_trash"
            " (uuid, owner, name, comment, creation_time, modification_time,"
            "  certificate, subject_dn, issuer_dn, trust,"
-           "  activation_time, expiration_time, md5_fingerprint)"
+           "  activation_time, expiration_time, md5_fingerprint,"
+           "  certificate_format)"
            " SELECT"
            "  uuid, owner, name, comment, creation_time, modification_time,"
            "  certificate, subject_dn, issuer_dn, trust,"
-           "  activation_time, expiration_time, md5_fingerprint"
+           "  activation_time, expiration_time, md5_fingerprint,"
+           "  certificate_format"
            " FROM tls_certificates WHERE id = %llu;",
            tls_certificate);
 
@@ -620,11 +666,13 @@ restore_tls_certificate (const char *tls_certificate_id)
   sql ("INSERT INTO tls_certificates"
        " (uuid, owner, name, comment, creation_time, modification_time,"
        "  certificate, subject_dn, issuer_dn, trust,"
-       "  activation_time, expiration_time, md5_fingerprint)"
+       "  activation_time, expiration_time, md5_fingerprint,"
+       "  certificate_format)"
        " SELECT"
        "  uuid, owner, name, comment, creation_time, modification_time,"
        "  certificate, subject_dn, issuer_dn, trust,"
-       "  activation_time, expiration_time, md5_fingerprint"
+       "  activation_time, expiration_time, md5_fingerprint,"
+       "  certificate_format"
        " FROM tls_certificates_trash WHERE id = %llu;",
        trash_tls_certificate);
 
@@ -806,7 +854,8 @@ modify_tls_certificate (const gchar *tls_certificate_id,
            " md5_fingerprint = '%s',"
            " subject_dn = '%s',"
            " issuer_dn = '%s',"
-           " modification_time = m_now ()"
+           " modification_time = m_now (),"
+           " certificate_format = '%s'"
            " WHERE id = %llu;",
            quoted_certificate,
            activation_time,
@@ -814,6 +863,7 @@ modify_tls_certificate (const gchar *tls_certificate_id,
            md5_fingerprint,
            subject_dn,
            issuer_dn,
+           tls_certificate_format_str (certificate_format),
            tls_certificate);
       g_free (quoted_certificate);
     }

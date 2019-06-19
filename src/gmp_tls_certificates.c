@@ -183,7 +183,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Send tls_certificate info. */
       SENDF_TO_CLIENT_OR_FAIL 
-        ("<certificate>%s</certificate>"
+        ("<certificate format=\"%s\">%s</certificate>"
          "<md5_fingerprint>%s</md5_fingerprint>"
          "<trust>%d</trust>"
          "<valid>%d</valid>"
@@ -192,6 +192,9 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          "<subject_dn>%s</subject_dn>"
          "<issuer_dn>%s</issuer_dn>"
          "</tls_certificate>",
+         tls_certificate_iterator_certificate_format (&tls_certificates)
+            ? tls_certificate_iterator_certificate_format (&tls_certificates)
+            : "unknown",
          tls_certificate_iterator_certificate (&tls_certificates),
          tls_certificate_iterator_md5_fingerprint (&tls_certificates),
          tls_certificate_iterator_trust (&tls_certificates),

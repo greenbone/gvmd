@@ -22877,7 +22877,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>certificate</name>
           <summary>The Base64 encoded certificate data (x.509 DER or PEM)</summary>
-          <pattern>text</pattern>
+          <pattern>
+            <attrib>
+              <name>format</name>
+              <summary>The format of the certificate</summary>
+              <type>
+                <alts>
+                  <alt>DER</alt>
+                  <alt>PEM</alt>
+                  <alt>unknown</alt>
+                </alts>
+              </type>
+              <required>1</required>
+            </attrib>
+          </pattern>
         </ele>
         <ele>
           <name>md5_fingerprint</name>
@@ -23056,7 +23069,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <name>Everything</name>
               </permission>
             </permissions>
-            <certificate>MIIDNjCCAp+gAwIBAgIBATANBgkqhkiG9w0BAQQFADCBqTELM[...]</certificate>
+            <certificate format="DER">MIIDNjCCAp+gAwIBAgIBATANBgkqhkiG9w0BAQQFADCBqTELM[...]</certificate>
             <md5_fingerprint>ba:ec:16:30:27:ca:99:17:ff:df:a4:4c:bc:bf:1b:98</md5_fingerprint>
             <trust>1</trust>
             <valid>1</valid>

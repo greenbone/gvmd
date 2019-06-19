@@ -3860,13 +3860,13 @@ create_tables ()
        "  name text, comment text, creation_time integer,"
        "  modification_time integer, certificate text, subject_dn text,"
        "  issuer_dn text, activation_time integer, expiration_time integer,"
-       "  md5_fingerprint text, trust integer);");
+       "  md5_fingerprint text, trust integer, certificate_format text);");
   sql ("CREATE TABLE IF NOT EXISTS tls_certificates_trash"
        " (id INTEGER PRIMARY KEY, uuid text UNIQUE, owner integer,"
        "  name text, comment text, creation_time integer,"
        "  modification_time integer, certificate text, subject_dn text,"
        "  issuer_dn text, activation_time integer, expiration_time integer,"
-       "  md5_fingerprint text, trust integer);");
+       "  md5_fingerprint text, trust integer, certificate_format text);");
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  host, port, type, ca_pub, credential INTEGER,"

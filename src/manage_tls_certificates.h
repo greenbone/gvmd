@@ -60,6 +60,9 @@ tls_certificate_iterator_expiration_time (iterator_t*);
 int
 tls_certificate_iterator_valid (iterator_t *);
 
+const char*
+tls_certificate_iterator_certificate_format (iterator_t*);
+
 int
 tls_certificate_in_use (tls_certificate_t);
 

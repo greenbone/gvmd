@@ -2530,7 +2530,8 @@ create_tables ()
        "  activation_time integer,"
        "  expiration_time integer,"
        "  md5_fingerprint text,"
-       "  trust integer);");
+       "  trust integer,"
+       "  certificate_format text);");
 
   sql ("CREATE TABLE IF NOT EXISTS tls_certificates_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -2546,7 +2547,8 @@ create_tables ()
        "  activation_time integer,"
        "  expiration_time integer,"
        "  md5_fingerprint text,"
-       "  trust integer);");
+       "  trust integer,"
+       "  certificate_format text);");
 
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
