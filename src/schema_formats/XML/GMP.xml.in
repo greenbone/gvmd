@@ -1974,14 +1974,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>notes</name>
-          <summary>Whether notes are included</summary>
+          <summary>Whether notes are included even if details are not requested</summary>
           <pattern>
             <t><alts><alt>0</alt><alt>1</alt></alts></t>
           </pattern>
         </ele>
         <ele>
           <name>overrides</name>
-          <summary>Whether overrides are included</summary>
+          <summary>Whether overrides are included even if details are not requested</summary>
           <pattern>
             <t><alts><alt>0</alt><alt>1</alt></alts></t>
           </pattern>
