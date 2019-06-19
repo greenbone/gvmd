@@ -341,12 +341,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
       gnutls_x509_crt_t gnutls_cert;
       static const gchar* begin_str = "-----BEGIN ";
 
-      if (certificate_len < 0)
-        cert_datum.size = strlen (cert_truncated);
-      else
-        cert_datum.size = certificate_len;
-
-      if (g_strrstr_len (certificate, cert_datum.size, begin_str))
+      if (g_strstr_len (certificate, certificate_len, begin_str))
         {
           cert_truncated = truncate_certificate (certificate);
           if (cert_truncated == NULL)
@@ -357,10 +352,23 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
         }
       else
         {
-          cert_truncated = g_memdup (certificate, cert_datum.size);
+          if (certificate_len < 0)
+            {
+              g_warning ("%s: PEM encoded certificate expected if"
+                         " certificate_length is negative",
+                         __FUNCTION__);
+              return -1;
+            }
+
+          cert_truncated = g_memdup (certificate, certificate_len);
           certificate_format_internal = GNUTLS_X509_FMT_DER;
         }
+
       cert_datum.data = (unsigned char*) cert_truncated;
+      if (certificate_len < 0)
+        cert_datum.size = strlen (cert_truncated);
+      else
+        cert_datum.size = certificate_len;
 
       gnutls_x509_crt_init (&gnutls_cert);
       err = gnutls_x509_crt_import (gnutls_cert, &cert_datum,
