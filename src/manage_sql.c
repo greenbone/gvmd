@@ -31175,7 +31175,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (delta && get->details)
     {
       if (print_report_delta_xml (out, &results, &delta_results, delta_states,
-                                  first_result, max_results, task, notes,
+                                  ignore_pagination ? 1 : first_result,
+                                  ignore_pagination ? -1 : max_results,
+                                  task, notes,
                                   notes_details, overrides, overrides_details,
                                   sort_order, sort_field, result_hosts_only,
                                   &orig_filtered_result_count,
