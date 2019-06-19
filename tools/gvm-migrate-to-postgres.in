@@ -3006,7 +3006,7 @@ create () {
       ;;
 
     *)
-      log_notice "Database version not supported: " $DB_VERSION
+      log_notice "Database version not supported: $DB_VERSION"
       exit 1
   esac
 }
