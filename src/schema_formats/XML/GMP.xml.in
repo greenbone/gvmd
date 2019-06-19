@@ -22876,7 +22876,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>certificate</name>
-          <summary>The Base64 encoded certificate data (x.509 DER or PEM)</summary>
+          <summary>The Base64 encoded certificate data if details are requested, empty otherwise</summary>
           <pattern>
             <attrib>
               <name>format</name>

@@ -195,7 +195,9 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          tls_certificate_iterator_certificate_format (&tls_certificates)
             ? tls_certificate_iterator_certificate_format (&tls_certificates)
             : "unknown",
-         tls_certificate_iterator_certificate (&tls_certificates),
+         get_tls_certificates_data.get.details
+            ? tls_certificate_iterator_certificate (&tls_certificates)
+            : "",
          tls_certificate_iterator_md5_fingerprint (&tls_certificates),
          tls_certificate_iterator_trust (&tls_certificates),
          tls_certificate_iterator_valid (&tls_certificates),
