@@ -24,7 +24,7 @@ for development is Debian GNU/Linux 'Stretch' 9.
 4.  Setup Postgres User and DB (`/usr/share/doc/postgresql-common/README.Debian.gz`)
 
     ```sh
-    sudo -u postgres sh
+    sudo -u postgres bash
     createuser -DRS mattm       # mattm is your OS login name
     createdb -O mattm gvmd
     ```
@@ -32,7 +32,7 @@ for development is Debian GNU/Linux 'Stretch' 9.
 5.  Setup DB extensions and permission.
 
     ```sh
-    sudo -u postgres sh  # if you logged out after step 4
+    sudo -u postgres bash  # if you logged out after step 4
     psql gvmd
     create role dba with superuser noinherit;
     grant dba to mattm;
