@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-Copyright (C) 2011-2018 Greenbone Networks GmbH
+Copyright (C) 2011-2019 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -35,15 +35,15 @@ Parameters:
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:str="http://exslt.org/strings"
     xmlns:func="http://exslt.org/functions"
-    xmlns:openvas="http://openvas.org"
-    extension-element-prefixes="str func openvas">
+    xmlns:gvm="http://greenbone.net"
+    extension-element-prefixes="str func gvm">
   <xsl:param name="filenames_str"/>
   <xsl:param name="mimetypes_str"/>
   <xsl:param name="filedate"/>
   <xsl:include href="classification.xsl"/>
   <xsl:output method="xml" encoding="UTF-8"/>
 
-  <func:function name="openvas:get-nvt-tag">
+  <func:function name="gvm:get-nvt-tag">
     <xsl:param name="tags"/>
     <xsl:param name="name"/>
     <xsl:variable name="after">
@@ -59,15 +59,15 @@ Parameters:
     </xsl:choose>
   </func:function>
 
-  <func:function name="openvas:newstyle-nvt">
+  <func:function name="gvm:newstyle-nvt">
     <xsl:param name="nvt"/>
     <xsl:choose>
-      <xsl:when test="string-length (openvas:get-nvt-tag ($nvt/tags, 'summary'))
-                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'affected'))
-                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'insight'))
-                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'vuldetect'))
-                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'impact'))
-                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'solution'))">
+      <xsl:when test="string-length (gvm:get-nvt-tag ($nvt/tags, 'summary'))
+                      and string-length (gvm:get-nvt-tag ($nvt/tags, 'affected'))
+                      and string-length (gvm:get-nvt-tag ($nvt/tags, 'insight'))
+                      and string-length (gvm:get-nvt-tag ($nvt/tags, 'vuldetect'))
+                      and string-length (gvm:get-nvt-tag ($nvt/tags, 'impact'))
+                      and string-length (gvm:get-nvt-tag ($nvt/tags, 'solution'))">
         <func:result select="1"/>
       </xsl:when>
       <xsl:otherwise>
@@ -549,17 +549,17 @@ CIS</value>
           <xsl:variable name="report" select="/report"/>
 
           <!-- Summary -->
-          <xsl:if test="openvas:newstyle-nvt (nvt)">
+          <xsl:if test="gvm:newstyle-nvt (nvt)">
             <xsl:text>Summary:</xsl:text>
             <xsl:call-template name="newline"/>
-            <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
+            <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'summary')"/>
             <xsl:call-template name="newline"/>
             <xsl:call-template name="newline"/>
           </xsl:if>
 
           <!-- Result -->
           <xsl:choose>
-            <xsl:when test="openvas:newstyle-nvt (nvt)">
+            <xsl:when test="gvm:newstyle-nvt (nvt)">
               <xsl:choose>
                 <xsl:when test="delta/text() = 'changed'">
                   <xsl:text>Result 1:</xsl:text>
@@ -592,40 +592,40 @@ CIS</value>
           </xsl:choose>
           <xsl:call-template name="newline"/>
 
-          <xsl:if test="openvas:newstyle-nvt (nvt)">
-            <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+          <xsl:if test="gvm:newstyle-nvt (nvt)">
+            <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
               <xsl:text>Impact:</xsl:text>
               <xsl:call-template name="newline"/>
-              <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
+              <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'impact')"/>
               <xsl:call-template name="newline"/>
               <xsl:call-template name="newline"/>
             </xsl:if>
 
-            <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+            <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
               <xsl:text>Affected Software/OS:</xsl:text>
               <xsl:call-template name="newline"/>
-              <xsl:value-of name="string" select="openvas:get-nvt-tag (nvt/tags, 'affected')"/>
+              <xsl:value-of name="string" select="gvm:get-nvt-tag (nvt/tags, 'affected')"/>
               <xsl:call-template name="newline"/>
               <xsl:call-template name="newline"/>
             </xsl:if>
 
-            <xsl:if test="(openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (openvas:get-nvt-tag (nvt/tags, 'solution_type') != '')">
+            <xsl:if test="(gvm:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (gvm:get-nvt-tag (nvt/tags, 'solution_type') != '')">
               <xsl:text>Solution:</xsl:text>
               <xsl:call-template name="newline"/>
-              <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+              <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
                 <xsl:text>Solution type: </xsl:text>
-                <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'solution_type')"/>
+                <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'solution_type')"/>
                 <xsl:call-template name="newline"/>
               </xsl:if>
-              <xsl:value-of name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
+              <xsl:value-of name="string" select="gvm:get-nvt-tag (nvt/tags, 'solution')"/>
               <xsl:call-template name="newline"/>
               <xsl:call-template name="newline"/>
             </xsl:if>
 
-            <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+            <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
               <xsl:text>Vulnerability Insight:</xsl:text>
               <xsl:call-template name="newline"/>
-              <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
+              <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'insight')"/>
               <xsl:call-template name="newline"/>
               <xsl:call-template name="newline"/>
             </xsl:if>
@@ -640,7 +640,7 @@ CIS</value>
             </xsl:otherwise>
           </xsl:choose>
           <xsl:call-template name="newline"/>
-          <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'vuldetect')"/>
+          <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'vuldetect')"/>
           <xsl:call-template name="newline"/>
           <xsl:text>Details:</xsl:text>
           <xsl:call-template name="newline"/>

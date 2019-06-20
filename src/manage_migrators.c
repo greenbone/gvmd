@@ -1738,7 +1738,7 @@ migrate_208_to_209 ()
 }
 
 /**
- * @brief Migrate the database from version 208 to version 209.
+ * @brief Migrate the database from version 209 to version 210.
  *
  * @return 0 success, -1 error.
  */
@@ -1772,6 +1772,42 @@ migrate_209_to_210 ()
   /* Set the database version to 210. */
 
   set_db_version (210);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 210 to version 211.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_210_to_211 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 210. */
+
+  if (manage_db_version () != 210)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove any entry in table "results" where field "nvt" is '0'.
+   * The oid '0' was used to inidcate a open port detection in very early
+   * versions. This migration ensures there are no more such
+   * results although it is very unlikely the case. */
+
+  sql ("DELETE FROM results WHERE nvt = '0';");
+
+  /* Set the database version to 211. */
+
+  set_db_version (211);
 
   sql_commit ();
 
@@ -1815,6 +1851,7 @@ static migrator_t database_migrators[] = {
   {208, migrate_207_to_208},
   {209, migrate_208_to_209},
   {210, migrate_209_to_210},
+  {211, migrate_210_to_211},
   /* End marker. */
   {-1, NULL}};
 
