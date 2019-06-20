@@ -5,8 +5,8 @@
     xmlns:func="http://exslt.org/functions"
     xmlns:str="http://exslt.org/strings"
     xmlns:date="http://exslt.org/dates-and-times"
-    xmlns:openvas="http://openvas.org"
-    extension-element-prefixes="str date func openvas">
+    xmlns:gvm="http://greenbone.net"
+    extension-element-prefixes="str date func gvm">
   <xsl:output method="text" encoding="string" indent="no"/>
   <xsl:strip-space elements="*"/>
 
@@ -32,7 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- Report stylesheet for NBE format. -->
 
-  <func:function name="openvas:get-nvt-tag">
+  <func:function name="gvm:get-nvt-tag">
     <xsl:param name="tags"/>
     <xsl:param name="name"/>
     <xsl:variable name="after">
@@ -130,10 +130,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>|</xsl:text>
 
   <!-- Summary -->
-  <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
+  <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
     <xsl:text>Summary:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'summary'), '&#10;', '\n')"/>
+    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'summary'), '&#10;', '\n')"/>
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
@@ -156,36 +156,36 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
   <xsl:text>\n</xsl:text>
 
-  <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+  <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
     <xsl:text>Impact:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'impact'), '&#10;', '\n')"/>
+    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'impact'), '&#10;', '\n')"/>
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
-  <xsl:if test="(string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')))">
+  <xsl:if test="(string-length (gvm:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')))">
     <xsl:text>Solution:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
       <xsl:text>Solution type: </xsl:text>
-      <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'solution_type')"/>
+      <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'solution_type')"/>
       <xsl:text>\n</xsl:text>
     </xsl:if>
-    <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'solution'), '&#10;', '\n')"/>
+    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'solution'), '&#10;', '\n')"/>
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
-  <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+  <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
     <xsl:text>Affected Software/OS:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'affected'), '&#10;', '\n')"/>
+    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'affected'), '&#10;', '\n')"/>
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
-  <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+  <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
     <xsl:text>Vulnerability Insight:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'insight'), '&#10;', '\n')"/>
+    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'insight'), '&#10;', '\n')"/>
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
@@ -198,8 +198,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:otherwise>
   </xsl:choose>
   <xsl:text>\n</xsl:text>
-  <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'vuldetect')) &gt; 0">
-    <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'vuldetect'), '&#10;', '\n')"/>
+  <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'vuldetect')) &gt; 0">
+    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'vuldetect'), '&#10;', '\n')"/>
     <xsl:text>\n</xsl:text>
   </xsl:if>
   <xsl:text>Details:</xsl:text>

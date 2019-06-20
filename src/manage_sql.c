@@ -28504,7 +28504,7 @@ static int
 report_vuln_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT nvt) FROM results"
-                  " WHERE report = %llu AND nvt != '0'"
+                  " WHERE report = %llu"
                   " AND severity != " G_STRINGIFY (SEVERITY_ERROR) ";",
                   report);
 }
