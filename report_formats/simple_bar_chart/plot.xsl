@@ -3,7 +3,7 @@
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:func = "http://exslt.org/functions"
-    xmlns:gvm="http://openvas.org"
+    xmlns:gvm="http://greenbone.net"
     extension-element-prefixes="func">
 
   <xsl:output method="text" encoding="UTF-8" />

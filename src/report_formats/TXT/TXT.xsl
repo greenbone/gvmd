@@ -5,12 +5,12 @@
     xmlns:str="http://exslt.org/strings"
     xmlns:func="http://exslt.org/functions"
     xmlns:date="http://exslt.org/dates-and-times"
-    xmlns:openvas="http://openvas.org"
-    extension-element-prefixes="str date func openvas">
+    xmlns:gvm="http://greenbone.net"
+    extension-element-prefixes="str date func gvm">
   <xsl:output method="text" encoding="string" indent="no"/>
 
 <!--
-Copyright (C) 2010-2018 Greenbone Networks GmbH
+Copyright (C) 2010-2019 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- Report stylesheet for TXT format. -->
 
-<func:function name="openvas:timezone-abbrev">
+<func:function name="gvm:timezone-abbrev">
   <xsl:choose>
     <xsl:when test="/report/@extension='xml'">
       <func:result select="/report/report/timezone_abbrev"/>
@@ -42,7 +42,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
 </func:function>
 
-<func:function name="openvas:get-nvt-tag">
+<func:function name="gvm:get-nvt-tag">
   <xsl:param name="tags"/>
   <xsl:param name="name"/>
   <xsl:variable name="after">
@@ -216,14 +216,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="scan_start" name="format-date">
     <xsl:param name="date" select="text ()"/>
     <xsl:if test="string-length ($date)">
-      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', openvas:timezone-abbrev ())"/>
+      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', gvm:timezone-abbrev ())"/>
     </xsl:if>
   </xsl:template>
 
   <xsl:template name="scan_end">
     <xsl:param name="date" select="scan_end"/>
     <xsl:if test="string-length ($date)">
-      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', openvas:timezone-abbrev ())"/>
+      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', gvm:timezone-abbrev ())"/>
     </xsl:if>
   </xsl:template>
 
@@ -415,12 +415,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:if>
 
     <!-- Summary -->
-    <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
+    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
       <xsl:text>Summary:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
         <xsl:with-param name="string"
-                        select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
+                        select="gvm:get-nvt-tag (nvt/tags, 'summary')"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
@@ -447,43 +447,43 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:choose>
     <xsl:call-template name="newline"/>
 
-    <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
       <xsl:text>Impact:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
+        <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'impact')"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
 
-    <xsl:if test="(string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+    <xsl:if test="(string-length (gvm:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
       <xsl:text>Solution:</xsl:text>
       <xsl:call-template name="newline"/>
-      <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+      <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
         <xsl:text>Solution type: </xsl:text>
-        <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'solution_type')"/>
+        <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'solution_type')"/>
         <xsl:call-template name="newline"/>
       </xsl:if>
       <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
+        <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'solution')"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
 
-    <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
       <xsl:text>Affected Software/OS:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'affected')"/>
+        <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'affected')"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
 
-    <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
       <xsl:text>Vulnerability Insight:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
+        <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'insight')"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
@@ -498,7 +498,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:choose>
     <xsl:call-template name="newline"/>
     <xsl:call-template name="wrap">
-      <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'vuldetect')"/>
+      <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'vuldetect')"/>
     </xsl:call-template>
     <xsl:text>Details:</xsl:text>
     <xsl:call-template name="newline"/>
