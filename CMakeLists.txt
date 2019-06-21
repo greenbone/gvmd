@@ -38,10 +38,6 @@ if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Debug)
 endif (NOT CMAKE_BUILD_TYPE)
 
-if (NOT BACKEND STREQUAL POSTGRESQL)
-  set (BACKEND SQLITE3)
-endif (NOT BACKEND STREQUAL POSTGRESQL)
-
 OPTION (ENABLE_COVERAGE "Enable support for coverage analysis" OFF)
 OPTION (DEBUG_FUNCTION_NAMES "Print function names on entry and exit" OFF)
 
@@ -160,15 +156,6 @@ endif (NOT DATADIR)
 if (NOT INCLUDEDIR)
   set (INCLUDEDIR "${CMAKE_INSTALL_PREFIX}/include")
 endif (NOT INCLUDEDIR)
-
-# The maximum number of seconds the SQLite backend will sleep
-# before retrying an SQL operation that is getting a busy response.
-#
-# 0 means to not sleep at all, and let the db/libsqlite do its own thing.
-#
-if (NOT DEFINED GVM_SQLITE_SLEEP_MAX)
-  set (GVM_SQLITE_SLEEP_MAX 0)
-endif (NOT DEFINED GVM_SQLITE_SLEEP_MAX)
 
 set (GVM_SYSCONF_DIR  "${SYSCONFDIR}/gvm")
 
@@ -599,13 +586,6 @@ install (FILES ${CMAKE_BINARY_DIR}/tools/gvm-migrate-to-postgres
          DESTINATION ${SBINDIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
-if (BACKEND STREQUAL SQLITE3)
-  install (FILES ${CMAKE_SOURCE_DIR}/tools/database-statistics-sqlite
-           DESTINATION ${SBINDIR}
-           PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
-                       GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-endif (BACKEND STREQUAL SQLITE3)
 
 install (FILES ${CMAKE_BINARY_DIR}/tools/gvm-manage-certs
          DESTINATION ${BINDIR}
