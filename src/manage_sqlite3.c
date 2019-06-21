@@ -4000,7 +4000,6 @@ create_tables ()
        "          (CASE WHEN"
        "           (((SELECT family FROM nvts WHERE oid = results.nvt)"
        "              IN (" LSC_FAMILY_LIST "))"
-       "            OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
        "            OR EXISTS"
        "              (SELECT id FROM nvts"
        "               WHERE oid = results.nvt"
@@ -4024,7 +4023,6 @@ create_tables ()
        "          (CASE WHEN"
        "            (((SELECT family FROM nvts WHERE oid = results.nvt)"
        "              IN (" LSC_FAMILY_LIST "))"
-       "             OR results.nvt = '0'" /* Open ports previously had 0 NVT.*/
        "             OR EXISTS"
        "             (SELECT id FROM nvts AS outer_nvts"
        "              WHERE oid = results.nvt"

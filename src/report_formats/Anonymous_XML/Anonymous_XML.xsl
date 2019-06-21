@@ -6,14 +6,14 @@
     xmlns:str="http://exslt.org/strings"
     xmlns:func="http://exslt.org/functions"
     xmlns:date="http://exslt.org/dates-and-times"
-    xmlns:openvas="http://openvas.org"
-    extension-element-prefixes="str date func openvas exslt">
+    xmlns:gvm="http://greenbone.net"
+    extension-element-prefixes="str date func gvm exslt">
   <xsl:output method="xml"
               indent="yes"
               encoding="UTF-8" />
 
 <!--
-Copyright (C) 2015-2018 Greenbone Networks GmbH
+Copyright (C) 2015-2019 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -46,7 +46,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:for-each>
   </xsl:variable>
 
-  <func:function name="openvas:host">
+  <func:function name="gvm:host">
     <xsl:param name="host"/>
     <xsl:for-each select="$hosts">
       <xsl:if test=". = $host">
@@ -55,7 +55,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:for-each>
   </func:function>
 
-  <func:function name="openvas:hostname">
+  <func:function name="gvm:hostname">
     <xsl:param name="hostname"/>
     <xsl:for-each select="exslt:node-set ($hostnames)">
       <xsl:if test=". = $hostname">
@@ -69,14 +69,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="host" >
     <xsl:copy>
-      <xsl:value-of select="openvas:host (text ())"/>
+      <xsl:value-of select="gvm:host (text ())"/>
       <xsl:apply-templates select="*|@*" />
     </xsl:copy>
   </xsl:template>
 
   <xsl:template match="host/detail[name = 'hostname']/value" >
     <xsl:copy>
-      <xsl:value-of select="openvas:hostname (text ())"/>
+      <xsl:value-of select="gvm:hostname (text ())"/>
     </xsl:copy>
   </xsl:template>
 
@@ -85,10 +85,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:for-each select="str:tokenize(text (), ',')">
         <xsl:choose>
           <xsl:when test="position() = 1">
-            <xsl:value-of select="openvas:host (.)"/>
+            <xsl:value-of select="gvm:host (.)"/>
           </xsl:when>
           <xsl:when test="position() = 2">
-            <xsl:value-of select="concat (',', openvas:hostname (.))"/>
+            <xsl:value-of select="concat (',', gvm:hostname (.))"/>
           </xsl:when>
           <xsl:otherwise>
             <xsl:value-of select="concat (',', .)"/>
@@ -100,13 +100,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="host/ip" >
     <xsl:copy>
-      <xsl:value-of select="openvas:host (text ())"/>
+      <xsl:value-of select="gvm:host (text ())"/>
     </xsl:copy>
   </xsl:template>
 
   <xsl:template match="host/hostname" >
     <xsl:copy>
-      <xsl:value-of select="openvas:hostname (text ())"/>
+      <xsl:value-of select="gvm:hostname (text ())"/>
     </xsl:copy>
   </xsl:template>
 
@@ -144,20 +144,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:when test="substring (., 1, 5) = 'host='">
             <xsl:choose>
               <xsl:when test="position() = 1">
-                <xsl:value-of select="concat ('host=', openvas:host (substring-after (., 'host=')))"/>
+                <xsl:value-of select="concat ('host=', gvm:host (substring-after (., 'host=')))"/>
               </xsl:when>
               <xsl:otherwise>
-                <xsl:value-of select="concat (' host=', openvas:host (substring-after (., 'host=')))"/>
+                <xsl:value-of select="concat (' host=', gvm:host (substring-after (., 'host=')))"/>
               </xsl:otherwise>
             </xsl:choose>
           </xsl:when>
           <xsl:when test="substring (., 1, 9) = 'hostname='">
             <xsl:choose>
               <xsl:when test="position() = 1">
-                <xsl:value-of select="concat ('hostname=', openvas:hostname (substring-after (., 'hostname=')))"/>
+                <xsl:value-of select="concat ('hostname=', gvm:hostname (substring-after (., 'hostname=')))"/>
               </xsl:when>
               <xsl:otherwise>
-                <xsl:value-of select="concat (' hostname=', openvas:hostname (substring-after (., 'hostname=')))"/>
+                <xsl:value-of select="concat (' hostname=', gvm:hostname (substring-after (., 'hostname=')))"/>
               </xsl:otherwise>
             </xsl:choose>
           </xsl:when>
@@ -178,13 +178,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="filters/keywords/keyword[column = 'host']/value" >
     <xsl:copy>
-      <xsl:value-of select="openvas:host (text ())"/>
+      <xsl:value-of select="gvm:host (text ())"/>
     </xsl:copy>
   </xsl:template>
 
   <xsl:template match="filters/keywords/keyword[column = 'hostname']/value" >
     <xsl:copy>
-      <xsl:value-of select="openvas:hostname (text ())"/>
+      <xsl:value-of select="gvm:hostname (text ())"/>
     </xsl:copy>
   </xsl:template>
 

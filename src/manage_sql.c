@@ -5197,7 +5197,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     {
       resource = 0;
     }
-  else if (get->id && owned && (current_credentials.uuid == NULL))
+  else if (get->id && (owned == 0 || (current_credentials.uuid == NULL)))
     {
       gchar *quoted_uuid = sql_quote (get->id);
       switch (sql_int64 (&resource,
@@ -28504,7 +28504,7 @@ static int
 report_vuln_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT nvt) FROM results"
-                  " WHERE report = %llu AND nvt != '0'"
+                  " WHERE report = %llu"
                   " AND severity != " G_STRINGIFY (SEVERITY_ERROR) ";",
                   report);
 }
@@ -31119,7 +31119,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (delta && get->details)
     {
       if (print_report_delta_xml (out, &results, &delta_results, delta_states,
-                                  first_result, max_results, task, notes,
+                                  ignore_pagination ? 1 : first_result,
+                                  ignore_pagination ? -1 : max_results,
+                                  task, notes,
                                   notes_details, overrides, overrides_details,
                                   sort_order, sort_field, result_hosts_only,
                                   &orig_filtered_result_count,
