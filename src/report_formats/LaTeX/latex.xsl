@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <!--
-Copyright (C) 2010-2018 Greenbone Networks GmbH
+Copyright (C) 2010-2019 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -30,13 +30,13 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:func = "http://exslt.org/functions"
     xmlns:str="http://exslt.org/strings"
-    xmlns:openvas="http://openvas.org"
+    xmlns:gvm="http://greenbone.net"
     xmlns:date="http://exslt.org/dates-and-times"
-    extension-element-prefixes="str func date openvas">
+    extension-element-prefixes="str func date gvm">
   <xsl:output method="text" encoding="string" indent="no"/>
   <xsl:strip-space elements="*"/>
 
-  <func:function name="openvas:timezone-abbrev">
+  <func:function name="gvm:timezone-abbrev">
     <xsl:choose>
       <xsl:when test="/report/@extension='xml'">
         <func:result select="/report/report/timezone_abbrev"/>
@@ -47,7 +47,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     </xsl:choose>
   </func:function>
 
-  <func:function name="openvas:get-nvt-tag">
+  <func:function name="gvm:get-nvt-tag">
     <xsl:param name="tags"/>
     <xsl:param name="name"/>
     <xsl:variable name="after">
@@ -63,7 +63,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     </xsl:choose>
   </func:function>
 
-  <func:function name="openvas:report">
+  <func:function name="gvm:report">
     <xsl:choose>
       <xsl:when test="count(/report/report) &gt; 0">
         <func:result select="/report/report"/>
@@ -77,14 +77,14 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <xsl:template match="scan_start" name="format-date">
     <xsl:param name="date" select="."/>
     <xsl:if test="string-length ($date)">
-      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', openvas:timezone-abbrev ())"/>
+      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', gvm:timezone-abbrev ())"/>
     </xsl:if>
   </xsl:template>
 
   <xsl:template match="scan_end">
     <xsl:param name="date" select="."/>
     <xsl:if test="string-length ($date)">
-      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', openvas:timezone-abbrev ())"/>
+      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', gvm:timezone-abbrev ())"/>
     </xsl:if>
   </xsl:template>
 
@@ -224,15 +224,15 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 \usepackage{hyperref}
 \definecolor{linkblue}{rgb}{0.11,0.56,1}
 \definecolor{inactive}{rgb}{0.56,0.56,0.56}
-\definecolor{openvas_debug}{rgb}{0.78,0.78,0.78}
-\definecolor{openvas_false_positive}{rgb}{0.2275,0.2275,0.2275}
-\definecolor{openvas_log}{rgb}{0.2275,0.2275,0.2275}
-\definecolor{openvas_hole}{rgb}{0.7960,0.1137,0.0902}
-\definecolor{openvas_note}{rgb}{0.3255,0.6157,0.7961}
-\definecolor{openvas_report}{rgb}{0.68,0.74,0.88}
-\definecolor{openvas_user_note}{rgb}{1.0,1.0,0.5625}
-\definecolor{openvas_user_override}{rgb}{1.0,1.0,0.5625}
-\definecolor{openvas_warning}{rgb}{0.9764,0.6235,0.1922}
+\definecolor{gvm_debug}{rgb}{0.78,0.78,0.78}
+\definecolor{gvm_false_positive}{rgb}{0.2275,0.2275,0.2275}
+\definecolor{gvm_log}{rgb}{0.2275,0.2275,0.2275}
+\definecolor{gvm_hole}{rgb}{0.7960,0.1137,0.0902}
+\definecolor{gvm_note}{rgb}{0.3255,0.6157,0.7961}
+\definecolor{gvm_report}{rgb}{0.68,0.74,0.88}
+\definecolor{gvm_user_note}{rgb}{1.0,1.0,0.5625}
+\definecolor{gvm_user_override}{rgb}{1.0,1.0,0.5625}
+\definecolor{gvm_warning}{rgb}{0.9764,0.6235,0.1922}
 \definecolor{chunk}{rgb}{0.9412,0.8275,1}
 \definecolor{line_new}{rgb}{0.89,1,0.89}
 \definecolor{line_gone}{rgb}{1.0,0.89,0.89}
@@ -245,7 +245,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 \setlength{\parindent}{0pt}
 </xsl:text>
 <xsl:choose>
-  <xsl:when test="openvas:report()/delta">
+  <xsl:when test="gvm:report()/delta">
     <xsl:text>\title{Delta Report}</xsl:text>
   </xsl:when>
   <xsl:otherwise>
@@ -477,27 +477,27 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <!-- The Abstract. -->
   <xsl:template name="abstract">
     <xsl:choose>
-      <xsl:when test="openvas:report()/delta and openvas:report()/report_format/param[name='summary']">
+      <xsl:when test="gvm:report()/delta and gvm:report()/report_format/param[name='summary']">
         <xsl:text>
 \renewcommand{\abstractname}{Delta Report Summary}
 \begin{abstract}
 </xsl:text>
-        <xsl:value-of select="openvas:report()/report_format/param[name='summary']/value"/>
+        <xsl:value-of select="gvm:report()/report_format/param[name='summary']/value"/>
         <xsl:text>
 \end{abstract}
 </xsl:text>
       </xsl:when>
-      <xsl:when test="openvas:report()/report_format/param[name='summary']">
+      <xsl:when test="gvm:report()/report_format/param[name='summary']">
         <xsl:text>
 \renewcommand{\abstractname}{Summary}
 \begin{abstract}
 </xsl:text>
-        <xsl:value-of select="openvas:report()/report_format/param[name='summary']/value"/>
+        <xsl:value-of select="gvm:report()/report_format/param[name='summary']/value"/>
         <xsl:text>
 \end{abstract}
 </xsl:text>
       </xsl:when>
-      <xsl:when test="openvas:report()/delta">
+      <xsl:when test="gvm:report()/delta">
         <xsl:text>
 \renewcommand{\abstractname}{Delta Report Summary}
 \begin{abstract}
@@ -744,21 +744,21 @@ advice given in each description, in order to rectify the issue.
     <xsl:call-template name="latex-hline"/>
     <xsl:call-template name="longtable-continue-block">
       <xsl:with-param name="number-of-columns">6</xsl:with-param>
-      <xsl:with-param name="header-color">openvas_report</xsl:with-param>
+      <xsl:with-param name="header-color">gvm_report</xsl:with-param>
       <xsl:with-param name="header-text">Host&amp;High&amp;Medium&amp;Low&amp;Log&amp;False Positive</xsl:with-param>
     </xsl:call-template>
     <xsl:for-each select="host"><xsl:call-template name="results-overview-table-single-host-row"/></xsl:for-each>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>Total: </xsl:text>
-    <xsl:value-of select="count(openvas:report()/host)"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
+    <xsl:value-of select="count(gvm:report()/host)"/>&amp;<xsl:value-of select="count(gvm:report()/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(gvm:report()/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(gvm:report()/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(gvm:report()/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(gvm:report()/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
 
     <xsl:choose>
-      <xsl:when test="openvas:report()/filters/keywords/keyword[column='autofp']/value='1'">
+      <xsl:when test="gvm:report()/filters/keywords/keyword[column='autofp']/value='1'">
         <xsl:text>Vendor security updates are trusted, using full CVE matching.</xsl:text>
       </xsl:when>
-      <xsl:when test="openvas:report()/filters/keywords/keyword[column='autofp']/value='2'">
+      <xsl:when test="gvm:report()/filters/keywords/keyword[column='autofp']/value='2'">
         <xsl:text>Vendor security updates are trusted, using partial CVE matching.</xsl:text>
       </xsl:when>
       <xsl:otherwise>
@@ -767,7 +767,7 @@ advice given in each description, in order to rectify the issue.
     </xsl:choose>
     <xsl:call-template name="latex-newline"/>
     <xsl:choose>
-      <xsl:when test="openvas:report()/filters/keywords/keyword[column='apply_overrides']/value='1'">
+      <xsl:when test="gvm:report()/filters/keywords/keyword[column='apply_overrides']/value='1'">
         <xsl:text>Overrides are on.  When a result has an override, this report uses the threat of the override.</xsl:text>
         <xsl:call-template name="latex-newline"/>
       </xsl:when>
@@ -777,7 +777,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="openvas:report()/filters/keywords/keyword[column='overrides']/value = 0">
+      <xsl:when test="gvm:report()/filters/keywords/keyword[column='overrides']/value = 0">
         <xsl:text>Information on overrides is excluded from the report.</xsl:text>
         <xsl:call-template name="latex-newline"/>
       </xsl:when>
@@ -787,7 +787,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="openvas:report()/filters/keywords/keyword[column='notes']/value = 0">
+      <xsl:when test="gvm:report()/filters/keywords/keyword[column='notes']/value = 0">
         <xsl:text>Notes are excluded from the report.</xsl:text>
         <xsl:call-template name="latex-newline"/>
       </xsl:when>
@@ -798,43 +798,43 @@ advice given in each description, in order to rectify the issue.
     </xsl:choose>
 
     <xsl:text>This report might not show details of all issues that were found.</xsl:text><xsl:call-template name="latex-newline"/>
-    <xsl:if test="openvas:report()/filters/keywords/keyword[column='result_hosts_only']/value = 1">
+    <xsl:if test="gvm:report()/filters/keywords/keyword[column='result_hosts_only']/value = 1">
       <xsl:text>It only lists hosts that produced issues.</xsl:text><xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="string-length(openvas:report()/filters/phrase) &gt; 0">
-      <xsl:text>It shows issues that contain the search phrase "</xsl:text><xsl:value-of select="openvas:report()/filters/phrase"/><xsl:text>".</xsl:text>
+    <xsl:if test="string-length(gvm:report()/filters/phrase) &gt; 0">
+      <xsl:text>It shows issues that contain the search phrase "</xsl:text><xsl:value-of select="gvm:report()/filters/phrase"/><xsl:text>".</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'h') = false">
+    <xsl:if test="contains(gvm:report()/filters/keywords/keyword[column='levels']/value, 'h') = false">
       <xsl:text>Issues with the threat level ``High'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'm') = false">
+    <xsl:if test="contains(gvm:report()/filters/keywords/keyword[column='levels']/value, 'm') = false">
       <xsl:text>Issues with the threat level ``Medium'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'l') = false">
+    <xsl:if test="contains(gvm:report()/filters/keywords/keyword[column='levels']/value, 'l') = false">
       <xsl:text>Issues with the threat level ``Low'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'g') = false">
+    <xsl:if test="contains(gvm:report()/filters/keywords/keyword[column='levels']/value, 'g') = false">
       <xsl:text>Issues with the threat level ``Log'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'd') = false">
+    <xsl:if test="contains(gvm:report()/filters/keywords/keyword[column='levels']/value, 'd') = false">
       <xsl:text>Issues with the threat level ``Debug'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(openvas:report()/filters/keywords/keyword[column='levels']/value, 'f') = false">
+    <xsl:if test="contains(gvm:report()/filters/keywords/keyword[column='levels']/value, 'f') = false">
       <xsl:text>Issues with the threat level ``False Positive'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:choose>
-      <xsl:when test="openvas:report()/filters/keywords/keyword[column='min_qod']/value = 0">
+      <xsl:when test="gvm:report()/filters/keywords/keyword[column='min_qod']/value = 0">
       </xsl:when>
-      <xsl:when test="string-length (openvas:report()/filters/keywords/keyword[column='min_qod']/value) > 0">
+      <xsl:when test="string-length (gvm:report()/filters/keywords/keyword[column='min_qod']/value) > 0">
         <xsl:text>Only results with a minimum QoD of </xsl:text>
-        <xsl:value-of select="openvas:report()/filters/keywords/keyword[column='min_qod']/value"/>
+        <xsl:value-of select="gvm:report()/filters/keywords/keyword[column='min_qod']/value"/>
         <xsl:text> are shown.</xsl:text>
         <xsl:call-template name="latex-newline"/>
       </xsl:when>
@@ -845,42 +845,42 @@ advice given in each description, in order to rectify the issue.
     </xsl:choose>
     <xsl:call-template name="latex-newline"/>
 
-    <xsl:variable name="last" select="openvas:report()/results/@start + count(openvas:report()/results/result) - 1"/>
+    <xsl:variable name="last" select="gvm:report()/results/@start + count(gvm:report()/results/result) - 1"/>
     <xsl:choose>
       <xsl:when test="$last = 0">
         <xsl:text>This report contains 0 results.</xsl:text>
       </xsl:when>
-      <xsl:when test="$last = openvas:report()/results/@start">
+      <xsl:when test="$last = gvm:report()/results/@start">
         <xsl:text>This report contains result </xsl:text>
         <xsl:value-of select="$last"/>
         <xsl:text> of the </xsl:text>
-        <xsl:value-of select="openvas:report()/result_count/filtered"/>
+        <xsl:value-of select="gvm:report()/result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:text> filtering above.</xsl:text>
       </xsl:when>
-      <xsl:when test="$last = openvas:report()/result_count/filtered">
+      <xsl:when test="$last = gvm:report()/result_count/filtered">
         <xsl:text>This report contains all </xsl:text>
-        <xsl:value-of select="openvas:report()/result_count/filtered"/>
+        <xsl:value-of select="gvm:report()/result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:text> filtering described above.</xsl:text>
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>This report contains results </xsl:text>
-        <xsl:value-of select="openvas:report()/results/@start"/>
+        <xsl:value-of select="gvm:report()/results/@start"/>
         <xsl:text> to </xsl:text>
         <xsl:value-of select="$last"/>
         <xsl:text> of the </xsl:text>
-        <xsl:value-of select="openvas:report()/result_count/filtered"/>
+        <xsl:value-of select="gvm:report()/result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:text> filtering described above.</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="openvas:report()/delta">
+      <xsl:when test="gvm:report()/delta">
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>  Before filtering there were </xsl:text>
-        <xsl:value-of select="openvas:report()/result_count/text()"/>
+        <xsl:value-of select="gvm:report()/result_count/text()"/>
         <xsl:text> results.</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
@@ -897,7 +897,7 @@ advice given in each description, in order to rectify the issue.
         <xsl:call-template name="latex-hline"/>
         <xsl:call-template name="longtable-continue-block">
           <xsl:with-param name="number-of-columns">4</xsl:with-param>
-          <xsl:with-param name="header-color">openvas_report</xsl:with-param>
+          <xsl:with-param name="header-color">gvm_report</xsl:with-param>
           <xsl:with-param name="header-text">Host&amp;Protocol&amp;Result&amp;Port/User</xsl:with-param>
         </xsl:call-template>
         <xsl:for-each select="host">
@@ -914,9 +914,9 @@ advice given in each description, in order to rectify the issue.
   <xsl:template name="single-host-overview-table-row">
     <xsl:param name="threat"/>
     <xsl:param name="host"/>
-    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
+    <xsl:for-each select="gvm:report()/ports/port[host/text()=$host]">
       <xsl:variable name="port_service" select="text()"/>
-        <xsl:if test="openvas:report()/results/result[host/text()=$host][threat/text()=$threat][port=$port_service]">
+        <xsl:if test="gvm:report()/results/result[host/text()=$host][threat/text()=$threat][port=$port_service]">
           <xsl:call-template name="latex-hyperref">
             <xsl:with-param name="target" select="concat('port:', $host, ' ', $port_service, ' ', $threat)"/>
             <xsl:with-param name="text" select="$port_service"/>
@@ -934,7 +934,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:call-template name="latex-hline"/>
     <xsl:call-template name="longtable-continue-block">
       <xsl:with-param name="number-of-columns">2</xsl:with-param>
-      <xsl:with-param name="header-color">openvas_report</xsl:with-param>
+      <xsl:with-param name="header-color">gvm_report</xsl:with-param>
       <xsl:with-param name="header-text">Service (Port)&amp;Threat Level</xsl:with-param>
     </xsl:call-template>
     <xsl:call-template name="single-host-overview-table-row">
@@ -964,14 +964,14 @@ advice given in each description, in order to rectify the issue.
   <xsl:template name="results-per-host-single-host-closed-cves">
     <xsl:variable name="cves" select="str:split(detail[name = 'Closed CVEs']/value, ',')"/>
     <xsl:choose>
-      <xsl:when test="openvas:report()/@type = 'delta'">
+      <xsl:when test="gvm:report()/@type = 'delta'">
       </xsl:when>
-      <xsl:when test="openvas:report()/filters/keywords/keyword[column='show_closed_cves']/value = 1">
+      <xsl:when test="gvm:report()/filters/keywords/keyword[column='show_closed_cves']/value = 1">
         <xsl:text>\begin{longtable}{|l|l|}</xsl:text><xsl:call-template name="newline"/>
         <xsl:call-template name="latex-hline"/>
         <xsl:call-template name="longtable-continue-block">
           <xsl:with-param name="number-of-columns">2</xsl:with-param>
-          <xsl:with-param name="header-color">openvas_report</xsl:with-param>
+          <xsl:with-param name="header-color">gvm_report</xsl:with-param>
           <xsl:with-param name="header-text">Closed CVE&amp;NVT</xsl:with-param>
         </xsl:call-template>
         <xsl:variable name="host" select="."/>
@@ -994,11 +994,11 @@ advice given in each description, in order to rectify the issue.
   <xsl:template name="threat-to-color">
     <xsl:param name="threat"/>
     <xsl:choose>
-      <xsl:when test="threat='High'">openvas_hole</xsl:when>
-      <xsl:when test="threat='Medium'">openvas_warning</xsl:when>
-      <xsl:when test="threat='Low'">openvas_note</xsl:when>
-      <xsl:when test="threat='Log'">openvas_log</xsl:when>
-      <xsl:when test="threat='False Positive'">openvas_log</xsl:when>
+      <xsl:when test="threat='High'">gvm_hole</xsl:when>
+      <xsl:when test="threat='Medium'">gvm_warning</xsl:when>
+      <xsl:when test="threat='Low'">gvm_note</xsl:when>
+      <xsl:when test="threat='Log'">gvm_log</xsl:when>
+      <xsl:when test="threat='False Positive'">gvm_log</xsl:when>
     </xsl:choose>
   </xsl:template>
 
@@ -1039,19 +1039,19 @@ advice given in each description, in order to rectify the issue.
     </xsl:if>
     <xsl:for-each select="notes/note [not (active='0')]">
       <xsl:call-template name="latex-newline"/>
-      <xsl:text>\rowcolor{openvas_user_note}{\textbf{Note}</xsl:text>
+      <xsl:text>\rowcolor{gvm_user_note}{\textbf{Note}</xsl:text>
       <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
       <xsl:text>}</xsl:text>\\<xsl:call-template name="latex-newline"/>
       <xsl:call-template name="text-to-escaped-row-color">
-        <xsl:with-param name="color" select="'openvas_user_note'"/>
+        <xsl:with-param name="color" select="'gvm_user_note'"/>
         <xsl:with-param name="string" select="text"/>
       </xsl:call-template>
-      <xsl:text>\rowcolor{openvas_user_note}{}</xsl:text><xsl:call-template name="latex-newline"/>
+      <xsl:text>\rowcolor{gvm_user_note}{}</xsl:text><xsl:call-template name="latex-newline"/>
       <xsl:choose>
         <xsl:when test="active='0'">
         </xsl:when>
         <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-          <xsl:text>\rowcolor{openvas_user_note}{Active until: </xsl:text>
+          <xsl:text>\rowcolor{gvm_user_note}{Active until: </xsl:text>
           <xsl:call-template name="format-date">
             <xsl:with-param name="date" select="end_time"/>
           </xsl:call-template>
@@ -1060,7 +1060,7 @@ advice given in each description, in order to rectify the issue.
         <xsl:otherwise>
         </xsl:otherwise>
       </xsl:choose>
-      <xsl:text>\rowcolor{openvas_user_note}{Last modified: </xsl:text>
+      <xsl:text>\rowcolor{gvm_user_note}{Last modified: </xsl:text>
       <xsl:call-template name="format-date">
         <xsl:with-param name="date" select="modification_time"/>
       </xsl:call-template>
@@ -1071,14 +1071,14 @@ advice given in each description, in order to rectify the issue.
   <!-- Text of an override. -->
   <xsl:template name="overrides">
     <xsl:param name="delta">0</xsl:param>
-    <xsl:if test="openvas:report()/filters/apply_overrides/text()='1'">
+    <xsl:if test="gvm:report()/filters/apply_overrides/text()='1'">
       <xsl:if test="count(overrides/override [not (active='0')]) &gt; 0">
         <xsl:call-template name="latex-hline"/>
         <xsl:call-template name="latex-newline"/>
       </xsl:if>
       <xsl:for-each select="overrides/override [not (active='0')]">
         <xsl:call-template name="latex-newline"/>
-        <xsl:text>\rowcolor{openvas_user_override}{\textbf{Override from </xsl:text>
+        <xsl:text>\rowcolor{gvm_user_override}{\textbf{Override from </xsl:text>
         <xsl:choose>
           <xsl:when test="string-length(threat) = 0">
             <xsl:text>Any</xsl:text>
@@ -1092,15 +1092,15 @@ advice given in each description, in order to rectify the issue.
         <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
         <xsl:text>}</xsl:text>\\<xsl:call-template name="latex-newline"/>
         <xsl:call-template name="text-to-escaped-row-color">
-          <xsl:with-param name="color" select="'openvas_user_override'"/>
+          <xsl:with-param name="color" select="'gvm_user_override'"/>
           <xsl:with-param name="string" select="text"/>
         </xsl:call-template>
-        <xsl:text>\rowcolor{openvas_user_override}{}</xsl:text><xsl:call-template name="latex-newline"/>
+        <xsl:text>\rowcolor{gvm_user_override}{}</xsl:text><xsl:call-template name="latex-newline"/>
         <xsl:choose>
           <xsl:when test="active='0'">
           </xsl:when>
           <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-            <xsl:text>\rowcolor{openvas_user_override}{Active until: </xsl:text>
+            <xsl:text>\rowcolor{gvm_user_override}{Active until: </xsl:text>
             <xsl:call-template name="format-date">
               <xsl:with-param name="date" select="end_time"/>
             </xsl:call-template>
@@ -1109,7 +1109,7 @@ advice given in each description, in order to rectify the issue.
           <xsl:otherwise>
           </xsl:otherwise>
         </xsl:choose>
-        <xsl:text>\rowcolor{openvas_user_override}{Last modified: </xsl:text>
+        <xsl:text>\rowcolor{gvm_user_override}{Last modified: </xsl:text>
         <xsl:call-template name="format-date">
           <xsl:with-param name="date" select="modification_time"/>
         </xsl:call-template>
@@ -1125,11 +1125,11 @@ advice given in each description, in order to rectify the issue.
     <xsl:param name="host"/>
     <xsl:param name="port_service"/>
     <xsl:param name="threat"/>
-    <xsl:if test="openvas:report()/results/result[host/text()=$host][threat/text()=$threat][port=$port_service]">
+    <xsl:if test="gvm:report()/results/result[host/text()=$host][threat/text()=$threat][port=$port_service]">
       <xsl:call-template name="latex-subsubsection"><xsl:with-param name="subsubsection_string" select="concat ($threat, ' ', $port_service)"/></xsl:call-template>
       <xsl:call-template name="latex-label"><xsl:with-param name="label_string" select="concat('port:', $host, ' ', $port_service, ' ', $threat)"/></xsl:call-template>
       <xsl:call-template name="newline"/>
-      <xsl:for-each select="openvas:report()/results/result[host/text()=$host][threat/text()=$threat][port=$port_service]">
+      <xsl:for-each select="gvm:report()/results/result[host/text()=$host][threat/text()=$threat][port=$port_service]">
         <xsl:text>\begin{longtable}{|p{\textwidth * 1}|}</xsl:text><xsl:call-template name="newline"/>
         <xsl:call-template name="latex-hline"/>
         <xsl:text>\rowcolor{</xsl:text>
@@ -1211,12 +1211,12 @@ advice given in each description, in order to rectify the issue.
         </xsl:if>
 
         <!-- Summary -->
-        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
+        <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Summary}</xsl:text>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
+            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'summary')"/>
           </xsl:call-template>
         </xsl:if>
 
@@ -1244,48 +1244,48 @@ advice given in each description, in order to rectify the issue.
           </xsl:otherwise>
         </xsl:choose>
 
-        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+        <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Impact}</xsl:text>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
+            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'impact')"/>
           </xsl:call-template>
         </xsl:if>
 
-        <xsl:if test="(string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0)">
+        <xsl:if test="(string-length (gvm:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0)">
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Solution}</xsl:text>
           <xsl:call-template name="latex-newline"/>
-          <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+          <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
             \textbf{Solution type:}
-            <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'solution_type')"/>
+            <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'solution_type')"/>
             <xsl:call-template name="latex-newline"/>
           </xsl:if>
           <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
+            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'solution')"/>
           </xsl:call-template>
         </xsl:if>
 
-        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+        <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Affected Software/OS}</xsl:text>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'affected')"/>
+            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'affected')"/>
           </xsl:call-template>
         </xsl:if>
 
-        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+        <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Vulnerability Insight}</xsl:text>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
+            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'insight')"/>
           </xsl:call-template>
         </xsl:if>
 
@@ -1301,7 +1301,7 @@ advice given in each description, in order to rectify the issue.
         </xsl:choose>
         <xsl:call-template name="latex-newline"/>
         <xsl:call-template name="structured-text">
-          <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'vuldetect')"/>
+          <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'vuldetect')"/>
         </xsl:call-template>
 
         <xsl:text>Details:</xsl:text><xsl:call-template name="newline"/>
@@ -1427,7 +1427,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:param name="host"/>
 
     <!-- TODO Solve other sorting possibilities. -->
-    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
+    <xsl:for-each select="gvm:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">High</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1435,7 +1435,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
+    <xsl:for-each select="gvm:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Medium</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1443,7 +1443,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
+    <xsl:for-each select="gvm:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Low</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1451,7 +1451,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
+    <xsl:for-each select="gvm:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Log</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1459,7 +1459,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
+    <xsl:for-each select="gvm:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Debug</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
@@ -1467,7 +1467,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="openvas:report()/ports/port[host/text()=$host]">
+    <xsl:for-each select="gvm:report()/ports/port[host/text()=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">False Positive</xsl:with-param>
         <xsl:with-param name="host" select="$host"/>
