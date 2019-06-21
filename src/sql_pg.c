@@ -619,31 +619,6 @@ sql_explain_internal (const char* sql, va_list args)
 /* Transactions. */
 
 /**
- * @brief Begin an exclusive transaction.
- */
-void
-sql_begin_exclusive ()
-{
-  /* No longer used under Postgres. */
-  assert (0);
-  abort ();
-}
-
-/**
- * @brief Begin an exclusive transaction, giving up on failure.
- *
- * @return 0 got lock, 1 gave up, -1 error.
- */
-int
-sql_begin_exclusive_giveup ()
-{
-  /* No longer used under Postgres. */
-  assert (0);
-  abort ();
-  return -1;
-}
-
-/**
  * @brief Begin an immediate transaction.
  */
 void

@@ -19453,16 +19453,11 @@ set_task_requested (task_t task, task_status_t *status)
 
   /* Locking here prevents another process from starting the task
    * concurrently. */
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
+  sql_begin_immediate ();
+  if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
     {
-      sql_begin_immediate ();
-      if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
-        {
-          sql_rollback ();
-          return 1;
-        }
+      sql_rollback ();
+      return 1;
     }
 
   run_status = task_run_status (task);
@@ -20603,22 +20598,14 @@ auto_delete_reports ()
 
   g_debug ("%s", __FUNCTION__);
 
-  if (sql_is_sqlite3 ())
-    {
-      if (sql_begin_exclusive_giveup ())
-        return;
-    }
-  else
-    {
-      sql_begin_immediate ();
+  sql_begin_immediate ();
 
-      /* As in delete_report, this prevents other processes from getting the
-       * report ID. */
-      if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
-        {
-          sql_rollback ();
-          return;
-        }
+  /* As in delete_report, this prevents other processes from getting the
+   * report ID. */
+  if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
+    {
+      sql_rollback ();
+      return;
     }
 
   init_iterator (&tasks,
@@ -20791,9 +20778,8 @@ result_nvt_notice (const gchar *nvt)
 {
   if (nvt == NULL)
     return;
-  if (sql_is_sqlite3 ()
-      || (sql_int ("SELECT current_setting ('server_version_num')::integer;")
-          < 90500))
+  if (sql_int ("SELECT current_setting ('server_version_num')::integer;")
+          < 90500)
     sql ("INSERT into result_nvts (nvt)"
          " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts"
          "                               WHERE nvt = '%s');",
@@ -26904,20 +26890,15 @@ delete_report (const char *report_id, int dummy)
   report_t report;
   int ret;
 
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
-    {
-      sql_begin_immediate ();
+  sql_begin_immediate ();
 
-      /* This prevents other processes (in particular a RESUME_TASK) from getting
-       * a reference to the report ID, and then using that reference to try access
-       * the deleted report.
-       *
-       * If the report is running already then delete_report_internal will
-       * ROLLBACK. */
-      sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
-    }
+  /* This prevents other processes (in particular a RESUME_TASK) from getting
+   * a reference to the report ID, and then using that reference to try access
+   * the deleted report.
+   *
+   * If the report is running already then delete_report_internal will
+   * ROLLBACK. */
+  sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
 
   if (acl_user_may ("delete_report") == 0)
     {
@@ -33220,10 +33201,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
   g_debug ("   request delete task %s", task_id);
 
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
-    sql_begin_immediate ();
+  sql_begin_immediate ();
 
   if (acl_user_may ("delete_task") == 0)
     {
@@ -33287,8 +33265,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         {
           int ret;
 
-          if (ultimate
-              && (sql_is_sqlite3 () == 0))
+          if (ultimate)
             /* This prevents other processes (for example a START_TASK) from
              * getting a reference to a report ID or the task ID, and then using
              * that reference to try access the deleted report or task.
@@ -33451,23 +33428,18 @@ delete_task_lock (task_t task, int ultimate)
 
   g_debug ("   delete task %llu", task);
 
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
-    {
-      sql_begin_immediate ();
+  sql_begin_immediate ();
 
-      /* This prevents other processes (for example a START_TASK) from getting
-       * a reference to a report ID or the task ID, and then using that
-       * reference to try access the deleted report or task.
-       *
-       * If the task is already active then delete_report (via delete_task)
-       * will fail and rollback. */
-      if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
-        {
-          sql_rollback ();
-          return -1;
-        }
+  /* This prevents other processes (for example a START_TASK) from getting
+   * a reference to a report ID or the task ID, and then using that
+   * reference to try access the deleted report or task.
+   *
+   * If the task is already active then delete_report (via delete_task)
+   * will fail and rollback. */
+  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+    {
+      sql_rollback ();
+      return -1;
     }
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
