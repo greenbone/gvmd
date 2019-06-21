@@ -4226,7 +4226,8 @@ target_osp_ssh_credential (target_t target)
   if (credential)
     {
       iterator_t iter;
-      const char *type, *ssh_port;
+      const char *type;
+      char *ssh_port;
       osp_credential_t *osp_credential;
 
       init_credential_iterator_one (&iter, credential);
@@ -4245,8 +4246,9 @@ target_osp_ssh_credential (target_t target)
           return NULL;
         }
 
-      ssh_port = target_iterator_ssh_port (&iter);
+      ssh_port = target_ssh_port (target);
       osp_credential = osp_credential_new (type, "ssh", ssh_port);
+      free (ssh_port);
       osp_credential_set_auth_data (osp_credential,
                                     "username",
                                     credential_iterator_login (&iter));
