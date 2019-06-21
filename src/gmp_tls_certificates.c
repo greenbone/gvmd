@@ -261,8 +261,8 @@ create_tls_certificate_reset ()
  */
 void
 create_tls_certificate_start (gmp_parser_t *gmp_parser,
-                     const gchar **attribute_names,
-                     const gchar **attribute_values)
+                              const gchar **attribute_names,
+                              const gchar **attribute_values)
 {
   memset (&create_tls_certificate_data, 0, sizeof (create_tls_certificate_t));
   create_tls_certificate_data.context = g_malloc0 (sizeof (context_data_t));
@@ -279,12 +279,13 @@ create_tls_certificate_start (gmp_parser_t *gmp_parser,
  * @param[in]  attribute_values  All attribute values.
  */
 void
-create_tls_certificate_element_start (gmp_parser_t *gmp_parser, const gchar *name,
-                             const gchar **attribute_names,
-                             const gchar **attribute_values)
+create_tls_certificate_element_start (gmp_parser_t *gmp_parser,
+                                      const gchar *name,
+                                      const gchar **attribute_names,
+                                      const gchar **attribute_values)
 {
-  xml_handle_start_element (create_tls_certificate_data.context, name, attribute_names,
-                            attribute_values);
+  xml_handle_start_element (create_tls_certificate_data.context, name,
+                            attribute_names, attribute_values);
 }
 
 /**
@@ -398,7 +399,7 @@ create_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   switch (create_tls_certificate
-                (name ? entity_text (comment) : NULL,
+                (name ? entity_text (name) : NULL,
                  comment ? entity_text (comment) : "",
                  certificate ? entity_text (certificate) : NULL,
                  trust_int,
@@ -593,7 +594,7 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
       log_event_fail ("tls_certificate",
                       "TLS Certificate",
                       NULL,
-                      "created");
+                      "modified");
       return;
     }
 

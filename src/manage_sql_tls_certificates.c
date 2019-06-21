@@ -580,7 +580,7 @@ delete_tls_certificate (const char *tls_certificate_id, int ultimate)
       return 0;
     }
 
-  /* Ticket was found in regular table. */
+  /* TLS certificate was found in regular table. */
 
   if (ultimate == 0)
     {
@@ -713,13 +713,13 @@ empty_trashcan_tls_certificates ()
        LOCATION_TRASH,
        current_credentials.uuid);
 
-  sql ("DELETE FROM tickets_trash"
+  sql ("DELETE FROM tls_certifcates_trash"
        " WHERE owner = (SELECT id FROM users WHERE uuid = '%s');",
        current_credentials.uuid);
 }
 
 /**
- * @brief Delete all TLS certificate owner by a user.
+ * @brief Delete all TLS certificate owned by a user.
  *
  * Also delete trash TLS certificates.
  *
@@ -753,7 +753,7 @@ inherit_tls_certificates (user_t user, user_t inheritor)
   sql ("UPDATE tls_certificate SET owner = %llu WHERE owner = %llu;",
        inheritor, user);
 
-  /* Trash tickets. */
+  /* Trash TLS certificates. */
 
   sql ("UPDATE tls_certificate_trash SET owner = %llu WHERE owner = %llu;",
        inheritor, user);
