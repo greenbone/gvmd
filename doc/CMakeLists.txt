@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2018 Greenbone Networks GmbH
+# Copyright (C) 2009-2019 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -108,8 +108,7 @@ endif (NOT XSLTPROC_EXECUTABLE)
 if (XMLTOMAN_EXECUTABLE)
   add_custom_target (man COMMENT "Building manual page..."
     DEPENDS gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
-	        database-statistics-sqlite.8 gvm-migrate-to-postgres.8
-			gvm-portnames-update.8)
+            gvm-migrate-to-postgres.8 gvm-portnames-update.8)
 
   add_custom_command (OUTPUT gvmd.8
 					  COMMAND sh
@@ -125,11 +124,6 @@ if (XMLTOMAN_EXECUTABLE)
 					  COMMAND sh
 					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/greenbone-scapdata-sync.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/greenbone-scapdata-sync.8\;\"
 					  DEPENDS greenbone-scapdata-sync.8.xml)
-
-  add_custom_command (OUTPUT database-statistics-sqlite.8
-					  COMMAND sh
-					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/database-statistics-sqlite.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/database-statistics-sqlite.8\;\"
-					  DEPENDS database-statistics-sqlite.8.xml)
 
   add_custom_command (OUTPUT gvm-migrate-to-postgres.8
 					  COMMAND sh
@@ -151,9 +145,6 @@ else (XMLTOMAN_EXECUTABLE)
   add_custom_command (OUTPUT greenbone-scapdata-sync.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
 					          > greenbone-scapdata-sync.8)
-  add_custom_command (OUTPUT database-statistics-sqlite.8
-                      COMMAND echo "[Error: xmltoman required to see manpage here]"
-					          > database-statistics-sqlite.8)
   add_custom_command (OUTPUT gvm-migrate-to-postgres.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
 					          > gvm-migrate-to-postgres.8)
@@ -186,7 +177,6 @@ if (XSLTPROC_EXECUTABLE)
 endif (XSLTPROC_EXECUTABLE)
 
 install (FILES gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
-               database-statistics-sqlite.8 gvm-migrate-to-postgres.8
-			   gvm-portnames-update.8
+               gvm-migrate-to-postgres.8 gvm-portnames-update.8
   DESTINATION share/man/man8/
   COMPONENT doc)
