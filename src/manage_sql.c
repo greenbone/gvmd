@@ -5197,7 +5197,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     {
       resource = 0;
     }
-  else if (get->id && owned && (current_credentials.uuid == NULL))
+  else if (get->id && (owned == 0 || (current_credentials.uuid == NULL)))
     {
       gchar *quoted_uuid = sql_quote (get->id);
       switch (sql_int64 (&resource,
