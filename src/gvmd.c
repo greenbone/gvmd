@@ -1597,7 +1597,7 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
 int
-main (int argc, char** argv)
+gvmd (int argc, char** argv)
 {
   /* Process options. */
 
@@ -2495,6 +2495,13 @@ main (int argc, char** argv)
     }
 
   /* Run the standard manager. */
+
+  if (osp_vt_update == NULL)
+    {
+      g_critical ("%s: --osp-vt-update required for now",
+                  __FUNCTION__);
+      return EXIT_FAILURE;
+    }
 
   if (lockfile_locked ("gvm-helping"))
     {

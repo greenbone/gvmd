@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2018 Greenbone Networks GmbH
+/* Copyright (C) 2014-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -2861,8 +2861,6 @@ create_tables ()
        "  name text,"
        "  comment text,"
        "  cve text,"
-       "  bid text,"
-       "  xref text,"
        "  tag text,"
        "  category text,"
        "  family text,"
@@ -3095,7 +3093,6 @@ create_tables ()
        "          (CASE WHEN"
        "           (((SELECT family FROM nvts WHERE oid = results.nvt)"
        "             IN (" LSC_FAMILY_LIST "))"
-       "            OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
        "            OR EXISTS"
        "              (SELECT id FROM nvts"
        "               WHERE oid = results.nvt"
@@ -3121,7 +3118,6 @@ create_tables ()
        "          (CASE WHEN"
        "            (((SELECT family FROM nvts WHERE oid = results.nvt)"
        "              IN (" LSC_FAMILY_LIST "))"
-       "             OR results.nvt = '0'" /* Open ports previously had 0 NVT.*/
        "             OR EXISTS"
        "             (SELECT id FROM nvts AS outer_nvts"
        "              WHERE oid = results.nvt"

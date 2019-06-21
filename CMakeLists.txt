@@ -117,7 +117,7 @@ include (CPack)
 
 ## Variables
 
-set (GVMD_DATABASE_VERSION 209)
+set (GVMD_DATABASE_VERSION 211)
 
 set (GVMD_SCAP_DATABASE_VERSION 15)
 
@@ -289,6 +289,10 @@ endif (NOT SKIP_SRC)
 ## Documentation
 
 add_subdirectory (doc)
+
+## Testing
+
+enable_testing ()
 
 ## Install
 

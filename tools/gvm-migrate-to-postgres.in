@@ -1038,6 +1038,13 @@ cleanup_sqlite_db () {
   # table lying around.
   sqlite "DROP TABLE IF EXISTS escalator_condition_data_trash;"
   test_sql_exit "Failed to remove escalator_condition_data_trash"
+
+  HAVE_CACHE=`sqlite "SELECT EXISTS (SELECT FROM sqlite_master WHERE type='table' AND name='permissions_get_tasks');"`
+  if [ "$HAVE_CACHE" != "0" ]
+  then
+    sqlite "UPDATE permissions_get_tasks SET has_permission = 1 WHERE has_permission != '0';"
+    test_sql_exit "Failed to clean permission_get_tasks"
+  fi
 }
 
 # Replace the value of a column if the cast does not work
@@ -1107,9 +1114,9 @@ clean_fkey_columns () {
 
 copy_data () {
 
-  if [ $# -ne 1 ]
+  if [ $# -ne 1 -a $# -ne 2 ]
   then
-    log_notice "Internal Error: copy_data must have an arg"
+    log_notice "Internal Error: copy_data must have one or two args"
     exit 1
   fi
 
@@ -1130,7 +1137,7 @@ copy_data () {
   test_sql_exit "Failed get table list"
   log_debug "SQLITE_TABLES: $SQLITE_TABLES"
 
-  echo $SQLITE_TABLES | tr -s ' ' '\n' | sort - | grep --invert-match "^\(nvt_cves\|nvts\|report_counts\|auth_cache\)" > $TEMP_DIR/sqlite_tables_sorted
+  echo $SQLITE_TABLES | tr -s ' ' '\n' | sort - | grep --invert-match "^\(nvt_cves\|nvts\|report_counts\|result_nvts\|auth_cache\)" > $TEMP_DIR/sqlite_tables_sorted
   echo $TABLES | tr -s ' ' '\n' | sort - | diff - $TEMP_DIR/sqlite_tables_sorted
   if [ $? -ne 0 ]
   then
@@ -1147,7 +1154,7 @@ copy_data () {
     # database.
     #
     log_info "Copying SQLite3 data: copying table $TABLE"
-    COLS=`pg "SELECT string_agg ('\"' || column_name || '\"', ',') from (select column_name from information_schema.columns where table_schema = 'public' and table_name = '$TABLE' order by ordinal_position) as sub;"`
+    COLS=`pg "SELECT string_agg ('\"' || column_name || '\"', ',') FROM (SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '$TABLE' AND column_name != 'orphaned_time' order by ordinal_position) as sub;"`
     log_debug "COLS: $COLS"
     # Pipe SQLite CSV output into Postgres COPY FROM.
     $SQLITE3 -csv $SQLITE_DB "SELECT $COLS FROM $TABLE;" | pg "COPY $TABLE ($COLS) FROM STDIN DELIMITER ',' CSV";
@@ -1186,6 +1193,16 @@ copy_data () {
   test_sql_exit "Could not generate reset SQL"
   $PSQL -f $TEMP_DIR/reset.sql | sed '/^\s*$/d'
   test_sql_exit "Could not run reset SQL"
+
+  if [ $# -eq 2 ]
+  then
+    # Some of the dev's SQLite databases have errors in result_nvts, so fill it by hand.
+    $SQLITE3 -csv $SQLITE_DB "SELECT distinct nvt FROM results WHERE nvt != '' AND nvt IS NOT NULL;" | pg "COPY result_nvts (nvt) FROM STDIN DELIMITER ',' CSV";
+    # Reset result_nvt references.
+    pg "UPDATE results SET result_nvt = (SELECT id FROM result_nvts WHERE result_nvts.nvt = results.nvt);"
+    pg "UPDATE overrides SET result_nvt = (SELECT id FROM result_nvts WHERE result_nvts.nvt = overrides.nvt);"
+    pg "UPDATE overrides_trash SET result_nvt = (SELECT id FROM result_nvts WHERE result_nvts.nvt = overrides_trash.nvt);"
+  fi
 
   rm -rf $TEMP_DIR
 }
@@ -1687,7 +1704,7 @@ TABLES_186=$TABLES_185
 
 migrate_186_to_187 () {
   pg "ALTER TABLE alerts ADD COLUMN active INTEGER;"
-   pg "ALTER TABLE alerts_trash ADD COLUMN active INTEGER;"
+  pg "ALTER TABLE alerts_trash ADD COLUMN active INTEGER;"
 }
 
 TABLES_187=$TABLES_186
@@ -1699,6 +1716,260 @@ migrate_187_to_188 () {
 
 TABLES_188=$TABLES_187
 
+migrate_188_to_189 () {
+  pg "CREATE TABLE result_nvts (id SERIAL PRIMARY KEY,
+                                nvt text UNIQUE NOT NULL);"
+
+  pg "ALTER TABLE results ADD COLUMN result_nvt INTEGER;"
+  pg "ALTER TABLE overrides ADD COLUMN result_nvt integer;"
+  pg "ALTER TABLE overrides_trash ADD COLUMN result_nvt integer;"
+}
+
+# result_nvts not aded here as it is filled by hand after copying the data.
+TABLES_189=$TABLES_188
+
+migrate_189_to_190 () {
+  pg "CREATE TABLE result_nvt_reports (result_nvt INTEGER, report INTEGER);"
+}
+
+TABLES_190="$TABLES_189 result_nvt_reports"
+
+migrate_190_to_191 () {
+  pg "ALTER TABLE schedules ADD COLUMN icalendar text;"
+  pg "ALTER TABLE schedules_trash ADD COLUMN icalendar text;"
+}
+
+TABLES_191=$TABLES_190
+
+migrate_191_to_192 () {
+  : # Schema stayed the same.
+}
+
+TABLES_192=$TABLES_191
+
+migrate_192_to_193 () {
+  pg "CREATE TABLE IF NOT EXISTS tag_resources
+       (tag integer REFERENCES tags (id),
+        resource_type text,
+        resource integer,
+        resource_uuid text,
+        resource_location integer);"
+
+  pg "CREATE TABLE IF NOT EXISTS tag_resources_trash
+       (tag integer REFERENCES tags_trash (id),
+        resource_type text,
+        resource integer,
+        resource_uuid text,
+        resource_location integer);"
+
+  pg "ALTER TABLE tags DROP COLUMN resource;"
+  pg "ALTER TABLE tags DROP COLUMN resource_uuid;"
+  pg "ALTER TABLE tags DROP COLUMN resource_location;"
+
+  pg "ALTER TABLE tags_trash DROP COLUMN resource;"
+  pg "ALTER TABLE tags_trash DROP COLUMN resource_uuid;"
+  pg "ALTER TABLE tags_trash DROP COLUMN resource_location;"
+}
+
+TABLES_193="$TABLES_192 tag_resources tag_resources_trash"
+
+migrate_193_to_194 () {
+ pg "ALTER TABLE nvts DROP COLUMN version;"
+}
+
+TABLES_194=$TABLES_193
+
+migrate_194_to_195 () {
+  pg "ALTER TABLE results ADD COLUMN hostname TEXT;"
+}
+
+TABLES_195=$TABLES_194
+
+migrate_195_to_196 () {
+  pg "CREATE TABLE IF NOT EXISTS results_trash
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+        host text,
+        port text,
+        nvt text,
+        result_nvt integer,
+        type text,
+        description text,
+        report integer REFERENCES reports (id) ON DELETE RESTRICT,
+        nvt_version text,
+        severity real,
+        qod integer,
+        qod_type text,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        date integer,
+        hostname text);"
+}
+
+TABLES_196="$TABLES_195 results_trash"
+
+migrate_196_to_197 () {
+  pg "ALTER TABLE reports DROP COLUMN hidden;"
+}
+
+TABLES_197=$TABLES_196
+
+migrate_197_to_198 () {
+  pg "ALTER TABLE nvts DROP COLUMN copyright;"
+}
+
+TABLES_198=$TABLES_197
+
+migrate_198_to_199 () {
+  : # Schema stayed the same.
+}
+
+TABLES_199=$TABLES_198
+
+migrate_199_to_200 () {
+  : # Schema stayed the same.
+}
+
+TABLES_200=$TABLES_199
+
+migrate_200_to_201 () {
+  : # Schema stayed the same.
+}
+
+TABLES_201=$TABLES_200
+
+migrate_201_to_202 () {
+  pg "CREATE TABLE IF NOT EXISTS tickets
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        nvt text,
+        task integer,
+        report integer,
+        severity real,
+        host text,
+        location text,
+        solution_type text,
+        assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,
+        status integer,
+        open_time integer,
+        solved_time integer,
+        solved_comment text,
+        confirmed_time integer,
+        confirmed_report integer,
+        closed_time integer,
+        closed_comment text,
+        orphaned_time integer,
+        creation_time integer,
+        modification_time integer);"
+
+  pg "CREATE TABLE IF NOT EXISTS ticket_results
+       (id SERIAL PRIMARY KEY,
+        ticket integer REFERENCES tickets (id) ON DELETE RESTRICT,
+        result integer,
+        result_location integer,
+        result_uuid text,
+        report integer);"
+
+  pg "CREATE TABLE IF NOT EXISTS tickets_trash
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        nvt text,
+        task integer,
+        report integer,
+        severity real,
+        host text,
+        location text,
+        solution_type text,
+        assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,
+        status integer,
+        open_time integer,
+        solved_time integer,
+        solved_comment text,
+        confirmed_time integer,
+        confirmed_report integer,
+        closed_time integer,
+        closed_comment text,
+        orphaned_time integer,
+        creation_time integer,
+        modification_time integer);"
+
+  pg "CREATE TABLE IF NOT EXISTS ticket_results_trash
+       (id SERIAL PRIMARY KEY,
+        ticket integer REFERENCES tickets_trash (id) ON DELETE RESTRICT,
+        result integer,
+        result_location integer,
+        result_uuid text,
+        report integer);"
+}
+
+TABLES_202="$TABLES_201 tickets ticket_results tickets_trash ticket_results_trash"
+
+migrate_202_to_203 () {
+  pg "ALTER TABLE tickets DROP COLUMN orphaned_time;"
+
+  pg "ALTER TABLE tickets RENAME COLUMN solved_comment TO fixed_comment;"
+  pg "ALTER TABLE tickets RENAME COLUMN solved_time TO fixed_time;"
+  pg "ALTER TABLE tickets RENAME COLUMN confirmed_report TO fix_verified_report;"
+  pg "ALTER TABLE tickets RENAME COLUMN confirmed_time TO fix_verified_time;"
+
+  pg "ALTER TABLE tickets_trash RENAME COLUMN solved_comment TO fixed_comment;"
+  pg "ALTER TABLE tickets_trash RENAME COLUMN solved_time TO fixed_time;"
+  pg "ALTER TABLE tickets_trash RENAME COLUMN confirmed_report TO fix_verified_report;"
+  pg "ALTER TABLE tickets_trash RENAME COLUMN confirmed_time TO fix_verified_time;"
+}
+
+TABLES_203=$TABLES_202
+
+migrate_203_to_204 () {
+  pg "ALTER TABLE tickets ADD COLUMN open_comment text;"
+  pg "ALTER TABLE tickets_trash ADD COLUMN open_comment text;"
+}
+
+TABLES_204=$TABLES_203
+
+migrate_204_to_205 () {
+  pg "ALTER TABLE tickets RENAME COLUMN open_comment TO open_note;"
+  pg "ALTER TABLE tickets RENAME COLUMN fixed_comment TO fixed_note;"
+  pg "ALTER TABLE tickets RENAME COLUMN closed_comment TO closed_note;"
+
+  pg "ALTER TABLE tickets_trash RENAME COLUMN open_comment TO open_note;"
+  pg "ALTER TABLE tickets_trash RENAME COLUMN fixed_comment TO fixed_note;"
+  pg "ALTER TABLE tickets_trash RENAME COLUMN closed_comment TO closed_note;"
+}
+
+TABLES_205=$TABLES_204
+
+migrate_205_to_206 () {
+  : # Schema stayed the same.
+}
+
+TABLES_206=$TABLES_205
+
+migrate_206_to_207 () {
+  : # Schema stayed the same.
+}
+
+TABLES_207=$TABLES_206
+
+migrate_207_to_208 () {
+  : # Schema stayed the same.
+}
+
+TABLES_208=$TABLES_207
+echo TABLES_208: $TABLES_208
+
+migrate_208_to_209 () {
+  pg "DROP TABLE IF EXISTS nvt_cves;"
+}
+
+TABLES_209=`echo $TABLES_208 | sed -e "s/ nvt_cves//g"`
+echo TABLES_209: $TABLES_209
 
 ## Migrate the schema of the Postgres database from version $1 to $2.
 ##
@@ -2152,6 +2423,174 @@ migrate () {
       fi
       migrate 188 $TO;;
 
+    188)
+      migrate_188_to_189
+      if [ $TO -eq 189 ]
+      then
+          return
+      fi
+      migrate 189 $TO;;
+
+    189)
+      migrate_189_to_190
+      if [ $TO -eq 190 ]
+      then
+          return
+      fi
+      migrate 190 $TO;;
+
+    190)
+      migrate_190_to_191
+      if [ $TO -eq 191 ]
+      then
+          return
+      fi
+      migrate 191 $TO;;
+
+    191)
+      migrate_191_to_192
+      if [ $TO -eq 192 ]
+      then
+          return
+      fi
+      migrate 192 $TO;;
+
+    192)
+      migrate_192_to_193
+      if [ $TO -eq 193 ]
+      then
+          return
+      fi
+      migrate 193 $TO;;
+
+    193)
+      migrate_193_to_194
+      if [ $TO -eq 194 ]
+      then
+          return
+      fi
+      migrate 194 $TO;;
+
+    194)
+      migrate_194_to_195
+      if [ $TO -eq 195 ]
+      then
+          return
+      fi
+      migrate 195 $TO;;
+
+    195)
+      migrate_195_to_196
+      if [ $TO -eq 196 ]
+      then
+          return
+      fi
+      migrate 196 $TO;;
+
+    196)
+      migrate_196_to_197
+      if [ $TO -eq 197 ]
+      then
+          return
+      fi
+      migrate 197 $TO;;
+
+    197)
+      migrate_197_to_198
+      if [ $TO -eq 198 ]
+      then
+          return
+      fi
+      migrate 198 $TO;;
+
+    198)
+      migrate_198_to_199
+      if [ $TO -eq 199 ]
+      then
+          return
+      fi
+      migrate 199 $TO;;
+
+    199)
+      migrate_199_to_200
+      if [ $TO -eq 200 ]
+      then
+          return
+      fi
+      migrate 200 $TO;;
+
+    200)
+      migrate_200_to_201
+      if [ $TO -eq 201 ]
+      then
+          return
+      fi
+      migrate 201 $TO;;
+
+    201)
+      migrate_201_to_202
+      if [ $TO -eq 202 ]
+      then
+          return
+      fi
+      migrate 202 $TO;;
+
+    202)
+      migrate_202_to_203
+      if [ $TO -eq 203 ]
+      then
+          return
+      fi
+      migrate 203 $TO;;
+
+    203)
+      migrate_203_to_204
+      if [ $TO -eq 204 ]
+      then
+          return
+      fi
+      migrate 204 $TO;;
+
+    204)
+      migrate_204_to_205
+      if [ $TO -eq 205 ]
+      then
+          return
+      fi
+      migrate 205 $TO;;
+
+    205)
+      migrate_205_to_206
+      if [ $TO -eq 206 ]
+      then
+          return
+      fi
+      migrate 206 $TO;;
+
+    206)
+      migrate_206_to_207
+      if [ $TO -eq 207 ]
+      then
+          return
+      fi
+      migrate 207 $TO;;
+
+    207)
+      migrate_207_to_208
+      if [ $TO -eq 208 ]
+      then
+          return
+      fi
+      migrate 208 $TO;;
+
+    208)
+      migrate_208_to_209
+      if [ $TO -eq 209 ]
+      then
+          return
+      fi
+      migrate 209 $TO;;
+
     *)
       log_notice "Version in Postgres database out of sync."
       exit 1
@@ -2461,8 +2900,113 @@ create () {
       copy_data "$TABLES_188"
       ;;
 
+    189)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_189" 1
+      ;;
+
+    190)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_190" 1
+      ;;
+
+    191)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_191" 1
+      ;;
+
+    192)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_192" 1
+      ;;
+
+    193)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_193" 1
+      ;;
+
+    194)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_194" 1
+      ;;
+
+    195)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_195" 1
+      ;;
+
+    196)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_196" 1
+      ;;
+
+    197)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_197" 1
+      ;;
+
+    198)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_198" 1
+      ;;
+
+    199)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_199" 1
+      ;;
+
+    200)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_200" 1
+      ;;
+
+    201)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_201" 1
+      ;;
+
+    202)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_202" 1
+      ;;
+
+    203)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_203" 1
+      ;;
+
+    204)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_204" 1
+      ;;
+
+    205)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_205" 1
+      ;;
+
+    206)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_206" 1
+      ;;
+
+    207)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_207" 1
+      ;;
+
+    208)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_208" 1
+      ;;
+
+    209)
+      create_migrate_clean $DB_VERSION
+      copy_data "$TABLES_209" 1
+      ;;
+
     *)
-      log_notice "Database version not supported: " $DB_VERSION
+      log_notice "Database version not supported: $DB_VERSION"
       exit 1
   esac
 }
