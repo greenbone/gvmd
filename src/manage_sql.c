@@ -5680,42 +5680,24 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
    *  the JavaScript Date objects do not support setting the timezone.
    */
   if (column_is_timestamp (group_column))
-    if (sql_is_sqlite3 ())
-      outer_group_by_column
-        = g_strdup_printf ("CAST (strftime ('%%s',"
-                           "                date(%s, 'unixepoch',"
-                           "                     'localtime'),"
-                           "                'utc')"
-                           "      AS INTEGER)",
-                           "aggregate_group_value");
-    else
-      outer_group_by_column
-        = g_strdup_printf ("EXTRACT (EPOCH FROM"
-                           "           date_trunc ('day',"
-                           "           TIMESTAMP WITH TIME ZONE 'epoch'"
-                           "           + (%s) * INTERVAL '1 second'))"
-                           "  :: integer",
-                           "aggregate_group_value");
+    outer_group_by_column
+      = g_strdup_printf ("EXTRACT (EPOCH FROM"
+                         "           date_trunc ('day',"
+                         "           TIMESTAMP WITH TIME ZONE 'epoch'"
+                         "           + (%s) * INTERVAL '1 second'))"
+                         "  :: integer",
+                         "aggregate_group_value");
   else
     outer_group_by_column = g_strdup ("aggregate_group_value");
 
   if (column_is_timestamp (subgroup_column))
-    if (sql_is_sqlite3 ())
-      outer_subgroup_column
-        = g_strdup_printf ("CAST (strftime ('%%s',"
-                           "                date(%s, 'unixepoch',"
-                           "                     'localtime'),"
-                           "                'utc')"
-                           "      AS INTEGER)",
-                           "aggregate_subgroup_value");
-    else
-      outer_subgroup_column
-        = g_strdup_printf ("EXTRACT (EPOCH FROM"
-                           "           date_trunc ('day',"
-                           "           TIMESTAMP WITH TIME ZONE 'epoch'"
-                           "           + (%s) * INTERVAL '1 second'))"
-                           "  :: integer",
-                           "aggregate_subgroup_value");
+    outer_subgroup_column
+      = g_strdup_printf ("EXTRACT (EPOCH FROM"
+                         "           date_trunc ('day',"
+                         "           TIMESTAMP WITH TIME ZONE 'epoch'"
+                         "           + (%s) * INTERVAL '1 second'))"
+                         "  :: integer",
+                         "aggregate_subgroup_value");
   else
     outer_subgroup_column = g_strdup ("aggregate_subgroup_value");
 
@@ -19629,7 +19611,6 @@ task_upload_progress (task_t task)
   if (report)
     {
       int count;
-      int using_sqlite = sql_is_sqlite3 ();
       get_data_t get;
       memset (&get, 0, sizeof (get_data_t));
       get.filter = g_strdup ("min_qod=0");
@@ -19637,11 +19618,9 @@ task_upload_progress (task_t task)
       get_data_reset (&get);
 
       return sql_int ("SELECT"
-                      " %s (%s (((%i * 100) / upload_result_count), 100), -1)"
+                      " greatest (least (((%i * 100) / upload_result_count), 100), -1)"
                       " FROM tasks"
                       " WHERE id = %llu;",
-                      using_sqlite ? "max" : "greatest",
-                      using_sqlite ? "min" : "least",
                       count,
                       task);
     }
@@ -69809,25 +69788,14 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       int missing_severity_changes = 0;
       sql_begin_immediate ();
 
-      if (sql_is_sqlite3 ())
-        sql ("UPDATE results"
-            " SET severity"
-            "       = (SELECT value FROM settings"
-            "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
-            "             AND (settings.owner = results.owner"
-            "                  OR settings.owner IS NULL)"
-            "          ORDER BY settings.owner DESC)"
-            " WHERE severity IS NULL"
-            "    OR severity = '';");
-      else
-        sql ("UPDATE results"
-            " SET severity"
-            "       = (SELECT CAST (value AS real) FROM settings"
-            "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
-            "             AND (settings.owner = results.owner"
-            "                  OR settings.owner IS NULL)"
-            "          ORDER BY settings.owner DESC)"
-            " WHERE severity IS NULL;");
+      sql ("UPDATE results"
+          " SET severity"
+          "       = (SELECT CAST (value AS real) FROM settings"
+          "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+          "             AND (settings.owner = results.owner"
+          "                  OR settings.owner IS NULL)"
+          "          ORDER BY settings.owner DESC)"
+          " WHERE severity IS NULL;");
 
       missing_severity_changes = sql_changes();
       sql_commit ();
