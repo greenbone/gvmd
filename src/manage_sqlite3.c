@@ -1206,6 +1206,34 @@ sql_iso_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Convert an epoch time like iso_time with certificate special cases.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_certificate_iso_time (sqlite3_context *context, int argc,
+                          sqlite3_value** argv)
+{
+  time_t epoch_time;
+  gchar *iso;
+
+  assert (argc == 1);
+
+  epoch_time = sqlite3_value_int64 (argv[0]);
+
+  iso = certificate_iso_time (epoch_time);
+  if (iso)
+    sqlite3_result_text (context, iso, -1, SQLITE_TRANSIENT);
+  else
+    sqlite3_result_error (context, "Failed to format time", -1);
+  g_free (iso);
+}
+
+/**
  * @brief Calculate difference between now and epoch time in days
  *
  * This is a callback for a scalar SQL function of one argument.
@@ -2930,6 +2958,20 @@ manage_create_sql_functions ()
     }
 
   if (sqlite3_create_function (gvmd_db,
+                               "certificate_iso_time",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_certificate_iso_time,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create certificate_iso_time", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (gvmd_db,
                                "days_from_now",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -3813,6 +3855,18 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
        " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
        "  result_uuid, report);");
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificates"
+       " (id INTEGER PRIMARY KEY, uuid text UNIQUE, owner integer,"
+       "  name text, comment text, creation_time integer,"
+       "  modification_time integer, certificate text, subject_dn text,"
+       "  issuer_dn text, activation_time integer, expiration_time integer,"
+       "  md5_fingerprint text, trust integer, certificate_format text);");
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificates_trash"
+       " (id INTEGER PRIMARY KEY, uuid text UNIQUE, owner integer,"
+       "  name text, comment text, creation_time integer,"
+       "  modification_time integer, certificate text, subject_dn text,"
+       "  issuer_dn text, activation_time integer, expiration_time integer,"
+       "  md5_fingerprint text, trust integer, certificate_format text);");
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  host, port, type, ca_pub, credential INTEGER,"
