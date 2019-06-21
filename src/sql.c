@@ -700,9 +700,7 @@ next (iterator_t* iterator)
       if (ret == -3 || ret == -2)
         {
           /* Busy or locked, with statement reset.  Just try step again like
-           * we used to do in sql_exec_internal.  We're not supposed to do this
-           * for SQLite, but it would mean quite a bit of reworking in the
-           * callers to be able to handle this case. */
+           * we used to do in sql_exec_internal. */
           g_warning ("%s: stepping after reset", __FUNCTION__);
           continue;
         }
