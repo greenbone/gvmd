@@ -14794,7 +14794,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
    "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
    "first", "last", "false_positive", "log", "low", "medium", "high",         \
    "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",    \
-   "medium_per_host", "high_per_host", "target", NULL }
+   "medium_per_host", "high_per_host", "target", "usage_type", NULL }
 
 /**
  * @brief Task iterator columns.
@@ -14832,7 +14832,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
    { "hosts_ordering", NULL, KEYWORD_TYPE_STRING },                         \
-   { "scanner", NULL, KEYWORD_TYPE_INTEGER }
+   { "scanner", NULL, KEYWORD_TYPE_INTEGER },                               \
+   { "usage_type", NULL, KEYWORD_TYPE_STRING }
 
 /**
  * @brief Task iterator WHERE columns.
@@ -15273,6 +15274,20 @@ task_iterator_scanner (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+}
+
+/**
+ * @brief Get the UUID of task scanner from a task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task scanner if found, NULL otherwise.
+ */
+const char *
+task_iterator_usage_type (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
 }
 
 /**
@@ -16895,11 +16910,11 @@ check_db_configs ()
       sqli (&config,
             "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
             " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time)"
+            " type, creation_time, modification_time, usage_type)"
             " VALUES ('" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
             " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s; optimized by using previously collected information.',"
-            " %i, %i, 1, 1, 0, m_now (), m_now ())",
+            " %i, %i, 1, 1, 0, m_now (), m_now (), 'scan')",
             family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
             family_count ());
 
@@ -16916,12 +16931,12 @@ check_db_configs ()
       sqli (&config,
             "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
             " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time)"
+            " type, creation_time, modification_time, usage_type)"
             " VALUES ('" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
             " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s including those that can stop services/hosts;"
             " optimized by using previously collected information.',"
-            " %i, %i, 1, 1, 0, m_now (), m_now ())",
+            " %i, %i, 1, 1, 0, m_now (), m_now (), 'scan')",
             family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
             family_count ());
 
@@ -16938,11 +16953,11 @@ check_db_configs ()
       sqli (&config,
             "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
             " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time)"
+            " type, creation_time, modification_time, usage_type)"
             " VALUES ('" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
             " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s; don''t trust previously collected information; slow.',"
-            " %i, %i, 1, 1, 0, m_now (), m_now ())",
+            " %i, %i, 1, 1, 0, m_now (), m_now (), 'scan')",
             family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
             family_count ());
 
@@ -16959,13 +16974,13 @@ check_db_configs ()
       sqli (&config,
             "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
             " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time)"
+            " type, creation_time, modification_time, usage_type)"
             " VALUES ('" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
             " NULL, 'Full and very deep ultimate',"
             " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s including those that can stop services/hosts;"
             " don''t trust previously collected information; slow.',"
-            " %i, %i, 1, 1, 0, m_now (), m_now ())",
+            " %i, %i, 1, 1, 0, m_now (), m_now (), 'scan')",
             family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
             family_count ());
 
@@ -16982,10 +16997,10 @@ check_db_configs ()
       sqli (&config,
             "INSERT into configs (uuid, name, owner, nvt_selector, comment,"
             " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time)"
+            " type, creation_time, modification_time, usage_type)"
             " VALUES ('" CONFIG_UUID_EMPTY "', 'empty', NULL, 'empty',"
             " 'Empty and static configuration template.',"
-            " 0, 0, 0, 0, 0, m_now (), m_now ())");
+            " 0, 0, 0, 0, 0, m_now (), m_now (), 'scan')");
 
       /* Setup preferences for the config. */
       setup_full_config_prefs (config, 1, 1, 0);
@@ -19344,6 +19359,27 @@ task_scanner_in_trash (task_t task)
 {
   return sql_int ("SELECT scanner_location = " G_STRINGIFY (LOCATION_TRASH)
                   " FROM tasks WHERE id = %llu;", task);
+}
+
+/**
+ * @brief Set the usage_type of a task.
+ *
+ * @param[in]  task       Task.
+ * @param[in]  usage_type New usage type ("scan" or "audit").
+ */
+void
+set_task_usage_type (task_t task, const char *usage_type)
+{
+  gchar *quoted_usage_type;
+  if (usage_type && strcasecmp (usage_type, "policy") == 0)
+    quoted_usage_type = g_strdup ("policy");
+  else
+    quoted_usage_type = g_strdup ("scan");
+
+  sql ("UPDATE tasks SET usage_type = '%s', modification_time = m_now ()"
+       " WHERE id = %llu;", quoted_usage_type, task);
+
+  g_free (quoted_usage_type);
 }
 
 /**
@@ -32982,10 +33018,10 @@ make_task (char* name, char* comment, int in_assets, int event)
        " (owner, uuid, name, hidden, comment, schedule,"
        "  schedule_next_time, config_location, target, target_location,"
        "  scanner_location, schedule_location, alterable,"
-       "  creation_time, modification_time)"
+       "  creation_time, modification_time, usage_type)"
        " VALUES ((SELECT id FROM users WHERE users.uuid = '%s'),"
        "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
-       "         m_now ());",
+       "         m_now (), 'scan');",
        current_credentials.uuid,
        uuid,
        quoted_name ? quoted_name : "",
@@ -33096,7 +33132,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
                             " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " hosts_ordering",
+                            " hosts_ordering, usage_type",
                             1, &new, &old);
   if (ret)
     {
@@ -36680,6 +36716,7 @@ config_insert_preferences (config_t config,
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
  * @param[in]   config_type    Config type.
+ * @param[in]   usage_type     The usage type ("scan" or "policy")
  * @param[out]  config         On success the config.
  * @param[out]  name           On success the name of the config.
  *
@@ -36691,11 +36728,12 @@ int
 create_config (const char* proposed_name, const char* comment,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */,
-               const char* config_type, config_t *config, char **name)
+               const char* config_type, const char *usage_type,
+               config_t *config, char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
-  gchar *quoted_type;
+  gchar *quoted_type, *quoted_usage_type;
   char *selector_uuid;
   unsigned int num = 1;
 
@@ -36719,6 +36757,10 @@ create_config (const char* proposed_name, const char* comment,
   candidate_name = g_strdup (proposed_name);
   quoted_candidate_name = sql_quote (candidate_name);
   quoted_type = config_type ? sql_quote (config_type) : g_strdup ("0");
+  if (usage_type && strcasecmp (usage_type, "policy") == 0)
+    quoted_usage_type = g_strdup ("policy");
+  else
+    quoted_usage_type = g_strdup ("scan");
 
   while (1)
     {
@@ -36734,29 +36776,32 @@ create_config (const char* proposed_name, const char* comment,
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-           " type, creation_time, modification_time)"
-           " VALUES (make_uuid (), '%s',"
+           " type, creation_time, modification_time, usage_type)"
+           " VALUES (make_uuid (), '%s'"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', m_now (), m_now ());",
+           " '%s', '%s', '%s', m_now (), m_now (), '%s');",
            quoted_candidate_name,
            current_credentials.uuid,
            selector_uuid,
            quoted_comment,
-           quoted_type);
+           quoted_type,
+           quoted_usage_type);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-         " type, creation_time, modification_time)"
+         " type, creation_time, modification_time, usage_type)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', '%s', m_now (), m_now ());",
+         " '%s', '', '%s', m_now (), m_now (), '%s');",
          quoted_candidate_name,
          current_credentials.uuid,
          selector_uuid,
-         quoted_type);
+         quoted_type,
+         quoted_usage_type);
   g_free (quoted_candidate_name);
   g_free (quoted_type);
+  g_free (quoted_usage_type);
 
   /* Insert the selectors into the nvt_selectors table. */
 
@@ -36867,6 +36912,7 @@ insert_osp_parameter (osp_param_t *param, config_t config)
  * @param[in]   scanner_id  UUID of scanner to create config from.
  * @param[in]   name        Name for config.
  * @param[in]   comment     Comment for config.
+ * @param[in]   usage_type  The usage type ("scan" or "policy")
  * @param[out]  uuid        Config UUID, on success.
  *
  * @return 0 success, 1 couldn't find scanner, 2 scanner not of OSP type,
@@ -36875,12 +36921,13 @@ insert_osp_parameter (osp_param_t *param, config_t config)
  */
 int
 create_config_from_scanner (const char *scanner_id, const char *name,
-                            const char *comment, char **uuid)
+                            const char *comment, const char *usage_type,
+                            char **uuid)
 {
   scanner_t scanner;
   config_t config;
   GSList *params, *element;
-  char *quoted_name, *quoted_comment;
+  char *quoted_name, *quoted_comment, *quoted_usage_type;
 
   assert (current_credentials.uuid);
   assert (scanner_id);
@@ -36920,15 +36967,22 @@ create_config_from_scanner (const char *scanner_id, const char *name,
     }
   quoted_name = sql_quote (name ?: "");
   quoted_comment = sql_quote (comment ?: "");
+  if (usage_type && strcasecmp (usage_type, "policy") == 0)
+    quoted_usage_type = g_strdup ("policy");
+  else
+    quoted_usage_type = g_strdup ("scan");
+
   /* Create new OSP config. */
   sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-       " type, scanner, creation_time, modification_time)"
+       " type, scanner, creation_time, modification_time, usage_type)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '', '%s', 1, %llu, m_now (), m_now ());",
-       quoted_name, current_credentials.uuid, quoted_comment, scanner);
+       " '', '%s', 1, %llu, m_now (), m_now (), '%s');",
+       quoted_name, current_credentials.uuid, quoted_comment, scanner,
+       quoted_usage_type);
   g_free (quoted_name);
   g_free (quoted_comment);
+  g_free (quoted_usage_type);
   config = sql_last_insert_id ();
   *uuid = config_uuid (config);
 
@@ -37143,7 +37197,7 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
  */
 int
 copy_config (const char* name, const char* comment, const char *config_id,
-             config_t* new_config)
+             const char* usage_type, config_t* new_config)
 {
   int ret, type;
   char *config_selector;
@@ -37158,7 +37212,8 @@ copy_config (const char* name, const char* comment, const char *config_id,
 
   ret = copy_resource_lock ("config", name, comment, config_id,
                             " family_count, nvt_count, families_growing,"
-                            " nvts_growing, type, scanner", 1, &new, &old);
+                            " nvts_growing, type, scanner, usage_type",
+                            1, &new, &old);
   if (ret)
     {
       sql_rollback ();
@@ -37184,6 +37239,22 @@ copy_config (const char* name, const char* comment, const char *config_id,
 
   sql ("UPDATE configs SET nvt_selector = make_uuid () WHERE id = %llu;",
        new);
+
+  if (usage_type && strcmp (usage_type, ""))
+    {
+      gchar *quoted_usage_type;
+
+      if (strcasecmp (usage_type, "policy") == 0)
+        quoted_usage_type = g_strdup ("policy");
+      else
+        quoted_usage_type = g_strdup ("scan");
+
+      sql ("UPDATE configs SET usage_type = '%s' WHERE id = %llu;",
+           quoted_usage_type,
+           new);
+
+      g_free (quoted_usage_type);
+    }
 
   config_selector = config_nvt_selector (old);
   if (config_selector == NULL)
@@ -37322,13 +37393,14 @@ delete_config (const char *config_id, int ultimate)
         }
 
       sql ("INSERT INTO configs_trash"
-           " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
-           "  families_growing, nvts_growing, type, scanner,"
-           "  creation_time, modification_time, scanner_location)"
+           " (uuid, owner, name, nvt_selector, comment, family_count,"
+           "  nvt_count, families_growing, nvts_growing, type, scanner,"
+           "  creation_time, modification_time,"
+           "  scanner_location, usage_type)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
-           "        nvt_count, families_growing, nvts_growing,"
-           "        type, scanner, creation_time, modification_time,"
-           "        " G_STRINGIFY (LOCATION_TABLE)
+           "        nvt_count, families_growing, nvts_growing, type, scanner,"
+           "        creation_time, modification_time,"
+           "        " G_STRINGIFY (LOCATION_TABLE) ", usage_type"
            " FROM configs WHERE id = %llu;",
            config);
 
@@ -37511,7 +37583,8 @@ sync_config (const char *config_id)
  */
 #define CONFIG_ITERATOR_FILTER_COLUMNS                                        \
  { GET_ITERATOR_FILTER_COLUMNS, "nvt_selector", "families_total",             \
-   "nvts_total", "families_trend", "nvts_trend", "type", NULL }
+   "nvts_total", "families_trend", "nvts_trend", "type", "usage_type",        \
+   NULL }
 
 /**
  * @brief Scan config iterator columns.
@@ -37527,6 +37600,7 @@ sync_config (const char *config_id)
    { "type", NULL, KEYWORD_TYPE_INTEGER },                                    \
    { "scanner", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                                       \
+   { "usage_type", NULL, KEYWORD_TYPE_STRING },                               \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -37544,6 +37618,7 @@ sync_config (const char *config_id)
    { "type", NULL, KEYWORD_TYPE_INTEGER },                                    \
    { "scanner", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "scanner_location", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "usage_type", NULL, KEYWORD_TYPE_STRING },                               \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -37760,6 +37835,16 @@ config_iterator_scanner_trash (iterator_t* iterator)
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
   return ret;
 }
+
+/**
+ * @brief Get the usage type from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The usage type of the config, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 8);
 
 /**
  * @brief Return whether a config is referenced by a task.
@@ -60047,12 +60132,12 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO configs"
-           " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
-           "  families_growing, nvts_growing, type, scanner, creation_time,"
-           "  modification_time)"
+           " (uuid, owner, name, nvt_selector, comment, family_count,"
+           "  nvt_count, families_growing, nvts_growing, type, scanner,"
+           "  creation_time, modification_time, usage_type)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
-           "        nvt_count, families_growing, nvts_growing,"
-           "        type, scanner, creation_time, modification_time"
+           "        nvt_count, families_growing, nvts_growing, type, scanner,"
+           "        creation_time, modification_time, usage_type"
            " FROM configs_trash WHERE id = %llu;",
            resource);
 

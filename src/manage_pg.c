@@ -2533,7 +2533,8 @@ create_tables ()
        "  type integer,"
        "  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  usage_type text);");
 
   sql ("CREATE TABLE IF NOT EXISTS configs_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -2550,7 +2551,8 @@ create_tables ()
        "  scanner integer," /* REFERENCES scanners (id) */
        "  creation_time integer,"
        "  modification_time integer,"
-       "  scanner_location integer);");
+       "  scanner_location integer,"
+       "  usage_type text);");
 
   sql ("CREATE TABLE IF NOT EXISTS config_preferences"
        " (id SERIAL PRIMARY KEY,"
@@ -2643,7 +2645,8 @@ create_tables ()
        "  hosts_ordering text,"
        "  alterable integer,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  usage_type text);");
 
   sql ("CREATE TABLE IF NOT EXISTS task_files"
        " (id SERIAL PRIMARY KEY,"

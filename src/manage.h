@@ -781,6 +781,9 @@ task_iterator_hosts_ordering (iterator_t *);
 scanner_t
 task_iterator_scanner (iterator_t *);
 
+const char *
+task_iterator_usage_type (iterator_t *);
+
 int
 task_uuid (task_t, char **);
 
@@ -855,6 +858,9 @@ set_task_hosts_ordering (task_t, const char *);
 
 void
 set_task_scanner (task_t, scanner_t);
+
+void
+set_task_usage_type (task_t, const char *);
 
 char*
 task_description (task_t);
@@ -1795,14 +1801,14 @@ typedef struct
 
 int
 create_config (const char*, const char*, const array_t*, const array_t*,
-               const char*, config_t*, char**);
+               const char*, const char*, config_t*, char**);
 
 int
 create_config_from_scanner (const char*, const char *, const char *,
-                            char **);
+                            const char *, char **);
 
 int
-copy_config (const char*, const char*, const char *, config_t*);
+copy_config (const char*, const char*, const char *, const char *, config_t*);
 
 int
 delete_config (const char*, int);
@@ -1851,6 +1857,9 @@ config_iterator_scanner (iterator_t*);
 
 int
 config_iterator_scanner_trash (iterator_t*);
+
+const char*
+config_iterator_usage_type (iterator_t*);
 
 char*
 config_nvt_selector (config_t);
