@@ -351,13 +351,11 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/comm.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/sql_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/utils.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
