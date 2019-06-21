@@ -2496,6 +2496,13 @@ gvmd (int argc, char** argv)
 
   /* Run the standard manager. */
 
+  if (osp_vt_update == NULL)
+    {
+      g_critical ("%s: --osp-vt-update required for now",
+                  __FUNCTION__);
+      return EXIT_FAILURE;
+    }
+
   if (lockfile_locked ("gvm-helping"))
     {
       g_warning ("%s: An option process is running", __FUNCTION__);
