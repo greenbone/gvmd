@@ -1064,9 +1064,6 @@ config_task_iterator_readable (iterator_t*);
 int
 severity_in_level (double, const char *);
 
-int
-severity_matches_ov (double, double);
-
 const char*
 severity_to_level (double, int);
 
