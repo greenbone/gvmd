@@ -706,23 +706,6 @@ next (iterator_t* iterator)
           g_warning ("%s: stepping after reset", __FUNCTION__);
           continue;
         }
-      if (ret == 2)
-        {
-          /* Schema changed, for example an internal change due to a VACUUM.
-           * Retrying will result in the same error, so abort.  We lock
-           * exclusively around the VACUUM in --optimize, so hopefully when
-           * using --optimize the schema error will happen earlier, in the
-           * the init function for the iterator.
-           *
-           * This only applies to SQLite3. */
-          g_warning ("%s: schema error.\n"
-                     "  This is possibly due to running VACUUM while Manager\n"
-                     "  is running.  Restart Manager.  In future use\n"
-                     "  --optimize=vacuum instead of running VACUUM"
-                     "  directly.",
-                     __FUNCTION__);
-          abort ();
-        }
       break;
     }
   assert (ret == 1);
