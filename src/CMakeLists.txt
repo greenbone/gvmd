@@ -35,21 +35,16 @@ pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBICAL REQUIRED libical>=1.00)
 
-if (BACKEND STREQUAL SQLITE3)
-  # sqlite3 3.8.3 is required for WITH syntax
-  pkg_check_modules (SQLITE3 REQUIRED sqlite3>=3.8.3)
-else (BACKEND STREQUAL SQLITE3)
-  message (STATUS "Looking for PostgreSQL...")
-  find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
-  execute_process (COMMAND ${PG_CONFIG_EXECUTABLE} --includedir-server
-                   OUTPUT_VARIABLE PostgreSQL_SERVER_INCLUDE_DIRS
-                   OUTPUT_STRIP_TRAILING_WHITESPACE)
-  set(PostgreSQL_ADDITIONAL_SEARCH_PATHS ${PostgreSQL_SERVER_INCLUDE_DIRS})
-  find_package (PostgreSQL REQUIRED)
-  if (NOT PostgreSQL_FOUND)
-    message (SEND_ERROR "The PostgreSQL library is required.")
-  endif (NOT PostgreSQL_FOUND)
-endif (BACKEND STREQUAL SQLITE3)
+message (STATUS "Looking for PostgreSQL...")
+find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
+execute_process (COMMAND ${PG_CONFIG_EXECUTABLE} --includedir-server
+                 OUTPUT_VARIABLE PostgreSQL_SERVER_INCLUDE_DIRS
+                 OUTPUT_STRIP_TRAILING_WHITESPACE)
+set(PostgreSQL_ADDITIONAL_SEARCH_PATHS ${PostgreSQL_SERVER_INCLUDE_DIRS})
+find_package (PostgreSQL REQUIRED)
+if (NOT PostgreSQL_FOUND)
+  message (SEND_ERROR "The PostgreSQL library is required.")
+endif (NOT PostgreSQL_FOUND)
 
 message (STATUS "Looking for gpgme...")
 find_library (GPGME gpgme)
@@ -69,25 +64,13 @@ include_directories (${LIBGVM_GMP_INCLUDE_DIRS}
                      ${LIBGVM_BASE_INCLUDE_DIRS} ${LIBGVM_UTIL_INCLUDE_DIRS}
                      ${LIBGVM_OSP_INCLUDE_DIRS}  ${GLIB_INCLUDE_DIRS})
 
-if (BACKEND STREQUAL SQLITE3)
-  set (BACKEND_FILES sql_sqlite3.c manage_sqlite3.c)
-else (BACKEND STREQUAL SQLITE3)
-  set (BACKEND_FILES sql_pg.c manage_pg.c)
-
-  add_library (gvm-pg-server SHARED
-               manage_pg_server.c manage_utils.c)
-  set_target_properties (gvm-pg-server PROPERTIES SOVERSION "${CPACK_PACKAGE_VERSION_MAJOR}")
-  set_target_properties (gvm-pg-server PROPERTIES VERSION "${CPACK_PACKAGE_VERSION}")
-  include_directories (${PostgreSQL_INCLUDE_DIRS} ${PostgreSQL_SERVER_INCLUDE_DIRS})
-endif (BACKEND STREQUAL SQLITE3)
+add_library (gvm-pg-server SHARED
+             manage_pg_server.c manage_utils.c)
+set_target_properties (gvm-pg-server PROPERTIES SOVERSION "${CPACK_PACKAGE_VERSION_MAJOR}")
+set_target_properties (gvm-pg-server PROPERTIES VERSION "${CPACK_PACKAGE_VERSION}")
+include_directories (${PostgreSQL_INCLUDE_DIRS} ${PostgreSQL_SERVER_INCLUDE_DIRS})
 
 ## Program
-
-if (BACKEND STREQUAL SQLITE3)
-  set (BINARY_NAME "gvmd-sqlite")
-else (BACKEND STREQUAL SQLITE3)
-  set (BINARY_NAME "gvmd-pg")
-endif (BACKEND STREQUAL SQLITE3)
 
 add_executable (manage-utils-test
                 EXCLUDE_FROM_ALL
@@ -104,7 +87,7 @@ add_executable (manage-utils-test
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_tickets.c
                 manage_migrators.c scanner.c
-                ${BACKEND_FILES}
+                sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
                 gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c)
@@ -126,7 +109,7 @@ add_executable (manage-test
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_tickets.c
                 manage_migrators.c scanner.c
-                ${BACKEND_FILES}
+                sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
                 gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c)
@@ -148,7 +131,7 @@ add_executable (gmp-tickets-test
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_tickets.c
                 manage_migrators.c scanner.c
-                ${BACKEND_FILES}
+                sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
                 gmp.c gmp_base.c gmp_delete.c gmp_get.c)
@@ -158,7 +141,7 @@ add_test (gmp-tickets-test gmp-tickets-test)
 add_custom_target (tests
                    DEPENDS gmp-tickets-test manage-test manage-utils-test)
 
-add_executable (${BINARY_NAME}
+add_executable (gvmd
                 main.c gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_ranges_all_tcp_nmap_5_51_top_100.c
@@ -170,44 +153,36 @@ add_executable (${BINARY_NAME}
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_migrators.c scanner.c
-                ${BACKEND_FILES}
+                sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
                 gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
-if (BACKEND STREQUAL SQLITE3)
-  target_link_libraries (${BINARY_NAME} m
-                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                         ${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
-                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-else (BACKEND STREQUAL SQLITE3)
-  target_link_libraries (${BINARY_NAME} m
-                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                         ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
-                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-  target_link_libraries (manage-test cgreen m
-                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                         ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
-                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-  target_link_libraries (manage-utils-test cgreen m
-                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                         ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
-                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS}
-                         -Wl,--wrap=time)
-  target_link_libraries (gmp-tickets-test cgreen m
-                         ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                         ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
-                         ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                         ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-  target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
-endif (BACKEND STREQUAL SQLITE3)
+target_link_libraries (gvmd m
+                       ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                       ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+target_link_libraries (manage-test cgreen m
+                       ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                       ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+target_link_libraries (manage-utils-test cgreen m
+                       ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                       ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS}
+                       -Wl,--wrap=time)
+target_link_libraries (gmp-tickets-test cgreen m
+                       ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                       ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 
-set_target_properties (${BINARY_NAME} PROPERTIES LINKER_LANGUAGE C)
+set_target_properties (gvmd PROPERTIES LINKER_LANGUAGE C)
 set_target_properties (manage-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties (manage-utils-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties (gmp-tickets-test PROPERTIES LINKER_LANGUAGE C)
@@ -221,7 +196,7 @@ if (GVMD_VERSION)
 endif (GVMD_VERSION)
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
-  target_compile_options (${BINARY_NAME} PUBLIC ${C_FLAGS_DEBUG_GVMD})
+  target_compile_options (gvmd PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options (manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options (manage-utils-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options (gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
@@ -238,16 +213,13 @@ if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
                         -P ${CMAKE_SOURCE_DIR}/cmake/GetGit.cmake)
 
     # explicitly say that the executable depends on custom target
-    add_dependencies (${BINARY_NAME} revisiontag)
+    add_dependencies (gvmd revisiontag)
 
     # include the output directory, where the gitversion.h file is generated
     include_directories (${CMAKE_CURRENT_BINARY_DIR})
     add_definitions (-DGIT_REV_AVAILABLE)
   endif (GIT_REVISION)
 endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
-
-add_custom_command (TARGET ${BINARY_NAME} POST_BUILD
-                    COMMAND ln -sf ${BINARY_NAME} gvmd)
 
 if (GMP_VERSION)
   add_definitions (-DGMP_VERSION="${GMP_VERSION}")
@@ -333,24 +305,15 @@ if (BINDIR)
   add_definitions (-DBINDIR="${BINDIR}")
 endif (BINDIR)
 
-if (DEFINED GVM_SQLITE_SLEEP_MAX)
-        add_definitions (-DGVM_SQLITE_SLEEP_MAX=${GVM_SQLITE_SLEEP_MAX})
-endif (DEFINED GVM_SQLITE_SLEEP_MAX)
-
 ## Install
 
-install (TARGETS ${BINARY_NAME}
+install (TARGETS gvmd
          RUNTIME DESTINATION ${SBINDIR}
          LIBRARY DESTINATION ${LIBDIR}
          ARCHIVE DESTINATION ${LIBDIR}/static)
 
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd
-         DESTINATION ${SBINDIR})
-
-if (BACKEND STREQUAL POSTGRESQL)
-  install (TARGETS gvm-pg-server
-           LIBRARY DESTINATION ${GVM_LIB_INSTALL_DIR})
-endif (BACKEND STREQUAL POSTGRESQL)
+install (TARGETS gvm-pg-server
+         LIBRARY DESTINATION ${GVM_LIB_INSTALL_DIR})
 
 ## Static analysis
 
@@ -388,13 +351,11 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/comm.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/sql_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/utils.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})

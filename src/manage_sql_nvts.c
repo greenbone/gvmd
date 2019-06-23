@@ -1368,16 +1368,8 @@ update_nvts_from_vts (entity_t *get_vts_response,
   sql ("INSERT INTO old_nvts (oid, modification_time)"
        " SELECT oid, modification_time FROM nvts;");
 
-  if (sql_is_sqlite3 ())
-    {
-      sql ("DELETE FROM nvts;");
-      sql ("DELETE FROM nvt_preferences;");
-    }
-  else
-    {
-      sql ("TRUNCATE nvts CASCADE;");
-      sql ("TRUNCATE nvt_preferences;");
-    }
+  sql ("TRUNCATE nvts CASCADE;");
+  sql ("TRUNCATE nvt_preferences;");
 
   preferences = NULL;
   children = vts->entities;
