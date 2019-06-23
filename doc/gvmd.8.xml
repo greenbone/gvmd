@@ -3,7 +3,7 @@
 <?xml-stylesheet type="text/xsl" href="/usr/share/xmltoman/xmltoman.xsl" ?>
 
 <!--
-Copyright (C) 2009-2018 Greenbone Networks GmbH
+Copyright (C) 2009-2019 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -85,9 +85,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </optdesc>
     </option>
     <option>
-      <p><opt>-d, --database=<arg>FILE/NAME</arg></opt></p>
+      <p><opt>-d, --database=<arg>NAME</arg></opt></p>
       <optdesc>
-        <p>Use FILE/NAME as database for SQLite/Postgres.</p>
+        <p>Use NAME as database for PostgreSQL.</p>
       </optdesc>
     </option>
     <option>
