@@ -19,10 +19,7 @@
 
 /**
  * @file  manage_sql.c
- * @brief The Greenbone Vulnerability Manager management library (SQLite implementation).
- *
- * This file defines the SQLite specific portions of the Greenbone Vulnerability Manager
- * management library.
+ * @brief The Greenbone Vulnerability Manager management library.
  */
 
 /**
