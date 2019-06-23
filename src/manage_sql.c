@@ -20295,33 +20295,6 @@ set_task_schedule_next_time_uuid (const gchar *task_id, time_t time)
 /**
  * @brief Return the severity score of a task, taking overrides into account.
  *
- * Only used by SQLite backend.
- *
- * @param[in]  task       Task.
- * @param[in]  overrides  Whether to apply overrides.
- * @param[in]  min_qod    Minimum QoD of results to count.
- * @param[in]  offset     Offset of report to get severity from:
- *                        0 = use last report, 1 = use next to last report
- *
- * @return Severity score of last report on task if there is one, as a freshly
- *  allocated string, else NULL.
- */
-char *
-task_severity (task_t task, int overrides, int min_qod, int offset)
-{
-  double severity;
-
-  severity = task_severity_double (task, overrides, min_qod, offset);
-
-  if (severity == SEVERITY_MISSING)
-    return NULL;
-  else
-    return g_strdup_printf ("%0.1f", severity);
-}
-
-/**
- * @brief Return the severity score of a task, taking overrides into account.
- *
  * @param[in]  task       Task.
  * @param[in]  overrides  Whether to apply overrides.
  * @param[in]  min_qod    Minimum QoD of results to count.
@@ -32709,23 +32682,6 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 /* More task stuff. */
 
 /**
- * @brief Return the number of finished reports associated with a task.
- *
- * @param[in]  task  Task.
- *
- * @return Number of reports.
- */
-static unsigned int
-task_finished_report_count (task_t task)
-{
-  return (unsigned int) sql_int ("SELECT count(*) FROM reports"
-                                 " WHERE task = %llu"
-                                 " AND scan_run_status = %u;",
-                                 task,
-                                 TASK_STATUS_DONE);
-}
-
-/**
  * @brief Return the trend of a task, given counts.
  *
  * @param[in]  holes_a   Number of holes on earlier report.
@@ -32841,83 +32797,6 @@ task_iterator_trend_counts (iterator_t *iterator, int holes_a, int warns_a,
 
   if (task_iterator_run_status (iterator) == TASK_STATUS_RUNNING)
     return "";
-
-  return task_trend_calc (holes_a, warns_a, infos_a, severity_a,
-                          holes_b, warns_b, infos_b, severity_b);
-}
-
-/**
- * @brief Return the trend of a task.
- *
- * Only used by SQLite backend.
- *
- * @param[in]  task      Task.
- * @param[in]  override  Whether to override the threat.
- * @param[in]  min_qod   The minimum QoD of results to count.
- *
- * @return "up", "down", "more", "less", "same" or if too few reports "".
- */
-const char *
-task_trend (task_t task, int override, int min_qod)
-{
-  report_t last_report, second_last_report;
-  int holes_a, warns_a, infos_a, logs_a, false_positives_a;
-  int holes_b, warns_b, infos_b, logs_b, false_positives_b;
-  double severity_a, severity_b;
-  get_data_t *get;
-
-  /* Ensure there are enough reports. */
-
-  if (task_finished_report_count (task) <= 1)
-    return "";
-
-  /* Get trend only for authenticated users to avoid
-     caching result counts for dummy or NULL users   */
-  if (current_credentials.uuid == NULL
-      || strcmp (current_credentials.uuid, "") == 0)
-    return "";
-
-  /* Skip running and container tasks. */
-
-  if (task_run_status (task) == TASK_STATUS_RUNNING)
-    return "";
-
-  if (task_target (task) == 0)
-    return NULL;
-
-  /* Get details of last report. */
-
-  task_last_report (task, &last_report);
-  if (last_report == 0)
-    return "";
-
-  /* Count the logs and false positives too, as report_counts_id is faster
-   * with all five. */
-  get = report_results_get_data (1, -1, override, 0, min_qod);
-  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
-                        &false_positives_a, &severity_a, get, NULL))
-    /** @todo Either fail better or abort at SQL level. */
-    abort ();
-
-  /* Get details of second last report. */
-
-  task_second_last_report (task, &second_last_report);
-  if (second_last_report == 0)
-    {
-      get_data_reset (get);
-      free (get);
-      return "";
-    }
-
-  /* Count the logs and false positives too, as report_counts_id is faster
-   * with all five. */
-  if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
-                        &warns_b, &false_positives_b, &severity_b, get, NULL))
-    /** @todo Either fail better or abort at SQL level. */
-    abort ();
-
-  get_data_reset (get);
-  free (get);
 
   return task_trend_calc (holes_a, warns_a, infos_a, severity_a,
                           holes_b, warns_b, infos_b, severity_b);
@@ -34450,87 +34329,6 @@ target_credential (target_t target, const char* type)
 }
 
 /**
- * @brief Get a credential from a target in the trashcan.
- *
- * Only used by SQLite backend.
- *
- * @param[in]  target         The target.
- * @param[in]  type           The credential type (e.g. "ssh" or "smb").
- *
- * @return  0 on success, -1 on error, 1 credential not found, 99 permission
- *          denied.
- */
-credential_t
-trash_target_credential (target_t target, const char* type)
-{
-  gchar *quoted_type;
-  credential_t credential;
-
-  if (target == 0 || type == NULL)
-    return 0;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT NOT EXISTS"
-               " (SELECT * FROM targets_trash_login_data"
-               "  WHERE target = %llu and type = '%s');",
-               target, quoted_type))
-    {
-      g_free (quoted_type);
-      return 0;
-    }
-
-  sql_int64 (&credential,
-             "SELECT credential FROM targets_trash_login_data"
-             " WHERE target = %llu AND type = '%s';",
-             target, quoted_type);
-
-  g_free (quoted_type);
-
-  return credential;
-}
-
-/**
- * @brief Get whether a credential of a trash target is in trashcan.
- *
- * Only used by SQLite backend.
- *
- * @param[in]  target         The target.
- * @param[in]  type           The credential type (e.g. "ssh" or "smb").
- *
- * @return  0 on success, -1 on error, 1 credential not found, 99 permission
- *          denied.
- */
-int
-trash_target_credential_location (target_t target, const char* type)
-{
-  gchar *quoted_type;
-  int location;
-
-  if (target == 0 || type == NULL)
-    return 0;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT NOT EXISTS"
-               " (SELECT * FROM targets_trash_login_data"
-               "  WHERE target = %llu and type = '%s');",
-               target, quoted_type))
-    {
-      g_free (quoted_type);
-      return 0;
-    }
-
-  location = sql_int ("SELECT credential_location FROM targets_trash_login_data"
-                      " WHERE target = %llu AND type = '%s';",
-                      target, quoted_type);
-
-  g_free (quoted_type);
-
-  return location;
-}
-
-/**
  * @brief Get a login port from a target.
  *
  * @param[in]  target         The target.
@@ -34560,46 +34358,6 @@ target_login_port (target_t target, const char* type)
     }
 
   port = sql_int ("SELECT port FROM targets_login_data"
-                  " WHERE target = %llu AND type = '%s';",
-                  target, quoted_type);
-
-  g_free (quoted_type);
-
-  return port;
-}
-
-/**
- * @brief Get a port from a target in the trashcan.
- *
- * Only used by SQLite backend.
- *
- * @param[in]  target         The target.
- * @param[in]  type           The credential type (e.g. "ssh" or "smb").
- *
- * @return  0 on success, -1 on error, 1 credential not found, 99 permission
- *          denied.
- */
-int
-trash_target_login_port (target_t target, const char* type)
-{
-  gchar *quoted_type;
-  int port;
-
-  if (target == 0 || type == NULL)
-    return 0;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT NOT EXISTS"
-               " (SELECT * FROM targets_trash_login_data"
-               "  WHERE target = %llu and type = '%s');",
-               target, quoted_type))
-    {
-      g_free (quoted_type);
-      return 0;
-    }
-
-  port = sql_int ("SELECT port FROM targets_trash_login_data"
                   " WHERE target = %llu AND type = '%s';",
                   target, quoted_type);
 
