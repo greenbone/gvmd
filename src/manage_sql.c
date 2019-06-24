@@ -21338,24 +21338,6 @@ detect_cleanup:
 
 /* Prognostics. */
 
-DEF_ACCESS (prognosis_iterator_cve, 0);
-DEF_ACCESS (prognosis_iterator_description, 2);
-DEF_ACCESS (prognosis_iterator_cpe, 3);
-
-/**
- * @brief Get the CVSS from a result iterator as a double.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return CVSS.
- */
-double
-prognosis_iterator_cvss_double (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_double (iterator, 1);
-}
-
 /**
  * @brief Get the location of an App for a report's host.
  *
@@ -21580,6 +21562,25 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (order_sql) g_string_free (order_sql, TRUE);
 }
+
+DEF_ACCESS (prognosis_iterator_cve, 0);
+
+/**
+ * @brief Get the CVSS from a result iterator as a double.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return CVSS.
+ */
+double
+prognosis_iterator_cvss_double (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_double (iterator, 1);
+}
+
+DEF_ACCESS (prognosis_iterator_description, 2);
+DEF_ACCESS (prognosis_iterator_cpe, 3);
 
 
 /* Reports. */
