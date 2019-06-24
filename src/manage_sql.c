@@ -31081,18 +31081,6 @@ apply_report_format (gchar *report_format_id,
  * @param[in]  alert_id       ID of alert to escalate report with,
  *                                instead of getting report.  NULL to get
  *                                report.
- * @param[in]  host               Host or NULL, when type "assets".
- * @param[in]  pos                Position of report from end, when host.  1 for
- *                                last.
- * @param[in]  host_search_phrase  Phrase that results must include.  All results
- *                                 if NULL or "".  For hosts.
- * @param[in]  host_levels         String describing threat levels (message types)
- *                                 to include in count (for example, "hmlgd" for
- *                                 High, Medium, Low, loG and Debug).  All levels if
- *                                 NULL.
- * @param[in]  host_first_result   The host result to start from.  The results
- *                                 are 0 indexed.
- * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  prefix              Text to send to client before the report.
  *
  * @return 0 success, -1 error, -2 failed to find alert report format, -3 error
@@ -31109,9 +31097,7 @@ manage_send_report (report_t report, report_t delta_report,
                                       void*),
                     int (*send_data_1) (const char *, void*), void *send_data_2,
                     const char *alert_id,
-                    const char *host, int pos, const char *host_search_phrase,
-                    const char *host_levels, int host_first_result,
-                    int host_max_results, const gchar* prefix)
+                    const gchar* prefix)
 {
   task_t task;
   gchar *xml_start, *xml_file;

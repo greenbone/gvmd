@@ -16168,7 +16168,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 gmp_parser->client_writer,
                                 gmp_parser->client_writer_data,
                                 get_reports_data->alert_id,
-                                NULL, 0, NULL, NULL, 0, 0, prefix->str);
+                                prefix->str);
       g_string_free (prefix, TRUE);
       if (ret)
         {
