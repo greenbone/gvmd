@@ -3825,6 +3825,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>scanner</e>
       </or>
       <e>name</e>
+      <o><e>usage_type</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -3851,6 +3852,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>name</name>
       <summary>A name for the config</summary>
       <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>usage_type</name>
+      <summary>Usage type (scan or policy) for the config. Can overwrite the one in get_configs_response</summary>
+      <pattern>
+        <t>
+          <alts>
+            <alt>scan</alt>
+            <alt>policy</alt>
+          </alts>
+        </t>
+      </pattern>
     </ele>
     <response>
       <pattern>
@@ -5818,6 +5831,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <o><e>copy</e></o>
       <o><e>alterable</e></o>
+      <o><e>usage_type</e></o>
       <e>config</e>
       <e>target</e>
       <o><e>hosts_ordering</e></o>
@@ -5851,6 +5865,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>alterable</name>
       <summary>Whether the task is alterable</summary>
       <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>usage_type</name>
+      <summary>Usage type for the task (scan or audit), defaulting to scan</summary>
+      <pattern>
+        <t>
+          <alts>
+            <alt>scan</alt>
+            <alt>audit</alt>
+          </alts>
+        </t>
+      </pattern>
     </ele>
     <ele>
       <name>config</name>
@@ -8099,8 +8125,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <alts>
                 <alt>0</alt>
                 <alt>1</alt>
-              </alts></type>
+              </alts>
+            </type>
             <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
+          </column>
+          <column>
+            <name>usage_type</name>
+            <type>
+              <alts>
+                <alt>scan</alt>
+                <alt>policy</alt>
+              </alts>
+            </type>
+            <summary>Usage type</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -8169,6 +8206,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>family_count</e>
           <e>nvt_count</e>
           <e>type</e>
+          <e>usage_type</e>
           <e>max_nvt_count</e>
           <e>known_nvt_count</e>
           <o><e>scanner</e></o>
@@ -8252,6 +8290,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <alts>
                 <alt>0</alt>
                 <alt>1</alt>
+              </alts>
+            </t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>usage_type</name>
+          <summary>The usage type of the config (scan or policy)</summary>
+          <pattern>
+            <t>
+              <alts>
+                <alt>scan</alt>
+                <alt>policy</alt>
               </alts>
             </t>
           </pattern>
@@ -20604,6 +20654,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>name</type>
             <summary>Name of the target</summary>
           </column>
+          <column>
+            <name>usage_type</name>
+            <type>
+              <alts>
+                <alt>scan</alt>
+                <alt>audit</alt>
+              </alts>
+            </type>
+            <summary>Usage type</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -20682,6 +20742,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>status</e>
               <e>progress</e>
               <e>alterable</e>
+              <e>usage_type</e>
               <e>config</e>
               <e>target</e>
               <e>hosts_ordering</e>
@@ -20843,6 +20904,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>alterable</name>
           <summary>Whether the task is an Alterable Task</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>usage_type</name>
+          <summary>The usage type of the task (scan or audit)</summary>
+          <pattern>
+            <t>
+              <alts>
+                <alt>scan</alt>
+                <alt>audit</alt>
+              </alts>
+            </t>
+          </pattern>
         </ele>
         <ele>
           <name>config</name>
