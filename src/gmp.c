@@ -2591,15 +2591,9 @@ typedef struct
   char *format_id;       ///< ID of report format.
   char *alert_id;        ///< ID of alert.
   char *report_id;       ///< ID of single report to get.
-  int host_first_result; ///< Skip over results before this result number.
-  int host_max_results;  ///< Maximum number of results return.
-  char *host_levels;     ///< Letter encoded threat level filter, for hosts.
-  char *host_search_phrase;  ///< Search phrase result filter.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides_details; ///< Boolean.  Whether to include details of above.
   int result_tags;       ///< Boolean.  Whether to include result tags.
-  char *host;            ///< Host for asset report.
-  char *pos;             ///< Position of report from end.
   int ignore_pagination; ///< Boolean.  Whether to ignore pagination filters.
 } get_reports_data_t;
 
@@ -2617,10 +2611,6 @@ get_reports_data_reset (get_reports_data_t *data)
   free (data->format_id);
   free (data->alert_id);
   free (data->report_id);
-  free (data->host_levels);
-  free (data->host_search_phrase);
-  free (data->host);
-  free (data->pos);
 
   memset (data, 0, sizeof (get_reports_data_t));
 }
@@ -6479,26 +6469,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &get_reports_data->format_id);
 
             if (find_attribute (attribute_names, attribute_values,
-                                "host_first_result", &attribute))
-              /* Subtract 1 to switch from 1 to 0 indexing. */
-              get_reports_data->host_first_result = atoi (attribute) - 1;
-            else
-              get_reports_data->host_first_result = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "host_max_results", &attribute))
-              get_reports_data->host_max_results = atoi (attribute);
-            else
-              get_reports_data->host_max_results = -1;
-
-            append_attribute (attribute_names, attribute_values, "host_levels",
-                              &get_reports_data->host_levels);
-
-            append_attribute (attribute_names, attribute_values,
-                              "host_search_phrase",
-                              &get_reports_data->host_search_phrase);
-
-            if (find_attribute (attribute_names, attribute_values,
                                 "notes_details", &attribute))
               get_reports_data->notes_details = strcmp (attribute, "0");
             else
@@ -6515,16 +6485,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_reports_data->result_tags = strcmp (attribute, "0");
             else
               get_reports_data->result_tags = 0;
-
-            append_attribute (attribute_names,
-                              attribute_values,
-                              "host",
-                              &get_reports_data->host);
-
-            append_attribute (attribute_names,
-                              attribute_values,
-                              "pos",
-                              &get_reports_data->pos);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "ignore_pagination", &attribute))
