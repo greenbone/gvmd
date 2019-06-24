@@ -22267,8 +22267,6 @@ insert_report_host_detail (report_t report, const char *host,
  *
  * @param[in]   results       Array of create_report_result_t pointers.
  * @param[in]   task_id       UUID of container task, or NULL to create new one.
- * @param[in]   task_name     Name for container task.
- * @param[in]   task_comment  Comment for container task.
  * @param[in]   in_assets     Whether to create assets from the report.
  * @param[in]   scan_start    Scan start time text.
  * @param[in]   scan_end      Scan end time text.
@@ -22280,17 +22278,16 @@ insert_report_host_detail (report_t report, const char *host,
  * @param[out]  report_id     Report ID.
  *
  * @return 0 success, 99 permission denied, -1 error, -2 failed to generate ID,
- *         -3 task_name is NULL, -4 failed to find task, -5 task must be
+ *         -3 task_id is NULL, -4 failed to find task, -5 task must be
  *         container, -6 permission to create assets denied.
  */
 int
-create_report (array_t *results, const char *task_id, const char *task_name,
-               const char *task_comment, const char *in_assets,
+create_report (array_t *results, const char *task_id, const char *in_assets,
                const char *scan_start, const char *scan_end,
                array_t *host_starts, array_t *host_ends, array_t *details,
                char **report_id)
 {
-  int index, in_assets_int, count, insert_count, first;
+  int index, in_assets_int, count, insert_count, first, rc;
   create_report_result_t *result, *end, *start;
   report_t report;
   user_t owner;
@@ -22310,43 +22307,28 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   if (acl_user_may ("create_report") == 0)
     return 99;
 
-  if (task_id == NULL && task_name == NULL)
+  if (task_id == NULL)
     return -3;
 
-  /* Find or create the task. */
-
   sql_begin_immediate ();
-  if (task_id)
-    {
-      int rc = 0;
 
-      /* It's important that the task is not in the trash, because we
-       * are inserting results below.  This find function will fail if
-       * the task is in the trash. */
-      if (find_task_with_permission (task_id, &task, "modify_task"))
-        rc = -1;
-      else if (task == 0)
-        rc = -4;
-      else if (task_target (task))
-        rc = -5;
-      if (rc)
-        {
-          sql_rollback ();
-          return rc;
-        }
-    }
-  else
-    {
-      if (acl_user_may ("create_task") == 0)
-        {
-          sql_rollback ();
-          return 99;
-        }
+  /* Find the task. */
 
-      task = make_task (g_strdup (task_name),
-                        task_comment ? g_strdup (task_comment) : NULL,
-                        1,  /* Include in assets. */
-                        1); /* Log and generate event. */
+  rc = 0;
+
+  /* It's important that the task is not in the trash, because we
+   * are inserting results below.  This find function will fail if
+   * the task is in the trash. */
+  if (find_task_with_permission (task_id, &task, "modify_task"))
+    rc = -1;
+  else if (task == 0)
+    rc = -4;
+  else if (task_target (task))
+    rc = -5;
+  if (rc)
+    {
+      sql_rollback ();
+      return rc;
     }
 
   /* Generate report UUID. */

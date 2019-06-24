@@ -4969,7 +4969,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>task</name>
       <summary>
-        Task for report: id to use existing task, name to create new task
+        Existing task for report
       </summary>
       <pattern>
         <attrib>
@@ -4977,19 +4977,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>uuid</type>
           <required>0</required>
         </attrib>
-        <o><e>name</e></o>
-        <o><e>comment</e></o>
       </pattern>
-      <ele>
-        <name>name</name>
-        <summary>The name of the task</summary>
-        <pattern><t>name</t></pattern>
-      </ele>
-      <ele>
-        <name>comment</name>
-        <summary>Comment for the new task</summary>
-        <pattern>text</pattern>
-      </ele>
     </ele>
     <ele>
       <name>in_assets</name>
@@ -26928,6 +26916,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>CREATE_REPORT</command>
+    <summary>Remove elements TASK/NAME and TASK/COMMENT</summary>
+    <description>
+      <p>
+        The elements NAME and COMMENT of element TASK have been removed
+        from the command CREATE_REPORT.   It is no longer possible to
+        create a task when uploading a report.
+      </p>
+      <p>
+        The alternate option, of specifying an existing task using the
+        TASK/@id attribute, is now required.
+      </p>
+    </description>
+    <version>9.0</version>
+  </change>
   <change>
     <command>GET_PREFERENCES, GET_CONFIGS</command>
     <summary>Add NVT Preferences ID</summary>
