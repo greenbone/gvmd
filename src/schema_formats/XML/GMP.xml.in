@@ -3111,6 +3111,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_target</c>
           <c>create_task</c>
           <c>create_ticket</c>
+          <c>create_tls_certificate</c>
           <c>create_user</c>
           <c>delete_agent</c>
           <c>delete_alert</c>
@@ -3164,6 +3165,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_targets</c>
           <c>get_tasks</c>
           <c>get_tickets</c>
+          <c>get_tls_certificates</c>
           <c>get_users</c>
           <c>get_version</c>
           <c>get_vulns</c>
@@ -3190,6 +3192,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_target</c>
           <c>modify_task</c>
           <c>modify_ticket</c>
+          <c>modify_tls_certificate</c>
           <c>modify_user</c>
           <c>restore</c>
           <c>resume_task</c>
@@ -3239,6 +3242,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_target</r>
             <r>create_task</r>
             <r>create_ticket</r>
+            <r>create_tls_certificate</r>
             <r>create_user</r>
             <r>delete_agent</r>
             <r>delete_alert</r>
@@ -3292,6 +3296,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_targets</r>
             <r>get_tasks</r>
             <r>get_tickets</r>
+            <r>get_tls_certificates</r>
             <r>get_users</r>
             <r>get_version</r>
             <r>get_vulns</r>
@@ -3317,6 +3322,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_tag</r>
             <r>modify_target</r>
             <r>modify_ticket</r>
+            <r>modify_tls_certificate</r>
             <r>modify_task</r>
             <r>modify_user</r>
             <r>restore</r>
@@ -6105,6 +6111,94 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                                 status_text="OK, resource created"
                                 id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_ticket_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_tls_certificate</name>
+    <summary>Create a TLS certificate</summary>
+    <description>
+      <p>
+        The client uses the create_tls_certificate command to create a new
+        TLS certificate.
+      </p>
+    </description>
+    <pattern>
+      <o><e>comment</e></o>
+      <o><e>copy</e></o>
+      <o><e>name</e></o>
+      <o><e>trust</e></o>
+      <e>certificate</e>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the TLS certificate</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing TLS certificate</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>
+        The name of the certificate, defaulting to the MD5 fingerprint
+      </summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>trust</name>
+      <summary>Whether the certificate is trusted</summary>
+      <pattern>
+        <t>boolean</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>certificate</name>
+      <summary>The Base64 encoded certificate data (x.509 DER or PEM)</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a TLS certificate</summary>
+      <request>
+        <create_tls_certificate>
+          <name>Example Certificate</name>
+          <certificate>MIIDNjCCAp+gAwIBAgIBATANBgkqhkiG9w0BAQQFADCBqTELM[...]</certificate>
+        </create_tls_certificate>
+      </request>
+      <response>
+        <create_tls_certificate_response status="201"
+            status_text="OK, resource created"
+            id="8a925978-59d0-494b-a837-40b271569727">
+        </create_tls_certificate_response>
       </response>
     </example>
   </command>
@@ -22655,6 +22749,441 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_tls_certificates</name>
+    <summary>Get one or many TLS certificates</summary>
+    <description>
+      <p>
+        The client uses the "get_tls_certificates" command to retrieve one
+        or more TLS certificates.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>tls_certificate_id</name>
+        <summary>ID of single TLS certificate to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>subject_dn</name>
+            <type>text</type>
+            <summary>
+              Distinguished name (DN) of the certificate subject
+            </summary>
+          </column>
+          <column>
+            <name>issuer_dn</name>
+            <type>text</type>
+            <summary>
+              Distinguished name (DN) of the certificate issuer
+            </summary>
+          </column>
+          <column>
+            <name>md5_fingerprint</name>
+            <type>text</type>
+            <summary>
+              MD5 fingerprint of the certificate
+            </summary>
+          </column>
+          <column>
+            <name>activates</name>
+            <type>iso_time</type>
+            <summary>Time before which the certificate is not valid</summary>
+          </column>
+          <column>
+            <name>expires</name>
+            <type>iso_time</type>
+            <summary>Time after which the certificate is not valid</summary>
+          </column>
+          <column>
+            <name>valid</name>
+            <type>boolean</type>
+            <summary>Whether the certificate is currently valid</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>tls_certificate</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>tls_certificates</e>
+        <e>tls_certificate_count</e>
+      </pattern>
+      <ele>
+        <name>tls_certificate</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of TLS certificate</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>certificate</e>
+          <e>md5_fingerprint</e>
+          <e>trust</e>
+          <e>activation_time</e>
+          <e>expiration_time</e>
+          <e>subject_dn</e>
+          <e>issuer_dn</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the TLS certificate</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the TLS certificate</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the TLS certificate</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Creation time of the TLS certificate</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Last time the TLS certificate was modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the TLS certificate is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether this TLS certificate is currently in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the TLS certificate
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>certificate</name>
+          <summary>The Base64 encoded certificate data if details are requested, empty otherwise</summary>
+          <pattern>
+            <attrib>
+              <name>format</name>
+              <summary>The format of the certificate</summary>
+              <type>
+                <alts>
+                  <alt>DER</alt>
+                  <alt>PEM</alt>
+                  <alt>unknown</alt>
+                </alts>
+              </type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>md5_fingerprint</name>
+          <summary>The MD5 fingerprint of the certificate</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>trust</name>
+          <summary>Whether the certificate is trusted</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>valid</name>
+          <summary>Whether the certificate is currently valid</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>activation_time</name>
+          <summary>Time before which the certificate is not valid</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>expiration_time</name>
+          <summary>Time after which the certificate is not valid</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>subject_dn</name>
+          <summary>Distinguished name (DN) of the certificate subject</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>issuer_dn</name>
+          <summary>Distinguished name (DN) of the certificate issuer</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>tls_certificates</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First TLS certificate</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of TLS certificates</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>tls_certificate_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of TLS certificate after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of TLS certificate on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the TLS certificates</summary>
+      <request>
+        <get_tls_certificates></get_tls_certificates>
+      </request>
+      <response>
+        <get_tls_certificates_response status="200" status_text="OK">
+          <tls_certificate id="ba36ed15-92fa-4ae0-af53-bad8ce472f18">
+            <owner>
+              <name>admin</name>
+            </owner>
+            <name>Example Certificate</name>
+            <comment></comment>
+            <creation_time>2019-06-12T14:36:53Z</creation_time>
+            <modification_time>2019-06-13T08:56:36Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <certificate format="DER">MIIDNjCCAp+gAwIBAgIBATANBgkqhkiG9w0BAQQFADCBqTELM[...]</certificate>
+            <md5_fingerprint>ba:ec:16:30:27:ca:99:17:ff:df:a4:4c:bc:bf:1b:98</md5_fingerprint>
+            <trust>1</trust>
+            <valid>1</valid>
+            <activation_time>2019-02-26T14:24:15Z</activation_time>
+            <expiration_time>2021-02-25T14:24:15Z</expiration_time>
+            <subject_dn>CN=localhost,O=GVM Users,L=Osnabrueck,C=DE</subject_dn>
+            <issuer_dn>OU=Certificate Authority for localhost,O=GVM Users,L=Osnabrueck,C=DE</issuer_dn>
+          </tls_certificate>
+          <filters id="">
+            <term>first=1 rows=10 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>1000</value>
+              </keyword>
+              <keyword>
+                <column>sort</column>
+                <relation>=</relation>
+                <value>name</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <tls_certificates start="1" max="10"/>
+          <tls_certificate_count>1
+            <filtered>1</filtered>
+            <page>1</page>
+          </tls_certificate_count>
+        </get_tls_certificates_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_version</name>
     <summary>Get the Greenbone Management Protocol version</summary>
     <pattern></pattern>
@@ -25632,6 +26161,96 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_ticket_response status="200" status_text="OK">
         </modify_ticket_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_tls_certificate</name>
+    <summary>Create a TLS certificate</summary>
+    <description>
+      <p>
+        The client uses the modify_tls_certificate command to modify an
+        existing TLS certificate.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>tls_certificate_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+      <o><e>copy</e></o>
+      <o><e>name</e></o>
+      <o><e>trust</e></o>
+      <o><e>certificate</e></o>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the TLS certificate</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing TLS certificate</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>
+        The name of the certificate, defaulting to the MD5 fingerprint
+      </summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>trust</name>
+      <summary>Whether the certificate is trusted</summary>
+      <pattern>
+        <t>boolean</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>certificate</name>
+      <summary>The Base64 encoded certificate data (x.509 DER or PEM)</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>
+        Modify the name and certificate content of a TLS certificate
+      </summary>
+      <request>
+        <modify_tls_certificate
+            tls_certificate_id="8a925978-59d0-494b-a837-40b271569727">
+          <name>Updated Example Certificate</name>
+          <certificate>LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVrVENDQ[...]
+          </certificate>
+        </modify_tls_certificate>
+      </request>
+      <response>
+        <modify_tls_certificate_response status="200" status_text="OK">
+        </modify_tls_certificate_response>
       </response>
     </example>
   </command>

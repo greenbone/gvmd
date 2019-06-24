@@ -89,6 +89,7 @@
 #include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_tickets.h"
+#include "gmp_tls_certificates.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "utils.h"
@@ -5208,6 +5209,7 @@ typedef enum
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_CREATE_TASK_USAGE_TYPE,
   CLIENT_CREATE_TICKET,
+  CLIENT_CREATE_TLS_CERTIFICATE,
   CLIENT_CREATE_USER,
   CLIENT_CREATE_USER_COMMENT,
   CLIENT_CREATE_USER_COPY,
@@ -5241,6 +5243,7 @@ typedef enum
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TICKET,
+  CLIENT_DELETE_TLS_CERTIFICATE,
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
@@ -5276,6 +5279,7 @@ typedef enum
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
   CLIENT_GET_TICKETS,
+  CLIENT_GET_TLS_CERTIFICATES,
   CLIENT_GET_USERS,
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
@@ -5465,6 +5469,7 @@ typedef enum
   CLIENT_MODIFY_TASK_HOSTS_ORDERING,
   CLIENT_MODIFY_TASK_SCANNER,
   CLIENT_MODIFY_TICKET,
+  CLIENT_MODIFY_TLS_CERTIFICATE,
   CLIENT_MODIFY_USER,
   CLIENT_MODIFY_USER_COMMENT,
   CLIENT_MODIFY_USER_GROUPS,
@@ -5819,6 +5824,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                  attribute_values);
             set_client_state (CLIENT_CREATE_TICKET);
           }
+        else if (strcasecmp ("CREATE_TLS_CERTIFICATE", element_name) == 0)
+          {
+            create_tls_certificate_start (gmp_parser, attribute_names,
+                                          attribute_values);
+            set_client_state (CLIENT_CREATE_TLS_CERTIFICATE);
+          }
         else if (strcasecmp ("CREATE_USER", element_name) == 0)
           {
             set_client_state (CLIENT_CREATE_USER);
@@ -6061,6 +6072,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             delete_start ("ticket", "Ticket",
                           attribute_names, attribute_values);
             set_client_state (CLIENT_DELETE_TICKET);
+          }
+        else if (strcasecmp ("DELETE_TLS_CERTIFICATE", element_name) == 0)
+          {
+            delete_start ("tls_certificate", "TLS Certificate",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_TLS_CERTIFICATE);
           }
         else if (strcasecmp ("DELETE_USER", element_name) == 0)
           {
@@ -6713,6 +6730,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_TASKS);
           }
         ELSE_GET_START (tickets, TICKETS)
+        ELSE_GET_START (tls_certificates, TLS_CERTIFICATES)
         else if (strcasecmp ("GET_USERS", element_name) == 0)
           {
             get_data_parse_attributes (&get_users_data->get, "user",
@@ -6902,6 +6920,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             modify_ticket_start (gmp_parser, attribute_names,
                                  attribute_values);
             set_client_state (CLIENT_MODIFY_TICKET);
+          }
+        else if (strcasecmp ("MODIFY_TLS_CERTIFICATE", element_name) == 0)
+          {
+            modify_tls_certificate_start (gmp_parser, attribute_names,
+                                          attribute_values);
+            set_client_state (CLIENT_MODIFY_TLS_CERTIFICATE);
           }
         else if (strcasecmp ("MODIFY_USER", element_name) == 0)
           {
@@ -7860,6 +7884,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         modify_ticket_element_start (gmp_parser, element_name,
                                      attribute_names,
                                      attribute_values);
+        break;
+
+      case CLIENT_MODIFY_TLS_CERTIFICATE:
+        modify_tls_certificate_element_start (gmp_parser, element_name,
+                                              attribute_names,
+                                              attribute_values);
         break;
 
       case CLIENT_MODIFY_USER:
@@ -9263,6 +9293,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         create_ticket_element_start (gmp_parser, element_name,
                                      attribute_names,
                                      attribute_values);
+        break;
+
+      case CLIENT_CREATE_TLS_CERTIFICATE:
+        create_tls_certificate_element_start (gmp_parser, element_name,
+                                              attribute_names,
+                                              attribute_values);
         break;
 
       case CLIENT_CREATE_USER:
@@ -13710,9 +13746,9 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           time_t activation_time, expiration_time;
           gchar *activation_time_str, *expiration_time_str;
           gchar *fingerprint, *issuer;
-          get_certificate_info (cert,
+          get_certificate_info (cert, -1,
                                 &activation_time, &expiration_time,
-                                &fingerprint, &issuer);
+                                &fingerprint, NULL, &issuer, NULL);
           activation_time_str = certificate_iso_time (activation_time);
           expiration_time_str = certificate_iso_time (expiration_time);
           SENDF_TO_CLIENT_OR_FAIL
@@ -17071,9 +17107,9 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
             {
               /* CA Certificate */
               gchar *fingerprint, *issuer;
-              get_certificate_info (scanner_iterator_ca_pub (&scanners),
+              get_certificate_info (scanner_iterator_ca_pub (&scanners), -1,
                                     &activation_time, &expiration_time,
-                                    &fingerprint, &issuer);
+                                    &fingerprint, NULL, &issuer, NULL);
               activation_time_str = certificate_iso_time (activation_time);
               expiration_time_str = certificate_iso_time (expiration_time);
               SENDF_TO_CLIENT_OR_FAIL
@@ -17116,9 +17152,9 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
             {
               /* Certificate */
               gchar *fingerprint, *issuer;
-              get_certificate_info (scanner_iterator_key_pub (&scanners),
+              get_certificate_info (scanner_iterator_key_pub (&scanners), -1,
                                     &activation_time, &expiration_time,
-                                    &fingerprint, &issuer);
+                                    &fingerprint, NULL, &issuer, NULL);
               activation_time_str = certificate_iso_time (activation_time);
               expiration_time_str = certificate_iso_time (expiration_time);
               SENDF_TO_CLIENT_OR_FAIL
@@ -17994,10 +18030,10 @@ handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
           gchar *activation_time_str, *expiration_time_str, *fingerprint;
           gchar *issuer;
 
-          get_certificate_info (setting_iterator_value (&settings),
+          get_certificate_info (setting_iterator_value (&settings), -1,
                                 &activation_time,
                                 &expiration_time, &fingerprint,
-                                &issuer);
+                                NULL, &issuer, NULL);
           activation_time_str = certificate_iso_time (activation_time);
           expiration_time_str = certificate_iso_time (expiration_time);
           SENDF_TO_CLIENT_OR_FAIL
@@ -20581,6 +20617,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TICKET:
+      case CLIENT_DELETE_TLS_CERTIFICATE:
         delete_run (gmp_parser, error);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -20748,9 +20785,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     "<value>%s</value>",
                     ldap_cacert);
 
-                  get_certificate_info (ldap_cacert, &activation_time,
+                  get_certificate_info (ldap_cacert, -1, &activation_time,
                                         &expiration_time, &fingerprint,
-                                        &issuer);
+                                        NULL, &issuer, NULL);
                   activation_time_str = certificate_iso_time (activation_time);
                   expiration_time_str = certificate_iso_time (expiration_time);
                   SENDF_TO_CLIENT_OR_FAIL
@@ -20928,6 +20965,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       CASE_GET_END (TICKETS, tickets);
+
+      CASE_GET_END (TLS_CERTIFICATES, tls_certificates);
 
       case CLIENT_GET_USERS:
         handle_get_users (gmp_parser, error);
@@ -25150,6 +25189,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_CREATE_TLS_CERTIFICATE:
+        if (create_tls_certificate_element_end (gmp_parser, error,
+                                                element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_CREATE_USER:
         {
           gchar *errdesc;
@@ -27882,6 +27927,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_MODIFY_TLS_CERTIFICATE:
+        if (modify_tls_certificate_element_end (gmp_parser,
+                                                error,
+                                                element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_MODIFY_USER:
         {
           if ((modify_user_data->name == NULL
@@ -29803,6 +29855,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         create_ticket_element_text (text, text_len);
         break;
 
+      case CLIENT_CREATE_TLS_CERTIFICATE:
+        create_tls_certificate_element_text (text, text_len);
+        break;
+
 
       APPEND (CLIENT_CREATE_USER_COMMENT,
               &create_user_data->comment);
@@ -30110,6 +30166,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         modify_ticket_element_text (text, text_len);
         break;
 
+      case CLIENT_MODIFY_TLS_CERTIFICATE:
+        modify_tls_certificate_element_text (text, text_len);
+        break;
 
       APPEND (CLIENT_RUN_WIZARD_MODE,
               &run_wizard_data->mode);

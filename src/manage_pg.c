@@ -991,6 +991,17 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
+  sql ("CREATE OR REPLACE FUNCTION certificate_iso_time (integer)"
+       " RETURNS text AS $$"
+       " BEGIN"
+       "   RETURN CASE"
+       "     WHEN ($1 = 0) THEN 'unlimited'"
+       "     WHEN ($1 = -1) THEN 'unknown'"
+       "     ELSE iso_time($1)"
+       "     END;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
   sql ("CREATE OR REPLACE FUNCTION days_from_now (seconds integer)"
        " RETURNS integer AS $$"
        " DECLARE"
@@ -2505,6 +2516,40 @@ create_tables ()
        "  result_uuid text,"
        "  report integer);"); // REFERENCES reports_trash (id) ON DELETE RESTRICT
 
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificates"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  certificate text,"
+       "  subject_dn text,"
+       "  issuer_dn text,"
+       "  activation_time integer,"
+       "  expiration_time integer,"
+       "  md5_fingerprint text,"
+       "  trust integer,"
+       "  certificate_format text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificates_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  certificate text,"
+       "  subject_dn text,"
+       "  issuer_dn text,"
+       "  activation_time integer,"
+       "  expiration_time integer,"
+       "  md5_fingerprint text,"
+       "  trust integer,"
+       "  certificate_format text);");
+
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -3711,18 +3756,4 @@ manage_backup_db (const gchar *database)
 {
   g_warning ("%s: database backup not supported for Postgres", __FUNCTION__);
   return -1;
-}
-
-
-/* Migrator helper. */
-
-/**
- * @brief Dummy for SQLite3 compatibility.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_create_migrate_51_to_52_convert ()
-{
-  return 0;
 }

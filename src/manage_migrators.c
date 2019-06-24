@@ -197,6 +197,8 @@ insert_permission (const char *name, const char *role)
 int
 migrate_184_to_185 ()
 {
+  iterator_t fkeys;
+
   sql_begin_immediate ();
 
   /* Ensure that the database is currently version 184. */
@@ -216,23 +218,19 @@ migrate_184_to_185 ()
        "   SET scanner_location = " G_STRINGIFY (LOCATION_TABLE));
 
   /* Remove the foreign key constraint in Postgres */
-  if (!sql_is_sqlite3 ())
+  init_iterator (&fkeys,
+                 "SELECT ccu.constraint_name"
+                 "  FROM information_schema.constraint_column_usage AS ccu"
+                 "  JOIN information_schema.table_constraints AS tc"
+                 "    ON tc.constraint_name = ccu.constraint_name"
+                 " WHERE tc.table_name = 'configs_trash'"
+                 "  AND tc.constraint_type = 'FOREIGN KEY'"
+                 "  AND ccu.table_name = 'scanners';");
+  while (next (&fkeys))
     {
-      iterator_t fkeys;
-      init_iterator (&fkeys,
-                     "SELECT ccu.constraint_name"
-                     "  FROM information_schema.constraint_column_usage AS ccu"
-                     "  JOIN information_schema.table_constraints AS tc"
-                     "    ON tc.constraint_name = ccu.constraint_name"
-                     " WHERE tc.table_name = 'configs_trash'"
-                     "  AND tc.constraint_type = 'FOREIGN KEY'"
-                     "  AND ccu.table_name = 'scanners';");
-      while (next (&fkeys))
-        {
-          const char *constraint_name;
-          constraint_name = iterator_string (&fkeys, 0);
-          sql ("ALTER TABLE configs_trash DROP constraint %s", constraint_name);
-        }
+      const char *constraint_name;
+      constraint_name = iterator_string (&fkeys, 0);
+      sql ("ALTER TABLE configs_trash DROP constraint %s", constraint_name);
     }
 
   /* Set the database version to 185. */
@@ -388,29 +386,23 @@ migrate_188_to_189 ()
        "       UNION SELECT DISTINCT nvt FROM overrides_trash)"
        "      AS sub;");
 
-  if (sql_is_sqlite3 ())
-    sql ("CREATE TABLE IF NOT EXISTS results_188"
-         " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
-         "  result_nvt, type, description, report, nvt_version, severity REAL,"
-         "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER)");
-  else
-    sql ("CREATE TABLE IF NOT EXISTS results_188"
-         " (id SERIAL PRIMARY KEY,"
-         "  uuid text UNIQUE NOT NULL,"
-         "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-         "  host text,"
-         "  port text,"
-         "  nvt text,"
-         "  result_nvt integer," // REFERENCES result_nvts (id),"
-         "  type text,"
-         "  description text,"
-         "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
-         "  nvt_version text,"
-         "  severity real,"
-         "  qod integer,"
-         "  qod_type text,"
-         "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-         "  date integer);");
+  sql ("CREATE TABLE IF NOT EXISTS results_188"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  host text,"
+       "  port text,"
+       "  nvt text,"
+       "  result_nvt integer," // REFERENCES result_nvts (id),"
+       "  type text,"
+       "  description text,"
+       "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  nvt_version text,"
+       "  severity real,"
+       "  qod integer,"
+       "  qod_type text,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  date integer);");
 
   sql ("INSERT INTO results_188"
        " (id, uuid, task, host, port, nvt, result_nvt, type, description,"
@@ -423,10 +415,7 @@ migrate_188_to_189 ()
        "    FROM results;");
 
   /* This also removes indexes. */
-  if (sql_is_sqlite3 ())
-    sql ("DROP TABLE results;");
-  else
-    sql ("DROP TABLE results CASCADE;");
+  sql ("DROP TABLE results CASCADE;");
   sql ("ALTER TABLE results_188 RENAME TO results;");
 
   /* Ensure result indexes exist, for the SQL in the next migrator. */
@@ -681,38 +670,19 @@ migrate_192_to_193 ()
 
   /* Create new tables for tag resources */
 
-  if (sql_is_sqlite3 ())
-    {
-      sql ("CREATE TABLE IF NOT EXISTS tag_resources"
-           " (tag INTEGER,"
-           "  resource_type text,"
-           "  resource INTEGER,"
-           "  resource_uuid TEXT,"
-           "  resource_location INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS tag_resources"
+       " (tag integer REFERENCES tags (id),"
+       "  resource_type text,"
+       "  resource integer,"
+       "  resource_uuid text,"
+       "  resource_location integer);");
 
-      sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
-           " (tag INTEGER,"
-           "  resource_type text,"
-           "  resource INTEGER,"
-           "  resource_uuid TEXT,"
-           "  resource_location INTEGER);");
-    }
-  else
-    {
-      sql ("CREATE TABLE IF NOT EXISTS tag_resources"
-           " (tag integer REFERENCES tags (id),"
-           "  resource_type text,"
-           "  resource integer,"
-           "  resource_uuid text,"
-           "  resource_location integer);");
-
-      sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
-           " (tag integer REFERENCES tags_trash (id),"
-           "  resource_type text,"
-           "  resource integer,"
-           "  resource_uuid text,"
-           "  resource_location integer);");
-    }
+  sql ("CREATE TABLE IF NOT EXISTS tag_resources_trash"
+       " (tag integer REFERENCES tags_trash (id),"
+       "  resource_type text,"
+       "  resource integer,"
+       "  resource_uuid text,"
+       "  resource_location integer);");
 
   /* Move tag resources to new tables */
 
@@ -730,52 +700,13 @@ migrate_192_to_193 ()
 
   /* Drop tag resource columns except resource_type */
 
-  if (sql_is_sqlite3 ())
-    {
-      sql ("ALTER TABLE tags RENAME TO tags_191;");
-      sql ("ALTER TABLE tags_trash RENAME TO tags_trash_191;");
+  sql ("ALTER TABLE tags DROP COLUMN resource;");
+  sql ("ALTER TABLE tags DROP COLUMN resource_uuid;");
+  sql ("ALTER TABLE tags DROP COLUMN resource_location;");
 
-      sql ("CREATE TABLE tags"
-           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
-           "  creation_time, modification_time, resource_type,"
-           "  active, value);");
-
-      sql ("INSERT INTO tags"
-           " (id, uuid, owner, name, comment,"
-           "  creation_time, modification_time, resource_type,"
-           "  active, value)"
-           " SELECT id, uuid, owner, name, comment,"
-           "  creation_time, modification_time, resource_type,"
-           "  active, value"
-           " FROM tags_191;");
-
-      sql ("CREATE TABLE tags_trash"
-           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
-           "  creation_time, modification_time, resource_type,"
-           "  active, value);");
-
-      sql ("INSERT INTO tags_trash"
-           " (id, uuid, owner, name, comment,"
-           "  creation_time, modification_time, resource_type,"
-           "  active, value)"
-           " SELECT id, uuid, owner, name, comment,"
-           "  creation_time, modification_time, resource_type,"
-           "  active, value"
-           " FROM tags_trash_191;");
-
-      sql ("DROP TABLE tags_191;");
-      sql ("DROP TABLE tags_trash_191;");
-    }
-  else
-    {
-      sql ("ALTER TABLE tags DROP COLUMN resource;");
-      sql ("ALTER TABLE tags DROP COLUMN resource_uuid;");
-      sql ("ALTER TABLE tags DROP COLUMN resource_location;");
-
-      sql ("ALTER TABLE tags_trash DROP COLUMN resource;");
-      sql ("ALTER TABLE tags_trash DROP COLUMN resource_uuid;");
-      sql ("ALTER TABLE tags_trash DROP COLUMN resource_location;");
-    }
+  sql ("ALTER TABLE tags_trash DROP COLUMN resource;");
+  sql ("ALTER TABLE tags_trash DROP COLUMN resource_uuid;");
+  sql ("ALTER TABLE tags_trash DROP COLUMN resource_location;");
 
   /* Set the database version to 193. */
 
@@ -808,30 +739,7 @@ migrate_193_to_194 ()
 
   /* The version column was dropped from the nvts table. */
 
-  if (sql_is_sqlite3 ())
-    {
-      sql ("ALTER TABLE nvts RENAME TO nvts_193;");
-
-      sql ("CREATE TABLE IF NOT EXISTS nvts"
-           " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
-           "  copyright, cve, bid, xref, tag, category INTEGER, family,"
-           "  cvss_base, creation_time, modification_time, solution_type TEXT,"
-           "  qod INTEGER, qod_type TEXT);");
-
-      sql ("INSERT INTO nvts"
-           " (id, uuid, oid, name, comment, copyright, cve, bid, xref, tag,"
-           "  category, family, cvss_base, creation_time, modification_time,"
-           "  solution_type, qod, qod_type)"
-           " SELECT"
-           "  id, uuid, oid, name, comment, copyright, cve, bid, xref, tag,"
-           "  category, family, cvss_base, creation_time, modification_time,"
-           "  solution_type, qod, qod_type"
-           " FROM nvts_193;");
-
-      sql ("DROP TABLE nvts_193;");
-    }
-  else
-    sql ("ALTER TABLE nvts DROP COLUMN version;");
+  sql ("ALTER TABLE nvts DROP COLUMN version;");
 
   /* Set the database version to 194. */
 
@@ -897,31 +805,24 @@ migrate_195_to_196 ()
 
   /* Ensure new tables exist. */
 
-  if (sql_is_sqlite3 ())
-    sql ("CREATE TABLE IF NOT EXISTS results_trash"
-         " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
-         "  result_nvt, type, description, report, nvt_version, severity REAL,"
-         "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER,"
-         "  hostname TEXT)");
-  else
-    sql ("CREATE TABLE IF NOT EXISTS results_trash"
-         " (id SERIAL PRIMARY KEY,"
-         "  uuid text UNIQUE NOT NULL,"
-         "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-         "  host text,"
-         "  port text,"
-         "  nvt text,"
-         "  result_nvt integer," // REFERENCES result_nvts (id),"
-         "  type text,"
-         "  description text,"
-         "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
-         "  nvt_version text,"
-         "  severity real,"
-         "  qod integer,"
-         "  qod_type text,"
-         "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-         "  date integer,"
-         "  hostname text);");
+  sql ("CREATE TABLE IF NOT EXISTS results_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  host text,"
+       "  port text,"
+       "  nvt text,"
+       "  result_nvt integer," // REFERENCES result_nvts (id),"
+       "  type text,"
+       "  description text,"
+       "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  nvt_version text,"
+       "  severity real,"
+       "  qod integer,"
+       "  qod_type text,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  date integer,"
+       "  hostname text);");
 
   /* Results of trashcan tasks are now stored in results_trash. */
 
@@ -969,34 +870,7 @@ migrate_196_to_197 ()
 
   /* The hidden column was removed from reports. */
 
-  if (sql_is_sqlite3 ())
-    {
-      sql ("ALTER TABLE reports RENAME TO reports_196;");
-
-      sql (
-        "CREATE TABLE IF NOT EXISTS reports"
-        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER,"
-        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
-        "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
-        "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
-        "  flags INTEGER);");
-
-      sql ("INSERT INTO reports"
-           " (id, uuid, owner, task, date, start_time, end_time, nbefile,"
-           "  comment, scan_run_status, slave_progress, slave_task_uuid,"
-           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
-           "  flags)"
-           " SELECT"
-           "  id, uuid, owner, task, date, start_time, end_time, nbefile,"
-           "  comment, scan_run_status, slave_progress, slave_task_uuid,"
-           "  slave_uuid, slave_name, slave_host, slave_port, source_iface,"
-           "  flags"
-           " FROM reports_196;");
-
-      sql ("DROP TABLE reports_196;");
-    }
-  else
-    sql ("ALTER TABLE reports DROP COLUMN hidden;");
+  sql ("ALTER TABLE reports DROP COLUMN hidden;");
 
   /* Set the database version to 197. */
 
@@ -1029,31 +903,7 @@ migrate_197_to_198 ()
 
   /* The copyright column was removed from nvts. */
 
-  if (sql_is_sqlite3 ())
-    {
-      sql ("ALTER TABLE nvts RENAME TO nvts_197;");
-
-      sql (
-        "CREATE TABLE IF NOT EXISTS nvts"
-        " (id INTEGER PRIMARY KEY, uuid, oid, name, comment,"
-        "  cve, bid, xref, tag, category INTEGER, family, cvss_base,"
-        "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
-        "  qod_type TEXT);");
-
-      sql ("INSERT INTO nvts"
-           " (id, uuid, oid, name, comment, cve, bid, xref, tag, category,"
-           "  family, cvss_base, creation_time, modification_time,"
-           "  solution_type, qod, qod_type)"
-           " SELECT"
-           "  id, uuid, oid, name, comment, cve, bid, xref, tag, category,"
-           "  family, cvss_base, creation_time, modification_time,"
-           "  solution_type, qod, qod_type"
-           " FROM nvts_197;");
-
-      sql ("DROP TABLE nvts_197;");
-    }
-  else
-    sql ("ALTER TABLE nvts DROP COLUMN copyright;");
+  sql ("ALTER TABLE nvts DROP COLUMN copyright;");
 
   /* Set the database version to 198. */
 
@@ -1231,99 +1081,73 @@ migrate_201_to_202 ()
   /* Update the database. */
 
   /* Ensure the various tickets tables exist */
-  if (sql_is_sqlite3 ())
-    {
-      sql ("CREATE TABLE IF NOT EXISTS tickets"
-           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
-           "  comment, nvt, task, report, severity, host, location,"
-           "  solution_type, assigned_to, status, open_time, solved_time,"
-           "  solved_comment, confirmed_time, confirmed_report, closed_time,"
-           "  closed_comment, orphaned_time, creation_time,"
-           "  modification_time);");
-      sql ("CREATE TABLE IF NOT EXISTS ticket_results"
-           " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
-           "  result_uuid, report);");
-      sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
-           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
-           "  comment, nvt, task, report, severity, host, location,"
-           "  solution_type, assigned_to, status, open_time, solved_time,"
-           "  solved_comment, confirmed_time, confirmed_report, closed_time,"
-           "  closed_comment, orphaned_time, creation_time,"
-           "  modification_time);");
-      sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
-           " (id INTEGER PRIMARY KEY, ticket, result, result_location,"
-           "  result_uuid, report);");
-    }
-  else
-    {
-      sql ("CREATE TABLE IF NOT EXISTS tickets"
-           " (id SERIAL PRIMARY KEY,"
-           "  uuid text UNIQUE NOT NULL,"
-           "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-           "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
-           "  comment text,"
-           "  nvt text,"
-           "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
-           "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
-           "  severity real,"
-           "  host text,"
-           "  location text,"
-           "  solution_type text,"
-           "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
-           "  status integer,"
-           "  open_time integer,"
-           "  solved_time integer,"
-           "  solved_comment text,"
-           "  confirmed_time integer,"
-           "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
-           "  closed_time integer,"
-           "  closed_comment text,"
-           "  orphaned_time integer,"
-           "  creation_time integer,"
-           "  modification_time integer);");
+  sql ("CREATE TABLE IF NOT EXISTS tickets"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
+       "  comment text,"
+       "  nvt text,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  severity real,"
+       "  host text,"
+       "  location text,"
+       "  solution_type text,"
+       "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  status integer,"
+       "  open_time integer,"
+       "  solved_time integer,"
+       "  solved_comment text,"
+       "  confirmed_time integer,"
+       "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  closed_time integer,"
+       "  closed_comment text,"
+       "  orphaned_time integer,"
+       "  creation_time integer,"
+       "  modification_time integer);");
 
-      sql ("CREATE TABLE IF NOT EXISTS ticket_results"
-           " (id SERIAL PRIMARY KEY,"
-           "  ticket integer REFERENCES tickets (id) ON DELETE RESTRICT,"
-           "  result integer,"    // REFERENCES results (id) ON DELETE RESTRICT
-           "  result_location integer,"
-           "  result_uuid text,"
-           "  report integer);"); // REFERENCES reports (id) ON DELETE RESTRICT
+  sql ("CREATE TABLE IF NOT EXISTS ticket_results"
+       " (id SERIAL PRIMARY KEY,"
+       "  ticket integer REFERENCES tickets (id) ON DELETE RESTRICT,"
+       "  result integer,"    // REFERENCES results (id) ON DELETE RESTRICT
+       "  result_location integer,"
+       "  result_uuid text,"
+       "  report integer);"); // REFERENCES reports (id) ON DELETE RESTRICT
 
-      sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
-           " (id SERIAL PRIMARY KEY,"
-           "  uuid text UNIQUE NOT NULL,"
-           "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-           "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
-           "  comment text,"
-           "  nvt text,"
-           "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
-           "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
-           "  severity real,"
-           "  host text,"
-           "  location text,"
-           "  solution_type text,"
-           "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
-           "  status integer,"
-           "  open_time integer,"
-           "  solved_time integer,"
-           "  solved_comment text,"
-           "  confirmed_time integer,"
-           "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
-           "  closed_time integer,"
-           "  closed_comment text,"
-           "  orphaned_time integer,"
-           "  creation_time integer,"
-          "  modification_time integer);");
+  sql ("CREATE TABLE IF NOT EXISTS tickets_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL," /* NVT name.  Aka Vulnerability. */
+       "  comment text,"
+       "  nvt text,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  severity real,"
+       "  host text,"
+       "  location text,"
+       "  solution_type text,"
+       "  assigned_to integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  status integer,"
+       "  open_time integer,"
+       "  solved_time integer,"
+       "  solved_comment text,"
+       "  confirmed_time integer,"
+       "  confirmed_report integer," // REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  closed_time integer,"
+       "  closed_comment text,"
+       "  orphaned_time integer,"
+       "  creation_time integer,"
+      "  modification_time integer);");
 
-      sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
-          " (id SERIAL PRIMARY KEY,"
-          "  ticket integer REFERENCES tickets_trash (id) ON DELETE RESTRICT,"
-          "  result integer,"    // REFERENCES results_trash (id) ON DELETE RESTRICT
-          "  result_location integer,"
-          "  result_uuid text,"
-          "  report integer);"); // REFERENCES reports_trash (id) ON DELETE RESTRICT
-    }
+  sql ("CREATE TABLE IF NOT EXISTS ticket_results_trash"
+      " (id SERIAL PRIMARY KEY,"
+      "  ticket integer REFERENCES tickets_trash (id) ON DELETE RESTRICT,"
+      "  result integer,"    // REFERENCES results_trash (id) ON DELETE RESTRICT
+      "  result_location integer,"
+      "  result_uuid text,"
+      "  report integer);"); // REFERENCES reports_trash (id) ON DELETE RESTRICT
 
   /* Ticket orphan state was removed. */
 
@@ -1374,30 +1198,17 @@ migrate_202_to_203 ()
 
   /* Ticket columns were renamed to match the state names. */
 
-  if (sql_is_sqlite3 ())
-    {
-      /* This is a lot easier that migrating.  No real user
-       * should have been using the ticket implementation yet
-       * so it is safe. */
-      sql ("DROP TABLE IF EXISTS ticket_results;");
-      sql ("DROP TABLE IF EXISTS tickets;");
-      sql ("DROP TABLE IF EXISTS ticket_results_trash;");
-      sql ("DROP TABLE IF EXISTS tickets_trash;");
-    }
-  else
-    {
-      sql ("ALTER TABLE tickets DROP COLUMN orphaned_time;");
+  sql ("ALTER TABLE tickets DROP COLUMN orphaned_time;");
 
-      move ("tickets", "solved_comment", "fixed_comment");
-      move ("tickets", "solved_time", "fixed_time");
-      move ("tickets", "confirmed_report", "fix_verified_report");
-      move ("tickets", "confirmed_time", "fix_verified_time");
+  move ("tickets", "solved_comment", "fixed_comment");
+  move ("tickets", "solved_time", "fixed_time");
+  move ("tickets", "confirmed_report", "fix_verified_report");
+  move ("tickets", "confirmed_time", "fix_verified_time");
 
-      move ("tickets_trash", "solved_comment", "fixed_comment");
-      move ("tickets_trash", "solved_time", "fixed_time");
-      move ("tickets_trash", "confirmed_report", "fix_verified_report");
-      move ("tickets_trash", "confirmed_time", "fix_verified_time");
-    }
+  move ("tickets_trash", "solved_comment", "fixed_comment");
+  move ("tickets_trash", "solved_time", "fixed_time");
+  move ("tickets_trash", "confirmed_report", "fix_verified_report");
+  move ("tickets_trash", "confirmed_time", "fix_verified_time");
 
   /* Set the database version to 203. */
 
@@ -1430,25 +1241,11 @@ migrate_203_to_204 ()
 
   /* Ticket open_comment was added. */
 
-  if (sql_is_sqlite3 ())
-    {
-      /* This is a lot easier that migrating.  No real user
-       * should have been using the ticket implementation yet
-       * so it is safe. */
-      sql ("DROP TABLE IF EXISTS ticket_results;");
-      sql ("DROP TABLE IF EXISTS tickets;");
-      sql ("DROP TABLE IF EXISTS ticket_results_trash;");
-      sql ("DROP TABLE IF EXISTS tickets_trash;");
-    }
-  else
-    {
-      sql ("ALTER TABLE tickets ADD COLUMN open_comment text;");
-      sql ("UPDATE tickets SET open_comment = 'No comment for migration.';");
+  sql ("ALTER TABLE tickets ADD COLUMN open_comment text;");
+  sql ("UPDATE tickets SET open_comment = 'No comment for migration.';");
 
-      sql ("ALTER TABLE tickets_trash ADD COLUMN open_comment text;");
-      sql (
-        "UPDATE tickets_trash SET open_comment = 'No comment for migration.';");
-    }
+  sql ("ALTER TABLE tickets_trash ADD COLUMN open_comment text;");
+  sql ("UPDATE tickets_trash SET open_comment = 'No comment for migration.';");
 
   /* Set the database version to 204. */
 
@@ -1481,26 +1278,13 @@ migrate_204_to_205 ()
 
   /* Ticket "comment" column suffix was changed to "note". */
 
-  if (sql_is_sqlite3 ())
-    {
-      /* This is a lot easier that migrating.  No real user
-       * should have been using the ticket implementation yet
-       * so it is safe. */
-      sql ("DROP TABLE IF EXISTS ticket_results;");
-      sql ("DROP TABLE IF EXISTS tickets;");
-      sql ("DROP TABLE IF EXISTS ticket_results_trash;");
-      sql ("DROP TABLE IF EXISTS tickets_trash;");
-    }
-  else
-    {
-      move ("tickets", "open_comment", "open_note");
-      move ("tickets", "fixed_comment", "fixed_note");
-      move ("tickets", "closed_comment", "closed_note");
+  move ("tickets", "open_comment", "open_note");
+  move ("tickets", "fixed_comment", "fixed_note");
+  move ("tickets", "closed_comment", "closed_note");
 
-      move ("tickets_trash", "open_comment", "open_note");
-      move ("tickets_trash", "fixed_comment", "fixed_note");
-      move ("tickets_trash", "closed_comment", "closed_note");
-    }
+  move ("tickets_trash", "open_comment", "open_note");
+  move ("tickets_trash", "fixed_comment", "fixed_note");
+  move ("tickets_trash", "closed_comment", "closed_note");
 
   /* Set the database version to 205. */
 
@@ -1755,19 +1539,12 @@ migrate_209_to_210 ()
       return -1;
     }
 
-  /* Do nothing when SQLite is used. During a later
-   * migration the columns will automatically be removed.
-   */ 
-  if (! sql_is_sqlite3 ())
-    {
+  /* Update the database. */
 
-      /* Update the database. */
+  /* Remove the fields "bid" and "xref" from table "nvts". */
 
-      /* Remove the fields "bid" and "xref" from table "nvts". */
-
-      sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN bid CASCADE;");
-      sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN xref CASCADE;");
-    }
+  sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN bid CASCADE;");
+  sql ("ALTER TABLE IF EXISTS nvts DROP COLUMN xref CASCADE;");
 
   /* Set the database version to 210. */
 

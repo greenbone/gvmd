@@ -158,7 +158,14 @@ gchar*
 truncate_private_key (const gchar*);
 
 int
-get_certificate_info (const gchar*, time_t*, time_t*, gchar**, gchar**);
+get_certificate_info (const gchar *,
+                      gssize,
+                      time_t *,
+                      time_t *,
+                      gchar **,
+                      gchar **,
+                      gchar **,
+                      gnutls_x509_crt_fmt_t *);
 
 gchar *
 certificate_iso_time (time_t);
@@ -331,6 +338,7 @@ typedef long long int tag_t;
 typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int ticket_t;
+typedef long long int tls_certificate_t;
 typedef long long int result_t;
 typedef long long int report_t;
 typedef long long int report_host_t;
@@ -923,9 +931,6 @@ const char *
 task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
                             double);
 
-const char *
-task_trend (task_t, int, int);
-
 int
 task_schedule_periods (task_t);
 
@@ -946,9 +951,6 @@ task_schedule_next_time_uuid (const gchar *);
 
 int
 task_schedule_next_time (task_t);
-
-char *
-task_severity (task_t, int, int, int);
 
 int
 task_debugs_size (task_t);
@@ -1061,9 +1063,6 @@ config_task_iterator_readable (iterator_t*);
 
 int
 severity_in_level (double, const char *);
-
-int
-severity_matches_ov (double, double);
 
 const char*
 severity_to_level (double, int);
@@ -1757,17 +1756,8 @@ target_task_iterator_readable (iterator_t*);
 credential_t
 target_credential (target_t, const char*);
 
-credential_t
-trash_target_credential (target_t, const char*);
-
-int
-trash_target_credential_location (target_t, const char*);
-
 int
 target_login_port (target_t, const char*);
-
-int
-trash_target_login_port (target_t, const char*);
 
 
 /* Configs. */

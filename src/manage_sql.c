@@ -19,10 +19,7 @@
 
 /**
  * @file  manage_sql.c
- * @brief The Greenbone Vulnerability Manager management library (SQLite implementation).
- *
- * This file defines the SQLite specific portions of the Greenbone Vulnerability Manager
- * management library.
+ * @brief The Greenbone Vulnerability Manager management library.
  */
 
 /**
@@ -35,6 +32,7 @@
 #include "manage_sql_nvts.h"
 #include "manage_tickets.h"
 #include "manage_sql_tickets.h"
+#include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
 #include "lsc_user.h"
 #include "sql.h"
@@ -586,6 +584,7 @@ command_t gmp_commands[]
     {"CREATE_TARGET", "Create a target."},
     {"CREATE_TASK", "Create a task."},
     {"CREATE_TICKET", "Create a ticket."},
+    {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
     {"DELETE_AGENT", "Delete an agent."},
     {"DELETE_ALERT", "Delete an alert."},
@@ -608,6 +607,7 @@ command_t gmp_commands[]
     {"DELETE_TARGET", "Delete a target."},
     {"DELETE_TASK", "Delete a task."},
     {"DELETE_TICKET", "Delete a ticket."},
+    {"DELETE_TLS_CERTIFICATE", "Delete a TLS certificate."},
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
@@ -640,6 +640,7 @@ command_t gmp_commands[]
     {"GET_TARGETS", "Get all targets."},
     {"GET_TASKS", "Get all tasks."},
     {"GET_TICKETS", "Get all tickets."},
+    {"GET_TLS_CERTIFICATES", "Get all TLS certificates."},
     {"GET_USERS", "Get all users."},
     {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
@@ -666,6 +667,7 @@ command_t gmp_commands[]
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
     {"MODIFY_TICKET", "Modify an existing ticket."},
+    {"MODIFY_TLS_CERTIFICATE", "Modify an existing TLS certificate."},
     {"MODIFY_USER", "Modify a user."},
     {"MOVE_TASK", "Assign task to another slave scanner, even while running."},
     {"RESTORE", "Restore a resource."},
@@ -5675,42 +5677,24 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
    *  the JavaScript Date objects do not support setting the timezone.
    */
   if (column_is_timestamp (group_column))
-    if (sql_is_sqlite3 ())
-      outer_group_by_column
-        = g_strdup_printf ("CAST (strftime ('%%s',"
-                           "                date(%s, 'unixepoch',"
-                           "                     'localtime'),"
-                           "                'utc')"
-                           "      AS INTEGER)",
-                           "aggregate_group_value");
-    else
-      outer_group_by_column
-        = g_strdup_printf ("EXTRACT (EPOCH FROM"
-                           "           date_trunc ('day',"
-                           "           TIMESTAMP WITH TIME ZONE 'epoch'"
-                           "           + (%s) * INTERVAL '1 second'))"
-                           "  :: integer",
-                           "aggregate_group_value");
+    outer_group_by_column
+      = g_strdup_printf ("EXTRACT (EPOCH FROM"
+                         "           date_trunc ('day',"
+                         "           TIMESTAMP WITH TIME ZONE 'epoch'"
+                         "           + (%s) * INTERVAL '1 second'))"
+                         "  :: integer",
+                         "aggregate_group_value");
   else
     outer_group_by_column = g_strdup ("aggregate_group_value");
 
   if (column_is_timestamp (subgroup_column))
-    if (sql_is_sqlite3 ())
-      outer_subgroup_column
-        = g_strdup_printf ("CAST (strftime ('%%s',"
-                           "                date(%s, 'unixepoch',"
-                           "                     'localtime'),"
-                           "                'utc')"
-                           "      AS INTEGER)",
-                           "aggregate_subgroup_value");
-    else
-      outer_subgroup_column
-        = g_strdup_printf ("EXTRACT (EPOCH FROM"
-                           "           date_trunc ('day',"
-                           "           TIMESTAMP WITH TIME ZONE 'epoch'"
-                           "           + (%s) * INTERVAL '1 second'))"
-                           "  :: integer",
-                           "aggregate_subgroup_value");
+    outer_subgroup_column
+      = g_strdup_printf ("EXTRACT (EPOCH FROM"
+                         "           date_trunc ('day',"
+                         "           TIMESTAMP WITH TIME ZONE 'epoch'"
+                         "           + (%s) * INTERVAL '1 second'))"
+                         "  :: integer",
+                         "aggregate_subgroup_value");
   else
     outer_subgroup_column = g_strdup ("aggregate_subgroup_value");
 
@@ -19502,16 +19486,11 @@ set_task_requested (task_t task, task_status_t *status)
 
   /* Locking here prevents another process from starting the task
    * concurrently. */
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
+  sql_begin_immediate ();
+  if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
     {
-      sql_begin_immediate ();
-      if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
-        {
-          sql_rollback ();
-          return 1;
-        }
+      sql_rollback ();
+      return 1;
     }
 
   run_status = task_run_status (task);
@@ -19660,7 +19639,6 @@ task_upload_progress (task_t task)
   if (report)
     {
       int count;
-      int using_sqlite = sql_is_sqlite3 ();
       get_data_t get;
       memset (&get, 0, sizeof (get_data_t));
       get.filter = g_strdup ("min_qod=0");
@@ -19668,11 +19646,9 @@ task_upload_progress (task_t task)
       get_data_reset (&get);
 
       return sql_int ("SELECT"
-                      " %s (%s (((%i * 100) / upload_result_count), 100), -1)"
+                      " greatest (least (((%i * 100) / upload_result_count), 100), -1)"
                       " FROM tasks"
                       " WHERE id = %llu;",
-                      using_sqlite ? "max" : "greatest",
-                      using_sqlite ? "min" : "least",
                       count,
                       task);
     }
@@ -20352,33 +20328,6 @@ set_task_schedule_next_time_uuid (const gchar *task_id, time_t time)
 /**
  * @brief Return the severity score of a task, taking overrides into account.
  *
- * Only used by SQLite backend.
- *
- * @param[in]  task       Task.
- * @param[in]  overrides  Whether to apply overrides.
- * @param[in]  min_qod    Minimum QoD of results to count.
- * @param[in]  offset     Offset of report to get severity from:
- *                        0 = use last report, 1 = use next to last report
- *
- * @return Severity score of last report on task if there is one, as a freshly
- *  allocated string, else NULL.
- */
-char *
-task_severity (task_t task, int overrides, int min_qod, int offset)
-{
-  double severity;
-
-  severity = task_severity_double (task, overrides, min_qod, offset);
-
-  if (severity == SEVERITY_MISSING)
-    return NULL;
-  else
-    return g_strdup_printf ("%0.1f", severity);
-}
-
-/**
- * @brief Return the severity score of a task, taking overrides into account.
- *
  * @param[in]  task       Task.
  * @param[in]  overrides  Whether to apply overrides.
  * @param[in]  min_qod    Minimum QoD of results to count.
@@ -20655,22 +20604,14 @@ auto_delete_reports ()
 
   g_debug ("%s", __FUNCTION__);
 
-  if (sql_is_sqlite3 ())
-    {
-      if (sql_begin_exclusive_giveup ())
-        return;
-    }
-  else
-    {
-      sql_begin_immediate ();
+  sql_begin_immediate ();
 
-      /* As in delete_report, this prevents other processes from getting the
-       * report ID. */
-      if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
-        {
-          sql_rollback ();
-          return;
-        }
+  /* As in delete_report, this prevents other processes from getting the
+   * report ID. */
+  if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
+    {
+      sql_rollback ();
+      return;
     }
 
   init_iterator (&tasks,
@@ -20843,9 +20784,8 @@ result_nvt_notice (const gchar *nvt)
 {
   if (nvt == NULL)
     return;
-  if (sql_is_sqlite3 ()
-      || (sql_int ("SELECT current_setting ('server_version_num')::integer;")
-          < 90500))
+  if (sql_int ("SELECT current_setting ('server_version_num')::integer;")
+          < 90500)
     sql ("INSERT into result_nvts (nvt)"
          " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts"
          "                               WHERE nvt = '%s');",
@@ -26956,20 +26896,15 @@ delete_report (const char *report_id, int dummy)
   report_t report;
   int ret;
 
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
-    {
-      sql_begin_immediate ();
+  sql_begin_immediate ();
 
-      /* This prevents other processes (in particular a RESUME_TASK) from getting
-       * a reference to the report ID, and then using that reference to try access
-       * the deleted report.
-       *
-       * If the report is running already then delete_report_internal will
-       * ROLLBACK. */
-      sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
-    }
+  /* This prevents other processes (in particular a RESUME_TASK) from getting
+   * a reference to the report ID, and then using that reference to try access
+   * the deleted report.
+   *
+   * If the report is running already then delete_report_internal will
+   * ROLLBACK. */
+  sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
 
   if (acl_user_may ("delete_report") == 0)
     {
@@ -32780,23 +32715,6 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 /* More task stuff. */
 
 /**
- * @brief Return the number of finished reports associated with a task.
- *
- * @param[in]  task  Task.
- *
- * @return Number of reports.
- */
-static unsigned int
-task_finished_report_count (task_t task)
-{
-  return (unsigned int) sql_int ("SELECT count(*) FROM reports"
-                                 " WHERE task = %llu"
-                                 " AND scan_run_status = %u;",
-                                 task,
-                                 TASK_STATUS_DONE);
-}
-
-/**
  * @brief Return the trend of a task, given counts.
  *
  * @param[in]  holes_a   Number of holes on earlier report.
@@ -32912,83 +32830,6 @@ task_iterator_trend_counts (iterator_t *iterator, int holes_a, int warns_a,
 
   if (task_iterator_run_status (iterator) == TASK_STATUS_RUNNING)
     return "";
-
-  return task_trend_calc (holes_a, warns_a, infos_a, severity_a,
-                          holes_b, warns_b, infos_b, severity_b);
-}
-
-/**
- * @brief Return the trend of a task.
- *
- * Only used by SQLite backend.
- *
- * @param[in]  task      Task.
- * @param[in]  override  Whether to override the threat.
- * @param[in]  min_qod   The minimum QoD of results to count.
- *
- * @return "up", "down", "more", "less", "same" or if too few reports "".
- */
-const char *
-task_trend (task_t task, int override, int min_qod)
-{
-  report_t last_report, second_last_report;
-  int holes_a, warns_a, infos_a, logs_a, false_positives_a;
-  int holes_b, warns_b, infos_b, logs_b, false_positives_b;
-  double severity_a, severity_b;
-  get_data_t *get;
-
-  /* Ensure there are enough reports. */
-
-  if (task_finished_report_count (task) <= 1)
-    return "";
-
-  /* Get trend only for authenticated users to avoid
-     caching result counts for dummy or NULL users   */
-  if (current_credentials.uuid == NULL
-      || strcmp (current_credentials.uuid, "") == 0)
-    return "";
-
-  /* Skip running and container tasks. */
-
-  if (task_run_status (task) == TASK_STATUS_RUNNING)
-    return "";
-
-  if (task_target (task) == 0)
-    return NULL;
-
-  /* Get details of last report. */
-
-  task_last_report (task, &last_report);
-  if (last_report == 0)
-    return "";
-
-  /* Count the logs and false positives too, as report_counts_id is faster
-   * with all five. */
-  get = report_results_get_data (1, -1, override, 0, min_qod);
-  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
-                        &false_positives_a, &severity_a, get, NULL))
-    /** @todo Either fail better or abort at SQL level. */
-    abort ();
-
-  /* Get details of second last report. */
-
-  task_second_last_report (task, &second_last_report);
-  if (second_last_report == 0)
-    {
-      get_data_reset (get);
-      free (get);
-      return "";
-    }
-
-  /* Count the logs and false positives too, as report_counts_id is faster
-   * with all five. */
-  if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
-                        &warns_b, &false_positives_b, &severity_b, get, NULL))
-    /** @todo Either fail better or abort at SQL level. */
-    abort ();
-
-  get_data_reset (get);
-  free (get);
 
   return task_trend_calc (holes_a, warns_a, infos_a, severity_a,
                           holes_b, warns_b, infos_b, severity_b);
@@ -33272,10 +33113,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
   g_debug ("   request delete task %s", task_id);
 
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
-    sql_begin_immediate ();
+  sql_begin_immediate ();
 
   if (acl_user_may ("delete_task") == 0)
     {
@@ -33339,8 +33177,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         {
           int ret;
 
-          if (ultimate
-              && (sql_is_sqlite3 () == 0))
+          if (ultimate)
             /* This prevents other processes (for example a START_TASK) from
              * getting a reference to a report ID or the task ID, and then using
              * that reference to try access the deleted report or task.
@@ -33503,23 +33340,18 @@ delete_task_lock (task_t task, int ultimate)
 
   g_debug ("   delete task %llu", task);
 
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
-    {
-      sql_begin_immediate ();
+  sql_begin_immediate ();
 
-      /* This prevents other processes (for example a START_TASK) from getting
-       * a reference to a report ID or the task ID, and then using that
-       * reference to try access the deleted report or task.
-       *
-       * If the task is already active then delete_report (via delete_task)
-       * will fail and rollback. */
-      if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
-        {
-          sql_rollback ();
-          return -1;
-        }
+  /* This prevents other processes (for example a START_TASK) from getting
+   * a reference to a report ID or the task ID, and then using that
+   * reference to try access the deleted report or task.
+   *
+   * If the task is already active then delete_report (via delete_task)
+   * will fail and rollback. */
+  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+    {
+      sql_rollback ();
+      return -1;
     }
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
@@ -34530,87 +34362,6 @@ target_credential (target_t target, const char* type)
 }
 
 /**
- * @brief Get a credential from a target in the trashcan.
- *
- * Only used by SQLite backend.
- *
- * @param[in]  target         The target.
- * @param[in]  type           The credential type (e.g. "ssh" or "smb").
- *
- * @return  0 on success, -1 on error, 1 credential not found, 99 permission
- *          denied.
- */
-credential_t
-trash_target_credential (target_t target, const char* type)
-{
-  gchar *quoted_type;
-  credential_t credential;
-
-  if (target == 0 || type == NULL)
-    return 0;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT NOT EXISTS"
-               " (SELECT * FROM targets_trash_login_data"
-               "  WHERE target = %llu and type = '%s');",
-               target, quoted_type))
-    {
-      g_free (quoted_type);
-      return 0;
-    }
-
-  sql_int64 (&credential,
-             "SELECT credential FROM targets_trash_login_data"
-             " WHERE target = %llu AND type = '%s';",
-             target, quoted_type);
-
-  g_free (quoted_type);
-
-  return credential;
-}
-
-/**
- * @brief Get whether a credential of a trash target is in trashcan.
- *
- * Only used by SQLite backend.
- *
- * @param[in]  target         The target.
- * @param[in]  type           The credential type (e.g. "ssh" or "smb").
- *
- * @return  0 on success, -1 on error, 1 credential not found, 99 permission
- *          denied.
- */
-int
-trash_target_credential_location (target_t target, const char* type)
-{
-  gchar *quoted_type;
-  int location;
-
-  if (target == 0 || type == NULL)
-    return 0;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT NOT EXISTS"
-               " (SELECT * FROM targets_trash_login_data"
-               "  WHERE target = %llu and type = '%s');",
-               target, quoted_type))
-    {
-      g_free (quoted_type);
-      return 0;
-    }
-
-  location = sql_int ("SELECT credential_location FROM targets_trash_login_data"
-                      " WHERE target = %llu AND type = '%s';",
-                      target, quoted_type);
-
-  g_free (quoted_type);
-
-  return location;
-}
-
-/**
  * @brief Get a login port from a target.
  *
  * @param[in]  target         The target.
@@ -34640,46 +34391,6 @@ target_login_port (target_t target, const char* type)
     }
 
   port = sql_int ("SELECT port FROM targets_login_data"
-                  " WHERE target = %llu AND type = '%s';",
-                  target, quoted_type);
-
-  g_free (quoted_type);
-
-  return port;
-}
-
-/**
- * @brief Get a port from a target in the trashcan.
- *
- * Only used by SQLite backend.
- *
- * @param[in]  target         The target.
- * @param[in]  type           The credential type (e.g. "ssh" or "smb").
- *
- * @return  0 on success, -1 on error, 1 credential not found, 99 permission
- *          denied.
- */
-int
-trash_target_login_port (target_t target, const char* type)
-{
-  gchar *quoted_type;
-  int port;
-
-  if (target == 0 || type == NULL)
-    return 0;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT NOT EXISTS"
-               " (SELECT * FROM targets_trash_login_data"
-               "  WHERE target = %llu and type = '%s');",
-               target, quoted_type))
-    {
-      g_free (quoted_type);
-      return 0;
-    }
-
-  port = sql_int ("SELECT port FROM targets_trash_login_data"
                   " WHERE target = %llu AND type = '%s';",
                   target, quoted_type);
 
@@ -60051,7 +59762,13 @@ manage_restore (const char *id)
       return 99;
     }
 
+  /* Ticket. */
   ret = restore_ticket (id);
+  if (ret != 2)
+    return ret;
+
+  /* TLS Certificate. */
+  ret = restore_tls_certificate (id);
   if (ret != 2)
     return ret;
 
@@ -61256,6 +60973,7 @@ manage_empty_trashcan ()
        current_credentials.uuid);
   sql ("DELETE FROM configs_trash" WHERE_OWNER);
   empty_trashcan_tickets ();
+  empty_trashcan_tls_certificates();
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'group'"
        " AND subject IN (SELECT id from groups_trash"
@@ -65850,6 +65568,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
 
       inherit_tickets (user, inheritor);
+      inherit_tls_certificates (user, inheritor);
 
       sql ("UPDATE groups SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
@@ -65917,6 +65636,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
   delete_tickets_user (user);
+  delete_tls_certificates_user (user);
 
   /* Delete assets (not directly referenced). */
 
@@ -69880,25 +69600,14 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       int missing_severity_changes = 0;
       sql_begin_immediate ();
 
-      if (sql_is_sqlite3 ())
-        sql ("UPDATE results"
-            " SET severity"
-            "       = (SELECT value FROM settings"
-            "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
-            "             AND (settings.owner = results.owner"
-            "                  OR settings.owner IS NULL)"
-            "          ORDER BY settings.owner DESC)"
-            " WHERE severity IS NULL"
-            "    OR severity = '';");
-      else
-        sql ("UPDATE results"
-            " SET severity"
-            "       = (SELECT CAST (value AS real) FROM settings"
-            "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
-            "             AND (settings.owner = results.owner"
-            "                  OR settings.owner IS NULL)"
-            "          ORDER BY settings.owner DESC)"
-            " WHERE severity IS NULL;");
+      sql ("UPDATE results"
+          " SET severity"
+          "       = (SELECT CAST (value AS real) FROM settings"
+          "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+          "             AND (settings.owner = results.owner"
+          "                  OR settings.owner IS NULL)"
+          "          ORDER BY settings.owner DESC)"
+          " WHERE severity IS NULL;");
 
       missing_severity_changes = sql_changes();
       sql_commit ();

@@ -51,6 +51,7 @@
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
+#include "manage_sql_tls_certificates.h"
 #include "comm.h"
 #include "utils.h"
 
@@ -299,20 +300,25 @@ truncate_private_key (const gchar* private_key)
 /**
  * @brief Gathers info from a certificate.
  *
- * @param[in]  certificate      The certificate to get data from.
- * @param[out] activation_time  Pointer to write activation time to.
- * @param[out] expiration_time  Pointer to write expiration time to.
- * @param[out] fingerprint      Pointer for newly allocated fingerprint.
- * @param[out] issuer           Pointer for newly allocated issuer DN.
+ * @param[in]  certificate        The certificate to get data from.
+ * @param[in]  certificate_len    Length of certificate, -1: null-terminated
+ * @param[out] activation_time    Pointer to write activation time to.
+ * @param[out] expiration_time    Pointer to write expiration time to.
+ * @param[out] fingerprint        Pointer for newly allocated fingerprint.
+ * @param[out] subject            Pointer for newly allocated subject DN.
+ * @param[out] issuer             Pointer for newly allocated issuer DN.
+ * @param[out] certificate_format Pointer to certificate format.
  *
  * @return 0 success, -1 error.
  */
 int
-get_certificate_info (const gchar* certificate,
+get_certificate_info (const gchar* certificate, gssize certificate_len,
                       time_t* activation_time, time_t* expiration_time,
-                      gchar** fingerprint, gchar** issuer)
+                      gchar** fingerprint, gchar **subject, gchar** issuer,
+                      gnutls_x509_crt_fmt_t *certificate_format)
 {
   gchar *cert_truncated;
+  gnutls_x509_crt_fmt_t certificate_format_internal;
 
   cert_truncated = NULL;
   if (activation_time)
@@ -321,31 +327,60 @@ get_certificate_info (const gchar* certificate,
     *expiration_time = -1;
   if (fingerprint)
     *fingerprint = NULL;
+  if (subject)
+    *subject = NULL;
   if (issuer)
     *issuer = NULL;
+  if (certificate_format)
+    *certificate_format = 0;
 
   if (certificate)
     {
       int err;
       gnutls_datum_t cert_datum;
       gnutls_x509_crt_t gnutls_cert;
+      static const gchar* begin_str = "-----BEGIN ";
 
-      cert_truncated = truncate_certificate (certificate);
-      if (cert_truncated == NULL)
+      if (g_strstr_len (certificate, certificate_len, begin_str))
         {
-          return -1;
+          cert_truncated = truncate_certificate (certificate);
+          if (cert_truncated == NULL)
+            {
+              return -1;
+            }
+          certificate_format_internal = GNUTLS_X509_FMT_PEM;
         }
+      else
+        {
+          if (certificate_len < 0)
+            {
+              g_warning ("%s: PEM encoded certificate expected if"
+                         " certificate_length is negative",
+                         __FUNCTION__);
+              return -1;
+            }
+
+          cert_truncated = g_memdup (certificate, certificate_len);
+          certificate_format_internal = GNUTLS_X509_FMT_DER;
+        }
+
       cert_datum.data = (unsigned char*) cert_truncated;
-      cert_datum.size = strlen (cert_truncated);
+      if (certificate_len < 0)
+        cert_datum.size = strlen (cert_truncated);
+      else
+        cert_datum.size = certificate_len;
 
       gnutls_x509_crt_init (&gnutls_cert);
       err = gnutls_x509_crt_import (gnutls_cert, &cert_datum,
-                                    GNUTLS_X509_FMT_PEM);
+                                    certificate_format_internal);
       if (err)
         {
           g_free (cert_truncated);
           return -1;
         }
+
+      if (certificate_format)
+        *certificate_format = certificate_format_internal;
 
       if (activation_time)
         {
@@ -382,6 +417,17 @@ get_certificate_info (const gchar* certificate,
 
           *fingerprint = string->str;
           g_string_free (string, FALSE);
+        }
+
+      if (subject)
+        {
+          size_t buffer_size;
+          gchar *buffer;
+          gnutls_x509_crt_get_dn (gnutls_cert, NULL, &buffer_size);
+          buffer = g_malloc (buffer_size);
+          gnutls_x509_crt_get_dn (gnutls_cert, buffer, &buffer_size);
+
+          *subject = buffer;
         }
 
       if (issuer)
@@ -776,25 +822,6 @@ severity_in_level (double severity, const char *level)
       else
         return 0;
     }
-}
-
-/**
- * @brief Check whether a severity matches an override's severity.
- *
- * Only used by SQLite backend.
- *
- * @param[in] severity     severity score
- * @param[in] ov_severity  override severity score to match
- *
- * @return 1 if matches, else 0.
- */
-int
-severity_matches_ov (double severity, double ov_severity)
-{
-  if (ov_severity <= 0.0)
-    return severity == ov_severity;
-  else
-    return severity >= ov_severity;
 }
 
 /**
@@ -9960,6 +9987,8 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
 {
   if (strcasecmp (type, "ticket") == 0)
     return delete_ticket (resource_id, ultimate);
+  if (strcasecmp (type, "tls_certificate") == 0)
+    return delete_tls_certificate (resource_id, ultimate);
   assert (0);
   return -1;
 }

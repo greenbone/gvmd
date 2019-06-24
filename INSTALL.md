@@ -19,7 +19,7 @@ Prerequisites:
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
 * libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 11.0.0
-* sqlite3 library >= 3.8.3 or PostgreSQL database
+* PostgreSQL database
 * pkg-config
 * libical >= 1.0.0
 
@@ -33,15 +33,6 @@ Prerequisites for building documentation:
 
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
-
-Install prerequisites on Debian GNU/Linux 'Stretch' 9:
-For SQLite backend:
-
-    apt-get install libsqlite3-dev
-
-For PostgreSQL backend:
-
-    apt-get install libpq-dev postgresql-server-dev-9.6
 
 
 Compiling Greenbone Vulnerability Manager
@@ -128,18 +119,146 @@ certificates for scanners, please see also section `Updating Scanner
 Certificates`.
 
 
-Choosing the Database Backend
------------------------------
+Configure PostgreSQL Database Backend
+-------------------------------------
 
-Greenbone Vulnerability Manager can use either SQLite or PostgreSQL as the
-database backend.
+Setting up the PostgresSQL database
 
-SQLite is the default and as a prerequisite you need to have
-the sqlite3 library installed. No further configuration
-is required, the database is created automatically.
+1.  Install Postgres.
 
-In order to use PostgreSQL as database backend, follow the
-instructions given in file [doc/postgres-HOWTO](doc/postgres-HOWTO).
+	  (Debian: postgresql, postgresql-contrib, postgresql-server-dev-9.6).
+
+    ```sh
+    apt install postgresql postgresql-contrib postgresql-server-dev-all
+    ```
+
+2.  Run cmake and build gvmd as usual.
+
+3.  Setup Postgres User and DB (`/usr/share/doc/postgresql-common/README.Debian.gz`)
+
+    ```sh
+    sudo -u postgres bash
+    createuser -DRS mattm       # mattm is your OS login name
+    createdb -O mattm gvmd
+    ```
+
+4.  Setup permissions.
+
+    ```sh
+    sudo -u postgres bash  # if you logged out after step 4
+    psql gvmd
+    create role dba with superuser noinherit;
+    grant dba to mattm;    # mattm is the user created in step 4
+    ```
+
+5.  Create DB extension (also necessary when the database got dropped).
+
+    ```sh
+    sudo -u postgres bash  # if you logged out after step 5
+    psql gvmd
+    create extension "uuid-ossp";
+    ```
+
+6.  Make Postgres aware of the gvm libraries if not installed
+    in a ld-aware directory. For example create file `/etc/ld.so.conf.d/gvm.conf`
+    with appropriate path and then run `ldconfig`.
+
+7.  If you wish to migrate from SQLite, follow the next section before running
+    Manager.
+
+8.  Run Manager as usual.
+
+9. To run SQL on the database.
+
+    ```sh
+    psql gvmd
+    ```
+
+Migrating from SQLite to PostgreSQL
+
+GVM-10 was last release where gvmd supports SQLite. GVM-11
+supports exclusively PostgreSQL. If you worked with SQLite before
+and want to keep your data, you need to migrate the data to
+PostgreSQL. 
+
+1.  Run `gvm-migrate-to-postgres` into a clean newly created PostgreSQL database
+    like described above.
+
+    If you accidentally already rebuilt the database or for other reasons
+    want to start from scratch, drop the database and repeat the process
+    described above.  It is essentially important that you do not start
+    Manager before the migration as it would create a fresh one and therefore
+    prevent migration.
+
+    Note that the migrate script will modify the SQLite database to clean
+    up errors. So it's a good idea to make a backup in case anything goes
+    wrong.
+
+2.  Run `greenbone-scapdata-sync`.
+
+3.  Run `greenbone-certdata-sync`.
+
+
+Switching between releases
+
+There are two factors for developers to consider when switching between
+releases:
+
+1.  gvmd uses C server-side extensions that link to gvm-libs, so Postgres
+    needs to be able to find the version of gvm-libs that goes with gvmd.
+
+    One way to do this is to modify `ld.so.conf` and run `ldconfig` after
+    installing the desired gvmd version.
+
+2.  The Postgres database "gvmd" must be the version that is supported by
+    gvmd. If it is too high, gvmd will refuse to run.  If it is too low
+    gvmd will only run if the database is migrated to the higher version.
+
+    One way to handle this is to switch between different versions of the
+    database using RENAME:
+
+    ```sh
+    sudo -u postgres psql -q --command='ALTER DATABASE gvmd RENAME TO gvmd_10;'
+    sudo -u postgres psql -q --command='ALTER DATABASE gvmd_master RENAME TO gvmd;'
+    ```
+
+    Note that for OpenVAS-9 the database name is "tasks", so this step is not
+    necessary.
+
+
+Analyzing the size of the tables
+
+In case the database grows in size and you want to understand
+which of the tables is responsible for it, there are two queries
+to check table sizes:
+
+Biggest relations:
+
+```sql
+SELECT nspname || '.' || relname AS "relation",
+    pg_size_pretty(pg_relation_size(C.oid)) AS "size"
+  FROM pg_class C
+  LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace)
+  WHERE nspname NOT IN ('pg_catalog', 'information_schema')
+  ORDER BY pg_relation_size(C.oid) DESC
+  LIMIT 20;
+```
+
+Biggest tables:
+
+```sql
+SELECT nspname || '.' || relname AS "relation",
+    pg_size_pretty(pg_total_relation_size(C.oid)) AS "total_size"
+  FROM pg_class C
+  LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace)
+  WHERE nspname NOT IN ('pg_catalog', 'information_schema')
+    AND C.relkind <> 'i'
+    AND nspname !~ '^pg_toast'
+  ORDER BY pg_total_relation_size(C.oid) DESC
+  LIMIT 20;
+```
+
+These queries were taken from https://wiki.postgresql.org/wiki/Disk_Usage
 
 
 Migrating to Version 8.0
