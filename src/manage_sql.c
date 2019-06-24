@@ -271,9 +271,6 @@ user_ensure_in_db (const gchar *, const gchar *);
 static int
 verify_report_format_internal (report_format_t);
 
-static void
-cleanup_prognosis_iterator ();
-
 static int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
 
@@ -18280,7 +18277,6 @@ cleanup_manage_process (gboolean cleanup)
                 }
               set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
             }
-          cleanup_prognosis_iterator ();
           sql_close ();
         }
       else
@@ -21341,24 +21337,6 @@ detect_cleanup:
 
 
 /* Prognostics. */
-
-/**
- * @brief Prognosis iterator prepared statement.
- */
-static sql_stmt_t *prognosis_stmt = NULL;
-
-/**
- * @brief Cleanup the prognosis iterator prepared statement.
- */
-static void
-cleanup_prognosis_iterator ()
-{
-  if (prognosis_stmt)
-    {
-      sql_finalize (prognosis_stmt);
-      prognosis_stmt = NULL;
-    }
-}
 
 DEF_ACCESS (prognosis_iterator_cve, 0);
 DEF_ACCESS (prognosis_iterator_description, 2);
