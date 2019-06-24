@@ -36903,6 +36903,7 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
  * @param[in]  name        Name of new config and NVT selector.
  * @param[in]  comment     Comment on new config.
  * @param[in]  config_id   UUID of existing config.
+ * @param[in]  usage_type  Optional new usage type for the new config.
  * @param[out] new_config  New config.
  *
  * @return 0 success, 1 config exists already, 2 failed to find existing
