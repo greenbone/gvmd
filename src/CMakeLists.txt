@@ -85,12 +85,13 @@ add_executable (manage-utils-test
                 manage_acl.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
-                manage_sql_tickets.c
+                manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c)
+                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c
+                gmp_tls_certificates.c)
 
 add_test (manage-utils-test manage-utils-test)
 
@@ -107,12 +108,13 @@ add_executable (manage-test
                 manage_acl.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
-                manage_sql_tickets.c
+                manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c)
+                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c
+                gmp_tls_certificates.c)
 
 add_test (manage-test manage-test)
 
@@ -129,12 +131,13 @@ add_executable (gmp-tickets-test
                 manage_acl.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
-                manage_sql_tickets.c
+                manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_delete.c gmp_get.c)
+                gmp.c gmp_base.c gmp_delete.c gmp_get.c
+                gmp_tls_certificates.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
 
