@@ -29153,18 +29153,6 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[in]  result_tags        Whether to include tags in results.
- * @param[in]  host               Host or NULL, when type "assets".
- * @param[in]  pos                Position of report from end, when type
- *                                "assets".
- * @param[in]  host_search_phrase  Phrase that results must include.  All results
- *                                 if NULL or "".  For hosts.
- * @param[in]  host_levels         String describing threat levels (message types)
- *                                 to include in count (for example, "hmlgd" for
- *                                 High, Medium, Low, loG and Debug).  All levels if
- *                                 NULL.
- * @param[in]  host_first_result   The host result to start from.  The results
- *                                 are 0 indexed.
- * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  ignore_pagination   Whether to ignore pagination data.
  * @param[out] filter_term_return  Filter term used in report.
  * @param[out] zone_return         Actual timezone used in report.
@@ -29176,11 +29164,9 @@ static int
 print_report_xml_start (report_t report, report_t delta, task_t task,
                         gchar* xml_start, const get_data_t *get,
                         int notes_details, int overrides_details,
-                        int result_tags, const char *host, int pos,
-                        const char *host_search_phrase, const char *host_levels,
-                        int host_first_result, int host_max_results,
-                        int ignore_pagination, gchar **filter_term_return,
-                        gchar **zone_return, gchar **host_summary)
+                        int result_tags, int ignore_pagination,
+                        gchar **filter_term_return, gchar **zone_return,
+                        gchar **host_summary)
 {
   int result_hosts_only;
   int notes, overrides;
@@ -30431,7 +30417,6 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
   ret = print_report_xml_start (report, delta_report, task, xml_start, get,
                                 notes_details, overrides_details,
                                 1 /* result_tags */,
-                                NULL /* host */, 0, NULL, NULL, 0, 0, /* host params */
                                 0 /* ignore_pagination */,
                                 filter_term_return, zone_return, host_summary);
   if (ret)
@@ -31186,8 +31171,6 @@ manage_send_report (report_t report, report_t delta_report,
   xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
   ret = print_report_xml_start (report, delta_report, task, xml_start, get,
                                 notes_details, overrides_details, result_tags,
-                                host, pos, host_search_phrase, host_levels,
-                                host_first_result, host_max_results,
                                 ignore_pagination, NULL, NULL, NULL);
   if (ret)
     {
