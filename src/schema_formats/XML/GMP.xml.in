@@ -1937,7 +1937,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>min_qod</e>
           <e>autofp</e>
           <any><e>filter</e></any>
-          <o><e>host</e></o>
           <o><e>delta</e></o>
         </pattern>
         <ele>
@@ -2012,17 +2011,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </alts>
             </t>
           </pattern>
-        </ele>
-        <ele>
-          <name>host</name>
-          <pattern><e>ip</e></pattern>
-          <ele>
-            <name>ip</name>
-            <summary>
-              IP of single host in report (for "delta")
-            </summary>
-            <pattern>text</pattern>
-          </ele>
         </ele>
         <ele>
           <name>delta</name>
@@ -26862,6 +26850,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         On the response side REPORT/REPORT/HOST_COUNT has been removed,
         as this was only returned by the assets reports.
+      </p>
+      <p>
+        At the same time the element REPORT/REPORT/FILTERS/HOST has been
+        removed.  This element was left behind during the switch to named
+        filters very long ago.  It originally showed the host being filtered
+        for delta reports, but this information is in the filter keywords
+        these days.
       </p>
     </description>
     <version>9.0</version>
