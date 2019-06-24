@@ -1601,7 +1601,6 @@ gvmd (int argc, char** argv)
 {
   /* Process options. */
 
-  static gboolean backup_database = FALSE;
   static gboolean check_alerts = FALSE;
   static gboolean migrate_database = FALSE;
   static gboolean encrypt_all_credentials = FALSE;
@@ -1659,10 +1658,6 @@ gvmd (int argc, char** argv)
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
-        { "backup", '\0', 0, G_OPTION_ARG_NONE,
-          &backup_database,
-          "Backup the database.",
-          NULL },
         { "check-alerts", '\0', 0, G_OPTION_ARG_NONE,
           &check_alerts,
           "Check SecInfo alerts.",
@@ -2171,33 +2166,6 @@ gvmd (int argc, char** argv)
 
   if (osp_vt_update)
     osp_update_socket = osp_vt_update;
-
-  if (backup_database)
-    {
-      /* Backup the database and then exit. */
-
-      proctitle_set ("gvmd: Backing up database");
-
-      g_info ("   Backing up database.");
-
-      /* TODO Not sure about locking.  Not used by Postgres.  Perhaps remove. */
-
-      switch (manage_backup_db (database))
-        {
-          case 0:
-            g_info ("   Backup succeeded.");
-            return EXIT_SUCCESS;
-          case -1:
-            g_critical ("%s: database backup failed",
-                        __FUNCTION__);
-            return EXIT_FAILURE;
-          default:
-            assert (0);
-            g_critical ("%s: strange return from manage_backup_db",
-                        __FUNCTION__);
-            return EXIT_FAILURE;
-        }
-    }
 
   if (disable_password_policy)
     gvm_disable_password_policy ();
