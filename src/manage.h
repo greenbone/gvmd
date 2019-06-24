@@ -925,9 +925,6 @@ const char *
 task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
                             double);
 
-const char *
-task_trend (task_t, int, int);
-
 int
 task_schedule_periods (task_t);
 
@@ -948,9 +945,6 @@ task_schedule_next_time_uuid (const gchar *);
 
 int
 task_schedule_next_time (task_t);
-
-char *
-task_severity (task_t, int, int, int);
 
 int
 task_debugs_size (task_t);
@@ -1756,17 +1750,8 @@ target_task_iterator_readable (iterator_t*);
 credential_t
 target_credential (target_t, const char*);
 
-credential_t
-trash_target_credential (target_t, const char*);
-
-int
-trash_target_credential_location (target_t, const char*);
-
 int
 target_login_port (target_t, const char*);
-
-int
-trash_target_login_port (target_t, const char*);
 
 
 /* Configs. */
