@@ -1591,6 +1591,44 @@ migrate_210_to_211 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 211 to version 212.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_211_to_212 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 211. */
+
+  if (manage_db_version () != 211)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add usage_type columns to configs and tasks */
+  sql ("ALTER TABLE configs ADD COLUMN usage_type text;");
+  sql ("ALTER TABLE configs_trash ADD COLUMN usage_type text;");
+  sql ("ALTER TABLE tasks ADD COLUMN usage_type text;");
+
+  sql ("UPDATE configs SET usage_type = 'scan'");
+  sql ("UPDATE configs_trash SET usage_type = 'scan'");
+  sql ("UPDATE tasks SET usage_type = 'scan'");
+
+  /* Set the database version to 212. */
+
+  set_db_version (212);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1629,6 +1667,7 @@ static migrator_t database_migrators[] = {
   {209, migrate_208_to_209},
   {210, migrate_209_to_210},
   {211, migrate_210_to_211},
+  {212, migrate_211_to_212},
   /* End marker. */
   {-1, NULL}};
 
