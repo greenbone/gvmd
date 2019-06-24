@@ -19354,16 +19354,14 @@ task_scanner_in_trash (task_t task)
 void
 set_task_usage_type (task_t task, const char *usage_type)
 {
-  gchar *quoted_usage_type;
+  const char *actual_usage_type;
   if (usage_type && strcasecmp (usage_type, "policy") == 0)
-    quoted_usage_type = g_strdup ("policy");
+    actual_usage_type = "policy";
   else
-    quoted_usage_type = g_strdup ("scan");
+    actual_usage_type = "scan";
 
   sql ("UPDATE tasks SET usage_type = '%s', modification_time = m_now ()"
-       " WHERE id = %llu;", quoted_usage_type, task);
-
-  g_free (quoted_usage_type);
+       " WHERE id = %llu;", actual_usage_type, task);
 }
 
 /**
@@ -36446,7 +36444,8 @@ create_config (const char* proposed_name, const char* comment,
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
-  gchar *quoted_type, *quoted_usage_type;
+  gchar *quoted_type;
+  const char *actual_usage_type;
   char *selector_uuid;
   unsigned int num = 1;
 
@@ -36471,9 +36470,9 @@ create_config (const char* proposed_name, const char* comment,
   quoted_candidate_name = sql_quote (candidate_name);
   quoted_type = config_type ? sql_quote (config_type) : g_strdup ("0");
   if (usage_type && strcasecmp (usage_type, "policy") == 0)
-    quoted_usage_type = g_strdup ("policy");
+    actual_usage_type = "policy";
   else
-    quoted_usage_type = g_strdup ("scan");
+    actual_usage_type = "scan";
 
   while (1)
     {
@@ -36498,7 +36497,7 @@ create_config (const char* proposed_name, const char* comment,
            selector_uuid,
            quoted_comment,
            quoted_type,
-           quoted_usage_type);
+           actual_usage_type);
       g_free (quoted_comment);
     }
   else
@@ -36511,10 +36510,9 @@ create_config (const char* proposed_name, const char* comment,
          current_credentials.uuid,
          selector_uuid,
          quoted_type,
-         quoted_usage_type);
+         actual_usage_type);
   g_free (quoted_candidate_name);
   g_free (quoted_type);
-  g_free (quoted_usage_type);
 
   /* Insert the selectors into the nvt_selectors table. */
 
@@ -36640,7 +36638,8 @@ create_config_from_scanner (const char *scanner_id, const char *name,
   scanner_t scanner;
   config_t config;
   GSList *params, *element;
-  char *quoted_name, *quoted_comment, *quoted_usage_type;
+  char *quoted_name, *quoted_comment;
+  const char *actual_usage_type;
 
   assert (current_credentials.uuid);
   assert (scanner_id);
@@ -36681,9 +36680,9 @@ create_config_from_scanner (const char *scanner_id, const char *name,
   quoted_name = sql_quote (name ?: "");
   quoted_comment = sql_quote (comment ?: "");
   if (usage_type && strcasecmp (usage_type, "policy") == 0)
-    quoted_usage_type = g_strdup ("policy");
+    actual_usage_type = "policy";
   else
-    quoted_usage_type = g_strdup ("scan");
+    actual_usage_type = "scan";
 
   /* Create new OSP config. */
   sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
@@ -36692,10 +36691,9 @@ create_config_from_scanner (const char *scanner_id, const char *name,
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
        " '', '%s', 1, %llu, m_now (), m_now (), '%s');",
        quoted_name, current_credentials.uuid, quoted_comment, scanner,
-       quoted_usage_type);
+       actual_usage_type);
   g_free (quoted_name);
   g_free (quoted_comment);
-  g_free (quoted_usage_type);
   config = sql_last_insert_id ();
   *uuid = config_uuid (config);
 
@@ -36956,18 +36954,16 @@ copy_config (const char* name, const char* comment, const char *config_id,
 
   if (usage_type && strcmp (usage_type, ""))
     {
-      gchar *quoted_usage_type;
+      const char *actual_usage_type;
 
       if (strcasecmp (usage_type, "policy") == 0)
-        quoted_usage_type = g_strdup ("policy");
+        actual_usage_type = "policy";
       else
-        quoted_usage_type = g_strdup ("scan");
+        actual_usage_type = "scan";
 
       sql ("UPDATE configs SET usage_type = '%s' WHERE id = %llu;",
-           quoted_usage_type,
+           actual_usage_type,
            new);
-
-      g_free (quoted_usage_type);
     }
 
   config_selector = config_nvt_selector (old);
