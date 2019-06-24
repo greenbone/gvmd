@@ -1185,9 +1185,7 @@ typedef struct
   array_t *results;               ///< All results.
   char *scan_end;                 ///< End time for a scan.
   char *scan_start;               ///< Start time for a scan.
-  char *task_comment;             ///< Comment for container task.
   char *task_id;                  ///< ID of container task.
-  char *task_name;                ///< Name for container task.
   char *type;                     ///< Type of report.
   int wrapper;                    ///< Whether there was a wrapper REPORT.
 } create_report_data_t;
@@ -1281,9 +1279,7 @@ create_report_data_reset (create_report_data_t *data)
     }
   free (data->scan_end);
   free (data->scan_start);
-  free (data->task_comment);
   free (data->task_id);
-  free (data->task_name);
   free (data->type);
 
   memset (data, 0, sizeof (create_report_data_t));
@@ -23414,8 +23410,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else switch (create_report
                         (create_report_data->results,
                          create_report_data->task_id,
-                         create_report_data->task_name,
-                         create_report_data->task_comment,
                          create_report_data->in_assets,
                          create_report_data->scan_start,
                          create_report_data->scan_end,
@@ -23439,7 +23433,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case -3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report",
-                                    "TASK_NAME is required"));
+                                    "A TASK id attribute is required"));
                 log_event_fail ("report", "Report", NULL, "created");
                 break;
               case -4:
@@ -29580,13 +29574,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_REPORT_RR_H_START,
               &create_report_data->host_start);
-
-
-      APPEND (CLIENT_CREATE_REPORT_TASK_NAME,
-              &create_report_data->task_name);
-
-      APPEND (CLIENT_CREATE_REPORT_TASK_COMMENT,
-              &create_report_data->task_comment);
 
 
       APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE,

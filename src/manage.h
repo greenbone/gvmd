@@ -1275,8 +1275,7 @@ update_duration_schedule_periods (task_t);
 
 int
 create_report (array_t*, const char *, const char *, const char *, const char *,
-               const char *, const char *, array_t*, array_t*, array_t*,
-               char **);
+               array_t*, array_t*, array_t*, char **);
 
 void
 report_add_result (report_t, result_t);
