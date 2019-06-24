@@ -31,9 +31,6 @@
 
 /* Helpers. */
 
-int
-sql_is_sqlite3 ();
-
 const char *
 sql_schema ();
 
@@ -119,12 +116,6 @@ void
 sql_rename_column (const char *, const char *, const char *, const char *);
 
 /* Transactions. */
-
-void
-sql_begin_exclusive ();
-
-int
-sql_begin_exclusive_giveup ();
 
 void
 sql_begin_immediate ();

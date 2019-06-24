@@ -35,6 +35,7 @@
 #include "manage_sql_nvts.h"
 #include "manage_tickets.h"
 #include "manage_sql_tickets.h"
+#include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
 #include "lsc_user.h"
 #include "sql.h"
@@ -586,6 +587,7 @@ command_t gmp_commands[]
     {"CREATE_TARGET", "Create a target."},
     {"CREATE_TASK", "Create a task."},
     {"CREATE_TICKET", "Create a ticket."},
+    {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
     {"DELETE_AGENT", "Delete an agent."},
     {"DELETE_ALERT", "Delete an alert."},
@@ -608,6 +610,7 @@ command_t gmp_commands[]
     {"DELETE_TARGET", "Delete a target."},
     {"DELETE_TASK", "Delete a task."},
     {"DELETE_TICKET", "Delete a ticket."},
+    {"DELETE_TLS_CERTIFICATE", "Delete a TLS certificate."},
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
@@ -640,6 +643,7 @@ command_t gmp_commands[]
     {"GET_TARGETS", "Get all targets."},
     {"GET_TASKS", "Get all tasks."},
     {"GET_TICKETS", "Get all tickets."},
+    {"GET_TLS_CERTIFICATES", "Get all TLS certificates."},
     {"GET_USERS", "Get all users."},
     {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
@@ -666,6 +670,7 @@ command_t gmp_commands[]
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
     {"MODIFY_TICKET", "Modify an existing ticket."},
+    {"MODIFY_TLS_CERTIFICATE", "Modify an existing TLS certificate."},
     {"MODIFY_USER", "Modify a user."},
     {"MOVE_TASK", "Assign task to another slave scanner, even while running."},
     {"RESTORE", "Restore a resource."},
@@ -5675,42 +5680,24 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
    *  the JavaScript Date objects do not support setting the timezone.
    */
   if (column_is_timestamp (group_column))
-    if (sql_is_sqlite3 ())
-      outer_group_by_column
-        = g_strdup_printf ("CAST (strftime ('%%s',"
-                           "                date(%s, 'unixepoch',"
-                           "                     'localtime'),"
-                           "                'utc')"
-                           "      AS INTEGER)",
-                           "aggregate_group_value");
-    else
-      outer_group_by_column
-        = g_strdup_printf ("EXTRACT (EPOCH FROM"
-                           "           date_trunc ('day',"
-                           "           TIMESTAMP WITH TIME ZONE 'epoch'"
-                           "           + (%s) * INTERVAL '1 second'))"
-                           "  :: integer",
-                           "aggregate_group_value");
+    outer_group_by_column
+      = g_strdup_printf ("EXTRACT (EPOCH FROM"
+                         "           date_trunc ('day',"
+                         "           TIMESTAMP WITH TIME ZONE 'epoch'"
+                         "           + (%s) * INTERVAL '1 second'))"
+                         "  :: integer",
+                         "aggregate_group_value");
   else
     outer_group_by_column = g_strdup ("aggregate_group_value");
 
   if (column_is_timestamp (subgroup_column))
-    if (sql_is_sqlite3 ())
-      outer_subgroup_column
-        = g_strdup_printf ("CAST (strftime ('%%s',"
-                           "                date(%s, 'unixepoch',"
-                           "                     'localtime'),"
-                           "                'utc')"
-                           "      AS INTEGER)",
-                           "aggregate_subgroup_value");
-    else
-      outer_subgroup_column
-        = g_strdup_printf ("EXTRACT (EPOCH FROM"
-                           "           date_trunc ('day',"
-                           "           TIMESTAMP WITH TIME ZONE 'epoch'"
-                           "           + (%s) * INTERVAL '1 second'))"
-                           "  :: integer",
-                           "aggregate_subgroup_value");
+    outer_subgroup_column
+      = g_strdup_printf ("EXTRACT (EPOCH FROM"
+                         "           date_trunc ('day',"
+                         "           TIMESTAMP WITH TIME ZONE 'epoch'"
+                         "           + (%s) * INTERVAL '1 second'))"
+                         "  :: integer",
+                         "aggregate_subgroup_value");
   else
     outer_subgroup_column = g_strdup ("aggregate_subgroup_value");
 
@@ -19466,16 +19453,11 @@ set_task_requested (task_t task, task_status_t *status)
 
   /* Locking here prevents another process from starting the task
    * concurrently. */
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
+  sql_begin_immediate ();
+  if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
     {
-      sql_begin_immediate ();
-      if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
-        {
-          sql_rollback ();
-          return 1;
-        }
+      sql_rollback ();
+      return 1;
     }
 
   run_status = task_run_status (task);
@@ -19624,7 +19606,6 @@ task_upload_progress (task_t task)
   if (report)
     {
       int count;
-      int using_sqlite = sql_is_sqlite3 ();
       get_data_t get;
       memset (&get, 0, sizeof (get_data_t));
       get.filter = g_strdup ("min_qod=0");
@@ -19632,11 +19613,9 @@ task_upload_progress (task_t task)
       get_data_reset (&get);
 
       return sql_int ("SELECT"
-                      " %s (%s (((%i * 100) / upload_result_count), 100), -1)"
+                      " greatest (least (((%i * 100) / upload_result_count), 100), -1)"
                       " FROM tasks"
                       " WHERE id = %llu;",
-                      using_sqlite ? "max" : "greatest",
-                      using_sqlite ? "min" : "least",
                       count,
                       task);
     }
@@ -20619,22 +20598,14 @@ auto_delete_reports ()
 
   g_debug ("%s", __FUNCTION__);
 
-  if (sql_is_sqlite3 ())
-    {
-      if (sql_begin_exclusive_giveup ())
-        return;
-    }
-  else
-    {
-      sql_begin_immediate ();
+  sql_begin_immediate ();
 
-      /* As in delete_report, this prevents other processes from getting the
-       * report ID. */
-      if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
-        {
-          sql_rollback ();
-          return;
-        }
+  /* As in delete_report, this prevents other processes from getting the
+   * report ID. */
+  if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
+    {
+      sql_rollback ();
+      return;
     }
 
   init_iterator (&tasks,
@@ -20807,9 +20778,8 @@ result_nvt_notice (const gchar *nvt)
 {
   if (nvt == NULL)
     return;
-  if (sql_is_sqlite3 ()
-      || (sql_int ("SELECT current_setting ('server_version_num')::integer;")
-          < 90500))
+  if (sql_int ("SELECT current_setting ('server_version_num')::integer;")
+          < 90500)
     sql ("INSERT into result_nvts (nvt)"
          " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts"
          "                               WHERE nvt = '%s');",
@@ -26920,20 +26890,15 @@ delete_report (const char *report_id, int dummy)
   report_t report;
   int ret;
 
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
-    {
-      sql_begin_immediate ();
+  sql_begin_immediate ();
 
-      /* This prevents other processes (in particular a RESUME_TASK) from getting
-       * a reference to the report ID, and then using that reference to try access
-       * the deleted report.
-       *
-       * If the report is running already then delete_report_internal will
-       * ROLLBACK. */
-      sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
-    }
+  /* This prevents other processes (in particular a RESUME_TASK) from getting
+   * a reference to the report ID, and then using that reference to try access
+   * the deleted report.
+   *
+   * If the report is running already then delete_report_internal will
+   * ROLLBACK. */
+  sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
 
   if (acl_user_may ("delete_report") == 0)
     {
@@ -33236,10 +33201,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
   g_debug ("   request delete task %s", task_id);
 
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
-    sql_begin_immediate ();
+  sql_begin_immediate ();
 
   if (acl_user_may ("delete_task") == 0)
     {
@@ -33303,8 +33265,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         {
           int ret;
 
-          if (ultimate
-              && (sql_is_sqlite3 () == 0))
+          if (ultimate)
             /* This prevents other processes (for example a START_TASK) from
              * getting a reference to a report ID or the task ID, and then using
              * that reference to try access the deleted report or task.
@@ -33467,23 +33428,18 @@ delete_task_lock (task_t task, int ultimate)
 
   g_debug ("   delete task %llu", task);
 
-  if (sql_is_sqlite3 ())
-    sql_begin_exclusive ();
-  else
-    {
-      sql_begin_immediate ();
+  sql_begin_immediate ();
 
-      /* This prevents other processes (for example a START_TASK) from getting
-       * a reference to a report ID or the task ID, and then using that
-       * reference to try access the deleted report or task.
-       *
-       * If the task is already active then delete_report (via delete_task)
-       * will fail and rollback. */
-      if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
-        {
-          sql_rollback ();
-          return -1;
-        }
+  /* This prevents other processes (for example a START_TASK) from getting
+   * a reference to a report ID or the task ID, and then using that
+   * reference to try access the deleted report or task.
+   *
+   * If the task is already active then delete_report (via delete_task)
+   * will fail and rollback. */
+  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+    {
+      sql_rollback ();
+      return -1;
     }
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
@@ -59966,7 +59922,13 @@ manage_restore (const char *id)
       return 99;
     }
 
+  /* Ticket. */
   ret = restore_ticket (id);
+  if (ret != 2)
+    return ret;
+
+  /* TLS Certificate. */
+  ret = restore_tls_certificate (id);
   if (ret != 2)
     return ret;
 
@@ -61171,6 +61133,7 @@ manage_empty_trashcan ()
        current_credentials.uuid);
   sql ("DELETE FROM configs_trash" WHERE_OWNER);
   empty_trashcan_tickets ();
+  empty_trashcan_tls_certificates();
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'group'"
        " AND subject IN (SELECT id from groups_trash"
@@ -65765,6 +65728,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
 
       inherit_tickets (user, inheritor);
+      inherit_tls_certificates (user, inheritor);
 
       sql ("UPDATE groups SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
@@ -65832,6 +65796,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        user);
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
   delete_tickets_user (user);
+  delete_tls_certificates_user (user);
 
   /* Delete assets (not directly referenced). */
 
@@ -69795,25 +69760,14 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       int missing_severity_changes = 0;
       sql_begin_immediate ();
 
-      if (sql_is_sqlite3 ())
-        sql ("UPDATE results"
-            " SET severity"
-            "       = (SELECT value FROM settings"
-            "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
-            "             AND (settings.owner = results.owner"
-            "                  OR settings.owner IS NULL)"
-            "          ORDER BY settings.owner DESC)"
-            " WHERE severity IS NULL"
-            "    OR severity = '';");
-      else
-        sql ("UPDATE results"
-            " SET severity"
-            "       = (SELECT CAST (value AS real) FROM settings"
-            "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
-            "             AND (settings.owner = results.owner"
-            "                  OR settings.owner IS NULL)"
-            "          ORDER BY settings.owner DESC)"
-            " WHERE severity IS NULL;");
+      sql ("UPDATE results"
+          " SET severity"
+          "       = (SELECT CAST (value AS real) FROM settings"
+          "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+          "             AND (settings.owner = results.owner"
+          "                  OR settings.owner IS NULL)"
+          "          ORDER BY settings.owner DESC)"
+          " WHERE severity IS NULL;");
 
       missing_severity_changes = sql_changes();
       sql_commit ();

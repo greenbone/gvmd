@@ -700,28 +700,9 @@ next (iterator_t* iterator)
       if (ret == -3 || ret == -2)
         {
           /* Busy or locked, with statement reset.  Just try step again like
-           * we used to do in sql_exec_internal.  We're not supposed to do this
-           * for SQLite, but it would mean quite a bit of reworking in the
-           * callers to be able to handle this case. */
+           * we used to do in sql_exec_internal. */
           g_warning ("%s: stepping after reset", __FUNCTION__);
           continue;
-        }
-      if (ret == 2)
-        {
-          /* Schema changed, for example an internal change due to a VACUUM.
-           * Retrying will result in the same error, so abort.  We lock
-           * exclusively around the VACUUM in --optimize, so hopefully when
-           * using --optimize the schema error will happen earlier, in the
-           * the init function for the iterator.
-           *
-           * This only applies to SQLite3. */
-          g_warning ("%s: schema error.\n"
-                     "  This is possibly due to running VACUUM while Manager\n"
-                     "  is running.  Restart Manager.  In future use\n"
-                     "  --optimize=vacuum instead of running VACUUM"
-                     "  directly.",
-                     __FUNCTION__);
-          abort ();
         }
       break;
     }
