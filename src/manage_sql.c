@@ -18123,8 +18123,6 @@ init_manage_internal (GSList *log_config,
    *     --encrypt/decrypt-all-credentials
    *         manage_encrypt_...
    *             init_manage_helper
-   *     --backup-database
-   *         (no init because no db access required)
    *     --migrate
    *         manage_migrate
    *             init_manage_process (sorts out db state itself) */
