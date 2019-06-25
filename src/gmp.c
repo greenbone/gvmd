@@ -5562,14 +5562,6 @@ make_xml_error_syntax (const char *tag, const char *text)
  * @param[in]  op  Operation.
  */
 #define ELSE_ERROR(op)                                          \
-  else if (gmp_parser->importing)                               \
-    {                                                           \
-      if (gmp_parser->read_over == 0)                           \
-        {                                                       \
-          gmp_parser->read_over = 1;                            \
-          gmp_parser->parent_state = client_state;              \
-        }                                                       \
-    }                                                           \
   else                                                          \
     {                                                           \
       if (gmp_parser->read_over == 0)                           \
@@ -5585,14 +5577,6 @@ make_xml_error_syntax (const char *tag, const char *text)
  *
  */
 #define ELSE_ERROR_CREATE_TASK()                                     \
-  else if (gmp_parser->importing)                                    \
-    {                                                                \
-      if (gmp_parser->read_over == 0)                                \
-        {                                                            \
-          gmp_parser->read_over = 1;                                 \
-          gmp_parser->parent_state = client_state;                   \
-        }                                                            \
-    }                                                                \
   else                                                               \
     {                                                                \
       if (gmp_parser->read_over == 0)                                \
@@ -8038,7 +8022,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CONFIG_COPY);
         else if (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0)
           {
-            gmp_parser->importing = 1;
             import_config_data->import = 1;
             set_client_state (CLIENT_C_C_GCR);
           }
@@ -8383,7 +8366,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_PORT_LIST_COPY);
         else if (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0)
           {
-            gmp_parser->importing = 1;
             create_port_list_data->import = 1;
             set_client_state (CLIENT_CPL_GPLR);
           }
@@ -8495,8 +8477,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("REPORT", element_name) == 0)
           {
             const gchar* attribute;
-
-            gmp_parser->importing = 1;
 
             append_attribute (attribute_names, attribute_values,
                               "type", &create_report_data->type);
@@ -8758,7 +8738,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_REPORT_FORMAT:
         if (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0)
           {
-            gmp_parser->importing = 1;
             create_report_format_data->import = 1;
             set_client_state (CLIENT_CRF_GRFR);
           }
@@ -23326,7 +23305,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
             }
 
-          gmp_parser->importing = 0;
           create_report_data_reset (create_report_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
