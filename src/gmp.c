@@ -20141,8 +20141,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
     {
       gmp_parser->read_over--;
     }
-  else if ((gmp_parser->read_over == 1) && gmp_parser->parent_state)
+  else if (gmp_parser->read_over == 1)
     {
+      assert (gmp_parser->parent_state);
       client_state = gmp_parser->parent_state;
       gmp_parser->parent_state = 0;
       gmp_parser->read_over = 0;
