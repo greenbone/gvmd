@@ -185,9 +185,6 @@ authenticate (credentials_t*);
 /* Database. */
 
 int
-manage_backup_db (const gchar *);
-
-int
 manage_db_supported_version ();
 
 int
