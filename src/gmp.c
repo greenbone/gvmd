@@ -12004,20 +12004,6 @@ convert_to_manage_ranges (array_t *ranges)
     break
 
 /**
- * @brief Insert else clause for gmp_xml_handle_start_element.
- *
- * Stop the parser from reading over elements at the same time.
- *
- * @param[in]  parent   Parent element.
- * @param[in]  element  Element.
- */
-#define CLOSE_READ_OVER(parent, element)                                 \
-  case parent ## _ ## element:                                           \
-    gmp_parser->read_over = 0;                                           \
-    set_client_state (parent);                                           \
-    break
-
-/**
  * @brief Insert GET case for gmp_xml_handle_end_element.
  *
  * @param[in]  upper    What to GET, in uppercase.
@@ -23149,7 +23135,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CPL_GPLR_PORT_LIST, COMMENT);
       CLOSE (CLIENT_CPL_GPLR_PORT_LIST, IN_USE);
       CLOSE (CLIENT_CPL_GPLR_PORT_LIST, NAME);
-      CLOSE_READ_OVER (CLIENT_CPL_GPLR_PORT_LIST, TARGETS);
       CLOSE (CLIENT_CPL_GPLR_PORT_LIST, PORT_RANGE);
       CLOSE (CLIENT_CPL_GPLR_PORT_LIST, PORT_RANGES);
 
@@ -23355,7 +23340,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       CLOSE (CLIENT_CREATE_REPORT_RR, ERRORS);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_ERRORS, COUNT);
       case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR:
         {
           create_report_result_t *result;
@@ -23416,8 +23400,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT, CVSS_BASE);
       CLOSE (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT, NAME);
 
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, FILTERS);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOST_COUNT);
       case CLIENT_CREATE_REPORT_RR_HOST_END:
         if (create_report_data->host_end_host)
           {
@@ -23463,16 +23445,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
         set_client_state (CLIENT_CREATE_REPORT_RR);
         break;
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOSTS);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, PORTS);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, REPORT_FORMAT);
       CLOSE (CLIENT_CREATE_REPORT_RR, RESULTS);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, SCAN_RUN_STATUS);
       CLOSE (CLIENT_CREATE_REPORT_RR, SCAN_END);
       CLOSE (CLIENT_CREATE_REPORT_RR, SCAN_START);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, SORT);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, TASK);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, RESULT_COUNT);
 
       CLOSE (CLIENT_CREATE_REPORT_RR_HOST_END, HOST);
       CLOSE (CLIENT_CREATE_REPORT_RR_HOST_START, HOST);
@@ -23614,22 +23589,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS);
           break;
         }
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, COMMENT);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, CREATION_TIME);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DESCRIPTION);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DETECTION);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST, ASSET);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST, HOSTNAME);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT,
-                       MODIFICATION_TIME);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NAME);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NOTES);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NVT);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, ORIGINAL_SEVERITY);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, ORIGINAL_THREAT);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, OVERRIDES);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, OWNER);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, PORT);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, QOD);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD, TYPE);
@@ -23931,13 +23897,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, PREDEFINED);
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SIGNATURE);
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SUMMARY);
-      CLOSE_READ_OVER (CLIENT_CRF_GRFR_REPORT_FORMAT, TRUST);
-
-      CLOSE_READ_OVER (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT,
-                       REPORT_FORMAT);
-
-      CLOSE_READ_OVER (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
-                       REPORT_FORMAT);
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
         array_add (create_report_format_data->param_options,
