@@ -271,9 +271,6 @@ user_ensure_in_db (const gchar *, const gchar *);
 static int
 verify_report_format_internal (report_format_t);
 
-static void
-cleanup_prognosis_iterator ();
-
 static int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
 
@@ -12326,7 +12323,6 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                                   report_format,
                                   notes_details,
                                   overrides_details,
-                                  NULL, /* Type. */
                                   content_length,
                                   extension,
                                   content_type,
@@ -12555,7 +12551,6 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
                                           report_format,
                                           notes_details,
                                           overrides_details,
-                                          NULL, /* Type. */
                                           &content_length,
                                           NULL /* extension */,
                                           &(alert_report_item->content_type),
@@ -18295,7 +18290,6 @@ cleanup_manage_process (gboolean cleanup)
                 }
               set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
             }
-          cleanup_prognosis_iterator ();
           sql_close ();
         }
       else
@@ -21377,110 +21371,6 @@ detect_cleanup:
 /* Prognostics. */
 
 /**
- * @brief Return highest CVSS for an App.
- *
- * @param[in]  cpe  CPE.
- *
- * @return Highest CVSS.
- */
-static double
-cpe_highest_cvss (const char *cpe)
-{
-  int highest;
-  gchar *quoted_cpe;
-  quoted_cpe = sql_quote (cpe);
-  highest = sql_double ("SELECT"
-                        " (CASE WHEN EXISTS (SELECT id FROM cpes"
-                        "                    WHERE name = '%s')"
-                        "  THEN (SELECT max_cvss FROM cpes WHERE name = '%s')"
-                        "  ELSE -1"
-                        "  END);",
-                        quoted_cpe,
-                        quoted_cpe);
-  g_free (quoted_cpe);
-  return highest;
-}
-
-/**
- * @brief Prognosis iterator prepared statement.
- */
-static sql_stmt_t *prognosis_stmt = NULL;
-
-/**
- * @brief Cleanup the prognosis iterator prepared statement.
- */
-static void
-cleanup_prognosis_iterator ()
-{
-  if (prognosis_stmt)
-    {
-      sql_finalize (prognosis_stmt);
-      prognosis_stmt = NULL;
-    }
-}
-
-/**
- * @brief Initialise a prognosis iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  cpe       CPE.
- */
-static void
-init_prognosis_iterator (iterator_t *iterator, const char *cpe)
-{
-  if (prognosis_stmt == NULL)
-    prognosis_stmt = sql_prepare ("SELECT cves.name, cves.cvss,"
-                                  "       cves.description, cpes.name"
-                                  " FROM scap.cves, scap.cpes,"
-                                  "      scap.affected_products"
-                                  " WHERE cpes.name=$1"
-                                  " AND cpes.id=affected_products.cpe"
-                                  " AND cves.id=affected_products.cve"
-                                  " ORDER BY CAST (cves.cvss AS NUMERIC)"
-                                  " DESC;");
-  else
-    {
-      if (sql_reset (prognosis_stmt))
-        {
-          g_warning ("%s: sql_reset failed", __FUNCTION__);
-          abort ();
-        }
-    }
-
-  if (prognosis_stmt == NULL)
-    abort ();
-
-  init_prepared_iterator (iterator, prognosis_stmt);
-
-  /* Bind iterator. */
-  if (sql_bind_text (prognosis_stmt, 1, cpe, -1))
-    {
-      g_warning ("%s: sql_bind_text failed", __FUNCTION__);
-      abort ();
-    }
-}
-
-DEF_ACCESS (prognosis_iterator_cve, 0);
-static
-DEF_ACCESS (prognosis_iterator_cvss, 1);
-DEF_ACCESS (prognosis_iterator_description, 2);
-DEF_ACCESS (prognosis_iterator_cpe, 3);
-
-/**
- * @brief Get the CVSS from a result iterator as a double.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return CVSS.
- */
-double
-prognosis_iterator_cvss_double (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_double (iterator, 1);
-}
-
-/**
  * @brief Get the location of an App for a report's host.
  *
  * @param[in]  report_host  Report host.
@@ -21704,6 +21594,25 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (order_sql) g_string_free (order_sql, TRUE);
 }
+
+DEF_ACCESS (prognosis_iterator_cve, 0);
+
+/**
+ * @brief Get the CVSS from a result iterator as a double.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return CVSS.
+ */
+double
+prognosis_iterator_cvss_double (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_double (iterator, 1);
+}
+
+DEF_ACCESS (prognosis_iterator_description, 2);
+DEF_ACCESS (prognosis_iterator_cpe, 3);
 
 
 /* Reports. */
@@ -23355,157 +23264,6 @@ next_report (iterator_t* iterator, report_t* report)
       return TRUE;
     }
   return FALSE;
-}
-
-/**
- * @brief Return SQL WHERE for restricting a SELECT to levels.
- *
- * @param[in]  levels  String describing threat levels (message types)
- *                     to include in report (for example, "hmlgd" for
- *                     High, Medium, Low, loG and Debug).  All levels if
- *                     NULL.
- * @param[in]  new_severity_sql  SQL for new severity.
- *
- * @return WHERE clause for levels if one is required, else NULL.
- */
-static GString *
-where_levels (const char* levels, const char *new_severity_sql)
-{
-  int count;
-  GString *levels_sql;
-
-  /* Generate SQL for constraints on message type, according to levels. */
-
-  if (levels == NULL || strlen (levels) == 0)
-    {
-      levels_sql = g_string_new ("");
-      g_string_append_printf (levels_sql,
-                              " AND %s != " G_STRINGIFY (SEVERITY_ERROR),
-                              new_severity_sql);
-      return levels_sql;
-    }
-
-  levels_sql = NULL;
-  count = 0;
-
-  /* High. */
-  if (strchr (levels, 'h'))
-    {
-      count = 1;
-      // FIX handles dynamic "severity" in caller?
-      levels_sql = g_string_new ("");
-      g_string_append_printf (levels_sql,
-                              " AND (severity_in_level (%s, 'high')",
-                              new_severity_sql);
-    }
-
-  /* Medium. */
-  if (strchr (levels, 'm'))
-    {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (severity_in_level (%s, 'medium')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'medium')",
-                                new_severity_sql);
-      count++;
-    }
-
-  /* Low. */
-  if (strchr (levels, 'l'))
-    {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (severity_in_level (%s, 'low')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'low')",
-                                new_severity_sql);
-      count++;
-    }
-
-  /* loG. */
-  if (strchr (levels, 'g'))
-    {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND ((%s"
-                                  "       = " G_STRINGIFY (SEVERITY_LOG) ")",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR (%s"
-                                "     = " G_STRINGIFY (SEVERITY_LOG) ")",
-                                new_severity_sql);
-      count++;
-    }
-
-  /* Debug. */
-  if (strchr (levels, 'd'))
-    {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND ((%s"
-                                  "       = " G_STRINGIFY
-                                               (SEVERITY_DEBUG) ")",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR (%s"
-                                "     = " G_STRINGIFY (SEVERITY_DEBUG) ")",
-                                new_severity_sql);
-      count++;
-    }
-
-  /* False Positive. */
-  if (strchr (levels, 'f'))
-    {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND ((%s"
-                                  "       = " G_STRINGIFY
-                                               (SEVERITY_FP) ")",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR (%s"
-                                "     = " G_STRINGIFY (SEVERITY_FP) ")",
-                                new_severity_sql);
-      count++;
-    }
-
-  if (count)
-    levels_sql = g_string_append (levels_sql, ")");
-
-  if (count == 6)
-    {
-      /* All levels. */
-      g_string_free (levels_sql, TRUE);
-      levels_sql = g_string_new ("");
-      g_string_append_printf (levels_sql,
-                              "AND %s != " G_STRINGIFY (SEVERITY_ERROR),
-                              new_severity_sql);
-    }
-
-  return levels_sql;
 }
 
 /**
@@ -25189,31 +24947,6 @@ host_iterator_max_port (iterator_t* iterator)
 }
 
 /**
- * @brief Get the report from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The report of the host.
- */
-static report_t
-host_iterator_report (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (report_host_t) iterator_int64 (iterator, 6);
-}
-
-/**
- * @brief Get the report UUID from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The UUID of the report of the host.  Caller must use only before
- *         calling cleanup_iterator.
- */
-static
-DEF_ACCESS (host_iterator_report_uuid, 7);
-
-/**
  * @brief Get the asset UUID from a host iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -25447,271 +25180,6 @@ DEF_ACCESS (report_host_details_iterator_source_desc, 5);
  */
 static
 DEF_ACCESS (report_host_details_iterator_extra, 6);
-
-/**
- * @brief Initialise an asset iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  first_result  The host to start from.  The hosts are 0
- *                           indexed.
- * @param[in]  max_results   The maximum number of hosts returned.
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in hosts (for example, "hml" for
- *                            High, Medium and Low).  All levels if NULL.
- * @param[in]  search_phrase  Phrase that host IPs must include.  All
- *                            hosts if NULL or "".
- * @param[in]  apply_overrides  Whether to apply overrides.
- */
-static void
-init_classic_asset_iterator (iterator_t* iterator, int first_result,
-                             int max_results, const char *levels,
-                             const char *search_phrase, int apply_overrides)
-{
-  assert (current_credentials.uuid);
-
-  if (levels && strlen (levels))
-    {
-      GString *levels_sql;
-      gchar *severity_sql, *new_severity_sql, *last_report_sql;
-
-      if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup ("CASE WHEN results.severity"
-                                 "          > " G_STRINGIFY (SEVERITY_LOG)
-                                 " THEN coalesce ((SELECT CAST (cvss_base"
-                                 "                              AS REAL)"
-                                 "                 FROM nvts"
-                                 "                 WHERE nvts.oid"
-                                 "                        = results.nvt),"
-                                 "                results.severity)"
-                                 " ELSE results.severity END");
-      else
-        severity_sql = g_strdup ("results.severity");
-
-      if (apply_overrides)
-        {
-          gchar *ov, *owned_clause, *with_clause;
-
-          owned_clause = acl_where_owned_for_get ("override", NULL,
-                                                  &with_clause);
-
-          ov = g_strdup_printf
-                ("%s"
-                 " SELECT overrides.new_severity"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = results.nvt"
-                 " AND %s"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= m_now ()))"
-                 /** @todo Include tasks.hidden and task pref in_assets? */
-                 " AND (overrides.task ="
-                 "      (SELECT reports.task FROM reports"
-                 "       WHERE reports.id = results.report)"
-                 "      OR overrides.task = 0)"
-                 " AND (overrides.result = results.id"
-                 "      OR overrides.result = 0)"
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = ''"
-                 "      OR hosts_contains (overrides.hosts, results.host))"
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = ''"
-                 "      OR overrides.port = results.port)"
-                 " AND severity_matches_ov (%s, overrides.severity)"
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.creation_time DESC"
-                 " LIMIT 1",
-                 with_clause ? with_clause : "",
-                 owned_clause,
-                 severity_sql);
-
-          g_free (with_clause);
-          g_free (owned_clause);
-
-          new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
-                                              ov, severity_sql);
-
-          g_free (severity_sql);
-          g_free (ov);
-        }
-      else
-        new_severity_sql = g_strdup_printf ("%s",
-                                            severity_sql);
-
-      levels_sql = where_levels (levels, new_severity_sql);
-
-      last_report_sql
-       = g_strdup_printf (" (SELECT report FROM report_hosts"
-                          "  WHERE report_hosts.host = distinct_host"
-                          "  AND end_time IS NOT NULL"
-                          "  AND report_hosts.report"
-                          "      IN (SELECT reports.id FROM reports"
-                          "          WHERE user_owns ('task', reports.task))"
-                          "  AND (SELECT reports.scan_run_status = %u"
-                          "       FROM reports"
-                          "       WHERE reports.id = report)"
-                          "  AND (SELECT hidden FROM tasks"
-                          "       WHERE tasks.id"
-                          "             = (SELECT task FROM reports"
-                          "                WHERE reports.id = report))"
-                          "      = 0"
-                          "  AND (SELECT value FROM task_preferences"
-                          "       WHERE task_preferences.task"
-                          "             = (SELECT task FROM reports"
-                          "                WHERE reports.id = report)"
-                          "       AND task_preferences.name = 'in_assets')"
-                          "      = 'yes'"
-                          "  ORDER BY id DESC LIMIT 1)",
-                          TASK_STATUS_DONE);
-
-      if (search_phrase && strlen (search_phrase))
-        {
-          gchar *quoted_search_phrase;
-
-          quoted_search_phrase = sql_quote (search_phrase);
-          init_iterator
-           (iterator,
-            "SELECT"
-            " distinct_host"
-            " FROM (SELECT DISTINCT host AS distinct_host, order_inet (host)"
-            "       FROM report_hosts"
-            "       ORDER BY order_inet (host))"
-            "      AS distinct_host_subquery"
-            /* Search IP. */
-            " WHERE (distinct_host %s '%%%s%%%'"
-            /* Search hostname. */
-            "        OR EXISTS"
-            "        (SELECT * FROM report_host_details"
-            "         WHERE report_host"
-            "               = (SELECT id FROM report_hosts"
-            "                  WHERE report = %s"
-            "                  AND host = distinct_host)"
-            "         AND (name = 'hostname'"
-            "              OR name = 'best_os_txt'"
-            "              OR name = 'best_os_cpe' OR name = 'App'"
-            "              OR name = 'ports')"
-            "         AND source_type = 'nvt'"
-            "         AND value %s '%%%s%%'))"
-            /* Filter levels. */
-            " AND EXISTS (SELECT results.id"
-            "             FROM results"
-            "             WHERE results.report = %s"
-            "             AND results.host = distinct_host"
-            "             AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
-            "             %s)"
-            " LIMIT %s OFFSET %i;",
-            sql_ilike_op (),
-            quoted_search_phrase,
-            last_report_sql,
-            sql_ilike_op (),
-            quoted_search_phrase,
-            last_report_sql,
-            levels_sql ? levels_sql->str : "",
-            sql_select_limit (max_results),
-            first_result);
-          g_free (quoted_search_phrase);
-        }
-      else
-        init_iterator
-         (iterator,
-          "SELECT"
-          " distinct_host"
-          " FROM (SELECT DISTINCT host AS distinct_host, order_inet (host)"
-          "       FROM report_hosts"
-          "       ORDER BY order_inet (host))"
-          "      AS distinct_host_subquery"
-          " WHERE EXISTS (SELECT results.id"
-          "               FROM results"
-          "               WHERE results.report = %s"
-          "               AND results.host = distinct_host"
-            "             AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
-          "               %s)"
-          " LIMIT %s OFFSET %i;",
-          last_report_sql,
-          levels_sql ? levels_sql->str : "",
-          sql_select_limit (max_results),
-          first_result);
-
-      if (levels_sql)
-        g_string_free (levels_sql, TRUE);
-      g_free (new_severity_sql);
-      g_free (last_report_sql);
-    }
-  else if (search_phrase && strlen (search_phrase))
-    {
-      gchar *quoted_search_phrase;
-
-      quoted_search_phrase = sql_quote (search_phrase);
-      init_iterator (iterator,
-                     "SELECT host"
-                     " FROM report_hosts"
-                     " WHERE report_hosts.report"
-                     "     IN (SELECT reports.id FROM reports"
-                     "         WHERE user_owns ('task', reports.task))"
-                     " AND (SELECT tasks.hidden FROM tasks, reports"
-                     "      WHERE reports.task = tasks.id"
-                     "      AND reports.id = report_hosts.report)"
-                     "     = 0"
-                     " AND (SELECT value FROM task_preferences, tasks,"
-                     "                        reports"
-                     "      WHERE reports.task = tasks.id"
-                     "      AND reports.id = report_hosts.report"
-                     "      AND task_preferences.task = tasks.id"
-                     "      AND task_preferences.name = 'in_assets')"
-                     "     = 'yes'"
-                     " AND report_hosts.end_time IS NOT NULL"
-                     " GROUP BY host"
-                     " HAVING host %s '%%%s%%'"
-                     " OR EXISTS"
-                     " (SELECT * FROM report_host_details"
-                     "  WHERE report_hosts.id = report_host"
-                     "  AND (name = 'hostname' OR name = 'best_os_txt'"
-                     "       OR name = 'best_os_cpe' OR name = 'App'"
-                     "       OR name = 'ports')"
-                     "  AND source_type = 'nvt'"
-                     "  AND value %s '%%%s%%')"
-                     " ORDER BY order_inet (host)"
-                     " LIMIT %s OFFSET %i;",
-                     sql_ilike_op (),
-                     quoted_search_phrase,
-                     sql_ilike_op (),
-                     quoted_search_phrase,
-                     sql_select_limit (max_results),
-                     first_result);
-      g_free (quoted_search_phrase);
-    }
-  else
-    init_iterator (iterator,
-                   "SELECT DISTINCT host, order_inet (host) FROM report_hosts"
-                   " WHERE report_hosts.report"
-                   "     IN (SELECT reports.id FROM reports"
-                   "         WHERE user_owns ('task', reports.task))"
-                   " AND (SELECT tasks.hidden FROM tasks, reports"
-                   "      WHERE reports.task = tasks.id"
-                   "      AND reports.id = report_hosts.report)"
-                   "     = 0"
-                   " AND (SELECT value FROM task_preferences, tasks,"
-                   "                        reports"
-                   "      WHERE reports.task = tasks.id"
-                   "      AND reports.id = report_hosts.report"
-                   "      AND task_preferences.task = tasks.id"
-                   "      AND task_preferences.name = 'in_assets')"
-                   "     = 'yes'"
-                   " AND report_hosts.end_time IS NOT NULL"
-                   " ORDER BY order_inet (host)"
-                   " LIMIT %s OFFSET %i;",
-                   sql_select_limit (max_results),
-                   first_result);
-}
-
-/**
- * @brief Get the IP from a asset iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Host IP.
- */
-static
-DEF_ACCESS (classic_asset_iterator_ip, 0);
 
 /**
  * @brief Set the end time of a task.
@@ -28096,277 +27564,6 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
 }
 
 /**
- * @brief Count host reports.
- *
- * @param[in]  host  Host.
- *
- * @return Report count.
- */
-static int
-host_report_count (const char *host)
-{
-  int count;
-  gchar *quoted_host;
-  assert (current_credentials.uuid);
-  quoted_host = sql_quote (host);
-  count = sql_int ("SELECT count (*) FROM report_hosts WHERE host = '%s'"
-                   "  AND (SELECT reports.owner FROM reports"
-                   "       WHERE reports.id = report_hosts.report)"
-                   "      = (SELECT id FROM users"
-                   "         WHERE users.uuid = '%s')"
-                   "  AND (SELECT tasks.hidden FROM tasks, reports"
-                   "       WHERE reports.task = tasks.id"
-                   "       AND reports.id = report_hosts.report)"
-                   "      = 0"
-                   "  AND (SELECT reports.scan_run_status FROM reports"
-                   "       WHERE reports.id = report_hosts.report)"
-                   "      = %u;",
-                   quoted_host,
-                   current_credentials.uuid,
-                   TASK_STATUS_DONE);
-  g_free (quoted_host);
-  return count;
-}
-
-/**
- * @brief Count hosts.
- *
- * @return Host count.
- */
-static int
-host_count ()
-{
-  return sql_int ("SELECT count (DISTINCT host) FROM report_hosts"
-                  " WHERE host != 'localhost';");
-}
-
-/**
- * @brief Count hosts with filtering.
- *
- * @param[in]  levels         Levels.
- * @param[in]  search_phrase  Phrase that host IPs must include.  All hosts
- *                            if NULL or "".
- * @param[in]  apply_overrides  Whether to apply overrides.
- *
- * @return Host count.
- */
-static int
-filtered_host_count (const char *levels, const char *search_phrase,
-                     int apply_overrides)
-{
-  assert (current_credentials.uuid);
-
-  if (levels && strlen (levels))
-    {
-      int ret;
-      GString *levels_sql;
-      gchar *severity_sql, *new_severity_sql, *last_report_sql;
-
-      if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup ("CASE WHEN results.severity"
-                                 "          > " G_STRINGIFY (SEVERITY_LOG)
-                                 " THEN coalesce ((SELECT CAST (cvss_base"
-                                 "                              AS REAL)"
-                                 "                 FROM nvts"
-                                 "                 WHERE nvts.oid"
-                                 "                         = results.nvt),"
-                                 "                results.severity)"
-                                 " ELSE results.severity END");
-      else
-        severity_sql = g_strdup ("results.severity");
-
-      if (apply_overrides)
-        {
-          gchar *ov, *owned_clause, *with_clause;
-
-          owned_clause = acl_where_owned_for_get ("override", NULL,
-                                                  &with_clause);
-
-          ov = g_strdup_printf
-                ("%s"
-                 " SELECT overrides.new_severity"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = results.nvt"
-                 " AND %s"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= m_now ()))"
-                 " AND (overrides.task ="
-                 "      (SELECT reports.task FROM reports"
-                 "       WHERE reports.id = results.report)"
-                 "      OR overrides.task = 0)"
-                 " AND (overrides.result = results.id"
-                 "      OR overrides.result = 0)"
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = ''"
-                 "      OR hosts_contains (overrides.hosts, results.host))"
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = ''"
-                 "      OR overrides.port = results.port)"
-                 " AND (severity_matches_ov (%s, overrides.severity))"
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.creation_time DESC"
-                 " LIMIT 1",
-                 with_clause ? with_clause : "",
-                 owned_clause,
-                 severity_sql);
-
-          g_free (with_clause);
-          g_free (owned_clause);
-
-          new_severity_sql = g_strdup_printf ("coalesce ((%s),%s)",
-                                              ov, severity_sql);
-
-          g_free (ov);
-        }
-      else
-        new_severity_sql = g_strdup_printf ("%s", severity_sql);
-
-      g_free (severity_sql);
-
-      levels_sql = where_levels (levels, new_severity_sql);
-
-      last_report_sql
-       = g_strdup_printf (" (SELECT report FROM report_hosts"
-                          "  WHERE report_hosts.host = distinct_host"
-                          "  AND end_time IS NOT NULL"
-                          "  AND report_hosts.report"
-                          "      IN (SELECT reports.id FROM reports"
-                          "          WHERE user_owns ('task', reports.task))"
-                          "  AND (SELECT reports.scan_run_status = %u"
-                          "       FROM reports"
-                          "       WHERE reports.id = report)"
-                          "  AND (SELECT hidden FROM tasks"
-                          "       WHERE tasks.id"
-                          "             = (SELECT task FROM reports"
-                          "                WHERE reports.id = report))"
-                          "      = 0"
-                          "  AND (SELECT value FROM task_preferences"
-                          "       WHERE task_preferences.task"
-                          "             = (SELECT task FROM reports"
-                          "                WHERE reports.id = report)"
-                          "       AND task_preferences.name = 'in_assets')"
-                          "      = 'yes'"
-                          "  ORDER BY id DESC LIMIT 1)",
-                          TASK_STATUS_DONE);
-
-      if (search_phrase && strlen (search_phrase))
-        {
-          gchar *quoted_search_phrase;
-
-          quoted_search_phrase = sql_quote (search_phrase);
-          ret = sql_int
-                 ("SELECT"
-                  " count (*)"
-                  " FROM (SELECT DISTINCT host AS distinct_host"
-                  "       FROM report_hosts)"
-                  "      AS distinct_host_subquery"
-                  /* Search IP. */
-                  " WHERE (distinct_host %s '%%%s%%%'"
-                  /* Search hostname. */
-                  "        OR EXISTS"
-                  "        (SELECT * FROM report_host_details"
-                  "         WHERE report_host"
-                  "               = (SELECT id FROM report_hosts"
-                  "                  WHERE report = %s"
-                  "                  AND host = distinct_host)"
-                  "         AND (name = 'hostname'"
-                  "              OR name = 'best_os_txt'"
-                  "              OR name = 'best_os_cpe' OR name = 'App'"
-                  "              OR name = 'ports')"
-                  "         AND source_type = 'nvt'"
-                  "         AND value %s '%%%s%%'))"
-                  " AND EXISTS (SELECT results.id, %s AS new_severity"
-                  "             FROM results"
-                  "             WHERE results.report = %s"
-                  "             AND results.host = distinct_host"
-                  "             AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
-                  "             %s);",
-                  sql_ilike_op (),
-                  quoted_search_phrase,
-                  last_report_sql,
-                  sql_ilike_op (),
-                  quoted_search_phrase,
-                  new_severity_sql,
-                  last_report_sql,
-                  levels_sql ? levels_sql->str : "");
-          g_free (quoted_search_phrase);
-        }
-      else
-        ret = sql_int
-               ("SELECT"
-                " count (*)"
-                " FROM (SELECT DISTINCT host AS distinct_host"
-                "       FROM report_hosts)"
-                "      AS distinct_host_subquery"
-                " WHERE EXISTS (SELECT results.id, %s AS new_severity"
-                "               FROM results"
-                "               WHERE results.report = %s"
-                "               AND results.host = distinct_host"
-                "               AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
-                "               %s);",
-                new_severity_sql,
-                last_report_sql,
-                levels_sql ? levels_sql->str : "");
-
-      if (levels_sql)
-        g_string_free (levels_sql, TRUE);
-      g_free (new_severity_sql);
-      g_free (last_report_sql);
-
-      return ret;
-    }
-  else if (search_phrase && strlen (search_phrase))
-    {
-      int retn;
-      gchar *quoted_search_phrase;
-
-      quoted_search_phrase = sql_quote (search_phrase);
-      retn = sql_int ("SELECT count(*) FROM"
-                      " (SELECT host"
-                      "  FROM report_hosts"
-                      "  WHERE report_hosts.report"
-                      "        IN (SELECT reports.id FROM reports"
-                      "            WHERE user_owns ('task', reports.task))"
-                      "  AND (SELECT tasks.hidden FROM tasks, reports"
-                      "       WHERE reports.task = tasks.id"
-                      "       AND reports.id = report_hosts.report)"
-                      "      = 0"
-                      "  AND report_hosts.end_time IS NOT NULL"
-                      "  GROUP BY host"
-                      "  HAVING host %s '%%%s%%'"
-                      "  OR EXISTS"
-                      "  (SELECT * FROM report_host_details"
-                      "   WHERE report_hosts.id = report_host"
-                      "   AND (name = 'hostname' OR name = 'best_os_txt'"
-                      "        OR name = 'best_os_cpe' OR name = 'App'"
-                      "        OR name = 'ports')"
-                      "   AND source_type = 'nvt'"
-                      "   AND value %s '%%%s%%')"
-                      "  ORDER BY order_inet (host))"
-                      " AS distinct_host_subquery;",
-                      sql_ilike_op (),
-                      quoted_search_phrase,
-                      sql_ilike_op (),
-                      quoted_search_phrase);
-      g_free (quoted_search_phrase);
-      return retn;
-    }
-
-  return sql_int ("SELECT count(*) FROM"
-                  " (SELECT DISTINCT host FROM report_hosts"
-                  "  WHERE report_hosts.report"
-                  "        IN (SELECT reports.id FROM reports"
-                  "            WHERE user_owns ('task', reports.task))"
-                  "  AND (SELECT tasks.hidden FROM tasks, reports"
-                  "       WHERE reports.task = tasks.id"
-                  "       AND reports.id = report_hosts.report)"
-                  "      = 0"
-                  "  AND report_hosts.end_time IS NOT NULL)"
-                  " AS distinct_host_subquery;");
-}
-
-/**
  * @brief Count a report's total number of hosts.
  *
  * @param[in]  report  Report.
@@ -28646,292 +27843,6 @@ print_report_errors_xml (report_t report, FILE *stream)
     }
   cleanup_iterator (&errors);
   PRINT (stream, "</errors>");
-
-  return 0;
-}
-
-/**
- * @brief Print the XML for a report of type assets.
- * @param[in]  out              File stream to write to.
- * @param[in]  host             Host or NULL.
- * @param[in]  first_result     The result to start from. The results are 0
- *                              indexed.
- * @param[in]  max_results      The maximum number of results returned.
- * @param[in]  levels           String describing threat levels (message types)
- * @param[in]  search_phrase    Phrase that results must include.
- * @param[in]  pos              Position of report from end.
- * @param[in]  get              GET command data.
- * @param[in]  apply_overrides  Whether to apply overrides.
- * @param[in]  autofp           Whether to apply the auto FP filter.
- *
- * @return 0 on success, -1 error.
- */
-static int
-print_report_assets_xml (FILE *out, const char *host, int first_result, int
-                         max_results, gchar *levels, gchar *search_phrase,
-                         int pos, const get_data_t *get, int apply_overrides,
-                         int autofp)
-{
-  iterator_t hosts;
-
-  if (host)
-    {
-      PRINT (out,
-             "<host_count>"
-             "<full>1</full>"
-             "<filtered>1</filtered>"
-             "</host_count>"
-             "<hosts start=\"1\" max=\"1\"/>");
-    }
-  else
-    {
-      // TODO Slow (about 30% of assets page).
-      init_classic_asset_iterator (&hosts, first_result, max_results, levels,
-                                   search_phrase, apply_overrides);
-      PRINT (out,
-             "<host_count>"
-             "<full>%i</full>"
-             "<filtered>%i</filtered>"
-             "</host_count>",
-             host_count (),
-             // TODO Slow (about 30% of assets page).
-             filtered_host_count (levels, search_phrase, apply_overrides));
-      PRINT (out,
-             "<hosts start=\"%i\" max=\"%i\"/>",
-             /* Add 1 for 1 indexing. */
-             first_result + 1,
-             max_results);
-    }
-
-  while (host || next (&hosts))
-    {
-      report_host_t report_host;
-      const char *ip;
-
-      ip = host ? host : classic_asset_iterator_ip (&hosts);
-
-      if (host_nthlast_report_host (ip, &report_host, pos))
-        {
-          if (host == NULL)
-            cleanup_iterator (&hosts);
-
-          return -1;
-        }
-
-      if (report_host)
-        {
-          iterator_t report_hosts;
-          init_report_host_iterator (&report_hosts, 0, NULL, report_host);
-          if (next (&report_hosts))
-            {
-              iterator_t details;
-              report_t report;
-              int holes, infos, logs, warnings, false_positives;
-              double severity, highest_cvss;
-
-              PRINT (out,
-                     "<host>"
-                     "<ip>%s</ip>"
-                     "<start>%s</start>"
-                     "<end>%s</end>",
-                     ip,
-                     host_iterator_start_time (&report_hosts),
-                     host_iterator_end_time (&report_hosts));
-
-              PRINT (out,
-                     "<detail>"
-                     "<name>report/@id</name>"
-                     "<value>%s</value>"
-                     "<source>"
-                     "<type></type>"
-                     "<name>openvasmd</name>"
-                     "<description>UUID of current report</description>"
-                     "</source>"
-                     "</detail>",
-                     host_iterator_report_uuid (&report_hosts));
-
-              PRINT (out,
-                     "<detail>"
-                     "<name>report_count</name>"
-                     "<value>%i</value>"
-                     "<source>"
-                     "<type></type>"
-                     "<name>openvasmd</name>"
-                     "<description>Number of reports</description>"
-                     "</source>"
-                     "</detail>",
-                     host_report_count (ip));
-
-              report = host_iterator_report (&report_hosts);
-
-              report_counts_id (report, NULL, &holes, &infos, &logs,
-                                &warnings, &false_positives, &severity,
-                                get, ip);
-
-              PRINT (out,
-                     "<detail>"
-                     "<name>report/result_count/high</name>"
-                     "<value>%i</value>"
-                     "<source>"
-                     "<type></type>"
-                     "<name>openvasmd</name>"
-                     "<description>Number of highs</description>"
-                     "</source>"
-                     "</detail>",
-                     holes);
-
-              PRINT (out,
-                     "<detail>"
-                     "<name>report/result_count/medium</name>"
-                     "<value>%i</value>"
-                     "<source>"
-                     "<type></type>"
-                     "<name>openvasmd</name>"
-                     "<description>Number of mediums</description>"
-                     "</source>"
-                     "</detail>",
-                     warnings);
-
-              PRINT (out,
-                     "<detail>"
-                     "<name>report/result_count/low</name>"
-                     "<value>%i</value>"
-                     "<source>"
-                     "<type></type>"
-                     "<name>openvasmd</name>"
-                     "<description>Number of lows</description>"
-                     "</source>"
-                     "</detail>",
-                     infos);
-
-              PRINT (out,
-                     "<detail>"
-                     "<name>report/result_count/log</name>"
-                     "<value>%i</value>"
-                     "<source>"
-                     "<type></type>"
-                     "<name>openvasmd</name>"
-                     "<description>Number of logs</description>"
-                     "</source>"
-                     "</detail>",
-                     logs);
-
-              /* Print all the host details. */
-
-              highest_cvss = -1;
-              init_report_host_details_iterator
-               (&details, report_host);
-              while (next (&details))
-                {
-                  const char *value;
-                  value = report_host_details_iterator_value (&details);
-
-                  if (print_report_host_detail (out, &details))
-                    return -1;
-
-                  if (manage_scap_loaded ()
-                      && get->details
-                      && (strcmp (report_host_details_iterator_name
-                                   (&details),
-                                  "App")
-                          == 0))
-                    {
-                      iterator_t prognosis;
-                      double cvss;
-                      int first;
-
-                      /* Print details of all CVEs on the App. */
-
-                      first = 1;
-                      cvss = -1;
-                      init_prognosis_iterator (&prognosis, value);
-                      while (next (&prognosis))
-                        {
-                          if (first)
-                            {
-                              cvss = prognosis_iterator_cvss_double
-                                      (&prognosis);
-                              first = 0;
-                            }
-
-                          PRINT (out,
-                                 "<detail>"
-                                 "<name>%s/CVE</name>"
-                                 "<value>%s</value>"
-                                 "</detail>"
-                                 "<detail>"
-                                 "<name>%s/%s/CVSS</name>"
-                                 "<value>%s</value>"
-                                 "</detail>",
-                                 value,
-                                 prognosis_iterator_cve (&prognosis),
-                                 value,
-                                 prognosis_iterator_cve (&prognosis),
-                                 prognosis_iterator_cvss (&prognosis));
-                        }
-
-                      /* Print App prognosis, according to highest CVSS. */
-
-                      if (cvss >= 0)
-                        PRINT (out,
-                               "<detail>"
-                               "<name>%s/threat</name>"
-                               "<value>%s</value>"
-                               "</detail>",
-                               value,
-                               severity_to_level (cvss, 0));
-                      cleanup_iterator (&prognosis);
-                    }
-
-                  if (manage_scap_loaded ()
-                      && (strcmp (report_host_details_iterator_name
-                                   (&details),
-                                  "App")
-                          == 0))
-                    {
-                      int highest;
-                      /* Check if this App's CVSS is the highest CVSS for
-                       * this host. */
-                      highest = cpe_highest_cvss (value);
-                      if (highest > highest_cvss)
-                        highest_cvss = highest;
-                    }
-                }
-              cleanup_iterator (&details);
-
-              /* Print prognosis of host, according to highest CVSS. */
-
-              if (highest_cvss > 0)
-                PRINT (out,
-                       "<detail>"
-                       "<name>prognosis</name>"
-                       "<value>%s</value>"
-                       "</detail>",
-                       severity_to_level (highest_cvss, 0));
-
-              PRINT (out,
-                     "<detail>"
-                     "<name>report/pos</name>"
-                     "<value>%i</value>"
-                     "<source>"
-                     "<type></type>"
-                     "<name>openvasmd</name>"
-                     "<description>Position of report from end</description>"
-                     "</source>"
-                     "</detail>",
-                     pos);
-            }
-          cleanup_iterator (&report_hosts);
-
-          PRINT (out,
-                 "</host>");
-        }
-
-      if (host)
-        break;
-    }
-  if (host == NULL)
-    cleanup_iterator (&hosts);
 
   return 0;
 }
@@ -30253,22 +29164,9 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  task        Task associated with report.
  * @param[in]  xml_start   File name.
  * @param[in]  get         GET command data.
- * @param[in]  type               Type of report, NULL, "scan" or "assets".
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[in]  result_tags        Whether to include tags in results.
- * @param[in]  host               Host or NULL, when type "assets".
- * @param[in]  pos                Position of report from end, when type
- *                                "assets".
- * @param[in]  host_search_phrase  Phrase that results must include.  All results
- *                                 if NULL or "".  For hosts.
- * @param[in]  host_levels         String describing threat levels (message types)
- *                                 to include in count (for example, "hmlgd" for
- *                                 High, Medium, Low, loG and Debug).  All levels if
- *                                 NULL.
- * @param[in]  host_first_result   The host result to start from.  The results
- *                                 are 0 indexed.
- * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  ignore_pagination   Whether to ignore pagination data.
  * @param[out] filter_term_return  Filter term used in report.
  * @param[out] zone_return         Actual timezone used in report.
@@ -30279,13 +29177,10 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 static int
 print_report_xml_start (report_t report, report_t delta, task_t task,
                         gchar* xml_start, const get_data_t *get,
-                        const char *type,
                         int notes_details, int overrides_details,
-                        int result_tags, const char *host, int pos,
-                        const char *host_search_phrase, const char *host_levels,
-                        int host_first_result, int host_max_results,
-                        int ignore_pagination, gchar **filter_term_return,
-                        gchar **zone_return, gchar **host_summary)
+                        int result_tags, int ignore_pagination,
+                        gchar **filter_term_return, gchar **zone_return,
+                        gchar **host_summary)
 {
   int result_hosts_only;
   int notes, overrides;
@@ -30339,19 +29234,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
    * warning. */
   run_status = TASK_STATUS_INTERRUPTED;
 
-  if (type
-      && strcmp (type, "scan")
-      && strcmp (type, "assets"))
-    return -1;
-
-  if ((type == NULL) || (strcmp (type, "scan") == 0))
+  if (report == 0)
     {
-      type = NULL;
-      if (report == 0)
-        {
-          assert (0);
-          return -1;
-        }
+      assert (0);
+      return -1;
     }
 
   out = fopen (xml_start, "w");
@@ -30495,18 +29381,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       PRINT (out, "<report type=\"delta\" id=\"%s\">", uuid);
       free (uuid);
     }
-  else if (report)
+  else
     {
       uuid = report_uuid (report);
       PRINT (out, "<report id=\"%s\">", uuid);
       free (uuid);
     }
-  else if (type && (strcmp (type, "assets") == 0))
-    PRINT (out, "<report scap_loaded=\"%i\" type=\"%s\">",
-           manage_scap_loaded (),
-           type);
-  else
-    PRINT (out, "<report type=\"%s\">", type);
 
   PRINT (out, "<gmp><version>%s</version></gmp>", GMP_VERSION);
 
@@ -30641,10 +29521,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta)
     {
-      gchar *escaped_host = host ? g_markup_escape_text (host, -1) : NULL;
       gchar *escaped_delta_states = g_markup_escape_text (delta_states, -1);
       g_string_append_printf (filters_extra_buffer,
-                              "<host><ip>%s</ip></host>"
                               "<delta>"
                               "%s"
                               "<changed>%i</changed>"
@@ -30652,13 +29530,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                               "<new>%i</new>"
                               "<same>%i</same>"
                               "</delta>",
-                              escaped_host ? escaped_host : "",
                               escaped_delta_states,
                               strchr (delta_states, 'c') != NULL,
                               strchr (delta_states, 'g') != NULL,
                               strchr (delta_states, 'n') != NULL,
                               strchr (delta_states, 's') != NULL);
-      g_free (escaped_host);
       g_free (escaped_delta_states);
     }
 
@@ -30904,39 +29780,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                "</task>"
                "</scan>");
       }
-    }
-
-  if (type && (strcmp (type, "assets") == 0))
-    {
-      int ret;
-
-      g_free (term);
-
-      ret = print_report_assets_xml (out, host,
-                                     ignore_pagination ? 1 : first_result,
-                                     ignore_pagination ? -1 : max_results,
-                                     levels, search_phrase, pos,
-                                     get, apply_overrides, autofp);
-      g_free (sort_field);
-      g_free (levels);
-      g_free (search_phrase);
-      g_free (min_qod);
-      g_free (delta_states);
-
-      tz_revert (zone, tz, old_tz_override);
-
-      if (ret)
-        return ret;
-
-      if (fclose (out))
-        {
-          g_warning ("%s: fclose failed: %s",
-                     __FUNCTION__,
-                     strerror (errno));
-          return -1;
-        }
-
-      return 0;
     }
 
   uuid = report_uuid (report);
@@ -31539,7 +30382,6 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
  * @param[in]  report_format      Report format.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[in]  type               Type of report: NULL or "scan".
  * @param[out] output_length      NULL or location for length of return.
  * @param[out] extension          NULL or location for report format extension.
  *                                Only defined on success.
@@ -31554,7 +30396,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
 gchar *
 manage_report (report_t report, report_t delta_report, const get_data_t *get,
                const report_format_t report_format,
-               int notes_details, int overrides_details, const char *type,
+               int notes_details, int overrides_details,
                gsize *output_length, gchar **extension, gchar **content_type,
                gchar **filter_term_return, gchar **zone_return,
                gchar **host_summary)
@@ -31569,9 +30411,6 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
   gsize output_len;
 
   used_rfps = NULL;
-
-  if (type && strcmp (type, "scan"))
-    return NULL;
 
   /* Print the report as XML to a file. */
 
@@ -31590,9 +30429,8 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
 
   xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
   ret = print_report_xml_start (report, delta_report, task, xml_start, get,
-                                type, notes_details, overrides_details,
+                                notes_details, overrides_details,
                                 1 /* result_tags */,
-                                NULL, 0, NULL, NULL, 0, 0, /* host params */
                                 0 /* ignore_pagination */,
                                 filter_term_return, zone_return, host_summary);
   if (ret)
@@ -32257,19 +31095,6 @@ apply_report_format (gchar *report_format_id,
  * @param[in]  alert_id       ID of alert to escalate report with,
  *                                instead of getting report.  NULL to get
  *                                report.
- * @param[in]  type               Type of report: NULL, "scan" or "assets".
- * @param[in]  host               Host or NULL, when type "assets".
- * @param[in]  pos                Position of report from end, when host.  1 for
- *                                last.
- * @param[in]  host_search_phrase  Phrase that results must include.  All results
- *                                 if NULL or "".  For hosts.
- * @param[in]  host_levels         String describing threat levels (message types)
- *                                 to include in count (for example, "hmlgd" for
- *                                 High, Medium, Low, loG and Debug).  All levels if
- *                                 NULL.
- * @param[in]  host_first_result   The host result to start from.  The results
- *                                 are 0 indexed.
- * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  prefix              Text to send to client before the report.
  *
  * @return 0 success, -1 error, -2 failed to find alert report format, -3 error
@@ -32285,10 +31110,8 @@ manage_send_report (report_t report, report_t delta_report,
                                       int (*) (const char *, void*),
                                       void*),
                     int (*send_data_1) (const char *, void*), void *send_data_2,
-                    const char *alert_id, const char *type,
-                    const char *host, int pos, const char *host_search_phrase,
-                    const char *host_levels, int host_first_result,
-                    int host_max_results, const gchar* prefix)
+                    const char *alert_id,
+                    const gchar* prefix)
 {
   task_t task;
   gchar *xml_start, *xml_file;
@@ -32301,11 +31124,7 @@ manage_send_report (report_t report, report_t delta_report,
 
   used_rfps = NULL;
 
-  if (type && (strcmp (type, "assets") == 0))
-    task = 0;
-  else if (type && (strcmp (type, "scan")))
-    return -1;
-  else if (report_task (report, &task))
+  if (report_task (report, &task))
     return -1;
 
   /* Escalate instead, if requested. */
@@ -32351,10 +31170,7 @@ manage_send_report (report_t report, report_t delta_report,
 
   xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
   ret = print_report_xml_start (report, delta_report, task, xml_start, get,
-                                type, notes_details, overrides_details,
-                                result_tags,
-                                host, pos, host_search_phrase, host_levels,
-                                host_first_result, host_max_results,
+                                notes_details, overrides_details, result_tags,
                                 ignore_pagination, NULL, NULL, NULL);
   if (ret)
     {

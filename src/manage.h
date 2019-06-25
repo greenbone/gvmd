@@ -1527,8 +1527,8 @@ report_progress (report_t, task_t, gchar **);
 
 gchar *
 manage_report (report_t, report_t, const get_data_t *, report_format_t,
-               int, int, const char *,
-               gsize *, gchar **, gchar **, gchar **, gchar **, gchar **);
+               int, int, gsize *, gchar **, gchar **, gchar **, gchar **,
+               gchar **);
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
@@ -1537,8 +1537,7 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                                   int (*) (const char*, void*),
                                   void*),
                     int (*) (const char *, void*), void *, const char *,
-                    const char *, const char *, int, const char *,
-                    const char *, int, int, const gchar *);
+                    const gchar *);
 
 
 
