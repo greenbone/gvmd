@@ -5557,6 +5557,21 @@ make_xml_error_syntax (const char *tag, const char *text)
     }
 
 /**
+ * @brief Set read_over flag on a parser.
+ *
+ * @param[in]  gmp_parser  Parser.
+ */
+static void
+set_read_over (gmp_parser_t *gmp_parser)
+{
+  if (gmp_parser->read_over == 0)
+    {
+      gmp_parser->read_over = 1;
+      gmp_parser->parent_state = client_state;
+    }
+}
+
+/**
  * @brief Insert else clause for error in gmp_xml_handle_start_element.
  *
  * @param[in]  op  Operation.
@@ -5564,11 +5579,7 @@ make_xml_error_syntax (const char *tag, const char *text)
 #define ELSE_ERROR(op)                                          \
   else                                                          \
     {                                                           \
-      if (gmp_parser->read_over == 0)                           \
-        {                                                       \
-          gmp_parser->read_over = 1;                            \
-          gmp_parser->parent_state = client_state;              \
-        }                                                       \
+      set_read_over (gmp_parser);                               \
     }                                                           \
   break
 
@@ -5580,11 +5591,7 @@ make_xml_error_syntax (const char *tag, const char *text)
   else                                                               \
     {                                                                \
       request_delete_task (&create_task_data->task);                 \
-      if (gmp_parser->read_over == 0)                                \
-        {                                                            \
-          gmp_parser->read_over = 1;                                 \
-          gmp_parser->parent_state = client_state;                   \
-        }                                                            \
+      set_read_over (gmp_parser);                                    \
     }                                                                \
   break
 
@@ -7925,13 +7932,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_USER_SOURCES);
           }
         else
-          {
-            if (gmp_parser->read_over == 0)
-              {
-                gmp_parser->read_over = 1;
-                gmp_parser->parent_state = client_state;
-              }
-          }
+          set_read_over (gmp_parser);
         break;
 
       case CLIENT_MODIFY_USER_GROUPS:
@@ -7951,13 +7952,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
            set_client_state (CLIENT_MODIFY_USER_SOURCES_SOURCE);
          }
         else
-          {
-            if (gmp_parser->read_over == 0)
-              {
-                gmp_parser->read_over = 1;
-                gmp_parser->parent_state = client_state;
-              }
-          }
+          set_read_over (gmp_parser);
         break;
 
       case CLIENT_CREATE_AGENT:
@@ -9172,13 +9167,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_USER_SOURCES);
           }
         else
-          {
-            if (gmp_parser->read_over == 0)
-              {
-                gmp_parser->read_over = 1;
-                gmp_parser->parent_state = client_state;
-              }
-          }
+          set_read_over (gmp_parser);
         break;
 
       case CLIENT_CREATE_USER_GROUPS:
@@ -9196,13 +9185,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         if (strcasecmp ("SOURCE", element_name) == 0)
           set_client_state (CLIENT_CREATE_USER_SOURCES_SOURCE);
         else
-          {
-            if (gmp_parser->read_over == 0)
-              {
-                gmp_parser->read_over = 1;
-                gmp_parser->parent_state = client_state;
-              }
-          }
+          set_read_over (gmp_parser);
         break;
 
       case CLIENT_MODIFY_NOTE:
@@ -9339,11 +9322,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
       default:
         /* Read over this element. */
-        if (gmp_parser->read_over == 0)
-          {
-            gmp_parser->read_over = 1;
-            gmp_parser->parent_state = client_state;
-          }
+        set_read_over (gmp_parser);
         break;
     }
 
