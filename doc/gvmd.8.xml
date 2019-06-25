@@ -54,12 +54,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </optdesc>
     </option>
     <option>
-      <p><opt>--backup</opt></p>
-      <optdesc>
-        <p>Backup the database.</p>
-      </optdesc>
-    </option>
-    <option>
       <p><opt>--check-alerts</opt></p>
       <optdesc>
         <p>Check SecInfo alerts.</p>
