@@ -8419,11 +8419,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_port_list_data->ranges = make_array ();
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES);
           }
-        else if (strcasecmp ("TARGETS", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CPL_GPLR_PORT_LIST_TARGETS);
-          }
         ELSE_ERROR ("create_port_list");
 
       case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES:
@@ -8548,52 +8543,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS);
           }
-        else if (strcasecmp ("FILTERS", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_FILTERS);
-          }
         else if (strcasecmp ("HOST", element_name) == 0)
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_H);
-          }
-        else if (strcasecmp ("HOST_COUNT", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_HOST_COUNT);
           }
         else if (strcasecmp ("HOST_END", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_END);
         else if (strcasecmp ("HOST_START", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START);
-        else if (strcasecmp ("HOSTS", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_HOSTS);
-          }
-        else if (strcasecmp ("PORTS", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_PORTS);
-          }
-        else if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_REPORT_FORMAT);
-          }
         else if (strcasecmp ("RESULTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS);
-        else if (strcasecmp ("RESULT_COUNT", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_RESULT_COUNT);
-          }
-        else if (strcasecmp ("SCAN_RUN_STATUS", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state
-             (CLIENT_CREATE_REPORT_RR_SCAN_RUN_STATUS);
-          }
         else if (strcasecmp ("SCAN_END", element_name) == 0)
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_SCAN_END);
@@ -8602,25 +8561,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_SCAN_START);
           }
-        else if (strcasecmp ("SORT", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_SORT);
-          }
-        else if (strcasecmp ("TASK", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_TASK);
-          }
         ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_ERRORS:
-        if (strcasecmp ("COUNT", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_COUNT);
-          }
-        else if (strcasecmp ("ERROR", element_name) == 0)
+        if (strcasecmp ("ERROR", element_name) == 0)
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR);
           }
@@ -8732,46 +8676,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            set_client_state
-              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_COMMENT);
-            gmp_parser->read_over = 1;
-          }
-        else if (strcasecmp ("CREATION_TIME", element_name) == 0)
-          {
-            set_client_state
-              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_CREATION_TIME);
-            gmp_parser->read_over = 1;
-          }
-        else if (strcasecmp ("DESCRIPTION", element_name) == 0)
+        if (strcasecmp ("DESCRIPTION", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION);
-        else if (strcasecmp ("DETECTION", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION);
-          }
         else if (strcasecmp ("HOST", element_name) == 0)
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
-          }
-        else if (strcasecmp ("MODIFICATION_TIME", element_name) == 0)
-          {
-            set_client_state
-              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_MODIFICATION_TIME);
-            gmp_parser->read_over = 1;
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          {
-            set_client_state
-              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NAME);
-            gmp_parser->read_over = 1;
-          }
-        else if (strcasecmp ("NOTES", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES);
           }
         else if (strcasecmp ("NVT", element_name) == 0)
           {
@@ -8785,17 +8695,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("ORIGINAL_THREAT", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT);
-        else if (strcasecmp ("OVERRIDES", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES);
-          }
-        else if (strcasecmp ("OWNER", element_name) == 0)
-          {
-            set_client_state
-              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OWNER);
-            gmp_parser->read_over = 1;
-          }
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT);
         else if (strcasecmp ("QOD", element_name) == 0)
@@ -8915,11 +8814,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE);
         else if (strcasecmp ("SUMMARY", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY);
-        else if (strcasecmp ("TRUST", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST);
-          }
         ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
@@ -8939,24 +8833,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE);
-        ELSE_ERROR ("create_report_format");
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
-        if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state
-              (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT_REPORT_FORMAT);
-          }
-        ELSE_ERROR ("create_report_format");
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
-        if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
-          {
-            gmp_parser->read_over = 1;
-            set_client_state
-              (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE_REPORT_FORMAT);
-          }
         ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS:
