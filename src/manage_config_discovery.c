@@ -589,10 +589,10 @@ make_config_discovery (char *const uuid, char *const selector_name)
   /* First, create the Discovery config. */
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
        " family_count, nvt_count, nvts_growing, families_growing,"
-       " type, creation_time, modification_time)"
+       " type, creation_time, modification_time, usage_type)"
        " VALUES ('%s', 'Discovery', NULL,"
        "         '%s', 'Network Discovery scan configuration.',"
-       "         0, 0, 0, 0, 0, m_now (), m_now ());",
+       "         0, 0, 0, 0, 0, m_now (), m_now (), 'scan');",
        uuid,
        selector_name);
 

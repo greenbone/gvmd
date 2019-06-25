@@ -53,10 +53,10 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
 
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
        " family_count, nvt_count, nvts_growing, families_growing,"
-       " type, creation_time, modification_time)"
+       " type, creation_time, modification_time, usage_type)"
        " VALUES ('%s', 'Host Discovery', NULL,"
        "         '%s', 'Network Host Discovery scan configuration.',"
-       "         0, 0, 0, 0, 0, m_now (), m_now ());",
+       "         0, 0, 0, 0, 0, m_now (), m_now (), 'scan');",
        uuid,
        selector_name);
 
