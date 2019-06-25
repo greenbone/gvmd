@@ -5573,10 +5573,8 @@ set_read_over (gmp_parser_t *gmp_parser)
 
 /**
  * @brief Insert else clause for error in gmp_xml_handle_start_element.
- *
- * @param[in]  op  Operation.
  */
-#define ELSE_READ_OVER()                                        \
+#define ELSE_READ_OVER                                          \
   else                                                          \
     {                                                           \
       set_read_over (gmp_parser);                               \
@@ -5585,14 +5583,13 @@ set_read_over (gmp_parser_t *gmp_parser)
 
 /**
  * @brief Insert else clause for gmp_xml_handle_start_element in create_task.
- *
  */
-#define ELSE_READ_OVER_CREATE_TASK()                                 \
-  else                                                               \
-    {                                                                \
-      request_delete_task (&create_task_data->task);                 \
-      set_read_over (gmp_parser);                                    \
-    }                                                                \
+#define ELSE_READ_OVER_CREATE_TASK                              \
+  else                                                          \
+    {                                                           \
+      request_delete_task (&create_task_data->task);            \
+      set_read_over (gmp_parser);                               \
+    }                                                           \
   break
 
 /** @todo Free globals when tags open, in case of duplicate tags. */
@@ -7000,14 +6997,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_to_credentials_password (&current_credentials, "", 0);
             set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_AUTHENTICATE_CREDENTIALS:
         if (strcasecmp ("USERNAME", element_name) == 0)
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_SCANNER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7030,7 +7027,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_scanner_data->credential_id);
             set_client_state (CLIENT_CREATE_SCANNER_CREDENTIAL);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_SCHEDULE:
         if (strcasecmp ("BYDAY", element_name) == 0)
@@ -7051,7 +7048,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
         else if (strcasecmp ("TIMEZONE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_TIMEZONE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME:
         if (strcasecmp ("DAY_OF_MONTH", element_name) == 0)
@@ -7064,17 +7061,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH);
         else if (strcasecmp ("YEAR", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_SCHEDULE_DURATION:
         if (strcasecmp ("UNIT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_DURATION_UNIT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_SCHEDULE_PERIOD:
         if (strcasecmp ("UNIT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_GET_AGGREGATES:
         if (strcasecmp ("DATA_COLUMN", element_name) == 0)
@@ -7125,7 +7122,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                g_strdup (""));
             set_client_state (CLIENT_GET_AGGREGATES_TEXT_COLUMN);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_AGENT:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7138,7 +7135,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_agent_data->name, "");
             set_client_state (CLIENT_MODIFY_AGENT_NAME);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_ALERT:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -7165,37 +7162,37 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_ALERT_CONDITION);
         else if (strcasecmp ("METHOD", element_name) == 0)
           set_client_state (CLIENT_MODIFY_ALERT_METHOD);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_ALERT_EVENT:
         if (strcasecmp ("DATA", element_name) == 0)
           set_client_state (CLIENT_MODIFY_ALERT_EVENT_DATA);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_ALERT_EVENT_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_ALERT_EVENT_DATA_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_ALERT_CONDITION:
         if (strcasecmp ("DATA", element_name) == 0)
           set_client_state (CLIENT_MODIFY_ALERT_CONDITION_DATA);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_ALERT_CONDITION_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_ALERT_CONDITION_DATA_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_ALERT_METHOD:
         if (strcasecmp ("DATA", element_name) == 0)
           set_client_state (CLIENT_MODIFY_ALERT_METHOD_DATA);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_ALERT_METHOD_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_ALERT_METHOD_DATA_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_ASSET:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7203,7 +7200,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_asset_data->comment, "");
             set_client_state (CLIENT_MODIFY_ASSET_COMMENT);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_AUTH:
         if (strcasecmp ("GROUP", element_name) == 0)
@@ -7219,19 +7216,19 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               g_slist_prepend (modify_auth_data->groups, new_group);
             set_client_state (CLIENT_MODIFY_AUTH_GROUP);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_AUTH_GROUP:
         if (strcasecmp ("AUTH_CONF_SETTING", element_name) == 0)
           set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING:
         if (strcasecmp ("KEY", element_name) == 0)
           set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_KEY);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_VALUE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7270,7 +7267,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_free_string_var (&modify_config_data->preference_value);
             set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
         if (strcasecmp ("FAMILY", element_name) == 0)
@@ -7281,7 +7278,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_config_data->nvt_selection_nvt_oid);
             set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
         if (strcasecmp ("FAMILY", element_name) == 0)
@@ -7294,7 +7291,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GROWING", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
         if (strcasecmp ("ALL", element_name) == 0)
@@ -7305,7 +7302,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
            (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CONFIG_PREFERENCE:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -7318,7 +7315,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CREDENTIAL:
         if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
@@ -7363,7 +7360,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_credential_data->privacy_algorithm,
                                    "");
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CREDENTIAL_KEY:
         if (strcasecmp ("PHRASE", element_name) == 0)
@@ -7380,7 +7377,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CREDENTIAL_PRIVACY:
         if (strcasecmp ("ALGORITHM", element_name) == 0)
@@ -7393,7 +7390,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_credential_data->privacy_password, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_FILTER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7416,7 +7413,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_filter_data->type, "");
             set_client_state (CLIENT_MODIFY_FILTER_TYPE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_GROUP:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7434,7 +7431,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_group_data->users, "");
             set_client_state (CLIENT_MODIFY_GROUP_USERS);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_PERMISSION:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7453,17 +7450,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_permission_data->subject_id);
             set_client_state (CLIENT_MODIFY_PERMISSION_SUBJECT);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_PERMISSION_RESOURCE:
         if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_PERMISSION_RESOURCE_TYPE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_PERMISSION_SUBJECT:
         if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_PERMISSION_SUBJECT_TYPE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_PORT_LIST:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -7474,12 +7471,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_port_list_data->comment, "");
             set_client_state (CLIENT_MODIFY_PORT_LIST_COMMENT);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_REPORT:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_COMMENT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_REPORT_FORMAT:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -7490,14 +7487,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_SUMMARY);
         else if (strcasecmp ("PARAM", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_REPORT_FORMAT_PARAM:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_ROLE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7515,7 +7512,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_role_data->users, "");
             set_client_state (CLIENT_MODIFY_ROLE_USERS);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_SCANNER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7554,7 +7551,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_scanner_data->credential_id);
             set_client_state (CLIENT_MODIFY_SCANNER_CREDENTIAL);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_SCHEDULE:
         if (strcasecmp ("BYDAY", element_name) == 0)
@@ -7584,7 +7581,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_SCHEDULE_PERIOD);
         else if (strcasecmp ("TIMEZONE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_SCHEDULE_TIMEZONE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_SCHEDULE_FIRST_TIME:
         if (strcasecmp ("DAY_OF_MONTH", element_name) == 0)
@@ -7597,17 +7594,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MONTH);
         else if (strcasecmp ("YEAR", element_name) == 0)
           set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_YEAR);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_SCHEDULE_DURATION:
         if (strcasecmp ("UNIT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_SCHEDULE_DURATION_UNIT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_SCHEDULE_PERIOD:
         if (strcasecmp ("UNIT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_SCHEDULE_PERIOD_UNIT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_SETTING:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -7617,7 +7614,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_setting_data->value, "");
             set_client_state (CLIENT_MODIFY_SETTING_VALUE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TAG:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -7649,7 +7646,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_tag_data->value, "");
             set_client_state (CLIENT_MODIFY_TAG_VALUE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TAG_RESOURCES:
         if (strcasecmp ("RESOURCE", element_name) == 0)
@@ -7665,7 +7662,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_tag_data->resource_type, "");
             set_client_state (CLIENT_MODIFY_TAG_RESOURCES_TYPE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TARGET:
         if (strcasecmp ("EXCLUDE_HOSTS", element_name) == 0)
@@ -7742,17 +7739,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_target_data->name, "");
             set_client_state (CLIENT_MODIFY_TARGET_NAME);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TARGET_SSH_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_SSH_CREDENTIAL_PORT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TASK:
         if (strcasecmp ("ALTERABLE", element_name) == 0)
@@ -7822,7 +7819,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               gvm_append_string (&modify_task_data->action, "update");
             set_client_state (CLIENT_MODIFY_TASK_FILE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TASK_OBSERVERS:
         if (strcasecmp ("GROUP", element_name) == 0)
@@ -7833,7 +7830,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               array_add (modify_task_data->groups, g_strdup (attribute));
             set_client_state (CLIENT_MODIFY_TASK_OBSERVERS_GROUP);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TASK_PREFERENCES:
         if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -7844,14 +7841,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             modify_task_data->preference->value = NULL;
             set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
         if (strcasecmp ("SCANNER_NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TICKET:
         modify_ticket_element_start (gmp_parser, element_name,
@@ -7944,7 +7941,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               array_add (modify_user_data->groups, g_strdup (attribute));
             set_client_state (CLIENT_MODIFY_USER_GROUPS_GROUP);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_USER_SOURCES:
         if (strcasecmp ("SOURCE", element_name) == 0)
@@ -7971,13 +7968,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&create_agent_data->name, "");
             set_client_state (CLIENT_CREATE_AGENT_NAME);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
       case CLIENT_CREATE_AGENT_INSTALLER:
         if (strcasecmp ("FILENAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_INSTALLER_FILENAME);
         else if (strcasecmp ("SIGNATURE", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ASSET:
         if (strcasecmp ("ASSET", element_name) == 0)
@@ -7988,7 +7985,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_asset_data->report_id);
             set_client_state (CLIENT_CREATE_ASSET_REPORT);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ASSET_ASSET:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7997,17 +7994,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ASSET_ASSET_NAME);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET_ASSET_TYPE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ASSET_REPORT:
         if (strcasecmp ("FILTER", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET_REPORT_FILTER);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ASSET_REPORT_FILTER:
         if (strcasecmp ("TERM", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET_REPORT_FILTER_TERM);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8025,7 +8022,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CONFIG_NAME);
         else if (strcasecmp ("USAGE_TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_USAGE_TYPE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_C_C_GCR:
         if (strcasecmp ("CONFIG", element_name) == 0)
@@ -8035,7 +8032,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             import_config_data->import = 1;
             set_client_state (CLIENT_C_C_GCR_CONFIG);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_C_C_GCR_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8062,12 +8059,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_C_C_GCR_CONFIG_USAGE_TYPE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS:
         if (strcasecmp ("NVT_SELECTOR", element_name) == 0)
           set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR:
         if (strcasecmp ("INCLUDE", element_name) == 0)
@@ -8082,7 +8079,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("FAMILY_OR_NVT", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_FAMILY_OR_NVT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES:
         if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -8090,7 +8087,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             array_reset (&import_config_data->preference_alts);
             set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE:
         if (strcasecmp ("ALT", element_name) == 0)
@@ -8121,13 +8118,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ALERT:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -8150,37 +8147,37 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ALERT_METHOD);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ALERT_CONDITION:
         if (strcasecmp ("DATA", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_CONDITION_DATA);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ALERT_CONDITION_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_CONDITION_DATA_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ALERT_EVENT:
         if (strcasecmp ("DATA", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_EVENT_DATA);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ALERT_EVENT_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_EVENT_DATA_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ALERT_METHOD:
         if (strcasecmp ("DATA", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_METHOD_DATA);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ALERT_METHOD_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_METHOD_DATA_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_CREDENTIAL:
         if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
@@ -8213,7 +8210,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_TYPE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_CREDENTIAL_KEY:
         if (strcasecmp ("PHRASE", element_name) == 0)
@@ -8225,14 +8222,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE);
         else if (strcasecmp ("PUBLIC", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_CREDENTIAL_PRIVACY:
         if (strcasecmp ("ALGORITHM", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_FILTER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8248,7 +8245,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_FILTER_TERM);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_FILTER_TYPE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_GROUP:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8264,7 +8261,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_GROUP_SPECIALS);
         else if (strcasecmp ("USERS", element_name) == 0)
           set_client_state (CLIENT_CREATE_GROUP_USERS);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_GROUP_SPECIALS:
         if (strcasecmp ("FULL", element_name) == 0)
@@ -8272,7 +8269,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_group_data->special_full = 1;
             set_client_state (CLIENT_CREATE_GROUP_SPECIALS_FULL);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_NOTE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -8319,7 +8316,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_NOTE_TEXT);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_THREAT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_PERMISSION:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8343,17 +8340,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_permission_data->subject_id);
             set_client_state (CLIENT_CREATE_PERMISSION_SUBJECT);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_PERMISSION_RESOURCE:
         if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_PERMISSION_RESOURCE_TYPE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_PERMISSION_SUBJECT:
         if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_PERMISSION_SUBJECT_TYPE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_PORT_LIST:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8372,7 +8369,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_PORT_LIST_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CPL_GPLR:
         if (strcasecmp ("PORT_LIST", element_name) == 0)
@@ -8381,7 +8378,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_port_list_data->id);
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CPL_GPLR_PORT_LIST:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8397,7 +8394,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_port_list_data->ranges = make_array ();
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES:
         if (strcasecmp ("PORT_RANGE", element_name) == 0)
@@ -8409,7 +8406,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &(create_port_list_data->range->id));
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8432,7 +8429,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&create_port_list_data->range->type, "");
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_TYPE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_PORT_RANGE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8449,7 +8446,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_PORT_RANGE_START);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_PORT_RANGE_TYPE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ROLE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8463,7 +8460,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("USERS", element_name) == 0)
           set_client_state (CLIENT_CREATE_ROLE_USERS);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT:
         if (strcasecmp ("IN_ASSETS", element_name) == 0)
@@ -8501,7 +8498,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_report_data->task_id);
             set_client_state (CLIENT_CREATE_REPORT_TASK);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_REPORT:
         if (strcasecmp ("REPORT", element_name) == 0)
@@ -8512,7 +8509,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_report_data->results = make_array ();
             set_client_state (CLIENT_CREATE_REPORT_RR);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR:
         if (strcasecmp ("ERRORS", element_name) == 0)
@@ -8537,14 +8534,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_SCAN_START);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_ERRORS:
         if (strcasecmp ("ERROR", element_name) == 0)
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR:
         if (strcasecmp ("DESCRIPTION", element_name) == 0)
@@ -8567,7 +8564,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
            (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SCAN_NVT_VERSION);
         else if (strcasecmp ("SEVERITY", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_SEVERITY);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST:
         if (strcasecmp ("ASSET", element_name) == 0)
@@ -8576,7 +8573,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("HOSTNAME", element_name) == 0)
           set_client_state
             (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_HOST_HOSTNAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT:
         if (strcasecmp ("CVSS_BASE", element_name) == 0)
@@ -8584,17 +8581,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
            (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT_CVSS_BASE);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS_ERROR_NVT_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_HOST_END:
         if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_END_HOST);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_HOST_START:
         if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START_HOST);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_H:
         if (strcasecmp ("IP", element_name) == 0)
@@ -8613,7 +8610,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_H_START);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_H_DETAIL:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -8628,7 +8625,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE:
         if (strcasecmp ("DESCRIPTION", element_name) == 0)
@@ -8643,13 +8640,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_TYPE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_RESULTS:
         if (strcasecmp ("RESULT", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
         if (strcasecmp ("DESCRIPTION", element_name) == 0)
@@ -8682,7 +8679,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST:
         if (strcasecmp ("ASSET", element_name) == 0)
@@ -8691,7 +8688,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("HOSTNAME", element_name) == 0)
           set_client_state
             (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST_HOSTNAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT:
         if (strcasecmp ("BID", element_name) == 0)
@@ -8709,27 +8706,27 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_XREF);
         else if (strcasecmp ("CERT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CERT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CERT):
         if (strcasecmp ("CERT_REF", element_name) == 0)
           set_client_state
               (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CERT_CERT_REF);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD:
         if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD_TYPE);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD_VALUE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_TASK:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_TASK_COMMENT);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_TASK_NAME);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_FORMAT:
         if (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0)
@@ -8739,7 +8736,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_FORMAT_COPY);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CRF_GRFR:
         if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
@@ -8751,7 +8748,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_report_format_data->id);
             set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT:
         if (strcasecmp ("CONTENT_TYPE", element_name) == 0)
@@ -8789,7 +8786,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE);
         else if (strcasecmp ("SUMMARY", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
         if (strcasecmp ("DEFAULT", element_name) == 0)
@@ -8808,7 +8805,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS:
         if (strcasecmp ("OPTION", element_name) == 0)
@@ -8817,7 +8814,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state
              (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
         if (strcasecmp ("MAX", element_name) == 0)
@@ -8830,7 +8827,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state
              (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -8881,7 +8878,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_OVERRIDE_TEXT);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_THREAT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TAG:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -8916,7 +8913,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&create_tag_data->value, "");
             set_client_state (CLIENT_CREATE_TAG_VALUE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TAG_RESOURCES:
         if (strcasecmp ("RESOURCE", element_name) == 0)
@@ -8932,7 +8929,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&create_tag_data->resource_type, "");
             set_client_state (CLIENT_CREATE_TAG_RESOURCES_TYPE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TARGET:
         if (strcasecmp ("ASSET_HOSTS", element_name) == 0)
@@ -9013,17 +9010,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&create_target_data->name, "");
             set_client_state (CLIENT_CREATE_TARGET_NAME);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TARGET_SSH_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_SSH_CREDENTIAL_PORT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT);
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TASK:
         if (strcasecmp ("ALTERABLE", element_name) == 0)
@@ -9079,7 +9076,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("USAGE_TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_USAGE_TYPE);
-        ELSE_READ_OVER_CREATE_TASK ();
+        ELSE_READ_OVER_CREATE_TASK;
 
       case CLIENT_CREATE_TASK_OBSERVERS:
         if (strcasecmp ("GROUP", element_name) == 0)
@@ -9090,7 +9087,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               array_add (create_task_data->groups, g_strdup (attribute));
             set_client_state (CLIENT_CREATE_TASK_OBSERVERS_GROUP);
           }
-        ELSE_READ_OVER_CREATE_TASK ();
+        ELSE_READ_OVER_CREATE_TASK;
 
       case CLIENT_CREATE_TASK_PREFERENCES:
         if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -9101,14 +9098,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_task_data->preference->value = NULL;
             set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
           }
-        ELSE_READ_OVER_CREATE_TASK ();
+        ELSE_READ_OVER_CREATE_TASK;
 
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
         if (strcasecmp ("SCANNER_NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE);
-        ELSE_READ_OVER_CREATE_TASK ();
+        ELSE_READ_OVER_CREATE_TASK;
 
       case CLIENT_CREATE_TICKET:
         create_ticket_element_start (gmp_parser, element_name,
@@ -9179,7 +9176,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               array_add (create_user_data->groups, g_strdup (attribute));
             set_client_state (CLIENT_CREATE_USER_GROUPS_GROUP);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_USER_SOURCES:
         if (strcasecmp ("SOURCE", element_name) == 0)
@@ -9231,7 +9228,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_note_data->nvt_oid);
             set_client_state (CLIENT_MODIFY_NOTE_NVT);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_MODIFY_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -9280,7 +9277,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_override_data->nvt_oid);
             set_client_state (CLIENT_MODIFY_OVERRIDE_NVT);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_RUN_WIZARD:
         if (strcasecmp ("MODE", element_name) == 0)
@@ -9296,7 +9293,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             run_wizard_data->params = make_array ();
             set_client_state (CLIENT_RUN_WIZARD_PARAMS);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_RUN_WIZARD_PARAMS:
         if (strcasecmp ("PARAM", element_name) == 0)
@@ -9307,7 +9304,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             run_wizard_data->param->value = NULL;
             set_client_state (CLIENT_RUN_WIZARD_PARAMS_PARAM);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       case CLIENT_RUN_WIZARD_PARAMS_PARAM:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -9318,7 +9315,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE);
           }
-        ELSE_READ_OVER ();
+        ELSE_READ_OVER;
 
       default:
         /* Read over this element. */
