@@ -5579,6 +5579,7 @@ make_xml_error_syntax (const char *tag, const char *text)
 #define ELSE_ERROR_CREATE_TASK()                                     \
   else                                                               \
     {                                                                \
+      request_delete_task (&create_task_data->task);                 \
       if (gmp_parser->read_over == 0)                                \
         {                                                            \
           gmp_parser->read_over = 1;                                 \
