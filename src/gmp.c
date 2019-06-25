@@ -2593,16 +2593,9 @@ typedef struct
   char *format_id;       ///< ID of report format.
   char *alert_id;        ///< ID of alert.
   char *report_id;       ///< ID of single report to get.
-  int host_first_result; ///< Skip over results before this result number.
-  int host_max_results;  ///< Maximum number of results return.
-  char *host_levels;     ///< Letter encoded threat level filter, for hosts.
-  char *host_search_phrase;  ///< Search phrase result filter.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides_details; ///< Boolean.  Whether to include details of above.
   int result_tags;       ///< Boolean.  Whether to include result tags.
-  char *type;            ///< Type of report.
-  char *host;            ///< Host for asset report.
-  char *pos;             ///< Position of report from end.
   int ignore_pagination; ///< Boolean.  Whether to ignore pagination filters.
 } get_reports_data_t;
 
@@ -2620,11 +2613,6 @@ get_reports_data_reset (get_reports_data_t *data)
   free (data->format_id);
   free (data->alert_id);
   free (data->report_id);
-  free (data->host_levels);
-  free (data->host_search_phrase);
-  free (data->type);
-  free (data->host);
-  free (data->pos);
 
   memset (data, 0, sizeof (get_reports_data_t));
 }
@@ -6486,26 +6474,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &get_reports_data->format_id);
 
             if (find_attribute (attribute_names, attribute_values,
-                                "host_first_result", &attribute))
-              /* Subtract 1 to switch from 1 to 0 indexing. */
-              get_reports_data->host_first_result = atoi (attribute) - 1;
-            else
-              get_reports_data->host_first_result = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "host_max_results", &attribute))
-              get_reports_data->host_max_results = atoi (attribute);
-            else
-              get_reports_data->host_max_results = -1;
-
-            append_attribute (attribute_names, attribute_values, "host_levels",
-                              &get_reports_data->host_levels);
-
-            append_attribute (attribute_names, attribute_values,
-                              "host_search_phrase",
-                              &get_reports_data->host_search_phrase);
-
-            if (find_attribute (attribute_names, attribute_values,
                                 "notes_details", &attribute))
               get_reports_data->notes_details = strcmp (attribute, "0");
             else
@@ -6522,22 +6490,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_reports_data->result_tags = strcmp (attribute, "0");
             else
               get_reports_data->result_tags = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "type", &attribute))
-              gvm_append_string (&get_reports_data->type, attribute);
-            else
-              get_reports_data->type = g_strdup ("scan");
-
-            append_attribute (attribute_names,
-                              attribute_values,
-                              "host",
-                              &get_reports_data->host);
-
-            append_attribute (attribute_names,
-                              attribute_values,
-                              "pos",
-                              &get_reports_data->pos);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "ignore_pagination", &attribute))
@@ -15823,8 +15775,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  /** @todo Some checks only required when type is "scan". */
-
   /** @todo Respond in all error cases.
     *
     * When something fails mid-way through the report, we can only close
@@ -15833,19 +15783,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     * when there is a problem.  Buffering the entire report before sending
     * it would probably take too long and/or use to much memory. */
 
-  if (strcmp (get_reports_data->type, "scan")
-      && strcmp (get_reports_data->type, "assets"))
-    {
-      get_reports_data_reset (get_reports_data);
-      SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("get_reports",
-                          "Type must be scan or assets"));
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-
-  if ((strcmp (get_reports_data->type, "scan") == 0)
-      && get_reports_data->report_id
+  if (get_reports_data->report_id
       && find_report_with_permission (get_reports_data->report_id,
                                       &request_report,
                                       NULL))
@@ -15926,8 +15864,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
         }
     }
 
-  if ((strcmp (get_reports_data->type, "scan") == 0)
-      && get_reports_data->report_id
+  if (get_reports_data->report_id
       && request_report == 0)
     {
       if (send_find_error_to_client ("get_reports", "report",
@@ -15942,8 +15879,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if ((strcmp (get_reports_data->type, "scan") == 0)
-      && get_reports_data->delta_report_id
+  if (get_reports_data->delta_report_id
       && strcmp (get_reports_data->delta_report_id, "0")
       && delta_report == 0)
     {
@@ -15980,86 +15916,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
-
-  if (strcmp (get_reports_data->type, "assets") == 0)
-    {
-      gchar *extension, *content_type;
-      int pos;
-      get_data_t * get;
-
-      /* An asset report. */
-
-      get = &get_reports_data->get;
-      if (get->filt_id && strcmp (get->filt_id, FILT_ID_USER_SETTING) == 0)
-        {
-          g_free (get->filt_id);
-          get->filt_id = g_strdup ("0");
-        }
-
-      if (get_reports_data->alert_id == NULL)
-        SEND_TO_CLIENT_OR_FAIL
-         ("<get_reports_response"
-          " status=\"" STATUS_OK "\""
-          " status_text=\"" STATUS_OK_TEXT "\">");
-
-      content_type = report_format_content_type (report_format);
-      extension = report_format_extension (report_format);
-
-      SENDF_TO_CLIENT_OR_FAIL
-       ("<report"
-        " type=\"assets\""
-        " format_id=\"%s\""
-        " extension=\"%s\""
-        " content_type=\"%s\">",
-        get_reports_data->format_id,
-        extension,
-        content_type);
-
-      g_free (extension);
-      g_free (content_type);
-
-      pos = get_reports_data->pos ? atoi (get_reports_data->pos) : 1;
-      ret = manage_send_report (0,
-                                0,
-                                report_format,
-                                &get_reports_data->get,
-                                get_reports_data->notes_details,
-                                get_reports_data->overrides_details,
-                                get_reports_data->result_tags,
-                                get_reports_data->ignore_pagination,
-                                /* Special case the XML reports, bah. */
-                                strcmp
-                                  (get_reports_data->format_id,
-                                   "a994b278-1f62-11e1-96ac-406186ea4fc5")
-                                && strcmp
-                                    (get_reports_data->format_id,
-                                     "5057e5cc-b825-11e4-9d0e-28d24461215b"),
-                                send_to_client,
-                                gmp_parser->client_writer,
-                                gmp_parser->client_writer_data,
-                                get_reports_data->alert_id,
-                                "assets",
-                                get_reports_data->host,
-                                pos,
-                                NULL, NULL, 0, 0, NULL);
-
-      if (ret)
-        {
-          internal_error_send_to_client (error);
-          get_reports_data_reset (get_reports_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          return;
-        }
-
-      SEND_TO_CLIENT_OR_FAIL ("</report>"
-                              "</get_reports_response>");
-
-      get_reports_data_reset (get_reports_data);
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-
-  /* The usual scan report. */
 
   if (get_reports_data->get.id)
     {
@@ -16175,7 +16031,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       if (get_reports_data->alert_id == NULL)
         g_string_append_printf (prefix,
                                 "<report"
-                                " type=\"scan\""
                                 " id=\"%s\""
                                 " format_id=\"%s\""
                                 " extension=\"%s\""
@@ -16289,8 +16144,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 gmp_parser->client_writer,
                                 gmp_parser->client_writer_data,
                                 get_reports_data->alert_id,
-                                get_reports_data->type,
-                                NULL, 0, NULL, NULL, 0, 0, prefix->str);
+                                prefix->str);
       g_string_free (prefix, TRUE);
       if (ret)
         {
