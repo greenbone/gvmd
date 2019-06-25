@@ -718,6 +718,7 @@ typedef struct
   char *preference_type;             ///< Type in PREFERENCE.
   char *preference_value;            ///< Value in PREFERENCE.
   char *type;                        ///< Config type.
+  char *usage_type;                  ///< Usage type ("scan" or "policy")
 } import_config_data_t;
 
 /**
@@ -730,6 +731,7 @@ typedef struct
   char *copy;                        ///< Config to copy.
   import_config_data_t import;       ///< Config to import.
   char *name;                        ///< Name.
+  char *usage_type;                  ///< Usage type ("scan" or "policy")
 } create_config_data_t;
 
 /**
@@ -776,8 +778,10 @@ create_config_data_reset (create_config_data_t *data)
   g_free (import->preference_type);
   g_free (import->preference_value);
   g_free (import->type);
+  g_free (import->usage_type);
 
   g_free (data->name);
+  g_free (data->usage_type);
 
   memset (data, 0, sizeof (create_config_data_t));
 }
@@ -1185,9 +1189,7 @@ typedef struct
   array_t *results;               ///< All results.
   char *scan_end;                 ///< End time for a scan.
   char *scan_start;               ///< Start time for a scan.
-  char *task_comment;             ///< Comment for container task.
   char *task_id;                  ///< ID of container task.
-  char *task_name;                ///< Name for container task.
   char *type;                     ///< Type of report.
   int wrapper;                    ///< Whether there was a wrapper REPORT.
 } create_report_data_t;
@@ -1281,9 +1283,7 @@ create_report_data_reset (create_report_data_t *data)
     }
   free (data->scan_end);
   free (data->scan_start);
-  free (data->task_comment);
   free (data->task_id);
-  free (data->task_name);
   free (data->type);
 
   memset (data, 0, sizeof (create_report_data_t));
@@ -1586,6 +1586,7 @@ typedef struct
   char *schedule_periods; ///< Number of periods the schedule must run for.
   char *target_id;      ///< ID of task target.
   task_t task;          ///< ID of new task.
+  char *usage_type;     ///< Usage type ("scan" or "audit")
 } create_task_data_t;
 
 /**
@@ -1623,6 +1624,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->schedule_id);
   free (data->schedule_periods);
   free (data->target_id);
+  free (data->usage_type);
 
   memset (data, 0, sizeof (create_task_data_t));
 }
@@ -4918,6 +4920,7 @@ typedef enum
   CLIENT_CREATE_CONFIG_COPY,
   CLIENT_CREATE_CONFIG_SCANNER,
   CLIENT_CREATE_CONFIG_NAME,
+  CLIENT_CREATE_CONFIG_USAGE_TYPE,
   /* get_configs_response (GCR) is used for config export.  CLIENT_C_C is
    * for CLIENT_CREATE_CONFIG. */
   CLIENT_C_C_GCR,
@@ -4942,6 +4945,7 @@ typedef enum
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE,
   CLIENT_C_C_GCR_CONFIG_TYPE,
+  CLIENT_C_C_GCR_CONFIG_USAGE_TYPE,
   CLIENT_CREATE_FILTER,
   CLIENT_CREATE_FILTER_COMMENT,
   CLIENT_CREATE_FILTER_COPY,
@@ -5199,6 +5203,7 @@ typedef enum
   CLIENT_CREATE_TASK_SCHEDULE,
   CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
   CLIENT_CREATE_TASK_TARGET,
+  CLIENT_CREATE_TASK_USAGE_TYPE,
   CLIENT_CREATE_TICKET,
   CLIENT_CREATE_TLS_CERTIFICATE,
   CLIENT_CREATE_USER,
@@ -8065,6 +8070,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_NAME);
+        else if (strcasecmp ("USAGE_TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CONFIG_USAGE_TYPE);
         ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR:
@@ -8097,6 +8104,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("TYPE", element_name) == 0)
           {
             set_client_state (CLIENT_C_C_GCR_CONFIG_TYPE);
+          }
+        else if (strcasecmp ("USAGE_TYPE", element_name) == 0)
+          {
+            set_client_state (CLIENT_C_C_GCR_CONFIG_USAGE_TYPE);
           }
         ELSE_ERROR ("create_config");
 
@@ -9241,6 +9252,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_task_data->target_id);
             set_client_state (CLIENT_CREATE_TASK_TARGET);
           }
+        else if (strcasecmp ("USAGE_TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_USAGE_TYPE);
         ELSE_ERROR_CREATE_TASK ();
 
       case CLIENT_CREATE_TASK_OBSERVERS:
@@ -13305,7 +13318,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
   while (1)
     {
       int config_nvts_growing, config_families_growing, config_type;
-      const char *selector;
+      const char *selector, *usage_type;
       config_t config;
 
       ret = get_next (&configs, &get_configs_data->get, &first,
@@ -13324,6 +13337,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
       config = get_iterator_resource (&configs);
       config_nvts_growing = config_iterator_nvts_growing (&configs);
       config_type = config_iterator_type (&configs);
+      usage_type = config_iterator_usage_type (&configs);
       config_families_growing = config_iterator_families_growing
                                  (&configs);
 
@@ -13335,12 +13349,14 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                                "<nvt_count>"
                                "%i<growing>%i</growing>"
                                "</nvt_count>"
-                               "<type>%i</type>",
+                               "<type>%i</type>"
+                               "<usage_type>%s</usage_type>",
                                config_iterator_family_count (&configs),
                                config_families_growing,
                                config_iterator_nvt_count (&configs),
                                config_nvts_growing,
-                               config_type);
+                               config_type,
+                               usage_type);
 
       if (config_type == 0 && (get_configs_data->families
                                || get_configs_data->get.details))
@@ -19219,6 +19235,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
           response = g_strdup_printf
                       ("<alterable>%i</alterable>"
+                       "<usage_type>%s</usage_type>"
                        "<config id=\"%s\">"
                        "<name>%s</name>"
                        "<type>%i</type>"
@@ -19248,6 +19265,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        get_tasks_data->get.trash
                         ? 0
                         : task_alterable (index),
+                       task_iterator_usage_type (&tasks),
                        config_uuid ?: "",
                        config_name_escaped ?: "",
                        config_type (task_config (index)),
@@ -21353,6 +21371,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           if (import_config_data->import)
             {
               char *name;
+              const char *usage_type;
+
+              // Allow to overwrite usage type
+              if (create_config_data->usage_type
+                  && strcmp (create_config_data->usage_type, ""))
+                usage_type = create_config_data->usage_type;
+              else
+                usage_type = import_config_data->usage_type;
+
               array_terminate (import_config_data->nvt_selectors);
               array_terminate (import_config_data->preferences);
               switch (create_config (import_config_data->name,
@@ -21360,6 +21387,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                      import_config_data->nvt_selectors,
                                      import_config_data->preferences,
                                      import_config_data->type,
+                                     usage_type,
                                      &new_config,
                                      &name))
                 {
@@ -21426,8 +21454,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               char *uuid = NULL;
 
               switch (create_config_from_scanner
-                       (create_config_data->scanner, create_config_data->name,
-                        create_config_data->comment, &uuid))
+                       (create_config_data->scanner,
+                        create_config_data->name,
+                        create_config_data->comment,
+                        create_config_data->usage_type,
+                        &uuid))
                 {
                   case 0:
                     SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
@@ -21491,6 +21522,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else switch (copy_config (create_config_data->name,
                                     create_config_data->comment,
                                     create_config_data->copy,
+                                    create_config_data->usage_type,
                                     &new_config))
             {
               case 0:
@@ -21539,6 +21571,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CONFIG, COPY);
       CLOSE (CLIENT_CREATE_CONFIG, SCANNER);
       CLOSE (CLIENT_CREATE_CONFIG, NAME);
+      CLOSE (CLIENT_CREATE_CONFIG, USAGE_TYPE);
 
       case CLIENT_C_C_GCR:
         set_client_state (CLIENT_CREATE_CONFIG);
@@ -21637,6 +21670,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, TYPE);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, VALUE);
       CLOSE (CLIENT_C_C_GCR_CONFIG, TYPE);
+      CLOSE (CLIENT_C_C_GCR_CONFIG, USAGE_TYPE);
 
       case CLIENT_CREATE_ALERT:
         {
@@ -23414,8 +23448,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           else switch (create_report
                         (create_report_data->results,
                          create_report_data->task_id,
-                         create_report_data->task_name,
-                         create_report_data->task_comment,
                          create_report_data->in_assets,
                          create_report_data->scan_start,
                          create_report_data->scan_end,
@@ -23439,7 +23471,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case -3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report",
-                                    "TASK_NAME is required"));
+                                    "A TASK id attribute is required"));
                 log_event_fail ("report", "Report", NULL, "created");
                 break;
               case -4:
@@ -24852,6 +24884,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               /* Container task. */
 
               set_task_target (create_task_data->task, 0);
+              set_task_usage_type (create_task_data->task,
+                                   create_task_data->usage_type);
               SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
                                        tsk_uuid);
               make_task_complete (create_task_data->task);
@@ -25072,6 +25106,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_task_scanner (create_task_data->task, scanner);
           set_task_hosts_ordering (create_task_data->task,
                                    create_task_data->hosts_ordering);
+          set_task_usage_type (create_task_data->task,
+                               create_task_data->usage_type);
           if (create_task_data->preferences)
             switch (set_task_preferences (create_task_data->task,
                                           create_task_data->preferences))
@@ -25125,6 +25161,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK, OBSERVERS);
       CLOSE (CLIENT_CREATE_TASK, PREFERENCES);
       CLOSE (CLIENT_CREATE_TASK, TARGET);
+      CLOSE (CLIENT_CREATE_TASK, USAGE_TYPE);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE_PERIODS);
 
@@ -29217,6 +29254,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_CONFIG_NAME,
               &create_config_data->name);
 
+      APPEND (CLIENT_CREATE_CONFIG_USAGE_TYPE,
+              &create_config_data->usage_type);
+
       APPEND (CLIENT_C_C_GCR_CONFIG_COMMENT,
               &import_config_data->comment);
 
@@ -29261,6 +29301,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_C_C_GCR_CONFIG_TYPE,
               &import_config_data->type);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_USAGE_TYPE,
+              &import_config_data->usage_type);
 
 
       APPEND (CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE,
@@ -29582,13 +29625,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &create_report_data->host_start);
 
 
-      APPEND (CLIENT_CREATE_REPORT_TASK_NAME,
-              &create_report_data->task_name);
-
-      APPEND (CLIENT_CREATE_REPORT_TASK_COMMENT,
-              &create_report_data->task_comment);
-
-
       APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE,
               &create_report_format_data->content_type);
 
@@ -29799,6 +29835,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
               &create_task_data->schedule_periods);
 
+      APPEND (CLIENT_CREATE_TASK_USAGE_TYPE,
+              &create_task_data->usage_type);
 
       case CLIENT_CREATE_TICKET:
         create_ticket_element_text (text, text_len);
