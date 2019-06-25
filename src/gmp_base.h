@@ -54,10 +54,6 @@ gboolean
 send_to_client (const char *, int (*) (const char *, void *), void *);
 
 gboolean
-send_element_error_to_client (const char *, const char *,
-                              int (*) (const char *, void *), void *);
-
-gboolean
 send_find_error_to_client (const char *, const char *, const char *,
                            gmp_parser_t *);
 

@@ -142,35 +142,6 @@ send_to_client (const char* msg,
 }
 
 /**
- * @brief Send an XML element error response message to the client.
- *
- * @param[in]  command  Command name.
- * @param[in]  element  Element name.
- * @param[in]  write_to_client       Function to write to client.
- * @param[in]  write_to_client_data  Argument to \p write_to_client.
- *
- * @return TRUE if out of space in to_client, else FALSE.
- */
-gboolean
-send_element_error_to_client (const char* command, const char* element,
-                              int (*write_to_client) (const char*, void*),
-                              void* write_to_client_data)
-{
-  gchar *msg;
-  gboolean ret;
-
-  /** @todo Set gerror so parsing terminates. */
-  msg = g_strdup_printf ("<%s_response status=\""
-                         STATUS_ERROR_SYNTAX
-                         "\" status_text=\"Bogus element: %s\"/>",
-                         command,
-                         element);
-  ret = send_to_client (msg, write_to_client, write_to_client_data);
-  g_free (msg);
-  return ret;
-}
-
-/**
  * @brief Send an XML find error response message to the client.
  *
  * @param[in]  command      Command name.

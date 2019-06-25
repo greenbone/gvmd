@@ -5572,18 +5572,11 @@ make_xml_error_syntax (const char *tag, const char *text)
     }                                                           \
   else                                                          \
     {                                                           \
-      if (send_element_error_to_client (op, element_name,       \
-                                        write_to_client,        \
-                                        write_to_client_data))  \
+      if (gmp_parser->read_over == 0)                           \
         {                                                       \
-          error_send_to_client (error);                         \
-          return;                                               \
+          gmp_parser->read_over = 1;                            \
+          gmp_parser->parent_state = client_state;              \
         }                                                       \
-      set_client_state (CLIENT_AUTHENTIC);                      \
-      g_set_error (error,                                       \
-                   G_MARKUP_ERROR,                              \
-                   G_MARKUP_ERROR_UNKNOWN_ELEMENT,              \
-                   "Error");                                    \
     }                                                           \
   break
 
@@ -5602,19 +5595,11 @@ make_xml_error_syntax (const char *tag, const char *text)
     }                                                                \
   else                                                               \
     {                                                                \
-      request_delete_task (&create_task_data->task);                 \
-      if (send_element_error_to_client ("create_task", element_name, \
-                                        write_to_client,             \
-                                        write_to_client_data))       \
+      if (gmp_parser->read_over == 0)                                \
         {                                                            \
-          error_send_to_client (error);                              \
-          return;                                                    \
+          gmp_parser->read_over = 1;                                 \
+          gmp_parser->parent_state = client_state;                   \
         }                                                            \
-      set_client_state (CLIENT_AUTHENTIC);                           \
-      g_set_error (error,                                            \
-                   G_MARKUP_ERROR,                                   \
-                   G_MARKUP_ERROR_UNKNOWN_ELEMENT,                   \
-                   "Error");                                         \
     }                                                                \
   break
 
@@ -7956,16 +7941,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else
           {
-            if (send_element_error_to_client ("modify_user", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
+            if (gmp_parser->read_over == 0)
               {
-                error_send_to_client (error);
-                return;
+                gmp_parser->read_over = 1;
+                gmp_parser->parent_state = client_state;
               }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
           }
         break;
 
@@ -7987,17 +7967,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
          }
         else
           {
-            if (send_element_error_to_client ("modify_user_sources",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
+            if (gmp_parser->read_over == 0)
               {
-                error_send_to_client (error);
-                return;
+                gmp_parser->read_over = 1;
+                gmp_parser->parent_state = client_state;
               }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
           }
         break;
 
@@ -9343,16 +9317,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else
           {
-            if (send_element_error_to_client ("create_user", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
+            if (gmp_parser->read_over == 0)
               {
-                error_send_to_client (error);
-                return;
+                gmp_parser->read_over = 1;
+                gmp_parser->parent_state = client_state;
               }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
           }
         break;
 
@@ -9372,16 +9341,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_USER_SOURCES_SOURCE);
         else
           {
-            if (send_element_error_to_client ("create_user", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
+            if (gmp_parser->read_over == 0)
               {
-                error_send_to_client (error);
-                return;
+                gmp_parser->read_over = 1;
+                gmp_parser->parent_state = client_state;
               }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
           }
         break;
 
@@ -9518,19 +9482,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR ("run_wizard");
 
       default:
-        /* Send a generic response. */
-        if (send_element_error_to_client ("gmp", element_name,
-                                          write_to_client,
-                                          write_to_client_data))
+        /* Read over this element. */
+        if (gmp_parser->read_over == 0)
           {
-            error_send_to_client (error);
-            return;
+            gmp_parser->read_over = 1;
+            gmp_parser->parent_state = client_state;
           }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
         break;
     }
 
