@@ -1790,7 +1790,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>scan_run_status</e>
             <e>result_count</e>
             <e>severity</e>
-            <o><e>host_count</e></o>
             <e>task</e>
             <e>scan</e>
             <e>ports</e>
@@ -1938,7 +1937,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>min_qod</e>
           <e>autofp</e>
           <any><e>filter</e></any>
-          <o><e>host</e></o>
           <o><e>delta</e></o>
         </pattern>
         <ele>
@@ -2013,17 +2011,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </alts>
             </t>
           </pattern>
-        </ele>
-        <ele>
-          <name>host</name>
-          <pattern><e>ip</e></pattern>
-          <ele>
-            <name>ip</name>
-            <summary>
-              IP of single host in report (for "delta")
-            </summary>
-            <pattern>text</pattern>
-          </ele>
         </ele>
         <ele>
           <name>delta</name>
@@ -2338,29 +2325,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <t>integer</t>
             </pattern>
           </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>host_count</name>
-        <summary>Counts of hosts in the results</summary>
-        <description>
-          <p>
-            This is only present in the "assets" report.
-          </p>
-        </description>
-        <pattern>
-          <e>full</e>
-          <e>filtered</e>
-        </pattern>
-        <ele>
-          <name>full</name>
-          <summary>Total number of hosts</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>filtered</name>
-          <summary>Number of hosts after filtering</summary>
-          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -16073,16 +16037,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>type</name>
-        <summary>Type of report to get</summary>
-        <type>
-          <alts>
-            <alt>scan</alt>
-            <alt>assets</alt>
-          </alts>
-        </type>
-      </attrib>
-      <attrib>
         <name>format_id</name>
         <summary>ID of required report format</summary>
         <type>uuid</type>
@@ -16112,42 +16066,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>result_tags</name>
         <summary>Whether to include tags in the results</summary>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>host</name>
-        <summary>For "assets", single host to retrieve</summary>
-        <type>text</type>
-      </attrib>
-      <attrib>
-        <name>host_first_result</name>
-        <summary>For "assets", first host to retrieve</summary>
-        <type>integer</type>
-      </attrib>
-      <attrib>
-        <name>host_max_results</name>
-        <summary>
-          For "assets", maximum hosts to retrieve
-        </summary>
-        <type>integer</type>
-      </attrib>
-      <attrib>
-        <name>host_levels</name>
-        <summary>
-          For "assets", which threat levels to include in hosts
-        </summary>
-        <type>levels</type>
-      </attrib>
-      <attrib>
-        <name>host_search_phrase</name>
-        <summary>
-          For "assets", the search phrase to limit hosts to
-        </summary>
-        <type>text</type>
-      </attrib>
-      <attrib>
-        <name>pos</name>
-        <summary>For type "assets", position of report used, from end</summary>
-        <type>integer</type>
       </attrib>
       <attrib>
         <name>delta_report_id</name>
@@ -26916,6 +26834,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>Remove report type "assets"</summary>
+    <description>
+      <p>
+        The "assets" report has been removed from GET_REPORTS.  Clients should
+        instead use the GET_ASSETS command.
+      </p>
+      <p>
+        As a result the GET_REPORTS attributes "type", "host", "pos",
+        "host_first_result", "host_max_results", "host_levels" and
+        "host_search_phrase" were removed.
+      </p>
+      <p>
+        On the response side REPORT/REPORT/HOST_COUNT has been removed,
+        as this was only returned by the assets reports.
+      </p>
+      <p>
+        At the same time the element REPORT/REPORT/FILTERS/HOST has been
+        removed.  This element was left behind during the switch to named
+        filters very long ago.  It originally showed the host being filtered
+        for delta reports, but this information is in the filter keywords
+        these days.
+      </p>
+    </description>
+    <version>9.0</version>
+  </change>
   <change>
     <command>CREATE_REPORT</command>
     <summary>Remove elements TASK/NAME and TASK/COMMENT</summary>
