@@ -1554,8 +1554,6 @@ run_status_name_internal (task_status_t status)
     }
 }
 
-/** @todo g_convert back to ISO-8559-1 for scanner? */
-
 
 /* Slave tasks. */
 
