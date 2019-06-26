@@ -122,6 +122,14 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  if (get_tls_certificates_data.get.trash)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_tls_certificates",
+                          "TLS Certificates do not use the trashcan"));
+      return;
+    }
+
   /* Setup the iterator. */
 
   ret = init_tls_certificate_iterator (&tls_certificates,
@@ -178,8 +186,9 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Send generic GET command elements. */
 
-      SEND_GET_COMMON (tls_certificate, &get_tls_certificates_data.get,
-                       &tls_certificates);
+      SEND_GET_COMMON_NO_TRASH (tls_certificate,
+                                &get_tls_certificates_data.get,
+                                &tls_certificates);
 
       /* Send tls_certificate info. */
       SENDF_TO_CLIENT_OR_FAIL 

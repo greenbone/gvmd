@@ -117,6 +117,30 @@ send_get_common (const char *, get_data_t *, iterator_t *,
     }                                                                      \
   while (0)
 
+/**
+ * @brief Send common part of GET response to client, returning on fail.
+ *
+ * This will work for types not using the trashcan.
+ *
+ * @param[in]  type      Type of resource.
+ * @param[in]  get       GET data.
+ * @param[in]  iterator  Iterator.
+ */
+#define SEND_GET_COMMON_NO_TRASH(type, get, iterator)                      \
+  do                                                                       \
+    {                                                                      \
+      if (send_get_common (                                                \
+            G_STRINGIFY (type), get, iterator, gmp_parser->client_writer,  \
+            gmp_parser->client_writer_data,                                \
+            type##_writable (get_iterator_resource (iterator)),            \
+            type##_in_use (get_iterator_resource (iterator))))             \
+        {                                                                  \
+          error_send_to_client (error);                                    \
+          return;                                                          \
+        }                                                                  \
+    }                                                                      \
+  while (0)
+
 int
 buffer_get_filter_xml (GString *, const char *, const get_data_t *,
                        const char *, const char *);

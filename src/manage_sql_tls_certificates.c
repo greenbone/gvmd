@@ -113,72 +113,6 @@
  }
 
 /**
- * @brief TLS Certificate iterator columns for trash case.
- */
-#define TLS_CERTIFICATE_ITERATOR_TRASH_COLUMNS                                \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (tls_certificates_trash),                             \
-   {                                                                          \
-     "certificate",                                                           \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING                                                      \
-   },                                                                         \
-   {                                                                          \
-     "subject_dn",                                                            \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING                                                      \
-   },                                                                         \
-   {                                                                          \
-     "issuer_dn",                                                             \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING                                                      \
-   },                                                                         \
-   {                                                                          \
-     "trust",                                                                 \
-     NULL,                                                                    \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "md5_fingerprint",                                                       \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING                                                      \
-   },                                                                         \
-   {                                                                          \
-     "iso_time (activation_time)",                                            \
-     "activation_time",                                                       \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "iso_time (expiration_time)",                                            \
-     "expiration_time",                                                       \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "(CASE WHEN (expiration_time >= m_now() OR expiration_time = -1)"        \
-     "       AND (activation_time <= m_now() OR activation_time = -1)"        \
-     "      THEN 1 ELSE 0 END)",                                              \
-     "valid",                                                                 \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "certificate_format",                                                    \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING                                                      \
-   },                                                                         \
-   {                                                                          \
-     "activation_time",                                                       \
-     "activates",                                                             \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "expiration_time",                                                       \
-     "expires",                                                               \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
  * @brief Count number of tls_certificates.
  *
  * @param[in]  get  GET params.
@@ -190,9 +124,8 @@ tls_certificate_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TLS_CERTIFICATE_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = TLS_CERTIFICATE_ITERATOR_TRASH_COLUMNS;
 
-  return count ("tls_certificate", get, columns, trash_columns, extra_columns,
+  return count ("tls_certificate", get, columns, NULL, extra_columns,
                 0, 0, 0, TRUE);
 }
 
@@ -210,13 +143,12 @@ init_tls_certificate_iterator (iterator_t *iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TLS_CERTIFICATE_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = TLS_CERTIFICATE_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "tls_certificate",
                             get,
                             columns,
-                            trash_columns,
+                            NULL,
                             filter_columns,
                             0,
                             NULL,
@@ -339,19 +271,6 @@ tls_certificate_in_use (tls_certificate_t tls_certificate)
 }
 
 /**
- * @brief Return whether a trashcan tls_certificate is in use.
- *
- * @param[in]  tls_certificate  TLS Certificate.
- *
- * @return 1 if in use, else 0.
- */
-int
-trash_tls_certificate_in_use (tls_certificate_t tls_certificate)
-{
-  return 0;
-}
-
-/**
  * @brief Return whether a tls_certificate is writable.
  *
  * @param[in]  tls_certificate  TLS Certificate.
@@ -362,19 +281,6 @@ int
 tls_certificate_writable (tls_certificate_t tls_certificate)
 {
   return 1;
-}
-
-/**
- * @brief Return whether a trashcan tls_certificate is writable.
- *
- * @param[in]  tls_certificate  TLS Certificate.
- *
- * @return 1 if writable, else 0.
- */
-int
-trash_tls_certificate_writable (tls_certificate_t tls_certificate)
-{
-  return trash_tls_certificate_in_use (tls_certificate) == 0;
 }
 
 /**
@@ -507,8 +413,11 @@ copy_tls_certificate (const char *name,
 /**
  * @brief Delete a tls_certificate.
  *
+ * TLS certificates do not use the trashcan, so the "ultimate" param is ignored
+ *  and the resource is always removed completely.
+ *
  * @param[in]  tls_certificate_id  UUID of tls_certificate.
- * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ * @param[in]  ultimate   Dummy for consistency with other delete commands.
  *
  * @return 0 success, 1 fail because tls_certificate is in use,
  *         2 failed to find tls_certificate,
@@ -541,181 +450,27 @@ delete_tls_certificate (const char *tls_certificate_id, int ultimate)
 
   if (tls_certificate == 0)
     {
-      /* No such tls_certificate, check the trashcan. */
-
-      if (find_trash ("tls_certificate",
-                      tls_certificate_id,
-                      &tls_certificate))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (tls_certificate == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      sql ("DELETE FROM permissions"
-           " WHERE resource_type = 'tls_certificate'"
-           " AND resource_location = %i"
-           " AND resource = %llu;",
-           LOCATION_TRASH,
-           tls_certificate);
-
-      tags_remove_resource ("tls_certificate",
-                            tls_certificate,
-                            LOCATION_TRASH);
-
-      sql ("DELETE FROM tls_certificates_trash WHERE id = %llu;",
-           tls_certificate);
-
-      sql_commit ();
-      return 0;
+      /* No such tls_certificate */
+      sql_rollback ();
+      return 2;
     }
 
-  /* TLS certificate was found in regular table. */
+  sql ("DELETE FROM permissions"
+        " WHERE resource_type = 'tls_certificate'"
+        " AND resource_location = %i"
+        " AND resource = %llu;",
+        LOCATION_TABLE,
+        tls_certificate);
 
-  if (ultimate == 0)
-    {
-      tls_certificate_t trash_tls_certificate;
-
-      /* Move to trash. */
-
-      sql ("INSERT INTO tls_certificates_trash"
-           " (uuid, owner, name, comment, creation_time, modification_time,"
-           "  certificate, subject_dn, issuer_dn, trust,"
-           "  activation_time, expiration_time, md5_fingerprint,"
-           "  certificate_format)"
-           " SELECT"
-           "  uuid, owner, name, comment, creation_time, modification_time,"
-           "  certificate, subject_dn, issuer_dn, trust,"
-           "  activation_time, expiration_time, md5_fingerprint,"
-           "  certificate_format"
-           " FROM tls_certificates WHERE id = %llu;",
-           tls_certificate);
-
-      trash_tls_certificate = sql_last_insert_id ();
-
-      permissions_set_locations ("tls_certificate",
-                                 tls_certificate,
-                                 trash_tls_certificate,
-                                 LOCATION_TRASH);
-      tags_set_locations ("tls_certificate",
-                          tls_certificate,
-                          trash_tls_certificate,
-                          LOCATION_TRASH);
-    }
-  else
-    {
-      /* Delete entirely. */
-
-      sql ("DELETE FROM permissions"
-           " WHERE resource_type = 'tls_certificate'"
-           " AND resource_location = %i"
-           " AND resource = %llu;",
-           LOCATION_TABLE,
-           tls_certificate);
-
-      tags_remove_resource ("tls_certificate",
-                            tls_certificate,
-                            LOCATION_TABLE);
-    }
+  tags_remove_resource ("tls_certificate",
+                        tls_certificate,
+                        LOCATION_TABLE);
 
   sql ("DELETE FROM tls_certificates WHERE id = %llu;",
        tls_certificate);
 
   sql_commit ();
   return 0;
-}
-
-/**
- * @brief Try restore a tls_certificate.
- *
- * If success, ends transaction for caller before exiting.
- *
- * @param[in]  tls_certificate_id  UUID of resource.
- *
- * @return 0 success, 1 fail because tls_certificate is in use,
- *         2 failed to find tls_certificate, -1 error.
- */
-int
-restore_tls_certificate (const char *tls_certificate_id)
-{
-  tls_certificate_t trash_tls_certificate, tls_certificate;
-
-  if (find_trash ("tls_certificate",
-                  tls_certificate_id,
-                  &trash_tls_certificate))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (trash_tls_certificate == 0)
-    return 2;
-
-  /* Move the tls_certificate back to the regular table. */
-
-  sql ("INSERT INTO tls_certificates"
-       " (uuid, owner, name, comment, creation_time, modification_time,"
-       "  certificate, subject_dn, issuer_dn, trust,"
-       "  activation_time, expiration_time, md5_fingerprint,"
-       "  certificate_format)"
-       " SELECT"
-       "  uuid, owner, name, comment, creation_time, modification_time,"
-       "  certificate, subject_dn, issuer_dn, trust,"
-       "  activation_time, expiration_time, md5_fingerprint,"
-       "  certificate_format"
-       " FROM tls_certificates_trash WHERE id = %llu;",
-       trash_tls_certificate);
-
-  tls_certificate = sql_last_insert_id ();
-
-  /* Adjust references to the tls_certificate. */
-
-  permissions_set_locations ("tls_certificate",
-                             trash_tls_certificate,
-                             tls_certificate,
-                             LOCATION_TABLE);
-  tags_set_locations ("tls_certificate",
-                      trash_tls_certificate,
-                      tls_certificate,
-                      LOCATION_TABLE);
-
-  /* Clear out the trashcan tls_certificate. */
-
-  sql ("DELETE FROM tls_certificates_trash WHERE id = %llu;",
-       trash_tls_certificate);
-
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Empty TLS certificate trashcans.
- */
-void
-empty_trashcan_tls_certificates ()
-{
-  sql ("DELETE FROM permissions"
-       " WHERE resource_type = 'tls_certificate'"
-       " AND resource_location = %i"
-       " AND resource IN (SELECT id FROM tls_certificates_trash"
-       "                  WHERE owner = (SELECT id FROM users"
-       "                                 WHERE uuid = '%s'));",
-       LOCATION_TRASH,
-       current_credentials.uuid);
-
-  sql ("DELETE FROM tls_certifcates_trash"
-       " WHERE owner = (SELECT id FROM users WHERE uuid = '%s');",
-       current_credentials.uuid);
 }
 
 /**

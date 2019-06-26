@@ -67,13 +67,7 @@ int
 tls_certificate_in_use (tls_certificate_t);
 
 int
-trash_tls_certificate_in_use (tls_certificate_t);
-
-int
 tls_certificate_writable (tls_certificate_t);
-
-int
-trash_tls_certificate_writable (tls_certificate_t);
 
 int
 create_tls_certificate (const char *, const char *, const char *, int,

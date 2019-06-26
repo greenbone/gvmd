@@ -4521,7 +4521,8 @@ type_has_trash (const char *type)
           && type_is_info_subtype (type) == 0
           && strcasecmp (type, "allinfo")
           && strcasecmp (type, "vuln")
-          && strcasecmp (type, "user"));
+          && strcasecmp (type, "user")
+          && strcasecmp (type, "tls_certificate"));
 }
 
 /**
@@ -59744,11 +59745,6 @@ manage_restore (const char *id)
   if (ret != 2)
     return ret;
 
-  /* TLS Certificate. */
-  ret = restore_tls_certificate (id);
-  if (ret != 2)
-    return ret;
-
   /* Agent. */
 
   if (find_trash ("agent", id, &resource))
@@ -60950,7 +60946,6 @@ manage_empty_trashcan ()
        current_credentials.uuid);
   sql ("DELETE FROM configs_trash" WHERE_OWNER);
   empty_trashcan_tickets ();
-  empty_trashcan_tls_certificates();
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'group'"
        " AND subject IN (SELECT id from groups_trash"

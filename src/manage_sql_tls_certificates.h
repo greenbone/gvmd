@@ -30,12 +30,6 @@
 int
 delete_tls_certificate (const char *, int);
 
-int
-restore_tls_certificate (const char *);
-
-void
-empty_trashcan_tls_certificates ();
-
 void
 delete_tls_certificates_user (user_t);
 

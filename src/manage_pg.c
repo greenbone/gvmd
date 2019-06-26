@@ -2533,23 +2533,6 @@ create_tables ()
        "  trust integer,"
        "  certificate_format text);");
 
-  sql ("CREATE TABLE IF NOT EXISTS tls_certificates_trash"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text,"
-       "  comment text,"
-       "  creation_time integer,"
-       "  modification_time integer,"
-       "  certificate text,"
-       "  subject_dn text,"
-       "  issuer_dn text,"
-       "  activation_time integer,"
-       "  expiration_time integer,"
-       "  md5_fingerprint text,"
-       "  trust integer,"
-       "  certificate_format text);");
-
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
