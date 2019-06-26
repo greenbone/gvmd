@@ -4213,8 +4213,7 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
 
           start_time = time (NULL);
           prognosis_report_host = 0;
-          init_host_prognosis_iterator (&prognosis, report_host, 0, -1,
-                                        NULL, NULL, 0, NULL);
+          init_host_prognosis_iterator (&prognosis, report_host);
           while (next (&prognosis))
             {
               const char *app, *cve;
