@@ -542,4 +542,7 @@ int
 copy_resource_lock (const char *, const char *, const char *, const char *,
                     const char *, int, resource_t *, resource_t *);
 
+nvti_t *
+lookup_nvti (const gchar *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */

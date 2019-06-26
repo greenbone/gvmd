@@ -15481,6 +15481,15 @@ setup_full_config_prefs (config_t config, int safe_checks,
 /**
  * @brief Update the memory cache of NVTs.
  */
+nvti_t *
+lookup_nvti (const gchar *nvt)
+{
+  return nvtis_lookup (nvti_cache, nvt);
+}
+
+/**
+ * @brief Update the memory cache of NVTs.
+ */
 static void
 update_nvti_cache ()
 {
@@ -21115,7 +21124,7 @@ make_result (task_t task, const char* host, const char *hostname,
     {
       nvti_t *nvti;
 
-      nvti = nvtis_lookup (nvti_cache, nvt);
+      nvti = lookup_nvti (nvt);
       if (nvti)
         {
           gchar *qod_str, *qod_type;
@@ -24131,7 +24140,7 @@ result_iterator_nvt_name (iterator_t *iterator)
 {
   nvti_t *nvti;
   if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_name (nvti);
   return NULL;
@@ -24149,7 +24158,7 @@ result_iterator_nvt_family (iterator_t *iterator)
 {
   nvti_t *nvti;
   if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_family (nvti);
   return NULL;
@@ -24167,7 +24176,7 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
 {
   nvti_t *nvti;
   if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_cvss_base (nvti);
   return NULL;
@@ -24182,7 +24191,7 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
 void
 nvti_refs_append_xml (GString *xml, const char *oid)
 {
-  nvti_t *nvti = nvtis_lookup (nvti_cache, oid);
+  nvti_t *nvti = lookup_nvti (oid);
   int i;
 
   if (!nvti)
@@ -24221,7 +24230,7 @@ result_iterator_nvt_tag (iterator_t *iterator)
 {
   nvti_t *nvti;
   if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_tag (nvti);
   return NULL;

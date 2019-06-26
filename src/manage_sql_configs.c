@@ -1192,7 +1192,7 @@ insert_nvt_selectors (const char *quoted_name,
           && (type == NVT_SELECTOR_TYPE_NVT))
         {
           gchar *quoted_family_or_nvt, *quoted_family, *family = NULL;
-          nvti_t *nvti = nvtis_lookup (nvti_cache, selector->family_or_nvt);
+          nvti_t *nvti = lookup_nvti (selector->family_or_nvt);
 
           /* An NVT selector. */
 
