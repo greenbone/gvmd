@@ -4945,7 +4945,7 @@ run_task (const char *task_id, char **report_id, int from)
       || scanner_type (scanner) == SCANNER_TYPE_OSP)
     return run_osp_task (task);
 
-  return -1;
+  return -1; // Unknown scanner type
 }
 
 /**
