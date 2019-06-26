@@ -88,6 +88,7 @@
 #include "gmp_base.h"
 #include "gmp_delete.h"
 #include "gmp_get.h"
+#include "gmp_configs.h"
 #include "gmp_tickets.h"
 #include "gmp_tls_certificates.h"
 #include "manage.h"
@@ -570,66 +571,6 @@ command_disabled (gmp_parser_t *gmp_parser, const gchar *name)
 /* Command data passed between parser callbacks. */
 
 /**
- * @brief Create a new preference.
- *
- * @param[in]  id        ID of preference.
- * @param[in]  name      Name of preference.
- * @param[in]  type      Type of preference.
- * @param[in]  value     Value of preference.
- * @param[in]  nvt_name  Name of NVT of preference.
- * @param[in]  nvt_oid   OID of NVT of preference.
- * @param[in]  alts      Array of gchar's.  Alternative values for type radio.
- * @param[in]  default_value   Default value of preference.
- * @param[in]  hr_name   Extended, more human-readable name of the preference.
- *
- * @return Newly allocated preference.
- */
-static gpointer
-preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
-                char *nvt_oid, array_t *alts, char* default_value,
-                char *hr_name)
-{
-  preference_t *preference;
-
-  preference = (preference_t*) g_malloc0 (sizeof (preference_t));
-  preference->id = id;
-  preference->name = name;
-  preference->type = type;
-  preference->value = value;
-  preference->nvt_name = nvt_name;
-  preference->nvt_oid = nvt_oid;
-  preference->alts = alts;
-  preference->default_value = default_value;
-  preference->hr_name = hr_name;
-
-  return preference;
-}
-
-/**
- * @brief Create a new NVT selector.
- *
- * @param[in]  name           Name of NVT selector.
- * @param[in]  type           Type of NVT selector.
- * @param[in]  include        Include/exclude flag.
- * @param[in]  family_or_nvt  Family or NVT.
- *
- * @return Newly allocated NVT selector.
- */
-static gpointer
-nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
-{
-  nvt_selector_t *selector;
-
-  selector = (nvt_selector_t*) g_malloc0 (sizeof (nvt_selector_t));
-  selector->name = name;
-  selector->type = type;
-  selector->include = include;
-  selector->family_or_nvt = family_or_nvt;
-
-  return selector;
-}
-
-/**
  * @brief Command data for the create_agent command.
  */
 typedef struct
@@ -691,99 +632,6 @@ create_asset_data_reset (create_asset_data_t *data)
   free (data->name);
 
   memset (data, 0, sizeof (create_asset_data_t));
-}
-
-/**
- * @brief Command data for the import part of the create_config command.
- */
-typedef struct
-{
-  int import;                        ///< The import element was present.
-  char *comment;                     ///< Comment.
-  char *name;                        ///< Config name.
-  array_t *nvt_selectors;            ///< Array of nvt_selector_t's.
-  char *nvt_selector_name;           ///< In NVT_SELECTORS name of selector.
-  char *nvt_selector_type;           ///< In NVT_SELECTORS type of selector.
-  char *nvt_selector_include;        ///< In NVT_SELECTORS include/exclude flag.
-  char *nvt_selector_family_or_nvt;  ///< In NVT_SELECTORS family/NVT flag.
-  array_t *preferences;              ///< Array of preference_t's.
-  array_t *preference_alts;          ///< Array of gchar's in PREFERENCES.
-  char *preference_alt;              ///< Single radio alternative in PREFERENCE.
-  char *preference_default;          ///< Default value in PREFERENCE.
-  char *preference_hr_name;          ///< Human readable name in PREFERENCE.
-  char *preference_id;               ///< ID in PREFERENCE.
-  char *preference_name;             ///< Name in PREFERENCE.
-  char *preference_nvt_name;         ///< NVT name in PREFERENCE.
-  char *preference_nvt_oid;          ///< NVT OID in PREFERENCE.
-  char *preference_type;             ///< Type in PREFERENCE.
-  char *preference_value;            ///< Value in PREFERENCE.
-  char *type;                        ///< Config type.
-  char *usage_type;                  ///< Usage type ("scan" or "policy")
-} import_config_data_t;
-
-/**
- * @brief Command data for the create_config command.
- */
-typedef struct
-{
-  char *comment;                     ///< Comment.
-  char *scanner;                     ///< Scanner to create config from.
-  char *copy;                        ///< Config to copy.
-  import_config_data_t import;       ///< Config to import.
-  char *name;                        ///< Name.
-  char *usage_type;                  ///< Usage type ("scan" or "policy")
-} create_config_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_config_data_reset (create_config_data_t *data)
-{
-  import_config_data_t *import = (import_config_data_t*) &data->import;
-
-  g_free (data->comment);
-  g_free (data->copy);
-  g_free (data->scanner);
-
-  g_free (import->comment);
-  g_free (import->name);
-  array_free (import->nvt_selectors);
-  g_free (import->nvt_selector_name);
-  g_free (import->nvt_selector_type);
-  g_free (import->nvt_selector_family_or_nvt);
-
-  if (import->preferences)
-    {
-      guint index = import->preferences->len;
-      while (index--)
-        {
-          const preference_t *preference;
-          preference = (preference_t*) g_ptr_array_index (import->preferences,
-                                                          index);
-          if (preference)
-            array_free (preference->alts);
-        }
-      array_free (import->preferences);
-    }
-
-  g_free (import->preference_alt);
-  g_free (import->preference_id);
-  g_free (import->preference_name);
-  g_free (import->preference_hr_name);
-  g_free (import->preference_nvt_name);
-  g_free (import->preference_nvt_oid);
-  g_free (import->preference_type);
-  g_free (import->preference_value);
-  g_free (import->type);
-  g_free (import->usage_type);
-
-  g_free (data->name);
-  g_free (data->usage_type);
-
-  memset (data, 0, sizeof (create_config_data_t));
 }
 
 /**
@@ -4033,7 +3881,6 @@ typedef union
 {
   create_agent_data_t create_agent;                   ///< create_agent
   create_asset_data_t create_asset;                   ///< create_asset
-  create_config_data_t create_config;                 ///< create_config
   create_alert_data_t create_alert;                   ///< create_alert
   create_credential_data_t create_credential;         ///< create_credential
   create_filter_data_t create_filter;                 ///< create_filter
@@ -4167,12 +4014,6 @@ static create_agent_data_t *create_agent_data
  */
 static create_asset_data_t *create_asset_data
  = (create_asset_data_t*) &(command_data.create_asset);
-
-/**
- * @brief Parser callback data for CREATE_CONFIG.
- */
-static create_config_data_t *create_config_data
- = (create_config_data_t*) &(command_data.create_config);
 
 /**
  * @brief Parser callback data for CREATE_ALERT.
@@ -4595,12 +4436,6 @@ static help_data_t *help_data
  = &(command_data.help);
 
 /**
- * @brief Parser callback data for CREATE_CONFIG (import).
- */
-static import_config_data_t *import_config_data
- = (import_config_data_t*) &(command_data.create_config.import);
-
-/**
  * @brief Parser callback data for MODIFY_CONFIG.
  */
 static modify_config_data_t *modify_config_data
@@ -4885,6 +4720,7 @@ typedef enum
   CLIENT_CREATE_ASSET_ASSET_COMMENT,
   CLIENT_CREATE_ASSET_ASSET_NAME,
   CLIENT_CREATE_ASSET_ASSET_TYPE,
+  CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CREDENTIAL,
   CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE,
   CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM,
@@ -4903,37 +4739,6 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
   CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
   CLIENT_CREATE_CREDENTIAL_TYPE,
-  CLIENT_CREATE_CONFIG,
-  CLIENT_CREATE_CONFIG_COMMENT,
-  CLIENT_CREATE_CONFIG_COPY,
-  CLIENT_CREATE_CONFIG_SCANNER,
-  CLIENT_CREATE_CONFIG_NAME,
-  CLIENT_CREATE_CONFIG_USAGE_TYPE,
-  /* get_configs_response (GCR) is used for config export.  CLIENT_C_C is
-   * for CLIENT_CREATE_CONFIG. */
-  CLIENT_C_C_GCR,
-  CLIENT_C_C_GCR_CONFIG,
-  CLIENT_C_C_GCR_CONFIG_COMMENT,
-  CLIENT_C_C_GCR_CONFIG_NAME,
-  CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS,
-  CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR,
-  CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_FAMILY_OR_NVT,
-  CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_INCLUDE,
-  CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_NAME,
-  CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_TYPE,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_DEFAULT,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_HR_NAME,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ID,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE,
-  CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE,
-  CLIENT_C_C_GCR_CONFIG_TYPE,
-  CLIENT_C_C_GCR_CONFIG_USAGE_TYPE,
   CLIENT_CREATE_FILTER,
   CLIENT_CREATE_FILTER_COMMENT,
   CLIENT_CREATE_FILTER_COPY,
@@ -5722,8 +5527,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ASSET);
         else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
           {
-            gvm_append_string (&create_config_data->comment, "");
-            gvm_append_string (&create_config_data->name, "");
+            create_config_start (gmp_parser, attribute_names,
+                                 attribute_values);
             set_client_state (CLIENT_CREATE_CONFIG);
           }
         else if (strcasecmp ("CREATE_ALERT", element_name) == 0)
@@ -8008,125 +7813,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_ERROR ("create_asset");
 
       case CLIENT_CREATE_CONFIG:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CONFIG_COMMENT);
-        else if (strcasecmp ("SCANNER", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CONFIG_SCANNER);
-        else if (strcasecmp ("COPY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CONFIG_COPY);
-        else if (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0)
-          {
-            gmp_parser->importing = 1;
-            import_config_data->import = 1;
-            set_client_state (CLIENT_C_C_GCR);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CONFIG_NAME);
-        else if (strcasecmp ("USAGE_TYPE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CONFIG_USAGE_TYPE);
-        ELSE_ERROR ("create_config");
-
-      case CLIENT_C_C_GCR:
-        if (strcasecmp ("CONFIG", element_name) == 0)
-          {
-            /* Reset here in case there was a previous config element. */
-            create_config_data_reset (create_config_data);
-            import_config_data->import = 1;
-            set_client_state (CLIENT_C_C_GCR_CONFIG);
-          }
-        ELSE_ERROR ("create_config");
-
-      case CLIENT_C_C_GCR_CONFIG:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_C_C_GCR_CONFIG_COMMENT);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_C_C_GCR_CONFIG_NAME);
-        else if (strcasecmp ("NVT_SELECTORS", element_name) == 0)
-          {
-            /* Reset array, in case there was a previous nvt_selectors element. */
-            array_reset (&import_config_data->nvt_selectors);
-            set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS);
-          }
-        else if (strcasecmp ("PREFERENCES", element_name) == 0)
-          {
-            /* Reset array, in case there was a previous preferences element. */
-            array_reset (&import_config_data->preferences);
-            set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES);
-          }
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          {
-            set_client_state (CLIENT_C_C_GCR_CONFIG_TYPE);
-          }
-        else if (strcasecmp ("USAGE_TYPE", element_name) == 0)
-          {
-            set_client_state (CLIENT_C_C_GCR_CONFIG_USAGE_TYPE);
-          }
-        ELSE_ERROR ("create_config");
-
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS:
-        if (strcasecmp ("NVT_SELECTOR", element_name) == 0)
-          set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR);
-        ELSE_ERROR ("create_config");
-
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR:
-        if (strcasecmp ("INCLUDE", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_INCLUDE);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_NAME);
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_TYPE);
-        else if (strcasecmp ("FAMILY_OR_NVT", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_FAMILY_OR_NVT);
-        ELSE_ERROR ("create_config");
-
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES:
-        if (strcasecmp ("PREFERENCE", element_name) == 0)
-          {
-            array_reset (&import_config_data->preference_alts);
-            set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
-          }
-        ELSE_ERROR ("create_config");
-
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE:
-        if (strcasecmp ("ALT", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT);
-        else if (strcasecmp ("DEFAULT", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_DEFAULT);
-        else if (strcasecmp ("HR_NAME", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_HR_NAME);
-        else if (strcasecmp ("ID", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ID);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME);
-        else if (strcasecmp ("NVT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "oid",
-                              &import_config_data->preference_nvt_oid);
-            set_client_state
-             (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT);
-          }
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE);
-        else if (strcasecmp ("VALUE", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE);
-        ELSE_ERROR ("create_config");
-
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state
-           (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME);
-        ELSE_ERROR ("create_config");
+        create_config_element_start (gmp_parser, element_name,
+                                     attribute_names,
+                                     attribute_values);
+        break;
 
       case CLIENT_CREATE_ALERT:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -21213,318 +20903,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ASSET_REPORT_FILTER, TERM);
 
       case CLIENT_CREATE_CONFIG:
-        {
-          config_t new_config;
-
-          assert (import_config_data->import
-                  || (create_config_data->name != NULL));
-
-          /* For now the import element, GET_CONFIGS_RESPONSE, overrides
-           * any other elements. */
-
-          if (import_config_data->import)
-            {
-              char *name;
-              const char *usage_type;
-
-              // Allow to overwrite usage type
-              if (create_config_data->usage_type
-                  && strcmp (create_config_data->usage_type, ""))
-                usage_type = create_config_data->usage_type;
-              else
-                usage_type = import_config_data->usage_type;
-
-              array_terminate (import_config_data->nvt_selectors);
-              array_terminate (import_config_data->preferences);
-              switch (create_config (import_config_data->name,
-                                     import_config_data->comment,
-                                     import_config_data->nvt_selectors,
-                                     import_config_data->preferences,
-                                     import_config_data->type,
-                                     usage_type,
-                                     &new_config,
-                                     &name))
-                {
-                  case 0:
-                    {
-                      gchar *uuid = config_uuid (new_config);
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<create_config_response"
-                        " status=\"" STATUS_OK_CREATED "\""
-                        " status_text=\"" STATUS_OK_CREATED_TEXT "\""
-                        " id=\"%s\">"
-                        /* This is a hack for the GSA, which should really
-                         * do a GET_CONFIG with the ID to get the name. */
-                        "<config id=\"%s\"><name>%s</name></config>"
-                        "</create_config_response>",
-                        uuid,
-                        uuid,
-                        name);
-                      log_event ("config", "Scan config", uuid, "created");
-                      g_free (uuid);
-                      free (name);
-                      break;
-                    }
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Config exists already"));
-                    log_event_fail ("config", "Scan config", NULL, "created");
-                    break;
-                  case 99:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Permission denied"));
-                    log_event_fail ("config", "Scan config", NULL, "created");
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("create_config"));
-                    log_event_fail ("config", "Scan config", NULL, "created");
-                    break;
-                  case -2:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Import name must be at"
-                                        " least one character long"));
-                    log_event_fail ("config", "Scan config", NULL, "created");
-                    break;
-                  case -3:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Error in NVT_SELECTORS element."));
-                    log_event_fail ("config", "Scan config", NULL, "created");
-                    break;
-                  case -4:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Error in PREFERENCES element."));
-                    log_event_fail ("config", "Scan config", NULL, "created");
-                    break;
-                }
-            }
-          else if (create_config_data->scanner)
-            {
-              char *uuid = NULL;
-
-              switch (create_config_from_scanner
-                       (create_config_data->scanner,
-                        create_config_data->name,
-                        create_config_data->comment,
-                        create_config_data->usage_type,
-                        &uuid))
-                {
-                  case 0:
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
-                                              ("create_config"), uuid);
-                    log_event ("config", "Scan config", uuid, "created");
-                    break;
-                  case 1:
-                    SENDF_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Failed to find scanner"));
-                    break;
-                  case 2:
-                    SENDF_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Scanner not of type OSP"));
-                    break;
-                  case 3:
-                    SENDF_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Config name exists already"));
-                    break;
-                  case 4:
-                    SENDF_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Failed to get params from scanner"
-                                        " - the scanner may be offline or not"
-                                        " configured correctly"));
-                    break;
-                  case 99:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Permission denied"));
-                    log_event_fail ("config", "Scan config", NULL, "created");
-                    break;
-                  case -1:
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("create_config"));
-                    log_event_fail ("config", "Scan config", NULL, "created");
-                    break;
-                }
-              g_free (uuid);
-            }
-          else if (strlen (create_config_data->name) == 0
-                   && (create_config_data->copy == NULL
-                       || strlen (create_config_data->copy) == 0))
-            {
-              log_event_fail ("config", "Scan config", NULL, "created");
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_config",
-                                  "Name and base config to copy"
-                                  " must be at least one character long"));
-            }
-          else if (create_config_data->copy == NULL)
-            {
-              log_event_fail ("config", "Scan config", NULL, "created");
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_config",
-                                  "A COPY element is required"));
-            }
-          else switch (copy_config (create_config_data->name,
-                                    create_config_data->comment,
-                                    create_config_data->copy,
-                                    create_config_data->usage_type,
-                                    &new_config))
-            {
-              case 0:
-                {
-                  char *uuid = config_uuid (new_config);
-                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_config"),
-                                           uuid);
-                  log_event ("config", "Scan config", uuid, "created");
-                  free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_config",
-                                    "Config exists already"));
-                log_event_fail ("config", "Scan config", NULL, "created");
-                break;
-              case 2:
-                if (send_find_error_to_client ("create_config", "config",
-                                               create_config_data->copy,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("config", "Config", NULL, "created");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_config",
-                                    "Permission denied"));
-                log_event_fail ("config", "Scan config", NULL, "created");
-                break;
-              case -1:
-              default:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_config"));
-                log_event_fail ("config", "Scan config", NULL, "created");
-                break;
-            }
-          create_config_data_reset (create_config_data);
+        if (create_config_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_CONFIG, COMMENT);
-      CLOSE (CLIENT_CREATE_CONFIG, COPY);
-      CLOSE (CLIENT_CREATE_CONFIG, SCANNER);
-      CLOSE (CLIENT_CREATE_CONFIG, NAME);
-      CLOSE (CLIENT_CREATE_CONFIG, USAGE_TYPE);
-
-      case CLIENT_C_C_GCR:
-        set_client_state (CLIENT_CREATE_CONFIG);
         break;
-      CLOSE (CLIENT_C_C_GCR, CONFIG);
-      CLOSE (CLIENT_C_C_GCR_CONFIG, COMMENT);
-      CLOSE (CLIENT_C_C_GCR_CONFIG, NAME);
-      CLOSE (CLIENT_C_C_GCR_CONFIG, NVT_SELECTORS);
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR:
-        {
-          int include;
-
-          if (import_config_data->nvt_selector_include
-              && strcmp (import_config_data->nvt_selector_include, "0") == 0)
-            include = 0;
-          else
-            include = 1;
-
-          array_add (import_config_data->nvt_selectors,
-                     nvt_selector_new
-                      (import_config_data->nvt_selector_name,
-                       import_config_data->nvt_selector_type,
-                       include,
-                       import_config_data->nvt_selector_family_or_nvt));
-
-          import_config_data->nvt_selector_name = NULL;
-          import_config_data->nvt_selector_type = NULL;
-          free (import_config_data->nvt_selector_include);
-          import_config_data->nvt_selector_include = NULL;
-          import_config_data->nvt_selector_family_or_nvt = NULL;
-
-          set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS);
-          break;
-        }
-      CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, INCLUDE);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, NAME);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, TYPE);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, FAMILY_OR_NVT);
-      CLOSE (CLIENT_C_C_GCR_CONFIG, PREFERENCES);
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE:
-        array_terminate (import_config_data->preference_alts);
-
-        char* preference_hr_name;
-        if (import_config_data->type == NULL
-            || strcmp (import_config_data->type, "0") == 0)
-          {
-            // Classic OpenVAS config preference
-            preference_hr_name = NULL;
-          }
-        else if (import_config_data->preference_hr_name)
-          {
-            // OSP config preference with hr_name given
-            preference_hr_name
-              = import_config_data->preference_hr_name;
-          }
-        else
-          {
-            // Old OSP config without hr_name
-            preference_hr_name
-              = import_config_data->preference_name;
-          }
-
-        array_add (import_config_data->preferences,
-                   preference_new (import_config_data->preference_id,
-                                   import_config_data->preference_name,
-                                   import_config_data->preference_type,
-                                   import_config_data->preference_value,
-                                   import_config_data->preference_nvt_name,
-                                   import_config_data->preference_nvt_oid,
-                                   import_config_data->preference_alts,
-                                   import_config_data->preference_default,
-                                   preference_hr_name));
-        import_config_data->preference_id = NULL;
-        import_config_data->preference_name = NULL;
-        import_config_data->preference_type = NULL;
-        import_config_data->preference_value = NULL;
-        import_config_data->preference_nvt_name = NULL;
-        import_config_data->preference_nvt_oid = NULL;
-        import_config_data->preference_alts = NULL;
-        import_config_data->preference_default = NULL;
-        import_config_data->preference_hr_name = NULL;
-        set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT:
-        array_add (import_config_data->preference_alts,
-                   import_config_data->preference_alt);
-        import_config_data->preference_alt = NULL;
-        set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
-        break;
-      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, DEFAULT);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, HR_NAME);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, NAME);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, ID);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, NVT);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT, NAME);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, TYPE);
-      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, VALUE);
-      CLOSE (CLIENT_C_C_GCR_CONFIG, TYPE);
-      CLOSE (CLIENT_C_C_GCR_CONFIG, USAGE_TYPE);
 
       case CLIENT_CREATE_ALERT:
         {
@@ -29094,70 +28475,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_ASSET_REPORT_FILTER_TERM,
               &create_asset_data->filter_term);
-
-
-      APPEND (CLIENT_CREATE_CONFIG_COMMENT,
-              &create_config_data->comment);
-
-      APPEND (CLIENT_CREATE_CONFIG_SCANNER,
-              &create_config_data->scanner);
-
-      APPEND (CLIENT_CREATE_CONFIG_COPY,
-              &create_config_data->copy);
-
-      APPEND (CLIENT_CREATE_CONFIG_NAME,
-              &create_config_data->name);
-
-      APPEND (CLIENT_CREATE_CONFIG_USAGE_TYPE,
-              &create_config_data->usage_type);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_COMMENT,
-              &import_config_data->comment);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_NAME,
-              &import_config_data->name);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_INCLUDE,
-              &import_config_data->nvt_selector_include);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_NAME,
-              &import_config_data->nvt_selector_name);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_TYPE,
-              &import_config_data->nvt_selector_type);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_FAMILY_OR_NVT,
-              &import_config_data->nvt_selector_family_or_nvt);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT,
-              &import_config_data->preference_alt);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_DEFAULT,
-              &import_config_data->preference_default);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_HR_NAME,
-              &import_config_data->preference_hr_name);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ID,
-              &import_config_data->preference_id);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME,
-              &import_config_data->preference_name);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME,
-              &import_config_data->preference_nvt_name);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE,
-              &import_config_data->preference_type);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE,
-              &import_config_data->preference_value);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_TYPE,
-              &import_config_data->type);
-
-      APPEND (CLIENT_C_C_GCR_CONFIG_USAGE_TYPE,
-              &import_config_data->usage_type);
 
 
       APPEND (CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE,
