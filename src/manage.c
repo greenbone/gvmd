@@ -4884,9 +4884,6 @@ run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
 /**
  * @brief Start or resume a task.
  *
- * Use \ref send_to_server to queue the task start sequence in the scanner
- * output buffer.
- *
  * Only one task can run at a time in a process.
  *
  * @param[in]   task_id     The task ID.
@@ -4894,13 +4891,23 @@ run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
  *
- * @return Before forking: 1 task is active already, 3 failed to find task,
- *         4 resuming task not supported, 99 permission denied, -1 error,
+ * @return Before forking:
+ *         1 task is active already,
+ *         3 failed to find task,
+ *         4 resuming task not supported,
+ *         99 permission denied,
+ *         -1 error,
  *         -2 task is missing a target,
- *         -3 creating the report failed, -4 target missing hosts, -5 scanner is
- *         down or still loading, -6 already a task running in this process,
- *         -7 no CA cert, -9 fork failed.  After forking: 0 success (parent),
- *         2 success (child), -10 error (child).
+ *         -3 creating the report failed,
+ *         -4 target missing hosts,
+ *         -5 scanner is down or still loading,
+ *         -6 already a task running in this process,
+ *         -7 no CA cert,
+ *         -9 fork failed.
+ *         After forking:
+ *         0 success (parent),
+ *         2 success (child),
+ *         -10 error (child).
  */
 static int
 run_task (const char *task_id, char **report_id, int from)
