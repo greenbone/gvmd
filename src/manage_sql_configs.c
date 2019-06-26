@@ -31,15 +31,68 @@
  */
 
 #include "manage_configs.h"
+#include "manage_acl.h"
+#include "manage_sql.h"
+#include "manage_sql_configs.h"
+#include "manage_sql_nvts.h"
 #include "sql.h"
 
+#include <assert.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include <gvm/util/uuidutils.h>
 
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
  */
 #define G_LOG_DOMAIN "md manage"
+
+
+/* Static headers. */
+
+static int
+switch_representation (config_t, int);
+
+static void
+nvt_selector_add (const char*, const char*, const char*, int);
+
+static void
+nvt_selector_remove_selector (const char*, const char*, int);
+
+static void
+update_config_caches (config_t);
+
+static int
+nvt_selector_families_growing (const char *);
+
+static int
+nvt_selector_nvts_growing_2 (const char*, int);
+
+static int
+insert_nvt_selectors (const char *, const array_t*);
+
+
+/* Helpers. */
+
+/**
+ * @brief Test whether a string equal to a given string exists in an array.
+ *
+ * @param[in]  array   Array of gchar* pointers.
+ * @param[in]  string  String.
+ *
+ * @return 1 if a string equal to \arg string exists in \arg array, else 0.
+ */
+static int
+member (GPtrArray *array, const char *string)
+{
+  const gchar *item;
+  int index = 0;
+  while ((item = (gchar*) g_ptr_array_index (array, index++)))
+    if (strcmp (item, string) == 0) return 1;
+  return 0;
+}
 
 
 /* NVT selectors.  This is part of Configs.
@@ -2944,50 +2997,6 @@ sync_config (const char *config_id)
     }
   return 0;
 }
-
-/**
- * @brief Filter columns for scan configs iterator.
- */
-#define CONFIG_ITERATOR_FILTER_COLUMNS                                        \
- { GET_ITERATOR_FILTER_COLUMNS, "nvt_selector", "families_total",             \
-   "nvts_total", "families_trend", "nvts_trend", "type", "usage_type",        \
-   NULL }
-
-/**
- * @brief Scan config iterator columns.
- */
-#define CONFIG_ITERATOR_COLUMNS                                               \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (configs),                                            \
-   { "nvt_selector", NULL, KEYWORD_TYPE_STRING },                             \
-   { "family_count", "families_total", KEYWORD_TYPE_INTEGER },                \
-   { "nvt_count", "nvts_total", KEYWORD_TYPE_INTEGER},                        \
-   { "families_growing", "families_trend", KEYWORD_TYPE_INTEGER},             \
-   { "nvts_growing", "nvts_trend", KEYWORD_TYPE_INTEGER },                    \
-   { "type", NULL, KEYWORD_TYPE_INTEGER },                                    \
-   { "scanner", NULL, KEYWORD_TYPE_INTEGER },                                 \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                                       \
-   { "usage_type", NULL, KEYWORD_TYPE_STRING },                               \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief Scan config iterator columns for trash case.
- */
-#define CONFIG_ITERATOR_TRASH_COLUMNS                                         \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (configs_trash),                                      \
-   { "nvt_selector", NULL, KEYWORD_TYPE_STRING },                             \
-   { "family_count", "families_total", KEYWORD_TYPE_INTEGER },                \
-   { "nvt_count", "nvts_total", KEYWORD_TYPE_INTEGER},                        \
-   { "families_growing", "families_trend", KEYWORD_TYPE_INTEGER},             \
-   { "nvts_growing", "nvts_trend", KEYWORD_TYPE_INTEGER },                    \
-   { "type", NULL, KEYWORD_TYPE_INTEGER },                                    \
-   { "scanner", NULL, KEYWORD_TYPE_INTEGER },                                 \
-   { "scanner_location", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "usage_type", NULL, KEYWORD_TYPE_STRING },                               \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
 
 /**
  * @brief Count the number of scan configs.

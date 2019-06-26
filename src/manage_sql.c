@@ -31,6 +31,7 @@
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_tickets.h"
+#include "manage_sql_configs.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
@@ -216,18 +217,6 @@ check_config_system_discovery (const char *);
 
 /* Static headers. */
 
-static void
-nvt_selector_add (const char*, const char*, const char*, int);
-
-static void
-nvt_selector_remove_selector (const char*, const char*, int);
-
-static void
-update_config_caches (config_t);
-
-int
-family_count ();
-
 static int
 report_counts_cache_exists (report_t, int, int);
 
@@ -241,9 +230,6 @@ static int cache_report_counts (report_t, int, int, severity_data_t*);
 
 static char*
 task_owner_uuid (task_t);
-
-static int
-insert_nvt_selectors (const char *, const array_t*);
 
 static int
 validate_param_value (report_format_t, report_format_param_t param, const char *,
@@ -348,12 +334,6 @@ find_trash_report_with_permission (const char *, report_t *, const char *);
 
 static int
 cleanup_schedule_times ();
-
-static int
-nvt_selector_families_growing (const char *);
-
-static int
-nvt_selector_nvts_growing_2 (const char*, int);
 
 static char *
 permission_name (permission_t);
@@ -829,24 +809,6 @@ resource_with_name_exists_global (const char *name, const char *type,
   g_free (quoted_name);
   g_free (quoted_type);
   return !!ret;
-}
-
-/**
- * @brief Test whether a string equal to a given string exists in an array.
- *
- * @param[in]  array   Array of gchar* pointers.
- * @param[in]  string  String.
- *
- * @return 1 if a string equal to \arg string exists in \arg array, else 0.
- */
-static int
-member (GPtrArray *array, const char *string)
-{
-  const gchar *item;
-  int index = 0;
-  while ((item = (gchar*) g_ptr_array_index (array, index++)))
-    if (strcmp (item, string) == 0) return 1;
-  return 0;
 }
 
 /**
@@ -4781,7 +4743,7 @@ find_resource_by_name_with_permission (const char *type, const char *name,
  * @return 0 success, 1 resource exists already, 2 failed to find existing
  *         resource, 99 permission denied, -1 error.
  */
-static int
+int
 copy_resource_lock (const char *type, const char *name, const char *comment,
                     const char *resource_id, const char *columns,
                     int make_name_unique, resource_t* new_resource,
