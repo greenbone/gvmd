@@ -28565,6 +28565,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &create_alert_data->part_name);
 
 
+      case CLIENT_CREATE_CONFIG:
+        create_config_element_text (text, text_len);
+        break;
+
+
       APPEND (CLIENT_CREATE_FILTER_COMMENT,
               &create_filter_data->comment);
 
