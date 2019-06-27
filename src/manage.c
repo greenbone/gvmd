@@ -304,9 +304,12 @@ truncate_private_key (const gchar* private_key)
  * @param[in]  certificate_len    Length of certificate, -1: null-terminated
  * @param[out] activation_time    Pointer to write activation time to.
  * @param[out] expiration_time    Pointer to write expiration time to.
- * @param[out] fingerprint        Pointer for newly allocated fingerprint.
+ * @param[out] md5_fingerprint    Pointer for newly allocated MD5 fingerprint.
+ * @param[out] sha256_fingerprint Pointer for newly allocated SHA-256
+ *                                fingerprint.
  * @param[out] subject            Pointer for newly allocated subject DN.
  * @param[out] issuer             Pointer for newly allocated issuer DN.
+ * @param[out] serial             Pointer for newly allocated serial.
  * @param[out] certificate_format Pointer to certificate format.
  *
  * @return 0 success, -1 error.
@@ -314,7 +317,8 @@ truncate_private_key (const gchar* private_key)
 int
 get_certificate_info (const gchar* certificate, gssize certificate_len,
                       time_t* activation_time, time_t* expiration_time,
-                      gchar** fingerprint, gchar **subject, gchar** issuer,
+                      gchar** md5_fingerprint, gchar **sha256_fingerprint,
+                      gchar **subject, gchar** issuer, gchar **serial,
                       gnutls_x509_crt_fmt_t *certificate_format)
 {
   gchar *cert_truncated;
@@ -325,12 +329,16 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
     *activation_time = -1;
   if (expiration_time)
     *expiration_time = -1;
-  if (fingerprint)
-    *fingerprint = NULL;
+  if (md5_fingerprint)
+    *md5_fingerprint = NULL;
+  if (sha256_fingerprint)
+    *sha256_fingerprint = NULL;
   if (subject)
     *subject = NULL;
   if (issuer)
     *issuer = NULL;
+  if (serial)
+    *serial = NULL;
   if (certificate_format)
     *certificate_format = 0;
 
@@ -394,7 +402,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
             = gnutls_x509_crt_get_expiration_time (gnutls_cert);
         }
 
-      if (fingerprint)
+      if (md5_fingerprint)
         {
           int i;
           size_t buffer_size = 16;
@@ -415,7 +423,28 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
               g_string_append_printf (string, "%02x", buffer[i]);
             }
 
-          *fingerprint = string->str;
+          *md5_fingerprint = string->str;
+          g_string_free (string, FALSE);
+        }
+
+      if (sha256_fingerprint)
+        {
+          int i;
+          size_t buffer_size = 32;
+          unsigned char buffer[buffer_size];
+          GString *string;
+
+          string = g_string_new ("");
+
+          gnutls_x509_crt_get_fingerprint (gnutls_cert, GNUTLS_DIG_SHA256,
+                                           buffer, &buffer_size);
+
+          for (i = 0; i < buffer_size; i++)
+            {
+              g_string_append_printf (string, "%02X", buffer[i]);
+            }
+
+          *sha256_fingerprint = string->str;
           g_string_free (string, FALSE);
         }
 
@@ -439,6 +468,28 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
           gnutls_x509_crt_get_issuer_dn (gnutls_cert, buffer, &buffer_size);
 
           *issuer = buffer;
+        }
+
+      if (serial)
+        {
+          int i;
+          size_t buffer_size;
+          gchar* buffer;
+          GString *string;
+
+          string = g_string_new ("");
+
+          gnutls_x509_crt_get_serial (gnutls_cert, NULL, &buffer_size);
+          buffer = g_malloc (buffer_size);
+          gnutls_x509_crt_get_serial (gnutls_cert, buffer, &buffer_size);
+
+          for (i = 0; i < buffer_size; i++)
+            {
+              g_string_append_printf (string, "%02X", buffer[i]);
+            }
+
+          *serial = string->str;
+          g_string_free (string, FALSE);
         }
 
       gnutls_x509_crt_deinit (gnutls_cert);

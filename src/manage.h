@@ -165,6 +165,8 @@ get_certificate_info (const gchar *,
                       gchar **,
                       gchar **,
                       gchar **,
+                      gchar **,
+                      gchar **,
                       gnutls_x509_crt_fmt_t *);
 
 gchar *

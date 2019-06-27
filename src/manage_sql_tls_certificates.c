@@ -326,7 +326,7 @@ create_tls_certificate (const char *name,
   int ret;
   gchar *certificate_decoded;
   gsize certificate_len;
-  char *md5_fingerprint, *subject_dn, *issuer_dn;
+  char *md5_fingerprint, *sha256_fingerprint, *subject_dn, *issuer_dn, *serial;
   time_t activation_time, expiration_time;
   gnutls_x509_crt_fmt_t certificate_format;
 
@@ -341,8 +341,10 @@ create_tls_certificate (const char *name,
                               &activation_time,
                               &expiration_time,
                               &md5_fingerprint,
+                              &sha256_fingerprint,
                               &subject_dn,
                               &issuer_dn,
+                              &serial,
                               &certificate_format);
 
   if (ret)
@@ -351,13 +353,14 @@ create_tls_certificate (const char *name,
   sql ("INSERT INTO tls_certificates"
        " (uuid, owner, name, comment, creation_time, modification_time,"
        "  certificate, subject_dn, issuer_dn, trust,"
-       "  activation_time, expiration_time, md5_fingerprint,"
-       "  certificate_format)"
+       "  activation_time, expiration_time,"
+       "  md5_fingerprint, sha256_fingerprint, serial, certificate_format)"
        " SELECT make_uuid(), (SELECT id FROM users WHERE users.uuid = '%s'),"
        "        '%s', '%s', m_now(), m_now(), '%s', '%s', '%s', %d,"
-       "        %ld, %ld, '%s', '%s';",
+       "        %ld, %ld,"
+       "        '%s', '%s', '%s', '%s';",
        current_credentials.uuid,
-       name ? name : md5_fingerprint,
+       name ? name : sha256_fingerprint,
        comment ? comment : "",
        certificate_b64 ? certificate_b64 : "",
        subject_dn ? subject_dn : "",
@@ -366,6 +369,8 @@ create_tls_certificate (const char *name,
        activation_time,
        expiration_time,
        md5_fingerprint,
+       sha256_fingerprint,
+       serial,
        tls_certificate_format_str (certificate_format));
 
   if (tls_certificate)
@@ -573,7 +578,8 @@ modify_tls_certificate (const gchar *tls_certificate_id,
     {
       gchar *quoted_certificate;
       int ret;
-      char *md5_fingerprint, *subject_dn, *issuer_dn;
+      char *md5_fingerprint, *sha256_fingerprint, *subject_dn, *issuer_dn;
+      char *serial;
       time_t activation_time, expiration_time;
       gnutls_x509_crt_fmt_t certificate_format;
 
@@ -594,8 +600,10 @@ modify_tls_certificate (const gchar *tls_certificate_id,
                                   &activation_time,
                                   &expiration_time,
                                   &md5_fingerprint,
+                                  &sha256_fingerprint,
                                   &subject_dn,
                                   &issuer_dn,
+                                  &serial,
                                   &certificate_format);
 
       if (ret)
@@ -607,17 +615,21 @@ modify_tls_certificate (const gchar *tls_certificate_id,
            " activation_time = %llu,"
            " expiration_time = %llu,"
            " md5_fingerprint = '%s',"
+           " sha256_fingerprint = '%s',"
            " subject_dn = '%s',"
            " issuer_dn = '%s',"
            " modification_time = m_now (),"
+           " serial = '%s'"
            " certificate_format = '%s'"
            " WHERE id = %llu;",
            quoted_certificate,
            activation_time,
            expiration_time,
            md5_fingerprint,
+           sha256_fingerprint,
            subject_dn,
            issuer_dn,
+           serial,
            tls_certificate_format_str (certificate_format),
            tls_certificate);
       g_free (quoted_certificate);

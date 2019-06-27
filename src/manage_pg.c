@@ -2531,7 +2531,9 @@ create_tables ()
        "  expiration_time integer,"
        "  md5_fingerprint text,"
        "  trust integer,"
-       "  certificate_format text);");
+       "  certificate_format text,"
+       "  sha256_fingerprint text,"
+       "  serial text);");
 
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"

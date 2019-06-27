@@ -1629,6 +1629,84 @@ migrate_211_to_212 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 212 to version 213.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_212_to_213 ()
+{
+  iterator_t tls_certs; //, host_details;
+
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 212. */
+
+  if (manage_db_version () != 212)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add columns to tls_certificates */
+  sql ("ALTER TABLE tls_certificates"
+       " ADD COLUMN sha256_fingerprint text;");
+  sql ("ALTER TABLE tls_certificates"
+       " ADD COLUMN serial text;");
+
+  /* Remove now unused tls_certificates_trash table */
+  sql ("DROP TABLE IF EXISTS tls_certificates_trash;");
+
+  /* Set the sha256_fingerprint and serial for existing tls_certificates */
+  init_iterator (&tls_certs,
+                 "SELECT id, certificate FROM tls_certificates");
+  while (next (&tls_certs))
+    {
+      tls_certificate_t tls_certificate;
+      const char *certificate_64;
+      gsize certificate_size;
+      unsigned char *certificate;
+      char *sha256_fingerprint, *serial;
+
+      tls_certificate = iterator_int64 (&tls_certs, 0);
+      certificate_64 = iterator_string (&tls_certs, 1);
+      certificate = g_base64_decode (certificate_64, &certificate_size);
+
+      get_certificate_info ((gchar*)certificate, 
+                            certificate_size,
+                            NULL,   /* activation_time */
+                            NULL,   /* expiration_time */
+                            NULL,   /* md5_fingerprint */
+                            &sha256_fingerprint,
+                            NULL,   /* subject */
+                            NULL,   /* issuer */
+                            &serial,
+                            NULL);  /* certificate_format */
+
+      sql ("UPDATE tls_certificates"
+           " SET sha256_fingerprint = '%s', serial = '%s'"
+           " WHERE id = %llu",
+           sha256_fingerprint,
+           serial,
+           tls_certificate);
+
+      g_free (sha256_fingerprint);
+    }
+  cleanup_iterator (&tls_certs);
+
+  /* Set the database version to 213 */
+
+  set_db_version (213);
+
+  // FIXME: Add missing host / port columns and commit
+  sql_rollback();
+
+  return -1;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1668,6 +1746,7 @@ static migrator_t database_migrators[] = {
   {210, migrate_209_to_210},
   {211, migrate_210_to_211},
   {212, migrate_211_to_212},
+  {213, migrate_212_to_213},
   /* End marker. */
   {-1, NULL}};
 
