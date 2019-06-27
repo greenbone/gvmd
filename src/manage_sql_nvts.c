@@ -1398,6 +1398,12 @@ update_nvts_from_vts (entity_t *get_vts_response,
 
   set_nvts_feed_version (scanner_feed_version);
 
+  if (check_config_families ())
+    g_warning ("%s: Error updating config families."
+               "  One or more configs refer to an outdated family of an NVT.",
+               __FUNCTION__);
+  update_all_config_caches ();
+
   sql_commit ();
 }
 
