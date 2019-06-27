@@ -2199,7 +2199,7 @@ create_config (const char* proposed_name, const char* comment,
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
            " type, creation_time, modification_time, usage_type)"
-           " VALUES (make_uuid (), '%s'"
+           " VALUES (make_uuid (), '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s', '%s', m_now (), m_now (), '%s');",
            quoted_candidate_name,
