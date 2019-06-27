@@ -189,7 +189,8 @@ create_config_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 static gchar*
 text_or_null (entity_t entity)
 {
-  if (entity)
+  if (entity
+      && strlen (entity_text (entity)))
     return entity_text (entity);
   return NULL;
 }
