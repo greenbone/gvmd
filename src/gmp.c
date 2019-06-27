@@ -2180,8 +2180,59 @@ get_data_reset (get_data_t *data)
   free (data->filter_replacement);
   free (data->subtype);
   free (data->type);
+  if (data->extra_params)
+    g_hash_table_destroy (data->extra_params);
 
   memset (data, 0, sizeof (get_data_t));
+}
+
+/**
+ * @brief Retrieves a type-specific extra parameter from a get_data_t.
+ *
+ * @param[in]  data   The get data to add the parameter to.
+ * @param[in]  name   Name of the parameter to add.
+ *
+ * @return  Value of the parameter or NULL if not set.
+ */
+const char *
+get_data_get_extra (const get_data_t *data, const char *name)
+{
+  if (data->extra_params == NULL)
+    return NULL;
+  else
+    return g_hash_table_lookup (data->extra_params, name);
+}
+
+/**
+ * @brief Sets a type-specific extra parameter in a get_data_t.
+ *
+ * The names and values will be duplicated.
+ *
+ * @param[in]  data   The get data to add the parameter to.
+ * @param[in]  name   Name of the parameter to add.
+ * @param[in]  value  Value of the parameter to add.
+ */
+void
+get_data_set_extra (get_data_t *data, const char *name, const char *value)
+{
+  if (name == NULL)
+    return;
+
+  if (data->extra_params == NULL)
+    {
+      if (value == NULL)
+        return;
+
+      data->extra_params
+        = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    }
+
+  if (value)
+    g_hash_table_insert (data->extra_params,
+                         g_strdup (name),
+                         g_strdup (value));
+  else
+    g_hash_table_remove (data->extra_params, name);
 }
 
 /**
@@ -6180,6 +6231,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                 "ignore_pagination", &attribute) == 0)
               get_aggregates_data->get.ignore_pagination = 1;
 
+            // Extra selection attribute for configs and tasks
+            if (find_attribute (attribute_names, attribute_values,
+                                "usage_type", &attribute))
+              {
+                get_data_set_extra (&get_aggregates_data->get,
+                                    "usage_type",
+                                    attribute);
+              }
+
             set_client_state (CLIENT_GET_AGGREGATES);
           }
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
@@ -6208,6 +6268,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_configs_data->preferences = strcmp (attribute, "0");
             else
               get_configs_data->preferences = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "usage_type", &attribute))
+              {
+                get_data_set_extra (&get_configs_data->get,
+                                    "usage_type",
+                                    attribute);
+              }
 
             set_client_state (CLIENT_GET_CONFIGS);
           }

@@ -225,6 +225,9 @@ nvt_selector_remove_selector (const char*, const char*, int);
 static void
 update_config_caches (config_t);
 
+static gchar *
+configs_extra_where (const char *);
+
 int
 family_count ();
 
@@ -18879,7 +18882,12 @@ resource_count (const char *type, const get_data_t *get)
   else
     count_get.filter = "rows=-1 first=1 permission=any";
 
-  if (strcmp (type, "task") == 0)
+  if (strcasecmp (type, "config") == 0)
+    {
+      const gchar *usage_type = get_data_get_extra (get, "usage_type");
+      extra_where = configs_extra_where (usage_type);
+    }
+  else if (strcmp (type, "task") == 0)
     {
       extra_where = get->trash
                      ? " AND hidden = 2"
@@ -35971,6 +35979,21 @@ sync_config (const char *config_id)
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
+static gchar *
+configs_extra_where (const char *usage_type)
+{
+  gchar *extra_where = NULL;
+  if (usage_type && strcmp (usage_type, ""))
+    {
+      gchar *quoted_usage_type;
+      quoted_usage_type = sql_quote (usage_type);
+      extra_where = g_strdup_printf (" AND usage_type = '%s'",
+                                     quoted_usage_type);
+      g_free (quoted_usage_type);
+    }
+  return extra_where;
+}
+
 /**
  * @brief Count the number of scan configs.
  *
@@ -35981,11 +36004,18 @@ sync_config (const char *config_id)
 int
 config_count (const get_data_t *get)
 {
+  int rc;
   static const char *filter_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = CONFIG_ITERATOR_COLUMNS;
   static column_t trash_columns[] = CONFIG_ITERATOR_TRASH_COLUMNS;
-  return count ("config", get, columns, trash_columns, filter_columns,
-                0, 0, 0, TRUE);
+  const char *usage_type = get_data_get_extra (get, "usage_type");
+  gchar *extra_where = configs_extra_where (usage_type);
+
+  rc = count ("config", get, columns, trash_columns, filter_columns,
+              0, 0, extra_where, TRUE);
+
+  g_free (extra_where);
+  return rc;
 }
 
 /**
@@ -36040,6 +36070,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  get         GET data.
+ * @param[in]  usage_type  
  *
  * @return 0 success, 1 failed to find scan config, 2 failed to find filter,
  *         -1 error.
@@ -36047,20 +36078,26 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
 int
 init_config_iterator (iterator_t* iterator, const get_data_t *get)
 {
+  int rc;
   static const char *filter_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = CONFIG_ITERATOR_COLUMNS;
   static column_t trash_columns[] = CONFIG_ITERATOR_TRASH_COLUMNS;
+  const char *usage_type = get_data_get_extra (get, "usage_type");
+  gchar *extra_where = configs_extra_where (usage_type);
 
-  return init_get_iterator (iterator,
-                            "config",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
+  rc = init_get_iterator (iterator,
+                          "config",
+                          get,
+                          columns,
+                          trash_columns,
+                          filter_columns,
+                          0,
+                          NULL,
+                          extra_where,
+                          TRUE);
+
+  g_free (extra_where);
+  return rc;
 }
 
 /**
@@ -67651,15 +67688,24 @@ type_table (const char *type, int trash)
  * @param[in]  type     Resource type to get columns of.
  * @param[in]  trash    Whether to get the trash table.
  * @param[in]  filter   The filter term.
+ * @param[in]  extra_params  Optional extra parameters.
  *
  * @return The newly allocated WHERE clause additions.
  */
 static gchar*
-type_extra_where (const char *type, int trash, const char *filter)
+type_extra_where (const char *type, int trash, const char *filter,
+                  GHashTable *extra_params)
 {
   gchar *extra_where;
 
-  if (strcasecmp (type, "TASK") == 0)
+  if (strcasecmp (type, "CONFIG") == 0 && extra_params)
+    {
+      gchar *usage_type = g_hash_table_lookup (extra_params, "usage_type");
+      extra_where = configs_extra_where (usage_type);
+      if (extra_where == NULL)
+        extra_where = g_strdup ("");
+    }
+  else if (strcasecmp (type, "TASK") == 0)
     {
       if (trash)
         extra_where = g_strdup (" AND hidden = 2");
@@ -67779,7 +67825,8 @@ type_build_select (const char *type, const char *columns_str,
     extra_where = g_strdup (given_extra_where);
   else
     extra_where = type_extra_where (type, get->trash,
-                                    filter ? filter : get->filter);
+                                    filter ? filter : get->filter,
+                                    get->extra_params);
 
   if (get->ignore_pagination)
     pagination_clauses = NULL;
