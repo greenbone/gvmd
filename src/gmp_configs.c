@@ -230,7 +230,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
   get_configs_response = entity_child (entity, "get_configs_response");
   if (get_configs_response
-      && (config = entity_child (entity, "config")))
+      && (config = entity_child (get_configs_response, "config")))
     {
       config_t new_config;
       const char *usage_type_text;
