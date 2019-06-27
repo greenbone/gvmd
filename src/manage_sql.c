@@ -15480,6 +15480,10 @@ setup_full_config_prefs (config_t config, int safe_checks,
 
 /**
  * @brief Update the memory cache of NVTs.
+ *
+ * @param[in]  nvt  NVT.
+ *
+ * @return NVTi if found, else NULL.
  */
 nvti_t *
 lookup_nvti (const gchar *nvt)
