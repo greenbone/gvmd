@@ -139,7 +139,7 @@ add_executable (gmp-tickets-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_delete.c gmp_get.c
+                gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tls_certificates.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
