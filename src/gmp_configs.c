@@ -439,7 +439,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
               pref = (preference_t*) g_ptr_array_index (import_preferences,
                                                         index);
               if (pref)
-                array_free (pref->alts);
+                g_ptr_array_free (pref->alts, TRUE);
             }
         }
       array_free (import_preferences);
