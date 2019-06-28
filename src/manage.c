@@ -1561,11 +1561,6 @@ run_status_name_internal (task_status_t status)
 void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
 
 /**
- * @brief Number of seconds to sleep between polls to slave.
- */
-#define RUN_SLAVE_TASK_SLEEP_SECONDS 25
-
-/**
  * @brief Slave credential UUID.
  */
 static gchar *global_slave_ssh_credential_uuid = NULL;
@@ -1784,8 +1779,8 @@ slave_sleep_connect (gvm_connection_t *connection, task_t task)
           return 3;
         }
       g_debug ("   %s: sleeping for %i", __FUNCTION__,
-              RUN_SLAVE_TASK_SLEEP_SECONDS);
-      gvm_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+               manage_slave_check_period ());
+      gvm_sleep (manage_slave_check_period ());
     }
   while (slave_connect (connection));
   g_debug ("   %s: connected", __FUNCTION__);
@@ -3004,7 +2999,9 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
       free_entity (get_tasks);
 
-      gvm_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+      g_debug ("   %s: sleeping for %i\n", __FUNCTION__,
+               manage_slave_check_period ());
+      gvm_sleep (manage_slave_check_period ());
     }
 
   /* Cleanup. */
@@ -3233,7 +3230,9 @@ handle_slave_task (task_t task, target_t target,
             g_free (slave_task_name);
             return 0;
           }
-        gvm_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+        g_debug ("   %s: sleeping for %i\n", __FUNCTION__,
+                 manage_slave_check_period ());
+        gvm_sleep (manage_slave_check_period ());
       }
 
   while (1)
