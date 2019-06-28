@@ -21408,165 +21408,15 @@ app_location (report_host_t report_host, const gchar *app)
 }
 
 /**
- * @brief Return SQL WHERE for restricting a SELECT to a search phrase.
- *
- * @param[in]  search_phrase  Phrase that results must include.  All results if
- *                            NULL or "".
- *
- * @return WHERE clause for search phrase if one is required, else NULL.
- */
-static GString *
-prognosis_where_search_phrase (const char* search_phrase)
-{
-  if (search_phrase)
-    {
-      GString *phrase_sql;
-      gchar *quoted_search_phrase;
-
-      if (strlen (search_phrase) == 0)
-        return NULL;
-
-      quoted_search_phrase = sql_quote (search_phrase);
-      phrase_sql = g_string_new ("");
-      g_string_append_printf (phrase_sql,
-                              " AND (cves.description %s '%%%%%s%%%%'"
-                              " OR cves.name %s '%%%%%s%%%%'"
-                              " OR cpes.name %s '%%%%%s%%%%')",
-                              sql_ilike_op (),
-                              quoted_search_phrase,
-                              sql_ilike_op (),
-                              quoted_search_phrase,
-                              sql_ilike_op (),
-                              quoted_search_phrase);
-      g_free (quoted_search_phrase);
-
-      return phrase_sql;
-    }
-  return NULL;
-}
-
-/**
- * @brief Return SQL WHERE for restricting a SELECT to levels.
- *
- * @param[in]  levels  String describing threat levels (message types)
- *                     to include in report (for example, "hmlgd" for
- *                     High, Medium, Low, loG and Debug).  All levels if
- *                     NULL.
- *
- * @return WHERE clause for levels if one is required, else NULL.
- */
-static const char *
-prognosis_where_levels (const char* levels)
-{
-  char *high, *medium, *low;
-
-  if (levels == NULL || strlen (levels) == 0)
-    return "";
-
-  high = strchr (levels, 'h');
-  medium = strchr (levels, 'm');
-  low = strchr (levels, 'l');
-
-  if (high && medium && low)
-    return "";
-
-  if (high && medium)
-    return " AND cves.cvss > 2";
-
-  if (high && low)
-    return " AND (cves.cvss > 5 OR cves.cvss <= 2)";
-
-  if (medium && low)
-    return " AND cves.cvss <= 5";
-
-  if (high)
-    return " AND cves.cvss > 5";
-
-  if (medium)
-    return " AND cves.cvss <= 5 AND cves.cvss > 2";
-
-  if (low)
-    return " AND cves.cvss <= 2";
-
-  return "";
-}
-
-/**
- * @brief Return SQL ORDER BY for sorting results in a prognostic report.
- *
- * @param[in]  sort_field  Name of the field to sort by.
- * @param[in]  ascending   Sort in ascending order if true, descending if false.
- *
- * @return ORDER BY clause.
- */
-static GString *
-prognosis_order_by (const char* sort_field, int ascending)
-{
-  GString* order_sql = g_string_new ("");
-
-  if ((sort_field == NULL) || strcmp (sort_field, "ROWID") == 0)
-    g_string_append_printf (order_sql,
-                            " ORDER BY cves.id %s",
-                            ascending ? "ASC" : "DESC");
-  else if (strcmp (sort_field, "host") == 0)
-    g_string_append_printf (order_sql,
-                            " ORDER BY"
-                            " order_inet"
-                            "  ((SELECT host FROM report_hosts"
-                            "    WHERE id = report_host_details.report_host))"
-                            " %s,"
-                            " severity DESC",
-                            ascending ? "ASC" : "DESC");
-  else if (strcmp (sort_field, "vulnerability") == 0)
-    g_string_append_printf (order_sql,
-                            " ORDER BY"
-                            " vulnerability %s",
-                            ascending ? "ASC" : "DESC");
-  else if (strcmp (sort_field, "location") == 0)
-    g_string_append_printf (order_sql,
-                            " ORDER BY"
-                            " location,"
-                            " severity %s",
-                            ascending ? "ASC" : "DESC");
-  else
-    g_string_append_printf (order_sql,
-                            " ORDER BY"
-                            " severity %s",
-                            ascending ? "ASC" : "DESC");
-
-  return order_sql;
-}
-
-/**
  * @brief Initialise a report host prognosis iterator.
  *
  * @param[in]  iterator     Iterator.
  * @param[in]  report_host  Report host whose prognosis the iterator loops over.
  *                          All report_hosts if NULL.
- * @param[in]  first_result   The result to start from.  The results are 0
- *                            indexed.
- * @param[in]  max_results    The maximum number of results returned.
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in count (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
- * @param[in]  search_phrase  Phrase that results must include.  All results
- * @param[in]  sort_order     Whether to sort in ascending order.
- * @param[in]  sort_field     Name of the field to sort by.
  */
 void
-init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
-                              int first_result, int max_results,
-                              const char *levels, const char *search_phrase,
-                              int sort_order, const char *sort_field)
+init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
 {
-  GString *phrase_sql, *order_sql;
-
-  if (levels == NULL) levels = "hmlgdf";
-
-  phrase_sql = prognosis_where_search_phrase (search_phrase);
-  order_sql = prognosis_order_by (sort_field, sort_order);
-
   init_iterator (iterator,
                  "SELECT cves.name AS vulnerability,"
                  "       CAST (cves.cvss AS NUMERIC) AS severity,"
@@ -21581,18 +21431,11 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
                  " AND report_host_details.name = 'App'"
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"
-                 "%s%s%s"
-                 " LIMIT %s OFFSET %i;",
+                 " ORDER BY cves.id ASC"
+                 " LIMIT %s OFFSET 0;",
                  report_host,
                  report_host,
-                 phrase_sql ? phrase_sql->str : "",
-                 prognosis_where_levels (levels),
-                 order_sql ? order_sql->str : "",
-                 sql_select_limit (max_results),
-                 first_result);
-
-  if (phrase_sql) g_string_free (phrase_sql, TRUE);
-  if (order_sql) g_string_free (order_sql, TRUE);
+                 sql_select_limit (-1));
 }
 
 DEF_ACCESS (prognosis_iterator_cve, 0);
