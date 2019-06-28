@@ -2746,6 +2746,9 @@ manage_system_report (const char *,
                       const char *,
                       char **);
 
+int
+manage_slave_check_period ();
+
 
 /* Scanners. */
 
