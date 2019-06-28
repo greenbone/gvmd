@@ -16582,6 +16582,17 @@ check_db_settings ()
          "  '1');");
 
   if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_SLAVE_CHECK_PERIOD "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_SLAVE_CHECK_PERIOD "', NULL,"
+         "  'GMP Slave Check Period',"
+         "  'Period in seconds when polling a GMP slave',"
+         "  25);");
+
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '" SETTING_UUID_LSC_DEB_MAINTAINER "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -58644,6 +58655,8 @@ setting_name (const gchar *uuid)
     return "Default CA Cert";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "Max Rows Per Page";
+  if (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0)
+    return "GMP Slave Check Period";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Debian LSC Package Maintainer";
   return NULL;
@@ -58676,6 +58689,8 @@ setting_description (const gchar *uuid)
     return "Default CA Certificate for Scanners";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "The default maximum number of rows displayed in any listing.";
+  if (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0)
+    return "Period in seconds when polling a GMP slave";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Maintainer email address used in generated Debian LSC packages.";
   return NULL;
@@ -58709,6 +58724,14 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
             return 1;
         }
       else if (max_rows < 0)
+        return 1;
+    }
+
+  if (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0)
+    {
+      int period;
+      period = atoi (value);
+      if (period <= 0)
         return 1;
     }
 
@@ -58778,6 +58801,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
+      && strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD)
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER))
     {
       fprintf (stderr, "Error in setting UUID.\n");
@@ -58800,7 +58824,8 @@ manage_modify_setting (GSList *log_config, const gchar *database,
     {
       user_t user;
 
-      if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+      if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+          || (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
@@ -60640,6 +60665,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
                             user);
       return 3;
     }
+
   return 0;
 }
 
@@ -61706,6 +61732,18 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
     }
 
   sql_commit ();
+}
+
+/**
+ * @brief Get the slave check period.
+ *
+ * @return Number of seconds.
+ */
+int
+manage_slave_check_period ()
+{
+  return sql_int ("SELECT value FROM settings"
+                  " WHERE uuid = '" SETTING_UUID_SLAVE_CHECK_PERIOD "';");
 }
 
 
