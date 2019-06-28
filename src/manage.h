@@ -1547,8 +1547,7 @@ gchar *
 app_location (report_host_t, const gchar *);
 
 void
-init_host_prognosis_iterator (iterator_t*, report_host_t, int, int,
-                              const char *, const char *, int, const char *);
+init_host_prognosis_iterator (iterator_t*, report_host_t);
 
 double
 prognosis_iterator_cvss_double (iterator_t*);
