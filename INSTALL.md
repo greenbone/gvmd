@@ -1,5 +1,4 @@
-INSTALLATION INSTRUCTIONS FOR GREENBONE VULNERABILITY MANAGER
-=============================================================
+# INSTALLATION INSTRUCTIONS FOR GREENBONE VULNERABILITY MANAGER
 
 Please note: The reference system used by most of the developers is Debian
 GNU/Linux 'Stretch' 9. The build might fail on any other system. Also, it is
@@ -11,8 +10,7 @@ consider the section "Migrating to Version 8.0", unless you do not have
 an old setup on your system.
 
 
-Prerequisites for Greenbone Vulnerability Manager
--------------------------------------------------
+## Prerequisites for Greenbone Vulnerability Manager
 
 Prerequisites:
 * cmake >= 3.0
@@ -35,8 +33,7 @@ Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
 
 
-Compiling Greenbone Vulnerability Manager
------------------------------------------
+## Compiling Greenbone Vulnerability Manager
 
 If you have installed required libraries to a non-standard location, remember to
 set the `PKG_CONFIG_PATH` environment variable to the location of you pkg-config
@@ -74,8 +71,7 @@ To clean up the build environment, simply remove the contents of the `build`
 directory you created above.
 
 
-Choosing the Connection Type
------------------------------
+## Choosing the Connection Type
 
 Greenbone Vulnerability Manager can serve client connections on either a TCP
 socket or a UNIX domain socket.
@@ -93,8 +89,7 @@ To use a TCP socket, call gvmd with the --listen option, for example:
     gvmd --listen=127.0.0.1
 
 
-Certificate Generation
-----------------------
+## Certificate Generation
 
 All TCP-based communication with Greenbone Vulnerability Manager uses the TLS
 protocol to establish secure connections and for authentication and
@@ -119,8 +114,7 @@ certificates for scanners, please see also section `Updating Scanner
 Certificates`.
 
 
-Configure PostgreSQL Database Backend
--------------------------------------
+## Configure PostgreSQL Database Backend
 
 Setting up the PostgresSQL database
 
@@ -261,8 +255,7 @@ SELECT nspname || '.' || relname AS "relation",
 These queries were taken from https://wiki.postgresql.org/wiki/Disk_Usage
 
 
-Migrating to Version 8.0
-------------------------
+## Migrating to Version 8.0
 
 Before starting gvmd 8.0 for the first time you need to move some files to the
 new locations where they are expected now.  If you do not do this, the files are
@@ -305,8 +298,7 @@ properly.
     ```
 
 
-Migrating the Database
-----------------------
+## Migrating the Database
 
 If you have used Manager before, you might need to migrate the database to the
 current data model. Use this command to run the migration:
@@ -314,8 +306,7 @@ current data model. Use this command to run the migration:
     gvmd --migrate
 
 
-Creating an administrator user for GVM
---------------------------------------
+## Creating an administrator user for GVM
 
 You can create an administrator user with the `--create-user` option of `gvmd`:
 
@@ -329,8 +320,7 @@ clients like the Greenbone Security Assistant (GSA).
 Also, the new user can change their password via GSA.
 
 
-Logging Configuration
----------------------
+## Logging Configuration
 
 By default, Manager writes logs to the file
 
@@ -374,8 +364,7 @@ Logging to `syslog` can be enabled in each domain like:
     level=128
 
 
-Optimizing the database
------------------------
+## Optimizing the database
 
 Greenbone Vulnerability Manager offers the command line option
 `--optimize=<name>` to run various optimization of the database. The currently
@@ -429,8 +418,7 @@ supported values for `<name>` are:
   that are not cached yet.
 
 
-Import/Update IANA Services Names
----------------------------------
+## Import/Update IANA Services Names
 
 If you want the Manager to resolve port names when outputting reports for
 instance, you need to import the information from a Services Names list.
@@ -454,8 +442,7 @@ update the information in the database from a newer list.
 Currently, the helper tool supports only the official IANA Services Names list.
 
 
-Encrypted Credentials
----------------------
+## Encrypted Credentials
 
 By default, the Manager stores private key and password parts of target
 credentials encrypted in the database.  This avoids leaking such keys
@@ -513,8 +500,7 @@ are not desired, the manager must _always_ be started with the option
 `--disable-encrypted-credentials`.
 
 
-Resetting Credentials Encryption Key
-------------------------------------
+## Resetting Credentials Encryption Key
 
 If you lost some part of the encryption key, neither a regular migration nor
 a simple creation might work.
@@ -542,8 +528,7 @@ Create a new key:
 Finally, reset all credentials, by hand.
 
 
-Migrating Encrypted Credentials from Manager prior version 6.0
---------------------------------------------------------------
+## Migrating Encrypted Credentials from Manager prior version 6.0
 
 Please consult the INSTALL file of version 6.0 for detailed
 information about the migration of encrypted credentials.
@@ -551,8 +536,7 @@ information about the migration of encrypted credentials.
 From version 6.0 on the migration is seamless.
 
 
-Updating Scanner Certificates
------------------------------
+## Updating Scanner Certificates
 
 If you have changed the CA certificate used to sign the server and client
 certificates or the client certificate itself you will need to update the
@@ -601,8 +585,7 @@ UUID is the fixed one of the immutable global setting for the default
 CA certificate and thus does not need to be changed.
 
 
-Changing the Maximum Number of Rows per Page
---------------------------------------------
+## Changing the Maximum Number of Rows per Page
 
 The maximum number of rows returned by the GMP `GET` commands, like `GET_TARGETS`,
 is controlled by the GMP setting "Max Rows Per Page".  This setting is an upper
@@ -622,8 +605,7 @@ Adding `--user` to the command will set a value for maximum rows only for that
 user.
 
 
-Prerequisites for Optional Features
------------------------------------
+## Prerequisites for Optional Features
 
 Certain features of the Manager also require some programs at run time:
 
@@ -705,8 +687,7 @@ Prerequisites for key generation on systems with low entropy:
 * haveged (or a similar tool)
 
 
-Static code analysis with the Clang Static Analyzer
----------------------------------------------------
+## Static code analysis with the Clang Static Analyzer
 
 If you want to use the Clang Static Analyzer (https://clang-analyzer.llvm.org/)
 to do a static code analysis, you can do so by prefixing the configuration and
