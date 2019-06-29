@@ -116,7 +116,7 @@ Certificates`.
 
 ## Configure PostgreSQL Database Backend
 
-Setting up the PostgresSQL database
+### Setting up the PostgresSQL database
 
 1.  Install Postgres.
 
@@ -168,7 +168,7 @@ Setting up the PostgresSQL database
     psql gvmd
     ```
 
-Migrating from SQLite to PostgreSQL
+### Migrating from SQLite to PostgreSQL
 
 GVM-10 was last release where gvmd supports SQLite. GVM-11
 supports exclusively PostgreSQL. If you worked with SQLite before
@@ -193,7 +193,7 @@ PostgreSQL.
 3.  Run `greenbone-certdata-sync`.
 
 
-Switching between releases
+### Switching between releases
 
 There are two factors for developers to consider when switching between
 releases:
@@ -220,7 +220,7 @@ releases:
     necessary.
 
 
-Analyzing the size of the tables
+### Analyzing the size of the tables
 
 In case the database grows in size and you want to understand
 which of the tables is responsible for it, there are two queries
