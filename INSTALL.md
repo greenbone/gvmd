@@ -597,19 +597,16 @@ The database can be updated using the following command:
 
 Where:
 - `<uuid>`
-
   refers to the UUID used by OpenVAS Manager to identify the scanner;
   the UUID can be retrieved with `gvmd --get-scanners`.
 
 - `<cacert>`
-
   refers to the certificate of the CA used to sign the scanner certificate.
   Leaving this empty will delete the CA certificate of the scanner. This option
   can be dropped if the scanner uses a certificate that corresponds with the
   default CA certificate of Manager.
 
 - `<clientcert>`
-
   refers to the certificate Manager uses to authenticate when
   connecting to the scanner. For a default OSP scanner setup
   with self-signed certificates this would be
