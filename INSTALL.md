@@ -39,30 +39,40 @@ If you have installed required libraries to a non-standard location, remember to
 set the `PKG_CONFIG_PATH` environment variable to the location of you pkg-config
 files before configuring:
 
+    ```sh
     export PKG_CONFIG_PATH=/your/location/lib/pkgconfig:$PKG_CONFIG_PATH
+    ```
 
 Create a build directory and change into it with:
 
+    ```sh
     mkdir build
     cd build
+    ```
 
 Then configure the build with:
 
+    ```sh
     cmake -DCMAKE_INSTALL_PREFIX=/path/to/your/installation ..
+    ```
 
 Or (if you want to use the default installation path `/usr/local/`):
 
+    ```sh
     cmake ..
+    ```
 
 This only needs to be done once.
 
 Thereafter, the following commands are useful:
 
+    ```sh
     make                # build the scanner
     make doc            # build the documentation
     make doc-full       # build more developer-oriented documentation
     make install        # install the build
     make rebuild_cache  # rebuild the cmake cache
+    ```
 
 Please note that you may have to execute `make install` as root, especially if
 you have specified a prefix for which your user does not have full permissions.
@@ -86,7 +96,9 @@ permissions of the socket can be specified with the `--listen-owner`,
 
 To use a TCP socket, call gvmd with the --listen option, for example:
 
+    ```sh
     gvmd --listen=127.0.0.1
+    ```
 
 
 ## Certificate Generation
@@ -292,7 +304,7 @@ properly.
    `$prefix/var/lib/gvm/gvmd/gvmd.db`
 
  - (Postgres backend only) rename database to `gvmd`:
-    ```
+    ```sh
     sudo -u postgres sh
     psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
     ```
@@ -303,14 +315,18 @@ properly.
 If you have used Manager before, you might need to migrate the database to the
 current data model. Use this command to run the migration:
 
+    ```sh
     gvmd --migrate
+    ```
 
 
 ## Creating an administrator user for GVM
 
 You can create an administrator user with the `--create-user` option of `gvmd`:
 
+    ```sh
     gvmd --create-user=myuser
+    ```
 
 The new user's password is printed on success.
 
@@ -332,11 +348,13 @@ Logging is configured entirely by the file
 
 The configuration is divided into domains like this one
 
+    ```INI
     [md   main]
     prepend=%t %p
     prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
     file=/var/log/gvm/gvmd.log
     level=128
+    ```
 
 The `level` field controls the amount of logging that is written.
 The value of `level` can be
@@ -356,12 +374,14 @@ configuration file.
 
 Logging to `syslog` can be enabled in each domain like:
 
+    ```INI
     [md   main]
     prepend=%t %p
     prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
     file=syslog
     syslog_facility=daemon
     level=128
+    ```
 
 
 ## Optimizing the database
@@ -425,16 +445,22 @@ instance, you need to import the information from a Services Names list.
 
 In order to update the database, download the port names list:
 
+    ```sh
     wget https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
+    ```
 
 Then provide it as an argument to gvm-portnames-update script:
 
+    ```sh
     gvm-portnames-update service-names-port-numbers.xml
+    ```
 
 You can safely delete the list after that as it is not needed and all relevant
 information has been imported into the database.
 
+    ```sh
     rm service-names-port-numbers.xml
+    ```
 
 Note that IANA updates this list frequently. The same steps could be followed to
 update the information in the database from a newer list.
@@ -459,7 +485,9 @@ exist.
 
 To check whether the key has been generated you may use the command:
 
+    ```sh
     gpg --homedir <install-prefix>/var/lib/gvm/gvmd/gnupg --list-secret-keys
+    ```
 
 An example output would be:
 
@@ -476,24 +504,32 @@ credential it will be saved encrypted.
 
 To encrypt all existing credentials you may use:
 
+    ```sh
     gvmd --encrypt-all-credentials
+    ```
 
 Key change: If you disable the current key (see also the gpg manual) and
 create a new key, this command will decrypt using the old but disabled key
 and then re-encrypt using the new key.  The command `--decrypt-all-credentials`
 may be used to revert to plaintext credentials:
 
+    ```sh
     gpg --homedir /var/lib/gvm/gvmd/gnupg -K
+    ```
 
 Look for the current key and remember its keyid. Then:
 
+    ```sh
     gpg --homedir /var/lib/gvm/gvmd/gnupg --edit-key KEYID
+    ```
 
 At the prompt enter `disable` followed by `save` and `quit`.
 Then create a new key and re-encrypt all passwords:
 
+    ```sh
     gvmd --create-credentials-encryption-key
     gvmd --encrypt-all-credentials
+    ```
 
 No encryption: If for backward compatibility reasons encrypted credentials
 are not desired, the manager must _always_ be started with the option
@@ -511,19 +547,27 @@ will need to enter all of them anew afterwards.
 
 Get the key fingerprint:
 
+    ```sh
     gpg --homedir <install-prefix>/var/lib/gvm/gvmd/gnupg --list-secret-keys
+    ```
 
 Remove the secret key:
 
+    ```sh
     gpg --homedir=<prefix>/etc/openvas/gnupg --delete-secret-keys KEYID
+    ```
 
 Remove the key:
 
+    ```sh
     gpg --homedir=<prefix>/etc/openvas/gnupg --delete-keys KEYID
+    ```
 
 Create a new key:
 
+    ```sh
     gvmd --create-credentials-encryption-key
+    ```
 
 Finally, reset all credentials, by hand.
 
@@ -544,10 +588,12 @@ certificates in Manager database as well.
 
 The database can be updated using the following command:
 
+    ```sh
     gvmd --modify-scanner <uuid> \
          --scanner-ca-pub <cacert> \
          --scanner-key-pub <clientcert> \
          --scanner-key-priv <clientkey>
+    ```
 
 Where:
 - `<uuid>`
@@ -577,8 +623,10 @@ Where:
 
 To set just a new default CA certificate:
 
+    ```sh
     gvmd --modify-setting 9ac801ea-39f8-11e6-bbaa-28d24461215b \
          --value "`cat /var/lib/gvm/CA/cacert.pem`"
+    ```
 
 Replace the path to the pem-file with the one of your setup. The
 UUID is the fixed one of the immutable global setting for the default
@@ -597,8 +645,10 @@ The default value for "Max Rows Per Page" is 1000.  0 indicates no limit.
 This setting can not be changed via GMP.  However, the gvmd option
 `--modify-setting` can be used to change it.
 
+    ```sh
     gvmd --modify-setting 76374a7a-0569-11e6-b6da-28d24461215b \
         --value 100
+    ```
 
 This changes the global value of the setting, and so applies to all users.
 Adding `--user` to the command will set a value for maximum rows only for that
@@ -615,8 +665,10 @@ Prerequisites for generating PDF reports:
   On Debian GNU/Linux 'Stretch' 9 the following packages can be installed to
   fulfill this prerequisite:
 
-      apt-get install texlive-latex-extra --no-install-recommends
-      apt-get install texlive-fonts-recommended
+    ```sh
+    apt-get install texlive-latex-extra --no-install-recommends
+    apt-get install texlive-fonts-recommended
+    ```
 
 Prerequisites for generating HTML reports:
 * xsltproc
@@ -693,8 +745,10 @@ If you want to use the Clang Static Analyzer (https://clang-analyzer.llvm.org/)
 to do a static code analysis, you can do so by prefixing the configuration and
 build commands with `scan-build`:
 
+    ```sh
     scan-build cmake ..
     scan-build make
+    ```
 
 The tool will provide a hint on how to launch a web browser with the results.
 
