@@ -20623,6 +20623,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to only include id, name and schedule details</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>usage_type</name>
+        <summary>Optional usage type to limit the tasks to. Affects total count unlike filter</summary>
+        <type>
+          <alts>
+            <alt>audit</alt>
+            <alt>policy</alt>
+            <alt></alt>
+          </alts>
+        </type>
+      </attrib>
     </pattern>
     <response>
       <pattern>

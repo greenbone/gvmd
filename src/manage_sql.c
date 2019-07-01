@@ -14695,6 +14695,27 @@ alert_task_iterator_readable (iterator_t* iterator)
 
 /* Task functions. */
 
+static gchar *
+tasks_extra_where (int trash, const char *usage_type)
+{
+  gchar *extra_where = NULL;
+  if (usage_type && strcmp (usage_type, ""))
+    {
+      gchar *quoted_usage_type;
+      quoted_usage_type = sql_quote (usage_type);
+      extra_where = g_strdup_printf (" AND hidden = %d"
+                                     " AND usage_type = '%s'",
+                                     trash ? 2 : 0,
+                                     quoted_usage_type);
+      g_free (quoted_usage_type);
+    }
+  else
+    extra_where = g_strdup_printf (" AND hidden = %d",
+                                   trash ? 2 : 0);
+
+  return extra_where;
+}
+
 /**
  * @brief Append value to field of task.
  *
@@ -15061,7 +15082,8 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
   static column_t where_columns_min[] = TASK_ITERATOR_WHERE_COLUMNS_MIN;
   char *filter;
   int overrides, min_qod;
-  gchar *extra_tables;
+  const char *usage_type;
+  gchar *extra_tables, *extra_where;
   int ret;
 
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
@@ -15079,6 +15101,8 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
   free (filter);
 
   extra_tables = task_iterator_opts_table (overrides, min_qod, 0);
+  usage_type = get_data_get_extra (get, "usage_type");
+  extra_where = tasks_extra_where (get->trash, usage_type);
 
   ret = init_get_iterator2 (iterator,
                             "task",
@@ -15092,14 +15116,13 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             extra_tables,
-                            get->trash
-                             ? " AND hidden = 2"
-                             : " AND hidden = 0",
+                            extra_where,
                             current_credentials.uuid ? TRUE : FALSE,
                             FALSE,
                             NULL);
 
   g_free (extra_tables);
+  g_free (extra_where);
   return ret;
 }
 
@@ -18855,8 +18878,8 @@ resource_count (const char *type, const get_data_t *get)
   static const char *filter_columns[] = { "owner", NULL };
   static column_t select_columns[] = {{ "owner", NULL }, { NULL, NULL }};
   get_data_t count_get;
-
-  const char *extra_where;
+  gchar *extra_where;
+  int rc;
 
   memset (&count_get, '\0', sizeof (count_get));
   count_get.trash = get->trash;
@@ -18872,39 +18895,42 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "task") == 0)
     {
-      extra_where = get->trash
-                     ? " AND hidden = 2"
-                     : " AND hidden = 0";
+      const gchar *usage_type = get_data_get_extra (get, "usage_type");
+      extra_where = tasks_extra_where (get->trash, usage_type);
     }
   else if (strcmp (type, "report") == 0)
     {
-      extra_where = " AND (SELECT hidden FROM tasks"
-                    "      WHERE tasks.id = task)"
-                    "     = 0";
+      extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
+                              "      WHERE tasks.id = task)"
+                              "     = 0");
     }
   else if (strcmp (type, "result") == 0)
     {
-      extra_where = " AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")";
+      extra_where
+        = g_strdup (" AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")");
     }
   else if (strcmp (type, "vuln") == 0)
     {
-      extra_where = " AND (vuln_results (vulns.uuid,"
-                    "                    cast (null AS integer),"
-                    "                    cast (null AS integer),"
-                    "                    cast (null AS text))"
-                    "      > 0)";
+      extra_where = g_strdup (" AND (vuln_results (vulns.uuid,"
+                              "                    cast (null AS integer),"
+                              "                    cast (null AS integer),"
+                              "                    cast (null AS text))"
+                              "      > 0)");
     }
   else
     extra_where = NULL;
 
-  return count (get->subtype ? get->subtype : type,
-                &count_get,
-                type_owned (type) ? select_columns : NULL,
-                type_owned (type) ? select_columns : NULL,
-                type_owned (type) ? filter_columns : NULL,
-                0, NULL,
-                extra_where,
-                type_owned (type));
+  rc = count (get->subtype ? get->subtype : type,
+              &count_get,
+              type_owned (type) ? select_columns : NULL,
+              type_owned (type) ? select_columns : NULL,
+              type_owned (type) ? filter_columns : NULL,
+              0, NULL,
+              extra_where,
+              type_owned (type));
+
+  g_free (extra_where);
+  return rc;
 }
 
 /**
@@ -18922,7 +18948,8 @@ task_count (const get_data_t *get)
   static column_t where_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
   char *filter;
   int overrides, min_qod;
-  gchar *extra_tables;
+  const char *usage_type;
+  gchar *extra_tables, *extra_where;
   int ret;
 
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
@@ -18940,6 +18967,8 @@ task_count (const get_data_t *get)
   free (filter);
 
   extra_tables = task_iterator_opts_table (overrides, min_qod, 0);
+  usage_type = get_data_get_extra (get, "usage_type");
+  extra_where = tasks_extra_where (get->trash, usage_type);
 
   ret = count2 ("task", get,
                 columns,
@@ -18948,12 +18977,11 @@ task_count (const get_data_t *get)
                 where_columns,
                 extra_columns, 0,
                 extra_tables,
-                get->trash
-                 ? " AND hidden = 2"
-                 : " AND hidden = 0",
+                extra_where,
                 TRUE);
 
   g_free (extra_tables);
+  g_free (extra_where);
   return ret;
 }
 

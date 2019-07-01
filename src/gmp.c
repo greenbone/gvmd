@@ -6522,6 +6522,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_tasks_data->schedules_only = strcmp (attribute, "0");
             else
               get_tasks_data->schedules_only = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "usage_type", &attribute))
+              {
+                get_data_set_extra (&get_tasks_data->get,
+                                    "usage_type",
+                                    attribute);
+              }
+
             set_client_state (CLIENT_GET_TASKS);
           }
         ELSE_GET_START (tickets, TICKETS)
