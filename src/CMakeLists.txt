@@ -85,13 +85,14 @@ add_executable (manage-utils-test
                 manage_acl.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c
-                gmp_tls_certificates.c)
+                gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_tickets.c gmp_tls_certificates.c)
 
 add_test (manage-utils-test manage-utils-test)
 
@@ -108,13 +109,14 @@ add_executable (manage-test
                 manage_acl.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c
-                gmp_tls_certificates.c)
+                gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_tickets.c gmp_tls_certificates.c)
 
 add_test (manage-test manage-test)
 
@@ -131,12 +133,13 @@ add_executable (gmp-tickets-test
                 manage_acl.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_delete.c gmp_get.c
+                gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tls_certificates.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
@@ -154,13 +157,14 @@ add_executable (gvmd
                 manage_acl.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
                 otp.c
-                gmp.c gmp_base.c gmp_delete.c gmp_get.c gmp_tickets.c
-                gmp_tls_certificates.c)
+                gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_tickets.c gmp_tls_certificates.c)
 
 target_link_libraries (gvmd m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
@@ -334,6 +338,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_base.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tls_certificates.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/otp.c"
@@ -350,6 +355,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_iana_tcp_udp_2012.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_nmap_5_51_top_2000_top_100.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
