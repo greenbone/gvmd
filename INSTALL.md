@@ -185,7 +185,7 @@ Certificates`.
 GVM-10 was last release where gvmd supports SQLite. GVM-11
 supports exclusively PostgreSQL. If you worked with SQLite before
 and want to keep your data, you need to migrate the data to
-PostgreSQL. 
+PostgreSQL.
 
 1.  Run `gvm-migrate-to-postgres` into a clean newly created PostgreSQL database
     like described above.
