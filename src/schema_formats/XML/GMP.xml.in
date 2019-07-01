@@ -1457,8 +1457,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </attrib>
             <attrib>
               <name>type</name>
-	      <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"
-	      </summary>
+              <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"
+              </summary>
               <type>text</type>
             </attrib>
           </pattern>
@@ -6055,7 +6055,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <assigned_to>
             <user id="33e92d3e-a379-4c46-a4cf-88c8201ab710"/>
           </assigned_to>
-	      <open_note>Please fix today.</open_note>
+          <open_note>Please fix today.</open_note>
         </create_ticket>
       </request>
       <response>
@@ -26950,7 +26950,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The content of former elements CVE and BID are now also part of REFS and the
-	respective REF types are "cve" and "bid".
+        respective REF types are "cve" and "bid".
       </p>
       <p>
         The content of former element XREF is now also part of REFS and the
