@@ -14695,6 +14695,14 @@ alert_task_iterator_readable (iterator_t* iterator)
 
 /* Task functions. */
 
+/**
+ * @brief  Generate an extra WHERE clause for selecting tasks
+ *
+ * @param[in]  trash        Whether to get tasks from the trashcan.
+ * @param[in]  usage_type   The usage type to limit the selection to.
+ *
+ * @return Newly allocated where clause string.
+ */
 static gchar *
 tasks_extra_where (int trash, const char *usage_type)
 {
