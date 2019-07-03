@@ -383,10 +383,17 @@ typedef struct
   int ignore_max_rows_per_page; ///< Whether to ignore the Max Rows Per Page setting.
   int ignore_pagination; ///< Whether to ignore the pagination (first and max).
   int minimal;         ///< Whether to respond with minimal information.
+  GHashTable *extra_params; ///< Hashtable of type-specific extra parameters.
 } get_data_t;
 
 void
 get_data_reset (get_data_t*);
+
+const char *
+get_data_get_extra (const get_data_t *, const char *);
+
+void
+get_data_set_extra (get_data_t *, const char *, const char *);
 
 resource_t
 get_iterator_resource (iterator_t*);

@@ -72,4 +72,7 @@
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
+gchar *
+configs_extra_where (const char *);
+
 #endif /* not _GVMD_MANAGE_SQL_CONFIGS_H */
