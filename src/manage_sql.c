@@ -22995,6 +22995,138 @@ report_set_source_iface (report_t report, const gchar *iface)
  * @param[in]  report  The report.
  * @param[in]  result  The result.
  */
+static void
+report_add_result_for_buffer (report_t report, result_t result)
+{
+  double severity, ov_severity;
+  int qod;
+  rowid_t rowid;
+  iterator_t cache_iterator;
+  user_t previous_user = 0;
+
+  assert (result);
+
+  if (report == 0)
+    return;
+
+  if (sql_int ("SELECT NOT EXISTS (SELECT * from result_nvt_reports"
+               "                   WHERE result_nvt = (SELECT result_nvt"
+               "                                       FROM results"
+               "                                       WHERE id = %llu)"
+               "                   AND report = %llu);",
+       result,
+       report))
+    sql ("INSERT INTO result_nvt_reports (result_nvt, report)"
+         " VALUES ((SELECT result_nvt FROM results WHERE id = %llu),"
+         "         %llu);",
+         result,
+         report);
+
+  qod = sql_int ("SELECT qod FROM results WHERE id = %llu;",
+                 result);
+
+  severity = sql_double ("SELECT severity FROM results WHERE id = %llu;",
+                         result);
+  ov_severity = severity;
+
+  init_report_counts_build_iterator (&cache_iterator, report, qod, 1, NULL);
+  while (next (&cache_iterator))
+    {
+      int min_qod = report_counts_build_iterator_min_qod (&cache_iterator);
+      int override = report_counts_build_iterator_override (&cache_iterator);
+      user_t user = report_counts_build_iterator_user (&cache_iterator);
+
+      if (override && user != previous_user)
+        {
+          char *ov_severity_str;
+          gchar *owned_clause, *with_clause;
+
+          owned_clause = acl_where_owned_for_get ("override", NULL,
+                                                  &with_clause);
+
+          ov_severity_str
+            = sql_string ("%s"
+                          " SELECT coalesce (overrides.new_severity, %1.1f)"
+                          " FROM overrides, results"
+                          " WHERE results.id = %llu"
+                          " AND overrides.nvt = results.nvt"
+                          " AND %s"
+                          " AND ((overrides.end_time = 0)"
+                          "      OR (overrides.end_time >= m_now ()))"
+                          " AND (overrides.task ="
+                          "      (SELECT reports.task FROM reports"
+                          "       WHERE reports.id = %llu)"
+                          "      OR overrides.task = 0)"
+                          " AND (overrides.result = results.id"
+                          "      OR overrides.result = 0)"
+                          " AND (overrides.hosts is NULL"
+                          "      OR overrides.hosts = ''"
+                          "      OR hosts_contains (overrides.hosts,"
+                          "                         results.host))"
+                          " AND (overrides.port is NULL"
+                          "      OR overrides.port = ''"
+                          "      OR overrides.port = results.port)"
+                          " AND severity_matches_ov (%1.1f,"
+                          "                          overrides.severity)"
+                          " ORDER BY overrides.result DESC,"
+                          "   overrides.task DESC, overrides.port DESC,"
+                          "   overrides.severity ASC,"
+                          "   overrides.creation_time DESC"
+                          " LIMIT 1",
+                          with_clause ? with_clause : "",
+                          severity,
+                          result,
+                          owned_clause,
+                          report,
+                          severity);
+
+          g_free (with_clause);
+          g_free (owned_clause);
+
+          if (ov_severity_str == NULL
+              || (sscanf (ov_severity_str, "%lf", &ov_severity) != 1))
+            ov_severity = severity;
+
+          free (ov_severity_str);
+
+          previous_user = user;
+        }
+
+      rowid = 0;
+      sql_int64 (&rowid,
+                 "SELECT id FROM report_counts"
+                 " WHERE report = %llu"
+                 " AND \"user\" = %llu"
+                 " AND override = %d"
+                 " AND severity = %1.1f"
+                 " AND min_qod = %d",
+                 report, user, override,
+                 override ? ov_severity : severity,
+                 min_qod);
+      if (rowid)
+        sql ("UPDATE report_counts"
+            " SET count = count + 1"
+            " WHERE id = %llu;",
+            rowid);
+      else
+        sql ("INSERT INTO report_counts"
+             " (report, \"user\", override, min_qod, severity, count, end_time)"
+             " VALUES"
+             " (%llu, %llu, %d, %d, %1.1f, 1, 0);",
+             report, user, override,
+             override ? ov_severity : severity,
+             min_qod);
+
+    }
+  cleanup_iterator (&cache_iterator);
+}
+
+/**
+ * @brief Add a result to a report.
+ *
+ * @param[in]  report  The report.
+ * @param[in]  result  The result.
+ */
 void
 report_add_result (report_t report, result_t result)
 {
@@ -54197,6 +54329,159 @@ set_slave_commit_size (int new_commit_size)
 }
 
 /**
+ * @brief Buffer a result to be inserted.
+ *
+ * @param[in]  task         The task associated with the result.
+ * @param[in]  host         Host IP address.
+ * @param[in]  hostname     Hostname.
+ * @param[in]  port         The port the result refers to.
+ * @param[in]  nvt          The OID of the NVT that produced the result.
+ * @param[in]  type         Type of result.  "Security Hole", etc.
+ * @param[in]  description  Description of the result.
+ *
+ * @return A result descriptor for the new result, 0 if error.
+ */
+static result_t
+buffer_insert (GString *buffer, task_t task, const char* host,
+               const char *hostname, const char* port, const char* nvt,
+               const char* type, const char* description,
+               report_t report, user_t owner)
+{
+  gchar *nvt_revision, *severity;
+  gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
+  int qod, first;
+  nvt_t nvt_id = 0;
+
+  assert (report);
+
+  if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
+    {
+      g_warning ("NVT '%s' not found. Result not created", nvt);
+      return -1;
+    }
+
+  if (nvt && strcmp (nvt, ""))
+    {
+      nvti_t *nvti;
+
+      nvti = lookup_nvti (nvt);
+      if (nvti)
+        {
+          gchar *qod_str, *qod_type;
+          qod_str = tag_value (nvti_tag (nvti), "qod");
+          qod_type = tag_value (nvti_tag (nvti), "qod_type");
+
+          if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
+            qod = qod_from_type (qod_type);
+
+          quoted_qod_type = sql_quote (qod_type);
+
+          g_free (qod_str);
+          g_free (qod_type);
+        }
+      else
+        {
+          qod = QOD_DEFAULT;
+          quoted_qod_type = g_strdup ("");
+        }
+
+      nvt_revision = g_strdup_printf ("SELECT iso_time (modification_time)"
+                                      " FROM nvts"
+                                      " WHERE uuid = '%s';",
+                                      nvt);
+    }
+  else
+    {
+      qod = QOD_DEFAULT;
+      quoted_qod_type = g_strdup ("");
+      nvt_revision = g_strdup ("");
+    }
+  severity = nvt_severity (nvt, type);
+  if (!severity)
+    {
+      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
+      return -1;
+    }
+
+  if (!strcmp (severity, ""))
+    {
+      g_free (severity);
+      severity = g_strdup ("0.0");
+    }
+  quoted_hostname = sql_quote (hostname ? hostname : "");
+  quoted_descr = sql_quote (description ?: "");
+  result_nvt_notice (nvt);
+  first = (strlen (buffer->str) == 0);
+
+  if (first)
+    g_string_append (buffer,
+                     "INSERT into results"
+                     " (owner, date, task, host, hostname, port,"
+                     "  nvt, nvt_version, severity, type,"
+                     "  description, uuid, qod, qod_type, result_nvt"
+                     "  report)"
+                     " VALUES");
+  g_string_append_printf (buffer,
+                          "%s"
+                          " (%llu, m_now (), %llu, '%s', '%s', '%s',"
+                          "  '%s', '%s', '%s', '%s',"
+                          "  '%s', make_uuid (), %i, '%s',"
+                          "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
+                          "  %llu)",
+                          first ? "" : ",",
+                          owner,
+                          task, host ?: "", quoted_hostname, port ?: "",
+                          nvt ?: "", nvt_revision, severity, type,
+                          quoted_descr, qod, quoted_qod_type, nvt ? nvt : "",
+                          report);
+
+  g_free (quoted_hostname);
+  g_free (quoted_descr);
+  g_free (quoted_qod_type);
+  g_free (nvt_revision);
+  g_free (severity);
+  return 0;
+}
+
+/**
+ * @brief Run INSERT for update_from_slave.
+ *
+ * @param[in]   buffer  Buffer.
+ * @param[in]   report  Report.
+ */
+static void
+update_from_slave_insert (GString *buffer, report_t report)
+{
+  if (buffer && strlen (buffer->str))
+    {
+      if (report)
+        {
+          iterator_t ids;
+
+          g_string_append (buffer, " RETURNING id;");
+
+          init_iterator (&ids, buffer->str);
+          while (next (&ids))
+            report_add_result_for_buffer (report, iterator_int64 (&ids, 0));
+          cleanup_iterator (&ids);
+
+          sql ("UPDATE report_counts"
+               " SET end_time = (SELECT coalesce(min(overrides.end_time), 0)"
+               "                 FROM overrides, results"
+               "                 WHERE overrides.nvt = results.nvt"
+               "                 AND results.report = %llu"
+               "                 AND overrides.end_time >= m_now ())"
+               " WHERE report = %llu AND override = 1;",
+               report, report);
+        }
+      else
+        sql (buffer->str);
+
+      g_string_truncate (buffer, 0);
+    }
+}
+
+/**
  * @brief Update the local task from the slave task.
  *
  * @param[in]   task         The local task.
@@ -54213,6 +54498,8 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   entity_t entity, host_start, start;
   entities_t results, hosts, entities;
   int current_commit_size;
+  GString *buffer;
+  user_t owner;
 
   entity = entity_child (get_report, "report");
   if (entity == NULL)
@@ -54284,9 +54571,13 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
   assert (global_current_report);
 
+  owner = sql_int64_0 ("SELECT reports.owner FROM reports WHERE id = %llu;",
+                       global_current_report);
+
   sql_begin_immediate ();
   results = entity->entities;
   current_commit_size = 0;
+  buffer = g_string_new ("");
   while ((entity = first_entity (results)))
     {
       if (strcmp (entity_name (entity), "result") == 0)
@@ -54319,32 +54610,32 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
           if (description == NULL)
             goto rollback_fail;
 
-          {
-            result_t result;
+          buffer_insert (buffer,
+                         task,
+                         entity_text (host),
+                         hostname ? entity_text (hostname) : "",
+                         entity_text (port),
+                         oid,
+                         threat_message_type (entity_text (threat)),
+                         entity_text (description),
+                         global_current_report,
+                         owner);
 
-            result = make_result (task,
-                                  entity_text (host),
-                                  hostname ? entity_text (hostname) : "",
-                                  entity_text (port),
-                                  oid,
-                                  threat_message_type (entity_text (threat)),
-                                  entity_text (description));
-            if (global_current_report)
-              report_add_result (global_current_report, result);
-
-            current_commit_size++;
-            if (slave_commit_size && current_commit_size >= slave_commit_size)
-              {
-                sql_commit ();
-                sql_begin_immediate ();
-                current_commit_size = 0;
-              }
-          }
+          current_commit_size++;
+          if (slave_commit_size && current_commit_size >= slave_commit_size)
+            {
+              update_from_slave_insert (buffer, global_current_report);
+              sql_commit ();
+              sql_begin_immediate ();
+              current_commit_size = 0;
+            }
 
           (*next_result)++;
         }
       results = next_entities (results);
     }
+  update_from_slave_insert (buffer, global_current_report);
+  g_string_free (buffer, TRUE);
   sql_commit ();
   return 0;
 
