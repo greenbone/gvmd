@@ -8123,6 +8123,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to get tasks using this config</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>usage_type</name>
+        <summary>Optional usage type to limit the configs to. Affects total count unlike filter</summary>
+        <type>
+          <alts>
+            <alt>policy</alt>
+            <alt>scan</alt>
+            <alt></alt>
+          </alts>
+        </type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -8847,6 +8858,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <alts>
             <alt></alt>
             <alt>word_counts</alt>
+          </alts>
+        </type>
+      </attrib>
+      <attrib>
+        <name>usage_type</name>
+        <summary>Optional usage type to limit configs and tasks to</summary>
+        <type>
+          <alts>
+            <alt>audit</alt>
+            <alt>policy</alt>
+            <alt>scan</alt>
+            <alt></alt>
           </alts>
         </type>
       </attrib>
@@ -20599,6 +20622,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>schedules_only</name>
         <summary>Whether to only include id, name and schedule details</summary>
         <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>usage_type</name>
+        <summary>Optional usage type to limit the tasks to. Affects total count unlike filter</summary>
+        <type>
+          <alts>
+            <alt>audit</alt>
+            <alt>policy</alt>
+            <alt></alt>
+          </alts>
+        </type>
       </attrib>
     </pattern>
     <response>

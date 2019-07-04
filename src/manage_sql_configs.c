@@ -2328,6 +2328,28 @@ insert_osp_parameter (osp_param_t *param, config_t config)
 }
 
 /**
+ * @brief  Generate an extra WHERE clause for selecting configs
+ *
+ * @param[in]  usage_type   The usage type to limit the selection to.
+ *
+ * @return Newly allocated where clause string.
+ */
+gchar *
+configs_extra_where (const char *usage_type)
+{
+  gchar *extra_where = NULL;
+  if (usage_type && strcmp (usage_type, ""))
+    {
+      gchar *quoted_usage_type;
+      quoted_usage_type = sql_quote (usage_type);
+      extra_where = g_strdup_printf (" AND usage_type = '%s'",
+                                     quoted_usage_type);
+      g_free (quoted_usage_type);
+    }
+  return extra_where;
+}
+
+/**
  * @brief Create a config from an OSP scanner.
  *
  * @param[in]   scanner_id  UUID of scanner to create config from.
@@ -3008,11 +3030,18 @@ sync_config (const char *config_id)
 int
 config_count (const get_data_t *get)
 {
+  int rc;
   static const char *filter_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = CONFIG_ITERATOR_COLUMNS;
   static column_t trash_columns[] = CONFIG_ITERATOR_TRASH_COLUMNS;
-  return count ("config", get, columns, trash_columns, filter_columns,
-                0, 0, 0, TRUE);
+  const char *usage_type = get_data_get_extra (get, "usage_type");
+  gchar *extra_where = configs_extra_where (usage_type);
+
+  rc = count ("config", get, columns, trash_columns, filter_columns,
+              0, 0, extra_where, TRUE);
+
+  g_free (extra_where);
+  return rc;
 }
 
 /**
@@ -3074,20 +3103,25 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
 int
 init_config_iterator (iterator_t* iterator, const get_data_t *get)
 {
+  int rc;
   static const char *filter_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = CONFIG_ITERATOR_COLUMNS;
   static column_t trash_columns[] = CONFIG_ITERATOR_TRASH_COLUMNS;
+  const char *usage_type = get_data_get_extra (get, "usage_type");
+  gchar *extra_where = configs_extra_where (usage_type);
 
-  return init_get_iterator (iterator,
-                            "config",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
+  rc = init_get_iterator (iterator,
+                          "config",
+                          get,
+                          columns,
+                          trash_columns,
+                          filter_columns,
+                          0,
+                          NULL,
+                          extra_where,
+                          TRUE);
+  g_free (extra_where);
+  return rc;
 }
 
 /**
