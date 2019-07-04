@@ -54331,6 +54331,7 @@ set_slave_commit_size (int new_commit_size)
 /**
  * @brief Buffer a result to be inserted.
  *
+ * @param[in]  buffer       Buffer to store SQL.
  * @param[in]  task         The task associated with the result.
  * @param[in]  host         Host IP address.
  * @param[in]  hostname     Hostname.
@@ -54338,6 +54339,8 @@ set_slave_commit_size (int new_commit_size)
  * @param[in]  nvt          The OID of the NVT that produced the result.
  * @param[in]  type         Type of result.  "Security Hole", etc.
  * @param[in]  description  Description of the result.
+ * @param[in]  report       Report that result belongs to.
+ * @param[in]  owner        Owner of report.
  *
  * @return A result descriptor for the new result, 0 if error.
  */
