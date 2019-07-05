@@ -90,7 +90,6 @@ add_executable (manage-utils-test
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
-                otp.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tickets.c gmp_tls_certificates.c)
 
@@ -114,7 +113,6 @@ add_executable (manage-test
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
-                otp.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tickets.c gmp_tls_certificates.c)
 
@@ -138,7 +136,6 @@ add_executable (gmp-tickets-test
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
-                otp.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tls_certificates.c)
 
@@ -162,7 +159,6 @@ add_executable (gvmd
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c comm.c
-                otp.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tickets.c gmp_tls_certificates.c)
 
@@ -341,7 +337,6 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tls_certificates.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/otp.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
