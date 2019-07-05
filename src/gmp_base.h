@@ -354,16 +354,16 @@ log_event_fail (const char *, const char *, const char *, const char *);
  *
  * @param  tag  Name of the command generating the response.
  */
-#define SEND_XML_SERVICE_DOWN(tag)                                             \
-  do                                                                           \
-    {                                                                          \
-      char *str;                                                               \
-      str =                                                                    \
-        g_strdup_printf ("<%s_response status='%s' status_text='%s'/>", tag,   \
-                         STATUS_SERVICE_DOWN, STATUS_SERVICE_DOWN_TEXT);       \
-      SEND_TO_CLIENT_OR_FAIL (str);                                            \
-      g_free (str);                                                            \
-    }                                                                          \
+#define SEND_XML_SERVICE_DOWN(tag)                                           \
+  do                                                                         \
+    {                                                                        \
+      char *str;                                                             \
+      str =                                                                  \
+        g_strdup_printf ("<%s_response status='%s' status_text='%s'/>", tag, \
+                         STATUS_SERVICE_DOWN, STATUS_SERVICE_DOWN_TEXT);     \
+      SEND_TO_CLIENT_OR_FAIL (str);                                          \
+      g_free (str);                                                          \
+    }                                                                        \
   while (0);
 
 #endif /* not _GVMD_GMP_BASE_H */
