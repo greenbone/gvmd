@@ -48,15 +48,13 @@
  * The command line entry to the manager is defined in
  * src/\ref gvmd.c.  The manager is a GMP server.
  *
- * The GMP server is defined in src/\ref gmpd.c.  It uses the OTP library
- * to handle the OTP server and the GMP library to handle the GMP client.
- * The OTP library is defined in src/\ref otp.c.  The GMP library is defined
- * in src/\ref gmp.c.  Both the GMP and OTP libraries use the Manage library
+ * The GMP server is defined in src/\ref gmpd.c.  The GMP library is defined
+ * in src/\ref gmp.c.  The GMP library use the Manage library
  * to manage credentials and tasks.  The manage
  * library is defined in src/\ref manage.c and src/\ref manage_sql.c .
  *
- * The OTP and Manage libraries both use the Comm library to communication
- * with the OTP server (src/\ref comm.c).
+ * The Manage library uses the Comm library to communication
+ * with servers (src/\ref comm.c).
  *
  * \subsection Forking
  *

@@ -445,9 +445,9 @@ session_clean (gvm_connection_t *client_connection)
  * the input, and writing any results to the appropriate socket.
  * Exit the loop on reaching end of file on the client socket.
  *
- * Read input from the client and scanner.
- * Process the input with \ref process_gmp_client_input and
- * \ref process_otp_scanner_input.  Write the results to the client.
+ * Read input from the client.
+ * Process the input with \ref process_gmp_client_input.  Write the results
+ * to the client.
  *
  * \if STATIC
  *
