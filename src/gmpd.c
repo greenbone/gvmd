@@ -492,25 +492,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                     (void*) client_connection,
                     disable);
 
-  /* Setup the scanner address and try to connect. */
-  if (gmpd_nvt_cache_mode && !openvas_scanner_connected ())
-    {
-      int ret;
-
-      /* Is here because it queries the DB and needs it initialized.
-       * XXX: Move outside serve_gmp ().
-       */
-
-      ret = manage_scanner_set_default ();
-      if (ret)
-        return ret;
-      if (openvas_scanner_connect () || openvas_scanner_init ())
-        {
-          openvas_scanner_close ();
-          return -1;
-        }
-    }
-
   client_input_stalled = 0;
 
   /** @todo Confirm and clarify complications, especially last one. */
@@ -584,21 +565,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           if (to_client_start < to_client_end)
             FD_SET (client_connection->socket, &writefds);
         }
-
-      /* See whether we need to read from the scannner.  */
-      if (openvas_scanner_connected ()
-          && (scanner_init_state == SCANNER_INIT_DONE
-              || scanner_init_state == SCANNER_INIT_SENT_VERSION)
-          && !openvas_scanner_full ())
-        openvas_scanner_fd_set (&readfds);
-
-      /* See whether we need to write to the scanner.  */
-      if (openvas_scanner_connected ()
-          && (((scanner_init_state == SCANNER_INIT_TOP
-                || scanner_init_state == SCANNER_INIT_DONE)
-               && to_server_buffer_space () > 0)
-              || scanner_init_state == SCANNER_INIT_CONNECTED))
-        openvas_scanner_fd_set (&writefds);
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
        * we test for pending records first and emulate a select call
@@ -716,7 +682,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
             {
               /* In the parent after a start_task fork. Free the scanner session
                * without closing it, for usage by the child process. */
-              set_scanner_init_state (SCANNER_INIT_TOP);
               openvas_scanner_free ();
               nfds = openvas_scanner_get_nfds (client_connection->socket);
               client_input_stalled = 0;
@@ -794,14 +759,12 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                 /* This may be because the scanner closed the connection
                  * at the end of a command. */
                 /** @todo Then should get EOF (-3). */
-                set_scanner_init_state (SCANNER_INIT_TOP);
                 rc = -1;
                 goto client_free;
               case -2:       /* from_scanner buffer full. */
                 /* There may be more to read. */
                 break;
               case -3:       /* End of file. */
-                set_scanner_init_state (SCANNER_INIT_TOP);
                 if (client_active == 0)
                   /* The client has closed the connection, so exit. */
                   return 0;
@@ -809,30 +772,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                 rc = -1;
                 goto client_free;
               default:       /* Programming error. */
-                assert (0);
-            }
-        }
-
-      /* Write any data to the scanner. */
-      if (openvas_scanner_connected ()
-          && (openvas_scanner_fd_isset (&writefds) || scan_handler))
-        {
-          /* Write as much as possible to the scanner. */
-
-          switch (openvas_scanner_write ())
-            {
-              case  0:      /* Wrote everything in to_scanner. */
-                break;
-              case -1:      /* Error. */
-                /** @todo This may be because the scanner closed the connection
-                 * at the end of a command? */
-                rc = -1;
-                goto client_free;
-              case -2:      /* Wrote as much as scanner was willing to accept. */
-                break;
-              case -3:      /* Did an initialisation step. */
-                break;
-              default:      /* Programming error. */
                 assert (0);
             }
         }
@@ -871,7 +810,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               /* In the parent after a start_task fork. Free the scanner session
                * without closing it, for usage by the child process. */
               openvas_scanner_free ();
-              set_scanner_init_state (SCANNER_INIT_TOP);
               nfds = openvas_scanner_get_nfds (client_connection->socket);
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
@@ -929,55 +867,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               /* Programming error. */
               assert (0);
               client_input_stalled = 0;
-            }
-        }
-
-      if (openvas_scanner_connected ())
-        {
-          /* Try process the scanner input, in case writing to the scanner
-           * has freed some space in to_scanner. */
-
-          ret = process_otp_scanner_input ();
-          if (ret == 1)
-            {
-              /* Received scanner BYE.  Write out the rest of to_scanner (the
-               * BYE ACK).
-               */
-              openvas_scanner_write ();
-              set_scanner_init_state (SCANNER_INIT_TOP);
-              if (client_active == 0)
-                return 0;
-              openvas_scanner_free ();
-              nfds = openvas_scanner_get_nfds (client_connection->socket);
-            }
-          else if (ret == 2)
-            {
-              /* Bad login to scanner. */
-              if (client_active == 0)
-                return 0;
-              rc = -1;
-              goto client_free;
-            }
-          else if (ret == 3)
-            {
-              /* Calls via serve_client() should continue. */
-              if (gmpd_nvt_cache_mode)
-                return 1;
-              openvas_scanner_close ();
-            }
-          else if (ret == -1)
-            {
-              /* Error. */
-              rc = -1;
-              goto client_free;
-            }
-          else if (ret == -3)
-            /* to_scanner buffer still full. */
-            g_debug ("   scanner input stalled");
-          else
-            {
-              /* Programming error. */
-              assert (ret == 0 || ret == 5);
             }
         }
 

@@ -124,133 +124,6 @@ extern int to_server_start;
 /** @endcond */
 
 /**
- * @brief Write as much as possible from a string to the server.
- *
- * @param[in]  string          The string.
- *
- * @return 0 wrote everything, -1 error, or the number of bytes written
- *         when the server accepted fewer bytes than given in string.
- */
-static int
-write_string_to_server (char* const string)
-{
-  char* point = string;
-  char* end = string + strlen (string);
-  while (point < end)
-    {
-      ssize_t count;
-
-      if (openvas_scanner_unix_path)
-        {
-          count = send (openvas_scanner_socket, point, end - point, 0);
-          if (count < 0)
-            {
-              if (errno == EAGAIN)
-                return point - string;
-              else if (errno == EINTR)
-                continue;
-              else
-                {
-                  g_warning ("%s: Failed to write to scanner: %s", __FUNCTION__,
-                             strerror (errno));
-                  return -1;
-                }
-            }
-        }
-      else
-        {
-          count = gnutls_record_send (openvas_scanner_session,
-                                      point, (size_t) (end - point));
-          if (count < 0)
-            {
-              if (count == GNUTLS_E_AGAIN)
-                /* Wrote as much as server accepted. */
-                return point - string;
-              if (count == GNUTLS_E_INTERRUPTED)
-                /* Interrupted, try write again. */
-                continue;
-              if (count == GNUTLS_E_REHANDSHAKE)
-                /** @todo Rehandshake. */
-                continue;
-              g_warning ("%s: failed to write to server: %s",
-                         __FUNCTION__,
-                         gnutls_strerror ((int) count));
-              return -1;
-            }
-        }
-      g_debug ("s> server  (string) %.*s", (int) count, point);
-      point += count;
-      g_debug ("=> server  (string) %zi bytes", count);
-    }
-  g_debug ("=> server  (string) done");
-  /* Wrote everything. */
-  return 0;
-}
-
-/**
- * @brief Write as much as possible from the internal buffer to the server.
- *
- * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted,
- *         -3 interrupted.
- */
-static int
-write_to_server_buffer ()
-{
-  while (to_server_start < to_server_end)
-    {
-      ssize_t count;
-
-      if (openvas_scanner_unix_path)
-        {
-          count = send (openvas_scanner_socket, to_server + to_server_start,
-                        to_server_end - to_server_start, 0);
-          if (count < 0)
-            {
-              if (errno == EAGAIN)
-                return -2;
-              else if (errno == EINTR)
-                return -3;
-              else
-                {
-                  g_warning ("%s: Failed to write to scanner: %s", __FUNCTION__,
-                             strerror (errno));
-                  return -1;
-                }
-            }
-        }
-      else
-        {
-          count = gnutls_record_send (openvas_scanner_session,
-                                      to_server + to_server_start,
-                                      (size_t) to_server_end - to_server_start);
-          if (count < 0)
-            {
-              if (count == GNUTLS_E_AGAIN)
-                /* Wrote as much as server accepted. */
-                return -2;
-              if (count == GNUTLS_E_INTERRUPTED)
-                /* Interrupted, try write again. */
-                return -3;
-              if (count == GNUTLS_E_REHANDSHAKE)
-                /** @todo Rehandshake. */
-                continue;
-              g_warning ("%s: failed to write to server: %s",
-                         __FUNCTION__,
-                         gnutls_strerror ((int) count));
-              return -1;
-            }
-        }
-      g_debug ("s> server  %.*s", (int) count, to_server + to_server_start);
-      to_server_start += count;
-      g_debug ("=> server  %zi bytes", count);
-    }
-  g_debug ("=> server  done");
-  to_server_start = to_server_end = 0;
-  /* Wrote everything. */
-  return 0;
-}
-
-/**
  * @brief Read as much from the server as the \ref from_scanner buffer will
  * @brief hold.
  *
@@ -367,53 +240,6 @@ openvas_scanner_write ()
 {
   if (openvas_scanner_socket == -1)
     return -1;
-  switch (scanner_init_state)
-    {
-      case SCANNER_INIT_TOP:
-        if (!openvas_scanner_unix_path)
-          return -1;
-        else
-          {
-            set_scanner_init_state (SCANNER_INIT_CONNECTED);
-            /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-             * error" removes the data between `select' and `read'. */
-            if (fcntl (openvas_scanner_socket, F_SETFL, O_NONBLOCK) == -1)
-              {
-                g_warning ("%s: failed to set scanner socket flag: %s",
-                           __FUNCTION__, strerror (errno));
-                return -1;
-              }
-            /* Fall through to SCANNER_INIT_CONNECTED case below, to write
-             * version string. */
-          }
-        /* fallthrough */
-      case SCANNER_INIT_CONNECTED:
-        {
-          char* string = "< OTP/2.0 >\n";
-
-          scanner_init_offset = write_string_to_server
-                                 (string + scanner_init_offset);
-          if (scanner_init_offset == 0)
-            set_scanner_init_state (SCANNER_INIT_SENT_VERSION);
-          else if (scanner_init_offset == -1)
-            {
-              scanner_init_offset = 0;
-              return -1;
-            }
-          break;
-        }
-      case SCANNER_INIT_SENT_VERSION:
-        return 0;
-      case SCANNER_INIT_DONE:
-        while (1)
-          switch (write_to_server_buffer ())
-            {
-              case  0: return 0;
-              case -1: return -1;
-              case -2: return -2;
-              case -3: continue;  /* Interrupted. */
-            }
-    }
   return -3;
 }
 
@@ -542,7 +368,6 @@ openvas_scanner_fork ()
   openvas_scanner_credentials = NULL;
   from_scanner_start = 0;
   from_scanner_end = 0;
-  reset_scanner_states ();
 }
 
 /**
@@ -576,7 +401,6 @@ openvas_scanner_connect_unix ()
       return -1;
     }
 
-  init_otp_data ();
   return 0;
 }
 
@@ -615,8 +439,6 @@ openvas_scanner_connect ()
       openvas_scanner_close ();
       return -1;
     }
-
-  init_otp_data ();
 
   return 0;
 }
@@ -851,19 +673,6 @@ openvas_scanner_is_loading ()
       attempts = attempts - 1;
       gvm_usleep (500000);
       openvas_scanner_read ();
-      
-      switch (process_otp_scanner_input (NULL))
-        {
-          case 3:
-            /* Still loading. */
-            return 1;
-          case 5:
-            /* Empty message. Try again. */
-            ret = 1;
-            break;
-          default:
-            return 0;
-        }
     }
   return ret;
 }

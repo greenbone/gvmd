@@ -358,16 +358,9 @@ log_event_fail (const char *, const char *, const char *, const char *);
   do                                                                           \
     {                                                                          \
       char *str;                                                               \
-      if (scanner_current_loading && scanner_total_loading)                    \
-        str =                                                                  \
-          g_strdup_printf ("<%s_response status='%s' "                         \
-                           "status_text='Scanner loading nvts (%d/%d)'/>",     \
-                           tag, STATUS_SERVICE_DOWN, scanner_current_loading,  \
-                           scanner_total_loading);                             \
-      else                                                                     \
-        str =                                                                  \
-          g_strdup_printf ("<%s_response status='%s' status_text='%s'/>", tag, \
-                           STATUS_SERVICE_DOWN, STATUS_SERVICE_DOWN_TEXT);     \
+      str =                                                                    \
+        g_strdup_printf ("<%s_response status='%s' status_text='%s'/>", tag,   \
+                         STATUS_SERVICE_DOWN, STATUS_SERVICE_DOWN_TEXT);       \
       SEND_TO_CLIENT_OR_FAIL (str);                                            \
       g_free (str);                                                            \
     }                                                                          \
