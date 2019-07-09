@@ -594,7 +594,7 @@ advice given in each description, in order to rectify the issue.
   </xsl:template>
 
   <xsl:template name="auth-success-row">
-    <xsl:variable name="host" select="host"/>
+    <xsl:variable name="host" select="./ip"/>
     <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SSH-Success']">
       <xsl:value-of select="$host"/>
       <xsl:choose>
