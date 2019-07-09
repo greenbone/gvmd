@@ -385,10 +385,17 @@ typedef struct
   int ignore_max_rows_per_page; ///< Whether to ignore the Max Rows Per Page setting.
   int ignore_pagination; ///< Whether to ignore the pagination (first and max).
   int minimal;         ///< Whether to respond with minimal information.
+  GHashTable *extra_params; ///< Hashtable of type-specific extra parameters.
 } get_data_t;
 
 void
 get_data_reset (get_data_t*);
+
+const char *
+get_data_get_extra (const get_data_t *, const char *);
+
+void
+get_data_set_extra (get_data_t *, const char *, const char *);
 
 resource_t
 get_iterator_resource (iterator_t*);
@@ -1529,8 +1536,8 @@ report_progress (report_t, task_t, gchar **);
 
 gchar *
 manage_report (report_t, report_t, const get_data_t *, report_format_t,
-               int, int, const char *,
-               gsize *, gchar **, gchar **, gchar **, gchar **, gchar **);
+               int, int, gsize *, gchar **, gchar **, gchar **, gchar **,
+               gchar **);
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
@@ -1539,8 +1546,7 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                                   int (*) (const char*, void*),
                                   void*),
                     int (*) (const char *, void*), void *, const char *,
-                    const char *, const char *, int, const char *,
-                    const char *, int, int, const gchar *);
+                    const gchar *);
 
 
 
@@ -1550,8 +1556,7 @@ gchar *
 app_location (report_host_t, const gchar *);
 
 void
-init_host_prognosis_iterator (iterator_t*, report_host_t, int, int,
-                              const char *, const char *, int, const char *);
+init_host_prognosis_iterator (iterator_t*, report_host_t);
 
 double
 prognosis_iterator_cvss_double (iterator_t*);
@@ -3850,6 +3855,9 @@ manage_modify_setting (GSList *, const gchar *, const gchar *, const gchar *, co
 
 char *
 manage_default_ca_cert ();
+
+int
+manage_slave_check_period ();
 
 
 /* Users. */
