@@ -3948,14 +3948,14 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
       full_name = otp_pref_iterator_name (&prefs);
       value = otp_pref_iterator_value (&prefs);
-      split_name = g_strsplit (full_name, ":", 3);
+      split_name = g_strsplit (full_name, ":", 4);
 
       osp_vt = NULL;
       if (split_name && split_name[0] && split_name[1] && split_name[2])
         {
           const char *oid = split_name[0];
-          const char *type = split_name[1];
-          const char *pref_id = split_name[2];
+          const char *pref_id = split_name[1];
+          const char *type = split_name[2];
           gchar *osp_value = NULL;
 
           if (strcmp (type, "checkbox") == 0)

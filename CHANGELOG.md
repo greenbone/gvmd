@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update Postgres to SQLite migration. [#581](https://github.com/greenbone/gvmd/pull/581)
 
 ### Fixed
+- Fix the "Host Authentications" section in PDF / LaTeX reports. [#639](https://github.com/greenbone/gvmd/pull/639)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
