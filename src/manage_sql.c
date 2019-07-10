@@ -54252,7 +54252,7 @@ buffer_insert (GString *buffer, task_t task, const char* host,
     {
       nvti_t *nvti;
 
-      nvti = lookup_nvti (nvt);
+      nvti = nvtis_lookup (nvti_cache, nvt);
       if (nvti)
         {
           gchar *qod_str, *qod_type;
