@@ -19374,8 +19374,8 @@ void
 set_task_usage_type (task_t task, const char *usage_type)
 {
   const char *actual_usage_type;
-  if (usage_type && strcasecmp (usage_type, "policy") == 0)
-    actual_usage_type = "policy";
+  if (usage_type && strcasecmp (usage_type, "audit") == 0)
+    actual_usage_type = "audit";
   else
     actual_usage_type = "scan";
 
