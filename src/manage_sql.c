@@ -19374,8 +19374,8 @@ void
 set_task_usage_type (task_t task, const char *usage_type)
 {
   const char *actual_usage_type;
-  if (usage_type && strcasecmp (usage_type, "policy") == 0)
-    actual_usage_type = "policy";
+  if (usage_type && strcasecmp (usage_type, "audit") == 0)
+    actual_usage_type = "audit";
   else
     actual_usage_type = "scan";
 
@@ -22506,6 +22506,57 @@ report_task (report_t report, task_t *task)
     }
   return FALSE;
 }
+
+/**
+ * @brief Get compliance counts for a report.
+ * 
+ * @param[in]  report_id              UUID of the report.
+ * @param[out] compliance_yes         Number of "YES" results.
+ * @param[out] compliance_no          Number of "NO" results.
+ * @param[out] compliance_incomplete  Number of "INCOMPLETE" results.
+ */
+void
+report_compliance_by_uuid (const char *report_id,
+                           int *compliance_yes,
+                           int *compliance_no,
+                           int *compliance_incomplete)
+{
+  report_t report;
+  gchar *quoted_uuid = sql_quote (report_id);
+  sql_int64 (&report,
+             "SELECT id FROM reports WHERE uuid = '%s';",
+             quoted_uuid);
+
+  if (compliance_yes)
+    {
+      *compliance_yes 
+        = sql_int ("SELECT count(*) FROM results"
+                   " WHERE report = %llu"
+                   " AND description LIKE 'Compliant:%%YES%%';",
+                   report);
+    }
+
+  if (compliance_no)
+    {
+      *compliance_no 
+        = sql_int ("SELECT count(*) FROM results"
+                   " WHERE report = %llu"
+                   " AND description LIKE 'Compliant:%%NO%%';",
+                   report);
+    }
+
+  if (compliance_incomplete)
+    {
+      *compliance_incomplete
+        = sql_int ("SELECT count(*) FROM results"
+                   " WHERE report = %llu"
+                   " AND description LIKE 'Compliant:%%INCOMPLETE%%';",
+                   report);
+    }
+
+  g_free (quoted_uuid);
+}
+
 
 /**
  * @brief Return the UUID of a report's slave.
