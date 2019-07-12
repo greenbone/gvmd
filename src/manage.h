@@ -175,6 +175,9 @@ certificate_iso_time (time_t);
 const gchar *
 certificate_time_status (time_t, time_t);
 
+void
+parse_ssldetails (const char *, time_t *, time_t *, gchar **, gchar **);
+
 
 /* Credentials. */
 
