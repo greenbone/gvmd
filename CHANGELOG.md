@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Fix the "Host Authentications" section in PDF / LaTeX reports. [#639](https://github.com/greenbone/gvmd/pull/639)
+- An PostgreSQL statement order issue has been addressed [#611](https://github.com/greenbone/gvmd/issues/611)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
