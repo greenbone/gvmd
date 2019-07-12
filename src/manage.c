@@ -340,7 +340,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
   if (serial)
     *serial = NULL;
   if (certificate_format)
-    *certificate_format = 0;
+    *certificate_format = GNUTLS_X509_FMT_DER;
 
   if (certificate)
     {
@@ -450,7 +450,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
 
       if (subject)
         {
-          size_t buffer_size;
+          size_t buffer_size = 0;
           gchar *buffer;
           gnutls_x509_crt_get_dn (gnutls_cert, NULL, &buffer_size);
           buffer = g_malloc (buffer_size);
@@ -461,7 +461,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
 
       if (issuer)
         {
-          size_t buffer_size;
+          size_t buffer_size = 0;
           gchar *buffer;
           gnutls_x509_crt_get_issuer_dn (gnutls_cert, NULL, &buffer_size);
           buffer = g_malloc (buffer_size);
@@ -473,7 +473,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
       if (serial)
         {
           int i;
-          size_t buffer_size;
+          size_t buffer_size = 0;
           gchar* buffer;
           GString *string;
 
