@@ -623,6 +623,27 @@ parse_ssldetails (const char *ssldetails,
   g_strfreev (ssldetails_split);
 }
 
+/**
+ * @brief Get a string representation of a certificate format.
+ *
+ * @param[in]  certificate_format  The format as gnutls_x509_crt_fmt_t.
+ *
+ * @return A string representation of the format (e.g. "PEM" or "DER").
+ */
+const char*
+tls_certificate_format_str (gnutls_x509_crt_fmt_t certificate_format)
+{
+  switch (certificate_format)
+    {
+      case GNUTLS_X509_FMT_DER:
+        return "DER";
+      case GNUTLS_X509_FMT_PEM:
+        return "PEM";
+      default:
+        return "unknown";
+    }
+}
+
 
 /* Helpers. */
 

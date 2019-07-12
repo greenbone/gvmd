@@ -178,6 +178,9 @@ certificate_time_status (time_t, time_t);
 void
 parse_ssldetails (const char *, time_t *, time_t *, gchar **, gchar **);
 
+const char*
+tls_certificate_format_str (gnutls_x509_crt_fmt_t certificate_format);
+
 
 /* Credentials. */
 
