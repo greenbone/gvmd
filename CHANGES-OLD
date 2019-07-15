@@ -7,63 +7,8 @@ or get the entire source code repository and view log history:
 $ git clone https://github.com/greenbone/gvmd.git
 $ cd gvmd && git log
 
-gvmd 8.0.0 (2019-04-05)
-
-This is the first release of the gvmd module 8.0 for the Greenbone
-Vulnerability Management (GVM) framework.
-
-Many thanks to everyone who has contributed to this release.
-
-Main changes compared to gvm 8.0+beta2:
-* The new alert method "Alemba vFire" has been added.
-* GMP CREATE_ASSET, its GMP doc and usage by GSA are now more consistent.
-* The SMB alert will now try to create directories as needed.
-* The file path of SMB alerts can now be set to a directory, using the default
-  report filename from the user's settings.
-* The file extension from the report format will now be added by SMB alerts.
-* The tag "smb-alert:file_path" on tasks will override the file path of
-  SMB alerts.
-* Handling of SSH private keys has been improved, allowing use of EC keys.
-* An issue with deleting users has been fixed.
-* The option `--optimize remove-open-port-results` has been removed.
-* CREATE_TASK now requires a name.
-* The compile-time LOG option has been removed.
-* The `--modify-scanner` option now also accepts UNIX sockets.
-* Support for report content composition has been added.
-* TEST_ALERT now also works if NVTs are missing.
-* LSC errors are now logged as warnings.
-* Remediation support has been added (GMP CREATE_TICKET, GET_TICKETS, etc).
-* Missing data in credentials no longer prevents slave tasks from starting.
-  Instead the scan will start without the credential.
-* An issue preventing "Start Task" alerts from running has been fixed.
-* Handling of failed/successful SNMP Authentication has been added to the
-  HTML, LaTeX and PDF report formats.
-* A new password-only credential type has been added
-* The Sourcefire alert now accepts a password credential for PKCS12 decryption.
-* The source code and GMP documentation have been cleaned up.
-* A section about deprecated GMP elements has been added to the documentation.
-* Targets now use TCP-SYN without TCP-ACK when pinging hosts when configured
-  to do so.
-* Performance of GET_REPORTS retrieving the results has been improved.
-* GET_REPORTS will only return Tags of results if requested with the new
-  result_tags attribute.
-* Updates of the NVTs will now ignore duplicate preferences instead of failing.
-* An issue with alert emails missing a line break has been addressed.
-* MODIFY_SETTING now checks if text values can be decoded to valid UTF-8.
-* Users will automatically get read permission for themselves.
-* An issue with incomplete NVT info after feed updates has been addressed.
-* Issues with the predefined report formats not handling hosts and hostnames
-  correctly have been addressed.
-* Settings "Hosts Filter" and "Operating Systems Filter" have been added.
-* The predefined "Discovery", "Host Discovery" and "System Discovery" now
-  mark unreachable hosts as dead.
-* The GET_TASKS command now only returns the progress of individual hosts
-  when details are requested.
-* The --slave-commit-size option has been added, which can help prevent large
-  updates from GMP scanners blocking the database for a long time.
-* An issue with GET_FEEDS returning the wrong feed types has been addressed.
-* Various other code cleanups and improvements.
-
+Changelog for versions before gvmd-8.0.0
+Please refer to CHANGELOG.md for the newer versions.
 
 gvmd 8.0+beta2 (2018-12-05)
 
