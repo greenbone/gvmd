@@ -69,6 +69,9 @@ tls_certificate_iterator_sha256_fingerprint (iterator_t*);
 const char*
 tls_certificate_iterator_serial (iterator_t*);
 
+const char*
+tls_certificate_iterator_last_collected (iterator_t*);
+
 int
 tls_certificate_in_use (tls_certificate_t);
 

@@ -44,7 +44,7 @@
  */
 #define TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "subject_dn", "issuer_dn", "md5_fingerprint", \
-   "activates", "expires", "valid", "certificate_format",                     \
+   "activates", "expires", "valid", "certificate_format", "last_collected",   \
    "sha256_fingerprint", "serial", NULL }
 
 /**
@@ -111,6 +111,12 @@
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
+     "(SELECT iso_time(max(timestamp)) FROM tls_certificate_sources"          \
+     " WHERE tls_certificate = tls_certificates.id)",                         \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
      "activation_time",                                                       \
      "activates",                                                             \
      KEYWORD_TYPE_INTEGER                                                     \
@@ -118,6 +124,12 @@
    {                                                                          \
      "expiration_time",                                                       \
      "expires",                                                               \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT max(timestamp) FROM tls_certificate_sources"                    \
+     " WHERE tls_certificate = tls_certificates.id)",                         \
+     "last_collected",                                                        \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
@@ -287,6 +299,16 @@ DEF_ACCESS (tls_certificate_iterator_sha256_fingerprint,
  */
 DEF_ACCESS (tls_certificate_iterator_serial,
             GET_ITERATOR_COLUMN_COUNT + 10);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_iterator_last_collected,
+            GET_ITERATOR_COLUMN_COUNT + 11);
 
 
 /**

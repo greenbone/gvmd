@@ -202,6 +202,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          "<subject_dn>%s</subject_dn>"
          "<issuer_dn>%s</issuer_dn>"
          "<serial>%s</serial>"
+         "<last_collected>%s</last_collected>"
          "</tls_certificate>",
          tls_certificate_iterator_certificate_format (&tls_certificates)
             ? tls_certificate_iterator_certificate_format (&tls_certificates)
@@ -217,7 +218,8 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          tls_certificate_iterator_expiration_time (&tls_certificates),
          tls_certificate_iterator_subject_dn (&tls_certificates),
          tls_certificate_iterator_issuer_dn (&tls_certificates),
-         tls_certificate_iterator_serial (&tls_certificates));
+         tls_certificate_iterator_serial (&tls_certificates),
+         tls_certificate_iterator_last_collected (&tls_certificates));
 
       count++;
     }
