@@ -948,7 +948,9 @@ manage_create_sql_functions ()
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
-  sql ("CREATE OR REPLACE FUNCTION iso_time (seconds integer)"
+  sql ("DROP FUNCTION IF EXISTS iso_time (seconds integer);");
+
+  sql ("CREATE OR REPLACE FUNCTION iso_time (seconds bigint)"
        " RETURNS text AS $$"
        " DECLARE"
        "   user_zone text;"
@@ -991,7 +993,9 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
-  sql ("CREATE OR REPLACE FUNCTION certificate_iso_time (integer)"
+  sql ("DROP FUNCTION IF EXISTS iso_time (integer);");
+
+  sql ("CREATE OR REPLACE FUNCTION certificate_iso_time (bigint)"
        " RETURNS text AS $$"
        " BEGIN"
        "   RETURN CASE"
@@ -1002,7 +1006,9 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
-  sql ("CREATE OR REPLACE FUNCTION days_from_now (seconds integer)"
+  sql ("DROP FUNCTION IF EXISTS days_from_now (seconds integer);");
+
+  sql ("CREATE OR REPLACE FUNCTION days_from_now (seconds bigint)"
        " RETURNS integer AS $$"
        " DECLARE"
        "   diff interval;"
