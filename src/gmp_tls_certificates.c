@@ -191,8 +191,9 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
                                 &tls_certificates);
 
       /* Send tls_certificate info. */
-      SENDF_TO_CLIENT_OR_FAIL 
+      SENDF_TO_CLIENT_OR_FAIL
         ("<certificate format=\"%s\">%s</certificate>"
+         "<sha256_fingerprint>%s</sha256_fingerprint>"
          "<md5_fingerprint>%s</md5_fingerprint>"
          "<trust>%d</trust>"
          "<valid>%d</valid>"
@@ -200,6 +201,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          "<expiration_time>%s</expiration_time>"
          "<subject_dn>%s</subject_dn>"
          "<issuer_dn>%s</issuer_dn>"
+         "<serial>%s</serial>"
          "</tls_certificate>",
          tls_certificate_iterator_certificate_format (&tls_certificates)
             ? tls_certificate_iterator_certificate_format (&tls_certificates)
@@ -208,12 +210,15 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
             ? tls_certificate_iterator_certificate (&tls_certificates)
             : "",
          tls_certificate_iterator_md5_fingerprint (&tls_certificates),
+         tls_certificate_iterator_sha256_fingerprint (&tls_certificates),
          tls_certificate_iterator_trust (&tls_certificates),
          tls_certificate_iterator_valid (&tls_certificates),
          tls_certificate_iterator_activation_time (&tls_certificates),
          tls_certificate_iterator_expiration_time (&tls_certificates),
          tls_certificate_iterator_subject_dn (&tls_certificates),
-         tls_certificate_iterator_issuer_dn (&tls_certificates));
+         tls_certificate_iterator_issuer_dn (&tls_certificates),
+         tls_certificate_iterator_serial (&tls_certificates));
+
       count++;
     }
   cleanup_iterator (&tls_certificates);

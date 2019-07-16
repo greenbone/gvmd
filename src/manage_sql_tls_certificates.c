@@ -44,7 +44,8 @@
  */
 #define TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "subject_dn", "issuer_dn", "md5_fingerprint", \
-   "activates", "expires", "valid", "certificate_format", NULL }
+   "activates", "expires", "valid", "certificate_format",                     \
+   "sha256_fingerprint", "serial", NULL }
 
 /**
  * @brief TLS Certificate iterator columns.
@@ -96,6 +97,16 @@
    },                                                                         \
    {                                                                          \
      "certificate_format",                                                    \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "sha256_fingerprint",                                                    \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "serial",                                                                \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
@@ -256,6 +267,27 @@ tls_certificate_iterator_valid (iterator_t *iterator)
  */
 DEF_ACCESS (tls_certificate_iterator_certificate_format,
             GET_ITERATOR_COLUMN_COUNT + 8);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_iterator_sha256_fingerprint,
+            GET_ITERATOR_COLUMN_COUNT + 9);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_iterator_serial,
+            GET_ITERATOR_COLUMN_COUNT + 10);
+
 
 /**
  * @brief Return whether a tls_certificate is in use.

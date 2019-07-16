@@ -22753,6 +22753,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </summary>
           </column>
           <column>
+            <name>sha256_fingerprint</name>
+            <type>text</type>
+            <summary>
+              SHA256 fingerprint of the certificate
+            </summary>
+          </column>
+          <column>
             <name>md5_fingerprint</name>
             <type>text</type>
             <summary>
@@ -22773,6 +22780,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>valid</name>
             <type>boolean</type>
             <summary>Whether the certificate is currently valid</summary>
+          </column>
+          <column>
+            <name>serial</name>
+            <type>text</type>
+            <summary>
+              Hexadecimal serial number of the certificate
+            </summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -22818,12 +22832,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>permissions</e>
           <e>certificate</e>
+          <e>sha256_fingerprint</e>
           <e>md5_fingerprint</e>
           <e>trust</e>
           <e>activation_time</e>
           <e>expiration_time</e>
           <e>subject_dn</e>
           <e>issuer_dn</e>
+          <e>serial</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -22911,6 +22927,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
         <ele>
+          <name>sha256_fingerprint</name>
+          <summary>The SHA256 fingerprint of the certificate</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
           <name>trust</name>
           <summary>Whether the certificate is trusted</summary>
           <pattern><t>boolean</t></pattern>
@@ -22938,6 +22959,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>issuer_dn</name>
           <summary>Distinguished name (DN) of the certificate issuer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>serial</name>
+          <summary>Hexadecimal serial number of the certificate</summary>
           <pattern>text</pattern>
         </ele>
       </ele>
