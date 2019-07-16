@@ -8,10 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Special characters in credential login names are allowed. [#475](https://github.com/greenbone/gvmd/pull/475)
-- Missing arg in check_tickets are added. [#477](https://github.com/greenbone/gvmd/pull/477)
 - Add type filter column to GET_CONFIGS. [#486](https://github.com/greenbone/gvmd/pull/486)
 - Filter settings for groups, scanners, tickets, users and vulnerabilities have been added. [#497](https://github.com/greenbone/gvmd/pull/497)
-- Add missing filter case to result_count. [#548](https://github.com/greenbone/gvmd/pull/548)
 - Multiple certificate formats for S/MIME are allowed. [#551](https://github.com/greenbone/gvmd/pull/551)
 
 ### Changes
@@ -27,18 +25,30 @@ returned a count instead of the expected 1 or 0. [#460](https://github.com/green
 - Get content type when emailing an attached report. [#517](https://github.com/greenbone/gvmd/pull/517)
 - Allow vuln_iterator_opts_from_filter filter to be NULL. [#527](https://github.com/greenbone/gvmd/pull/527)
 - Wrap PostgreSQL exclusive table lock in function to prevent error messages in the PostgreSQL log if the lock is not available. [#542](https://github.com/greenbone/gvmd/pull/542)
+- Trim whole report when resuming slave scans [#549](https://github.com/greenbone/gvmd/pull/549)
 - Documentation has been improved. [#569](https://github.com/greenbone/gvmd/pull/569) [#567](https://github.com/greenbone/gvmd/pull/567) [#588](https://github.com/greenbone/gvmd/pull/588)
+- Update command line options in gvmd man page [#565](https://github.com/greenbone/gvmd/pull/565)
 - Clean special option keywords in filters. [#571](https://github.com/greenbone/gvmd/pull/571) [#578](https://github.com/greenbone/gvmd/pull/578) [#576](https://github.com/greenbone/gvmd/pull/576)
+- If the schedule of a task is available, GET_TASKS will always return the
+long schedule XML, not just if only the schedules are requested. [#500](https://github.com/greenbone/gvmd/pull/500)
+- References to OpenVAS have been replaced with GSM [#529](https://github.com/greenbone/gvmd/pull/529)
+- Buffer inserts when adding results from a slave [#641](https://github.com/greenbone/gvmd/pull/641)
 
 ### Fixed
 - Checks on 'type' in GET_FEEDS has been fixed. [#462](https://github.com/greenbone/gvmd/pull/462)
 - An issue which caused a race condition using the WHERE NOT EXISTS SQL has been addressed. [#472](https://github.com/greenbone/gvmd/pull/472)
+- A missing argument in check_tickets is added. [#477](https://github.com/greenbone/gvmd/pull/477)
+- Add missing filter case to result_count. [#548](https://github.com/greenbone/gvmd/pull/548)
 - Fix create_report cache update at end of results. [#490](https://github.com/greenbone/gvmd/pull/490)
-- Task schedule data has been fixed. [#500](https://github.com/greenbone/gvmd/pull/500)
+- Fix permission checks for trash reports [#503](https://github.com/greenbone/gvmd/pull/503)
 - Fix MODIFY_TAG and CREATE_TAG responses. [#520](https://github.com/greenbone/gvmd/pull/520)
 - Fix MODIFY_TAG for all types when given a filter. [#523](https://github.com/greenbone/gvmd/pull/523)
-- Fix variable in modify_alert. [#545](https://github.com/greenbone/gvmd/pull/545)
+- Fix email field validation in create_alert and modify_alert. [#534](https://github.com/greenbone/gvmd/pull/534) [#545](https://github.com/greenbone/gvmd/pull/545)
 - Fix --slave-commit-size option. [#555](https://github.com/greenbone/gvmd/pull/555)
+- Fix TippingPoint error handling [#592] (https://github.com/greenbone/gvmd/pull/592)
+- Apply ignore_pagination in delta reports [#597](https://github.com/greenbone/gvmd/pull/597)
+- Fix getting single unowned resources [#607](https://github.com/greenbone/gvmd/pull/607)
+- Fix the "Host Authentications" section in PDF / LaTeX reports. [#640](https://github.com/greenbone/gvmd/pull/640)
 
 ### Removed
 - Remove -m SMB3 for smbclient in SMB alert, which allows changing the maximum protocol version via the smbclient config instead of forcing a particular one in the alert script. [#505](https://github.com/greenbone/gvmd/pull/505)
