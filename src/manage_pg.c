@@ -2522,18 +2522,40 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text,"
        "  comment text,"
-       "  creation_time integer,"
-       "  modification_time integer,"
+       "  creation_time bigint,"
+       "  modification_time bigint,"
        "  certificate text,"
        "  subject_dn text,"
        "  issuer_dn text,"
-       "  activation_time integer,"
-       "  expiration_time integer,"
+       "  activation_time bigint,"
+       "  expiration_time bigint,"
        "  md5_fingerprint text,"
        "  trust integer,"
        "  certificate_format text,"
        "  sha256_fingerprint text,"
        "  serial text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificate_locations"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  host_ip text,"
+       "  port text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificate_origins"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  origin_type text,"
+       "  origin_id text,"
+       "  origin_data text);");
+
+  sql ("CREATE TABLE tls_certificate_sources"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  tls_certificate integer REFERENCES tls_certificates (id),"
+       "  location integer REFERENCES tls_certificate_locations (id),"
+       "  origin integer REFERENCES tls_certificate_origins (id),"
+       "  timestamp bigint,"
+       "  tls_versions text);");
 
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
@@ -3269,6 +3291,13 @@ create_tables ()
 
   sql ("SELECT create_index ('tag_resources_trash_by_tag',"
        "                     'tag_resources_trash', 'tag');");
+
+  sql ("SELECT create_index ('tls_certificate_locations_by_host_ip',"
+       "                     'tls_certificate_locations', 'host_ip')");
+
+  sql ("SELECT create_index ('tls_certificate_origins_by_origin_id_and_type',"
+       "                     'tls_certificate_origins',"
+       "                     'origin_id, origin_type')");
 
   sql ("SELECT create_index ('vt_refs_by_vt_oid',"
        "                     'vt_refs', 'vt_oid');");

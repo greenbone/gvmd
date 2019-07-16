@@ -554,6 +554,112 @@ migrate_211_to_212 ()
 }
 
 /**
+ * @brief Gets or creates a tls_certificate_location in the version 213 format.
+ *
+ * If a location with matching host_ip and port exists its id is returned,
+ *  otherwise a new one is created and its id is returned.
+ *
+ * @param[in]  host_ip  IP address of the location
+ * @param[in]  port     Port number of the location
+ *
+ * @return Row id of the tls_certificate_location
+ */
+resource_t
+tls_certificate_get_location_213 (const char *host_ip,
+                                  const char *port)
+{
+  resource_t location = 0;
+  char *quoted_host_ip, *quoted_port;
+  quoted_host_ip = host_ip ? sql_quote (host_ip) : g_strdup ("");
+  quoted_port = port ? sql_quote (port) : g_strdup ("");
+
+  sql_int64 (&location,
+             "SELECT id"
+             " FROM tls_certificate_locations"
+             " WHERE host_ip = '%s'"
+             "   AND port = '%s'",
+             quoted_host_ip,
+             quoted_port);
+
+  if (location)
+    {
+      g_free (quoted_host_ip);
+      g_free (quoted_port);
+      return location;
+    }
+
+  sql ("INSERT INTO tls_certificate_locations"
+       "  (uuid, host_ip, port)"
+       " VALUES (make_uuid (), '%s', '%s')",
+       quoted_host_ip,
+       quoted_port);
+
+  location = sql_last_insert_id ();
+
+  g_free (quoted_host_ip);
+  g_free (quoted_port);
+
+  return location;
+}
+
+/**
+ * @brief Gets or creates a tls_certificate_origin in the version 213 format.
+ *
+ * If an origin with matching type, id and data exists its id is returned,
+ *  otherwise a new one is created and its id is returned.
+ *
+ * @param[in]  origin_type  Origin type, e.g. "GMP" or "Report"
+ * @param[in]  origin_id    Origin resource id, e.g. a report UUID.
+ * @param[in]  origin_data  Origin extra data, e.g. OID of generating NVT.
+ *
+ * @return Row id of the tls_certificate_origin
+ */
+resource_t
+tls_certificate_get_origin_213 (const char *origin_type,
+                                const char *origin_id,
+                                const char *origin_data)
+{
+  resource_t origin = 0;
+  char *quoted_origin_type, *quoted_origin_id, *quoted_origin_data;
+  quoted_origin_type = origin_type ? sql_quote (origin_type) : g_strdup ("");
+  quoted_origin_id = origin_id ? sql_quote (origin_id) : g_strdup ("");
+  quoted_origin_data = origin_data ? sql_quote (origin_data) : g_strdup ("");
+
+  sql_int64 (&origin,
+             "SELECT id"
+             " FROM tls_certificate_origins"
+             " WHERE origin_type = '%s'"
+             "   AND origin_id = '%s'"
+             "   AND origin_data = '%s'",
+             quoted_origin_type,
+             quoted_origin_id,
+             quoted_origin_data);
+
+  if (origin)
+    {
+      g_free (quoted_origin_type);
+      g_free (quoted_origin_id);
+      g_free (quoted_origin_data);
+      return origin;
+    }
+
+  sql ("INSERT INTO tls_certificate_origins"
+       "  (uuid, origin_type, origin_id, origin_data)"
+       " VALUES (make_uuid (), '%s', '%s', '%s')",
+       quoted_origin_type,
+       quoted_origin_id,
+       quoted_origin_data);
+
+  origin = sql_last_insert_id ();
+
+  g_free (quoted_origin_type);
+  g_free (quoted_origin_id);
+  g_free (quoted_origin_data);
+
+  return origin;
+}
+
+/**
  * @brief Migrate the database from version 212 to version 213.
  *
  * @return 0 success, -1 error.
@@ -561,7 +667,13 @@ migrate_211_to_212 ()
 int
 migrate_212_to_213 ()
 {
-  iterator_t tls_certs; //, host_details;
+  iterator_t tls_certs;
+  resource_t import_origin;
+
+  gchar *sha256_fingerprint, *serial;
+
+  sha256_fingerprint = NULL;
+  serial = NULL;
 
   sql_begin_immediate ();
 
@@ -581,23 +693,72 @@ migrate_212_to_213 ()
   sql ("ALTER TABLE tls_certificates"
        " ADD COLUMN serial text;");
 
+  /* Change type of timestamp columns because some expiration times
+   *  may exceed the limits of 32 bit integers
+   */
+  sql ("ALTER TABLE tls_certificates"
+       " ALTER COLUMN activation_time TYPE bigint");
+  sql ("ALTER TABLE tls_certificates"
+       " ALTER COLUMN expiration_time TYPE bigint");
+  sql ("ALTER TABLE tls_certificates"
+       " ALTER COLUMN creation_time TYPE bigint");
+  sql ("ALTER TABLE tls_certificates"
+       " ALTER COLUMN modification_time TYPE bigint");
+
+  /* Create new tables */
+  sql ("CREATE TABLE tls_certificate_locations"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  host_ip text,"
+       "  port text);");
+
+  sql ("CREATE INDEX tls_certificate_locations_by_host_ip"
+       " ON tls_certificate_locations (host_ip)");
+
+  sql ("CREATE TABLE tls_certificate_origins"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  origin_type text,"
+       "  origin_id text,"
+       "  origin_data text);");
+
+  sql ("CREATE INDEX tls_certificate_origins_by_origin_id_and_type"
+       " ON tls_certificate_origins (origin_id, origin_type)");
+
+  sql ("CREATE TABLE tls_certificate_sources"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  tls_certificate integer REFERENCES tls_certificates (id),"
+       "  location integer REFERENCES tls_certificate_locations (id),"
+       "  origin integer REFERENCES tls_certificate_origins (id),"
+       "  timestamp bigint,"
+       "  tls_versions text);");
+
   /* Remove now unused tls_certificates_trash table */
   sql ("DROP TABLE IF EXISTS tls_certificates_trash;");
 
+  /* Add origin and source for manual GMP import */
+  sql ("INSERT INTO tls_certificate_origins"
+       " (uuid, origin_type, origin_id, origin_data)"
+       " VALUES (make_uuid(), 'Import', '', '')");
+  import_origin = sql_last_insert_id ();
+
   /* Set the sha256_fingerprint and serial for existing tls_certificates */
   init_iterator (&tls_certs,
-                 "SELECT id, certificate FROM tls_certificates");
+                 "SELECT id, certificate, creation_time"
+                 " FROM tls_certificates");
   while (next (&tls_certs))
     {
       tls_certificate_t tls_certificate;
       const char *certificate_64;
       gsize certificate_size;
       unsigned char *certificate;
-      char *sha256_fingerprint, *serial;
+      time_t creation_time;
 
       tls_certificate = iterator_int64 (&tls_certs, 0);
       certificate_64 = iterator_string (&tls_certs, 1);
       certificate = g_base64_decode (certificate_64, &certificate_size);
+      creation_time = iterator_int64 (&tls_certs, 2);
 
       get_certificate_info ((gchar*)certificate, 
                             certificate_size,
@@ -617,6 +778,13 @@ migrate_212_to_213 ()
            serial,
            tls_certificate);
 
+      sql ("INSERT INTO tls_certificate_sources"
+           " (uuid, tls_certificate, origin, location, timestamp)"
+           " VALUES (make_uuid(), %llu, %llu, NULL, %ld);",
+           tls_certificate,
+           import_origin,
+           creation_time);
+
       g_free (sha256_fingerprint);
     }
   cleanup_iterator (&tls_certs);
@@ -625,10 +793,9 @@ migrate_212_to_213 ()
 
   set_db_version (213);
 
-  // FIXME: Add missing host / port columns and commit
-  sql_rollback();
+  sql_commit ();
 
-  return -1;
+  return 0;
 }
 
 #undef UPDATE_DASHBOARD_SETTINGS
