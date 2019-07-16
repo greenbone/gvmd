@@ -798,6 +798,339 @@ migrate_212_to_213 ()
   return 0;
 }
 
+/**
+ * @brief Create a TLS certificate in the version 214 format.
+ *
+ * @param[in]  owner              Owner of the new tls_certificate.
+ * @param[in]  certificate_b64    The Base64 encoded certificate.
+ * @param[in]  subject_dn         The subject DN of the certificate.
+ * @param[in]  issuer_dn          The issuer DN of the certificate.
+ * @param[in]  activation_time    Time before which the certificate is invalid.
+ * @param[in]  expiration_time    Time after which the certificate is expired.
+ * @param[in]  md5_fingerprint    MD5 fingerprint of the certificate.
+ * @param[in]  sha256_fingerprint SHA-256 fingerprint of the certificate.
+ * @param[in]  serial             Serial of the certificate.
+ * @param[in]  certificate_format Certificate format (DER or PEM).
+ */
+static tls_certificate_t
+make_tls_certificate_214 (user_t owner,
+                          const char *certificate_b64,
+                          const char *subject_dn,
+                          const char *issuer_dn,
+                          time_t activation_time,
+                          time_t expiration_time,
+                          const char *md5_fingerprint,
+                          const char *sha256_fingerprint,
+                          const char *serial,
+                          gnutls_x509_crt_fmt_t certificate_format)
+{
+  gchar *quoted_certificate_b64, *quoted_subject_dn, *quoted_issuer_dn;
+  gchar *quoted_md5_fingerprint, *quoted_sha256_fingerprint, *quoted_serial;
+  tls_certificate_t ret;
+
+  quoted_certificate_b64
+    = certificate_b64 ? sql_quote (certificate_b64) : NULL;
+  quoted_subject_dn
+    = subject_dn ? sql_quote (subject_dn) : NULL;
+  quoted_issuer_dn
+    = issuer_dn ? sql_quote (issuer_dn) : NULL;
+  quoted_md5_fingerprint
+    = md5_fingerprint ? sql_quote (md5_fingerprint) : NULL;
+  quoted_sha256_fingerprint
+    = sha256_fingerprint ? sql_quote (sha256_fingerprint) : NULL;
+  quoted_serial
+    = serial ? sql_quote (serial) : NULL;
+
+  sql ("INSERT INTO tls_certificates"
+       " (uuid, owner,"
+       "  name, comment, creation_time, modification_time,"
+       "  certificate, subject_dn, issuer_dn, trust,"
+       "  activation_time, expiration_time,"
+       "  md5_fingerprint, sha256_fingerprint, serial, certificate_format)"
+       " SELECT make_uuid(), %llu,"
+       "        '%s', '%s', m_now(), m_now(),"
+       "        '%s', '%s', '%s', %d,"
+       "        %ld, %ld,"
+       "        '%s', '%s', '%s', '%s';",
+       owner,
+       sha256_fingerprint ? quoted_sha256_fingerprint : "",
+       "" /* comment */,
+       certificate_b64 ? quoted_certificate_b64 : "",
+       subject_dn ? quoted_subject_dn : "",
+       issuer_dn ? quoted_issuer_dn : "",
+       0, /* trust */
+       activation_time,
+       expiration_time,
+       md5_fingerprint ? quoted_md5_fingerprint : "",
+       sha256_fingerprint ? quoted_sha256_fingerprint : "",
+       serial ? quoted_serial : "",
+       tls_certificate_format_str (certificate_format));
+
+  ret = sql_last_insert_id ();
+
+  g_free (quoted_certificate_b64);
+  g_free (quoted_subject_dn);
+  g_free (quoted_issuer_dn);
+  g_free (quoted_md5_fingerprint);
+  g_free (quoted_sha256_fingerprint);
+  g_free (quoted_serial);
+
+  return ret;
+}
+
+/**
+ * @brief Migrate the database from version 213 to version 214.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_213_to_214 ()
+{
+  iterator_t tls_certs;
+  char *previous_fpr = NULL;
+  user_t previous_owner = 0;
+  tls_certificate_t current_tls_certificate = 0;
+
+  time_t activation_time, expiration_time;
+  gchar *md5_fingerprint, *sha256_fingerprint, *subject, *issuer, *serial;
+  gnutls_x509_crt_fmt_t certificate_format;
+
+  activation_time = -1;
+  expiration_time = -1;
+  md5_fingerprint = NULL;
+  sha256_fingerprint = NULL;
+  subject = NULL;
+  issuer = NULL;
+  serial = NULL;
+  certificate_format = 0;
+
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 213. */
+
+  if (manage_db_version () != 213)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Collect TLS certificates from host details */
+
+  init_iterator (&tls_certs,
+                 "SELECT rhd.value, rhd.name, reports.owner, rhd.report_host,"
+                 "       report_hosts.host, reports.uuid, rhd.source_name,"
+                 "       coalesce (report_hosts.start_time, reports.date)"
+                 " FROM report_host_details AS rhd"
+                 " JOIN report_hosts ON rhd.report_host = report_hosts.id"
+                 " JOIN reports ON report_hosts.report = reports.id"
+                 " WHERE source_description = 'SSL/TLS Certificate'"
+                 "    OR source_description = 'SSL Certificate'"
+                 " ORDER BY rhd.name, reports.owner, reports.id");
+
+  while (next (&tls_certs))
+    {
+      const char *certificate_prefixed, *certificate_b64;
+      gsize certificate_size;
+      unsigned char *certificate;
+      const char *scanner_fpr_prefixed, *scanner_fpr;
+      gchar *quoted_scanner_fpr;
+      user_t owner;
+      resource_t report_host;
+      const char *host_ip, *report_id, *source_name;
+      time_t timestamp;
+
+      iterator_t ports;
+      gboolean has_ports;
+      gchar *quoted_source_name;
+
+      certificate_prefixed = iterator_string (&tls_certs, 0);
+      certificate_b64 = g_strrstr (certificate_prefixed, ":") + 1;
+
+      certificate = g_base64_decode (certificate_b64, &certificate_size);
+
+      scanner_fpr_prefixed = iterator_string (&tls_certs, 1);
+      scanner_fpr = g_strrstr (scanner_fpr_prefixed, ":") + 1;
+
+      quoted_scanner_fpr = sql_quote (scanner_fpr);
+
+      owner = iterator_int64 (&tls_certs, 2);
+      report_host = iterator_int64 (&tls_certs, 3);
+      host_ip = iterator_string (&tls_certs, 4);
+      report_id = iterator_string (&tls_certs, 5);
+      source_name = iterator_string (&tls_certs, 6);
+      timestamp = iterator_int64 (&tls_certs, 7);
+
+      quoted_source_name = sql_quote (source_name);
+
+      // Get certificate data only once per fingerprint
+      if (previous_fpr == NULL
+          || strcmp (previous_fpr, quoted_scanner_fpr))
+        {
+          char *ssldetails;
+
+          activation_time = -1;
+          expiration_time = -1;
+          g_free (md5_fingerprint);
+          md5_fingerprint = NULL;
+          g_free (sha256_fingerprint);
+          sha256_fingerprint = NULL;
+          g_free (subject);
+          subject = NULL;
+          g_free (issuer);
+          issuer = NULL;
+          g_free (serial);
+          serial = NULL;
+          certificate_format = 0;
+
+          get_certificate_info ((gchar*)certificate,
+                                certificate_size,
+                                &activation_time,
+                                &expiration_time,
+                                &md5_fingerprint,
+                                &sha256_fingerprint,
+                                &subject,
+                                &issuer,
+                                &serial,
+                                &certificate_format);
+
+          if (sha256_fingerprint == NULL)
+            sha256_fingerprint = g_strdup (scanner_fpr);
+
+          ssldetails
+            = sql_string ("SELECT rhd.value"
+                          " FROM report_host_details AS rhd"
+                          " JOIN report_hosts"
+                          "   ON report_hosts.id = rhd.report_host"
+                          " WHERE name = 'SSLDetails:%s'"
+                          " ORDER BY report_hosts.start_time DESC"
+                          " LIMIT 1;",
+                          quoted_scanner_fpr);
+
+          parse_ssldetails (ssldetails,
+                            &activation_time,
+                            &expiration_time,
+                            &issuer,
+                            &serial);
+
+          free (ssldetails);
+        }
+
+      if (owner != previous_owner
+          || previous_fpr == NULL
+          || strcmp (previous_fpr, quoted_scanner_fpr))
+        {
+          current_tls_certificate = 0;
+          sql_int64 (&current_tls_certificate,
+                     "SELECT id FROM tls_certificates"
+                     " WHERE sha256_fingerprint = '%s'"
+                     "   AND owner = %llu",
+                     quoted_scanner_fpr, owner);
+
+          if (current_tls_certificate == 0)
+            {
+              current_tls_certificate
+                = make_tls_certificate_214 (owner,
+                                            certificate_b64,
+                                            subject,
+                                            issuer,
+                                            activation_time,
+                                            expiration_time,
+                                            md5_fingerprint,
+                                            sha256_fingerprint,
+                                            serial,
+                                            certificate_format);
+            }
+        }
+
+      init_iterator (&ports,
+                     "SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     "   AND name = 'SSLInfo'"
+                     "   AND value LIKE '%%:%%:%s'",
+                     report_host,
+                     quoted_scanner_fpr);
+
+      has_ports = FALSE;
+      while (next (&ports))
+        {
+          const char *value;
+          gchar *port, *quoted_port;
+          GString *versions;
+          iterator_t versions_iter;
+          resource_t cert_location, cert_origin;
+
+          value = iterator_string (&ports, 0);
+          port = g_strndup (value, g_strrstr (value, ":") - value - 1);
+          quoted_port = sql_quote (port);
+
+          has_ports = TRUE;
+
+          versions = g_string_new ("");
+          init_iterator (&versions_iter,
+                         "SELECT value FROM report_host_details"
+                         " WHERE report_host = %llu"
+                         "   AND name = 'TLS/%s'",
+                         report_host,
+                         quoted_port);
+          while (next (&versions_iter))
+            {
+              gchar *quoted_version;
+              quoted_version = sql_quote (iterator_string (&versions_iter, 0));
+
+              if (versions->len)
+                g_string_append (versions, ", ");
+              g_string_append (versions, quoted_version);
+            }
+          cleanup_iterator (&versions_iter);
+
+          cert_location
+            = tls_certificate_get_location_213 (host_ip, port);
+          cert_origin
+            = tls_certificate_get_origin_213 ("Report",
+                                              report_id,
+                                              quoted_source_name);
+
+          sql ("INSERT INTO tls_certificate_sources"
+               " (uuid, tls_certificate, location, origin,"
+               "  timestamp, tls_versions)"
+               " VALUES (make_uuid (), %llu, %llu, %llu,"
+               "         %ld, '%s')",
+               current_tls_certificate,
+               cert_location,
+               cert_origin,
+               timestamp,
+               versions->str);
+
+          g_free (port);
+          g_free (quoted_port);
+          g_string_free (versions, TRUE);
+        }
+
+      if (has_ports == FALSE)
+        g_warning ("Certificate without ports: %s report:%s host:%s",
+                   quoted_scanner_fpr, report_id, host_ip);
+
+      cleanup_iterator (&ports);
+
+      g_free (quoted_source_name);
+
+      g_free (previous_fpr);
+      previous_fpr = quoted_scanner_fpr;
+      previous_owner = owner;
+    }
+  cleanup_iterator (&tls_certs);
+
+  /* Set the database version to 214 */
+
+  set_db_version (214);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -817,6 +1150,7 @@ static migrator_t database_migrators[] = {
   {211, migrate_210_to_211},
   {212, migrate_211_to_212},
   {213, migrate_212_to_213},
+  {214, migrate_213_to_214},
   /* End marker. */
   {-1, NULL}};
 
