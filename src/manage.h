@@ -1334,6 +1334,9 @@ report_path_task_uuid (gchar*);
 gboolean
 report_task (report_t, task_t*);
 
+void
+report_compliance_by_uuid (const char *, int *, int *, int *);
+
 char *
 report_slave_task_uuid (report_t);
 

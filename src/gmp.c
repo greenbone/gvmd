@@ -18534,37 +18534,69 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               scan_start = scan_start_time_uuid (last_report_id);
               scan_end = scan_end_time_uuid (last_report_id);
 
-              last_report = g_strdup_printf ("<last_report>"
-                                             "<report id=\"%s\">"
-                                             "<timestamp>%s</timestamp>"
-                                             "<scan_start>%s</scan_start>"
-                                             "<scan_end>%s</scan_end>"
-                                             "<result_count>"
-                                             "<debug>%i</debug>"
-                                             "<hole>%i</hole>"
-                                             "<info>%i</info>"
-                                             "<log>%i</log>"
-                                             "<warning>%i</warning>"
-                                             "<false_positive>"
-                                             "%i"
-                                             "</false_positive>"
-                                             "</result_count>"
-                                             "<severity>"
-                                             "%1.1f"
-                                             "</severity>"
-                                             "</report>"
-                                             "</last_report>",
-                                             last_report_id,
-                                             timestamp,
-                                             scan_start,
-                                             scan_end,
-                                             debugs,
-                                             holes,
-                                             infos,
-                                             logs,
-                                             warnings,
-                                             false_positives,
-                                             severity);
+              if (strcmp (task_iterator_usage_type (&tasks), "audit") == 0)
+                {
+                  int compliance_yes, compliance_no, compliance_incomplete;
+
+                  report_compliance_by_uuid (last_report_id,
+                                             &compliance_yes,
+                                             &compliance_no,
+                                             &compliance_incomplete);
+
+                  last_report
+                    = g_strdup_printf ("<last_report>"
+                                       "<report id=\"%s\">"
+                                       "<timestamp>%s</timestamp>"
+                                       "<scan_start>%s</scan_start>"
+                                       "<scan_end>%s</scan_end>"
+                                       "<compliance_count>"
+                                       "<yes>%d</yes>"
+                                       "<no>%d</no>"
+                                       "<incomplete>%d</incomplete>"
+                                       "</compliance_count>"
+                                       "</report>"
+                                       "</last_report>",
+                                       last_report_id,
+                                       timestamp,
+                                       scan_start,
+                                       scan_end,
+                                       compliance_yes,
+                                       compliance_no,
+                                       compliance_incomplete);
+                }
+              else
+                last_report
+                    = g_strdup_printf ("<last_report>"
+                                       "<report id=\"%s\">"
+                                       "<timestamp>%s</timestamp>"
+                                       "<scan_start>%s</scan_start>"
+                                       "<scan_end>%s</scan_end>"
+                                       "<result_count>"
+                                       "<debug>%i</debug>"
+                                       "<hole>%i</hole>"
+                                       "<info>%i</info>"
+                                       "<log>%i</log>"
+                                       "<warning>%i</warning>"
+                                       "<false_positive>"
+                                       "%i"
+                                       "</false_positive>"
+                                       "</result_count>"
+                                       "<severity>"
+                                       "%1.1f"
+                                       "</severity>"
+                                       "</report>"
+                                       "</last_report>",
+                                       last_report_id,
+                                       timestamp,
+                                       scan_start,
+                                       scan_end,
+                                       debugs,
+                                       holes,
+                                       infos,
+                                       logs,
+                                       warnings,
+                                       false_positives,
+                                       severity);
               free (scan_start);
               free (scan_end);
               g_free (timestamp);
