@@ -2548,7 +2548,7 @@ create_tables ()
        "  origin_id text,"
        "  origin_data text);");
 
-  sql ("CREATE TABLE tls_certificate_sources"
+  sql ("CREATE TABLE IF NOT EXISTS tls_certificate_sources"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
        "  tls_certificate integer REFERENCES tls_certificates (id),"
