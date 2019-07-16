@@ -7,30 +7,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Update NVTs via OSP [#392](https://github.com/greenbone/gvmd/pull/392) [#609](https://github.com/greenbone/gvmd/pull/609) [#626](https://github.com/greenbone/gvmd/pull/626)
 - Handle addition of ID to NVT preferences. [#413](https://github.com/greenbone/gvmd/pull/413)
-- Use nvti_t to load/update vt xml. Introduces the usage of nvti_t to store a loaded VT XML and to write the information into the database. Functionality is not changed, just the way how data is handled internally. [#562](https://github.com/greenbone/gvmd/pull/562)
+- Add setting 'OMP Slave Check Period' [#491](https://github.com/greenbone/gvmd/pull/491)
 - Document switching between releases when using Postgres. [#563](https://github.com/greenbone/gvmd/pull/563)
-- Add vt_refs table. The table is filled with the references of the VTs. [#570](https://github.com/greenbone/gvmd/pull/570)
 - Cgreen based unit tests for gvmd has been added. [#579](https://github.com/greenbone/gvmd/pull/579)
 - New usage_type property to distinguish normal scan tasks and configs from compliance audits and policies [#613](https://github.com/greenbone/gvmd/pull/613) [#625](https://github.com/greenbone/gvmd/pull/625) [#633](https://github.com/greenbone/gvmd/pull/633)
 
 ### Changes
 - Check if NVT preferences exist before inserting. [#406](https://github.com/greenbone/gvmd/pull/406)
 - Raise minimum version for SQL functions. [#420](https://github.com/greenbone/gvmd/pull/420)
-- Run OpenVAS scans via OSP instead of OTP. [422]((https://github.com/greenbone/gvmd/pull/422)
+- Run OpenVAS scans via OSP instead of OTP. [#422](https://github.com/greenbone/gvmd/pull/422) [#584](https://github.com/greenbone/gvmd/pull/584) [#623](https://github.com/greenbone/gvmd/pull/623) [#636](https://github.com/greenbone/gvmd/pull/636)
 - Request nvti_cache update only at very end of NVT update. [#426](https://github.com/greenbone/gvmd/pull/426)
 - Consolidate NVT references into unified "refs" element. [#427](https://github.com/greenbone/gvmd/pull/427)
 - Update gvm-libs version requirements to v11.0. [#480](https://github.com/greenbone/gvmd/pull/480)
 -Adjust to use new API for vt references. [#526](https://github.com/greenbone/gvmd/pull/526)
 - Expect NVT sync script in bin directory. [#546](https://github.com/greenbone/gvmd/pull/546)
-- Update Postgres to SQLite migration. [#581](https://github.com/greenbone/gvmd/pull/581)
+- Change internal handling of NVT XML to use nvti_t. [#562](https://github.com/greenbone/gvmd/pull/562)
+- Change NVT references like CVEs and BID to general vt_refs. [#570](https://github.com/greenbone/gvmd/pull/570) [#574](https://github.com/greenbone/gvmd/pull/574) [#582](https://github.com/greenbone/gvmd/pull/582)
+- Update Postgres to SQLite migration. [#581](https://github.com/greenbone/gvmd/pull/581) [#601](https://github.com/greenbone/gvmd/pull/601) [#604](https://github.com/greenbone/gvmd/pull/604) [#605](https://github.com/greenbone/gvmd/pull/605)
 
 ### Fixed
-- Fix the "Host Authentications" section in PDF / LaTeX reports. [#639](https://github.com/greenbone/gvmd/pull/639)
+
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
 - Bid and xref have been removed from table nvts. [#582](https://github.com/greenbone/gvmd/pull/582)
+- Database migration from revisions before 185 has been removed. [#411](https://github.com/greenbone/gvmd/pull/411) [#622](https://github.com/greenbone/gvmd/pull/622)
+- Drop SQLite support [#610](https://github.com/greenbone/gvmd/pull/610) [#612](https://github.com/greenbone/gvmd/pull/612) [#614](https://github.com/greenbone/gvmd/pull/614)
+- Remove create report task creation [#616](https://github.com/greenbone/gvmd/pull/616)
+- Remove --backup command line option [#615](https://github.com/greenbone/gvmd/pull/615)
+- Remove GET_REPORTS type "assets" [#617](https://github.com/greenbone/gvmd/pull/617) [#620](https://github.com/greenbone/gvmd/pull/620)
+- Remove errors for unknown elements [#619](https://github.com/greenbone/gvmd/pull/619)
+
 
 [Unreleased]: https://github.com/greenbone/openvas/compare/gvmd-8.0...master
 
@@ -38,10 +47,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Special characters in credential login names are allowed. [#475](https://github.com/greenbone/gvmd/pull/475)
-- Missing arg in check_tickets are added. [#477](https://github.com/greenbone/gvmd/pull/477)
 - Add type filter column to GET_CONFIGS. [#486](https://github.com/greenbone/gvmd/pull/486)
 - Filter settings for groups, scanners, tickets, users and vulnerabilities have been added. [#497](https://github.com/greenbone/gvmd/pull/497)
-- Add missing filter case to result_count. [#548](https://github.com/greenbone/gvmd/pull/548)
 - Multiple certificate formats for S/MIME are allowed. [#551](https://github.com/greenbone/gvmd/pull/551)
 
 ### Changes
@@ -57,18 +64,30 @@ returned a count instead of the expected 1 or 0. [#460](https://github.com/green
 - Get content type when emailing an attached report. [#517](https://github.com/greenbone/gvmd/pull/517)
 - Allow vuln_iterator_opts_from_filter filter to be NULL. [#527](https://github.com/greenbone/gvmd/pull/527)
 - Wrap PostgreSQL exclusive table lock in function to prevent error messages in the PostgreSQL log if the lock is not available. [#542](https://github.com/greenbone/gvmd/pull/542)
+- Trim whole report when resuming slave scans [#549](https://github.com/greenbone/gvmd/pull/549)
 - Documentation has been improved. [#569](https://github.com/greenbone/gvmd/pull/569) [#567](https://github.com/greenbone/gvmd/pull/567) [#588](https://github.com/greenbone/gvmd/pull/588)
+- Update command line options in gvmd man page [#565](https://github.com/greenbone/gvmd/pull/565)
 - Clean special option keywords in filters. [#571](https://github.com/greenbone/gvmd/pull/571) [#578](https://github.com/greenbone/gvmd/pull/578) [#576](https://github.com/greenbone/gvmd/pull/576)
+- If the schedule of a task is available, GET_TASKS will always return the
+long schedule XML, not just if only the schedules are requested. [#500](https://github.com/greenbone/gvmd/pull/500)
+- References to OpenVAS have been replaced with GSM [#529](https://github.com/greenbone/gvmd/pull/529)
+- Buffer inserts when adding results from a slave [#641](https://github.com/greenbone/gvmd/pull/641)
 
 ### Fixed
 - Checks on 'type' in GET_FEEDS has been fixed. [#462](https://github.com/greenbone/gvmd/pull/462)
 - An issue which caused a race condition using the WHERE NOT EXISTS SQL has been addressed. [#472](https://github.com/greenbone/gvmd/pull/472)
+- A missing argument in check_tickets is added. [#477](https://github.com/greenbone/gvmd/pull/477)
+- Add missing filter case to result_count. [#548](https://github.com/greenbone/gvmd/pull/548)
 - Fix create_report cache update at end of results. [#490](https://github.com/greenbone/gvmd/pull/490)
-- Task schedule data has been fixed. [#500](https://github.com/greenbone/gvmd/pull/500)
+- Fix permission checks for trash reports [#503](https://github.com/greenbone/gvmd/pull/503)
 - Fix MODIFY_TAG and CREATE_TAG responses. [#520](https://github.com/greenbone/gvmd/pull/520)
 - Fix MODIFY_TAG for all types when given a filter. [#523](https://github.com/greenbone/gvmd/pull/523)
-- Fix variable in modify_alert. [#545](https://github.com/greenbone/gvmd/pull/545)
+- Fix email field validation in create_alert and modify_alert. [#534](https://github.com/greenbone/gvmd/pull/534) [#545](https://github.com/greenbone/gvmd/pull/545)
 - Fix --slave-commit-size option. [#555](https://github.com/greenbone/gvmd/pull/555)
+- Fix TippingPoint error handling [#592] (https://github.com/greenbone/gvmd/pull/592)
+- Apply ignore_pagination in delta reports [#597](https://github.com/greenbone/gvmd/pull/597)
+- Fix getting single unowned resources [#607](https://github.com/greenbone/gvmd/pull/607)
+- Fix the "Host Authentications" section in PDF / LaTeX reports. [#640](https://github.com/greenbone/gvmd/pull/640)
 
 ### Removed
 - Remove -m SMB3 for smbclient in SMB alert, which allows changing the maximum protocol version via the smbclient config instead of forcing a particular one in the alert script. [#505](https://github.com/greenbone/gvmd/pull/505)
