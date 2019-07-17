@@ -116,7 +116,7 @@ Certificates`.
 
 ## Configure PostgreSQL Database Backend
 
-### Setting up the PostgresSQL database
+### Setting up the PostgreSQL database
 
 1.  Install Postgres.
 
