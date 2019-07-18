@@ -125,4 +125,18 @@ tls_certificate_source_iterator_origin_id (iterator_t *);
 const char *
 tls_certificate_source_iterator_origin_data (iterator_t *);
 
+resource_t
+get_or_make_tls_certificate_location (const char *, const char *);
+
+resource_t
+get_or_make_tls_certificate_origin (const char *, const char *, const char *);
+
+resource_t
+get_or_make_tls_certificate_source (tls_certificate_t,
+                                    const char *,
+                                    const char *,
+                                    const char *,
+                                    const char *,
+                                    const char *);
+
 #endif /* not _GVMD_MANAGE_TLS_CERTIFICATES_H */

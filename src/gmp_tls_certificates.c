@@ -508,7 +508,16 @@ create_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
                           "TLS Certificate",
                           NULL,
                           "created");
-          return;
+          break;
+        }
+      case 3:
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_tls_certificate",
+                              "TLS Certificate exists already"));
+          log_event_fail ("tls_certificate", "TLS Certificate", NULL,
+                          "created");
+          break;
         }
       case 99:
         SEND_TO_CLIENT_OR_FAIL

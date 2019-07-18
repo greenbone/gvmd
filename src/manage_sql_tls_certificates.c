@@ -347,7 +347,7 @@ tls_certificate_writable (tls_certificate_t tls_certificate)
  * @param[out]  tls_certificate Created TLS certificate.
  *
  * @return 0 success, 1 invalid certificate content, 2 certificate not Base64,
- *         99 permission denied, -1 error.
+ *         3 certificate already exists, 99 permission denied, -1 error.
  */
 int
 create_tls_certificate (const char *name,
@@ -362,6 +362,7 @@ create_tls_certificate (const char *name,
   char *md5_fingerprint, *sha256_fingerprint, *subject_dn, *issuer_dn, *serial;
   time_t activation_time, expiration_time;
   gnutls_x509_crt_fmt_t certificate_format;
+  tls_certificate_t new_tls_certificate;
 
   certificate_decoded
       = (gchar*) g_base64_decode (certificate_b64, &certificate_len);
@@ -382,6 +383,16 @@ create_tls_certificate (const char *name,
 
   if (ret)
     return 1;
+
+  if (sql_int ("SELECT EXISTS"
+               " (SELECT * FROM tls_certificates"
+               "   WHERE (sha256_fingerprint = '%s'"
+               "          OR md5_fingerprint = '%s')"
+               "     AND owner = (SELECT id FROM users WHERE uuid = '%s'))",
+               sha256_fingerprint,
+               md5_fingerprint,
+               current_credentials.uuid))
+    return 3;
 
   sql ("INSERT INTO tls_certificates"
        " (uuid, owner, name, comment, creation_time, modification_time,"
@@ -406,8 +417,17 @@ create_tls_certificate (const char *name,
        serial,
        tls_certificate_format_str (certificate_format));
 
+  new_tls_certificate = sql_last_insert_id ();
+
   if (tls_certificate)
-    *tls_certificate = sql_last_insert_id ();
+    *tls_certificate = new_tls_certificate;
+
+  get_or_make_tls_certificate_source (new_tls_certificate,
+                                      NULL,   /* host_ip */
+                                      NULL,   /* port */
+                                      "Import",
+                                      NULL,   /* origin_id */
+                                      NULL);  /* origin_data */
 
   return 0;
 }
@@ -503,6 +523,20 @@ delete_tls_certificate (const char *tls_certificate_id, int ultimate)
   tags_remove_resource ("tls_certificate",
                         tls_certificate,
                         LOCATION_TABLE);
+
+  sql ("DELETE FROM tls_certificate_sources"
+       " WHERE tls_certificate = %llu",
+       tls_certificate);
+
+  sql ("DELETE FROM tls_certificate_locations"
+       " WHERE NOT EXISTS"
+       "   (SELECT * FROM tls_certificate_sources"
+       "     WHERE location = tls_certificate_locations.id);");
+
+  sql ("DELETE FROM tls_certificate_origins"
+       " WHERE NOT EXISTS"
+       "   (SELECT * FROM tls_certificate_sources"
+       "     WHERE origin = tls_certificate_origins.id);");
 
   sql ("DELETE FROM tls_certificates WHERE id = %llu;",
        tls_certificate);
@@ -787,3 +821,189 @@ DEF_ACCESS (tls_certificate_source_iterator_origin_id, 8);
  * @return Value of the column or NULL if iteration is complete.
  */
 DEF_ACCESS (tls_certificate_source_iterator_origin_data, 9);
+
+/**
+ * @brief Gets or creates a tls_certificate_location.
+ *
+ * If a location with matching host_ip and port exists its id is returned,
+ *  otherwise a new one is created and its id is returned.
+ *
+ * @param[in]  host_ip  IP address of the location
+ * @param[in]  port     Port number of the location
+ *
+ * @return Row id of the tls_certificate_location
+ */
+resource_t
+get_or_make_tls_certificate_location (const char *host_ip,
+                                      const char *port)
+{
+  resource_t location = 0;
+  char *quoted_host_ip, *quoted_port;
+  quoted_host_ip = host_ip ? sql_quote (host_ip) : g_strdup ("");
+  quoted_port = port ? sql_quote (port) : g_strdup ("");
+
+  sql_int64 (&location,
+             "SELECT id"
+             " FROM tls_certificate_locations"
+             " WHERE host_ip = '%s'"
+             "   AND port = '%s'",
+             quoted_host_ip,
+             quoted_port);
+
+  if (location)
+    {
+      g_free (quoted_host_ip);
+      g_free (quoted_port);
+      return location;
+    }
+
+  sql ("INSERT INTO tls_certificate_locations"
+       "  (uuid, host_ip, port)"
+       " VALUES (make_uuid (), '%s', '%s')",
+       quoted_host_ip,
+       quoted_port);
+
+  location = sql_last_insert_id ();
+
+  g_free (quoted_host_ip);
+  g_free (quoted_port);
+
+  return location;
+}
+
+/**
+ * @brief Gets or creates a tls_certificate_origin.
+ *
+ * If an origin with matching type, id and data exists its id is returned,
+ *  otherwise a new one is created and its id is returned.
+ *
+ * @param[in]  origin_type  Origin type, e.g. "GMP" or "Report"
+ * @param[in]  origin_id    Origin resource id, e.g. a report UUID.
+ * @param[in]  origin_data  Origin extra data, e.g. OID of generating NVT.
+ *
+ * @return Row id of the tls_certificate_origin
+ */
+resource_t
+get_or_make_tls_certificate_origin (const char *origin_type,
+                                    const char *origin_id,
+                                    const char *origin_data)
+{
+  resource_t origin = 0;
+  char *quoted_origin_type, *quoted_origin_id, *quoted_origin_data;
+  quoted_origin_type = origin_type ? sql_quote (origin_type) : g_strdup ("");
+  quoted_origin_id = origin_id ? sql_quote (origin_id) : g_strdup ("");
+  quoted_origin_data = origin_data ? sql_quote (origin_data) : g_strdup ("");
+
+  sql_int64 (&origin,
+             "SELECT id"
+             " FROM tls_certificate_origins"
+             " WHERE origin_type = '%s'"
+             "   AND origin_id = '%s'"
+             "   AND origin_data = '%s'",
+             quoted_origin_type,
+             quoted_origin_id,
+             quoted_origin_data);
+
+  if (origin)
+    {
+      g_free (quoted_origin_type);
+      g_free (quoted_origin_id);
+      g_free (quoted_origin_data);
+      return origin;
+    }
+
+  sql ("INSERT INTO tls_certificate_origins"
+       "  (uuid, origin_type, origin_id, origin_data)"
+       " VALUES (make_uuid (), '%s', '%s', '%s')",
+       quoted_origin_type,
+       quoted_origin_id,
+       quoted_origin_data);
+
+  origin = sql_last_insert_id ();
+
+  g_free (quoted_origin_type);
+  g_free (quoted_origin_id);
+  g_free (quoted_origin_data);
+
+  return origin;
+}
+
+/**
+ * @brief Gets or creates a tls_certificate_source.
+ *
+ * If a source with matching location and origin data exists its id is
+ *  returned, otherwise a new one is created and its id is returned.
+ *
+ * If all the location data is NULL a NULL location is fetched / created.
+ *
+ * @param[in]  tls_certificate  The TLS certificate of the source
+ * @param[in]  host_ip          IP address of the location
+ * @param[in]  port             Port number of the location
+ * @param[in]  origin_type      Origin type, e.g. "GMP" or "Report"
+ * @param[in]  origin_id        Origin resource id, e.g. a report UUID.
+ * @param[in]  origin_data      Origin extra data, e.g. OID of generating NVT.
+ *
+ * @return Row id of the tls_certificate_origin
+ */
+resource_t
+get_or_make_tls_certificate_source (tls_certificate_t tls_certificate,
+                                    const char *host_ip,
+                                    const char *port,
+                                    const char *origin_type,
+                                    const char *origin_id,
+                                    const char *origin_data)
+{
+  resource_t location, origin, source;
+
+  if (tls_certificate == 0)
+    {
+      g_warning ("%s: No TLS certificate given", __FUNCTION__);
+      return 0;
+    }
+
+  if (host_ip || port)
+    location = get_or_make_tls_certificate_location (host_ip, port);
+  else
+    location = 0;
+
+  origin = get_or_make_tls_certificate_origin (origin_type,
+                                               origin_id,
+                                               origin_data);
+
+  source = 0;
+  if (location)
+    {
+      sql_int64 (&source,
+                 "SELECT id FROM tls_certificate_sources"
+                 " WHERE tls_certificate = %llu"
+                 "   AND location = %llu"
+                 "   AND origin = %llu",
+                 tls_certificate,
+                 location,
+                 origin);
+    }
+  else
+    {
+      sql_int64 (&source,
+                 "SELECT id FROM tls_certificate_sources"
+                 " WHERE tls_certificate = %llu"
+                 "   AND location IS NULL"
+                 "   AND origin = %llu",
+                 tls_certificate,
+                 origin);
+    }
+
+  if (source == 0)
+    {
+      sql ("INSERT INTO tls_certificate_sources"
+           " (uuid, tls_certificate, location, origin, timestamp)"
+           " VALUES"
+           "  (make_uuid(), %llu, nullif(%llu, 0), %llu, m_now());",
+           tls_certificate,
+           location,
+           origin);
+      source = sql_last_insert_id ();
+    }
+
+  return source;
+}
