@@ -93,4 +93,37 @@ modify_tls_certificate (const gchar *, const gchar *, const gchar *,
 char*
 tls_certificate_uuid (tls_certificate_t);
 
+int
+init_tls_certificate_source_iterator (iterator_t *, tls_certificate_t);
+
+const char *
+tls_certificate_source_iterator_uuid (iterator_t *);
+
+const char *
+tls_certificate_source_iterator_timestamp (iterator_t *);
+
+const char *
+tls_certificate_source_iterator_tls_versions (iterator_t *);
+
+const char *
+tls_certificate_source_iterator_location_uuid (iterator_t *);
+
+const char *
+tls_certificate_source_iterator_location_host_ip (iterator_t *);
+
+const char *
+tls_certificate_source_iterator_location_port (iterator_t *);
+
+const char *
+tls_certificate_source_iterator_origin_uuid (iterator_t *);
+
+const char *
+tls_certificate_source_iterator_origin_type (iterator_t *);
+
+const char *
+tls_certificate_source_iterator_origin_id (iterator_t *);
+
+const char *
+tls_certificate_source_iterator_origin_data (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_TLS_CERTIFICATES_H */

@@ -202,8 +202,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          "<subject_dn>%s</subject_dn>"
          "<issuer_dn>%s</issuer_dn>"
          "<serial>%s</serial>"
-         "<last_collected>%s</last_collected>"
-         "</tls_certificate>",
+         "<last_collected>%s</last_collected>",
          tls_certificate_iterator_certificate_format (&tls_certificates)
             ? tls_certificate_iterator_certificate_format (&tls_certificates)
             : "unknown",
@@ -221,6 +220,65 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          tls_certificate_iterator_serial (&tls_certificates),
          tls_certificate_iterator_last_collected (&tls_certificates));
 
+      if (get_tls_certificates_data.get.details)
+        {
+          iterator_t sources;
+          SEND_TO_CLIENT_OR_FAIL ("<sources>");
+
+          init_tls_certificate_source_iterator
+             (&sources,
+              get_iterator_resource (&tls_certificates));
+
+          while (next (&sources))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+                 ("<source id=\"%s\">"
+                  "<timestamp>%s</timestamp>"
+                  "<tls_versions>%s</tls_versions>",
+                  tls_certificate_source_iterator_uuid (&sources),
+                  tls_certificate_source_iterator_timestamp (&sources),
+                  tls_certificate_source_iterator_tls_versions (&sources)
+                    ? tls_certificate_source_iterator_tls_versions (&sources)
+                    : "");
+
+              if (tls_certificate_source_iterator_location_uuid (&sources))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL
+                     ("<location id=\"%s\">"
+                      "<host><ip>%s</ip></host>"
+                      "<port>%s</port>"
+                      "</location>",
+                      tls_certificate_source_iterator_location_uuid
+                         (&sources),
+                      tls_certificate_source_iterator_location_host_ip
+                         (&sources),
+                      tls_certificate_source_iterator_location_port
+                         (&sources));
+                }
+
+              if (tls_certificate_source_iterator_origin_uuid (&sources))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL 
+                     ("<origin id=\"%s\">"
+                      "<origin_type>%s</origin_type>"
+                      "<origin_id>%s</origin_id>"
+                      "<origin_data>%s</origin_data>"
+                      "</origin>",
+                      tls_certificate_source_iterator_origin_uuid (&sources),
+                      tls_certificate_source_iterator_origin_type (&sources),
+                      tls_certificate_source_iterator_origin_id (&sources),
+                      tls_certificate_source_iterator_origin_data (&sources));
+                }
+
+              SEND_TO_CLIENT_OR_FAIL ("</source>");
+            }
+
+          cleanup_iterator (&sources);
+
+          SEND_TO_CLIENT_OR_FAIL ("</sources>");
+        }
+
+      SENDF_TO_CLIENT_OR_FAIL ("</tls_certificate>");
       count++;
     }
   cleanup_iterator (&tls_certificates);

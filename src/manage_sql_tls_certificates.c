@@ -730,3 +730,125 @@ tls_certificate_uuid (tls_certificate_t tls_certificate)
   return sql_string ("SELECT uuid FROM tls_certificates WHERE id = %llu;",
                      tls_certificate);
 }
+
+/**
+ * @brief Initialise an iterator of TLS certificate sources
+ *
+ * @param[in]  iterator         Iterator to initialise.
+ * @param[in]  tls_certificate  TLS certificate to get sources for.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+init_tls_certificate_source_iterator (iterator_t *iterator,
+                                      tls_certificate_t tls_certificate)
+{
+  init_iterator (iterator,
+                 "SELECT tls_certificate_sources.uuid,"
+                 "       iso_time(timestamp) AS iso_timestamp,"
+                 "       tls_versions,"
+                 "       tls_certificate_locations.uuid,"
+                 "       host_ip, port,"
+                 "       tls_certificate_origins.uuid,"
+                 "       origin_type, origin_id, origin_data"
+                 " FROM tls_certificate_sources"
+                 " LEFT OUTER JOIN tls_certificate_origins"
+                 "   ON tls_certificate_origins.id = origin"
+                 " LEFT OUTER JOIN tls_certificate_locations"
+                 "   ON tls_certificate_locations.id = location"
+                 " WHERE tls_certificate = %llu"
+                 " ORDER BY timestamp DESC",
+                 tls_certificate);
+
+  return 0;
+}
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_uuid, 0);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_timestamp, 1);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_tls_versions, 2);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_location_uuid, 3);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_location_host_ip, 4);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_location_port, 5);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_origin_uuid, 6);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_origin_type, 7);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_origin_id, 8);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_source_iterator_origin_data, 9);
