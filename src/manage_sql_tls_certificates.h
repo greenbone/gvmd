@@ -36,4 +36,7 @@ delete_tls_certificates_user (user_t);
 void
 inherit_tls_certificates (user_t, user_t);
 
+int
+user_has_tls_certificate (tls_certificate_t, user_t);
+
 #endif /* not _GVMD_MANAGE_SQL_TLS_CERTIFICATES_H */

@@ -39,6 +39,16 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+// Static function prototypes
+
+static tls_certificate_t
+user_tls_certificate_match_internal (tls_certificate_t,
+                                     user_t,
+                                     const char *,
+                                     const char *);
+
+// Iterator for GMP get_tls_certificates
+
 /**
  * @brief Filter columns for tls_certificate iterator.
  */
@@ -362,6 +372,7 @@ create_tls_certificate (const char *name,
   char *md5_fingerprint, *sha256_fingerprint, *subject_dn, *issuer_dn, *serial;
   time_t activation_time, expiration_time;
   gnutls_x509_crt_fmt_t certificate_format;
+  user_t current_user = 0;
   tls_certificate_t new_tls_certificate;
 
   certificate_decoded
@@ -384,14 +395,14 @@ create_tls_certificate (const char *name,
   if (ret)
     return 1;
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM tls_certificates"
-               "   WHERE (sha256_fingerprint = '%s'"
-               "          OR md5_fingerprint = '%s')"
-               "     AND owner = (SELECT id FROM users WHERE uuid = '%s'))",
-               sha256_fingerprint,
-               md5_fingerprint,
-               current_credentials.uuid))
+  sql_int64 (&current_user,
+             "SELECT id FROM users WHERE uuid = '%s'",
+             current_credentials.uuid);
+
+  if (user_tls_certificate_match_internal (0,
+                                           current_user,
+                                           sha256_fingerprint,
+                                           md5_fingerprint))
     return 3;
 
   sql ("INSERT INTO tls_certificates"
@@ -1006,4 +1017,79 @@ get_or_make_tls_certificate_source (tls_certificate_t tls_certificate,
     }
 
   return source;
+}
+
+/**
+ * @brief Tries to find a matching certificate for a given user
+ *
+ * @param[in]  tls_certificate    The certificate to check
+ * @param[in]  user               The user to check
+ * @param[in]  sha256_fingerprint The SHA256 fingerprint to match
+ * @param[in]  md5_fingerprint    The MD5 fingerprint to match
+ *
+ * @return The matching certificate or 0 if none is found.
+ */
+static tls_certificate_t
+user_tls_certificate_match_internal (tls_certificate_t tls_certificate,
+                                     user_t user,
+                                     const char *sha256_fingerprint,
+                                     const char *md5_fingerprint)
+{
+  tls_certificate_t ret_tls_certificate = 0;
+
+  sql_int64 (&ret_tls_certificate,
+             "SELECT id FROM tls_certificates"
+             "   WHERE (id = %llu"
+             "          OR sha256_fingerprint = '%s'"
+             "          OR md5_fingerprint = '%s')"
+             "     AND owner = %llu",
+             tls_certificate,
+             sha256_fingerprint,
+             md5_fingerprint,
+             user);
+
+  return ret_tls_certificate;
+}
+
+/**
+ * @brief Checks if user owns a certificate or one with the same fingerprints.
+ *
+ * @param[in]  tls_certificate  The certificate to check
+ * @param[in]  user             The user to check
+ *
+ * @return 1 matching certificate found, 0 no matching certificate
+ */
+int
+user_has_tls_certificate (tls_certificate_t tls_certificate,
+                          user_t user)
+{
+  gchar *sha256_fingerprint, *md5_fingerprint;
+
+  sql_int64 (&user,
+             "SELECT id FROM users WHERE uuid = '%s'",
+             current_credentials.uuid);
+
+  sha256_fingerprint
+    = sql_string ("SELECT sha256_fingerprint FROM tls_certificates"
+                  " WHERE id = %llu",
+                  tls_certificate);
+  md5_fingerprint
+    = sql_string ("SELECT md5_fingerprint FROM tls_certificates"
+                  " WHERE id = %llu",
+                  tls_certificate);
+
+  if (user_tls_certificate_match_internal (tls_certificate,
+                                           user,
+                                           sha256_fingerprint,
+                                           md5_fingerprint))
+    {
+      g_free (sha256_fingerprint);
+      g_free (md5_fingerprint);
+      return 1;
+    }
+
+  g_free (sha256_fingerprint);
+  g_free (md5_fingerprint);
+
+  return 0;
 }
