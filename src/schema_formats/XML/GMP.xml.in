@@ -6074,6 +6074,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The client uses the create_tls_certificate command to create a new
         TLS certificate.
       </p>
+      <p>
+        TLS certificates owned by the current user must have unique
+        fingerprints, so copying will only work with fingerprints owned
+        by another user.
+      </p>
     </description>
     <pattern>
       <o><e>comment</e></o>
@@ -6091,7 +6096,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>copy</name>
-      <summary>The UUID of an existing TLS certificate</summary>
+      <summary>The UUID of an existing TLS certificate.</summary>
       <pattern>
         <t>uuid</t>
       </pattern>

@@ -4798,6 +4798,38 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
 
   if (named && name && *name && resource_with_name_exists (name, type, 0))
     return 1;
+
+  if (strcmp (type, "tls_certificate") == 0)
+    {
+      gchar *sha256_fingerprint, *md5_fingerprint;
+
+      sha256_fingerprint
+        = sql_string ("SELECT sha256_fingerprint FROM tls_certificates"
+                      " WHERE id = %llu",
+                      resource);
+      md5_fingerprint
+        = sql_string ("SELECT md5_fingerprint FROM tls_certificates"
+                      " WHERE id = %llu",
+                      resource);
+
+      if (sql_int ("SELECT EXISTS"
+                  " (SELECT * FROM tls_certificates"
+                  "   WHERE (sha256_fingerprint = '%s'"
+                  "          OR md5_fingerprint = '%s')"
+                  "     AND owner = (SELECT id FROM users WHERE uuid = '%s'))",
+                  sha256_fingerprint,
+                  md5_fingerprint,
+                  current_credentials.uuid))
+        {
+          g_free (sha256_fingerprint);
+          g_free (md5_fingerprint);
+          return 1;
+        }
+
+      g_free (sha256_fingerprint);
+      g_free (md5_fingerprint);
+    }
+
   if (name && *name)
     quoted_name = sql_quote (name);
   else
