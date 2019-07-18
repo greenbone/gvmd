@@ -558,7 +558,6 @@ inherit_tls_certificates (user_t user, user_t inheritor)
  * @param[in]   tls_certificate_id  UUID of TLS certificate.
  * @param[in]   comment             New comment on TLS certificate.
  * @param[in]   name                New name of TLS certificate.
- * @param[in]   certificate_b64     New Base64 certificate file content.
  * @param[in]   trust               New trust value or -1 to keep old value.
  *
  * @return 0 success, 1 TLS certificate exists already,
@@ -570,7 +569,6 @@ int
 modify_tls_certificate (const gchar *tls_certificate_id,
                         const gchar *comment,
                         const gchar *name,
-                        const gchar *certificate_b64,
                         int trust)
 {
   tls_certificate_t tls_certificate;
@@ -603,69 +601,6 @@ modify_tls_certificate (const gchar *tls_certificate_id,
     {
       sql_rollback ();
       return 2;
-    }
-
-  /* Update certificate if requested. */
-
-  if (certificate_b64)
-    {
-      gchar *quoted_certificate;
-      int ret;
-      char *md5_fingerprint, *sha256_fingerprint, *subject_dn, *issuer_dn;
-      char *serial;
-      time_t activation_time, expiration_time;
-      gnutls_x509_crt_fmt_t certificate_format;
-
-      gchar *certificate_decoded;
-      gsize certificate_len;
-
-      certificate_decoded
-          = (gchar*) g_base64_decode (certificate_b64, &certificate_len);
-
-      if (certificate_decoded == NULL || certificate_len == 0)
-        {
-          sql_rollback ();
-          return 4;
-        }
-
-      ret = get_certificate_info (certificate_decoded,
-                                  certificate_len,
-                                  &activation_time,
-                                  &expiration_time,
-                                  &md5_fingerprint,
-                                  &sha256_fingerprint,
-                                  &subject_dn,
-                                  &issuer_dn,
-                                  &serial,
-                                  &certificate_format);
-
-      if (ret)
-        return 3;
-
-      quoted_certificate = sql_quote (certificate_b64);
-      sql ("UPDATE tls_certificates SET"
-           " certificate = '%s',"
-           " activation_time = %llu,"
-           " expiration_time = %llu,"
-           " md5_fingerprint = '%s',"
-           " sha256_fingerprint = '%s',"
-           " subject_dn = '%s',"
-           " issuer_dn = '%s',"
-           " modification_time = m_now (),"
-           " serial = '%s'"
-           " certificate_format = '%s'"
-           " WHERE id = %llu;",
-           quoted_certificate,
-           activation_time,
-           expiration_time,
-           md5_fingerprint,
-           sha256_fingerprint,
-           subject_dn,
-           issuer_dn,
-           serial,
-           tls_certificate_format_str (certificate_format),
-           tls_certificate);
-      g_free (quoted_certificate);
     }
 
   /* Update comment if requested. */

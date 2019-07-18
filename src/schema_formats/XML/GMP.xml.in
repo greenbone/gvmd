@@ -26255,7 +26255,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>copy</e></o>
       <o><e>name</e></o>
       <o><e>trust</e></o>
-      <o><e>certificate</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -26287,13 +26286,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <t>boolean</t>
       </pattern>
     </ele>
-    <ele>
-      <name>certificate</name>
-      <summary>The Base64 encoded certificate data (x.509 DER or PEM)</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
     <response>
       <pattern>
         <attrib>
@@ -26310,14 +26302,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </response>
     <example>
       <summary>
-        Modify the name and certificate content of a TLS certificate
+        Modify the name of a TLS certificate
       </summary>
       <request>
         <modify_tls_certificate
             tls_certificate_id="8a925978-59d0-494b-a837-40b271569727">
-          <name>Updated Example Certificate</name>
-          <certificate>LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVrVENDQ[...]
-          </certificate>
+          <name>Renamed Example Certificate</name>
         </modify_tls_certificate>
       </request>
       <response>

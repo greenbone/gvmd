@@ -87,8 +87,7 @@ copy_tls_certificate (const char*, const char*, const char*,
                       tls_certificate_t*);
 
 int
-modify_tls_certificate (const gchar *, const gchar *, const gchar *,
-                        const gchar *, int);
+modify_tls_certificate (const gchar *, const gchar *, const gchar *, int);
 
 char*
 tls_certificate_uuid (tls_certificate_t);

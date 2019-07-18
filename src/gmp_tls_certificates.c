@@ -644,7 +644,7 @@ modify_tls_certificate_element_start (gmp_parser_t *gmp_parser,
 void
 modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, comment, name, certificate, trust;
+  entity_t entity, comment, name, trust;
   const char *tls_certificate_id;
   int trust_int;
 
@@ -656,21 +656,7 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (entity, "comment");
   name = entity_child (entity, "name");
-  certificate = entity_child (entity, "certificate");
   trust = entity_child (entity, "trust");
-
-  if (certificate
-      && strcmp (entity_text (certificate), "") == 0)
-    {
-      SEND_TO_CLIENT_OR_FAIL
-        (XML_ERROR_SYNTAX ("modify_tls_certificate",
-                           "New CERTIFICATE must not be empty if given."));
-      log_event_fail ("tls_certificate",
-                      "TLS Certificate",
-                      NULL,
-                      "modified");
-      return;
-    }
 
   trust_int = -1;
   if (trust)
@@ -693,7 +679,6 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
                 (tls_certificate_id,
                  comment ? entity_text (comment) : NULL,
                  name ? entity_text (name) : NULL,
-                 certificate ? entity_text (certificate) : NULL,
                  trust_int))
     {
       case 0:
