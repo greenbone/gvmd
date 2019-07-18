@@ -471,7 +471,7 @@ copy_tls_certificate (const char *name,
   ret = copy_resource ("tls_certificate", name, comment, tls_certificate_id,
                        "certificate, subject_dn, issuer_dn, trust,"
                        "activation_time, expiration_time, md5_fingerprint,"
-                       "certificate_format",
+                       "certificate_format, sha256_fingerprint, serial",
                        0, new_tls_certificate, &old_tls_certificate);
   if (ret)
     return ret;
