@@ -252,7 +252,7 @@ insert_nvt (const nvti_t *nvti)
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti) ? nvti_cvss_base (nvti) : "");
 
   qod_str = tag_value (nvti_tag (nvti), "qod");
-  qod_type = tag_value (nvti_tag (nvti), "qod_type");
+  qod_type = nvti_qod_type (nvti);
 
   if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
     qod = qod_from_type (qod_type);
@@ -260,7 +260,6 @@ insert_nvt (const nvti_t *nvti)
   quoted_qod_type = sql_quote (qod_type ? qod_type : "");
 
   g_free (qod_str);
-  g_free (qod_type);
 
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
@@ -1079,26 +1078,12 @@ get_tag (entity_t vt)
   child = entity_child (vt, "detection");
   if (child)
     {
-      const gchar *qod_type;
-
       if (strlen (entity_text (child)))
         {
           g_string_append_printf (tag,
                                   "%svuldetect=%s",
                                   first ? "" : "|",
                                   entity_text (child));
-          first = 0;
-        }
-
-      qod_type = entity_attribute (child, "qod_type");
-      if (qod_type == NULL)
-        g_debug ("%s: DETECTION missing qod_type", __FUNCTION__);
-      else
-        {
-          g_string_append_printf (tag,
-                                  "%sqod_type=%s",
-                                  first ? "" : "|",
-                                  qod_type);
           first = 0;
         }
     }
@@ -1231,7 +1216,7 @@ nvti_from_vt (entity_t vt)
 {
   nvti_t *nvti = nvti_new ();
   const char *id;
-  entity_t name, refs, ref, custom, family, category;
+  entity_t name, detection, refs, ref, custom, family, category;
   entities_t children;
   gchar *tag, *cvss_base, *parsed_tags;
 
@@ -1252,6 +1237,12 @@ nvti_from_vt (entity_t vt)
       return NULL;
     }
   nvti_set_name (nvti, entity_text (name));
+
+  detection = entity_child (vt, "detection");
+  if (detection)
+    {
+      nvti_set_qod_type (nvti, entity_attribute (detection, "qod_type"));
+    }
 
   refs = entity_child (vt, "refs");
   if (refs == NULL)
