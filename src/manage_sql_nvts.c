@@ -318,35 +318,35 @@ insert_nvt (const nvti_t *nvti)
                nvti_oid (nvti)))
     sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
 
-      sql ("INSERT into nvts (oid, name,"
-           " cve, tag, category, family, cvss_base,"
-           " creation_time, modification_time, uuid, solution_type,"
-           " qod, qod_type)"
-           " VALUES ('%s', '%s', '%s',"
-           " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-           nvti_oid (nvti), quoted_name, quoted_cve, quoted_tag,
-           nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-           modification_time, nvti_oid (nvti), quoted_solution_type,
-           qod, quoted_qod_type);
+  sql ("INSERT into nvts (oid, name,"
+       " cve, tag, category, family, cvss_base,"
+       " creation_time, modification_time, uuid, solution_type,"
+       " qod, qod_type)"
+       " VALUES ('%s', '%s', '%s',"
+       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
+       nvti_oid (nvti), quoted_name, quoted_cve, quoted_tag,
+       nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
+       modification_time, nvti_oid (nvti), quoted_solution_type,
+       qod, quoted_qod_type);
 
-      sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
+  sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
 
-      for (i = 0; i < nvti_vtref_len (nvti); i++)
-        {
-          vtref_t *ref;
-          gchar *quoted_id, *quoted_text;
+  for (i = 0; i < nvti_vtref_len (nvti); i++)
+    {
+      vtref_t *ref;
+      gchar *quoted_id, *quoted_text;
 
-          ref = nvti_vtref (nvti, i);
-          quoted_id = sql_quote (vtref_id (ref));
-          quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
+      ref = nvti_vtref (nvti, i);
+      quoted_id = sql_quote (vtref_id (ref));
+      quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
 
-          sql ("INSERT into vt_refs (vt_oid, type, ref_id, ref_text)"
-               " VALUES ('%s', '%s', '%s', '%s');",
-               nvti_oid (nvti), vtref_type (ref), quoted_id, quoted_text);
+      sql ("INSERT into vt_refs (vt_oid, type, ref_id, ref_text)"
+           " VALUES ('%s', '%s', '%s', '%s');",
+           nvti_oid (nvti), vtref_type (ref), quoted_id, quoted_text);
 
-          g_free (quoted_id);
-          g_free (quoted_text);
-        }
+      g_free (quoted_id);
+      g_free (quoted_text);
+    }
 
   g_free (quoted_name);
   g_free (quoted_cve);
