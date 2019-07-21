@@ -1354,9 +1354,6 @@ update_nvts_from_vts (entity_t *get_vts_response,
   sql ("INSERT INTO old_nvts (oid, modification_time)"
        " SELECT oid, modification_time FROM nvts;");
 
-  sql ("TRUNCATE nvts CASCADE;");
-  sql ("TRUNCATE nvt_preferences;");
-
   preferences = NULL;
   children = vts->entities;
   while ((vt = first_entity (children)))
@@ -1438,6 +1435,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       || strcmp (scanner_feed_version, db_feed_version))
     {
       entity_t vts;
+      gchar *filter;
 
       g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
@@ -1450,11 +1448,14 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
           return -1;
         }
 
-      if (osp_get_vts (connection, &vts))
+      filter = g_strdup_printf ("modification_time>%s", db_feed_version); 
+      if (osp_get_vts_filtered (connection, filter, &vts))
         {
           g_warning ("%s: failed to get VTs", __FUNCTION__);
+	  g_free (filter);
           return -1;
         }
+      g_free (filter);
 
       osp_connection_close (connection);
 
