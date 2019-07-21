@@ -187,7 +187,7 @@ insert_nvt (const nvti_t *nvti)
   gchar *quoted_name, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
-  int creation_time, modification_time, qod;
+  int creation_time, modification_time, qod, i;
 
   cve = nvti_refs (nvti, "cve", "", 0);
 
@@ -316,11 +316,7 @@ insert_nvt (const nvti_t *nvti)
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
                nvti_oid (nvti)))
-    g_warning ("%s: NVT with OID %s exists already, ignoring", __FUNCTION__,
-               nvti_oid (nvti));
-  else
-    {
-      int i;
+    sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
 
       sql ("INSERT into nvts (oid, name,"
            " cve, tag, category, family, cvss_base,"
@@ -351,7 +347,6 @@ insert_nvt (const nvti_t *nvti)
           g_free (quoted_id);
           g_free (quoted_text);
         }
-    }
 
   g_free (quoted_name);
   g_free (quoted_cve);
