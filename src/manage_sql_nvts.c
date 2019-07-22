@@ -1435,7 +1435,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       || strcmp (scanner_feed_version, db_feed_version))
     {
       entity_t vts;
-      gchar *filter;
+      osp_get_vts_opts_t get_vts_opts;
 
       g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
@@ -1448,14 +1448,14 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
           return -1;
         }
 
-      filter = g_strdup_printf ("modification_time>%s", db_feed_version); 
-      if (osp_get_vts_filtered (connection, filter, &vts))
+      get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version); 
+      if (osp_get_vts_ext (connection, get_vts_opts, &vts))
         {
           g_warning ("%s: failed to get VTs", __FUNCTION__);
-	  g_free (filter);
+          g_free (get_vts_opts.filter);
           return -1;
         }
-      g_free (filter);
+      g_free (get_vts_opts.filter);
 
       osp_connection_close (connection);
 
