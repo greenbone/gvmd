@@ -187,7 +187,7 @@ insert_nvt (const nvti_t *nvti)
   gchar *quoted_name, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
-  int creation_time, modification_time, qod;
+  int creation_time, modification_time, qod, i;
 
   cve = nvti_refs (nvti, "cve", "", 0);
 
@@ -316,41 +316,36 @@ insert_nvt (const nvti_t *nvti)
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
                nvti_oid (nvti)))
-    g_warning ("%s: NVT with OID %s exists already, ignoring", __FUNCTION__,
-               nvti_oid (nvti));
-  else
+    sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
+
+  sql ("INSERT into nvts (oid, name,"
+       " cve, tag, category, family, cvss_base,"
+       " creation_time, modification_time, uuid, solution_type,"
+       " qod, qod_type)"
+       " VALUES ('%s', '%s', '%s',"
+       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
+       nvti_oid (nvti), quoted_name, quoted_cve, quoted_tag,
+       nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
+       modification_time, nvti_oid (nvti), quoted_solution_type,
+       qod, quoted_qod_type);
+
+  sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
+
+  for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
-      int i;
+      vtref_t *ref;
+      gchar *quoted_id, *quoted_text;
 
-      sql ("INSERT into nvts (oid, name,"
-           " cve, tag, category, family, cvss_base,"
-           " creation_time, modification_time, uuid, solution_type,"
-           " qod, qod_type)"
-           " VALUES ('%s', '%s', '%s',"
-           " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
-           nvti_oid (nvti), quoted_name, quoted_cve, quoted_tag,
-           nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-           modification_time, nvti_oid (nvti), quoted_solution_type,
-           qod, quoted_qod_type);
+      ref = nvti_vtref (nvti, i);
+      quoted_id = sql_quote (vtref_id (ref));
+      quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
 
-      sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
+      sql ("INSERT into vt_refs (vt_oid, type, ref_id, ref_text)"
+           " VALUES ('%s', '%s', '%s', '%s');",
+           nvti_oid (nvti), vtref_type (ref), quoted_id, quoted_text);
 
-      for (i = 0; i < nvti_vtref_len (nvti); i++)
-        {
-          vtref_t *ref;
-          gchar *quoted_id, *quoted_text;
-
-          ref = nvti_vtref (nvti, i);
-          quoted_id = sql_quote (vtref_id (ref));
-          quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
-
-          sql ("INSERT into vt_refs (vt_oid, type, ref_id, ref_text)"
-               " VALUES ('%s', '%s', '%s', '%s');",
-               nvti_oid (nvti), vtref_type (ref), quoted_id, quoted_text);
-
-          g_free (quoted_id);
-          g_free (quoted_text);
-        }
+      g_free (quoted_id);
+      g_free (quoted_text);
     }
 
   g_free (quoted_name);
@@ -1359,9 +1354,6 @@ update_nvts_from_vts (entity_t *get_vts_response,
   sql ("INSERT INTO old_nvts (oid, modification_time)"
        " SELECT oid, modification_time FROM nvts;");
 
-  sql ("TRUNCATE nvts CASCADE;");
-  sql ("TRUNCATE nvt_preferences;");
-
   preferences = NULL;
   children = vts->entities;
   while ((vt = first_entity (children)))
@@ -1443,6 +1435,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       || strcmp (scanner_feed_version, db_feed_version))
     {
       entity_t vts;
+      osp_get_vts_opts_t get_vts_opts;
 
       g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
@@ -1455,11 +1448,14 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
           return -1;
         }
 
-      if (osp_get_vts (connection, &vts))
+      get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version); 
+      if (osp_get_vts_ext (connection, get_vts_opts, &vts))
         {
           g_warning ("%s: failed to get VTs", __FUNCTION__);
+          g_free (get_vts_opts.filter);
           return -1;
         }
+      g_free (get_vts_opts.filter);
 
       osp_connection_close (connection);
 
