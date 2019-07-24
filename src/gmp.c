@@ -9797,25 +9797,31 @@ strdiff (const gchar *one, const gchar *two)
   gchar *standard_err = NULL;
   char dir[] = "/tmp/gvmd-strdiff-XXXXXX";
   GError *error = NULL;
+  gchar *c_one, *c_two;
 
   if (mkdtemp (dir) == NULL)
     return NULL;
 
   one_file = g_build_filename (dir, "Report 1", NULL);
 
-  g_file_set_contents (one_file, one, strlen (one), &error);
+  c_one = g_strdup_printf ("%s\n", one);
+
+  g_file_set_contents (one_file, c_one, strlen (c_one), &error);
   if (error)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
       gvm_file_remove_recurse (dir);
       g_free (one_file);
+      g_free (c_one);
       return NULL;
     }
 
   two_file = g_build_filename (dir, "Report 2", NULL);
 
-  g_file_set_contents (two_file, two, strlen (two), &error);
+  c_two = g_strdup_printf ("%s\n", two);
+
+  g_file_set_contents (two_file, c_two, strlen (c_two), &error);
   if (error)
     {
       g_warning ("%s", error->message);
@@ -9823,8 +9829,13 @@ strdiff (const gchar *one, const gchar *two)
       gvm_file_remove_recurse (dir);
       g_free (one_file);
       g_free (two_file);
+      g_free (c_one);
+      g_free (c_two);
       return NULL;
     }
+
+  g_free (c_one);
+  g_free (c_two);
 
   old_lc_all = getenv ("LC_ALL") ? g_strdup (getenv ("LC_ALL")) : NULL;
   if (setenv ("LC_ALL", "C", 1) == -1)
