@@ -9807,13 +9807,15 @@ strdiff (const gchar *one, const gchar *two)
   c_one = g_strdup_printf ("%s\n", one);
 
   g_file_set_contents (one_file, c_one, strlen (c_one), &error);
+
+  g_free (c_one);
+
   if (error)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
       gvm_file_remove_recurse (dir);
       g_free (one_file);
-      g_free (c_one);
       return NULL;
     }
 
@@ -9822,6 +9824,9 @@ strdiff (const gchar *one, const gchar *two)
   c_two = g_strdup_printf ("%s\n", two);
 
   g_file_set_contents (two_file, c_two, strlen (c_two), &error);
+
+  g_free (c_two);
+
   if (error)
     {
       g_warning ("%s", error->message);
@@ -9829,13 +9834,8 @@ strdiff (const gchar *one, const gchar *two)
       gvm_file_remove_recurse (dir);
       g_free (one_file);
       g_free (two_file);
-      g_free (c_one);
-      g_free (c_two);
       return NULL;
     }
-
-  g_free (c_one);
-  g_free (c_two);
 
   old_lc_all = getenv ("LC_ALL") ? g_strdup (getenv ("LC_ALL")) : NULL;
   if (setenv ("LC_ALL", "C", 1) == -1)
