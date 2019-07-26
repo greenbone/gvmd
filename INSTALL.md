@@ -291,6 +291,12 @@ supported values for `<name>` are:
   format `telnet (23/tcp)`, reducing it to the new format `23/tcp`.
   This makes filtering results and delta reports more consistent.
 
+- `cleanup-report-formats`
+
+  This cleans up references to report formats that have been removed without
+  using the DELETE_REPORT_FORMAT GMP command, for example after a built-in
+  report format has been removed.
+
 - `cleanup-result-severities`
 
   This cleans up results with no severity by assigning the default
