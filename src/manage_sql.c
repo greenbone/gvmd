@@ -64269,6 +64269,77 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " removed IANA port names: %d.",
                                       changes_old_format, changes_iana);
     }
+  else if (strcasecmp (name, "cleanup-report-formats") == 0)
+    {
+      iterator_t alert_data;
+      int alert_changes = 0;
+
+      /* Clean up alerts with missing report formats */
+      sql_begin_immediate ();
+
+      init_iterator (&alert_data,
+                     "SELECT id, data,"
+                     "       (SELECT uuid FROM alerts WHERE id = alert)"
+                     "  FROM alert_method_data"
+                     " WHERE (name = 'notice_attach_format'"
+                     "        OR name = 'notice_report_format'"
+                     "        OR name = 'send_report_format')"
+                     "   AND data NOT IN (SELECT uuid"
+                     "                      FROM report_formats)"
+                     "   AND data NOT IN (SELECT uuid"
+                     "                      FROM report_formats_trash)");
+      while (next (&alert_data))
+        {
+          alert_changes ++;
+          g_message ("Alert %s uses a non-existent report format (%s)"
+                     " and will now use the TXT report format (%s)"
+                     " if TXT exists.",
+                     iterator_string (&alert_data, 2),
+                     iterator_string (&alert_data, 1),
+                     "a3810a62-1f62-11e1-9219-406186ea4fc5");
+
+          sql ("UPDATE alert_method_data SET data = '%s'"
+               " WHERE id = %llu",
+               "a3810a62-1f62-11e1-9219-406186ea4fc5",
+               iterator_int64 (&alert_data, 0));
+        }
+      cleanup_iterator(&alert_data);
+
+      init_iterator (&alert_data,
+                     "SELECT id, data,"
+                     "       (SELECT uuid FROM alerts_trash WHERE id = alert)"
+                     "  FROM alert_method_data_trash"
+                     " WHERE (name = 'notice_attach_format'"
+                     "        OR name = 'notice_report_format'"
+                     "        OR name = 'send_report_format')"
+                     "   AND data NOT IN (SELECT uuid"
+                     "                      FROM report_formats)"
+                     "   AND data NOT IN (SELECT uuid"
+                     "                      FROM report_formats_trash)");
+      while (next (&alert_data))
+        {
+          alert_changes ++;
+          g_warning ("Trash Alert %s uses a non-existent report format (%s)"
+                     " and will now use the TXT report format (%s)"
+                     " if TXT exists.",
+                     iterator_string (&alert_data, 2),
+                     iterator_string (&alert_data, 1),
+                     "a3810a62-1f62-11e1-9219-406186ea4fc5");
+
+          sql ("UPDATE alert_method_data_trash SET data = '%s'"
+               " WHERE id = %llu",
+               "a3810a62-1f62-11e1-9219-406186ea4fc5",
+               iterator_int64 (&alert_data, 0));
+        }
+      cleanup_iterator(&alert_data);
+
+      sql_commit ();
+
+      success_text = g_strdup_printf ("Optimized: cleanup-report-formats."
+                                      " Cleaned up report format references in"
+                                      " %d alert(s).",
+                                      alert_changes);
+    }
   else if (strcasecmp (name, "cleanup-result-severities") == 0)
     {
       int missing_severity_changes = 0;
