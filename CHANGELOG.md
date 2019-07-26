@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [8.0.2] (unreleased)
 
 ### Added
+- Command cleanup-report-formats for --optimize option [#651](https://github.com/greenbone/gvmd/pull/651)
 
 ### Changes
 
