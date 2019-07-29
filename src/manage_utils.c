@@ -1568,46 +1568,67 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
   icaltimetype recur_time, prev_time, next_time;
   time_t rrule_time, rdates_time;
 
+  // Start iterating over rule-based times
   recur_iter = icalrecur_iterator_new (recurrence, dtstart);
-
-  /* Get the first rule-based recurrence time, skipping ahead in case DTSTART
-   *  is excluded by EXDATEs.  */
   recur_time = icalrecur_iterator_next (recur_iter);
-  while (icaltime_is_null_time (recur_time) == FALSE
-         && icalendar_time_matches_array (recur_time, exdates))
-    {
-      recur_time = icalrecur_iterator_next (recur_iter);
-    }
 
-  // Set the first recur_time as either the previous or next time.
-  if (icaltime_compare (recur_time, reference_time) < 0)
+  if (icaltime_is_null_time (recur_time))
     {
-      prev_time = recur_time;
+      // Use DTSTART if there are no recurrence rule times
+      if (icaltime_compare (dtstart, reference_time) < 0)
+        {
+          prev_time = dtstart;
+          next_time = icaltime_null_time ();
+        }
+      else
+        {
+          prev_time = icaltime_null_time ();
+          next_time = dtstart;
+        }
     }
   else
     {
-      prev_time = icaltime_null_time ();
+      /* Handle rule-based recurrence times:
+       * Get the first rule-based recurrence time, skipping ahead in case
+       *  DTSTART is excluded by EXDATEs.  */
+
+      while (icaltime_is_null_time (recur_time) == FALSE
+            && icalendar_time_matches_array (recur_time, exdates))
+        {
+          recur_time = icalrecur_iterator_next (recur_iter);
+        }
+
+      // Set the first recur_time as either the previous or next time.
+      if (icaltime_compare (recur_time, reference_time) < 0)
+        {
+          prev_time = recur_time;
+        }
+      else
+        {
+          prev_time = icaltime_null_time ();
+        }
+
+      /* Iterate over rule-based recurrences up to first time after
+       * reference time */
+      while (icaltime_is_null_time (recur_time) == FALSE
+            && icaltime_compare (recur_time, reference_time) < 0)
+        {
+          if (icalendar_time_matches_array (recur_time, exdates) == FALSE)
+            prev_time = recur_time;
+
+          recur_time = icalrecur_iterator_next (recur_iter);
+        }
+
+      // Skip further ahead if last recurrence time is in EXDATEs
+      while (icaltime_is_null_time (recur_time) == FALSE
+            && icalendar_time_matches_array (recur_time, exdates))
+        {
+          recur_time = icalrecur_iterator_next (recur_iter);
+        }
+
+      // Select last recur_time as the next_time
+      next_time = recur_time;
     }
-
-  // Iterate over rule-based recurrences up to first time after reference time
-  while (icaltime_is_null_time (recur_time) == FALSE
-         && icaltime_compare (recur_time, reference_time) < 0)
-    {
-      if (icalendar_time_matches_array (recur_time, exdates) == FALSE)
-        prev_time = recur_time;
-
-      recur_time = icalrecur_iterator_next (recur_iter);
-    }
-
-  // Skip further ahead if last recurrence time is in EXDATEs
-  while (icaltime_is_null_time (recur_time) == FALSE
-         && icalendar_time_matches_array (recur_time, exdates))
-    {
-      recur_time = icalrecur_iterator_next (recur_iter);
-    }
-
-  // Select last recur_time as the next_time
-  next_time = recur_time;
 
   // Get time from RDATEs
   rdates_time = icalendar_next_time_from_rdates (
@@ -1650,7 +1671,7 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
                                     int periods_offset)
 {
   icalcomponent *vevent;
-  icaltimetype dtstart, ical_now;
+  icaltimetype dtstart, dtstart_with_tz, ical_now;
   icaltimezone *tz;
   icalproperty *rrule_prop;
   struct icalrecurrencetype recurrence;
@@ -1681,6 +1702,10 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
   if (tz == NULL)
     tz = icalendar_timezone_from_tzid (default_tzid);
 
+  dtstart_with_tz = dtstart;
+  // Set timezone in case the original DTSTART did not have any set.
+  icaltime_set_timezone (&dtstart_with_tz, tz);
+
   // Get current time
   ical_now = icaltime_current_time_with_zone (tz);
   // Set timezone explicitly because icaltime_current_time_with_zone doesn't.
@@ -1702,7 +1727,7 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
 
   // Calculate next time.
   next_time = icalendar_next_time_from_recurrence (
-    recurrence, dtstart, ical_now, tz, exdates, rdates, periods_offset);
+    recurrence, dtstart_with_tz, ical_now, tz, exdates, rdates, periods_offset);
 
   // Cleanup
   g_ptr_array_free (exdates, TRUE);
