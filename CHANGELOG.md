@@ -30,7 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update result diff generation at delta reports [#650](https://github.com/greenbone/gvmd/pull/650)
 
 ### Fixed
-
+- Fix iCalendar recurrence and timezone handling [#654](https://github.com/greenbone/gvmd/pull/654)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
