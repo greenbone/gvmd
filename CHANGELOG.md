@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Fix iCalendar recurrence and timezone handling [#653](https://github.com/greenbone/gvmd/pull/653)
+- Fix issues with some scheduled tasks by using iCalendar more instead of old period fields [#655](https://github.com/greenbone/gvmd/pull/655)
 
 ### Removed
 
