@@ -348,6 +348,173 @@ tls_certificate_writable (tls_certificate_t tls_certificate)
 }
 
 /**
+ * @brief Create or update a TLS certificate from Base64 encoded file content.
+ *
+ * @param[in]   name              Name of new TLS certificate.
+ * @param[in]   comment           Comment of TLS certificate.
+ * @param[in]   certificate_b64   Base64 certificate file content.
+ * @param[in]   fallback_fpr      Fallback fingerprint if getting data fails.
+ * @param[in]   trust             Whether to trust the certificate.
+ * @param[in]   allow_failed_info Whether to use if get_certificate_info fails.
+ * @param[in]   update            Whether/how to update if certificate exists.
+ *                                0: reject, 1: update missing.
+ * @param[out]  tls_certificate Created TLS certificate.
+ *
+ * @return 0 success, 1 invalid certificate content, 2 certificate not Base64,
+ *         3 certificate already exists, 99 permission denied, -1 error.
+ */
+int
+make_tls_certificate_from_base64 (const char *name,
+                                  const char *comment,
+                                  const char *certificate_b64,
+                                  const char *fallback_fpr,
+                                  int trust,
+                                  int allow_failed_info,
+                                  int update,
+                                  tls_certificate_t *tls_certificate)
+{
+  int ret;
+  gchar *certificate_decoded;
+  gsize certificate_len;
+  char *md5_fingerprint, *sha256_fingerprint, *subject_dn, *issuer_dn, *serial;
+  time_t activation_time, expiration_time;
+  gnutls_x509_crt_fmt_t certificate_format;
+  user_t current_user = 0;
+  tls_certificate_t old_tls_certificate, new_tls_certificate;
+
+  sql_int64 (&current_user,
+             "SELECT id FROM users WHERE uuid = '%s'",
+             current_credentials.uuid);
+
+  certificate_decoded
+      = (gchar*) g_base64_decode (certificate_b64, &certificate_len);
+
+  if (certificate_decoded == NULL || certificate_len == 0)
+    return 2;
+
+  ret = get_certificate_info (certificate_decoded,
+                              certificate_len,
+                              &activation_time,
+                              &expiration_time,
+                              &md5_fingerprint,
+                              &sha256_fingerprint,
+                              &subject_dn,
+                              &issuer_dn,
+                              &serial,
+                              &certificate_format);
+
+  if (ret && (allow_failed_info == 0 || fallback_fpr == NULL))
+    {
+      g_free (certificate_decoded);
+      return 1;
+    }
+  else
+    {
+      sha256_fingerprint = g_strdup (fallback_fpr);
+    }
+
+  old_tls_certificate
+    = user_tls_certificate_match_internal (0,
+                                           current_user,
+                                           sha256_fingerprint,
+                                           md5_fingerprint);
+
+  if (old_tls_certificate)
+    {
+      if (update == 1)
+        {
+          /*
+           * Update any columns that are NULL or empty.
+           *
+           * (activation_time and expiration_time are updated if unknown (-1),
+           *  certificate_format is updated if certificate is updated)
+           */
+          sql ("UPDATE tls_certificates SET"
+               " certificate"
+               "   = coalesce (nullif (certificate, ''), '%s'),"
+               " activation_time"
+               "   = coalesce (nullif (activation_time, -1), '%s'),"
+               " expiration_time"
+               "   = coalesce (nullif (expiration_time, -1), '%s'),"
+               " md5_fingerprint"
+               "   = coalesce (nullif (md5_fingerprint, ''), '%s'),"
+               " sha256_fingerprint"
+               "   = coalesce (nullif (sha256_fingerprint, ''), '%s'),"
+               " subject_dn"
+               "   = coalesce (nullif (subject_dn, ''), '%s'),"
+               " issuer_dn"
+               "   = coalesce (nullif (issuer_dn, ''), '%s'),"
+               " serial"
+               "   = coalesce (nullif (serial, ''), '%s'),"
+               " certificate_format"
+               "   = coalesce (nullif (certificate, ''), %d),"
+               " modification_time = m_now ();",
+               certificate_b64,
+               activation_time,
+               expiration_time,
+               md5_fingerprint,
+               sha256_fingerprint,
+               subject_dn,
+               issuer_dn,
+               serial,
+               certificate_format);
+
+          new_tls_certificate = old_tls_certificate;
+        }
+      else
+        {
+          g_free (certificate_decoded);
+          g_free (md5_fingerprint);
+          g_free (sha256_fingerprint);
+          g_free (subject_dn);
+          g_free (issuer_dn);
+          g_free (serial);
+          return 3;
+        }
+    }
+  else
+    {
+      sql ("INSERT INTO tls_certificates"
+           " (uuid, owner, name, comment, creation_time, modification_time,"
+           "  certificate, subject_dn, issuer_dn, trust,"
+           "  activation_time, expiration_time,"
+           "  md5_fingerprint, sha256_fingerprint, serial, certificate_format)"
+           " SELECT make_uuid(),"
+           "        (SELECT id FROM users WHERE users.uuid = '%s'),"
+           "        '%s', '%s', m_now(), m_now(), '%s', '%s', '%s', %d,"
+           "        %ld, %ld,"
+           "        '%s', '%s', '%s', '%s';",
+           current_credentials.uuid,
+           name ? name : sha256_fingerprint,
+           comment ? comment : "",
+           certificate_b64 ? certificate_b64 : "",
+           subject_dn ? subject_dn : "",
+           issuer_dn ? issuer_dn : "",
+           trust,
+           activation_time,
+           expiration_time,
+           md5_fingerprint ? md5_fingerprint : "",
+           sha256_fingerprint,
+           serial ? serial : "",
+           tls_certificate_format_str (certificate_format));
+
+      new_tls_certificate = sql_last_insert_id ();
+    }
+
+  if (tls_certificate)
+    *tls_certificate = new_tls_certificate;
+
+  g_free (certificate_decoded);
+  g_free (md5_fingerprint);
+  g_free (sha256_fingerprint);
+  g_free (subject_dn);
+  g_free (issuer_dn);
+  g_free (serial);
+
+  return 0;
+}
+
+/**
  * @brief Create a TLS certificate.
  *
  * @param[in]   name            Name of new TLS certificate.
@@ -367,71 +534,19 @@ create_tls_certificate (const char *name,
                         tls_certificate_t *tls_certificate)
 {
   int ret;
-  gchar *certificate_decoded;
-  gsize certificate_len;
-  char *md5_fingerprint, *sha256_fingerprint, *subject_dn, *issuer_dn, *serial;
-  time_t activation_time, expiration_time;
-  gnutls_x509_crt_fmt_t certificate_format;
-  user_t current_user = 0;
   tls_certificate_t new_tls_certificate;
 
-  certificate_decoded
-      = (gchar*) g_base64_decode (certificate_b64, &certificate_len);
-
-  if (certificate_decoded == NULL || certificate_len == 0)
-    return 2;
-
-  ret = get_certificate_info (certificate_decoded,
-                              certificate_len,
-                              &activation_time,
-                              &expiration_time,
-                              &md5_fingerprint,
-                              &sha256_fingerprint,
-                              &subject_dn,
-                              &issuer_dn,
-                              &serial,
-                              &certificate_format);
+  ret = make_tls_certificate_from_base64 (name,
+                                          comment,
+                                          certificate_b64,
+                                          NULL, /* fallback_fpr */
+                                          trust,
+                                          0, /* allow_failed_info */
+                                          0, /* update */
+                                          &new_tls_certificate);
 
   if (ret)
-    return 1;
-
-  sql_int64 (&current_user,
-             "SELECT id FROM users WHERE uuid = '%s'",
-             current_credentials.uuid);
-
-  if (user_tls_certificate_match_internal (0,
-                                           current_user,
-                                           sha256_fingerprint,
-                                           md5_fingerprint))
-    return 3;
-
-  sql ("INSERT INTO tls_certificates"
-       " (uuid, owner, name, comment, creation_time, modification_time,"
-       "  certificate, subject_dn, issuer_dn, trust,"
-       "  activation_time, expiration_time,"
-       "  md5_fingerprint, sha256_fingerprint, serial, certificate_format)"
-       " SELECT make_uuid(), (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "        '%s', '%s', m_now(), m_now(), '%s', '%s', '%s', %d,"
-       "        %ld, %ld,"
-       "        '%s', '%s', '%s', '%s';",
-       current_credentials.uuid,
-       name ? name : sha256_fingerprint,
-       comment ? comment : "",
-       certificate_b64 ? certificate_b64 : "",
-       subject_dn ? subject_dn : "",
-       issuer_dn ? issuer_dn : "",
-       trust,
-       activation_time,
-       expiration_time,
-       md5_fingerprint,
-       sha256_fingerprint,
-       serial,
-       tls_certificate_format_str (certificate_format));
-
-  new_tls_certificate = sql_last_insert_id ();
-
-  if (tls_certificate)
-    *tls_certificate = new_tls_certificate;
+    return ret;
 
   get_or_make_tls_certificate_source (new_tls_certificate,
                                       NULL,   /* host_ip */
@@ -439,6 +554,9 @@ create_tls_certificate (const char *name,
                                       "Import",
                                       NULL,   /* origin_id */
                                       NULL);  /* origin_data */
+
+  if (tls_certificate)
+    *tls_certificate = new_tls_certificate;
 
   return 0;
 }
