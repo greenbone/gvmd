@@ -116,7 +116,7 @@ Certificates`.
 
 ## Configure PostgreSQL Database Backend
 
-### Setting up the PostgresSQL database
+### Setting up the PostgreSQL database
 
 1.  Install Postgres.
 
@@ -398,6 +398,12 @@ supported values for `<name>` are:
   For example the application name will be removed from a port using the old
   format `telnet (23/tcp)`, reducing it to the new format `23/tcp`.
   This makes filtering results and delta reports more consistent.
+
+- `cleanup-report-formats`
+
+  This cleans up references to report formats that have been removed without
+  using the DELETE_REPORT_FORMAT GMP command, for example after a built-in
+  report format has been removed.
 
 - `cleanup-result-severities`
 
