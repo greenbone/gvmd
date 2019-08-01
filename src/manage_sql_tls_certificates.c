@@ -348,70 +348,46 @@ tls_certificate_writable (tls_certificate_t tls_certificate)
 }
 
 /**
- * @brief Create or update a TLS certificate from Base64 encoded file content.
+ * @brief Create or update a TLS certificate from collected data
  *
- * @param[in]   name              Name of new TLS certificate.
- * @param[in]   comment           Comment of TLS certificate.
- * @param[in]   certificate_b64   Base64 certificate file content.
- * @param[in]   fallback_fpr      Fallback fingerprint if getting data fails.
- * @param[in]   trust             Whether to trust the certificate.
- * @param[in]   allow_failed_info Whether to use if get_certificate_info fails.
- * @param[in]   update            Whether/how to update if certificate exists.
+ * @param[in]  name               Optional name for the certificate.
+ * @param[in]  comment            Optional comment for the certificate.
+ * @param[in]  certificate_b64    Base64 encoded certificate.
+ * @param[in]  activation_time    Activation time of the certificate.
+ * @param[in]  expiration_time    Expiration time of the certificate
+ * @param[in]  md5_fingerprint    MD5 fingerprint of the certificate.
+ * @param[in]  sha256_fingerprint SHA-256 fingerprint of the certificate.
+ * @param[in]  subject_dn         Subject DN of the certificate.
+ * @param[in]  issuer_dn          Issuer DN of the certificate.
+ * @param[in]  serial             Serial of the certificate.
+ * @param[in]  certificate_format Certificate format (0 = DER, 1 = PEM).
+ * @param[in]  trust              Whether to trust the certificate.
+ * @param[in]  update             Whether/how to update if certificate exists.
  *                                0: reject, 1: update missing.
- * @param[out]  tls_certificate Created TLS certificate.
- *
- * @return 0 success, 1 invalid certificate content, 2 certificate not Base64,
- *         3 certificate already exists, 99 permission denied, -1 error.
+ * @param[out] tls_certificate    Created TLS certificate.
  */
-int
-make_tls_certificate_from_base64 (const char *name,
-                                  const char *comment,
-                                  const char *certificate_b64,
-                                  const char *fallback_fpr,
-                                  int trust,
-                                  int allow_failed_info,
-                                  int update,
-                                  tls_certificate_t *tls_certificate)
+static int
+make_tls_certificate (const char *name,
+                      const char *comment,
+                      const char *certificate_b64,
+                      time_t activation_time,
+                      time_t expiration_time,
+                      const char *md5_fingerprint,
+                      const char *sha256_fingerprint,
+                      const char *subject_dn,
+                      const char *issuer_dn,
+                      const char *serial,
+                      gnutls_x509_crt_fmt_t certificate_format,
+                      int trust,
+                      int update,
+                      tls_certificate_t *tls_certificate)
 {
-  int ret;
-  gchar *certificate_decoded;
-  gsize certificate_len;
-  char *md5_fingerprint, *sha256_fingerprint, *subject_dn, *issuer_dn, *serial;
-  time_t activation_time, expiration_time;
-  gnutls_x509_crt_fmt_t certificate_format;
   user_t current_user = 0;
   tls_certificate_t old_tls_certificate, new_tls_certificate;
 
   sql_int64 (&current_user,
              "SELECT id FROM users WHERE uuid = '%s'",
              current_credentials.uuid);
-
-  certificate_decoded
-      = (gchar*) g_base64_decode (certificate_b64, &certificate_len);
-
-  if (certificate_decoded == NULL || certificate_len == 0)
-    return 2;
-
-  ret = get_certificate_info (certificate_decoded,
-                              certificate_len,
-                              &activation_time,
-                              &expiration_time,
-                              &md5_fingerprint,
-                              &sha256_fingerprint,
-                              &subject_dn,
-                              &issuer_dn,
-                              &serial,
-                              &certificate_format);
-
-  if (ret && (allow_failed_info == 0 || fallback_fpr == NULL))
-    {
-      g_free (certificate_decoded);
-      return 1;
-    }
-  else
-    {
-      sha256_fingerprint = g_strdup (fallback_fpr);
-    }
 
   old_tls_certificate
     = user_tls_certificate_match_internal (0,
@@ -463,12 +439,6 @@ make_tls_certificate_from_base64 (const char *name,
         }
       else
         {
-          g_free (certificate_decoded);
-          g_free (md5_fingerprint);
-          g_free (sha256_fingerprint);
-          g_free (subject_dn);
-          g_free (issuer_dn);
-          g_free (serial);
           return 3;
         }
     }
@@ -504,6 +474,84 @@ make_tls_certificate_from_base64 (const char *name,
   if (tls_certificate)
     *tls_certificate = new_tls_certificate;
 
+  return 0;
+}
+
+/**
+ * @brief Create or update a TLS certificate from Base64 encoded file content.
+ *
+ * @param[in]   name              Name of new TLS certificate.
+ * @param[in]   comment           Comment of TLS certificate.
+ * @param[in]   certificate_b64   Base64 certificate file content.
+ * @param[in]   fallback_fpr      Fallback fingerprint if getting data fails.
+ * @param[in]   trust             Whether to trust the certificate.
+ * @param[in]   allow_failed_info Whether to use if get_certificate_info fails.
+ * @param[in]   update            Whether/how to update if certificate exists.
+ *                                0: reject, 1: update missing.
+ * @param[out]  tls_certificate Created TLS certificate.
+ *
+ * @return 0 success, 1 invalid certificate content, 2 certificate not Base64,
+ *         3 certificate already exists, 99 permission denied, -1 error.
+ */
+int
+make_tls_certificate_from_base64 (const char *name,
+                                  const char *comment,
+                                  const char *certificate_b64,
+                                  const char *fallback_fpr,
+                                  int trust,
+                                  int allow_failed_info,
+                                  int update,
+                                  tls_certificate_t *tls_certificate)
+{
+  int ret;
+  gchar *certificate_decoded;
+  gsize certificate_len;
+  char *md5_fingerprint, *sha256_fingerprint, *subject_dn, *issuer_dn, *serial;
+  time_t activation_time, expiration_time;
+  gnutls_x509_crt_fmt_t certificate_format;
+
+  certificate_decoded
+      = (gchar*) g_base64_decode (certificate_b64, &certificate_len);
+
+  if (certificate_decoded == NULL || certificate_len == 0)
+    return 2;
+
+  ret = get_certificate_info (certificate_decoded,
+                              certificate_len,
+                              &activation_time,
+                              &expiration_time,
+                              &md5_fingerprint,
+                              &sha256_fingerprint,
+                              &subject_dn,
+                              &issuer_dn,
+                              &serial,
+                              &certificate_format);
+
+  if (ret && (allow_failed_info == 0 || fallback_fpr == NULL))
+    {
+      g_free (certificate_decoded);
+      return 1;
+    }
+  else
+    {
+      sha256_fingerprint = g_strdup (fallback_fpr);
+    }
+
+  ret = make_tls_certificate (name,
+                              comment,
+                              certificate_b64,
+                              activation_time,
+                              expiration_time,
+                              md5_fingerprint,
+                              sha256_fingerprint,
+                              subject_dn,
+                              issuer_dn,
+                              serial,
+                              certificate_format,
+                              trust,
+                              update,
+                              tls_certificate);
+
   g_free (certificate_decoded);
   g_free (md5_fingerprint);
   g_free (sha256_fingerprint);
@@ -511,7 +559,7 @@ make_tls_certificate_from_base64 (const char *name,
   g_free (issuer_dn);
   g_free (serial);
 
-  return 0;
+  return ret;
 }
 
 /**
