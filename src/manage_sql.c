@@ -54297,7 +54297,7 @@ buffer_insert (GString *buffer, task_t task, const char* host,
                      "INSERT into results"
                      " (owner, date, task, host, hostname, port,"
                      "  nvt, nvt_version, severity, type,"
-                     "  description, uuid, qod, qod_type, result_nvt"
+                     "  description, uuid, qod, qod_type, result_nvt,"
                      "  report)"
                      " VALUES");
   g_string_append_printf (buffer,
