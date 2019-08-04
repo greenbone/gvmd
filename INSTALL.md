@@ -273,6 +273,12 @@ properly.
    If the `gsf-access-key` file was already migrated for the `openvas-scanner`
    module it can be removed from the `$prefix/etc/openvas/` directory.
 
+ - move `$prefix/var/lib/openvas/scap-data/scap.db` to
+   `$prefix/var/lib/gvm/gvmd/scap/`
+
+ - move `$prefix/var/lib/openvas/cert-data/cert.db` to
+   `$prefix/var/lib/gvm/gvmd/cert/`
+
  - move `$prefix/var/lib/openvas/scap-data` to
    `$prefix/var/lib/gvm/scap-data`
 
