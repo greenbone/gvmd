@@ -365,6 +365,8 @@ tls_certificate_writable (tls_certificate_t tls_certificate)
  * @param[in]  update             Whether/how to update if certificate exists.
  *                                0: reject, 1: update missing.
  * @param[out] tls_certificate    Created TLS certificate.
+ *
+ * @return 0 success, -1 error, 3 certificate already exists.
  */
 static int
 make_tls_certificate (const char *name,

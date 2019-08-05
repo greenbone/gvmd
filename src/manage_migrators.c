@@ -811,6 +811,8 @@ migrate_212_to_213 ()
  * @param[in]  sha256_fingerprint SHA-256 fingerprint of the certificate.
  * @param[in]  serial             Serial of the certificate.
  * @param[in]  certificate_format Certificate format (DER or PEM).
+ *
+ * @return The new TLS certificate.
  */
 static tls_certificate_t
 make_tls_certificate_214 (user_t owner,
