@@ -382,8 +382,18 @@ make_tls_certificate (const char *name,
                       int update,
                       tls_certificate_t *tls_certificate)
 {
+  gchar *quoted_name, *quoted_comment, *quoted_certificate_b64;
+  gchar *quoted_md5_fingerprint, *quoted_sha256_fingerprint;
+  gchar *quoted_subject_dn, *quoted_issuer_dn, *quoted_serial;
+
   user_t current_user = 0;
   tls_certificate_t old_tls_certificate, new_tls_certificate;
+
+  if (sha256_fingerprint == NULL || strcmp (sha256_fingerprint, "") == 0)
+    {
+      g_warning ("%s: Missing/empty sha256_fingerprint", __FUNCTION__);
+      return -1;
+    }
 
   sql_int64 (&current_user,
              "SELECT id FROM users WHERE uuid = '%s'",
@@ -394,6 +404,30 @@ make_tls_certificate (const char *name,
                                            current_user,
                                            sha256_fingerprint,
                                            md5_fingerprint);
+
+  if (old_tls_certificate && update != 1)
+    {
+      return 3;
+    }
+
+  if (name && strcmp (name, ""))
+    quoted_name = sql_quote (name);
+  else
+    quoted_name = sql_quote (sha256_fingerprint);
+  quoted_comment
+    = sql_quote (comment ? comment : "");
+  quoted_certificate_b64
+    = sql_quote (certificate_b64 ? certificate_b64 : "");
+  quoted_md5_fingerprint
+    = sql_quote (md5_fingerprint ? md5_fingerprint : "");
+  quoted_sha256_fingerprint
+    = sql_quote (sha256_fingerprint ? sha256_fingerprint : "");
+  quoted_subject_dn
+    = sql_quote (subject_dn ? subject_dn : "");
+  quoted_issuer_dn
+    = sql_quote (issuer_dn ? issuer_dn : "");
+  quoted_serial
+    = sql_quote (serial ? serial : "");
 
   if (old_tls_certificate)
     {
@@ -409,9 +443,9 @@ make_tls_certificate (const char *name,
                " certificate"
                "   = coalesce (nullif (certificate, ''), '%s'),"
                " activation_time"
-               "   = coalesce (nullif (activation_time, -1), '%s'),"
+               "   = coalesce (nullif (activation_time, -1), %ld),"
                " expiration_time"
-               "   = coalesce (nullif (expiration_time, -1), '%s'),"
+               "   = coalesce (nullif (expiration_time, -1), %ld),"
                " md5_fingerprint"
                "   = coalesce (nullif (md5_fingerprint, ''), '%s'),"
                " sha256_fingerprint"
@@ -423,23 +457,26 @@ make_tls_certificate (const char *name,
                " serial"
                "   = coalesce (nullif (serial, ''), '%s'),"
                " certificate_format"
-               "   = coalesce (nullif (certificate, ''), %d),"
-               " modification_time = m_now ();",
-               certificate_b64,
+               "   = (CASE"
+               "      WHEN (certificate IS NULL) OR (certificate = '')"
+               "      THEN '%s'"
+               "      ELSE certificate_format"
+               "      END),"
+               " modification_time = m_now ()"
+               " WHERE id = %llu",
+               quoted_certificate_b64,
                activation_time,
                expiration_time,
-               md5_fingerprint,
-               sha256_fingerprint,
-               subject_dn,
-               issuer_dn,
-               serial,
-               certificate_format);
+               quoted_md5_fingerprint,
+               quoted_sha256_fingerprint,
+               quoted_subject_dn,
+               quoted_issuer_dn,
+               quoted_serial,
+               tls_certificate_format_str (certificate_format),
+               old_tls_certificate);
 
           new_tls_certificate = old_tls_certificate;
-        }
-      else
-        {
-          return 3;
+          g_message ("update tls_certificate done");
         }
     }
   else
@@ -455,21 +492,30 @@ make_tls_certificate (const char *name,
            "        %ld, %ld,"
            "        '%s', '%s', '%s', '%s';",
            current_credentials.uuid,
-           name ? name : sha256_fingerprint,
-           comment ? comment : "",
-           certificate_b64 ? certificate_b64 : "",
-           subject_dn ? subject_dn : "",
-           issuer_dn ? issuer_dn : "",
+           quoted_name,
+           quoted_comment,
+           quoted_certificate_b64,
+           quoted_subject_dn,
+           quoted_issuer_dn,
            trust,
            activation_time,
            expiration_time,
-           md5_fingerprint ? md5_fingerprint : "",
-           sha256_fingerprint,
-           serial ? serial : "",
+           quoted_md5_fingerprint,
+           quoted_sha256_fingerprint,
+           quoted_serial,
            tls_certificate_format_str (certificate_format));
 
       new_tls_certificate = sql_last_insert_id ();
     }
+
+  g_free (quoted_name);
+  g_free (quoted_comment);
+  g_free (quoted_certificate_b64);
+  g_free (quoted_subject_dn);
+  g_free (quoted_issuer_dn);
+  g_free (quoted_md5_fingerprint);
+  g_free (quoted_sha256_fingerprint);
+  g_free (quoted_serial);
 
   if (tls_certificate)
     *tls_certificate = new_tls_certificate;
@@ -1201,7 +1247,13 @@ user_tls_certificate_match_internal (tls_certificate_t tls_certificate,
                                      const char *sha256_fingerprint,
                                      const char *md5_fingerprint)
 {
+  gchar *quoted_sha256_fingerprint, *quoted_md5_fingerprint;
   tls_certificate_t ret_tls_certificate = 0;
+
+  quoted_sha256_fingerprint
+    = sql_quote (sha256_fingerprint ? sha256_fingerprint : "");
+  quoted_md5_fingerprint
+    = sql_quote (md5_fingerprint ? md5_fingerprint : "");
 
   sql_int64 (&ret_tls_certificate,
              "SELECT id FROM tls_certificates"
@@ -1210,9 +1262,12 @@ user_tls_certificate_match_internal (tls_certificate_t tls_certificate,
              "          OR md5_fingerprint = '%s')"
              "     AND owner = %llu",
              tls_certificate,
-             sha256_fingerprint,
-             md5_fingerprint,
+             quoted_sha256_fingerprint,
+             quoted_md5_fingerprint,
              user);
+
+  g_free (quoted_sha256_fingerprint);
+  g_free (quoted_md5_fingerprint);
 
   return ret_tls_certificate;
 }
