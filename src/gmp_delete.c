@@ -104,8 +104,8 @@ delete_start (const gchar *type,
 
   delete.type = g_strdup (type);
   delete.type_capital = g_strdup (type_capital);
-  command = g_strdup_printf ("DELETE_%s", type);
-  delete.command = g_ascii_strup (command, -1);
+  command = g_strdup_printf ("delete_%s", type);
+  delete.command = g_ascii_strdown (command, -1);
   g_free (command);
 }
 
