@@ -126,19 +126,19 @@ send_get_common (const char *, get_data_t *, iterator_t *,
  * @param[in]  get       GET data.
  * @param[in]  iterator  Iterator.
  */
-#define SEND_GET_COMMON_NO_TRASH(type, get, iterator)                      \
-  do                                                                       \
-    {                                                                      \
-      if (send_get_common (                                                \
-            G_STRINGIFY (type), get, iterator, gmp_parser->client_writer,  \
-            gmp_parser->client_writer_data,                                \
-            type##_writable (get_iterator_resource (iterator)),            \
-            type##_in_use (get_iterator_resource (iterator))))             \
-        {                                                                  \
-          error_send_to_client (error);                                    \
-          return;                                                          \
-        }                                                                  \
-    }                                                                      \
+#define SEND_GET_COMMON_NO_TRASH(type, get, iterator)                          \
+  do                                                                           \
+    {                                                                          \
+      if (send_get_common (G_STRINGIFY (type), get, iterator,                  \
+                           gmp_parser->client_writer,                          \
+                           gmp_parser->client_writer_data,                     \
+                           type##_writable (get_iterator_resource (iterator)), \
+                           type##_in_use (get_iterator_resource (iterator))))  \
+        {                                                                      \
+          error_send_to_client (error);                                        \
+          return;                                                              \
+        }                                                                      \
+    }                                                                          \
   while (0)
 
 int
