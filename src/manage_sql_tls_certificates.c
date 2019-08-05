@@ -1316,3 +1316,213 @@ user_has_tls_certificate (tls_certificate_t tls_certificate,
 
   return 0;
 }
+
+/**
+ * @brief Collects and add TLS certificates from the details of a report host.
+ *
+ * @param[in] report_host  The report host to get certificates from.
+ * @param[in] report_id    UUID of the report
+ * @param[in] host_ip      The IP address of the report host.
+ *
+ * @return 0: success, -1: error
+ */
+int
+add_tls_certificates_from_report_host (report_host_t report_host,
+                                       const char *report_id,
+                                       const char *host_ip)
+{
+  iterator_t tls_certs;
+  time_t activation_time, expiration_time;
+  gchar *md5_fingerprint, *sha256_fingerprint, *subject, *issuer, *serial;
+  gnutls_x509_crt_fmt_t certificate_format;
+
+  /* host_ip and report_id are expected to avoid possibly redundant
+   *  SQL queries to get them */
+  if (report_host == 0
+      || host_ip == NULL
+      || report_id == NULL
+      || strcmp (host_ip, "") == 0
+      || strcmp (report_id, "") == 0)
+    return -1;
+
+  init_iterator (&tls_certs,
+                 "SELECT rhd.value, rhd.name, rhd.source_name"
+                 " FROM report_host_details AS rhd"
+                 " WHERE rhd.report_host = %llu"
+                 "   AND (source_description = 'SSL/TLS Certificate'"
+                 "        OR source_description = 'SSL Certificate')",
+                 report_host);
+
+  while (next (&tls_certs))
+    {
+      const char *certificate_prefixed, *certificate_b64;
+      gsize certificate_size;
+      unsigned char *certificate;
+      const char *scanner_fpr_prefixed, *scanner_fpr;
+      gchar *quoted_scanner_fpr;
+      const char *source_name;
+      char *ssldetails;
+      tls_certificate_t tls_certificate;
+
+      iterator_t ports;
+      gboolean has_ports;
+
+      certificate_prefixed = iterator_string (&tls_certs, 0);
+      certificate_b64 = g_strrstr (certificate_prefixed, ":") + 1;
+
+      certificate = g_base64_decode (certificate_b64, &certificate_size);
+
+      scanner_fpr_prefixed = iterator_string (&tls_certs, 1);
+      scanner_fpr = g_strrstr (scanner_fpr_prefixed, ":") + 1;
+
+      quoted_scanner_fpr = sql_quote (scanner_fpr);
+
+      source_name = iterator_string (&tls_certs, 2);
+
+      g_message ("scanner_fpr: %s", scanner_fpr);
+
+      activation_time = -1;
+      expiration_time = -1;
+      md5_fingerprint = NULL;
+      sha256_fingerprint = NULL;
+      subject = NULL;
+      issuer = NULL;
+      serial = NULL;
+      certificate_format = 0;
+
+      get_certificate_info ((gchar*)certificate,
+                            certificate_size,
+                            &activation_time,
+                            &expiration_time,
+                            &md5_fingerprint,
+                            &sha256_fingerprint,
+                            &subject,
+                            &issuer,
+                            &serial,
+                            &certificate_format);
+
+      g_message ("get_certificate_info done");
+
+      if (sha256_fingerprint == NULL)
+        sha256_fingerprint = g_strdup (scanner_fpr);
+
+      g_message ("got sha256_fingerprint: %s", sha256_fingerprint);
+
+      ssldetails
+        = sql_string ("SELECT rhd.value"
+                      " FROM report_host_details AS rhd"
+                      " WHERE report_host = %llu"
+                      "   AND name = 'SSLDetails:%s'"
+                      " LIMIT 1;",
+                      report_host,
+                      quoted_scanner_fpr);
+
+      g_message ("got ssldetails: %s", ssldetails);
+
+      parse_ssldetails (ssldetails,
+                        &activation_time,
+                        &expiration_time,
+                        &issuer,
+                        &serial);
+
+      g_message ("parse_ssldetails done");
+
+      free (ssldetails);
+
+      g_message ("l certificate_b64 = %lu", strlen(certificate_b64));
+      g_message ("md5_fingerprint = %s", md5_fingerprint);
+      g_message ("sha256_fingerprint = %s", sha256_fingerprint);
+      g_message ("subject = %s", subject);
+      g_message ("issuer = %s", issuer);
+      g_message ("serial = %s", serial);
+      g_message ("---");
+
+      make_tls_certificate (sha256_fingerprint, /* name */
+                            "", /* comment */
+                            certificate_b64,
+                            activation_time,
+                            expiration_time,
+                            md5_fingerprint,
+                            sha256_fingerprint,
+                            subject,
+                            issuer,
+                            serial,
+                            certificate_format,
+                            0,
+                            1,
+                            &tls_certificate);
+
+      g_message ("make_tls_certificate done");
+
+      init_iterator (&ports,
+                     "SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     "   AND name = 'SSLInfo'"
+                     "   AND value LIKE '%%:%%:%s'",
+                     report_host,
+                     quoted_scanner_fpr);
+
+      has_ports = FALSE;
+      while (next (&ports))
+        {
+          const char *value;
+          gchar *port, *quoted_port;
+          GString *versions;
+          iterator_t versions_iter;
+
+          g_message ("port start");
+
+          value = iterator_string (&ports, 0);
+          port = g_strndup (value, g_strrstr (value, ":") - value - 1);
+          quoted_port = sql_quote (port);
+
+          has_ports = TRUE;
+
+          versions = g_string_new ("");
+          init_iterator (&versions_iter,
+                         "SELECT value FROM report_host_details"
+                         " WHERE report_host = %llu"
+                         "   AND name = 'TLS/%s'",
+                         report_host,
+                         quoted_port);
+          while (next (&versions_iter))
+            {
+              gchar *quoted_version;
+              quoted_version = sql_quote (iterator_string (&versions_iter, 0));
+
+              if (versions->len)
+                g_string_append (versions, ", ");
+              g_string_append (versions, quoted_version);
+            }
+          cleanup_iterator (&versions_iter);
+
+          get_or_make_tls_certificate_source (tls_certificate,
+                                              host_ip,
+                                              port,
+                                              "Report",
+                                              report_id,
+                                              source_name);
+
+          g_free (port);
+          g_free (quoted_port);
+          g_string_free (versions, TRUE);
+        }
+
+      if (has_ports == FALSE)
+        g_warning ("Certificate without ports: %s report:%s host:%s",
+                   quoted_scanner_fpr, report_id, host_ip);
+
+      cleanup_iterator (&ports);
+
+      g_free (md5_fingerprint);
+      g_free (sha256_fingerprint);
+      g_free (subject);
+      g_free (issuer);
+      g_free (serial);
+
+      g_message ("certificate done");
+    }
+  cleanup_iterator (&tls_certs);
+
+  return 0;
+}

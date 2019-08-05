@@ -22449,6 +22449,20 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
         insert_count++;
       }
 
+  sql_commit ();
+
+  index = 0;
+  sql_begin_immediate ();
+  while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
+                                                             index++)))
+    if (end->host)
+      {
+        sql_commit ();
+        gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+        add_assets_from_host_in_report (report, end->host);
+        sql_begin_immediate ();
+      }
+
   if (first == 0)
     sql (insert->str);
 
@@ -31423,6 +31437,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_END") == 0))
         {
           set_scan_host_end_time_otp (report, host, desc);
+          add_assets_from_host_in_report (report, host);
         }
       else
         {
@@ -57914,6 +57929,60 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
 
   sql_rollback ();
   return 2;
+}
+
+/**
+ * @brief Generates and adds assets from report host details
+ *
+ * @param[in]  report   The report to get host details from.
+ * @param[in]  host_ip  IP address of the host to get details from.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+add_assets_from_host_in_report (report_t report, const char *host_ip)
+{
+  int ret;
+  gchar *quoted_host;
+  char *report_id;
+  report_host_t report_host = 0;
+
+  /* Get report UUID */
+  report_id = report_uuid (report);
+  if (report_id == NULL)
+    {
+      g_warning ("%s: report %llu not found.",
+                 __FUNCTION__, report);
+      return -1;
+    }
+
+  /* Find report_host */
+  quoted_host = sql_quote (host_ip);
+  sql_int64 (&report_host,
+             "SELECT id FROM report_hosts"
+             " WHERE host = '%s' AND report = %llu",
+             quoted_host,
+             report);
+  g_free (quoted_host);
+  if (report_host == 0)
+    {
+      g_warning ("%s: report_host for host '%s' and report '%s' not found.",
+                 __FUNCTION__, host_ip, report_id);
+      free (report_id);
+      return -1;
+    }
+
+  /* Create assets */
+  ret = add_tls_certificates_from_report_host (report_host,
+                                               report_id,
+                                               host_ip);
+  if (ret)
+    {
+      free (report_id);
+      return ret;
+    }
+
+  return 0;
 }
 
 

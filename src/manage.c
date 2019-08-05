@@ -1975,7 +1975,7 @@ update_end_times (entity_t report)
       entities = next_entities (entities);
     }
 
-  /* Add host details and set the host end times. */
+  /* Add host details, create assets and set the host end times. */
 
   entities = report->entities;
   while ((end = first_entity (entities)))
@@ -2004,6 +2004,9 @@ update_end_times (entity_t report)
               if (manage_report_host_details (global_current_report,
                                               entity_text (ip),
                                               end))
+                return -1;
+              if (add_assets_from_host_in_report (global_current_report,
+                                                  entity_text (ip)))
                 return -1;
             }
         }
