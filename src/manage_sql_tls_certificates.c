@@ -478,7 +478,6 @@ make_tls_certificate (const char *name,
                old_tls_certificate);
 
           new_tls_certificate = old_tls_certificate;
-          g_message ("update tls_certificate done");
         }
     }
   else
@@ -1379,8 +1378,10 @@ add_tls_certificates_from_report_host (report_host_t report_host,
 
       source_name = iterator_string (&tls_certs, 2);
 
-      g_message ("scanner_fpr: %s", scanner_fpr);
+      g_debug ("%s: Handling certificate %s on %s in report %s",
+               __FUNCTION__, scanner_fpr, host_ip, report_id);
 
+      tls_certificate = 0;
       activation_time = -1;
       expiration_time = -1;
       md5_fingerprint = NULL;
@@ -1401,12 +1402,8 @@ add_tls_certificates_from_report_host (report_host_t report_host,
                             &serial,
                             &certificate_format);
 
-      g_message ("get_certificate_info done");
-
       if (sha256_fingerprint == NULL)
         sha256_fingerprint = g_strdup (scanner_fpr);
-
-      g_message ("got sha256_fingerprint: %s", sha256_fingerprint);
 
       ssldetails
         = sql_string ("SELECT rhd.value"
@@ -1417,42 +1414,42 @@ add_tls_certificates_from_report_host (report_host_t report_host,
                       report_host,
                       quoted_scanner_fpr);
 
-      g_message ("got ssldetails: %s", ssldetails);
-
       parse_ssldetails (ssldetails,
                         &activation_time,
                         &expiration_time,
                         &issuer,
                         &serial);
 
-      g_message ("parse_ssldetails done");
-
       free (ssldetails);
 
-      g_message ("l certificate_b64 = %lu", strlen(certificate_b64));
-      g_message ("md5_fingerprint = %s", md5_fingerprint);
-      g_message ("sha256_fingerprint = %s", sha256_fingerprint);
-      g_message ("subject = %s", subject);
-      g_message ("issuer = %s", issuer);
-      g_message ("serial = %s", serial);
-      g_message ("---");
+      if (make_tls_certificate (sha256_fingerprint, /* name */
+                                "", /* comment */
+                                certificate_b64,
+                                activation_time,
+                                expiration_time,
+                                md5_fingerprint,
+                                sha256_fingerprint,
+                                subject,
+                                issuer,
+                                serial,
+                                certificate_format,
+                                0,
+                                1,
+                                &tls_certificate)
+          || tls_certificate == 0)
+        {
+          g_warning ("%s: Could not create TLS certificate"
+                     " or get existing one for fingerprint '%s'.",
+                     __FUNCTION__, scanner_fpr);
 
-      make_tls_certificate (sha256_fingerprint, /* name */
-                            "", /* comment */
-                            certificate_b64,
-                            activation_time,
-                            expiration_time,
-                            md5_fingerprint,
-                            sha256_fingerprint,
-                            subject,
-                            issuer,
-                            serial,
-                            certificate_format,
-                            0,
-                            1,
-                            &tls_certificate);
-
-      g_message ("make_tls_certificate done");
+          g_free (certificate);
+          g_free (md5_fingerprint);
+          g_free (sha256_fingerprint);
+          g_free (subject);
+          g_free (issuer);
+          g_free (serial);
+          continue;
+        }
 
       init_iterator (&ports,
                      "SELECT value FROM report_host_details"
@@ -1469,8 +1466,6 @@ add_tls_certificates_from_report_host (report_host_t report_host,
           gchar *port, *quoted_port;
           GString *versions;
           iterator_t versions_iter;
-
-          g_message ("port start");
 
           value = iterator_string (&ports, 0);
           port = g_strndup (value, g_strrstr (value, ":") - value - 1);
@@ -1514,13 +1509,12 @@ add_tls_certificates_from_report_host (report_host_t report_host,
 
       cleanup_iterator (&ports);
 
+      g_free (certificate);
       g_free (md5_fingerprint);
       g_free (sha256_fingerprint);
       g_free (subject);
       g_free (issuer);
       g_free (serial);
-
-      g_message ("certificate done");
     }
   cleanup_iterator (&tls_certs);
 
