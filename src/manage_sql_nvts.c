@@ -981,11 +981,8 @@ set_nvts_check_time ()
          " WHERE name = 'nvts_check_time';");
   else
     {
-      if (0)
-        {
-          check_for_new_nvts ();
-          check_for_updated_nvts ();
-        }
+      check_for_new_nvts ();
+      check_for_updated_nvts ();
       sql ("UPDATE meta SET value = m_now ()"
            " WHERE name = 'nvts_check_time';");
     }
