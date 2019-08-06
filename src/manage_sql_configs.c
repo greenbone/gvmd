@@ -1580,7 +1580,7 @@ check_config_families ()
 /* NVT preferences.  This is part of Configs. */
 
 /**
- * @brief Add an NVT preference.
+ * @brief Add/replace an NVT preference.
  *
  * @param[in]  name    The name of the preference.
  * @param[in]  value   The value of the preference.
@@ -1597,16 +1597,11 @@ manage_nvt_preference_add (const char* name, const char* value)
                    "  (SELECT * FROM nvt_preferences"
                    "   WHERE name = '%s')",
                    quoted_name))
-        {
-          g_warning ("%s: preference '%s' already exists",
-                     __FUNCTION__, name);
-        }
-      else
-        {
-          sql ("INSERT into nvt_preferences (name, value)"
-               " VALUES ('%s', '%s');",
-               quoted_name, quoted_value);
-        }
+        sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
+
+      sql ("INSERT into nvt_preferences (name, value)"
+           " VALUES ('%s', '%s');",
+           quoted_name, quoted_value);
     }
 
   g_free (quoted_name);

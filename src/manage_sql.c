@@ -20070,11 +20070,7 @@ set_task_schedule (task_t task, schedule_t schedule, int periods)
   sql ("UPDATE tasks"
        " SET schedule = %llu,"
        " schedule_periods = %i,"
-       " schedule_next_time = (SELECT next_time (first_time,"
-       "                                         period,"
-       "                                         period_months,"
-       "                                         byday,"
-       "                                         timezone)"
+       " schedule_next_time = (SELECT next_time_ical (icalendar, timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
@@ -20102,11 +20098,7 @@ set_task_schedule_uuid (const gchar *task_id, schedule_t schedule, int periods)
   sql ("UPDATE tasks"
        " SET schedule = %llu,"
        " schedule_periods = %i,"
-       " schedule_next_time = (SELECT next_time (first_time,"
-       "                                         period,"
-       "                                         period_months,"
-       "                                         byday,"
-       "                                         timezone)"
+       " schedule_next_time = (SELECT next_time_ical (icalendar, timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
@@ -20545,9 +20537,9 @@ clear_duration_schedules (task_t task)
        " modification_time = m_now ()"
        " WHERE schedule > 0"
        "%s"
-       " AND (SELECT period FROM schedules WHERE schedules.id = schedule) = 0"
-       " AND (SELECT period_months FROM schedules"
-       "       WHERE schedules.id = schedule) = 0"
+       " AND NOT (SELECT icalendar LIKE '%%\nRRULE%%'"
+       "              OR icalendar LIKE '%%\nRDATE%%'"
+       "            FROM schedules WHERE schedules.id = schedule)"
        " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
        "%s"
        " AND run_status != %i"
@@ -20582,8 +20574,7 @@ update_duration_schedule_periods (task_t task)
   duration_expired_element
    = /* The task has started, so assume that the start time was the last
       * most recent start of the period. */
-     " AND (SELECT next_time (first_time, period, period_months, byday,"
-     "                        timezone, -1)"
+     " AND (SELECT next_time_ical (icalendar, timezone, -1)"
      "             + duration"
      "      FROM schedules"
      "      WHERE schedules.id = schedule)"
@@ -20596,9 +20587,9 @@ update_duration_schedule_periods (task_t task)
        " WHERE schedule > 0"
        "%s"
        " AND schedule_periods = 1"
-       " AND ((SELECT period FROM schedules WHERE schedules.id = schedule) > 0"
-       "      OR (SELECT period_months FROM schedules"
-       "          WHERE schedules.id = schedule) > 0)"
+       " AND (SELECT icalendar LIKE '%%\nRRULE%%'"
+       "          OR icalendar LIKE '%%\nRDATE%%'"
+       "       FROM schedules WHERE schedules.id = schedule)"
        " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
        " AND schedule_next_time = 0"  /* Set as flag when starting task. */
        "%s"
@@ -48528,7 +48519,7 @@ buffer_insert (GString *buffer, task_t task, const char* host,
                      "INSERT into results"
                      " (owner, date, task, host, hostname, port,"
                      "  nvt, nvt_version, severity, type,"
-                     "  description, uuid, qod, qod_type, result_nvt"
+                     "  description, uuid, qod, qod_type, result_nvt,"
                      "  report)"
                      " VALUES");
   g_string_append_printf (buffer,
@@ -64268,6 +64259,77 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " Ports converted from old format: %d,"
                                       " removed IANA port names: %d.",
                                       changes_old_format, changes_iana);
+    }
+  else if (strcasecmp (name, "cleanup-report-formats") == 0)
+    {
+      iterator_t alert_data;
+      int alert_changes = 0;
+
+      /* Clean up alerts with missing report formats */
+      sql_begin_immediate ();
+
+      init_iterator (&alert_data,
+                     "SELECT id, data,"
+                     "       (SELECT uuid FROM alerts WHERE id = alert)"
+                     "  FROM alert_method_data"
+                     " WHERE (name = 'notice_attach_format'"
+                     "        OR name = 'notice_report_format'"
+                     "        OR name = 'send_report_format')"
+                     "   AND data NOT IN (SELECT uuid"
+                     "                      FROM report_formats)"
+                     "   AND data NOT IN (SELECT uuid"
+                     "                      FROM report_formats_trash)");
+      while (next (&alert_data))
+        {
+          alert_changes ++;
+          g_message ("Alert %s uses a non-existent report format (%s)"
+                     " and will now use the TXT report format (%s)"
+                     " if TXT exists.",
+                     iterator_string (&alert_data, 2),
+                     iterator_string (&alert_data, 1),
+                     "a3810a62-1f62-11e1-9219-406186ea4fc5");
+
+          sql ("UPDATE alert_method_data SET data = '%s'"
+               " WHERE id = %llu",
+               "a3810a62-1f62-11e1-9219-406186ea4fc5",
+               iterator_int64 (&alert_data, 0));
+        }
+      cleanup_iterator(&alert_data);
+
+      init_iterator (&alert_data,
+                     "SELECT id, data,"
+                     "       (SELECT uuid FROM alerts_trash WHERE id = alert)"
+                     "  FROM alert_method_data_trash"
+                     " WHERE (name = 'notice_attach_format'"
+                     "        OR name = 'notice_report_format'"
+                     "        OR name = 'send_report_format')"
+                     "   AND data NOT IN (SELECT uuid"
+                     "                      FROM report_formats)"
+                     "   AND data NOT IN (SELECT uuid"
+                     "                      FROM report_formats_trash)");
+      while (next (&alert_data))
+        {
+          alert_changes ++;
+          g_warning ("Trash Alert %s uses a non-existent report format (%s)"
+                     " and will now use the TXT report format (%s)"
+                     " if TXT exists.",
+                     iterator_string (&alert_data, 2),
+                     iterator_string (&alert_data, 1),
+                     "a3810a62-1f62-11e1-9219-406186ea4fc5");
+
+          sql ("UPDATE alert_method_data_trash SET data = '%s'"
+               " WHERE id = %llu",
+               "a3810a62-1f62-11e1-9219-406186ea4fc5",
+               iterator_int64 (&alert_data, 0));
+        }
+      cleanup_iterator(&alert_data);
+
+      sql_commit ();
+
+      success_text = g_strdup_printf ("Optimized: cleanup-report-formats."
+                                      " Cleaned up report format references in"
+                                      " %d alert(s).",
+                                      alert_changes);
     }
   else if (strcasecmp (name, "cleanup-result-severities") == 0)
     {

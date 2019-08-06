@@ -9797,13 +9797,19 @@ strdiff (const gchar *one, const gchar *two)
   gchar *standard_err = NULL;
   char dir[] = "/tmp/gvmd-strdiff-XXXXXX";
   GError *error = NULL;
+  gchar *c_one, *c_two;
 
   if (mkdtemp (dir) == NULL)
     return NULL;
 
   one_file = g_build_filename (dir, "Report 1", NULL);
 
-  g_file_set_contents (one_file, one, strlen (one), &error);
+  c_one = g_strdup_printf ("%s\n", one);
+
+  g_file_set_contents (one_file, c_one, strlen (c_one), &error);
+
+  g_free (c_one);
+
   if (error)
     {
       g_warning ("%s", error->message);
@@ -9815,7 +9821,12 @@ strdiff (const gchar *one, const gchar *two)
 
   two_file = g_build_filename (dir, "Report 2", NULL);
 
-  g_file_set_contents (two_file, two, strlen (two), &error);
+  c_two = g_strdup_printf ("%s\n", two);
+
+  g_file_set_contents (two_file, c_two, strlen (c_two), &error);
+
+  g_free (c_two);
+
   if (error)
     {
       g_warning ("%s", error->message);
@@ -9840,13 +9851,15 @@ strdiff (const gchar *one, const gchar *two)
       return NULL;
     }
 
-  cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
+  cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
 
   cmd[0] = g_strdup ("diff");
-  cmd[1] = g_strdup ("-u");
-  cmd[2] = g_strdup ("Report 1");
-  cmd[3] = g_strdup ("Report 2");
-  cmd[4] = NULL;
+  cmd[1] = g_strdup ("--ignore-space");
+  cmd[2] = g_strdup ("--ignore-blank-lines");
+  cmd[3] = g_strdup ("-u");
+  cmd[4] = g_strdup ("Report 1");
+  cmd[5] = g_strdup ("Report 2");
+  cmd[6] = NULL;
   g_debug ("%s: Spawning in %s: %s \"%s\" \"%s\"",
            __FUNCTION__, dir,
            cmd[0], cmd[1], cmd[2]);
@@ -9898,6 +9911,8 @@ strdiff (const gchar *one, const gchar *two)
   g_free (cmd[1]);
   g_free (cmd[2]);
   g_free (cmd[3]);
+  g_free (cmd[4]);
+  g_free (cmd[5]);
   g_free (cmd);
   g_free (standard_err);
   g_free (one_file);

@@ -116,7 +116,7 @@ Certificates`.
 
 ## Configure PostgreSQL Database Backend
 
-### Setting up the PostgresSQL database
+### Setting up the PostgreSQL database
 
 1.  Install Postgres.
 
@@ -273,6 +273,12 @@ properly.
    If the `gsf-access-key` file was already migrated for the `openvas-scanner`
    module it can be removed from the `$prefix/etc/openvas/` directory.
 
+ - move `$prefix/var/lib/openvas/scap-data/scap.db` to
+   `$prefix/var/lib/gvm/gvmd/scap/`
+
+ - move `$prefix/var/lib/openvas/cert-data/cert.db` to
+   `$prefix/var/lib/gvm/gvmd/cert/`
+
  - move `$prefix/var/lib/openvas/scap-data` to
    `$prefix/var/lib/gvm/scap-data`
 
@@ -398,6 +404,12 @@ supported values for `<name>` are:
   For example the application name will be removed from a port using the old
   format `telnet (23/tcp)`, reducing it to the new format `23/tcp`.
   This makes filtering results and delta reports more consistent.
+
+- `cleanup-report-formats`
+
+  This cleans up references to report formats that have been removed without
+  using the DELETE_REPORT_FORMAT GMP command, for example after a built-in
+  report format has been removed.
 
 - `cleanup-result-severities`
 
