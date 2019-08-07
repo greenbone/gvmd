@@ -5880,7 +5880,7 @@ slave_system_report (const char *name, const char *duration,
   gmp_get_system_reports_opts_t opts;
   int ret;
 
-  if (find_scanner_with_permission (slave_id, &slave, "get_slaves"))
+  if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
     return -1;
   if (slave == 0)
     return 2;
