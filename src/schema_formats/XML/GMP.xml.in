@@ -6096,7 +6096,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>copy</name>
-      <summary>The UUID of an existing TLS certificate.</summary>
+      <summary>The UUID of an existing TLS certificate</summary>
       <pattern>
         <t>uuid</t>
       </pattern>
