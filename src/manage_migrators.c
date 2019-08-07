@@ -856,7 +856,7 @@ make_tls_certificate_214 (user_t owner,
        "        '%s', '%s', '%s', '%s';",
        owner,
        sha256_fingerprint ? quoted_sha256_fingerprint : "",
-       "" /* comment */,
+       "", /* comment */
        certificate_b64 ? quoted_certificate_b64 : "",
        subject_dn ? quoted_subject_dn : "",
        issuer_dn ? quoted_issuer_dn : "",
@@ -889,13 +889,17 @@ int
 migrate_213_to_214 ()
 {
   iterator_t tls_certs;
-  char *previous_fpr = NULL;
-  user_t previous_owner = 0;
-  tls_certificate_t current_tls_certificate = 0;
+  char *previous_fpr;
+  user_t previous_owner;
+  tls_certificate_t current_tls_certificate;
 
   time_t activation_time, expiration_time;
   gchar *md5_fingerprint, *sha256_fingerprint, *subject, *issuer, *serial;
   gnutls_x509_crt_fmt_t certificate_format;
+
+  previous_fpr = NULL;
+  previous_owner = 0;
+  current_tls_certificate = 0;
 
   activation_time = -1;
   expiration_time = -1;
@@ -918,8 +922,20 @@ migrate_213_to_214 ()
 
   /* Update the database. */
 
-  /* Collect TLS certificates from host details */
-
+  /* Collect TLS certificates from host details
+   *
+   * The outer loop collects the details containing the
+   *  Base64 encoded certificates and their SHA-256 fingerprints
+   *  in an order that reduces how often the data has to extracted or
+   *  queried from other host details:
+   *
+   * - The detail name containing the fingerprint is first, to reduce the
+   *    number of times the certificate info must be fetched.
+   * - The owner is second so each certificate is created only once per user
+   *    without checking if it was already created in different report or not.
+   * - The report id is last so tls_certificate_sources are created in the
+   *   same order as the reports.
+   */
   init_iterator (&tls_certs,
                  "SELECT rhd.value, rhd.name, reports.owner, rhd.report_host,"
                  "       report_hosts.host, reports.uuid, rhd.source_name,"
@@ -986,6 +1002,7 @@ migrate_213_to_214 ()
           serial = NULL;
           certificate_format = 0;
 
+          /* Try extracting the data directly from the certificate */
           get_certificate_info ((gchar*)certificate,
                                 certificate_size,
                                 &activation_time,
@@ -997,9 +1014,13 @@ migrate_213_to_214 ()
                                 &serial,
                                 &certificate_format);
 
+          /* Use fingerprint from host detail
+           *  in case get_certificate_info fails */
           if (sha256_fingerprint == NULL)
             sha256_fingerprint = g_strdup (scanner_fpr);
 
+          /* Also use SSLDetails in case get_certificate_info fails
+           *  or to ensure consistency with the host details */
           ssldetails
             = sql_string ("SELECT rhd.value"
                           " FROM report_host_details AS rhd"
@@ -1019,6 +1040,7 @@ migrate_213_to_214 ()
           free (ssldetails);
         }
 
+      /* Ordering should ensure the certificate is unique for each owner */
       if (owner != previous_owner
           || previous_fpr == NULL
           || strcmp (previous_fpr, quoted_scanner_fpr))
@@ -1046,6 +1068,7 @@ migrate_213_to_214 ()
             }
         }
 
+      /* Collect ports for each unique certificate and owner */
       init_iterator (&ports,
                      "SELECT value FROM report_host_details"
                      " WHERE report_host = %llu"
@@ -1069,6 +1092,7 @@ migrate_213_to_214 ()
 
           has_ports = TRUE;
 
+          /* Collect TLS versions for each port */
           versions = g_string_new ("");
           init_iterator (&versions_iter,
                          "SELECT value FROM report_host_details"
