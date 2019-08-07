@@ -122,6 +122,14 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  if (get_tls_certificates_data.get.trash)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_tls_certificates",
+                          "TLS Certificates do not use the trashcan"));
+      return;
+    }
+
   /* Setup the iterator. */
 
   ret = init_tls_certificate_iterator (&tls_certificates,
@@ -178,12 +186,14 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Send generic GET command elements. */
 
-      SEND_GET_COMMON (tls_certificate, &get_tls_certificates_data.get,
-                       &tls_certificates);
+      SEND_GET_COMMON_NO_TRASH (tls_certificate,
+                                &get_tls_certificates_data.get,
+                                &tls_certificates);
 
       /* Send tls_certificate info. */
-      SENDF_TO_CLIENT_OR_FAIL 
+      SENDF_TO_CLIENT_OR_FAIL
         ("<certificate format=\"%s\">%s</certificate>"
+         "<sha256_fingerprint>%s</sha256_fingerprint>"
          "<md5_fingerprint>%s</md5_fingerprint>"
          "<trust>%d</trust>"
          "<valid>%d</valid>"
@@ -191,7 +201,8 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          "<expiration_time>%s</expiration_time>"
          "<subject_dn>%s</subject_dn>"
          "<issuer_dn>%s</issuer_dn>"
-         "</tls_certificate>",
+         "<serial>%s</serial>"
+         "<last_collected>%s</last_collected>",
          tls_certificate_iterator_certificate_format (&tls_certificates)
             ? tls_certificate_iterator_certificate_format (&tls_certificates)
             : "unknown",
@@ -199,12 +210,75 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
             ? tls_certificate_iterator_certificate (&tls_certificates)
             : "",
          tls_certificate_iterator_md5_fingerprint (&tls_certificates),
+         tls_certificate_iterator_sha256_fingerprint (&tls_certificates),
          tls_certificate_iterator_trust (&tls_certificates),
          tls_certificate_iterator_valid (&tls_certificates),
          tls_certificate_iterator_activation_time (&tls_certificates),
          tls_certificate_iterator_expiration_time (&tls_certificates),
          tls_certificate_iterator_subject_dn (&tls_certificates),
-         tls_certificate_iterator_issuer_dn (&tls_certificates));
+         tls_certificate_iterator_issuer_dn (&tls_certificates),
+         tls_certificate_iterator_serial (&tls_certificates),
+         tls_certificate_iterator_last_collected (&tls_certificates));
+
+      if (get_tls_certificates_data.get.details)
+        {
+          iterator_t sources;
+          SEND_TO_CLIENT_OR_FAIL ("<sources>");
+
+          init_tls_certificate_source_iterator
+             (&sources,
+              get_iterator_resource (&tls_certificates));
+
+          while (next (&sources))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+                 ("<source id=\"%s\">"
+                  "<timestamp>%s</timestamp>"
+                  "<tls_versions>%s</tls_versions>",
+                  tls_certificate_source_iterator_uuid (&sources),
+                  tls_certificate_source_iterator_timestamp (&sources),
+                  tls_certificate_source_iterator_tls_versions (&sources)
+                    ? tls_certificate_source_iterator_tls_versions (&sources)
+                    : "");
+
+              if (tls_certificate_source_iterator_location_uuid (&sources))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL
+                     ("<location id=\"%s\">"
+                      "<host><ip>%s</ip></host>"
+                      "<port>%s</port>"
+                      "</location>",
+                      tls_certificate_source_iterator_location_uuid
+                         (&sources),
+                      tls_certificate_source_iterator_location_host_ip
+                         (&sources),
+                      tls_certificate_source_iterator_location_port
+                         (&sources));
+                }
+
+              if (tls_certificate_source_iterator_origin_uuid (&sources))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL 
+                     ("<origin id=\"%s\">"
+                      "<origin_type>%s</origin_type>"
+                      "<origin_id>%s</origin_id>"
+                      "<origin_data>%s</origin_data>"
+                      "</origin>",
+                      tls_certificate_source_iterator_origin_uuid (&sources),
+                      tls_certificate_source_iterator_origin_type (&sources),
+                      tls_certificate_source_iterator_origin_id (&sources),
+                      tls_certificate_source_iterator_origin_data (&sources));
+                }
+
+              SEND_TO_CLIENT_OR_FAIL ("</source>");
+            }
+
+          cleanup_iterator (&sources);
+
+          SEND_TO_CLIENT_OR_FAIL ("</sources>");
+        }
+
+      SENDF_TO_CLIENT_OR_FAIL ("</tls_certificate>");
       count++;
     }
   cleanup_iterator (&tls_certificates);
@@ -434,7 +508,16 @@ create_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
                           "TLS Certificate",
                           NULL,
                           "created");
-          return;
+          break;
+        }
+      case 3:
+        {
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("create_tls_certificate",
+                              "TLS Certificate exists already"));
+          log_event_fail ("tls_certificate", "TLS Certificate", NULL,
+                          "created");
+          break;
         }
       case 99:
         SEND_TO_CLIENT_OR_FAIL
@@ -570,7 +653,7 @@ modify_tls_certificate_element_start (gmp_parser_t *gmp_parser,
 void
 modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, comment, name, certificate, trust;
+  entity_t entity, comment, name, trust;
   const char *tls_certificate_id;
   int trust_int;
 
@@ -582,21 +665,7 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (entity, "comment");
   name = entity_child (entity, "name");
-  certificate = entity_child (entity, "certificate");
   trust = entity_child (entity, "trust");
-
-  if (certificate
-      && strcmp (entity_text (certificate), "") == 0)
-    {
-      SEND_TO_CLIENT_OR_FAIL
-        (XML_ERROR_SYNTAX ("modify_tls_certificate",
-                           "New CERTIFICATE must not be empty if given."));
-      log_event_fail ("tls_certificate",
-                      "TLS Certificate",
-                      NULL,
-                      "modified");
-      return;
-    }
 
   trust_int = -1;
   if (trust)
@@ -619,7 +688,6 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
                 (tls_certificate_id,
                  comment ? entity_text (comment) : NULL,
                  name ? entity_text (name) : NULL,
-                 certificate ? entity_text (certificate) : NULL,
                  trust_int))
     {
       case 0:

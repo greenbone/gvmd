@@ -165,6 +165,8 @@ get_certificate_info (const gchar *,
                       gchar **,
                       gchar **,
                       gchar **,
+                      gchar **,
+                      gchar **,
                       gnutls_x509_crt_fmt_t *);
 
 gchar *
@@ -172,6 +174,12 @@ certificate_iso_time (time_t);
 
 const gchar *
 certificate_time_status (time_t, time_t);
+
+void
+parse_ssldetails (const char *, time_t *, time_t *, gchar **, gchar **);
+
+const char*
+tls_certificate_format_str (gnutls_x509_crt_fmt_t certificate_format);
 
 
 /* Credentials. */
@@ -2460,6 +2468,9 @@ create_asset_report (const char *, const char *);
 
 int
 create_asset_host (const char *, const char *, resource_t* );
+
+int
+add_assets_from_host_in_report (report_t report, const char *host);
 
 
 /* Notes. */

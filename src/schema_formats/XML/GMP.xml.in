@@ -6074,6 +6074,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The client uses the create_tls_certificate command to create a new
         TLS certificate.
       </p>
+      <p>
+        TLS certificates owned by the current user must have unique
+        fingerprints, so copying will only work with fingerprints owned
+        by another user.
+      </p>
     </description>
     <pattern>
       <o><e>comment</e></o>
@@ -22753,6 +22758,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </summary>
           </column>
           <column>
+            <name>sha256_fingerprint</name>
+            <type>text</type>
+            <summary>
+              SHA256 fingerprint of the certificate
+            </summary>
+          </column>
+          <column>
             <name>md5_fingerprint</name>
             <type>text</type>
             <summary>
@@ -22773,6 +22785,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>valid</name>
             <type>boolean</type>
             <summary>Whether the certificate is currently valid</summary>
+          </column>
+          <column>
+            <name>serial</name>
+            <type>text</type>
+            <summary>
+              Hexadecimal serial number of the certificate
+            </summary>
+          </column>
+          <column>
+            <name>last_collected</name>
+            <type>iso_time</type>
+            <summary>Time the certificate was last collected</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -22818,12 +22842,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>permissions</e>
           <e>certificate</e>
+          <e>sha256_fingerprint</e>
           <e>md5_fingerprint</e>
           <e>trust</e>
           <e>activation_time</e>
           <e>expiration_time</e>
           <e>subject_dn</e>
           <e>issuer_dn</e>
+          <e>serial</e>
+          <e>last_collected</e>
+          <o><e>sources</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -22911,6 +22939,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
         <ele>
+          <name>sha256_fingerprint</name>
+          <summary>The SHA256 fingerprint of the certificate</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
           <name>trust</name>
           <summary>Whether the certificate is trusted</summary>
           <pattern><t>boolean</t></pattern>
@@ -22939,6 +22972,110 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>issuer_dn</name>
           <summary>Distinguished name (DN) of the certificate issuer</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>serial</name>
+          <summary>Hexadecimal serial number of the certificate</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>last_collected</name>
+          <summary>Most recent time the TLS certificate was imported or found in a scan</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>sources</name>
+          <summary>List of sources</summary>
+          <pattern>
+            <any><e>source</e></any>
+          </pattern>
+          <ele>
+            <name>source</name>
+            <summary>A certificate source</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <summary>UUID of the source</summary>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>timestamp</e>
+              <e>tls_versions</e>
+              <o><e>location</e></o>
+              <e>origin</e>
+            </pattern>
+            <ele>
+              <name>timestamp</name>
+              <summary>Time the certificate was found or imported</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>tls_versions</name>
+              <summary>SSL and TLS versions of the service using the certificate, separated with &quot;, &quot;</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>location</name>
+              <summary>A location where the certificate was found</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <summary>UUID of the location</summary>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>host</e>
+                <e>port</e>
+              </pattern>
+              <ele>
+                <name>host</name>
+                <summary>Host where the certificate was found</summary>
+                <pattern>
+                  <e>ip</e>
+                </pattern>
+                <ele>
+                  <name>ip</name>
+                  <summary>IP address of the host</summary>
+                  <pattern>text</pattern>
+                </ele>
+              </ele>
+              <ele>
+                <name>port</name>
+                <summary>Port where the certificate was found</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
+            </ele>
+            <ele>
+              <name>origin</name>
+              <summary>Origin of the certificate data, e.g. a scan report</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <summary>UUID of the location</summary>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>origin_type</e>
+                <e>origin_id</e>
+                <e>origin_data</e>
+              </pattern>
+              <ele>
+                <name>origin_type</name>
+                <summary>Type of origin, e.g. &quot;Import&quot; or &quot;Report&quot;</summary>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>origin_id</name>
+                <summary>Identifier of origin, e.g. a report UUID</summary>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>origin_data</name>
+                <summary>Extra origin data, e.g. OID of the detection NVT</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
         </ele>
       </ele>
       <ele>
@@ -26123,7 +26260,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>copy</e></o>
       <o><e>name</e></o>
       <o><e>trust</e></o>
-      <o><e>certificate</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -26155,13 +26291,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <t>boolean</t>
       </pattern>
     </ele>
-    <ele>
-      <name>certificate</name>
-      <summary>The Base64 encoded certificate data (x.509 DER or PEM)</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
     <response>
       <pattern>
         <attrib>
@@ -26178,14 +26307,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </response>
     <example>
       <summary>
-        Modify the name and certificate content of a TLS certificate
+        Modify the name of a TLS certificate
       </summary>
       <request>
         <modify_tls_certificate
             tls_certificate_id="8a925978-59d0-494b-a837-40b271569727">
-          <name>Updated Example Certificate</name>
-          <certificate>LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVrVENDQ[...]
-          </certificate>
+          <name>Renamed Example Certificate</name>
         </modify_tls_certificate>
       </request>
       <response>
