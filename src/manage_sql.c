@@ -48507,10 +48507,10 @@ buffer_insert (GString *buffer, task_t task, const char* host,
           quoted_qod_type = g_strdup ("");
         }
 
-      nvt_revision = g_strdup_printf ("SELECT iso_time (modification_time)"
-                                      " FROM nvts"
-                                      " WHERE uuid = '%s';",
-                                      nvt);
+      nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                 " FROM nvts"
+                                 " WHERE uuid = '%s';",
+                                 nvt);
     }
   else
     {
