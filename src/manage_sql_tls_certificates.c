@@ -1459,11 +1459,16 @@ add_tls_certificates_from_report_host (report_host_t report_host,
                       report_host,
                       quoted_scanner_fpr);
 
-      parse_ssldetails (ssldetails,
-                        &activation_time,
-                        &expiration_time,
-                        &issuer,
-                        &serial);
+      if (ssldetails)
+        parse_ssldetails (ssldetails,
+                          &activation_time,
+                          &expiration_time,
+                          &issuer,
+                          &serial);
+      else
+        g_warning ("%s: No SSLDetails found for fingerprint %s",
+                   __FUNCTION__,
+                   scanner_fpr);
 
       free (ssldetails);
 
