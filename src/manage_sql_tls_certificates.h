@@ -30,16 +30,18 @@
 int
 delete_tls_certificate (const char *, int);
 
-int
-restore_tls_certificate (const char *);
-
-void
-empty_trashcan_tls_certificates ();
-
 void
 delete_tls_certificates_user (user_t);
 
 void
 inherit_tls_certificates (user_t, user_t);
+
+int
+user_has_tls_certificate (tls_certificate_t, user_t);
+
+int
+add_tls_certificates_from_report_host (report_host_t,
+                                       const char*,
+                                       const char*);
 
 #endif /* not _GVMD_MANAGE_SQL_TLS_CERTIFICATES_H */
