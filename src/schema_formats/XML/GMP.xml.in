@@ -22772,6 +22772,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </summary>
           </column>
           <column>
+            <name>time_status</name>
+            <summary>
+              Whether the certificate is valid, expired or not active yet
+            </summary>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>expired</alt>
+                  <alt>inactive</alt>
+                  <alt>unknown</alt>
+                  <alt>valid</alt>
+                </alts>
+              </t>
+            </pattern>
+          </column>
+          <column>
             <name>activates</name>
             <type>iso_time</type>
             <summary>Time before which the certificate is not valid</summary>
@@ -22845,6 +22861,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>sha256_fingerprint</e>
           <e>md5_fingerprint</e>
           <e>trust</e>
+          <e>time_status</e>
           <e>activation_time</e>
           <e>expiration_time</e>
           <e>subject_dn</e>
@@ -22952,6 +22969,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>valid</name>
           <summary>Whether the certificate is currently valid</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>time_status</name>
+          <summary>
+            Whether the certificate is valid, expired or not active yet
+          </summary>
+          <pattern>
+            <t>
+              <alts>
+                <alt>expired</alt>
+                <alt>inactive</alt>
+                <alt>unknown</alt>
+                <alt>valid</alt>
+              </alts>
+            </t>
+          </pattern>
         </ele>
         <ele>
           <name>activation_time</name>

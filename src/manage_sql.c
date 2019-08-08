@@ -63464,6 +63464,8 @@ type_select_columns (const char *type)
     return task_columns;
   /* Tickets don't use this. */
   assert (strcasecmp (type, "ticket"));
+  if (strcasecmp (type, "TLS_CERTIFICATE") == 0)
+    return tls_certificate_select_columns ();
   if (strcasecmp (type, "USER") == 0)
     return user_columns;
   if (strcasecmp (type, "VULN") == 0)
@@ -63653,6 +63655,8 @@ type_filter_columns (const char *type)
     }
   /* Tickets don't use this. */
   assert (strcasecmp (type, "ticket"));
+  if (strcasecmp (type, "TLS_CERTIFICATE") == 0)
+    return tls_certificate_filter_columns ();
   if (strcasecmp (type, "USER") == 0)
     {
       static const char *ret[] = USER_ITERATOR_FILTER_COLUMNS;

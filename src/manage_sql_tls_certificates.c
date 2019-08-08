@@ -55,7 +55,7 @@ user_tls_certificate_match_internal (tls_certificate_t,
 #define TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "subject_dn", "issuer_dn", "md5_fingerprint", \
    "activates", "expires", "valid", "certificate_format", "last_collected",   \
-   "sha256_fingerprint", "serial", NULL }
+   "sha256_fingerprint", "serial", "time_status", NULL }
 
 /**
  * @brief TLS Certificate iterator columns.
@@ -127,6 +127,17 @@ user_tls_certificate_match_internal (tls_certificate_t,
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
+     "(CASE WHEN (activation_time = -1) OR (expiration_time = 1)"             \
+     "      THEN 'unknown'"                                                   \
+     "      WHEN (expiration_time < m_now() AND expiration_time != 0)"        \
+     "      THEN 'expired'"                                                   \
+     "      WHEN (activation_time > m_now())"                                 \
+     "      THEN 'inactive'"                                                  \
+     "      ELSE 'valid' END)",                                               \
+     "time_status",                                                           \
+     KEYWORD_TYPE_INTEGER                                                     \
+   },                                                                         \
+   {                                                                          \
      "activation_time",                                                       \
      "activates",                                                             \
      KEYWORD_TYPE_INTEGER                                                     \
@@ -146,6 +157,30 @@ user_tls_certificate_match_internal (tls_certificate_t,
  }
 
 /**
+ * @brief Gets the filter columns for TLS certificates.
+ *
+ * @return Constant array of filter columns.
+ */
+const char**
+tls_certificate_filter_columns ()
+{
+  static const char *columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Gets the select columns for TLS certificates.
+ *
+ * @return Constant array of select columns.
+ */
+column_t*
+tls_certificate_select_columns ()
+{
+  static column_t columns[] = TLS_CERTIFICATE_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
  * @brief Count number of tls_certificates.
  *
  * @param[in]  get  GET params.
@@ -155,10 +190,10 @@ user_tls_certificate_match_internal (tls_certificate_t,
 int
 tls_certificate_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
+  static const char *filter_columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TLS_CERTIFICATE_ITERATOR_COLUMNS;
 
-  return count ("tls_certificate", get, columns, NULL, extra_columns,
+  return count ("tls_certificate", get, columns, NULL, filter_columns,
                 0, 0, 0, TRUE);
 }
 
@@ -319,6 +354,16 @@ DEF_ACCESS (tls_certificate_iterator_serial,
  */
 DEF_ACCESS (tls_certificate_iterator_last_collected,
             GET_ITERATOR_COLUMN_COUNT + 11);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_iterator_time_status,
+            GET_ITERATOR_COLUMN_COUNT + 12);
 
 
 /**

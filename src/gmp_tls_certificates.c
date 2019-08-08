@@ -197,6 +197,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          "<md5_fingerprint>%s</md5_fingerprint>"
          "<trust>%d</trust>"
          "<valid>%d</valid>"
+         "<time_status>%s</time_status>"
          "<activation_time>%s</activation_time>"
          "<expiration_time>%s</expiration_time>"
          "<subject_dn>%s</subject_dn>"
@@ -213,6 +214,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          tls_certificate_iterator_sha256_fingerprint (&tls_certificates),
          tls_certificate_iterator_trust (&tls_certificates),
          tls_certificate_iterator_valid (&tls_certificates),
+         tls_certificate_iterator_time_status (&tls_certificates),
          tls_certificate_iterator_activation_time (&tls_certificates),
          tls_certificate_iterator_expiration_time (&tls_certificates),
          tls_certificate_iterator_subject_dn (&tls_certificates),
