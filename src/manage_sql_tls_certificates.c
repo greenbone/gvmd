@@ -146,6 +146,30 @@ user_tls_certificate_match_internal (tls_certificate_t,
  }
 
 /**
+ * @brief Gets the filter columns for TLS certificates.
+ *
+ * @return Constant array of filter columns.
+ */
+const char**
+tls_certificate_filter_columns ()
+{
+  static const char *columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Gets the select columns for TLS certificates.
+ *
+ * @return Constant array of select columns.
+ */
+column_t*
+tls_certificate_select_columns ()
+{
+  static column_t columns[] = TLS_CERTIFICATE_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
  * @brief Count number of tls_certificates.
  *
  * @param[in]  get  GET params.
@@ -155,10 +179,10 @@ user_tls_certificate_match_internal (tls_certificate_t,
 int
 tls_certificate_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
+  static const char *filter_columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TLS_CERTIFICATE_ITERATOR_COLUMNS;
 
-  return count ("tls_certificate", get, columns, NULL, extra_columns,
+  return count ("tls_certificate", get, columns, NULL, filter_columns,
                 0, 0, 0, TRUE);
 }
 
