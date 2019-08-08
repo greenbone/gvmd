@@ -55,7 +55,7 @@ user_tls_certificate_match_internal (tls_certificate_t,
 #define TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "subject_dn", "issuer_dn", "md5_fingerprint", \
    "activates", "expires", "valid", "certificate_format", "last_collected",   \
-   "sha256_fingerprint", "serial", NULL }
+   "sha256_fingerprint", "serial", "time_status", NULL }
 
 /**
  * @brief TLS Certificate iterator columns.
@@ -125,6 +125,17 @@ user_tls_certificate_match_internal (tls_certificate_t,
      " WHERE tls_certificate = tls_certificates.id)",                         \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(CASE WHEN (activation_time = -1) OR (expiration_time = 1)"             \
+     "      THEN 'unknown'"                                                   \
+     "      WHEN (expiration_time < m_now() AND expiration_time != 0)"        \
+     "      THEN 'expired'"                                                   \
+     "      WHEN (activation_time > m_now())"                                 \
+     "      THEN 'inactive'"                                                  \
+     "      ELSE 'valid' END)",                                               \
+     "time_status",                                                           \
+     KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    {                                                                          \
      "activation_time",                                                       \
@@ -343,6 +354,16 @@ DEF_ACCESS (tls_certificate_iterator_serial,
  */
 DEF_ACCESS (tls_certificate_iterator_last_collected,
             GET_ITERATOR_COLUMN_COUNT + 11);
+
+/**
+ * @brief Get a column value from a tls_certificate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (tls_certificate_iterator_time_status,
+            GET_ITERATOR_COLUMN_COUNT + 12);
 
 
 /**

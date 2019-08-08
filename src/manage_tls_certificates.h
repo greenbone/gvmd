@@ -72,6 +72,9 @@ tls_certificate_iterator_serial (iterator_t*);
 const char*
 tls_certificate_iterator_last_collected (iterator_t*);
 
+const char*
+tls_certificate_iterator_time_status (iterator_t*);
+
 int
 tls_certificate_in_use (tls_certificate_t);
 
