@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Change NVT references like CVEs and BID to general vt_refs. [#570](https://github.com/greenbone/gvmd/pull/570) [#574](https://github.com/greenbone/gvmd/pull/574) [#582](https://github.com/greenbone/gvmd/pull/582)
 - Update Postgres to SQLite migration. [#581](https://github.com/greenbone/gvmd/pull/581) [#601](https://github.com/greenbone/gvmd/pull/601) [#604](https://github.com/greenbone/gvmd/pull/604) [#605](https://github.com/greenbone/gvmd/pull/605)
 - Update result diff generation at delta reports [#650](https://github.com/greenbone/gvmd/pull/650)
+- Check and create default permissions individually [#671](https://github.com/greenbone/gvmd/pull/671)
 
 ### Fixed
 - Fix iCalendar recurrence and timezone handling [#654](https://github.com/greenbone/gvmd/pull/654)
