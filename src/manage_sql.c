@@ -9402,11 +9402,12 @@ email (const char *to_address, const char *from_address, const char *subject,
        const char *attachment_name, const char *attachment_extension,
        credential_t recipient_credential)
 {
-  int ret, content_fd, to_fd;
+  int ret, content_fd, args_fd;
   gchar *command;
   GError *error = NULL;
   char content_file_name[] = "/tmp/gvmd-content-XXXXXX";
-  char to_file_name[] = "/tmp/gvmd-to-XXXXXX";
+  char args_file_name[] = "/tmp/gvmd-args-XXXXXX";
+  gchar *sendmail_args;
   FILE *content_file;
 
   content_fd = mkstemp (content_file_name);
@@ -9548,28 +9549,36 @@ email (const char *to_address, const char *from_address, const char *subject,
         }
     }
 
-  to_fd = mkstemp (to_file_name);
-  if (to_fd == -1)
+  args_fd = mkstemp (args_file_name);
+  if (args_fd == -1)
     {
       g_warning ("%s: mkstemp: %s", __FUNCTION__, strerror (errno));
       fclose (content_file);
       return -1;
     }
 
-  g_file_set_contents (to_file_name, to_address, strlen (to_address), &error);
+  sendmail_args = g_strdup_printf ("-f %s %s",
+                                   from_address,
+                                   to_address);
+  g_file_set_contents (args_file_name,
+                       sendmail_args,
+                       strlen (sendmail_args),
+                       &error);
+  g_free (sendmail_args);
+
   if (error)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
       fclose (content_file);
-      close (to_fd);
+      close (args_fd);
       return -1;
     }
 
   command = g_strdup_printf ("xargs -a %s -I XXX"
                              " /usr/sbin/sendmail XXX < %s"
                              " > /dev/null 2>&1",
-                             to_file_name,
+                             args_file_name,
                              content_file_name);
 
   g_debug ("   command: %s", command);
@@ -9584,16 +9593,16 @@ email (const char *to_address, const char *from_address, const char *subject,
                  command);
       g_free (command);
       fclose (content_file);
-      close (to_fd);
+      close (args_fd);
       unlink (content_file_name);
-      unlink (to_file_name);
+      unlink (args_file_name);
       return -1;
     }
   g_free (command);
   fclose (content_file);
-  close (to_fd);
+  close (args_fd);
   unlink (content_file_name);
-  unlink (to_file_name);
+  unlink (args_file_name);
   return 0;
 }
 

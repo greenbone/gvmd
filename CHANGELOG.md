@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changes
 - Check and create default permissions individually [#672](https://github.com/greenbone/gvmd/pull/672)
+- Add -f arg to sendmail call in email alert [#677](https://github.com/greenbone/gvmd/pull/677)
 
 ### Fixed
 - Fix iCalendar recurrence and timezone handling [#653](https://github.com/greenbone/gvmd/pull/653)
