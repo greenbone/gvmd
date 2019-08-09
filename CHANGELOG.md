@@ -30,7 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update Postgres to SQLite migration. [#581](https://github.com/greenbone/gvmd/pull/581) [#601](https://github.com/greenbone/gvmd/pull/601) [#604](https://github.com/greenbone/gvmd/pull/604) [#605](https://github.com/greenbone/gvmd/pull/605)
 - Update result diff generation at delta reports [#650](https://github.com/greenbone/gvmd/pull/650)
 - Check and create default permissions individually [#671](https://github.com/greenbone/gvmd/pull/671)
-- Add -f arg to sendmail call in email alert [#676](https://github.com/greenbone/gvmd/pull/676)
+- Add -f arg to sendmail call in email alert [#676](https://github.com/greenbone/gvmd/pull/676) [#678](https://github.com/greenbone/gvmd/pull/678)
 
 ### Fixed
 - Fix iCalendar recurrence and timezone handling [#654](https://github.com/greenbone/gvmd/pull/654)
