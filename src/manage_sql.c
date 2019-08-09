@@ -9506,7 +9506,7 @@ email (const char *to_address, const char *from_address, const char *subject,
       return -1;
     }
 
-  sendmail_args = g_strdup_printf ("-f %s %s",
+  sendmail_args = g_strdup_printf ("%s %s",
                                    from_address,
                                    to_address);
   g_file_set_contents (args_file_name,
@@ -9524,8 +9524,8 @@ email (const char *to_address, const char *from_address, const char *subject,
       return -1;
     }
 
-  command = g_strdup_printf ("xargs -a %s -I XXX"
-                             " /usr/sbin/sendmail XXX < %s"
+  command = g_strdup_printf ("read FROM TO < %s;"
+                             " /usr/sbin/sendmail -f \"$FROM\" \"$TO\" < %s"
                              " > /dev/null 2>&1",
                              args_file_name,
                              content_file_name);
