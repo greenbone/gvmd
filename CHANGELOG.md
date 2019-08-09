@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Command cleanup-report-formats for --optimize option [#651](https://github.com/greenbone/gvmd/pull/651)
 
 ### Changes
+- Check and create default permissions individually [#672](https://github.com/greenbone/gvmd/pull/672)
 
 ### Fixed
 - Fix iCalendar recurrence and timezone handling [#653](https://github.com/greenbone/gvmd/pull/653)
