@@ -17541,78 +17541,78 @@ add_permissions_on_globals (const gchar *role_uuid)
            role_uuid);
     }
 
-      /* Global configs. */
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_FULL_AND_FAST);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_FULL_AND_FAST_ULTIMATE);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_FULL_AND_VERY_DEEP);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_EMPTY);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_DISCOVERY);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_HOST_DISCOVERY);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_SYSTEM_DISCOVERY);
+  /* Global configs. */
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_FULL_AND_FAST);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_FULL_AND_FAST_ULTIMATE);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_FULL_AND_VERY_DEEP);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_EMPTY);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_DISCOVERY);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_HOST_DISCOVERY);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_SYSTEM_DISCOVERY);
 
-      /* Global port lists. */
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list", PORT_LIST_UUID_DEFAULT);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list", PORT_LIST_UUID_ALL_TCP);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_PRIV_TCP);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_PRIV_TCP_UDP);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_IANA_TCP_2012);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100);
+  /* Global port lists. */
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list", PORT_LIST_UUID_DEFAULT);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list", PORT_LIST_UUID_ALL_TCP);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_PRIV_TCP);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_PRIV_TCP_UDP);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_IANA_TCP_2012);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100);
 
-      /* Scanners are global when created from the command line. */
-      init_iterator (&scanners,
-                     "SELECT id, uuid FROM scanners WHERE owner is NULL;");
-      while (next (&scanners))
-        add_role_permission_resource (role_uuid, "GET_SCANNERS",
-                                      "scanner",
-                                      iterator_string (&scanners, 1));
-      cleanup_iterator (&scanners);
+  /* Scanners are global when created from the command line. */
+  init_iterator (&scanners,
+                  "SELECT id, uuid FROM scanners WHERE owner is NULL;");
+  while (next (&scanners))
+    add_role_permission_resource (role_uuid, "GET_SCANNERS",
+                                  "scanner",
+                                  iterator_string (&scanners, 1));
+  cleanup_iterator (&scanners);
 
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_ADMIN);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_GUEST);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_INFO);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_MONITOR);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_USER);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_OBSERVER);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_ADMIN);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_GUEST);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_INFO);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_MONITOR);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_USER);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_OBSERVER);
 }
 
 /**
@@ -17672,14 +17672,14 @@ check_db_permissions ()
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_GUEST "');");
     }
-      add_role_permission (ROLE_UUID_GUEST, "AUTHENTICATE");
-      add_role_permission (ROLE_UUID_GUEST, "COMMANDS");
-      add_role_permission (ROLE_UUID_GUEST, "HELP");
-      add_role_permission (ROLE_UUID_GUEST, "GET_AGGREGATES");
-      add_role_permission (ROLE_UUID_GUEST, "GET_FILTERS");
-      add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
-      add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
-      add_role_permission (ROLE_UUID_GUEST, "GET_SETTINGS");
+  add_role_permission (ROLE_UUID_GUEST, "AUTHENTICATE");
+  add_role_permission (ROLE_UUID_GUEST, "COMMANDS");
+  add_role_permission (ROLE_UUID_GUEST, "HELP");
+  add_role_permission (ROLE_UUID_GUEST, "GET_AGGREGATES");
+  add_role_permission (ROLE_UUID_GUEST, "GET_FILTERS");
+  add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
+  add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
+  add_role_permission (ROLE_UUID_GUEST, "GET_SETTINGS");
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
@@ -17693,14 +17693,14 @@ check_db_permissions ()
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_INFO "');");
     }
-      add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
-      add_role_permission (ROLE_UUID_INFO, "COMMANDS");
-      add_role_permission (ROLE_UUID_INFO, "HELP");
-      add_role_permission (ROLE_UUID_INFO, "GET_AGGREGATES");
-      add_role_permission (ROLE_UUID_INFO, "GET_INFO");
-      add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
-      add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");
-      add_role_permission (ROLE_UUID_INFO, "MODIFY_SETTING");
+  add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
+  add_role_permission (ROLE_UUID_INFO, "COMMANDS");
+  add_role_permission (ROLE_UUID_INFO, "HELP");
+  add_role_permission (ROLE_UUID_INFO, "GET_AGGREGATES");
+  add_role_permission (ROLE_UUID_INFO, "GET_INFO");
+  add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
+  add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");
+  add_role_permission (ROLE_UUID_INFO, "MODIFY_SETTING");
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
@@ -17714,11 +17714,11 @@ check_db_permissions ()
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_MONITOR "');");
     }
-      add_role_permission (ROLE_UUID_MONITOR, "AUTHENTICATE");
-      add_role_permission (ROLE_UUID_MONITOR, "COMMANDS");
-      add_role_permission (ROLE_UUID_MONITOR, "GET_SETTINGS");
-      add_role_permission (ROLE_UUID_MONITOR, "GET_SYSTEM_REPORTS");
-      add_role_permission (ROLE_UUID_MONITOR, "HELP");
+  add_role_permission (ROLE_UUID_MONITOR, "AUTHENTICATE");
+  add_role_permission (ROLE_UUID_MONITOR, "COMMANDS");
+  add_role_permission (ROLE_UUID_MONITOR, "GET_SETTINGS");
+  add_role_permission (ROLE_UUID_MONITOR, "GET_SYSTEM_REPORTS");
+  add_role_permission (ROLE_UUID_MONITOR, "HELP");
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
@@ -17732,18 +17732,18 @@ check_db_permissions ()
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_USER "');");
     }
-      command = gmp_commands;
-      while (command[0].name)
-        {
-          if (strstr (command[0].name, "DESCRIBE_AUTH") == NULL
-              && strcmp (command[0].name, "GET_VERSION")
-              && strstr (command[0].name, "GROUP") == NULL
-              && strstr (command[0].name, "ROLE") == NULL
-              && strstr (command[0].name, "SYNC") == NULL
-              && strstr (command[0].name, "USER") == NULL)
-            add_role_permission (ROLE_UUID_USER, command[0].name);
-          command++;
-        }
+  command = gmp_commands;
+  while (command[0].name)
+    {
+      if (strstr (command[0].name, "DESCRIBE_AUTH") == NULL
+          && strcmp (command[0].name, "GET_VERSION")
+          && strstr (command[0].name, "GROUP") == NULL
+          && strstr (command[0].name, "ROLE") == NULL
+          && strstr (command[0].name, "SYNC") == NULL
+          && strstr (command[0].name, "USER") == NULL)
+        add_role_permission (ROLE_UUID_USER, command[0].name);
+      command++;
+    }
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
@@ -17757,20 +17757,20 @@ check_db_permissions ()
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_OBSERVER "');");
     }
-      command = gmp_commands;
-      while (command[0].name)
-        {
-          if ((strstr (command[0].name, "GET") == command[0].name)
-              && strcmp (command[0].name, "GET_GROUPS")
-              && strcmp (command[0].name, "GET_ROLES")
-              && strcmp (command[0].name, "GET_USERS")
-              && strcmp (command[0].name, "GET_VERSION"))
-            add_role_permission (ROLE_UUID_OBSERVER, command[0].name);
-          command++;
-        }
-      add_role_permission (ROLE_UUID_OBSERVER, "AUTHENTICATE");
-      add_role_permission (ROLE_UUID_OBSERVER, "HELP");
-      add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
+  command = gmp_commands;
+  while (command[0].name)
+    {
+      if ((strstr (command[0].name, "GET") == command[0].name)
+          && strcmp (command[0].name, "GET_GROUPS")
+          && strcmp (command[0].name, "GET_ROLES")
+          && strcmp (command[0].name, "GET_USERS")
+          && strcmp (command[0].name, "GET_VERSION"))
+        add_role_permission (ROLE_UUID_OBSERVER, command[0].name);
+      command++;
+    }
+  add_role_permission (ROLE_UUID_OBSERVER, "AUTHENTICATE");
+  add_role_permission (ROLE_UUID_OBSERVER, "HELP");
+  add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
 
 
   add_permissions_on_globals (ROLE_UUID_ADMIN);
