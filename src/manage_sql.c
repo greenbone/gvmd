@@ -17508,12 +17508,11 @@ check_db_report_formats_trash ()
  * @brief Add permissions for all global resources.
  *
  * @param[in]  role_uuid  UUID of role.
- * @param[in]  force_add  Whether to always try to add permissions.
  */
 static void
-add_permissions_on_globals (const gchar *role_uuid, gboolean force_add)
+add_permissions_on_globals (const gchar *role_uuid)
 {
-  gboolean must_add = force_add;
+  iterator_t scanners;
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE owner is NULL"
@@ -17534,13 +17533,7 @@ add_permissions_on_globals (const gchar *role_uuid, gboolean force_add)
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '%s');",
            role_uuid);
-
-      must_add = TRUE;
     }
-
-  if (must_add)
-    {
-      iterator_t scanners;
 
       /* Global configs. */
       add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
@@ -17614,18 +17607,15 @@ add_permissions_on_globals (const gchar *role_uuid, gboolean force_add)
       add_role_permission_resource (role_uuid, "GET_ROLES",
                                     "role",
                                     ROLE_UUID_OBSERVER);
-    }
 }
 
 /**
  * @brief Ensure the predefined permissions exists.
- *
- * @param[in]  force_add   Whether to always try to create permissions.
  */
 static void
-check_db_permissions (gboolean force_add)
+check_db_permissions ()
 {
-  gboolean must_add;
+  command_t *command;
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "';")
@@ -17664,7 +17654,6 @@ check_db_permissions (gboolean force_add)
            "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());");
     }
 
-  must_add = force_add;
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT id FROM roles"
@@ -17676,10 +17665,7 @@ check_db_permissions (gboolean force_add)
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_GUEST "');");
-      must_add = TRUE;
     }
-  if (must_add)
-    {
       add_role_permission (ROLE_UUID_GUEST, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_GUEST, "COMMANDS");
       add_role_permission (ROLE_UUID_GUEST, "HELP");
@@ -17688,9 +17674,7 @@ check_db_permissions (gboolean force_add)
       add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
       add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
       add_role_permission (ROLE_UUID_GUEST, "GET_SETTINGS");
-    }
 
-  must_add = force_add;
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT id FROM roles"
@@ -17702,10 +17686,7 @@ check_db_permissions (gboolean force_add)
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_INFO "');");
-      must_add = TRUE;
     }
-  if (must_add)
-    {
       add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_INFO, "COMMANDS");
       add_role_permission (ROLE_UUID_INFO, "HELP");
@@ -17714,9 +17695,7 @@ check_db_permissions (gboolean force_add)
       add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
       add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");
       add_role_permission (ROLE_UUID_INFO, "MODIFY_SETTING");
-    }
 
-  must_add = force_add;
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT id FROM roles"
@@ -17728,18 +17707,13 @@ check_db_permissions (gboolean force_add)
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_MONITOR "');");
-      must_add = TRUE;
     }
-  if (must_add)
-    {
       add_role_permission (ROLE_UUID_MONITOR, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_MONITOR, "COMMANDS");
       add_role_permission (ROLE_UUID_MONITOR, "GET_SETTINGS");
       add_role_permission (ROLE_UUID_MONITOR, "GET_SYSTEM_REPORTS");
       add_role_permission (ROLE_UUID_MONITOR, "HELP");
-    }
 
-  must_add = force_add;
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT id FROM roles"
@@ -17751,11 +17725,7 @@ check_db_permissions (gboolean force_add)
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_USER "');");
-      must_add = TRUE;
     }
-  if (must_add)
-    {
-      command_t *command;
       command = gmp_commands;
       while (command[0].name)
         {
@@ -17768,9 +17738,7 @@ check_db_permissions (gboolean force_add)
             add_role_permission (ROLE_UUID_USER, command[0].name);
           command++;
         }
-    }
 
-  must_add = force_add;
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT id FROM roles"
@@ -17782,11 +17750,7 @@ check_db_permissions (gboolean force_add)
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_OBSERVER "');");
-      must_add = TRUE;
     }
-  if (must_add)
-    {
-      command_t *command;
       command = gmp_commands;
       while (command[0].name)
         {
@@ -17801,12 +17765,12 @@ check_db_permissions (gboolean force_add)
       add_role_permission (ROLE_UUID_OBSERVER, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_OBSERVER, "HELP");
       add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
-    }
 
-  add_permissions_on_globals (ROLE_UUID_ADMIN, force_add);
-  add_permissions_on_globals (ROLE_UUID_GUEST, force_add);
-  add_permissions_on_globals (ROLE_UUID_OBSERVER, force_add);
-  add_permissions_on_globals (ROLE_UUID_USER, force_add);
+
+  add_permissions_on_globals (ROLE_UUID_ADMIN);
+  add_permissions_on_globals (ROLE_UUID_GUEST);
+  add_permissions_on_globals (ROLE_UUID_OBSERVER);
+  add_permissions_on_globals (ROLE_UUID_USER);
 }
 
 /**
@@ -17920,7 +17884,7 @@ check_db (int check_encryption_key)
     goto fail;
   if (check_db_report_formats_trash ())
     goto fail;
-  check_db_permissions (TRUE);
+  check_db_permissions ();
   check_db_settings ();
   cleanup_schedule_times ();
   if (check_encryption_key && check_db_encryption_key ())
