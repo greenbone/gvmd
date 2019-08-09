@@ -56,6 +56,12 @@ parse_ssldetails (const char *ssldetails,
 {
   gchar **ssldetails_split, **ssldetails_point;
 
+  if (ssldetails == NULL)
+    {
+      g_warning ("%s: ssldetails is NULL", __FUNCTION__);
+      return;
+    }
+
   ssldetails_split = g_strsplit (ssldetails, "|", -1);
   ssldetails_point = ssldetails_split;
   while (*ssldetails_point)

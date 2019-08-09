@@ -27,6 +27,12 @@
 #ifndef _GVMD_MANAGE_SQL_TLS_CERTIFICATES_H
 #define _GVMD_MANAGE_SQL_TLS_CERTIFICATES_H
 
+const char**
+tls_certificate_filter_columns ();
+
+column_t*
+tls_certificate_select_columns ();
+
 int
 delete_tls_certificate (const char *, int);
 
