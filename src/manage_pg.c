@@ -2738,7 +2738,6 @@ create_tables ()
        "  date integer,"
        "  start_time integer,"
        "  end_time integer,"
-       "  nbefile text,"
        "  comment text,"
        "  scan_run_status integer,"
        "  slave_progress integer,"
