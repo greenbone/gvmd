@@ -167,12 +167,7 @@ ticket_status_name (ticket_status_t status)
    { "iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING },             \
    { "fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER },             \
    {                                                                          \
-     "(CASE"                                                                  \
-     " WHEN (SELECT EXISTS (SELECT * FROM ticket_results"                     \
-     "                      WHERE ticket = tickets.id))"                      \
-     " THEN 0"                                                                \
-     " ELSE 1"                                                                \
-     " END)",                                                                 \
+     "(task = -1)",                                                           \
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
@@ -241,12 +236,7 @@ ticket_status_name (ticket_status_t status)
    { "iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING },             \
    { "fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER },             \
    {                                                                          \
-     "(CASE"                                                                  \
-     " WHEN (SELECT EXISTS (SELECT * FROM ticket_results_trash"               \
-     "                      WHERE ticket = tickets_trash.id))"                \
-     " THEN 0"                                                                \
-     " ELSE 1"                                                                \
-     " END)",                                                                 \
+     "(task = -1)",                                                           \
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
@@ -445,6 +435,20 @@ DEF_ACCESS (ticket_iterator_closed_time, GET_ITERATOR_COLUMN_COUNT + 12);
  * @return Iterator column value or NULL if iteration is complete.
  */
 DEF_ACCESS (ticket_iterator_fix_verified_time, GET_ITERATOR_COLUMN_COUNT + 14);
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column, or -1 if iteration is complete.
+ */
+int
+ticket_iterator_orphan (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
+}
 
 /**
  * @brief Get column value from a ticket iterator.
