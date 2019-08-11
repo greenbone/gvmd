@@ -1445,6 +1445,12 @@ const char*
 result_iterator_nvt_name (iterator_t *);
 
 const char*
+result_iterator_nvt_solution (iterator_t *);
+
+const char*
+result_iterator_nvt_solution_type (iterator_t *);
+
+const char*
 result_iterator_nvt_family (iterator_t *);
 
 const char*
