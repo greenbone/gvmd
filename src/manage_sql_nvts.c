@@ -248,25 +248,6 @@ insert_nvt (const nvti_t *nvti)
         }
       g_strfreev (split);
 
-      /* Add the elements that are expected as part of the pipe-separated tag list
-       * via API although internally already explicitely stored. Once the API is
-       * extended to have these elements explicitely, they do not need to be
-       * added to this string anymore. */
-      if (nvti_solution (nvti))
-        {
-          if (tag->str)
-            g_string_append_printf (tag, "|solution=%s", nvti_solution (nvti));
-          else
-            g_string_append_printf (tag, "solution=%s", nvti_solution (nvti));
-        }
-      if (nvti_solution_type (nvti))
-        {
-          if (tag->str)
-            g_string_append_printf (tag, "|solution_type=%s", nvti_solution_type (nvti));
-          else
-            g_string_append_printf (tag, "solution_type=%s", nvti_solution_type (nvti));
-        }
-
       quoted_tag = sql_quote (tag->str);
       g_string_free (tag, TRUE);
     }
