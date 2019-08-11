@@ -15550,7 +15550,7 @@ update_nvti_cache ()
   nvti_cache = nvtis_new ();
 
   init_iterator (&nvts,
-                 "SELECT oid, name, family, cvss_base, tag FROM nvts;");
+                 "SELECT oid, name, family, cvss_base, tag, solution, solution_type FROM nvts;");
   while (next (&nvts))
     {
       iterator_t refs;
@@ -15561,6 +15561,8 @@ update_nvti_cache ()
       nvti_set_family (nvti, iterator_string (&nvts, 2));
       nvti_set_cvss_base (nvti, iterator_string (&nvts, 3));
       nvti_set_tag (nvti, iterator_string (&nvts, 4));
+      nvti_set_solution (nvti, iterator_string (&nvts, 5));
+      nvti_set_solution_type (nvti, iterator_string (&nvts, 6));
 
       init_iterator (&refs,
                      "SELECT type, ref_id, ref_text"
@@ -24297,6 +24299,43 @@ result_iterator_nvt_name (iterator_t *iterator)
   nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_name (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT solution from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_solution (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_solution (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT solution_type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution_type of the NVT that produced the result,
+ *         or NULL on error.
+ */
+const char*
+result_iterator_nvt_solution_type (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_solution_type (nvti);
   return NULL;
 }
 
