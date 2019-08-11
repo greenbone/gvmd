@@ -502,17 +502,10 @@ init_ticket_result_iterator (iterator_t *iterator,
   init_iterator (iterator,
                  "SELECT result,"
                  "       ticket,"
-                 "       (CASE"
-                 "        WHEN result_location = %i"
-                 "        THEN (SELECT uuid FROM results"
-                 "              WHERE id = result)"
-                 "        ELSE (SELECT uuid FROM results_trash"
-                 "              WHERE id = result)"
-                 "        END)"
+                 "       result_uuid"
                  " FROM ticket_results%s"
                  " WHERE ticket = %llu"
                  " ORDER BY id;",
-                 LOCATION_TABLE,
                  trash ? "_trash" : "",
                  ticket);
   return 0;
