@@ -7374,7 +7374,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
   if (details)
     {
       int tag_count;
-      GString *refs_str, *tags_str, *buffer;
+      GString *refs_str, *tags_str, *buffer, *nvt_tags;
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
       char *default_timeout = nvt_default_timeout (oid);
@@ -7383,6 +7383,28 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       DEF (tag);
 
 #undef DEF
+
+      nvt_tags = g_string_new (tag_text);
+      g_free (tag_text);
+
+      /* Add the elements that are expected as part of the pipe-separated tag list
+       * via API although internally already explicitely stored. Once the API is
+       * extended to have these elements explicitely, they do not need to be
+       * added to this string anymore. */
+      if (nvt_iterator_solution (nvts))
+        {
+          if (nvt_tags->str)
+            g_string_append_printf (nvt_tags, "|solution=%s", nvt_iterator_solution (nvts));
+          else
+            g_string_append_printf (nvt_tags, "solution=%s", result_iterator_nvt_solution (nvts));
+        }
+      if (nvt_iterator_solution_type (nvts))
+        {
+          if (nvt_tags->str)
+            g_string_append_printf (nvt_tags, "|solution_type=%s", nvt_iterator_solution_type (nvts));
+          else
+            g_string_append_printf (nvt_tags, "solution_type=%s", nvt_iterator_solution_type (nvts));
+        }
 
       refs_str = g_string_new ("");
 
@@ -7495,12 +7517,12 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               nvt_iterator_qod (nvts),
                               nvt_iterator_qod_type (nvts),
                               refs_str->str,
-                              tag_text,
+                              nvt_tags->str,
                               pref_count,
                               timeout ? timeout : "",
                               default_timeout ? default_timeout : "");
       g_free (family_text);
-      g_free (tag_text);
+      g_string_free(nvt_tags, 1);
       g_string_free(refs_str, 1);
       g_string_free(tags_str, 1);
 
