@@ -1163,6 +1163,38 @@ migrate_213_to_214 ()
 }
 
 /**
+ * @brief Migrate the database from version 214 to version 215.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_214_to_215 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 214. */
+
+  if (manage_db_version () != 214)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The column nbefile was removed from reports. */
+  sql ("ALTER TABLE reports DROP COLUMN nbefile;");
+
+  /* Set the database version to 215 */
+
+  set_db_version (215);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
  * @brief Migrate the database from version 215 to version 216.
  *
  * @return 0 success, -1 error.
@@ -1197,38 +1229,6 @@ migrate_215_to_216 ()
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
- * @brief Migrate the database from version 214 to version 215.
- *
- * @return 0 success, -1 error.
- */
-int
-migrate_214_to_215 ()
-{
-  sql_begin_immediate ();
-
-  /* Ensure that the database is currently version 214. */
-
-  if (manage_db_version () != 214)
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The column nbefile was removed from reports. */
-  sql ("ALTER TABLE reports DROP COLUMN nbefile;");
-
-  /* Set the database version to 215 */
-
-  set_db_version (215);
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
  * @brief The oldest version for which migration is supported
  */
 #define MIGRATE_MIN_OLD_VERSION 205
@@ -1247,6 +1247,7 @@ static migrator_t database_migrators[] = {
   {213, migrate_212_to_213},
   {214, migrate_213_to_214},
   {215, migrate_214_to_215},
+  {216, migrate_215_to_216},
   /* End marker. */
   {-1, NULL}};
 
