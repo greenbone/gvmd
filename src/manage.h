@@ -2015,6 +2015,9 @@ const char*
 nvt_iterator_qod_type ( iterator_t *iterator );
 
 const char*
+nvt_iterator_solution (iterator_t*);
+
+const char*
 nvt_iterator_solution_type (iterator_t*);
 
 char*
