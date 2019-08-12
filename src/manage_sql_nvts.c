@@ -147,7 +147,15 @@ set_nvts_feed_version (const char *feed_version)
 gboolean
 find_nvt (const char *oid, nvt_t *nvt)
 {
-  switch (sql_int64 (nvt, "SELECT id FROM nvts WHERE oid = '%s';", oid))
+  gchar *quoted_oid;
+  int ret;
+
+  quoted_oid = sql_quote (oid);
+  ret = sql_int64 (nvt,
+                   "SELECT id FROM nvts WHERE oid = '%s';",
+                   quoted_oid);
+  g_free (quoted_oid);
+  switch (ret)
     {
     case 0:
       break;
