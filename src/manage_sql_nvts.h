@@ -55,6 +55,7 @@
    { "qod_type", NULL, KEYWORD_TYPE_STRING },                               \
    { "solution_type", NULL, KEYWORD_TYPE_STRING },                          \
    { "tag", "script_tags", KEYWORD_TYPE_STRING},                            \
+   { "solution", NULL, KEYWORD_TYPE_STRING},                                \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 

@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673)
 - Update NVTs via OSP [#392](https://github.com/greenbone/gvmd/pull/392) [#609](https://github.com/greenbone/gvmd/pull/609) [#626](https://github.com/greenbone/gvmd/pull/626)
 - Handle addition of ID to NVT preferences. [#413](https://github.com/greenbone/gvmd/pull/413)
 - Add setting 'OMP Slave Check Period' [#491](https://github.com/greenbone/gvmd/pull/491)
@@ -28,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Change NVT references like CVEs and BID to general vt_refs. [#570](https://github.com/greenbone/gvmd/pull/570) [#574](https://github.com/greenbone/gvmd/pull/574) [#582](https://github.com/greenbone/gvmd/pull/582)
 - Update Postgres to SQLite migration. [#581](https://github.com/greenbone/gvmd/pull/581) [#601](https://github.com/greenbone/gvmd/pull/601) [#604](https://github.com/greenbone/gvmd/pull/604) [#605](https://github.com/greenbone/gvmd/pull/605)
 - Update result diff generation at delta reports [#650](https://github.com/greenbone/gvmd/pull/650)
+- Check and create default permissions individually [#671](https://github.com/greenbone/gvmd/pull/671)
+- Add -f arg to sendmail call in email alert [#676](https://github.com/greenbone/gvmd/pull/676) [#678](https://github.com/greenbone/gvmd/pull/678)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)
@@ -35,6 +38,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix issues with some scheduled tasks by using iCalendar more instead of old period fields [#656](https://github.com/greenbone/gvmd/pull/655)
 - Fix an issue in getting the reports from GMP scanners [#659](https://github.com/greenbone/gvmd/pull/659) [#665](https://github.com/greenbone/gvmd/pull/665)
 - Fix GET_SYSTEM_REPORTS using slave_id [#668](https://github.com/greenbone/gvmd/pull/668)
+- Fix RAW_DATA when calling GET_INFO with type NVT without attributes name or info_id [#682](https://github.com/greenbone/gvmd/pull/682)
+- Fix ORPHAN calculation in GET_TICKETS [#684](https://github.com/greenbone/gvmd/pull/684)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)

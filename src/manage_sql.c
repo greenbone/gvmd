@@ -4480,7 +4480,8 @@ type_has_trash (const char *type)
           && type_is_info_subtype (type) == 0
           && strcasecmp (type, "allinfo")
           && strcasecmp (type, "vuln")
-          && strcasecmp (type, "user"));
+          && strcasecmp (type, "user")
+          && strcasecmp (type, "tls_certificate"));
 }
 
 /**
@@ -4797,6 +4798,11 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
 
   if (named && name && *name && resource_with_name_exists (name, type, 0))
     return 1;
+
+  if ((strcmp (type, "tls_certificate") == 0)
+      && user_has_tls_certificate (resource, owner))
+    return 1;
+
   if (name && *name)
     quoted_name = sql_quote (name);
   else
@@ -9345,11 +9351,12 @@ email (const char *to_address, const char *from_address, const char *subject,
        const char *attachment_name, const char *attachment_extension,
        credential_t recipient_credential)
 {
-  int ret, content_fd, to_fd;
+  int ret, content_fd, args_fd;
   gchar *command;
   GError *error = NULL;
   char content_file_name[] = "/tmp/gvmd-content-XXXXXX";
-  char to_file_name[] = "/tmp/gvmd-to-XXXXXX";
+  char args_file_name[] = "/tmp/gvmd-args-XXXXXX";
+  gchar *sendmail_args;
   FILE *content_file;
 
   content_fd = mkstemp (content_file_name);
@@ -9491,28 +9498,36 @@ email (const char *to_address, const char *from_address, const char *subject,
         }
     }
 
-  to_fd = mkstemp (to_file_name);
-  if (to_fd == -1)
+  args_fd = mkstemp (args_file_name);
+  if (args_fd == -1)
     {
       g_warning ("%s: mkstemp: %s", __FUNCTION__, strerror (errno));
       fclose (content_file);
       return -1;
     }
 
-  g_file_set_contents (to_file_name, to_address, strlen (to_address), &error);
+  sendmail_args = g_strdup_printf ("%s %s",
+                                   from_address,
+                                   to_address);
+  g_file_set_contents (args_file_name,
+                       sendmail_args,
+                       strlen (sendmail_args),
+                       &error);
+  g_free (sendmail_args);
+
   if (error)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
       fclose (content_file);
-      close (to_fd);
+      close (args_fd);
       return -1;
     }
 
-  command = g_strdup_printf ("xargs -a %s -I XXX"
-                             " /usr/sbin/sendmail XXX < %s"
+  command = g_strdup_printf ("read FROM TO < %s;"
+                             " /usr/sbin/sendmail -f \"$FROM\" \"$TO\" < %s"
                              " > /dev/null 2>&1",
-                             to_file_name,
+                             args_file_name,
                              content_file_name);
 
   g_debug ("   command: %s", command);
@@ -9527,16 +9542,16 @@ email (const char *to_address, const char *from_address, const char *subject,
                  command);
       g_free (command);
       fclose (content_file);
-      close (to_fd);
+      close (args_fd);
       unlink (content_file_name);
-      unlink (to_file_name);
+      unlink (args_file_name);
       return -1;
     }
   g_free (command);
   fclose (content_file);
-  close (to_fd);
+  close (args_fd);
   unlink (content_file_name);
-  unlink (to_file_name);
+  unlink (args_file_name);
   return 0;
 }
 
@@ -15535,7 +15550,7 @@ update_nvti_cache ()
   nvti_cache = nvtis_new ();
 
   init_iterator (&nvts,
-                 "SELECT oid, name, family, cvss_base, tag FROM nvts;");
+                 "SELECT oid, name, family, cvss_base, tag, solution, solution_type FROM nvts;");
   while (next (&nvts))
     {
       iterator_t refs;
@@ -15546,6 +15561,8 @@ update_nvti_cache ()
       nvti_set_family (nvti, iterator_string (&nvts, 2));
       nvti_set_cvss_base (nvti, iterator_string (&nvts, 3));
       nvti_set_tag (nvti, iterator_string (&nvts, 4));
+      nvti_set_solution (nvti, iterator_string (&nvts, 5));
+      nvti_set_solution_type (nvti, iterator_string (&nvts, 6));
 
       init_iterator (&refs,
                      "SELECT type, ref_id, ref_text"
@@ -16640,23 +16657,33 @@ check_db_settings ()
  *
  * Caller must ensure args are SQL escaped.
  *
- * @param[in]  role        Role.
+ * @param[in]  role_id     Role.
  * @param[in]  permission  Permission.
  */
 static void
-add_role_permission (const gchar *role, const gchar *permission)
+add_role_permission (const gchar *role_id, const gchar *permission)
 {
-  sql ("INSERT INTO permissions"
-       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
-       "  resource_location, subject_type, subject, subject_location,"
-       "  creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), NULL, lower ('%s'), '', '',"
-       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
-       "  (SELECT id FROM roles WHERE uuid = '%s'),"
-       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
-       permission,
-       role);
+  if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
+               "               WHERE owner IS NULL"
+               "               AND name = lower ('%s')"
+               "               AND resource_type = ''"
+               "               AND resource = 0"
+               "               AND subject_type = 'role'"
+               "               AND subject = (SELECT id FROM roles"
+               "                              WHERE uuid = '%s'));",
+               permission,
+               role_id) == 0)
+    sql ("INSERT INTO permissions"
+         " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+         "  resource_location, subject_type, subject, subject_location,"
+         "  creation_time, modification_time)"
+         " VALUES"
+         " (make_uuid (), NULL, lower ('%s'), '', '',"
+         "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+         "  (SELECT id FROM roles WHERE uuid = '%s'),"
+         "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
+         permission,
+         role_id);
 }
 
 /**
@@ -17496,6 +17523,8 @@ check_db_report_formats_trash ()
 static void
 add_permissions_on_globals (const gchar *role_uuid)
 {
+  iterator_t scanners;
+
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE owner is NULL"
                " AND subject_type = 'role'"
@@ -17506,8 +17535,6 @@ add_permissions_on_globals (const gchar *role_uuid)
                role_uuid)
       == 0)
     {
-      iterator_t scanners;
-
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions"
            " WHERE owner IS NULL"
@@ -17517,80 +17544,80 @@ add_permissions_on_globals (const gchar *role_uuid)
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '%s');",
            role_uuid);
-
-      /* Global configs. */
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_FULL_AND_FAST);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_FULL_AND_FAST_ULTIMATE);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_FULL_AND_VERY_DEEP);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_EMPTY);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_DISCOVERY);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_HOST_DISCOVERY);
-      add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                    CONFIG_UUID_SYSTEM_DISCOVERY);
-
-      /* Global port lists. */
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list", PORT_LIST_UUID_DEFAULT);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list", PORT_LIST_UUID_ALL_TCP);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_PRIV_TCP);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_PRIV_TCP_UDP);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_IANA_TCP_2012);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012);
-      add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                    "port_list",
-                                    PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100);
-
-      /* Scanners are global when created from the command line. */
-      init_iterator (&scanners,
-                     "SELECT id, uuid FROM scanners WHERE owner is NULL;");
-      while (next (&scanners))
-        add_role_permission_resource (role_uuid, "GET_SCANNERS",
-                                      "scanner",
-                                      iterator_string (&scanners, 1));
-      cleanup_iterator (&scanners);
-
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_ADMIN);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_GUEST);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_INFO);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_MONITOR);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_USER);
-      add_role_permission_resource (role_uuid, "GET_ROLES",
-                                    "role",
-                                    ROLE_UUID_OBSERVER);
     }
+
+  /* Global configs. */
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_FULL_AND_FAST);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_FULL_AND_FAST_ULTIMATE);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_FULL_AND_VERY_DEEP);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_EMPTY);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_DISCOVERY);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_HOST_DISCOVERY);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_SYSTEM_DISCOVERY);
+
+  /* Global port lists. */
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list", PORT_LIST_UUID_DEFAULT);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list", PORT_LIST_UUID_ALL_TCP);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_PRIV_TCP);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_PRIV_TCP_UDP);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_IANA_TCP_2012);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012);
+  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
+                                "port_list",
+                                PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100);
+
+  /* Scanners are global when created from the command line. */
+  init_iterator (&scanners,
+                  "SELECT id, uuid FROM scanners WHERE owner is NULL;");
+  while (next (&scanners))
+    add_role_permission_resource (role_uuid, "GET_SCANNERS",
+                                  "scanner",
+                                  iterator_string (&scanners, 1));
+  cleanup_iterator (&scanners);
+
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_ADMIN);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_GUEST);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_INFO);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_MONITOR);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_USER);
+  add_role_permission_resource (role_uuid, "GET_ROLES",
+                                "role",
+                                ROLE_UUID_OBSERVER);
 }
 
 /**
@@ -17599,6 +17626,8 @@ add_permissions_on_globals (const gchar *role_uuid)
 static void
 check_db_permissions ()
 {
+  command_t *command;
+
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "';")
       == 0)
@@ -17647,15 +17676,15 @@ check_db_permissions ()
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_GUEST "');");
-      add_role_permission (ROLE_UUID_GUEST, "AUTHENTICATE");
-      add_role_permission (ROLE_UUID_GUEST, "COMMANDS");
-      add_role_permission (ROLE_UUID_GUEST, "HELP");
-      add_role_permission (ROLE_UUID_GUEST, "GET_AGGREGATES");
-      add_role_permission (ROLE_UUID_GUEST, "GET_FILTERS");
-      add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
-      add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
-      add_role_permission (ROLE_UUID_GUEST, "GET_SETTINGS");
     }
+  add_role_permission (ROLE_UUID_GUEST, "AUTHENTICATE");
+  add_role_permission (ROLE_UUID_GUEST, "COMMANDS");
+  add_role_permission (ROLE_UUID_GUEST, "HELP");
+  add_role_permission (ROLE_UUID_GUEST, "GET_AGGREGATES");
+  add_role_permission (ROLE_UUID_GUEST, "GET_FILTERS");
+  add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
+  add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
+  add_role_permission (ROLE_UUID_GUEST, "GET_SETTINGS");
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
@@ -17668,15 +17697,15 @@ check_db_permissions ()
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_INFO "');");
-      add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
-      add_role_permission (ROLE_UUID_INFO, "COMMANDS");
-      add_role_permission (ROLE_UUID_INFO, "HELP");
-      add_role_permission (ROLE_UUID_INFO, "GET_AGGREGATES");
-      add_role_permission (ROLE_UUID_INFO, "GET_INFO");
-      add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
-      add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");
-      add_role_permission (ROLE_UUID_INFO, "MODIFY_SETTING");
     }
+  add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
+  add_role_permission (ROLE_UUID_INFO, "COMMANDS");
+  add_role_permission (ROLE_UUID_INFO, "HELP");
+  add_role_permission (ROLE_UUID_INFO, "GET_AGGREGATES");
+  add_role_permission (ROLE_UUID_INFO, "GET_INFO");
+  add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
+  add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");
+  add_role_permission (ROLE_UUID_INFO, "MODIFY_SETTING");
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
@@ -17689,12 +17718,12 @@ check_db_permissions ()
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_MONITOR "');");
-      add_role_permission (ROLE_UUID_MONITOR, "AUTHENTICATE");
-      add_role_permission (ROLE_UUID_MONITOR, "COMMANDS");
-      add_role_permission (ROLE_UUID_MONITOR, "GET_SETTINGS");
-      add_role_permission (ROLE_UUID_MONITOR, "GET_SYSTEM_REPORTS");
-      add_role_permission (ROLE_UUID_MONITOR, "HELP");
     }
+  add_role_permission (ROLE_UUID_MONITOR, "AUTHENTICATE");
+  add_role_permission (ROLE_UUID_MONITOR, "COMMANDS");
+  add_role_permission (ROLE_UUID_MONITOR, "GET_SETTINGS");
+  add_role_permission (ROLE_UUID_MONITOR, "GET_SYSTEM_REPORTS");
+  add_role_permission (ROLE_UUID_MONITOR, "HELP");
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
@@ -17703,24 +17732,22 @@ check_db_permissions ()
                " AND resource = 0;")
       <= 1)
     {
-      command_t *command;
-      command = gmp_commands;
-
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_USER "');");
-      while (command[0].name)
-        {
-          if (strstr (command[0].name, "DESCRIBE_AUTH") == NULL
-              && strcmp (command[0].name, "GET_VERSION")
-              && strstr (command[0].name, "GROUP") == NULL
-              && strstr (command[0].name, "ROLE") == NULL
-              && strstr (command[0].name, "SYNC") == NULL
-              && strstr (command[0].name, "USER") == NULL)
-            add_role_permission (ROLE_UUID_USER, command[0].name);
-          command++;
-        }
+    }
+  command = gmp_commands;
+  while (command[0].name)
+    {
+      if (strstr (command[0].name, "DESCRIBE_AUTH") == NULL
+          && strcmp (command[0].name, "GET_VERSION")
+          && strstr (command[0].name, "GROUP") == NULL
+          && strstr (command[0].name, "ROLE") == NULL
+          && strstr (command[0].name, "SYNC") == NULL
+          && strstr (command[0].name, "USER") == NULL)
+        add_role_permission (ROLE_UUID_USER, command[0].name);
+      command++;
     }
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -17730,26 +17757,26 @@ check_db_permissions ()
                " AND resource = 0;")
       <= 1)
     {
-      command_t *command;
-      command = gmp_commands;
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
            "                WHERE uuid = '" ROLE_UUID_OBSERVER "');");
-      while (command[0].name)
-        {
-          if ((strstr (command[0].name, "GET") == command[0].name)
-              && strcmp (command[0].name, "GET_GROUPS")
-              && strcmp (command[0].name, "GET_ROLES")
-              && strcmp (command[0].name, "GET_USERS")
-              && strcmp (command[0].name, "GET_VERSION"))
-            add_role_permission (ROLE_UUID_OBSERVER, command[0].name);
-          command++;
-        }
-      add_role_permission (ROLE_UUID_OBSERVER, "AUTHENTICATE");
-      add_role_permission (ROLE_UUID_OBSERVER, "HELP");
-      add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
     }
+  command = gmp_commands;
+  while (command[0].name)
+    {
+      if ((strstr (command[0].name, "GET") == command[0].name)
+          && strcmp (command[0].name, "GET_GROUPS")
+          && strcmp (command[0].name, "GET_ROLES")
+          && strcmp (command[0].name, "GET_USERS")
+          && strcmp (command[0].name, "GET_VERSION"))
+        add_role_permission (ROLE_UUID_OBSERVER, command[0].name);
+      command++;
+    }
+  add_role_permission (ROLE_UUID_OBSERVER, "AUTHENTICATE");
+  add_role_permission (ROLE_UUID_OBSERVER, "HELP");
+  add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
+
 
   add_permissions_on_globals (ROLE_UUID_ADMIN);
   add_permissions_on_globals (ROLE_UUID_GUEST);
@@ -21911,11 +21938,11 @@ report_clear_count_cache (report_t report,
 report_t
 make_report (task_t task, const char* uuid, task_status_t status)
 {
-  sql ("INSERT into reports (uuid, owner, task, date, nbefile, comment,"
+  sql ("INSERT into reports (uuid, owner, task, date, comment,"
        " scan_run_status, slave_progress, slave_task_uuid)"
        " VALUES ('%s',"
        " (SELECT owner FROM tasks WHERE tasks.id = %llu),"
-       " %llu, %i, '', '', %u, 0, '');",
+       " %llu, %i, '', %u, 0, '');",
        uuid, task, task, time (NULL), status);
   return sql_last_insert_id ();
 }
@@ -22432,6 +22459,20 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
               }
           }
         insert_count++;
+      }
+
+  sql_commit ();
+
+  index = 0;
+  sql_begin_immediate ();
+  while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
+                                                             index++)))
+    if (end->host)
+      {
+        sql_commit ();
+        gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+        add_assets_from_host_in_report (report, end->host);
+        sql_begin_immediate ();
       }
 
   if (first == 0)
@@ -24258,6 +24299,43 @@ result_iterator_nvt_name (iterator_t *iterator)
   nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_name (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT solution from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_solution (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_solution (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT solution_type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution_type of the NVT that produced the result,
+ *         or NULL on error.
+ */
+const char*
+result_iterator_nvt_solution_type (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_solution_type (nvti);
   return NULL;
 }
 
@@ -31408,6 +31486,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_END") == 0))
         {
           set_scan_host_end_time_otp (report, host, desc);
+          add_assets_from_host_in_report (report, host);
         }
       else
         {
@@ -54395,11 +54474,6 @@ manage_restore (const char *id)
   if (ret != 2)
     return ret;
 
-  /* TLS Certificate. */
-  ret = restore_tls_certificate (id);
-  if (ret != 2)
-    return ret;
-
   /* Agent. */
 
   if (find_trash ("agent", id, &resource))
@@ -55601,7 +55675,6 @@ manage_empty_trashcan ()
        current_credentials.uuid);
   sql ("DELETE FROM configs_trash" WHERE_OWNER);
   empty_trashcan_tickets ();
-  empty_trashcan_tls_certificates();
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'group'"
        " AND subject IN (SELECT id from groups_trash"
@@ -57905,6 +57978,60 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
 
   sql_rollback ();
   return 2;
+}
+
+/**
+ * @brief Generates and adds assets from report host details
+ *
+ * @param[in]  report   The report to get host details from.
+ * @param[in]  host_ip  IP address of the host to get details from.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+add_assets_from_host_in_report (report_t report, const char *host_ip)
+{
+  int ret;
+  gchar *quoted_host;
+  char *report_id;
+  report_host_t report_host = 0;
+
+  /* Get report UUID */
+  report_id = report_uuid (report);
+  if (report_id == NULL)
+    {
+      g_warning ("%s: report %llu not found.",
+                 __FUNCTION__, report);
+      return -1;
+    }
+
+  /* Find report_host */
+  quoted_host = sql_quote (host_ip);
+  sql_int64 (&report_host,
+             "SELECT id FROM report_hosts"
+             " WHERE host = '%s' AND report = %llu",
+             quoted_host,
+             report);
+  g_free (quoted_host);
+  if (report_host == 0)
+    {
+      g_warning ("%s: report_host for host '%s' and report '%s' not found.",
+                 __FUNCTION__, host_ip, report_id);
+      free (report_id);
+      return -1;
+    }
+
+  /* Create assets */
+  ret = add_tls_certificates_from_report_host (report_host,
+                                               report_id,
+                                               host_ip);
+  if (ret)
+    {
+      free (report_id);
+      return ret;
+    }
+
+  return 0;
 }
 
 
@@ -63395,6 +63522,8 @@ type_select_columns (const char *type)
     return task_columns;
   /* Tickets don't use this. */
   assert (strcasecmp (type, "ticket"));
+  if (strcasecmp (type, "TLS_CERTIFICATE") == 0)
+    return tls_certificate_select_columns ();
   if (strcasecmp (type, "USER") == 0)
     return user_columns;
   if (strcasecmp (type, "VULN") == 0)
@@ -63584,6 +63713,8 @@ type_filter_columns (const char *type)
     }
   /* Tickets don't use this. */
   assert (strcasecmp (type, "ticket"));
+  if (strcasecmp (type, "TLS_CERTIFICATE") == 0)
+    return tls_certificate_filter_columns ();
   if (strcasecmp (type, "USER") == 0)
     {
       static const char *ret[] = USER_ITERATOR_FILTER_COLUMNS;

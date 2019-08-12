@@ -10170,9 +10170,29 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
       else
         {
           const char *cvss_base = result_iterator_nvt_cvss_base (results);
+          GString *tags = g_string_new (result_iterator_nvt_tag (results));
 
           if (!cvss_base && !strcmp (oid, "0"))
             cvss_base = "0.0";
+
+          /* Add the elements that are expected as part of the pipe-separated tag list
+           * via API although internally already explicitely stored. Once the API is
+           * extended to have these elements explicitely, they do not need to be
+           * added to this string anymore. */
+          if (result_iterator_nvt_solution (results))
+            {
+              if (tags->str)
+                g_string_append_printf (tags, "|solution=%s", result_iterator_nvt_solution (results));
+              else
+                g_string_append_printf (tags, "solution=%s", result_iterator_nvt_solution (results));
+            }
+          if (result_iterator_nvt_solution_type (results))
+            {
+              if (tags->str)
+                g_string_append_printf (tags, "|solution_type=%s", result_iterator_nvt_solution_type (results));
+              else
+                g_string_append_printf (tags, "solution_type=%s", result_iterator_nvt_solution_type (results));
+            }
 
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
@@ -10185,7 +10205,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     result_iterator_nvt_name (results) ?: oid,
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
-                                    result_iterator_nvt_tag (results) ?: "");
+                                    tags->str ?: "");
 
           buffer_xml_append_printf (buffer, "<refs>");
           result_iterator_nvt_refs_append (buffer, results);
@@ -10193,6 +10213,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                    result_iterator_has_cert_bunds (results),
                                    result_iterator_has_dfn_certs (results));
           buffer_xml_append_printf (buffer, "</refs>");
+
+          g_string_free (tags, TRUE);
         }
 
     }
@@ -13249,10 +13271,19 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           /* get certificate info */
           time_t activation_time, expiration_time;
           gchar *activation_time_str, *expiration_time_str;
-          gchar *fingerprint, *issuer;
-          get_certificate_info (cert, -1,
-                                &activation_time, &expiration_time,
-                                &fingerprint, NULL, &issuer, NULL);
+          gchar *md5_fingerprint, *issuer;
+
+          get_certificate_info (cert,
+                                -1,
+                                &activation_time,
+                                &expiration_time,
+                                &md5_fingerprint,
+                                NULL,   /* sha256_fingerprint */
+                                NULL,   /* subject */
+                                &issuer,
+                                NULL,   /* serial */
+                                NULL);  /* certificate_format */
+
           activation_time_str = certificate_iso_time (activation_time);
           expiration_time_str = certificate_iso_time (expiration_time);
           SENDF_TO_CLIENT_OR_FAIL
@@ -13266,11 +13297,11 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
             certificate_time_status (activation_time, expiration_time),
             activation_time_str,
             expiration_time_str,
-            fingerprint ? fingerprint : "",
+            md5_fingerprint ? md5_fingerprint : "",
             issuer ? issuer : "");
           g_free (activation_time_str);
           g_free (expiration_time_str);
-          g_free (fingerprint);
+          g_free (md5_fingerprint);
           g_free (issuer);
         }
 
@@ -16512,10 +16543,19 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           if (scanner_iterator_ca_pub (&scanners))
             {
               /* CA Certificate */
-              gchar *fingerprint, *issuer;
-              get_certificate_info (scanner_iterator_ca_pub (&scanners), -1,
-                                    &activation_time, &expiration_time,
-                                    &fingerprint, NULL, &issuer, NULL);
+              gchar *md5_fingerprint, *issuer;
+
+              get_certificate_info (scanner_iterator_ca_pub (&scanners),
+                                    -1,
+                                    &activation_time,
+                                    &expiration_time,
+                                    &md5_fingerprint,
+                                    NULL,   /* sha256_fingerprint */
+                                    NULL,   /* subject */
+                                    &issuer,
+                                    NULL,   /* serial */
+                                    NULL);  /* certificate_format */
+
               activation_time_str = certificate_iso_time (activation_time);
               expiration_time_str = certificate_iso_time (expiration_time);
               SENDF_TO_CLIENT_OR_FAIL
@@ -16529,11 +16569,11 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                 certificate_time_status (activation_time, expiration_time),
                 activation_time_str,
                 expiration_time_str,
-                fingerprint,
+                md5_fingerprint,
                 issuer);
               g_free (activation_time_str);
               g_free (expiration_time_str);
-              g_free (fingerprint);
+              g_free (md5_fingerprint);
               g_free (issuer);
             }
         }
@@ -16557,10 +16597,19 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           if (scanner_iterator_key_pub (&scanners))
             {
               /* Certificate */
-              gchar *fingerprint, *issuer;
-              get_certificate_info (scanner_iterator_key_pub (&scanners), -1,
-                                    &activation_time, &expiration_time,
-                                    &fingerprint, NULL, &issuer, NULL);
+              gchar *md5_fingerprint, *issuer;
+
+              get_certificate_info (scanner_iterator_key_pub (&scanners),
+                                    -1,
+                                    &activation_time,
+                                    &expiration_time,
+                                    &md5_fingerprint,
+                                    NULL,   /* sha256_fingerprint */
+                                    NULL,   /* subject */
+                                    &issuer,
+                                    NULL,   /* serial */
+                                    NULL);  /* certificate_format */
+
               activation_time_str = certificate_iso_time (activation_time);
               expiration_time_str = certificate_iso_time (expiration_time);
               SENDF_TO_CLIENT_OR_FAIL
@@ -16574,11 +16623,11 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                 certificate_time_status (activation_time, expiration_time),
                 activation_time_str,
                 expiration_time_str,
-                fingerprint,
+                md5_fingerprint,
                 issuer);
               g_free (activation_time_str);
               g_free (expiration_time_str);
-              g_free (fingerprint);
+              g_free (md5_fingerprint);
               g_free (issuer);
             }
         }
@@ -17433,13 +17482,20 @@ handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
           && strlen (setting_iterator_value (&settings)))
         {
           time_t activation_time, expiration_time;
-          gchar *activation_time_str, *expiration_time_str, *fingerprint;
+          gchar *activation_time_str, *expiration_time_str, *md5_fingerprint;
           gchar *issuer;
 
-          get_certificate_info (setting_iterator_value (&settings), -1,
+          get_certificate_info (setting_iterator_value (&settings),
+                                -1,
                                 &activation_time,
-                                &expiration_time, &fingerprint,
-                                NULL, &issuer, NULL);
+                                &expiration_time,
+                                &md5_fingerprint,
+                                NULL,   /* sha256_fingerprint */
+                                NULL,   /* subject */
+                                &issuer,
+                                NULL,   /* serial */
+                                NULL);  /* certificate_format */
+
           activation_time_str = certificate_iso_time (activation_time);
           expiration_time_str = certificate_iso_time (expiration_time);
           SENDF_TO_CLIENT_OR_FAIL
@@ -17453,11 +17509,11 @@ handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
             certificate_time_status (activation_time, expiration_time),
             activation_time_str,
             expiration_time_str,
-            fingerprint,
+            md5_fingerprint,
             issuer);
           g_free (activation_time_str);
           g_free (expiration_time_str);
-          g_free (fingerprint);
+          g_free (md5_fingerprint);
           g_free (issuer);
         }
 
@@ -20216,7 +20272,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 {
                   time_t activation_time, expiration_time;
                   gchar *activation_time_str, *expiration_time_str;
-                  gchar *fingerprint, *issuer;
+                  gchar *md5_fingerprint, *issuer;
 
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<auth_conf_setting>"
@@ -20224,9 +20280,17 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     "<value>%s</value>",
                     ldap_cacert);
 
-                  get_certificate_info (ldap_cacert, -1, &activation_time,
-                                        &expiration_time, &fingerprint,
-                                        NULL, &issuer, NULL);
+                  get_certificate_info (ldap_cacert,
+                                        -1,
+                                        &activation_time,
+                                        &expiration_time,
+                                        &md5_fingerprint,
+                                        NULL,   /* sha256_fingerprint */
+                                        NULL,   /* subject */
+                                        &issuer,
+                                        NULL,   /* serial */
+                                        NULL);  /* certificate_format */
+
                   activation_time_str = certificate_iso_time (activation_time);
                   expiration_time_str = certificate_iso_time (expiration_time);
                   SENDF_TO_CLIENT_OR_FAIL
@@ -20240,11 +20304,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     certificate_time_status (activation_time, expiration_time),
                     activation_time_str,
                     expiration_time_str,
-                    fingerprint,
+                    md5_fingerprint,
                     issuer);
                   g_free (activation_time_str);
                   g_free (expiration_time_str);
-                  g_free (fingerprint);
+                  g_free (md5_fingerprint);
                   g_free (issuer);
 
                   SEND_TO_CLIENT_OR_FAIL ("</auth_conf_setting>");

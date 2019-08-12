@@ -304,9 +304,12 @@ truncate_private_key (const gchar* private_key)
  * @param[in]  certificate_len    Length of certificate, -1: null-terminated
  * @param[out] activation_time    Pointer to write activation time to.
  * @param[out] expiration_time    Pointer to write expiration time to.
- * @param[out] fingerprint        Pointer for newly allocated fingerprint.
+ * @param[out] md5_fingerprint    Pointer for newly allocated MD5 fingerprint.
+ * @param[out] sha256_fingerprint Pointer for newly allocated SHA-256
+ *                                fingerprint.
  * @param[out] subject            Pointer for newly allocated subject DN.
  * @param[out] issuer             Pointer for newly allocated issuer DN.
+ * @param[out] serial             Pointer for newly allocated serial.
  * @param[out] certificate_format Pointer to certificate format.
  *
  * @return 0 success, -1 error.
@@ -314,7 +317,8 @@ truncate_private_key (const gchar* private_key)
 int
 get_certificate_info (const gchar* certificate, gssize certificate_len,
                       time_t* activation_time, time_t* expiration_time,
-                      gchar** fingerprint, gchar **subject, gchar** issuer,
+                      gchar** md5_fingerprint, gchar **sha256_fingerprint,
+                      gchar **subject, gchar** issuer, gchar **serial,
                       gnutls_x509_crt_fmt_t *certificate_format)
 {
   gchar *cert_truncated;
@@ -325,14 +329,18 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
     *activation_time = -1;
   if (expiration_time)
     *expiration_time = -1;
-  if (fingerprint)
-    *fingerprint = NULL;
+  if (md5_fingerprint)
+    *md5_fingerprint = NULL;
+  if (sha256_fingerprint)
+    *sha256_fingerprint = NULL;
   if (subject)
     *subject = NULL;
   if (issuer)
     *issuer = NULL;
+  if (serial)
+    *serial = NULL;
   if (certificate_format)
-    *certificate_format = 0;
+    *certificate_format = GNUTLS_X509_FMT_DER;
 
   if (certificate)
     {
@@ -394,7 +402,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
             = gnutls_x509_crt_get_expiration_time (gnutls_cert);
         }
 
-      if (fingerprint)
+      if (md5_fingerprint)
         {
           int i;
           size_t buffer_size = 16;
@@ -415,13 +423,34 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
               g_string_append_printf (string, "%02x", buffer[i]);
             }
 
-          *fingerprint = string->str;
+          *md5_fingerprint = string->str;
+          g_string_free (string, FALSE);
+        }
+
+      if (sha256_fingerprint)
+        {
+          int i;
+          size_t buffer_size = 32;
+          unsigned char buffer[buffer_size];
+          GString *string;
+
+          string = g_string_new ("");
+
+          gnutls_x509_crt_get_fingerprint (gnutls_cert, GNUTLS_DIG_SHA256,
+                                           buffer, &buffer_size);
+
+          for (i = 0; i < buffer_size; i++)
+            {
+              g_string_append_printf (string, "%02X", buffer[i]);
+            }
+
+          *sha256_fingerprint = string->str;
           g_string_free (string, FALSE);
         }
 
       if (subject)
         {
-          size_t buffer_size;
+          size_t buffer_size = 0;
           gchar *buffer;
           gnutls_x509_crt_get_dn (gnutls_cert, NULL, &buffer_size);
           buffer = g_malloc (buffer_size);
@@ -432,13 +461,35 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
 
       if (issuer)
         {
-          size_t buffer_size;
+          size_t buffer_size = 0;
           gchar *buffer;
           gnutls_x509_crt_get_issuer_dn (gnutls_cert, NULL, &buffer_size);
           buffer = g_malloc (buffer_size);
           gnutls_x509_crt_get_issuer_dn (gnutls_cert, buffer, &buffer_size);
 
           *issuer = buffer;
+        }
+
+      if (serial)
+        {
+          int i;
+          size_t buffer_size = 0;
+          gchar* buffer;
+          GString *string;
+
+          string = g_string_new ("");
+
+          gnutls_x509_crt_get_serial (gnutls_cert, NULL, &buffer_size);
+          buffer = g_malloc (buffer_size);
+          gnutls_x509_crt_get_serial (gnutls_cert, buffer, &buffer_size);
+
+          for (i = 0; i < buffer_size; i++)
+            {
+              g_string_append_printf (string, "%02X", buffer[i]);
+            }
+
+          *serial = string->str;
+          g_string_free (string, FALSE);
         }
 
       gnutls_x509_crt_deinit (gnutls_cert);
@@ -1820,7 +1871,7 @@ update_end_times (entity_t report)
       entities = next_entities (entities);
     }
 
-  /* Add host details and set the host end times. */
+  /* Add host details, create assets and set the host end times. */
 
   entities = report->entities;
   while ((end = first_entity (entities)))
@@ -1849,6 +1900,9 @@ update_end_times (entity_t report)
               if (manage_report_host_details (global_current_report,
                                               entity_text (ip),
                                               end))
+                return -1;
+              if (add_assets_from_host_in_report (global_current_report,
+                                                  entity_text (ip)))
                 return -1;
             }
         }
@@ -7320,7 +7374,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
   if (details)
     {
       int tag_count;
-      GString *refs_str, *tags_str, *buffer;
+      GString *refs_str, *tags_str, *buffer, *nvt_tags;
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
       char *default_timeout = nvt_default_timeout (oid);
@@ -7329,6 +7383,28 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       DEF (tag);
 
 #undef DEF
+
+      nvt_tags = g_string_new (tag_text);
+      g_free (tag_text);
+
+      /* Add the elements that are expected as part of the pipe-separated tag list
+       * via API although internally already explicitely stored. Once the API is
+       * extended to have these elements explicitely, they do not need to be
+       * added to this string anymore. */
+      if (nvt_iterator_solution (nvts))
+        {
+          if (nvt_tags->str)
+            g_string_append_printf (nvt_tags, "|solution=%s", nvt_iterator_solution (nvts));
+          else
+            g_string_append_printf (nvt_tags, "solution=%s", result_iterator_nvt_solution (nvts));
+        }
+      if (nvt_iterator_solution_type (nvts))
+        {
+          if (nvt_tags->str)
+            g_string_append_printf (nvt_tags, "|solution_type=%s", nvt_iterator_solution_type (nvts));
+          else
+            g_string_append_printf (nvt_tags, "solution_type=%s", nvt_iterator_solution_type (nvts));
+        }
 
       refs_str = g_string_new ("");
 
@@ -7441,12 +7517,12 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               nvt_iterator_qod (nvts),
                               nvt_iterator_qod_type (nvts),
                               refs_str->str,
-                              tag_text,
+                              nvt_tags->str,
                               pref_count,
                               timeout ? timeout : "",
                               default_timeout ? default_timeout : "");
       g_free (family_text);
-      g_free (tag_text);
+      g_string_free(nvt_tags, 1);
       g_string_free(refs_str, 1);
       g_string_free(tags_str, 1);
 
@@ -7595,7 +7671,7 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
       iterator_t nvts;
       nvt_t nvt;
 
-      if (!find_nvt (name ? name : uid, &nvt) && nvt)
+      if (!find_nvt (uid ? uid : name, &nvt) && nvt)
         {
           init_nvt_iterator (&nvts, nvt, 0, NULL, NULL, 0, NULL);
 
