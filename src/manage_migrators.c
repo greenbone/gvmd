@@ -1,4 +1,4 @@
-/* Copyright (C) 2013-2018 Greenbone Networks GmbH
+/* Copyright (C) 2013-2019 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
@@ -1162,8 +1162,6 @@ migrate_213_to_214 ()
   return 0;
 }
 
-#undef UPDATE_DASHBOARD_SETTINGS
-
 /**
  * @brief Migrate the database from version 214 to version 215.
  *
@@ -1197,6 +1195,40 @@ migrate_214_to_215 ()
 }
 
 /**
+ * @brief Migrate the database from version 215 to version 216.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_215_to_216 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 215. */
+
+  if (manage_db_version () != 215)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Extend table "nvts" with additional column "solution" */
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN solution text;");
+
+  /* Set the database version to 216. */
+
+  set_db_version (216);
+
+  sql_commit ();
+
+  return 0;
+}
+
+#undef UPDATE_DASHBOARD_SETTINGS
+
+/**
  * @brief The oldest version for which migration is supported
  */
 #define MIGRATE_MIN_OLD_VERSION 205
@@ -1215,6 +1247,7 @@ static migrator_t database_migrators[] = {
   {213, migrate_212_to_213},
   {214, migrate_213_to_214},
   {215, migrate_214_to_215},
+  {216, migrate_215_to_216},
   /* End marker. */
   {-1, NULL}};
 

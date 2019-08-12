@@ -10170,9 +10170,29 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
       else
         {
           const char *cvss_base = result_iterator_nvt_cvss_base (results);
+          GString *tags = g_string_new (result_iterator_nvt_tag (results));
 
           if (!cvss_base && !strcmp (oid, "0"))
             cvss_base = "0.0";
+
+          /* Add the elements that are expected as part of the pipe-separated tag list
+           * via API although internally already explicitely stored. Once the API is
+           * extended to have these elements explicitely, they do not need to be
+           * added to this string anymore. */
+          if (result_iterator_nvt_solution (results))
+            {
+              if (tags->str)
+                g_string_append_printf (tags, "|solution=%s", result_iterator_nvt_solution (results));
+              else
+                g_string_append_printf (tags, "solution=%s", result_iterator_nvt_solution (results));
+            }
+          if (result_iterator_nvt_solution_type (results))
+            {
+              if (tags->str)
+                g_string_append_printf (tags, "|solution_type=%s", result_iterator_nvt_solution_type (results));
+              else
+                g_string_append_printf (tags, "solution_type=%s", result_iterator_nvt_solution_type (results));
+            }
 
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
@@ -10185,7 +10205,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     result_iterator_nvt_name (results) ?: oid,
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
-                                    result_iterator_nvt_tag (results) ?: "");
+                                    tags->str ?: "");
 
           buffer_xml_append_printf (buffer, "<refs>");
           result_iterator_nvt_refs_append (buffer, results);
@@ -10193,6 +10213,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                    result_iterator_has_cert_bunds (results),
                                    result_iterator_has_dfn_certs (results));
           buffer_xml_append_printf (buffer, "</refs>");
+
+          g_string_free (tags, TRUE);
         }
 
     }
