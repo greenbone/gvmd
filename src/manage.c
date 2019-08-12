@@ -8397,7 +8397,7 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
       iterator_t nvts;
       nvt_t nvt;
 
-      if (!find_nvt (name ? name : uid, &nvt) && nvt)
+      if (!find_nvt (uid ? uid : name, &nvt) && nvt)
         {
           init_nvt_iterator (&nvts, nvt, 0, NULL, NULL, 0, NULL);
 
