@@ -1397,7 +1397,7 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
             }
 
           task = ticket_task (ticket);
-          if (task)
+          if (task && (task > 0))
             {
               char *task_id;
 
