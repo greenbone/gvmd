@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix issues with some scheduled tasks by using iCalendar more instead of old period fields [#655](https://github.com/greenbone/gvmd/pull/655)
 - Fix an issue in getting the reports from GMP scanners [#658](https://github.com/greenbone/gvmd/pull/658) [#666](https://github.com/greenbone/gvmd/pull/666)
 - Fix GET_SYSTEM_REPORTS using slave_id [#667](https://github.com/greenbone/gvmd/pull/667)
+- Fix assignment of orphaned tickets to the current user [#686](https://github.com/greenbone/gvmd/pull/686)
 
 ### Removed
 
