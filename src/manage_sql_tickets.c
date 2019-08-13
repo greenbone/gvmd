@@ -167,7 +167,7 @@ ticket_status_name (ticket_status_t status)
    { "iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING },             \
    { "fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER },             \
    {                                                                          \
-     "(task = -1)",                                                           \
+     "(task = -1 OR report = -1)",                                            \
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
@@ -236,7 +236,7 @@ ticket_status_name (ticket_status_t status)
    { "iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING },             \
    { "fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER },             \
    {                                                                          \
-     "(task = -1)",                                                           \
+     "(task = -1 OR report = -1)",                                            \
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
