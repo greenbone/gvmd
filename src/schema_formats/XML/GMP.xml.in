@@ -20436,6 +20436,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         the values of the sort order, sort field and apply overrides flag
         that the manager applied when selecting the tasks.
       </p>
+      <p>
+        A task may be a "container" task.  This means the task may not be
+        run, but reports may be uploaded to the task with the command
+        create_report.  Container tasks are identified by having an empty
+        id attribute in the target element.
+      </p>
     </description>
     <pattern>
       <attrib>
@@ -20927,6 +20933,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>id</name>
               <type>uuid</type>
               <required>1</required>
+              <summary>ID of target.  Empty for container tasks</summary>
             </attrib>
             <e>name</e>
             <o><e>permissions</e></o>
@@ -21650,6 +21657,108 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <tasks max="-1" start="1"/>
           <task_count>3<filtered>1</filtered><page>1</page></task_count>
         </get_tasks_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single container task</summary>
+      <request>
+        <get_tasks task_id="f404781f-6d2b-420c-b7a1-0d3f27f1a43b">
+        </get_tasks>
+      </request>
+      <response>
+		<get_tasks_response status="200" status_text="OK">
+		  <apply_overrides>0</apply_overrides>
+		  <task id="f404781f-6d2b-420c-b7a1-0d3f27f1a43b">
+			<owner>
+			  <name>m</name>
+			</owner>
+			<name>Container Example</name>
+			<comment>This task provides for uploading reports</comment>
+			<creation_time>2019-08-13T12:28:43+02:00</creation_time>
+			<modification_time>
+			2019-08-13T12:28:44+02:00</modification_time>
+			<writable>1</writable>
+			<in_use>0</in_use>
+			<permissions>
+			  <permission>
+				<name>Everything</name>
+			  </permission>
+			</permissions>
+			<alterable>0</alterable>
+			<usage_type>scan</usage_type>
+			<config id="">
+			  <name></name>
+			  <type>-1</type>
+			  <trash>0</trash>
+			</config>
+			<target id="">
+			  <name></name>
+			  <trash>0</trash>
+			</target>
+			<hosts_ordering></hosts_ordering>
+			<scanner id=''>
+			  <name></name>
+			  <type>0</type>
+			  <trash>0</trash>
+			</scanner>
+			<status>Done</status>
+			<progress>-1</progress>
+			<report_count>1
+			<finished>1</finished></report_count>
+			<trend></trend>
+			<schedule id="">
+			  <name></name>
+			  <next_time>over</next_time>
+			  <trash>0</trash>
+			</schedule>
+			<last_report>
+			  <report id="5496f417-9b3b-4582-b450-c05ca99009d8">
+				<timestamp>2019-08-13T12:29:25+02:00</timestamp>
+				<scan_start>2019-04-24T14:26:01+02:00</scan_start>
+				<scan_end>2019-04-24T14:50:59+02:00</scan_end>
+				<result_count>
+				  <debug>0</debug>
+				  <hole>1</hole>
+				  <info>0</info>
+				  <log>77</log>
+				  <warning>8</warning>
+				  <false_positive>0</false_positive>
+				</result_count>
+				<severity>9.0</severity>
+			  </report>
+			</last_report>
+			<observers></observers>
+			<preferences>
+			  <preference>
+				<name>Maximum concurrently executed NVTs per host</name>
+				<scanner_name>max_checks</scanner_name>
+				<value>4</value>
+			  </preference>
+            <truncated>...</truncated>
+			</preferences>
+		  </task>
+		  <filters id="">
+			<term>apply_overrides=0 min_qod=70
+			uuid=f404781f-6d2b-420c-b7a1-0d3f27f1a43b first=1 rows=10
+			sort=name</term>
+			<keywords>
+			  <keyword>
+				<column>apply_overrides</column>
+				<relation>=</relation>
+				<value>0</value>
+			  </keyword>
+              <truncated>...</truncated>
+			</keywords>
+		  </filters>
+		  <sort>
+			<field>name
+			<order>ascending</order></field>
+		  </sort>
+		  <tasks start="1" max="10" />
+		  <task_count>21
+		  <filtered>1</filtered>
+		  <page>1</page></task_count>
+		</get_tasks_response>
       </response>
     </example>
   </command>
