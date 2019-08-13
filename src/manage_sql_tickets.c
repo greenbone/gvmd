@@ -1634,6 +1634,15 @@ tickets_remove_report (report_t report)
 {
   sql ("UPDATE tickets SET report = -1 WHERE report = %llu;", report);
   sql ("UPDATE tickets_trash SET report = -1 WHERE report = %llu;", report);
+
+  sql ("UPDATE ticket_results"
+       " SET report = -1, result = -1"
+       " WHERE report = %llu;",
+       report);
+  sql ("UPDATE ticket_results_trash"
+       " SET report = -1, result = -1"
+       " WHERE report = %llu;",
+       report);
 }
 
 /**
