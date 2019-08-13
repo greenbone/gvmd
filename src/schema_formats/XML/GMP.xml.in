@@ -20848,6 +20848,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>id</name>
               <type>uuid</type>
               <required>1</required>
+              <summary>ID of target.  Empty for container tasks</summary>
             </attrib>
             <e>name</e>
             <o><e>permissions</e></o>
@@ -20882,7 +20883,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>id</name>
               <type>uuid</type>
               <required>1</required>
-              <summary>ID of target.  Empty for container tasks</summary>
             </attrib>
             <e>name</e>
             <o><e>permissions</e></o>
