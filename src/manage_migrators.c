@@ -1244,6 +1244,46 @@ migrate_215_to_216 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 216 to version 217.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_216_to_217 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 216. */
+
+  if (manage_db_version () != 216)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ticket references to reports and results are now cleared when the
+   * report is deleted. */
+
+  sql ("UPDATE tickets"
+       " SET report = -1"
+       " WHERE report NOT IN (SELECT id FROM reports);");
+
+  sql ("UPDATE ticket_results"
+       " SET report = -1, result = -1"
+       " WHERE report NOT IN (SELECT id FROM reports);");
+
+  /* Set the database version to 217. */
+
+  set_db_version (217);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1266,6 +1306,7 @@ static migrator_t database_migrators[] = {
   {214, migrate_213_to_214},
   {215, migrate_214_to_215},
   {216, migrate_215_to_216},
+  {217, migrate_216_to_217},
   /* End marker. */
   {-1, NULL}};
 
