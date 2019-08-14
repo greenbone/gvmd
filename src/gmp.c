@@ -19163,15 +19163,37 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
   INIT_GET (vuln, Vulnerabilitie);
 
   ret = init_vuln_iterator (&vulns, get);
-  switch (ret)
+  if (ret)
     {
-      case 0:
-        break;
-      default:
-        internal_error_send_to_client (error);
-        get_vulns_data_reset (get_vulns_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        return;
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_vulns",
+                                           "vuln",
+                                           get_vulns_data->get.id,
+                                           gmp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_vulns", "filter",
+                   get_vulns_data->get.filt_id, gmp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_vulns"));
+            break;
+        }
+      get_vulns_data_reset (get_vulns_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
     }
 
   SEND_GET_START ("vuln");
