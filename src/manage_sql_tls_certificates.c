@@ -826,11 +826,7 @@ delete_tls_certificates_user (user_t user)
 {
   /* Regular tls_certificate. */
 
-  sql ("DELETE FROM tls_certificate WHERE owner = %llu;", user);
-
-  /* Trash tls_certificate. */
-
-  sql ("DELETE FROM tls_certificate_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM tls_certificates WHERE owner = %llu;", user);
 }
 
 /**
