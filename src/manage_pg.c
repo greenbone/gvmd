@@ -2927,6 +2927,7 @@ create_tables ()
        "  cvss_base text,"
        "  creation_time integer,"
        "  modification_time integer,"
+       "  solution text,"
        "  solution_type text,"
        "  qod integer,"
        "  qod_type text);");
