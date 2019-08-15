@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673)
+- Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673) [#695](https://github.com/greenbone/gvmd/pull/695)
 - Update NVTs via OSP [#392](https://github.com/greenbone/gvmd/pull/392) [#609](https://github.com/greenbone/gvmd/pull/609) [#626](https://github.com/greenbone/gvmd/pull/626)
 - Handle addition of ID to NVT preferences. [#413](https://github.com/greenbone/gvmd/pull/413)
 - Add setting 'OMP Slave Check Period' [#491](https://github.com/greenbone/gvmd/pull/491)
@@ -40,8 +40,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix an issue in getting the reports from GMP scanners [#659](https://github.com/greenbone/gvmd/pull/659) [#665](https://github.com/greenbone/gvmd/pull/665)
 - Fix GET_SYSTEM_REPORTS using slave_id [#668](https://github.com/greenbone/gvmd/pull/668)
 - Fix RAW_DATA when calling GET_INFO with type NVT without attributes name or info_id [#682](https://github.com/greenbone/gvmd/pull/682)
-- Fix ORPHAN calculation in GET_TICKETS [#684](https://github.com/greenbone/gvmd/pull/684)
+- Fix ORPHAN calculations in GET_TICKETS [#684](https://github.com/greenbone/gvmd/pull/684) [#692](https://github.com/greenbone/gvmd/pull/692)
 - Fix assignment of orphaned tickets to the current user [#685](https://github.com/greenbone/gvmd/pull/685)
+- Fix response from GET_VULNS when given vuln_id does not exists [#696](https://github.com/greenbone/gvmd/pull/696)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
