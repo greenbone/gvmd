@@ -77,6 +77,9 @@ ticket_iterator_closed_time (iterator_t *);
 const char *
 ticket_iterator_fix_verified_time (iterator_t *);
 
+int
+ticket_iterator_orphan (iterator_t *);
+
 const char *
 ticket_iterator_open_note (iterator_t *);
 

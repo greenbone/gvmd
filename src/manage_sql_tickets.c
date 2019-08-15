@@ -141,12 +141,7 @@ ticket_status_integer (const char *status)
       {"closed_time", "closed", KEYWORD_TYPE_INTEGER},                         \
       {"iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING},             \
       {"fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER},             \
-      {"(CASE"                                                                 \
-       " WHEN (SELECT EXISTS (SELECT * FROM ticket_results"                    \
-       "                      WHERE ticket = tickets.id))"                     \
-       " THEN 0"                                                               \
-       " ELSE 1"                                                               \
-       " END)",                                                                \
+      {"(task = -1)",                                                          \
        "orphan",                                                               \
        KEYWORD_TYPE_INTEGER},                                                  \
       {"open_note", NULL, KEYWORD_TYPE_STRING},                                \
@@ -203,12 +198,7 @@ ticket_status_integer (const char *status)
       {"closed_time", "closed", KEYWORD_TYPE_INTEGER},                         \
       {"iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING},             \
       {"fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER},             \
-      {"(CASE"                                                                 \
-       " WHEN (SELECT EXISTS (SELECT * FROM ticket_results_trash"              \
-       "                      WHERE ticket = tickets_trash.id))"               \
-       " THEN 0"                                                               \
-       " ELSE 1"                                                               \
-       " END)",                                                                \
+      {"(task = -1)",                                                          \
        "orphan",                                                               \
        KEYWORD_TYPE_INTEGER},                                                  \
       {"open_note", NULL, KEYWORD_TYPE_STRING},                                \
@@ -397,6 +387,20 @@ DEF_ACCESS (ticket_iterator_fix_verified_time, GET_ITERATOR_COLUMN_COUNT + 14);
  *
  * @param[in]  iterator  Iterator.
  *
+ * @return Value of the column, or -1 if iteration is complete.
+ */
+int
+ticket_iterator_orphan (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
+}
+
+/**
+ * @brief Get column value from a ticket iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
  * @return Iterator column value or NULL if iteration is complete.
  */
 DEF_ACCESS (ticket_iterator_open_note, GET_ITERATOR_COLUMN_COUNT + 17);
@@ -483,17 +487,10 @@ init_ticket_result_iterator (iterator_t *iterator,
   init_iterator (iterator,
                  "SELECT result,"
                  "       ticket,"
-                 "       (CASE"
-                 "        WHEN result_location = %i"
-                 "        THEN (SELECT uuid FROM results"
-                 "              WHERE id = result)"
-                 "        ELSE (SELECT uuid FROM results_trash"
-                 "              WHERE id = result)"
-                 "        END)"
+                 "       result_uuid"
                  " FROM ticket_results%s"
                  " WHERE ticket = %llu"
                  " ORDER BY id;",
-                 LOCATION_TABLE,
                  trash ? "_trash" : "",
                  ticket);
   return 0;
@@ -1349,7 +1346,7 @@ modify_ticket (const gchar *ticket_id,
             }
 
           task = ticket_task (ticket);
-          if (task)
+          if (task && (task > 0))
             {
               char *task_id;
 

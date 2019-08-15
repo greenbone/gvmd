@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Command cleanup-report-formats for --optimize option [#651](https://github.com/greenbone/gvmd/pull/651)
 
 ### Changes
+- Check and create default permissions individually [#672](https://github.com/greenbone/gvmd/pull/672)
+- Add -f arg to sendmail call in email alert [#677](https://github.com/greenbone/gvmd/pull/677) [#679](https://github.com/greenbone/gvmd/pull/679)
 - Change get_tickets to use the status text for filtering. [#698](https://github.com/greenbone/gvmd/pull/698)
 
 ### Fixed
@@ -17,6 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix issues with some scheduled tasks by using iCalendar more instead of old period fields [#655](https://github.com/greenbone/gvmd/pull/655)
 - Fix an issue in getting the reports from GMP scanners [#658](https://github.com/greenbone/gvmd/pull/658) [#666](https://github.com/greenbone/gvmd/pull/666)
 - Fix GET_SYSTEM_REPORTS using slave_id [#667](https://github.com/greenbone/gvmd/pull/667)
+- Fix RAW_DATA when calling GET_INFO with type NVT without attributes name or info_id [#682](https://github.com/greenbone/gvmd/pull/682)
+- Fix assignment of orphaned tickets to the current user [#686](https://github.com/greenbone/gvmd/pull/686)
+- Fix ORPHAN calculation in GET_TICKETS [#687](https://github.com/greenbone/gvmd/pull/687)
 
 ### Removed
 
