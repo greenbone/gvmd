@@ -3282,12 +3282,11 @@ check_db_sequences ()
 {
   iterator_t sequence_tables;
   init_iterator (&sequence_tables,
-                 "SELECT table_name, column_name,"
-                 "       pg_get_serial_sequence (table_name, column_name)"
-                 "  FROM information_schema.columns"
-                 "  WHERE table_schema = 'public'"
-                 "    AND pg_get_serial_sequence (table_name, column_name)"
-                 "        IS NOT NULL;");
+                 "WITH table_columns AS ("
+                 " SELECT table_name, column_name FROM information_schema.columns"
+                 "  WHERE table_schema = 'public')"
+                 " SELECT *, pg_get_serial_sequence (table_name, column_name) FROM table_columns"
+                 "  WHERE pg_get_serial_sequence (table_name, column_name) IS NOT NULL;");
 
   while (next (&sequence_tables))
     {
