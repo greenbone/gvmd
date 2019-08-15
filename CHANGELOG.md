@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add -f arg to sendmail call in email alert [#677](https://github.com/greenbone/gvmd/pull/677) [#679](https://github.com/greenbone/gvmd/pull/679)
 
 ### Fixed
+- A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#691](https://github.com/greenbone/gvmd/pull/691)
 - Fix iCalendar recurrence and timezone handling [#653](https://github.com/greenbone/gvmd/pull/653)
 - Fix issues with some scheduled tasks by using iCalendar more instead of old period fields [#655](https://github.com/greenbone/gvmd/pull/655)
 - Fix an issue in getting the reports from GMP scanners [#658](https://github.com/greenbone/gvmd/pull/658) [#666](https://github.com/greenbone/gvmd/pull/666)
