@@ -167,7 +167,7 @@ ticket_status_name (ticket_status_t status)
    { "iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING },             \
    { "fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER },             \
    {                                                                          \
-     "(task = -1)",                                                           \
+     "(task = -1 OR report = -1)",                                            \
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
@@ -236,7 +236,7 @@ ticket_status_name (ticket_status_t status)
    { "iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING },             \
    { "fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER },             \
    {                                                                          \
-     "(task = -1)",                                                           \
+     "(task = -1 OR report = -1)",                                            \
      "orphan",                                                                \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
@@ -543,6 +543,7 @@ init_ticket_result_iterator (iterator_t *iterator, const gchar *ticket_id,
                  "       result_uuid"
                  " FROM ticket_results%s"
                  " WHERE ticket = %llu"
+                 " AND report > 0"
                  " ORDER BY id;",
                  trash ? "_trash" : "",
                  ticket);
@@ -1622,6 +1623,27 @@ tickets_remove_task (task_t task)
 {
   sql ("UPDATE tickets SET task = -1 WHERE task = %llu;", task);
   sql ("UPDATE tickets_trash SET task = -1 WHERE task = %llu;", task);
+}
+
+/**
+ * @brief Remove a report from all tickets.
+ *
+ * @param[in]  report  Report.
+ */
+void
+tickets_remove_report (report_t report)
+{
+  sql ("UPDATE tickets SET report = -1 WHERE report = %llu;", report);
+  sql ("UPDATE tickets_trash SET report = -1 WHERE report = %llu;", report);
+
+  sql ("UPDATE ticket_results"
+       " SET report = -1, result = -1"
+       " WHERE report = %llu;",
+       report);
+  sql ("UPDATE ticket_results_trash"
+       " SET report = -1, result = -1"
+       " WHERE report = %llu;",
+       report);
 }
 
 /**

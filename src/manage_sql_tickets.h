@@ -69,6 +69,9 @@ void
 tickets_remove_task (task_t);
 
 void
+tickets_remove_report (report_t);
+
+void
 tickets_remove_tasks_user (user_t);
 
 void

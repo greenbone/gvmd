@@ -26242,6 +26242,7 @@ delete_report_internal (report_t report)
 
   permissions_set_orphans ("report", report, LOCATION_TABLE);
   tags_remove_resource ("report", report, LOCATION_TABLE);
+  tickets_remove_report (report);
 
   /* Update the task state. */
 
