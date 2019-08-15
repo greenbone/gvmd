@@ -509,6 +509,7 @@ init_ticket_result_iterator (iterator_t *iterator,
                  "       result_uuid"
                  " FROM ticket_results%s"
                  " WHERE ticket = %llu"
+                 " AND report > 0"
                  " ORDER BY id;",
                  trash ? "_trash" : "",
                  ticket);
