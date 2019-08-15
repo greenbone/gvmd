@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changes
 - Check and create default permissions individually [#672](https://github.com/greenbone/gvmd/pull/672)
 - Add -f arg to sendmail call in email alert [#677](https://github.com/greenbone/gvmd/pull/677) [#679](https://github.com/greenbone/gvmd/pull/679)
+- Change get_tickets to use the status text for filtering. [#698](https://github.com/greenbone/gvmd/pull/698)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#691](https://github.com/greenbone/gvmd/pull/691)

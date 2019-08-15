@@ -81,31 +81,6 @@ ticket_status_integer (const char *status)
 }
 
 /**
- * @brief Get ticket status name from DB identifier.
- *
- * @param[in]   status  Status integer.
- *
- * @return Status name.
- */
-static const gchar *
-ticket_status_name (ticket_status_t status)
-{
-  switch (status)
-    {
-    case TICKET_STATUS_OPEN:
-      return "Open";
-    case TICKET_STATUS_FIXED:
-      return "Fixed";
-    case TICKET_STATUS_FIX_VERIFIED:
-      return "Fix Verified";
-    case TICKET_STATUS_CLOSED:
-      return "Closed";
-    default:
-      return "Error";
-    }
-}
-
-/**
  * @brief Filter columns for ticket iterator.
  */
 #define TICKET_ITERATOR_FILTER_COLUMNS                                  \
@@ -150,7 +125,14 @@ ticket_status_name (ticket_status_t status)
       {"host", NULL, KEYWORD_TYPE_STRING},                                     \
       {"location", NULL, KEYWORD_TYPE_STRING},                                 \
       {"solution_type", NULL, KEYWORD_TYPE_STRING},                            \
-      {"status", NULL, KEYWORD_TYPE_STRING},                                   \
+      {"(CASE status"                                                          \
+       " WHEN 0 THEN 'Open'"                                                   \
+       " WHEN 1 THEN 'Fixed'"                                                  \
+       " WHEN 2 THEN 'Fix Verified'"                                           \
+       " WHEN 3 THEN 'Closed'"                                                 \
+       " ELSE 'Error' END)",                                                   \
+       "status",                                                               \
+       KEYWORD_TYPE_STRING},                                                   \
       {"iso_time (open_time)", NULL, KEYWORD_TYPE_STRING},                     \
       {"open_time", "opened", KEYWORD_TYPE_INTEGER},                           \
       {"iso_time (fixed_time)", NULL, KEYWORD_TYPE_STRING},                    \
@@ -200,7 +182,14 @@ ticket_status_name (ticket_status_t status)
       {"host", NULL, KEYWORD_TYPE_STRING},                                     \
       {"location", NULL, KEYWORD_TYPE_STRING},                                 \
       {"solution_type", NULL, KEYWORD_TYPE_STRING},                            \
-      {"status", NULL, KEYWORD_TYPE_STRING},                                   \
+      {"(CASE status"                                                          \
+       " WHEN 0 THEN 'Open'"                                                   \
+       " WHEN 1 THEN 'Fixed'"                                                  \
+       " WHEN 2 THEN 'Fix Verified'"                                           \
+       " WHEN 3 THEN 'Closed'"                                                 \
+       " ELSE 'Error' END)",                                                   \
+       "status",                                                               \
+       KEYWORD_TYPE_STRING},                                                   \
       {"iso_time (open_time)", NULL, KEYWORD_TYPE_STRING},                     \
       {"open_time", "opened", KEYWORD_TYPE_INTEGER},                           \
       {"iso_time (fixed_time)", NULL, KEYWORD_TYPE_STRING},                    \
@@ -355,15 +344,7 @@ DEF_ACCESS (ticket_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 6);
  *
  * @return Status of the ticket or NULL if iteration is complete.
  */
-const char *
-ticket_iterator_status (iterator_t *iterator)
-{
-  int status;
-  if (iterator->done)
-    return NULL;
-  status = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
-  return ticket_status_name (status);
-}
+DEF_ACCESS (ticket_iterator_status, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get column value from a ticket iterator.
