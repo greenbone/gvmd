@@ -159,7 +159,7 @@ ticket_status_name (ticket_status_t status)
       {"closed_time", "closed", KEYWORD_TYPE_INTEGER},                         \
       {"iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING},             \
       {"fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER},             \
-      {"(task = -1)",                                                          \
+      {"(task = -1 OR report = -1)",                                           \
        "orphan",                                                               \
        KEYWORD_TYPE_INTEGER},                                                  \
       {"open_note", NULL, KEYWORD_TYPE_STRING},                                \
@@ -209,7 +209,7 @@ ticket_status_name (ticket_status_t status)
       {"closed_time", "closed", KEYWORD_TYPE_INTEGER},                         \
       {"iso_time (fix_verified_time)", NULL, KEYWORD_TYPE_STRING},             \
       {"fix_verified_time", "fix_verified", KEYWORD_TYPE_INTEGER},             \
-      {"(task = -1)",                                                          \
+      {"(task = -1 OR report = -1)",                                           \
        "orphan",                                                               \
        KEYWORD_TYPE_INTEGER},                                                  \
       {"open_note", NULL, KEYWORD_TYPE_STRING},                                \
