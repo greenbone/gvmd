@@ -54,6 +54,9 @@ void
 empty_trashcan_tickets ();
 
 void
+tickets_remove_report (report_t);
+
+void
 check_tickets ();
 
 void delete_tickets_user (user_t);
