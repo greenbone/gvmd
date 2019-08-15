@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Cgreen based unit tests for gvmd has been added. [#579](https://github.com/greenbone/gvmd/pull/579)
 - New usage_type property to distinguish normal scan tasks and configs from compliance audits and policies [#613](https://github.com/greenbone/gvmd/pull/613) [#625](https://github.com/greenbone/gvmd/pull/625) [#633](https://github.com/greenbone/gvmd/pull/633)
 - Command cleanup-report-formats for --optimize option [#652](https://github.com/greenbone/gvmd/pull/652)
+- Document container tasks in GMP doc [#688](https://github.com/greenbone/gvmd/pull/688)
 
 ### Changed
 - Check if NVT preferences exist before inserting. [#406](https://github.com/greenbone/gvmd/pull/406)
@@ -40,8 +41,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix an issue in getting the reports from GMP scanners [#659](https://github.com/greenbone/gvmd/pull/659) [#665](https://github.com/greenbone/gvmd/pull/665)
 - Fix GET_SYSTEM_REPORTS using slave_id [#668](https://github.com/greenbone/gvmd/pull/668)
 - Fix RAW_DATA when calling GET_INFO with type NVT without attributes name or info_id [#682](https://github.com/greenbone/gvmd/pull/682)
-- Fix ORPHAN calculation in GET_TICKETS [#684](https://github.com/greenbone/gvmd/pull/684)
+- Fix ORPHAN calculations in GET_TICKETS [#684](https://github.com/greenbone/gvmd/pull/684) [#692](https://github.com/greenbone/gvmd/pull/692)
 - Fix assignment of orphaned tickets to the current user [#685](https://github.com/greenbone/gvmd/pull/685)
+- Fix response from GET_VULNS when given vuln_id does not exists [#696](https://github.com/greenbone/gvmd/pull/696)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
