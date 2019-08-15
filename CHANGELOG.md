@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix RAW_DATA when calling GET_INFO with type NVT without attributes name or info_id [#682](https://github.com/greenbone/gvmd/pull/682)
 - Fix assignment of orphaned tickets to the current user [#686](https://github.com/greenbone/gvmd/pull/686)
 - Fix ORPHAN calculation in GET_TICKETS [#687](https://github.com/greenbone/gvmd/pull/687)
+- Fix response from GET_VULNS when given vuln_id does not exists [#699](https://github.com/greenbone/gvmd/pull/699)
 
 ### Removed
 
