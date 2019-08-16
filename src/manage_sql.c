@@ -58896,6 +58896,10 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "d3f5f2de-a85b-43f2-a817-b127457cc8ba") == 0)
         setting_name = g_strdup ("Hosts Top Dashboard Configuration");
 
+      /* TLS Certificate dashboard settings */
+      else if (strcmp (uuid, "9b62bf16-bf90-11e9-ad97-28d24461215b") == 0)
+        setting_name = g_strdup ("TLS Certificates Top Dashboard Configuration");
+
       /* Operating Systems dashboard settings */
       else if (strcmp (uuid, "e93b51ed-5881-40e0-bc4f-7d3268a36177") == 0)
         setting_name = g_strdup ("OSs Top Dashboard Configuration");
