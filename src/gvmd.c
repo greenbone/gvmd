@@ -53,9 +53,6 @@
  * to manage credentials and tasks.  The manage
  * library is defined in src/\ref manage.c and src/\ref manage_sql.c .
  *
- * The Manage library uses the Comm library to communication
- * with servers (src/\ref comm.c).
- *
  * \subsection Forking
  *
  * The main daemon manager process will fork for every incoming connection and
