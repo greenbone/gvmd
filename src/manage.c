@@ -4971,11 +4971,6 @@ run_task (const char *task_id, char **report_id, int from)
 /**
  * @brief Start a task.
  *
- * Use \ref send_to_server to queue the task start sequence in the scanner
- * output buffer.
- *
- * Only one task can run at a time in a process.
- *
  * @param[in]   task_id    The task ID.
  * @param[out]  report_id  The report ID.
  *
@@ -5039,9 +5034,6 @@ end_stop_osp:
 /**
  * @brief Initiate stopping a task.
  *
- * Use \ref send_to_server to queue the task stop sequence in the
- * scanner output buffer.
- *
  * @param[in]  task  Task.
  *
  * @return 0 on success, 1 if stop requested, -1 if out of space in scanner
@@ -5084,9 +5076,6 @@ stop_task_internal (task_t task)
 
 /**
  * @brief Initiate stopping a task.
- *
- * Use \ref send_to_server to queue the task stop sequence in the
- * scanner output buffer.
  *
  * @param[in]  task_id  Task UUID.
  *

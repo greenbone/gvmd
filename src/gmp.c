@@ -29418,8 +29418,7 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
  * (\ref gmp_xml_handle_start_element, \ref gmp_xml_handle_end_element,
  * \ref gmp_xml_handle_text and \ref gmp_xml_handle_error).
  *
- * The callback functions will queue any resulting scanner commands in
- * \ref to_scanner (using \ref send_to_server) and any replies for
+ * The callback functions will queue any replies for
  * the client in \ref to_client (using \ref send_to_client).
  *
  * \endif
@@ -29518,8 +29517,7 @@ process_gmp_write (const char* msg, void* buffer)
  * (\ref gmp_xml_handle_start_element, \ref gmp_xml_handle_end_element,
  * \ref gmp_xml_handle_text and \ref gmp_xml_handle_error).
  *
- * The callback functions will queue any resulting scanner commands in
- * \ref to_scanner (using \ref send_to_server) and any replies for
+ * The callback functions will queue any replies for
  * the client in \ref to_client (using \ref send_to_client).
  *
  * \endif
