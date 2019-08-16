@@ -243,44 +243,6 @@ openvas_scanner_write ()
 }
 
 /**
- * @brief Wait for the scanner socket to be writable.
- *
- * @return 0 on success, -1 on error.
- */
-static int
-openvas_scanner_wait ()
-{
-  if (openvas_scanner_socket == -1)
-    return -1;
-
-  while (1)
-    {
-      int ret;
-      struct timeval timeout;
-      fd_set writefds;
-
-      timeout.tv_usec = 0;
-      timeout.tv_sec = 1;
-      FD_ZERO (&writefds);
-      FD_SET (openvas_scanner_socket, &writefds);
-
-      ret = select (1 + openvas_scanner_socket, NULL, &writefds, NULL, &timeout);
-      if (ret < 0)
-        {
-          if (errno == EINTR)
-            continue;
-          g_warning ("%s: select failed (connect): %s", __FUNCTION__,
-                     strerror (errno));
-          return -1;
-        }
-
-      if (FD_ISSET (openvas_scanner_socket, &writefds))
-        break;
-    }
-  return 0;
-}
-
-/**
  * @brief Load certificates from the CA directory.
  *
  * @param[in]  scanner_credentials  Scanner credentials.
@@ -555,31 +517,6 @@ int
 openvas_scanner_connected ()
 {
   return openvas_scanner_socket == -1 ? 0 : 1;
-}
-
-/**
- * @brief Initializes the already setup connection with the Scanner.
- *
- * @return 0 success, -1 error.
- */
-int
-openvas_scanner_init ()
-{
-  int ret;
-
-  if (openvas_scanner_socket == -1)
-    return -1;
-  from_scanner = g_malloc0 (from_scanner_size);
-  ret = openvas_scanner_write ();
-  if (ret != -3)
-    {
-      openvas_scanner_free ();
-      return -1;
-    }
-  if (openvas_scanner_wait ())
-    return -2;
-
-  return 0;
 }
 
 /**

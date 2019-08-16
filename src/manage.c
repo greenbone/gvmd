@@ -5284,19 +5284,6 @@ move_task (const char *task_id, const char *slave_id)
 /* OTP Scanner messaging. */
 
 /**
- * @brief Acknowledge a scanner BYE.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer.
- */
-int
-acknowledge_bye ()
-{
-  if (send_to_server ("CLIENT <|> BYE <|> ACK\n"))
-    return -1;
-  return 0;
-}
-
-/**
  * @brief Handle state changes to current task made by other processes.
  *
  * @return 0 on success, -1 if out of space in scanner output buffer, 1 if

@@ -70,9 +70,6 @@ int
 openvas_scanner_connected ();
 
 int
-openvas_scanner_init ();
-
-int
 openvas_scanner_is_loading ();
 
 int
