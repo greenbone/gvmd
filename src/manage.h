@@ -2634,12 +2634,6 @@ const char*
 override_iterator_new_severity (iterator_t *);
 
 
-/* Scanner messaging. */
-
-int
-acknowledge_bye ();
-
-
 /* System reports. */
 
 /**
