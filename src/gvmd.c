@@ -105,7 +105,6 @@
 #include "manage_sql_secinfo.h"
 #include "scanner.h"
 #include "gmpd.h"
-#include "comm.h"
 #include "utils.h"
 
 #ifdef GIT_REV_AVAILABLE

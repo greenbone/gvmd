@@ -35,7 +35,6 @@
 #include "gmpd.h"
 #include "scanner.h"
 #include "gmp.h"
-#include "comm.h"
 
 #include <assert.h>
 #include <dirent.h>

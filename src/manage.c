@@ -52,7 +52,6 @@
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
-#include "comm.h"
 #include "utils.h"
 
 #include <assert.h>
