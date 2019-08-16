@@ -2639,9 +2639,6 @@ override_iterator_new_severity (iterator_t *);
 int
 acknowledge_bye ();
 
-int
-manage_check_current_task ();
-
 
 /* System reports. */
 

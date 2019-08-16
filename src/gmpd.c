@@ -603,8 +603,9 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
       if (!ret)
         {
-          /* Timeout periodically, so that process_gmp_change runs
-           * periodically. */
+          /* Timeout periodically.  This was needed in the past so that OTP
+           * scan handling processes could check if the client had stopped
+           * the task. */
           struct timeval timeout;
 
           timeout.tv_usec = 0;
@@ -613,11 +614,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
         }
       if ((ret < 0 && errno == EINTR) || ret == 0)
         {
-          if (process_gmp_change () == -1)
-            {
-              rc = -1;
-              goto client_free;
-            }
           if (!scan_handler && !gmpd_nvt_cache_mode)
             continue;
         }
@@ -867,13 +863,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               client_input_stalled = 0;
             }
         }
-
-      if (process_gmp_change () == -1)
-        {
-          rc = -1;
-          goto client_free;
-        }
-
     } /* while (1) */
 
 client_free:

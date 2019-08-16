@@ -29441,10 +29441,6 @@ process_gmp_client_input ()
   /* Terminate any pending transaction. (force close = TRUE). */
   manage_transaction_stop (TRUE);
 
-  /* In the XML parser handlers all writes to the to_scanner buffer must be
-   * complete OTP commands, because the caller may also write into to_scanner
-   * between calls to this function (via manage_check_current_task). */
-
   if (xml_context == NULL) return -1;
 
   current_error = 0;
@@ -29625,18 +29621,4 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   if (forked)
     return 3;
   return 0;
-}
-
-/* GMP change processor. */
-
-/**
- * @brief Deal with any changes caused by other processes.
- *
- * @return 0 success, 1 did something, -1 too little space in the scanner
- *         output buffer.
- */
-int
-process_gmp_change ()
-{
-  return manage_check_current_task ();
 }

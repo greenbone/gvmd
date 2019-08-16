@@ -5281,69 +5281,6 @@ move_task (const char *task_id, const char *slave_id)
 }
 
 
-/* OTP Scanner messaging. */
-
-/**
- * @brief Handle state changes to current task made by other processes.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer, 1 if
- *         queued to scanner.
- */
-int
-manage_check_current_task ()
-{
-  if (current_scanner_task)
-    {
-      task_status_t run_status;
-
-      /* Commit pending transaction if needed. */
-      manage_transaction_stop (FALSE);
-
-      /* Check if some other process changed the status. */
-
-      run_status = task_run_status (current_scanner_task);
-      switch (run_status)
-        {
-          case TASK_STATUS_STOP_REQUESTED_GIVEUP:
-            /* This should only happen for slave tasks. */
-            assert (0);
-          case TASK_STATUS_STOP_REQUESTED:
-            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_STOP_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_DELETE_REQUESTED:
-            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_DELETE_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
-            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_DELETE_ULTIMATE_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_DELETE_WAITING:
-          case TASK_STATUS_DELETE_ULTIMATE_WAITING:
-          case TASK_STATUS_DONE:
-          case TASK_STATUS_NEW:
-          case TASK_STATUS_REQUESTED:
-          case TASK_STATUS_RUNNING:
-          case TASK_STATUS_STOP_WAITING:
-          case TASK_STATUS_STOPPED:
-          case TASK_STATUS_INTERRUPTED:
-            break;
-        }
-    }
-  return 0;
-}
-
-
 /* Credentials. */
 
 /**
