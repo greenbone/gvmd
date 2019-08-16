@@ -4074,7 +4074,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
  *
  * @param[in]   task        The task.
  * @param[in]   target      The target.
- * @param[out]  report      The report.
+ * @param[out]  report_id   UUID of the report.
  *
  * @return Parent returns with 0 if success, -1 if failure. Child process
  *         doesn't return and simply exits.
