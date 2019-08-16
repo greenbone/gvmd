@@ -4521,44 +4521,6 @@ set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
 }
 
 /**
- * @brief Initialise some values of the OpenVAS scanner.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return 0 success, -1 error, 1 no CA cert.
- */
-static int
-scanner_setup (scanner_t scanner)
-{
-  int ret, port;
-  char *host, *ca_pub, *key_pub, *key_priv;
-
-  assert (scanner);
-  host = scanner_host (scanner);
-  if (host && *host == '/')
-    {
-      /* XXX: Workaround for unix socket case. Should add a flag. */
-      openvas_scanner_set_unix (host);
-      return 0;
-    }
-  port = scanner_port (scanner);
-  ret = openvas_scanner_set_address (host, port);
-  g_free (host);
-  if (ret)
-    return ret;
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
-  ret = 0;
-  if (set_certs (ca_pub, key_pub, key_priv))
-    ret = 1;
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
-  return ret;
-}
-
-/**
  * @brief Initialise variables required for running a scan.
  *
  * @param[in]  task             Task.
@@ -5095,26 +5057,6 @@ stop_task_internal (task_t task)
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
-      if (current_scanner_task == task)
-        {
-          scanner_t scanner = task_scanner (task);
-
-          assert (scanner);
-          switch (scanner_setup (scanner))
-            {
-              case 0:
-                break;
-              case 1:
-                return -7;
-              default:
-                return -5;
-            }
-          if (!openvas_scanner_connected ()
-              && (openvas_scanner_connect () || openvas_scanner_init ()))
-            return -5;
-          if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-            return -1;
-        }
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
     }
