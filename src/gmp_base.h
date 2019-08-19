@@ -365,7 +365,7 @@ log_event_fail (const char *, const char *, const char *, const char *);
   do                                                                           \
     {                                                                          \
       char *str;                                                               \
-      if (scanner_current_loading && scanner_total_loading)                    \
+      if ((scanner_current_loading >= 0) && scanner_total_loading)             \
         str = g_strdup_printf ("<%s_response status='%s' "                     \
                                "status_text='Scanner loading nvts (%d/%d)'/>", \
                                tag,                                            \
