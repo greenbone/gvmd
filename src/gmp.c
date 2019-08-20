@@ -29418,8 +29418,7 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
  * (\ref gmp_xml_handle_start_element, \ref gmp_xml_handle_end_element,
  * \ref gmp_xml_handle_text and \ref gmp_xml_handle_error).
  *
- * The callback functions will queue any resulting scanner commands in
- * \ref to_scanner (using \ref send_to_server) and any replies for
+ * The callback functions will queue any replies for
  * the client in \ref to_client (using \ref send_to_client).
  *
  * \endif
@@ -29440,10 +29439,6 @@ process_gmp_client_input ()
 
   /* Terminate any pending transaction. (force close = TRUE). */
   manage_transaction_stop (TRUE);
-
-  /* In the XML parser handlers all writes to the to_scanner buffer must be
-   * complete OTP commands, because the caller may also write into to_scanner
-   * between calls to this function (via manage_check_current_task). */
 
   if (xml_context == NULL) return -1;
 
@@ -29522,8 +29517,7 @@ process_gmp_write (const char* msg, void* buffer)
  * (\ref gmp_xml_handle_start_element, \ref gmp_xml_handle_end_element,
  * \ref gmp_xml_handle_text and \ref gmp_xml_handle_error).
  *
- * The callback functions will queue any resulting scanner commands in
- * \ref to_scanner (using \ref send_to_server) and any replies for
+ * The callback functions will queue any replies for
  * the client in \ref to_client (using \ref send_to_client).
  *
  * \endif
@@ -29625,18 +29619,4 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   if (forked)
     return 3;
   return 0;
-}
-
-/* GMP change processor. */
-
-/**
- * @brief Deal with any changes caused by other processes.
- *
- * @return 0 success, 1 did something, -1 too little space in the scanner
- *         output buffer.
- */
-int
-process_gmp_change ()
-{
-  return manage_check_current_task ();
 }

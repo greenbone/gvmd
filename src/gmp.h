@@ -59,9 +59,6 @@ init_gmp_process (int, const gchar *, int (*) (const char *, void *), void *,
 int
 process_gmp_client_input ();
 
-int
-process_gmp_change ();
-
 /** @todo As described in gmp.c, probably should be replaced by gmp_parser_t. */
 extern char to_client[];
 extern buffer_size_t to_client_start;
