@@ -172,7 +172,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:value-of select="gvm:formula_quote ($ip)"/>
   <xsl:text>,</xsl:text>
-  <xsl:value-of select="gvm:formula_quote (../../host[ip = $ip]/detail[name = 'hostname']/value)"/>
+  <xsl:value-of select="gvm:formula_quote (host/hostname)"/>
   <xsl:text>,</xsl:text>
   <xsl:value-of select="gvm:formula_quote ($port)"/>
   <xsl:text>,</xsl:text>
