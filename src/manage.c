@@ -4071,20 +4071,24 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 /**
  * @brief Fork a child to handle an OSP scan's fetching and inserting.
  *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
+ * @param[in]   task               The task.
+ * @param[in]   target             The target.
+ * @param[out]  report_id_return   UUID of the report.
  *
  * @return Parent returns with 0 if success, -1 if failure. Child process
  *         doesn't return and simply exits.
  */
 static int
-fork_osp_scan_handler (task_t task, target_t target)
+fork_osp_scan_handler (task_t task, target_t target, char **report_id_return)
 {
   char *report_id, title[128], *error = NULL;
   int rc;
 
   assert (task);
   assert (target);
+
+  if (report_id_return)
+    *report_id_return = NULL;
 
   if (create_current_report (task, &report_id, TASK_STATUS_REQUESTED))
     {
@@ -4100,6 +4104,7 @@ fork_osp_scan_handler (task_t task, target_t target)
         break;
       case -1:
         /* Parent, failed to fork. */
+        global_current_report = 0;
         g_warning ("%s: Failed to fork: %s",
                    __FUNCTION__,
                    strerror (errno));
@@ -4109,9 +4114,15 @@ fork_osp_scan_handler (task_t task, target_t target)
         set_report_scan_run_status (global_current_report,
                                     TASK_STATUS_INTERRUPTED);
         global_current_report = (report_t) 0;
+        g_free (report_id);
         return -9;
       default:
         /* Parent, successfully forked. */
+        global_current_report = 0;
+        if (report_id_return)
+          *report_id_return = report_id;
+        else
+          g_free (report_id);
         return 0;
     }
 
@@ -4180,11 +4191,12 @@ fork_osp_scan_handler (task_t task, target_t target)
  * @brief Start a task on an OSP or OpenVAS via OSP scanner.
  *
  * @param[in]   task       The task.
+ * @param[out]  report_id  The report ID.
  *
  * @return 0 success, 99 permission denied, -1 error.
  */
 static int
-run_osp_task (task_t task)
+run_osp_task (task_t task, char **report_id)
 {
   target_t target;
 
@@ -4205,7 +4217,7 @@ run_osp_task (task_t task)
         return 99;
     }
 
-  if (fork_osp_scan_handler (task, target))
+  if (fork_osp_scan_handler (task, target, report_id))
     {
       g_warning ("Couldn't fork OSP scan handler");
       return -1;
@@ -4963,7 +4975,7 @@ run_task (const char *task_id, char **report_id, int from)
 
   if (scanner_type (scanner) == SCANNER_TYPE_OPENVAS
       || scanner_type (scanner) == SCANNER_TYPE_OSP)
-    return run_osp_task (task);
+    return run_osp_task (task, report_id);
 
   return -1; // Unknown scanner type
 }
