@@ -4122,6 +4122,8 @@ fork_osp_scan_handler (task_t task, target_t target, char **report_id_return)
         global_current_report = 0;
         if (report_id_return)
           *report_id_return = report_id;
+        else
+          g_free (report_id);
         return 0;
     }
 
