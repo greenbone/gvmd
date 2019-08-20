@@ -39,9 +39,6 @@ openvas_scanner_close ();
 void
 openvas_scanner_fork ();
 
-int
-openvas_scanner_connect ();
-
 void
 openvas_scanner_free ();
 
@@ -68,12 +65,6 @@ openvas_scanner_realloc ();
 
 int
 openvas_scanner_connected ();
-
-int
-openvas_scanner_init ();
-
-int
-openvas_scanner_is_loading ();
 
 int
 openvas_scanner_set_address (const char *, int);

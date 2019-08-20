@@ -52,7 +52,6 @@
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
-#include "comm.h"
 #include "utils.h"
 
 #include <assert.h>
@@ -4533,44 +4532,6 @@ set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
 }
 
 /**
- * @brief Initialise some values of the OpenVAS scanner.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return 0 success, -1 error, 1 no CA cert.
- */
-static int
-scanner_setup (scanner_t scanner)
-{
-  int ret, port;
-  char *host, *ca_pub, *key_pub, *key_priv;
-
-  assert (scanner);
-  host = scanner_host (scanner);
-  if (host && *host == '/')
-    {
-      /* XXX: Workaround for unix socket case. Should add a flag. */
-      openvas_scanner_set_unix (host);
-      return 0;
-    }
-  port = scanner_port (scanner);
-  ret = openvas_scanner_set_address (host, port);
-  g_free (host);
-  if (ret)
-    return ret;
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
-  ret = 0;
-  if (set_certs (ca_pub, key_pub, key_priv))
-    ret = 1;
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
-  return ret;
-}
-
-/**
  * @brief Initialise variables required for running a scan.
  *
  * @param[in]  task             Task.
@@ -5022,11 +4983,6 @@ run_task (const char *task_id, char **report_id, int from)
 /**
  * @brief Start a task.
  *
- * Use \ref send_to_server to queue the task start sequence in the scanner
- * output buffer.
- *
- * Only one task can run at a time in a process.
- *
  * @param[in]   task_id    The task ID.
  * @param[out]  report_id  The report ID.
  *
@@ -5090,9 +5046,6 @@ end_stop_osp:
 /**
  * @brief Initiate stopping a task.
  *
- * Use \ref send_to_server to queue the task stop sequence in the
- * scanner output buffer.
- *
  * @param[in]  task  Task.
  *
  * @return 0 on success, 1 if stop requested, -1 if out of space in scanner
@@ -5107,26 +5060,6 @@ stop_task_internal (task_t task)
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
-      if (current_scanner_task == task)
-        {
-          scanner_t scanner = task_scanner (task);
-
-          assert (scanner);
-          switch (scanner_setup (scanner))
-            {
-              case 0:
-                break;
-              case 1:
-                return -7;
-              default:
-                return -5;
-            }
-          if (!openvas_scanner_connected ()
-              && (openvas_scanner_connect () || openvas_scanner_init ()))
-            return -5;
-          if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-            return -1;
-        }
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
     }
@@ -5155,9 +5088,6 @@ stop_task_internal (task_t task)
 
 /**
  * @brief Initiate stopping a task.
- *
- * Use \ref send_to_server to queue the task stop sequence in the
- * scanner output buffer.
  *
  * @param[in]  task_id  Task UUID.
  *
@@ -5347,82 +5277,6 @@ move_task (const char *task_id, const char *slave_id)
         return 1;
     }
 
-  return 0;
-}
-
-
-/* OTP Scanner messaging. */
-
-/**
- * @brief Acknowledge a scanner BYE.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer.
- */
-int
-acknowledge_bye ()
-{
-  if (send_to_server ("CLIENT <|> BYE <|> ACK\n"))
-    return -1;
-  return 0;
-}
-
-/**
- * @brief Handle state changes to current task made by other processes.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer, 1 if
- *         queued to scanner.
- */
-int
-manage_check_current_task ()
-{
-  if (current_scanner_task)
-    {
-      task_status_t run_status;
-
-      /* Commit pending transaction if needed. */
-      manage_transaction_stop (FALSE);
-
-      /* Check if some other process changed the status. */
-
-      run_status = task_run_status (current_scanner_task);
-      switch (run_status)
-        {
-          case TASK_STATUS_STOP_REQUESTED_GIVEUP:
-            /* This should only happen for slave tasks. */
-            assert (0);
-          case TASK_STATUS_STOP_REQUESTED:
-            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_STOP_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_DELETE_REQUESTED:
-            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_DELETE_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
-            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_DELETE_ULTIMATE_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_DELETE_WAITING:
-          case TASK_STATUS_DELETE_ULTIMATE_WAITING:
-          case TASK_STATUS_DONE:
-          case TASK_STATUS_NEW:
-          case TASK_STATUS_REQUESTED:
-          case TASK_STATUS_RUNNING:
-          case TASK_STATUS_STOP_WAITING:
-          case TASK_STATUS_STOPPED:
-          case TASK_STATUS_INTERRUPTED:
-            break;
-        }
-    }
   return 0;
 }
 

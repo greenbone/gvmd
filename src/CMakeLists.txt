@@ -90,7 +90,7 @@ add_executable (manage-utils-test
                 manage_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
-                lsc_user.c lsc_crypt.c utils.c comm.c
+                lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tickets.c gmp_tls_certificates.c)
 
@@ -114,7 +114,7 @@ add_executable (manage-test
                 manage_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
-                lsc_user.c lsc_crypt.c utils.c comm.c
+                lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tickets.c gmp_tls_certificates.c)
 
@@ -138,7 +138,7 @@ add_executable (gmp-tickets-test
                 manage_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
-                lsc_user.c lsc_crypt.c utils.c comm.c
+                lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tls_certificates.c)
 
@@ -162,7 +162,7 @@ add_executable (gvmd
                 manage_tls_certificates.c
                 manage_migrators.c scanner.c
                 sql_pg.c manage_pg.c
-                lsc_user.c lsc_crypt.c utils.c comm.c
+                lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_tickets.c gmp_tls_certificates.c)
 
@@ -360,7 +360,6 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/comm.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
