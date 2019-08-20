@@ -759,8 +759,6 @@ parse_scanner_loading (char *messages)
     return;
   str += 5;
   scanner_current_loading = atoi (str);
-  if (!scanner_current_loading)
-    return;
 
   str = strstr (str, " <|> ");
   if (str == NULL)
@@ -832,7 +830,7 @@ process_otp_scanner_input ()
       if (scanner_is_loading (messages))
         {
           parse_scanner_loading (messages);
-          if (scanner_current_loading && scanner_total_loading)
+          if ((scanner_current_loading >= 0) && scanner_total_loading)
             g_log (G_LOG_DOMAIN,
                    G_LOG_LEVEL_MESSAGE,
                    "Waiting for scanner to load NVTs: %d / %d",
