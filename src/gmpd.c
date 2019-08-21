@@ -519,8 +519,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
    *     something to write,
    *   - similarly, the program need only select on the fds for reading
    *     if there is buffer space available,
-   *   - the buffers from_client and from_scanner can become full during
-   *     reading
+   *   - the buffers from_client can become full during reading
    *   - a read from the client can be stalled by the to_client buffer
    *     filling up (in which case process_gmp_client_input will try to
    *     write the to_client buffer itself),
