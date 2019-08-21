@@ -438,6 +438,19 @@ session_clean (gvm_connection_t *client_connection)
 }
 
 /**
+ * @brief Get nfds value.
+ *
+ * @param[in]  socket  Highest socket number.
+ *
+ * @return nfds value for select.
+ */
+static int
+get_nfds (int socket)
+{
+  return 1 + socket;
+}
+
+/**
  * @brief Serve the Greenbone Management Protocol (GMP).
  *
  * Loop reading input from the sockets, processing
@@ -523,7 +536,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
    *     to_scanner buffer filling up (during initialisation).
    */
 
-  nfds = openvas_scanner_get_nfds (client_connection->socket);
+  nfds = get_nfds (client_connection->socket);
   while (1)
     {
       int ret;
@@ -579,25 +592,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           FD_ZERO (&writefds);
           ret++;
           FD_SET (client_connection->socket, &readfds);
-        }
-      if (openvas_scanner_fd_isset (&readfds))
-        {
-          if (openvas_scanner_session_peek ())
-            {
-              if (!ret)
-                {
-                  FD_ZERO (&readfds);
-                  FD_ZERO (&writefds);
-                }
-              ret++;
-              openvas_scanner_fd_set (&readfds);
-            }
-          else if (openvas_scanner_peek () == 0)
-            {
-              /* Scanner has gone down.  Exit. */
-              rc = -1;
-              goto client_free;
-            }
         }
 
       if (!ret)
@@ -676,7 +670,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               /* In the parent after a start_task fork. Free the scanner session
                * without closing it, for usage by the child process. */
               openvas_scanner_free ();
-              nfds = openvas_scanner_get_nfds (client_connection->socket);
+              nfds = get_nfds (client_connection->socket);
               client_input_stalled = 0;
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
@@ -740,35 +734,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
             }
         }
 
-      /* Read any data from the scanner. */
-      if (openvas_scanner_connected ()
-          && (openvas_scanner_fd_isset (&readfds) || scan_handler))
-        {
-          switch (openvas_scanner_read ())
-            {
-              case  0:       /* Read everything. */
-                break;
-              case -1:       /* Error. */
-                /* This may be because the scanner closed the connection
-                 * at the end of a command. */
-                /** @todo Then should get EOF (-3). */
-                rc = -1;
-                goto client_free;
-              case -2:       /* from_scanner buffer full. */
-                /* There may be more to read. */
-                break;
-              case -3:       /* End of file. */
-                if (client_active == 0)
-                  /* The client has closed the connection, so exit. */
-                  return 0;
-                /* Scanner went down, exit. */
-                rc = -1;
-                goto client_free;
-              default:       /* Programming error. */
-                assert (0);
-            }
-        }
-
       /* Write any data to the client. */
       if (client_connection->socket > 0
           && FD_ISSET (client_connection->socket, &writefds))
@@ -803,7 +768,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               /* In the parent after a start_task fork. Free the scanner session
                * without closing it, for usage by the child process. */
               openvas_scanner_free ();
-              nfds = openvas_scanner_get_nfds (client_connection->socket);
+              nfds = get_nfds (client_connection->socket);
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
               continue;
