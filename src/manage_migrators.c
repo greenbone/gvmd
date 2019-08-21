@@ -1284,6 +1284,39 @@ migrate_216_to_217 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 217 to version 218.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_217_to_218 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 217. */
+
+  if (manage_db_version () != 217)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add an UNIQUE constraint to the name column of users */
+
+  sql ("ALTER TABLE users ADD UNIQUE (name);");
+
+  /* Set the database version to 218. */
+
+  set_db_version (218);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1307,6 +1340,7 @@ static migrator_t database_migrators[] = {
   {215, migrate_214_to_215},
   {216, migrate_215_to_216},
   {217, migrate_216_to_217},
+  {218, migrate_217_to_218},
   /* End marker. */
   {-1, NULL}};
 

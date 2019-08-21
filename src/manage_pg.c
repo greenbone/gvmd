@@ -2058,7 +2058,7 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text NOT NULL,"
+       "  name text UNIQUE NOT NULL,"
        "  comment text,"
        "  password text,"
        "  timezone text,"
