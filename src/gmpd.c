@@ -549,11 +549,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                    __FUNCTION__,
                    sys_siglist[get_termination_signal()]);
 
-          if (openvas_scanner_connected ())
-            {
-              openvas_scanner_close ();
-            }
-
           goto client_free;
         }
 
@@ -669,7 +664,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
             {
               /* In the parent after a start_task fork. Free the scanner session
                * without closing it, for usage by the child process. */
-              openvas_scanner_free ();
               nfds = get_nfds (client_connection->socket);
               client_input_stalled = 0;
               /* Skip the rest of the loop because the scanner socket is
@@ -767,7 +761,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
             {
               /* In the parent after a start_task fork. Free the scanner session
                * without closing it, for usage by the child process. */
-              openvas_scanner_free ();
               nfds = get_nfds (client_connection->socket);
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
