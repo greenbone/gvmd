@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check and create default permissions individually [#671](https://github.com/greenbone/gvmd/pull/671)
 - Add -f arg to sendmail call in email alert [#676](https://github.com/greenbone/gvmd/pull/676) [#678](https://github.com/greenbone/gvmd/pull/678)
 - Change get_tickets to use the status text for filtering. [#697](https://github.com/greenbone/gvmd/pull/697)
+- Made checks to prevent duplicate user names stricter. [#708](https://github.com/greenbone/gvmd/pull/708)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)
