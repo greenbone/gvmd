@@ -33,7 +33,6 @@
  */
 
 #include "gmpd.h"
-#include "scanner.h"
 #include "gmp.h"
 
 #include <assert.h>

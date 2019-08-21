@@ -100,7 +100,6 @@
 
 #include "manage.h"
 #include "manage_sql_secinfo.h"
-#include "scanner.h"
 #include "gmpd.h"
 #include "utils.h"
 

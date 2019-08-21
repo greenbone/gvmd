@@ -88,7 +88,7 @@ add_executable (manage-utils-test
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
-                manage_migrators.c scanner.c
+                manage_migrators.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
@@ -112,7 +112,7 @@ add_executable (manage-test
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
-                manage_migrators.c scanner.c
+                manage_migrators.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
@@ -136,7 +136,7 @@ add_executable (gmp-tickets-test
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
-                manage_migrators.c scanner.c
+                manage_migrators.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
@@ -160,7 +160,7 @@ add_executable (gvmd
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
-                manage_migrators.c scanner.c
+                manage_migrators.c
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
@@ -344,7 +344,6 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/scanner.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_host_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_system_discovery.c"

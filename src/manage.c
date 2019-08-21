@@ -45,7 +45,6 @@
 #define _GNU_SOURCE
 
 #include "manage.h"
-#include "scanner.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
