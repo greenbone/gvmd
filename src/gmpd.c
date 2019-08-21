@@ -121,7 +121,6 @@ init_gmpd (GSList *log_config, const gchar *database,
 void
 init_gmpd_process (const gchar *database, gchar **disable)
 {
-  openvas_scanner_fork ();
   from_client_start = 0;
   from_client_end = 0;
   init_gmp_process (0, database, NULL, NULL, disable);

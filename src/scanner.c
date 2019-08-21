@@ -102,21 +102,6 @@ buffer_size_t from_scanner_start = 0;
 buffer_size_t from_scanner_end = 0;
 
 /**
- * @brief Reset Scanner variables after a fork.
- *
- * This other side of the fork will do the actual cleanup.
- */
-void
-openvas_scanner_fork ()
-{
-  openvas_scanner_socket = -1;
-  openvas_scanner_session = NULL;
-  openvas_scanner_credentials = NULL;
-  from_scanner_start = 0;
-  from_scanner_end = 0;
-}
-
-/**
  * @brief Free the scanner allocated data. Doesn't close socket and terminate
  *        the session.
  */

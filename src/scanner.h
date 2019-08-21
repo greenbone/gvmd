@@ -28,9 +28,6 @@
 #include <gnutls/gnutls.h>
 
 void
-openvas_scanner_fork ();
-
-void
 openvas_scanner_free ();
 
 #endif /* not _GVMD_SCANNER_H */
