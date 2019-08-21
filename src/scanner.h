@@ -27,44 +27,11 @@
 
 #include <gnutls/gnutls.h>
 
-int
-openvas_scanner_read ();
-
-int
-openvas_scanner_write ();
-
-int
-openvas_scanner_close ();
-
 void
 openvas_scanner_fork ();
 
 void
 openvas_scanner_free ();
-
-int
-openvas_scanner_fd_isset (fd_set *);
-
-void
-openvas_scanner_fd_set (fd_set *);
-
-int
-openvas_scanner_peek ();
-
-int
-openvas_scanner_get_nfds (int);
-
-int
-openvas_scanner_session_peek ();
-
-int
-openvas_scanner_full ();
-
-int
-openvas_scanner_realloc ();
-
-int
-openvas_scanner_connected ();
 
 int
 openvas_scanner_set_address (const char *, int);
