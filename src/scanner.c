@@ -26,7 +26,6 @@
 
 #include "scanner.h"
 #include "gmpd.h"
-#include "comm.h"
 #include "utils.h"
 
 #include <dirent.h>
@@ -243,94 +242,6 @@ openvas_scanner_write ()
 }
 
 /**
- * @brief Wait for the scanner socket to be writable.
- *
- * @return 0 on success, -1 on error.
- */
-static int
-openvas_scanner_wait ()
-{
-  if (openvas_scanner_socket == -1)
-    return -1;
-
-  while (1)
-    {
-      int ret;
-      struct timeval timeout;
-      fd_set writefds;
-
-      timeout.tv_usec = 0;
-      timeout.tv_sec = 1;
-      FD_ZERO (&writefds);
-      FD_SET (openvas_scanner_socket, &writefds);
-
-      ret = select (1 + openvas_scanner_socket, NULL, &writefds, NULL, &timeout);
-      if (ret < 0)
-        {
-          if (errno == EINTR)
-            continue;
-          g_warning ("%s: select failed (connect): %s", __FUNCTION__,
-                     strerror (errno));
-          return -1;
-        }
-
-      if (FD_ISSET (openvas_scanner_socket, &writefds))
-        break;
-    }
-  return 0;
-}
-
-/**
- * @brief Load certificates from the CA directory.
- *
- * @param[in]  scanner_credentials  Scanner credentials.
- *
- * @return 0 success, -1 error.
- */
-static int
-load_cas (gnutls_certificate_credentials_t *scanner_credentials)
-{
-  DIR *dir;
-  struct dirent *ent;
-
-  dir = opendir (CA_DIR);
-  if (dir == NULL)
-    {
-      if (errno != ENOENT)
-        {
-          g_warning ("%s: failed to open " CA_DIR ": %s", __FUNCTION__,
-                     strerror (errno));
-          return -1;
-        }
-    }
-  else while ((ent = readdir (dir)))
-    {
-      gchar *name;
-      struct stat state;
-
-      if ((strcmp (ent->d_name, ".") == 0) || (strcmp (ent->d_name, "..") == 0))
-        continue;
-
-      name = g_build_filename (CA_DIR, ent->d_name, NULL);
-      stat (name, &state);
-      if (S_ISREG (state.st_mode)
-          && (gnutls_certificate_set_x509_trust_file
-               (*scanner_credentials, name, GNUTLS_X509_FMT_PEM) < 0))
-        {
-          g_warning ("%s: gnutls_certificate_set_x509_trust_file failed: %s",
-                     __FUNCTION__, name);
-          g_free (name);
-          closedir (dir);
-          return -1;
-        }
-      g_free (name);
-    }
-  if (dir != NULL)
-    closedir (dir);
-  return 0;
-}
-
-/**
  * @brief Finish the connection to the Scanner and free internal buffers.
  *
  * @return -1 if error, 0 if success.
@@ -367,79 +278,6 @@ openvas_scanner_fork ()
   openvas_scanner_credentials = NULL;
   from_scanner_start = 0;
   from_scanner_end = 0;
-}
-
-/**
- * @brief Create a new connection to the scanner and set it as current scanner.
- *
- * Use a UNIX socket for the connection.
- *
- * @return 0 on success, -1 on error.
- */
-static int
-openvas_scanner_connect_unix ()
-{
-  struct sockaddr_un addr;
-  int len;
-
-  openvas_scanner_socket = socket (AF_UNIX, SOCK_STREAM, 0);
-  if (openvas_scanner_socket == -1)
-    {
-      g_warning ("%s: failed to create scanner socket: %s", __FUNCTION__,
-                 strerror (errno));
-      return -1;
-    }
-
-  addr.sun_family = AF_UNIX;
-  strncpy (addr.sun_path, openvas_scanner_unix_path, 108);
-  len = strlen (addr.sun_path) + sizeof (addr.sun_family);
-  if (connect (openvas_scanner_socket, (struct sockaddr *) &addr, len) == -1)
-    {
-      g_warning ("%s: Failed to connect to scanner (%s): %s", __FUNCTION__,
-                 openvas_scanner_unix_path, strerror (errno));
-      return -1;
-    }
-
-  return 0;
-}
-
-/**
- * @brief Create a new connection to the scanner and set it as current scanner.
- *
- * @return 0 on success, -1 on error.
- */
-int
-openvas_scanner_connect ()
-{
-  if (openvas_scanner_unix_path)
-    return openvas_scanner_connect_unix ();
-
-  openvas_scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
-  if (openvas_scanner_socket == -1)
-    {
-      g_warning ("%s: failed to create scanner socket: %s", __FUNCTION__,
-                 strerror (errno));
-      return -1;
-    }
-
-  /* Make the scanner socket. */
-  if (gvm_server_new_mem
-       (GNUTLS_CLIENT, openvas_scanner_ca_pub, openvas_scanner_key_pub,
-        openvas_scanner_key_priv, &openvas_scanner_session,
-        &openvas_scanner_credentials))
-    {
-      close (openvas_scanner_socket);
-      openvas_scanner_socket = -1;
-      return -1;
-    }
-
-  if (load_cas (&openvas_scanner_credentials))
-    {
-      openvas_scanner_close ();
-      return -1;
-    }
-
-  return 0;
 }
 
 /**
@@ -558,31 +396,6 @@ openvas_scanner_connected ()
 }
 
 /**
- * @brief Initializes the already setup connection with the Scanner.
- *
- * @return 0 success, -1 error.
- */
-int
-openvas_scanner_init ()
-{
-  int ret;
-
-  if (openvas_scanner_socket == -1)
-    return -1;
-  from_scanner = g_malloc0 (from_scanner_size);
-  ret = openvas_scanner_write ();
-  if (ret != -3)
-    {
-      openvas_scanner_free ();
-      return -1;
-    }
-  if (openvas_scanner_wait ())
-    return -2;
-
-  return 0;
-}
-
-/**
  * @brief Set the scanner's address and port. Will try to resolve addr if it is
  *        a hostname.
  *
@@ -652,26 +465,4 @@ openvas_scanner_set_certs (const char *ca_pub, const char *key_pub,
     openvas_scanner_key_pub = g_strdup (key_pub);
   if (key_priv)
     openvas_scanner_key_priv = g_strdup (key_priv);
-}
-
-/**
- * @brief Checks whether the connected to OpenVAS Scanner is still loading
- *        plugins. To be called right after openvas_scanner_init().
- *
- * @return 1 if loading, 0 if not loading or error.
- */
-int
-openvas_scanner_is_loading ()
-{
-  int attempts = 5;
-  int ret = 0;
-  while (attempts >= 0)
-    {
-      /* Add little delay in case we read before scanner write, as the socket is
-       * non-blocking. */
-      attempts = attempts - 1;
-      gvm_usleep (500000);
-      openvas_scanner_read ();
-    }
-  return ret;
 }

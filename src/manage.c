@@ -52,7 +52,6 @@
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
-#include "comm.h"
 #include "utils.h"
 
 #include <assert.h>
@@ -4072,20 +4071,24 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 /**
  * @brief Fork a child to handle an OSP scan's fetching and inserting.
  *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
+ * @param[in]   task               The task.
+ * @param[in]   target             The target.
+ * @param[out]  report_id_return   UUID of the report.
  *
  * @return Parent returns with 0 if success, -1 if failure. Child process
  *         doesn't return and simply exits.
  */
 static int
-fork_osp_scan_handler (task_t task, target_t target)
+fork_osp_scan_handler (task_t task, target_t target, char **report_id_return)
 {
   char *report_id, title[128], *error = NULL;
   int rc;
 
   assert (task);
   assert (target);
+
+  if (report_id_return)
+    *report_id_return = NULL;
 
   if (create_current_report (task, &report_id, TASK_STATUS_REQUESTED))
     {
@@ -4101,6 +4104,7 @@ fork_osp_scan_handler (task_t task, target_t target)
         break;
       case -1:
         /* Parent, failed to fork. */
+        global_current_report = 0;
         g_warning ("%s: Failed to fork: %s",
                    __FUNCTION__,
                    strerror (errno));
@@ -4110,9 +4114,15 @@ fork_osp_scan_handler (task_t task, target_t target)
         set_report_scan_run_status (global_current_report,
                                     TASK_STATUS_INTERRUPTED);
         global_current_report = (report_t) 0;
+        g_free (report_id);
         return -9;
       default:
         /* Parent, successfully forked. */
+        global_current_report = 0;
+        if (report_id_return)
+          *report_id_return = report_id;
+        else
+          g_free (report_id);
         return 0;
     }
 
@@ -4181,11 +4191,12 @@ fork_osp_scan_handler (task_t task, target_t target)
  * @brief Start a task on an OSP or OpenVAS via OSP scanner.
  *
  * @param[in]   task       The task.
+ * @param[out]  report_id  The report ID.
  *
  * @return 0 success, 99 permission denied, -1 error.
  */
 static int
-run_osp_task (task_t task)
+run_osp_task (task_t task, char **report_id)
 {
   target_t target;
 
@@ -4206,7 +4217,7 @@ run_osp_task (task_t task)
         return 99;
     }
 
-  if (fork_osp_scan_handler (task, target))
+  if (fork_osp_scan_handler (task, target, report_id))
     {
       g_warning ("Couldn't fork OSP scan handler");
       return -1;
@@ -4518,44 +4529,6 @@ set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
   if (ca_pub || fallback)
     return 0;
   return 1;
-}
-
-/**
- * @brief Initialise some values of the OpenVAS scanner.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return 0 success, -1 error, 1 no CA cert.
- */
-static int
-scanner_setup (scanner_t scanner)
-{
-  int ret, port;
-  char *host, *ca_pub, *key_pub, *key_priv;
-
-  assert (scanner);
-  host = scanner_host (scanner);
-  if (host && *host == '/')
-    {
-      /* XXX: Workaround for unix socket case. Should add a flag. */
-      openvas_scanner_set_unix (host);
-      return 0;
-    }
-  port = scanner_port (scanner);
-  ret = openvas_scanner_set_address (host, port);
-  g_free (host);
-  if (ret)
-    return ret;
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
-  ret = 0;
-  if (set_certs (ca_pub, key_pub, key_priv))
-    ret = 1;
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
-  return ret;
 }
 
 /**
@@ -5002,18 +4975,13 @@ run_task (const char *task_id, char **report_id, int from)
 
   if (scanner_type (scanner) == SCANNER_TYPE_OPENVAS
       || scanner_type (scanner) == SCANNER_TYPE_OSP)
-    return run_osp_task (task);
+    return run_osp_task (task, report_id);
 
   return -1; // Unknown scanner type
 }
 
 /**
  * @brief Start a task.
- *
- * Use \ref send_to_server to queue the task start sequence in the scanner
- * output buffer.
- *
- * Only one task can run at a time in a process.
  *
  * @param[in]   task_id    The task ID.
  * @param[out]  report_id  The report ID.
@@ -5078,9 +5046,6 @@ end_stop_osp:
 /**
  * @brief Initiate stopping a task.
  *
- * Use \ref send_to_server to queue the task stop sequence in the
- * scanner output buffer.
- *
  * @param[in]  task  Task.
  *
  * @return 0 on success, 1 if stop requested, -1 if out of space in scanner
@@ -5095,26 +5060,6 @@ stop_task_internal (task_t task)
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
-      if (current_scanner_task == task)
-        {
-          scanner_t scanner = task_scanner (task);
-
-          assert (scanner);
-          switch (scanner_setup (scanner))
-            {
-              case 0:
-                break;
-              case 1:
-                return -7;
-              default:
-                return -5;
-            }
-          if (!openvas_scanner_connected ()
-              && (openvas_scanner_connect () || openvas_scanner_init ()))
-            return -5;
-          if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-            return -1;
-        }
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
     }
@@ -5143,9 +5088,6 @@ stop_task_internal (task_t task)
 
 /**
  * @brief Initiate stopping a task.
- *
- * Use \ref send_to_server to queue the task stop sequence in the
- * scanner output buffer.
  *
  * @param[in]  task_id  Task UUID.
  *
@@ -5335,82 +5277,6 @@ move_task (const char *task_id, const char *slave_id)
         return 1;
     }
 
-  return 0;
-}
-
-
-/* OTP Scanner messaging. */
-
-/**
- * @brief Acknowledge a scanner BYE.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer.
- */
-int
-acknowledge_bye ()
-{
-  if (send_to_server ("CLIENT <|> BYE <|> ACK\n"))
-    return -1;
-  return 0;
-}
-
-/**
- * @brief Handle state changes to current task made by other processes.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer, 1 if
- *         queued to scanner.
- */
-int
-manage_check_current_task ()
-{
-  if (current_scanner_task)
-    {
-      task_status_t run_status;
-
-      /* Commit pending transaction if needed. */
-      manage_transaction_stop (FALSE);
-
-      /* Check if some other process changed the status. */
-
-      run_status = task_run_status (current_scanner_task);
-      switch (run_status)
-        {
-          case TASK_STATUS_STOP_REQUESTED_GIVEUP:
-            /* This should only happen for slave tasks. */
-            assert (0);
-          case TASK_STATUS_STOP_REQUESTED:
-            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_STOP_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_DELETE_REQUESTED:
-            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_DELETE_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
-            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_DELETE_ULTIMATE_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_DELETE_WAITING:
-          case TASK_STATUS_DELETE_ULTIMATE_WAITING:
-          case TASK_STATUS_DONE:
-          case TASK_STATUS_NEW:
-          case TASK_STATUS_REQUESTED:
-          case TASK_STATUS_RUNNING:
-          case TASK_STATUS_STOP_WAITING:
-          case TASK_STATUS_STOPPED:
-          case TASK_STATUS_INTERRUPTED:
-            break;
-        }
-    }
   return 0;
 }
 
