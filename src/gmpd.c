@@ -461,9 +461,8 @@ get_nfds (int socket)
  *
  * \if STATIC
  *
- * Read input with \ref read_from_client and \ref openvas_scanner_read.
- * Write the results with \ref write_to_client.  Write to the server
- * with \ref openvas_scanner_write.
+ * Read input with \ref read_from_client.
+ * Write the results with \ref write_to_client.
  *
  * \endif
  *
@@ -481,7 +480,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 {
   int nfds, scan_handler = 0, rc = 0;
   /* True if processing of the client input is waiting for space in the
-   * to_scanner or to_client buffer. */
+   * to_client buffer. */
   short client_input_stalled;
   /* Client status flag.  Set to 0 when the client closes the connection
    * while the scanner is active. */
@@ -507,15 +506,11 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
    *
    * That is, select on all the socket fds and then, as necessary
    *   - read from the client into buffer from_client
-   *   - write to the scanner from buffer to_scanner
-   *   - read from the scanner into buffer from_scanner
    *   - write to the client from buffer to_client.
    *
    * On reading from an fd, immediately try react to the input.  On reading
    * from the client call process_gmp_client_input, which parses GMP
-   * commands and may write to to_scanner and to_client.  On reading from
-   * the scanner call process_otp_scanner_input, which updates information
-   * kept about the scanner.
+   * commands and may write to to_client.
    *
    * There are a few complications here
    *   - the program must read from or write to an fd returned by select
@@ -526,12 +521,9 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
    *     if there is buffer space available,
    *   - the buffers from_client and from_scanner can become full during
    *     reading
-   *   - a read from the client can be stalled by the to_scanner buffer
-   *     filling up, or the to_client buffer filling up (in which case
-   *     process_gmp_client_input will try to write the to_client buffer
-   *     itself),
-   *   - a read from the scanner can, theoretically, be stalled by the
-   *     to_scanner buffer filling up (during initialisation).
+   *   - a read from the client can be stalled by the to_client buffer
+   *     filling up (in which case process_gmp_client_input will try to
+   *     write the to_client buffer itself),
    */
 
   nfds = get_nfds (client_connection->socket);
@@ -748,8 +740,8 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
       if (client_input_stalled)
         {
-          /* Try process the client input, in case writing to the scanner
-           * or client has freed some space in to_scanner or to_client. */
+          /* Try process the client input, in case writing to the client
+           * has freed some space in to_client. */
 
           ret = process_gmp_client_input ();
           if (ret == 0)
