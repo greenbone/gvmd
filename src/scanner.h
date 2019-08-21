@@ -39,7 +39,4 @@ openvas_scanner_set_address (const char *, int);
 int
 openvas_scanner_set_unix (const char *);
 
-void
-openvas_scanner_set_certs (const char *, const char *, const char *);
-
 #endif /* not _GVMD_SCANNER_H */

@@ -189,27 +189,3 @@ openvas_scanner_set_unix (const char *path)
 
   return 0;
 }
-
-/**
- * @brief Set the scanner's CA Certificate, and public/private key pair.
- *
- * @param[in]  ca_pub       CA Certificate.
- * @param[in]  key_pub      Scanner Certificate.
- * @param[in]  key_priv     Scanner private key.
- */
-void
-openvas_scanner_set_certs (const char *ca_pub, const char *key_pub,
-                           const char *key_priv)
-{
-  if (openvas_scanner_unix_path)
-    {
-      g_free (openvas_scanner_unix_path);
-      openvas_scanner_unix_path = NULL;
-    }
-  if (ca_pub)
-    openvas_scanner_ca_pub = g_strdup (ca_pub);
-  if (key_pub)
-    openvas_scanner_key_pub = g_strdup (key_pub);
-  if (key_priv)
-    openvas_scanner_key_priv = g_strdup (key_priv);
-}

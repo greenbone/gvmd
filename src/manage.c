@@ -4506,32 +4506,6 @@ run_cve_task (task_t task)
 /* OTP tasks. */
 
 /**
- * @brief Initialise OpenVAS scanner variables, checking for defaults.
- *
- * @param[in]  ca_pub       CA Certificate.
- * @param[in]  key_pub      Scanner Certificate.
- * @param[in]  key_priv     Scanner private key.
- *
- * @return 0 success, 1 both default CA cert setting and ca_pub were NULL.
- */
-int
-set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
-{
-  const char *fallback;
-
-  if (ca_pub == NULL)
-    fallback = manage_default_ca_cert ();
-  else
-    fallback = NULL;
-
-  openvas_scanner_set_certs (fallback ? fallback : ca_pub, key_pub, key_priv);
-
-  if (ca_pub || fallback)
-    return 0;
-  return 1;
-}
-
-/**
  * @brief Initialise variables required for running a scan.
  *
  * @param[in]  task             Task.
