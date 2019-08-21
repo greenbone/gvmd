@@ -111,16 +111,6 @@ static buffer_size_t from_scanner_size = 1048576;
  */
 static buffer_size_t from_scanner_max_size = 1073741824;
 
-/** @cond STATIC */
-
-/* XXX: gvm-comm.c content should be moved to scanner.c to better abstract
- * scanner reading/writing. */
-extern char to_server[];
-extern int to_server_end;
-extern int to_server_start;
-
-/** @endcond */
-
 /**
  * @brief Read as much from the server as the \ref from_scanner buffer will
  * @brief hold.
