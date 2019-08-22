@@ -4751,6 +4751,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   user_t owner;
   resource_t resource;
   resource_t new;
+  int ret = -1;
 
   if (resource_id == NULL)
     return -1;
@@ -4818,60 +4819,79 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
     {
       gchar *quoted_comment;
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO %ss"
-           " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
-           " SELECT make_uuid (),"
-           "        (SELECT id FROM users where users.uuid = '%s'),"
-           "        %s%s%s, '%s', m_now (), m_now ()%s%s"
-           " FROM %ss WHERE uuid = '%s';",
-           type,
-           columns ? ", " : "",
-           columns ? columns : "",
-           current_credentials.uuid,
-           quoted_name ? "'" : "",
-           quoted_name ? quoted_name : uniquify,
-           quoted_name ? "'" : "",
-           quoted_comment,
-           columns ? ", " : "",
-           columns ? columns : "",
-           type,
-           quoted_uuid);
+      ret = sql_error ("INSERT INTO %ss"
+                       " (uuid, owner, name, comment,"
+                       "  creation_time, modification_time%s%s)"
+                       " SELECT make_uuid (),"
+                       "        (SELECT id FROM users"
+                       "         where users.uuid = '%s'),"
+                       "        %s%s%s, '%s', m_now (), m_now ()%s%s"
+                       " FROM %ss WHERE uuid = '%s';",
+                       type,
+                       columns ? ", " : "",
+                       columns ? columns : "",
+                       current_credentials.uuid,
+                       quoted_name ? "'" : "",
+                       quoted_name ? quoted_name : uniquify,
+                       quoted_name ? "'" : "",
+                       quoted_comment,
+                       columns ? ", " : "",
+                       columns ? columns : "",
+                       type,
+                       quoted_uuid);
       g_free (quoted_comment);
     }
   else if (named)
-    sql ("INSERT INTO %ss"
-         " (uuid, owner, name%s, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (),"
-         "        (SELECT id FROM users where users.uuid = '%s'),"
-         "        %s%s%s%s, m_now (), m_now ()%s%s"
-         " FROM %ss WHERE uuid = '%s';",
-         type,
-         type_has_comment (type) ? ", comment" : "",
-         columns ? ", " : "",
-         columns ? columns : "",
-         current_credentials.uuid,
-         quoted_name ? "'" : "",
-         quoted_name ? quoted_name : uniquify,
-         quoted_name ? "'" : "",
-         type_has_comment (type) ? ", comment" : "",
-         columns ? ", " : "",
-         columns ? columns : "",
-         type,
-         quoted_uuid);
+    ret = sql_error ("INSERT INTO %ss"
+                      " (uuid, owner, name%s,"
+                      "  creation_time, modification_time%s%s)"
+                      " SELECT make_uuid (),"
+                      "        (SELECT id FROM users where users.uuid = '%s'),"
+                      "        %s%s%s%s, m_now (), m_now ()%s%s"
+                      " FROM %ss WHERE uuid = '%s';",
+                      type,
+                      type_has_comment (type) ? ", comment" : "",
+                      columns ? ", " : "",
+                      columns ? columns : "",
+                      current_credentials.uuid,
+                      quoted_name ? "'" : "",
+                      quoted_name ? quoted_name : uniquify,
+                      quoted_name ? "'" : "",
+                      type_has_comment (type) ? ", comment" : "",
+                      columns ? ", " : "",
+                      columns ? columns : "",
+                      type,
+                      quoted_uuid);
   else
-    sql ("INSERT INTO %ss"
-         " (uuid, owner, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), (SELECT id FROM users where users.uuid = '%s'),"
-         "        m_now (), m_now ()%s%s"
-         " FROM %ss WHERE uuid = '%s';",
-         type,
-         columns ? ", " : "",
-         columns ? columns : "",
-         current_credentials.uuid,
-         columns ? ", " : "",
-         columns ? columns : "",
-         type,
-         quoted_uuid);
+    ret = sql_error ("INSERT INTO %ss"
+                     " (uuid, owner, creation_time, modification_time%s%s)"
+                     " SELECT make_uuid (),"
+                     "        (SELECT id FROM users where users.uuid = '%s'),"
+                     "        m_now (), m_now ()%s%s"
+                     " FROM %ss WHERE uuid = '%s';",
+                     type,
+                     columns ? ", " : "",
+                     columns ? columns : "",
+                     current_credentials.uuid,
+                     columns ? ", " : "",
+                     columns ? columns : "",
+                     type,
+                     quoted_uuid);
+
+  if (ret == 3)
+    {
+      g_free (quoted_uuid);
+      g_free (quoted_name);
+      g_free (uniquify);
+      return 1;
+    }
+  else if (ret)
+    {
+      g_free (quoted_uuid);
+      g_free (quoted_name);
+      g_free (uniquify);
+      return -1;
+    }
 
   new = sql_last_insert_id ();
 
@@ -59638,7 +59658,7 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   char *errstr, *uuid;
   gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
   gchar *quoted_comment, *clean, *generated;
-  int index, max;
+  int index, max, ret;
   user_t user;
   GArray *cache_users;
 
@@ -59735,24 +59755,27 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   quoted_method = sql_quote (allowed_methods
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "file");
-  sql ("INSERT INTO users"
-       " (uuid, owner, name, password, comment, hosts, hosts_allow,"
-       "  ifaces, ifaces_allow, method, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (),"
-       "  (SELECT id FROM users WHERE uuid = '%s'),"
-       "  '%s', '%s', '%s', '%s', %i,"
-       "  '%s', %i, '%s', m_now (), m_now ());",
-       current_credentials.uuid,
-       quoted_name,
-       hash,
-       quoted_comment,
-       quoted_hosts,
-       hosts_allow,
-       quoted_ifaces,
-       ifaces_allow,
-       quoted_method);
-  user = sql_last_insert_id ();
+
+  ret
+    = sql_error ("INSERT INTO users"
+                 " (uuid, owner, name, password, comment, hosts, hosts_allow,"
+                 "  ifaces, ifaces_allow, method, creation_time,"
+                 "  modification_time)"
+                 " VALUES"
+                 " (make_uuid (),"
+                 "  (SELECT id FROM users WHERE uuid = '%s'),"
+                 "  '%s', '%s', '%s', '%s', %i,"
+                 "  '%s', %i, '%s', m_now (),"
+                 "  m_now ());",
+                 current_credentials.uuid,
+                 quoted_name,
+                 hash,
+                 quoted_comment,
+                 quoted_hosts,
+                 hosts_allow,
+                 quoted_ifaces,
+                 ifaces_allow,
+                 quoted_method);
   g_free (generated);
   g_free (hash);
   g_free (quoted_comment);
@@ -59760,6 +59783,19 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   g_free (quoted_ifaces);
   g_free (quoted_method);
   g_free (quoted_name);
+
+  if (ret == 3)
+    {
+      sql_rollback ();
+      return -2;
+    }
+  else if (ret)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  user = sql_last_insert_id ();
 
   /* Add the user to any given groups. */
 
