@@ -4681,11 +4681,6 @@ static run_wizard_data_t *run_wizard_data
  = (run_wizard_data_t*) &(command_data.wizard);
 
 /**
- * @brief Hack for returning forked process status from the callbacks.
- */
-static int current_error;
-
-/**
  * @brief Hack for returning fork status to caller.
  */
 static int forked;
@@ -29357,8 +29352,6 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
  *         3 success (when a process was forked),
  *         -1 error,
  *         -4 XML syntax error.
- *         2 success (in a forked process),
- *         -10 error (in a forked process).
  */
 int
 process_gmp_client_input ()
@@ -29371,7 +29364,6 @@ process_gmp_client_input ()
 
   if (xml_context == NULL) return -1;
 
-  current_error = 0;
   success = g_markup_parse_context_parse (xml_context,
                                           from_client + from_client_start,
                                           from_client_end - from_client_start,
@@ -29389,17 +29381,7 @@ process_gmp_client_input ()
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_INVALID_CONTENT))
-            {
-              if (current_error)
-                {
-                  /* This is the return status for a forked child. */
-                  forked = 2; /* Prevent further forking. */
-                  g_error_free (error);
-                  /* This can only be 2 (success) or -10 (error). */
-                  return current_error;
-                }
-              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
-            }
+            g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
@@ -29494,7 +29476,6 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   client_writer_data = parser->client_writer_data;
   parser->client_writer = process_gmp_write;
   parser->client_writer_data = buffer;
-  current_error = 0;
   success = g_markup_parse_context_parse (xml_context,
                                           command,
                                           strlen (command),
@@ -29517,16 +29498,7 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_INVALID_CONTENT))
-            {
-              if (current_error)
-                {
-                  /* This is the return status for a forked child. */
-                  forked = 2; /* Prevent further forking. */
-                  g_error_free (error);
-                  return current_error;
-                }
-              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
-            }
+            g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
