@@ -27553,15 +27553,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       resume_task_data->task_id,
                                       "resumed");
                       break;
-                    case 2:
-                      /* Forked task process: success. */
-                      current_error = 2;
-                      g_debug ("   %s: resume_task fork success", __FUNCTION__);
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
-                      break;
                     case 4:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_task",
@@ -27586,15 +27577,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       log_event_fail ("task", "Task",
                                       resume_task_data->task_id,
                                       "resumed");
-                      break;
-                    case -10:
-                      /* Forked task process: error. */
-                      current_error = -10;
-                      g_debug ("   %s: resume_task fork error", __FUNCTION__);
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
                       break;
                     case -6:
                       SEND_TO_CLIENT_OR_FAIL
@@ -27723,18 +27705,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     break;
                   }
 
-                case 2:
-                  {
-                    /* Process forked to run a task. */
-                    current_error = 2;
-                    g_debug ("   %s: run_wizard fork success", __FUNCTION__);
-                    g_set_error (error,
-                                 G_MARKUP_ERROR,
-                                 G_MARKUP_ERROR_INVALID_CONTENT,
-                                 "Dummy error for current_error");
-                    break;
-                  }
-
                 case 4:
                 case 6:
                   {
@@ -27811,18 +27781,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "run: to_scanner buffer full");
                     break;
                   }
-
-                case -10:
-                  {
-                    /* Process forked to run a task.  Task start failed. */
-                    current_error = -10;
-                    g_debug ("   %s: run_wizard fork error", __FUNCTION__);
-                    g_set_error (error,
-                                 G_MARKUP_ERROR,
-                                 G_MARKUP_ERROR_INVALID_CONTENT,
-                                 "Dummy error for current_error");
-                    break;
-                  }
               }
           }
         else
@@ -27893,15 +27851,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       start_task_data->task_id,
                                       "started");
                       break;
-                    case 2:
-                      /* Forked task process: success. */
-                      current_error = 2;
-                      g_debug ("   %s: start_task fork success", __FUNCTION__);
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
-                      break;
                     case 3:   /* Find failed. */
                       if (send_find_error_to_client ("start_task", "task",
                                                      start_task_data->task_id,
@@ -27965,15 +27914,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       log_event_fail ("task", "Task",
                                       start_task_data->task_id,
                                       "started");
-                      break;
-                    case -10:
-                      /* Forked task process: error. */
-                      current_error = -10;
-                      g_debug ("   %s: start_task fork error", __FUNCTION__);
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
                       break;
                     default: /* Programming error. */
                       assert (0);
