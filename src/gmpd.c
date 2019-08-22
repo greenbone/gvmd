@@ -670,15 +670,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               client_input_stalled = 0;
               scan_handler = 1;
             }
-          else if (ret == 4)
-            {
-              /* Now in a process forked for some operation which has
-               * successfully completed.  Close the client connection,
-               * and exit, as the parent process has continued the
-               * session with the client. */
-              session_clean (client_connection);
-              return 0;
-            }
           else if (ret == -10)
             {
               /* Now in a process forked to run a task, which has
@@ -694,20 +685,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               write_to_client (client_connection);
               rc = -1;
               goto client_free;
-            }
-          else if (ret == -2)
-            {
-              /* to_scanner buffer full. */
-              g_debug ("   client input stalled 1");
-              client_input_stalled = 1;
-              /* Carry on to write to_scanner. */
-            }
-          else if (ret == -3)
-            {
-              /* to_client buffer full. */
-              g_debug ("   client input stalled 2");
-              client_input_stalled = 2;
-              /* Carry on to write to_client. */
             }
           else
             {
@@ -765,15 +742,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               scan_handler = 1;
               client_active = 0;
             }
-          else if (ret == 4)
-            {
-              /* Now in a process forked for some operation which has
-               * successfully completed.  Close the client connection,
-               * and exit, as the parent process has continued the
-               * session with the client. */
-              session_clean (client_connection);
-              return 0;
-            }
           else if (ret == -10)
             {
               /* Now in a process forked to run a task, which has
@@ -789,18 +757,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               write_to_client (client_connection);
               rc = -1;
               goto client_free;
-            }
-          else if (ret == -2)
-            {
-              /* to_scanner buffer full. */
-              g_debug ("   client input still stalled (1)");
-              client_input_stalled = 1;
-            }
-          else if (ret == -3)
-            {
-              /* to_client buffer full. */
-              g_debug ("   client input still stalled (2)");
-              client_input_stalled = 2;
             }
           else
             {
