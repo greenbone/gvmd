@@ -29423,13 +29423,12 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
  *
  * \endif
  *
- * @todo The -2 return has been replaced by send_to_client trying to write
- *       the to_client buffer to the client when it is full.  This is
- *       necessary, as the to_client buffer may fill up halfway through the
- *       processing of a GMP element.
- *
- * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
- *         or the scanner output buffer (respectively), -4 XML syntax error.
+ * @return 0 success,
+ *         3 success (when a process was forked),
+ *         -1 error,
+ *         -4 XML syntax error.
+ *         2 success (in a forked process),
+ *         -10 error (in a forked process).
  */
 int
 process_gmp_client_input ()
@@ -29466,6 +29465,7 @@ process_gmp_client_input ()
                   /* This is the return status for a forked child. */
                   forked = 2; /* Prevent further forking. */
                   g_error_free (error);
+                  /* This can only be 2 (success) or -10 (error). */
                   return current_error;
                 }
               g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
