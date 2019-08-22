@@ -62151,13 +62151,12 @@ manage_slave_check_period ()
  * @param[in]  uuid        The resource UUID.
  * @param[in]  resource    The resource row id.
  * @param[in]  location    Whether the resource is in the trashcan.
- * @param[in]  duplicates_check  Whether to check if resource already has tag.
- * 
+ *
  * @return  0 success, -1 error
  */
 static int
 tag_add_resource (tag_t tag, const char *type, const char *uuid,
-                  resource_t resource, int location, int duplicates_check)
+                  resource_t resource, int location)
 {
   int already_added, ret;
   gchar *quoted_resource_uuid;
@@ -62166,9 +62165,7 @@ tag_add_resource (tag_t tag, const char *type, const char *uuid,
 
   quoted_resource_uuid = uuid ? sql_insert (uuid) : g_strdup ("''");
 
-  if (duplicates_check == 0)
-    already_added = 0;
-  else if (type_is_info_subtype (type))
+  if (type_is_info_subtype (type))
     already_added = sql_int ("SELECT count(*) FROM tag_resources"
                              " WHERE resource_type = '%s'"
                              " AND resource_uuid = %s"
@@ -62242,7 +62239,7 @@ tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
   if (resource == 0)
     return 1;
 
-  return tag_add_resource (tag, type, uuid, resource, resource_location, 1);
+  return tag_add_resource (tag, type, uuid, resource, resource_location);
 }
 
 /**
@@ -62340,30 +62337,9 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             return 2;
           }
 
-        if (type_is_info_subtype (type))
-          init_iterator (&resources,
-                         "SELECT id, uuid FROM (%s) AS filter_selection"
-                         " WHERE NOT EXISTS"
-                         "  (SELECT * FROM tag_resources"
-                         "    WHERE resource_type = '%s'"
-                         "      AND resource_uuid = filter_selection.uuid"
-                         "      AND tag = %llu)",
-                         filtered_select,
-                         type,
-                         tag);
-        else
-          init_iterator (&resources,
-                         "SELECT id, uuid FROM (%s) AS filter_selection"
-                         " WHERE NOT EXISTS"
-                         "  (SELECT * FROM tag_resources"
-                         "    WHERE resource_type = '%s'"
-                         "      AND resource = filter_selection.id"
-                         "      AND resource_location = %d"
-                         "      AND tag = %llu)",
-                         filtered_select,
-                         type,
-                         LOCATION_TABLE,
-                         tag);
+        init_iterator (&resources,
+                       "%s",
+                       filtered_select);
 
         break;
       default:
@@ -62390,7 +62366,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
       current_uuid = iterator_string (&resources, 1);
 
       add_ret = tag_add_resource (tag, type, current_uuid, resource,
-                                  LOCATION_TABLE, 0);
+                                  LOCATION_TABLE);
       if (add_ret)
         {
           ret = add_ret;
