@@ -27291,16 +27291,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             case 0:
               SEND_TO_CLIENT_OR_FAIL (XML_OK ("move_task"));
               break;
-            case 1:
-              /* Forked task process: success. */
-              forked = 1;
-              current_error = 2;
-              g_debug ("   %s: move_task fork success", __FUNCTION__);
-              g_set_error (error,
-                            G_MARKUP_ERROR,
-                            G_MARKUP_ERROR_INVALID_CONTENT,
-                            "Dummy error for current_error");
-              break;
             case 2:
               if (send_find_error_to_client ("move_task",
                                               "Task",

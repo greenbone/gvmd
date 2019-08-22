@@ -5161,7 +5161,7 @@ resume_task (const char *task_id, char **report_id)
  * @param[in]  task_id    UUID of task.
  * @param[in]  slave_id   UUID of slave.
  *
- * @return 0 success, 1 success, process forked, 2 task not found,
+ * @return 0 success, 2 task not found,
  *         3 slave not found, 4 slaves not supported by scanner, 5 task cannot
  *         be stopped currently, 6 scanner does not allow stopping, 7 new
  *         scanner does not support slaves, 98 stop and resume permission
@@ -5276,14 +5276,7 @@ move_task (const char *task_id, const char *slave_id)
   /* Resume task if required. */
 
   if (should_resume_task)
-    {
-      pid_t pid = getpid ();
-
-      resume_task (task_id, NULL);
-
-      if (getpid () != pid)
-        return 1;
-    }
+    resume_task (task_id, NULL);
 
   return 0;
 }
