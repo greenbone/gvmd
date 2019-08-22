@@ -416,26 +416,6 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
 }
 
 /**
- * @brief Clean session.
- *
- * @param[in]  client_connection  Connection.
- */
-static void
-session_clean (gvm_connection_t *client_connection)
-{
-  if (client_connection->session)
-    {
-      gnutls_deinit (client_connection->session);
-      client_connection->session = NULL;
-    }
-  if (client_connection->credentials)
-    {
-      gnutls_certificate_free_credentials (client_connection->credentials);
-      client_connection->credentials = NULL;
-    }
-}
-
-/**
  * @brief Get nfds value.
  *
  * @param[in]  socket  Highest socket number.
@@ -659,24 +639,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                * a new socket.  This is asking for select trouble, really. */
               continue;
             }
-          else if (ret == 2)
-            {
-              /* Now in a process forked to run a task, which has
-               * successfully started the task.  Close the client
-               * connection, as the parent process has continued the
-               * session with the client. */
-              session_clean (client_connection);
-              client_active = 0;
-              client_input_stalled = 0;
-              scan_handler = 1;
-            }
-          else if (ret == -10)
-            {
-              /* Now in a process forked to run a task, which has
-               * failed in starting the task. */
-              session_clean (client_connection);
-              return -1;
-            }
           else if (ret == -1 || ret == -4)
             {
               /* Error.  Write rest of to_client to client, so that the
@@ -731,23 +693,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
               continue;
-            }
-          else if (ret == 2)
-            {
-              /* Now in a process forked to run a task, which has
-               * successfully started the task.  Close the client
-               * connection, as the parent process has continued the
-               * session with the client. */
-              session_clean (client_connection);
-              scan_handler = 1;
-              client_active = 0;
-            }
-          else if (ret == -10)
-            {
-              /* Now in a process forked to run a task, which has
-               * failed in starting the task. */
-              session_clean (client_connection);
-              return -1;
             }
           else if (ret == -1)
             {
