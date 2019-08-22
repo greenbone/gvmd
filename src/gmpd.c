@@ -459,9 +459,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
            gchar **disable)
 {
   int nfds, rc = 0;
-  /* True if processing of the client input is waiting for space in the
-   * to_client buffer. */
-  short client_input_stalled;
   /* Client status flag.  Set to 0 when the client closes the connection
    * while the scanner is active. */
   short client_active = client_connection->socket > 0;
@@ -478,8 +475,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                     (int (*) (const char*, void*)) gmpd_send_to_client,
                     (void*) client_connection,
                     disable);
-
-  client_input_stalled = 0;
 
   /** @todo Confirm and clarify complications, especially last one. */
   /* Loop handling input from the sockets.
@@ -628,13 +623,12 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           ret = process_gmp_client_input ();
           if (ret == 0)
             /* Processed all input. */
-            client_input_stalled = 0;
+            ;
           else if (ret == 3)
             {
               /* In the parent after a start_task fork. Free the scanner session
                * without closing it, for usage by the child process. */
               nfds = get_nfds (client_connection->socket);
-              client_input_stalled = 0;
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
               continue;
@@ -652,7 +646,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
             {
               /* Programming error. */
               assert (0);
-              client_input_stalled = 0;
             }
         }
 
@@ -673,41 +666,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                 break;
               default:      /* Programming error. */
                 assert (0);
-            }
-        }
-
-      if (client_input_stalled)
-        {
-          /* Try process the client input, in case writing to the client
-           * has freed some space in to_client. */
-
-          ret = process_gmp_client_input ();
-          if (ret == 0)
-            /* Processed all input. */
-            client_input_stalled = 0;
-          else if (ret == 3)
-            {
-              /* In the parent after a start_task fork. Free the scanner session
-               * without closing it, for usage by the child process. */
-              nfds = get_nfds (client_connection->socket);
-              /* Skip the rest of the loop because the scanner socket is
-               * a new socket.  This is asking for select trouble, really. */
-              continue;
-            }
-          else if (ret == -1)
-            {
-              /* Error.  Write rest of to_client to client, so that the
-               * client gets any buffered output and the response to the
-               * error. */
-              write_to_client (client_connection);
-              rc = -1;
-              goto client_free;
-            }
-          else
-            {
-              /* Programming error. */
-              assert (0);
-              client_input_stalled = 0;
             }
         }
     } /* while (1) */
