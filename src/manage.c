@@ -19,15 +19,18 @@
 
 /**
  * @file  manage.c
- * @brief The Greenbone Vulnerability Manager management library.
+ * @brief The Greenbone Vulnerability Manager management layer.
  *
- * This file defines a management library, for implementing
+ * This file defines a management layer, for implementing
  * Managers such as the Greenbone Vulnerability Manager daemon.
  *
- * This library provides facilities for storing and manipulating credential
- * and task information, and manipulating reports.  Task manipulation
- * includes sending task commands to the OTP server (the "scanner") that is
- * running the tasks.
+ * This layer provides facilities for storing and manipulating user
+ * data (credentials, targets, tasks, reports, schedules, roles, etc)
+ * and general security data (NVTs, CVEs, etc).
+ * Task manipulation includes controlling external facilities such as
+ * OSP scanners.
+ *
+ * Simply put, the daemon's GMP implementation uses this layer to do the work.
  */
 
 /**
@@ -45,7 +48,6 @@
 #define _GNU_SOURCE
 
 #include "manage.h"
-#include "scanner.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
@@ -4503,33 +4505,7 @@ run_cve_task (task_t task)
 }
 
 
-/* OTP tasks. */
-
-/**
- * @brief Initialise OpenVAS scanner variables, checking for defaults.
- *
- * @param[in]  ca_pub       CA Certificate.
- * @param[in]  key_pub      Scanner Certificate.
- * @param[in]  key_priv     Scanner private key.
- *
- * @return 0 success, 1 both default CA cert setting and ca_pub were NULL.
- */
-int
-set_certs (const char *ca_pub, const char *key_pub, const char *key_priv)
-{
-  const char *fallback;
-
-  if (ca_pub == NULL)
-    fallback = manage_default_ca_cert ();
-  else
-    fallback = NULL;
-
-  openvas_scanner_set_certs (fallback ? fallback : ca_pub, key_pub, key_priv);
-
-  if (ca_pub || fallback)
-    return 0;
-  return 1;
-}
+/* Tasks. */
 
 /**
  * @brief Initialise variables required for running a scan.
