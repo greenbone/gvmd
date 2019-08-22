@@ -41,7 +41,7 @@
 #endif
 
 /**
- * @brief Size of \ref from_client and \ref from_scanner data buffers, in bytes.
+ * @brief Size of \ref from_client data buffers, in bytes.
  */
 #define FROM_BUFFER_SIZE 1048576
 

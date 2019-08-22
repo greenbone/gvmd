@@ -37,7 +37,6 @@
 #include "manage_acl.h"
 #include "lsc_user.h"
 #include "sql.h"
-#include "scanner.h"
 #include "utils.h"
 /* TODO This is for buffer_get_filter_xml, for print_report_xml_start.  We
  *      should not be generating XML in here, that should be done in gmp_*.c. */
@@ -159,9 +158,6 @@ int delete_reports (task_t);
 
 int delete_slave_task (const gchar *, int, const gchar *, const gchar *,
                        const char *);
-
-int
-set_certs (const char *, const char *, const char *);
 
 gchar *
 predefined_report_format_dir (const gchar *);
@@ -18567,86 +18563,6 @@ user_exists (const gchar *name)
       && user_exists_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT))
     return 1;
   return user_exists_method (name, AUTHENTICATION_METHOD_FILE);
-}
-
-/**
- * @brief Set the address of scanner to connect to.
- *
- * @param[in]  uuid     Scanner UUID.
- *
- * @return 0 if success, -1 if error, -2 scanner has no cert.
- */
-static int
-manage_scanner_set (const char *uuid)
-{
-  scanner_t scanner = 0;
-  char *host;
-  int type, ret = 0;
-
-  if (uuid == NULL)
-    return -1;
-
-  if (!current_credentials.uuid)
-    current_credentials.uuid = "";
-  /* This is only ever used to find the default scanner.  If the credentials
-   * are empty this will find the scanner regardless of permissions and
-   * ownership. */
-  if (find_scanner_with_permission (uuid, &scanner, "get_scanners")
-      || scanner == 0)
-    {
-      g_warning ("Failed to find scanner %s", uuid);
-      return -1;
-    }
-  if (!strcmp (current_credentials.uuid, ""))
-    current_credentials.uuid = NULL;
-
-  type = scanner_type (scanner);
-  if (type != SCANNER_TYPE_OPENVAS)
-    {
-      g_warning ("Scanner %s not an OpenVAS Scanner", uuid);
-      return -1;
-    }
-  host = scanner_host (scanner);
-  if (host && *host == '/')
-    {
-      /* XXX: Workaround for unix socket case. Should add a flag. */
-      openvas_scanner_set_unix (host);
-    }
-  else
-    {
-      char *ca_pub, *key_pub, *key_priv;
-      int port;
-
-      port = scanner_port (scanner);
-      if (openvas_scanner_set_address (host, port))
-        {
-          g_warning ("Failed to set %s:%d as scanner", host, port);
-          g_free (host);
-          return -1;
-        }
-      ca_pub = scanner_ca_pub (scanner);
-      key_pub = scanner_key_pub (scanner);
-      key_priv = scanner_key_priv (scanner);
-      ret = set_certs (ca_pub, key_pub, key_priv);
-      g_free (ca_pub);
-      g_free (key_pub);
-      g_free (key_priv);
-    }
-  g_free (host);
-  if (ret)
-    return -2;
-  return 0;
-}
-
-/**
- * @brief Set the default scanner as the scanner to connect to.
- *
- * @return 0 success, -1 error, -2 scanner has no cert.
- */
-int
-manage_scanner_set_default ()
-{
-  return manage_scanner_set (SCANNER_UUID_DEFAULT);
 }
 
 /**
