@@ -4363,11 +4363,12 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
 /**
  * @brief Fork a child to handle a CVE scan's calculating and inserting.
  *
+ * A process is forked to run the task, but the forked process never returns.
+ *
  * @param[in]   task        The task.
  * @param[in]   target      The target.
  *
- * @return Parent returns with 0 if success, -1 if failure. Child process
- *         doesn't return and simply exits.
+ * @return 0 success, -1 error, -9 failed to fork.
  */
 static int
 fork_cve_scan_handler (task_t task, target_t target)
@@ -4472,7 +4473,7 @@ fork_cve_scan_handler (task_t task, target_t target)
  *
  * @param[in]   task    The task.
  *
- * @return 0 success, 99 permission denied, -1 error.
+ * @return 0 success, 99 permission denied, -1 error, -9 failed to fork.
  */
 static int
 run_cve_task (task_t task)
@@ -4650,6 +4651,8 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 /**
  * @brief Start a slave/GMP task.
  *
+ * A process is forked to run the task, but the forked process never returns.
+ *
  * @param[in]  task        The task.
  * @param[in]  from        0 start from beginning, 1 continue from stopped, 2
  *                         continue if stopped else start from beginning.
@@ -4658,8 +4661,10 @@ run_task_prepare_report (task_t task, char **report_id, int from,
  * @param[in]  slave_id    UUID of slave.
  * @param[in]  slave_name  Name of slave.
  *
- * @return Before forking: 1 task is active already, 3 failed to find task,
- *         -1 error.
+ * @return 1 task is active already, 3 failed to find task,
+ *         4 resuming not supported, 99 permission denied, -1 error,
+ *         -3 creating report failed, -4 target host is NULL,
+ *         -9 failed to fork.
  */
 static int
 run_slave_or_gmp_task (task_t task, int from, char **report_id,
@@ -4809,14 +4814,18 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
 /**
  * @brief Start a task on a GMP scanner.
  *
+ * A process is forked to run the task, but the forked process never returns.
+ *
  * @param[in]   task        The task.
  * @param[in]   scanner     Slave scanner to run task on.
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
  * @param[out]  report_id   The report ID.
  *
- * @return Before forking: 1 task is active already, 3 failed to find task,
- *         -1 error.
+ * @return 1 task is active already, 3 failed to find task,
+ *         4 resuming not supported, 99 permission denied, -1 error,
+ *         -3 creating report failed, -4 target host is NULL,
+ *         -9 failed to fork.
  */
 static int
 run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
@@ -4885,15 +4894,15 @@ run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
 /**
  * @brief Start or resume a task.
  *
- * Only one task can run at a time in a process.
+ * A process will be forked to handle the task, but the forked process will
+ * never return.
  *
  * @param[in]   task_id     The task ID.
  * @param[out]  report_id   The report ID.
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
  *
- * @return Before forking:
- *         1 task is active already,
+ * @return 1 task is active already,
  *         3 failed to find task,
  *         4 resuming task not supported,
  *         99 permission denied,
@@ -4901,14 +4910,8 @@ run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
  *         -2 task is missing a target,
  *         -3 creating the report failed,
  *         -4 target missing hosts,
- *         -5 scanner is down or still loading,
  *         -6 already a task running in this process,
- *         -7 no CA cert,
  *         -9 fork failed.
- *         After forking:
- *         0 success (parent),
- *         2 success (child),
- *         -10 error (child).
  */
 static int
 run_task (const char *task_id, char **report_id, int from)
@@ -4959,16 +4962,22 @@ run_task (const char *task_id, char **report_id, int from)
 /**
  * @brief Start a task.
  *
+ * A process will be forked to handle the task, but the forked process will
+ * never return.
+ *
  * @param[in]   task_id    The task ID.
  * @param[out]  report_id  The report ID.
  *
- * @return Before forking: 1 task is active already, 3 failed to find task,
- *         99 permission denied, -1 internal error,
- *         -2 task is missing a target, -3 creating the report failed,
- *         -4 target missing hosts, -6 already a task running in this process,
- *         -7 no CA cert, -9 fork failed.
- *         After forking: 0 success (parent), 2 success (child),
- *         -10 error (child).
+ * @return 1 task is active already,
+ *         3 failed to find task,
+ *         4 resuming task not supported,
+ *         99 permission denied,
+ *         -1 error,
+ *         -2 task is missing a target,
+ *         -3 creating the report failed,
+ *         -4 target missing hosts,
+ *         -6 already a task running in this process,
+ *         -9 fork failed.
  */
 int
 start_task (const char *task_id, char **report_id)
@@ -5106,11 +5115,23 @@ stop_task (const char *task_id)
 /**
  * @brief Resume a task.
  *
+ * A process will be forked to handle the task, but the forked process will
+ * never return.
+ *
  * @param[in]   task_id    Task UUID.
  * @param[out]  report_id  If successful, ID of the resultant report.
  *
- * @return 22 caller error (task must be in "stopped" or "interrupted" state),
- *         or any start_task error.
+ * @return 1 task is active already,
+ *         3 failed to find task,
+ *         4 resuming task not supported,
+ *         22 caller error (task must be in "stopped" or "interrupted" state),
+ *         99 permission denied,
+ *         -1 error,
+ *         -2 task is missing a target,
+ *         -3 creating the report failed,
+ *         -4 target missing hosts,
+ *         -6 already a task running in this process,
+ *         -9 fork failed.
  */
 int
 resume_task (const char *task_id, char **report_id)
