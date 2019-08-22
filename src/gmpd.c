@@ -458,7 +458,7 @@ int
 serve_gmp (gvm_connection_t *client_connection, const gchar *database,
            gchar **disable)
 {
-  int nfds, scan_handler = 0, rc = 0;
+  int nfds, rc = 0;
   /* True if processing of the client input is waiting for space in the
    * to_client buffer. */
   short client_input_stalled;
@@ -571,7 +571,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
         }
       if ((ret < 0 && errno == EINTR) || ret == 0)
         {
-          if (!scan_handler && !gmpd_nvt_cache_mode)
+          if (!gmpd_nvt_cache_mode)
             continue;
         }
       else if (ret < 0)
