@@ -452,7 +452,7 @@ get_nfds (int socket)
  * @param[in]  database             Location of manage database.
  * @param[in]  disable              Commands to disable.
  *
- * @return 0 success, 1 scanner still loading, -1 error, -2 scanner has no cert.
+ * @return 0 success, -1 error.
  */
 int
 serve_gmp (gvm_connection_t *client_connection, const gchar *database,
