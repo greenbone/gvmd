@@ -3583,6 +3583,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT);
           report_add_result (report, result);
+          delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                           key_priv);
           rc = -1;
           break;
         }
@@ -3608,11 +3610,24 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               parse_osp_report (task, report, report_xml);
               g_free (report_xml);
 
-              osp_scan_status =
-                get_osp_scan_status (scan_id, host, port, ca_pub, key_pub,
-                                     key_priv);
-              if (progress == 100
-                  && osp_scan_status == OSP_SCAN_STATUS_FINISHED)
+              osp_scan_status = get_osp_scan_status (scan_id, host, port,
+                                                     ca_pub, key_pub, key_priv);
+              if (progress >= 0 && progress < 100
+                  && osp_scan_status == OSP_SCAN_STATUS_STOPPED)
+                {
+                  result_t result = make_osp_result
+                    (task, "", "", "",
+                     threat_message_type ("Error"),
+                     "Scan stopped unexpectedly by the server", "", "",
+                     QOD_DEFAULT);
+                  report_add_result (report, result);
+                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                   key_priv);
+                  rc = -1;
+                  break;
+                }
+              else if (progress == 100
+                       && osp_scan_status == OSP_SCAN_STATUS_FINISHED)
                 {
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
