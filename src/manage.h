@@ -3482,6 +3482,7 @@ typedef enum
 struct keyword
 {
   gchar *column;                 ///< The column prefix, or NULL.
+  int approx;                    ///< Whether the keyword is like "~example".
   int equal;                     ///< Whether the keyword is like "=example".
   int integer_value;             ///< Integer value of the keyword.
   double double_value;           ///< Floating point value of the keyword.
