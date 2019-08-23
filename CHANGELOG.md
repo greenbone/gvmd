@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix assignment of orphaned tickets to the current user [#686](https://github.com/greenbone/gvmd/pull/686)
 - Fix ORPHAN calculations in GET_TICKETS [#687](https://github.com/greenbone/gvmd/pull/687) [#700](https://github.com/greenbone/gvmd/pull/700)
 - Fix response from GET_VULNS when given vuln_id does not exists [#699](https://github.com/greenbone/gvmd/pull/699)
+- Make bulk tagging with a filter work if the resources are already tagged [#712](https://github.com/greenbone/gvmd/pull/712)
 - Fix columnless search phrase filter keywords with quotes [#716](https://github.com/greenbone/gvmd/pull/716)
 
 ### Removed
