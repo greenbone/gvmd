@@ -54432,7 +54432,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
     {
       if (strcmp (entity_name (host_start), "host") == 0)
         {
-          entity_t ip;
+          entity_t ip, end;
           char *uuid;
 
           ip = entity_child (host_start, "ip");
@@ -54443,10 +54443,18 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
           if (start == NULL)
             goto rollback_fail;
 
-          uuid = report_uuid (global_current_report);
-          host_notice (entity_text (ip), "ip", entity_text (ip),
-                       "Report Host", uuid, 1, 1);
-          free (uuid);
+          end = entity_child (host_start, "end");
+          if (end
+              && entity_text (end)
+              && strcmp (entity_text (end), "")
+              && report_host_noticeable (global_current_report,
+                                         entity_text (ip)))
+            {
+              uuid = report_uuid (global_current_report);
+              host_notice (entity_text (ip), "ip", entity_text (ip),
+                          "Report Host", uuid, 1, 1);
+              free (uuid);
+            }
 
           set_scan_host_start_time (global_current_report,
                                     entity_text (ip),
@@ -61808,6 +61816,9 @@ hosts_set_identifiers (report_t report)
           identifier_t *identifier;
           GString *select;
 
+          if (report_host_noticeable (report, ip) == 0)
+            continue;
+
           quoted_host_name = sql_quote (ip);
 
           select = g_string_new ("");
@@ -62154,8 +62165,6 @@ hosts_set_details (report_t report)
        "        value,"
        "        'Report',"
        "        (SELECT uuid FROM reports WHERE id = %llu),"
-       /*       Assume that every report host detail has a corresponding host
-        *       in the assets. */
        "        (SELECT host"
        "         FROM host_identifiers"
        "         WHERE source_id = (SELECT uuid FROM reports"
@@ -62172,6 +62181,16 @@ hosts_set_details (report_t report)
        " AND (SELECT value = 'yes' FROM task_preferences"
        "      WHERE task = (SELECT task FROM reports WHERE id = %llu)"
        "      AND name = 'in_assets')"
+       /* Ensure that every report host detail has a corresponding host
+        *  in the assets. */
+       " AND EXISTS (SELECT host"
+       "               FROM host_identifiers"
+       "              WHERE source_id = (SELECT uuid FROM reports"
+       "                            WHERE id = %llu)"
+       "                AND (SELECT name FROM hosts WHERE id = host)"
+       "                      = (SELECT host FROM report_hosts"
+       "                         WHERE id = report_host_details.report_host)"
+       "             LIMIT 1)"
        " AND (name IN ('best_os_cpe', 'best_os_txt', 'traceroute'));",
        report,
        report,
