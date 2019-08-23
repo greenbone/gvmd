@@ -510,21 +510,28 @@ buffer_get_filter_xml (GString *msg,
     {
       keyword_t *keyword;
       keyword = *point;
-      buffer_xml_append_printf (
-        msg,
-        "<keyword>"
-        "<column>%s</column>"
-        "<relation>%s</relation>"
-        "<value>%s%s%s</value>"
-        "</keyword>",
-        keyword->column ? keyword->column : "",
-        keyword->equal ? "="
-                       : (keyword_special (keyword)
-                            ? ""
-                            : keyword_relation_symbol (keyword->relation)),
-        keyword->quoted ? "\"" : "",
-        keyword->string ? keyword->string : "",
-        keyword->quoted ? "\"" : "");
+      const char *relation_symbol;
+
+      if (keyword->equal)
+        relation_symbol = "=";
+      else if (keyword->approx)
+        relation_symbol = "~";
+      else if (keyword_special (keyword))
+        relation_symbol = "";
+      else
+        relation_symbol = keyword_relation_symbol (keyword->relation);
+
+      buffer_xml_append_printf (msg,
+                                "<keyword>"
+                                "<column>%s</column>"
+                                "<relation>%s</relation>"
+                                "<value>%s%s%s</value>"
+                                "</keyword>",
+                                keyword->column ? keyword->column : "",
+                                relation_symbol,
+                                keyword->quoted ? "\"" : "",
+                                keyword->string ? keyword->string : "",
+                                keyword->quoted ? "\"" : "");
       point++;
     }
   filter_free (split);
