@@ -3506,34 +3506,34 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
  * @param[in]   ca_pub      CA Certificate.
  * @param[in]   key_pub     Certificate.
  * @param[in]   key_priv    Private key.
- * @param[out]  osp_scan_status    Private key.
  *
  * @return 0 in success, -1 otherwise.
  */
-static int
+static osp_scan_status_t
 get_osp_scan_status (const char *scan_id, const char *host, int port,
                      const char *ca_pub, const char *key_pub, const char
-                     *key_priv, char **osp_scan_status)
+                     *key_priv)
 {
   osp_connection_t *connection;
   char *error = NULL;
-  int ret;
+  osp_scan_status_t status = OSP_SCAN_STATUS_ERROR;
+
   connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
   if (!connection)
     {
       g_warning ("Couldn't connect to OSP scanner on %s:%d", host, port);
-      return -1;
+      return status;;
     }
-  ret = osp_get_scan_status (connection, scan_id, osp_scan_status, &error);
-  if (ret)
+  status = osp_get_scan_status (connection, scan_id, &error);
+  if (status == OSP_SCAN_STATUS_ERROR)
     {
       g_warning ("OSP %s %s: %s", __func__, scan_id, error);
       g_free (error);
-      return ret;
+      return status;
     }
 
   osp_connection_close (connection);
-  return ret ;
+  return status;
 }
 
 /**
@@ -3564,7 +3564,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
     {
       char *report_xml = NULL;
       int run_status;
-      char *osp_scan_status = NULL;
+      osp_scan_status_t osp_scan_status;
 
       run_status = task_run_status (task);
       if (run_status == TASK_STATUS_STOPPED
@@ -3608,16 +3608,17 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               parse_osp_report (task, report, report_xml);
               g_free (report_xml);
 
-              rc = get_osp_scan_status (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv, &osp_scan_status);
-              if (progress == 100 && !strcmp(osp_scan_status, "finished"))
+              osp_scan_status =
+                get_osp_scan_status (scan_id, host, port, ca_pub, key_pub,
+                                     key_priv);
+              if (progress == 100
+                  && osp_scan_status == OSP_SCAN_STATUS_FINISHED)
                 {
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
-                  g_free (osp_scan_status);
+                  rc = 0;
                   break;
                 }
-              g_free (osp_scan_status);
               rc = 0;
             }
         }
