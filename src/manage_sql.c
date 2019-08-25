@@ -24273,6 +24273,78 @@ result_iterator_nvt_name (iterator_t *iterator)
 }
 
 /**
+ * @brief Get the NVT summary from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The summary of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_summary (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_summary (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT insight from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The insight of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_insight (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_insight (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT affected from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The affected of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_affected (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_affected (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT affected from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Impact text of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_impact (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_impact (nvti);
+  return NULL;
+}
+
+/**
  * @brief Get the NVT solution from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -24306,6 +24378,24 @@ result_iterator_nvt_solution_type (iterator_t *iterator)
   nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_solution_type (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT detection from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The detection of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_detection (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_detection (nvti);
   return NULL;
 }
 
