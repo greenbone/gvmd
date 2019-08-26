@@ -1128,7 +1128,6 @@ get_tag (entity_t vt)
                                   "%scvss_base_vector=%s",
                                   first ? "" : "|",
                                   entity_text (severity));
-          first = 0;
         }
       else
         g_warning ("%s: no severity", __FUNCTION__);
