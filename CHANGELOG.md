@@ -35,6 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Change get_tickets to use the status text for filtering. [#697](https://github.com/greenbone/gvmd/pull/697)
 - Made checks to prevent duplicate user names stricter. [#708](https://github.com/greenbone/gvmd/pull/708)
 - Send delete command to ospd after stopping the task. [#710](https://github.com/greenbone/gvmd/pull/710)
+- Check whether hosts are alive and have results when adding them in slave scans. [#717](https://github.com/greenbone/gvmd/pull/717)
+
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)
@@ -47,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix assignment of orphaned tickets to the current user [#685](https://github.com/greenbone/gvmd/pull/685)
 - Fix response from GET_VULNS when given vuln_id does not exists [#696](https://github.com/greenbone/gvmd/pull/696)
 - Make bulk tagging with a filter work if the resources are already tagged [#711](https://github.com/greenbone/gvmd/pull/711)
+- Fix columnless search phrase filter keywords with quotes [#715](https://github.com/greenbone/gvmd/pull/715)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
