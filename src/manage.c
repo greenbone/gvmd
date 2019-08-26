@@ -3516,6 +3516,7 @@ get_osp_scan_status (const char *scan_id, const char *host, int port,
 {
   osp_connection_t *connection;
   char *error = NULL;
+  osp_get_scan_status_opts_t get_scan_opts;
   osp_scan_status_t status = OSP_SCAN_STATUS_ERROR;
 
   connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
@@ -3524,7 +3525,9 @@ get_osp_scan_status (const char *scan_id, const char *host, int port,
       g_warning ("Couldn't connect to OSP scanner on %s:%d", host, port);
       return status;;
     }
-  status = osp_get_scan_status (connection, scan_id, &error);
+
+  get_scan_opts.scan_id = scan_id;
+  status = osp_get_scan_status_ext (connection, get_scan_opts, &error);
   if (status == OSP_SCAN_STATUS_ERROR)
     {
       g_warning ("OSP %s %s: %s", __func__, scan_id, error);
