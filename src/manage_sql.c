@@ -2033,6 +2033,8 @@ split_filter (const gchar* given_filter)
                 keyword = g_malloc0 (sizeof (keyword_t));
                 if (*filter == '=')
                   keyword->equal = 1;
+                else
+                  keyword->approx = 1;
                 current_part = filter + 1;
                 between = 0;
                 break;
@@ -2125,9 +2127,11 @@ split_filter (const gchar* given_filter)
                 in_quote = 1;
                 current_part++;
               }
-            else if (keyword->equal && filter == current_part)
+            else if ((keyword->equal || keyword->approx)
+                     && filter == current_part)
               {
-                /* A quoted exact term, like ="abc". */
+                /* A quoted exact term, like ="abc"
+                 * or a prefixed approximate term, like ~"abc". */
                 in_quote = 1;
                 current_part++;
               }
@@ -2692,14 +2696,24 @@ manage_clean_filter_remove (const gchar *filter, const gchar *column)
               break;
           }
       else
-        if (keyword->quoted)
-          g_string_append_printf (clean, " %s\"%s\"",
-                                  keyword->equal ? "=" : "",
-                                  keyword->string);
-        else
-          g_string_append_printf (clean, " %s%s",
-                                  keyword->equal ? "=" : "",
-                                  keyword->string);
+        {
+          const char *relation_symbol;
+          if (keyword->equal)
+            relation_symbol = "=";
+          else if (keyword->approx)
+            relation_symbol = "~";
+          else
+            relation_symbol = "";
+
+          if (keyword->quoted)
+            g_string_append_printf (clean, " %s\"%s\"",
+                                    relation_symbol,
+                                    keyword->string);
+          else
+            g_string_append_printf (clean, " %s%s",
+                                    relation_symbol,
+                                    keyword->string);
+        }
       point++;
     }
   filter_free (split);
