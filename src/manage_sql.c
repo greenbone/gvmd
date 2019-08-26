@@ -61909,14 +61909,13 @@ hosts_set_details (report_t report)
        "      AND name = 'in_assets')"
        /* Ensure that every report host detail has a corresponding host
         *  in the assets. */
-       " AND EXISTS (SELECT host"
+       " AND EXISTS (SELECT *"
        "               FROM host_identifiers"
        "              WHERE source_id = (SELECT uuid FROM reports"
-       "                            WHERE id = %llu)"
+       "                                 WHERE id = %llu)"
        "                AND (SELECT name FROM hosts WHERE id = host)"
        "                      = (SELECT host FROM report_hosts"
-       "                         WHERE id = report_host_details.report_host)"
-       "             LIMIT 1)"
+       "                         WHERE id = report_host_details.report_host))"
        " AND (name IN ('best_os_cpe', 'best_os_txt', 'traceroute'));",
        report,
        report,
