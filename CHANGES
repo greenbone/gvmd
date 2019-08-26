@@ -27,6 +27,8 @@ Main changes since 7.0.3:
   when details are requested.
 * The --slave-commit-size option has been added, which can help prevent large
   updates from GMP scanners blocking the database for a long time.
+* A check whether hosts are alive and have results when adding them in slave
+  scans has been added.
 
 openvas-manager 7.0.3 (2018-03-29)
 
