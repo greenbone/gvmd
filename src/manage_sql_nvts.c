@@ -190,8 +190,8 @@ static void
 insert_nvt (const nvti_t *nvti)
 {
   gchar *qod_str, *qod_type, *cve;
-  gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected,
-	*quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
+  gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
+  gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution, *quoted_solution_type;
   int creation_time, modification_time, qod, i;
@@ -1236,8 +1236,8 @@ nvti_from_vt (entity_t vt)
 {
   nvti_t *nvti = nvti_new ();
   const char *id;
-  entity_t name, summary, insight, affected, impact, detection, solution,
-           refs, ref, custom, family, category;
+  entity_t name, summary, insight, affected, impact, detection, solution;
+  entity_t refs, ref, custom, family, category;
   entities_t children;
   gchar *tag, *cvss_base, *parsed_tags;
 
