@@ -54467,13 +54467,17 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   current_commit_size = 0;
   while ((host_start = first_entity (hosts)))
     {
-      if (strcmp (entity_name (host_start), "host_start") == 0)
+      if (strcmp (entity_name (host_start), "host") == 0)
         {
-          entity_t host, end;
+          entity_t ip, end;
           char *uuid;
 
-          host = entity_child (host_start, "host");
-          if (host == NULL)
+          ip = entity_child (host_start, "ip");
+          if (ip == NULL)
+            goto rollback_fail;
+
+          start = entity_child (host_start, "start");
+          if (start == NULL)
             goto rollback_fail;
 
           end = entity_child (host_start, "end");
@@ -54481,17 +54485,17 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
               && entity_text (end)
               && strcmp (entity_text (end), "")
               && report_host_noticeable (current_report,
-                                         entity_text (host)))
+                                         entity_text (ip)))
             {
               uuid = report_uuid (current_report);
-              host_notice (entity_text (host), "ip", entity_text (host),
-                           "Report Host", uuid, 1, 1);
+              host_notice (entity_text (ip), "ip", entity_text (ip),
+                          "Report Host", uuid, 1, 1);
               free (uuid);
             }
 
           set_scan_host_start_time (current_report,
-                                    entity_text (host),
-                                    entity_text (host_start));
+                                    entity_text (ip),
+                                    entity_text (start));
         }
       hosts = next_entities (hosts);
 
