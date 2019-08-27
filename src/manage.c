@@ -3561,7 +3561,6 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
-  rc = -1;
 
   while (1)
     {
@@ -3637,7 +3636,6 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   rc = 0;
                   break;
                 }
-              rc = 0;
             }
         }
     }
