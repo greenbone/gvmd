@@ -4462,6 +4462,22 @@ type_named (const char *type)
 }
 
 /**
+ * @brief Check whether a type must have globally unique names.
+ *
+ * @param[in]  type          Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_globally_unique (const char *type)
+{
+  if (strcasecmp (type, "user") == 0)
+    return 1;
+  else
+    return 0;
+}
+
+/**
  * @brief Check whether a type has a comment.
  *
  * @param[in]  type  Type of resource.
@@ -4761,7 +4777,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
                     resource_t *old_resource)
 {
   gchar *quoted_name, *quoted_uuid, *uniquify, *command;
-  int named;
+  int named, globally_unique;
   user_t owner;
   resource_t resource;
   resource_t new;
@@ -4806,6 +4822,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
     }
 
   named = type_named (type);
+  globally_unique = type_globally_unique (type);
 
   if (named && name && *name && resource_with_name_exists (name, type, 0))
     return 1;
@@ -4822,11 +4839,14 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
 
   /* Copy the existing resource. */
 
-  if (make_name_unique)
-    uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, '%cClone')",
+  if (globally_unique && make_name_unique)
+    uniquify = g_strdup_printf ("uniquify ('%s', name, NULL, '%cClone')",
                                 type,
-                                owner,
                                 strcmp (type, "user") ? ' ' : '_');
+  else if (make_name_unique)
+    uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, ' Clone')",
+                                type,
+                                owner);
   else
     uniquify = g_strdup ("name");
   if (named && comment && strlen (comment))
