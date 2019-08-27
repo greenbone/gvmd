@@ -1994,9 +1994,6 @@ const char*
 nvt_iterator_description (iterator_t*);
 
 const char*
-nvt_iterator_copyright (iterator_t*);
-
-const char*
 nvt_iterator_tag (iterator_t*);
 
 int
