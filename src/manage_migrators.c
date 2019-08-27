@@ -1304,6 +1304,13 @@ migrate_217_to_218 ()
 
   /* Update the database. */
 
+  /* Ensure all user names are unique */
+
+  sql ("UPDATE users"
+       " SET name = uniquify('user', name, NULL, '')"
+       " WHERE id != (SELECT min(id) FROM users AS inner_users"
+       "              WHERE users.name = inner_users.name);");
+
   /* Add an UNIQUE constraint to the name column of users */
 
   sql ("ALTER TABLE users ADD UNIQUE (name);");

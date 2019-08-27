@@ -1039,7 +1039,7 @@ manage_create_sql_functions ()
        "   LOOP"
        "     EXECUTE 'SELECT count (*) = 0 FROM ' || type || 's"
        "              WHERE name = $1"
-       "              AND ((owner IS NULL) OR (owner = $2))'"
+       "              AND (($2 IS NULL) OR (owner IS NULL) OR (owner = $2))'"
        "       INTO unique_candidate"
        "       USING candidate, owner;"
        "     EXIT WHEN unique_candidate;"
