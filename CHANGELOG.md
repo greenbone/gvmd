@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix assignment of orphaned tickets to the current user [#686](https://github.com/greenbone/gvmd/pull/686)
 - Fix ORPHAN calculations in GET_TICKETS [#687](https://github.com/greenbone/gvmd/pull/687) [#700](https://github.com/greenbone/gvmd/pull/700)
 - Fix response from GET_VULNS when given vuln_id does not exists [#699](https://github.com/greenbone/gvmd/pull/699)
+- Fix issues importing results or getting them from slaves if they contain "%s" [#724](https://github.com/greenbone/gvmd/pull/724)
 
 ### Removed
 
