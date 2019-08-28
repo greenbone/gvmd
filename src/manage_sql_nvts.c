@@ -1085,26 +1085,6 @@ get_tag (entity_t vt)
   first = 1;
   tag = g_string_new ("");
 
-  child = entity_child (vt, "creation_time");
-  if (child)
-    {
-      g_string_append_printf (tag,
-                              "%screation_date=%s",
-                              first ? "" : "|",
-                              entity_text (child));
-      first = 0;
-    }
-
-  child = entity_child (vt, "modification_time");
-  if (child)
-    {
-      g_string_append_printf (tag,
-                              "%slast_modification=%s",
-                              first ? "" : "|",
-                              entity_text (child));
-      first = 0;
-    }
-
   child = entity_child (vt, "severities");
   if (child)
     {
