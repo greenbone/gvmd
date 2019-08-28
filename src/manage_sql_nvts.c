@@ -249,58 +249,7 @@ insert_nvt (const nvti_t *nvti)
   quoted_detection = sql_quote (nvti_detection (nvti) ?
                                 nvti_detection (nvti) : "");
 
-  if (nvti_tag (nvti))
-    {
-      gchar **split, **point;
-      GString *tag;
-
-      /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
-
-      split = g_strsplit (nvti_tag (nvti), "|", 0);
-      point = split;
-
-      while (*point)
-        {
-          if (((strlen (*point) > strlen ("creation_date"))
-               && (strncmp (*point, "creation_date", strlen ("creation_date"))
-                   == 0)
-               && ((*point)[strlen ("creation_date")] == '='))
-              || ((strlen (*point) > strlen ("last_modification"))
-                  && (strncmp (*point, "last_modification",
-                               strlen ("last_modification"))
-                      == 0)
-                  && ((*point)[strlen ("last_modification")] == '=')))
-            {
-              gchar **move;
-              move = point;
-              g_free (*point);
-              while (*move)
-                {
-                  move[0] = move[1];
-                  move++;
-                }
-            }
-          else
-            point++;
-        }
-
-      point = split;
-      tag = g_string_new ("");
-      while (*point)
-        {
-          if (point[1])
-            g_string_append_printf (tag, "%s|", *point);
-          else
-            g_string_append_printf (tag, "%s", *point);
-          point++;
-        }
-      g_strfreev (split);
-
-      quoted_tag = sql_quote (tag->str);
-      g_string_free (tag, TRUE);
-    }
-  else
-    quoted_tag = g_strdup ("");
+  quoted_tag = sql_quote (nvti_tag (nvti) ?  nvti_tag (nvti) : "");
 
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti) ? nvti_cvss_base (nvti) : "");
 
