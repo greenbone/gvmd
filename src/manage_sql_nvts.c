@@ -190,7 +190,8 @@ static void
 insert_nvt (const nvti_t *nvti)
 {
   gchar *qod_str, *qod_type, *cve;
-  gchar *quoted_name, *quoted_cve, *quoted_tag;
+  gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
+  gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution, *quoted_solution_type;
   int creation_time, modification_time, qod, i;
@@ -198,14 +199,21 @@ insert_nvt (const nvti_t *nvti)
   cve = nvti_refs (nvti, "cve", "", 0);
 
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
-  quoted_cve = sql_quote (cve ? cve : "");
+  quoted_summary = sql_quote (nvti_summary (nvti) ? nvti_summary (nvti) : "");
+  quoted_insight = sql_quote (nvti_insight (nvti) ? nvti_insight (nvti) : "");
+  quoted_affected = sql_quote (nvti_affected (nvti) ?
+                               nvti_affected (nvti) : "");
+  quoted_impact = sql_quote (nvti_impact (nvti) ? nvti_impact (nvti) : "");
 
+  quoted_cve = sql_quote (cve ? cve : "");
   g_free (cve);
 
   quoted_solution = sql_quote (nvti_solution (nvti) ?
                                nvti_solution (nvti) : "");
   quoted_solution_type = sql_quote (nvti_solution_type (nvti) ?
                                     nvti_solution_type (nvti) : "");
+  quoted_detection = sql_quote (nvti_detection (nvti) ?
+                                nvti_detection (nvti) : "");
 
   if (nvti_tag (nvti))
     {
@@ -320,16 +328,17 @@ insert_nvt (const nvti_t *nvti)
                nvti_oid (nvti)))
     sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
 
-  sql ("INSERT into nvts (oid, name,"
-       " cve, tag, category, family, cvss_base,"
+  sql ("INSERT into nvts (oid, name, summary, insight, affected,"
+       " impact, cve, tag, category, family, cvss_base,"
        " creation_time, modification_time, uuid, solution_type,"
-       " solution, qod, qod_type)"
-       " VALUES ('%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', %d, '%s');",
-       nvti_oid (nvti), quoted_name, quoted_cve, quoted_tag,
+       " solution, detection, qod, qod_type)"
+       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', '%s', %d, '%s');",
+       nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
+       quoted_affected, quoted_impact, quoted_cve, quoted_tag,
        nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-       modification_time, nvti_oid (nvti), quoted_solution_type, quoted_solution,
-       qod, quoted_qod_type);
+       modification_time, nvti_oid (nvti), quoted_solution_type,
+       quoted_solution, quoted_detection, qod, quoted_qod_type);
 
   sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
 
@@ -351,12 +360,17 @@ insert_nvt (const nvti_t *nvti)
     }
 
   g_free (quoted_name);
+  g_free (quoted_summary);
+  g_free (quoted_insight);
+  g_free (quoted_affected);
+  g_free (quoted_impact);
   g_free (quoted_cve);
   g_free (quoted_tag);
   g_free (quoted_cvss_base);
   g_free (quoted_family);
   g_free (quoted_solution);
   g_free (quoted_solution_type);
+  g_free (quoted_detection);
   g_free (quoted_qod_type);
 }
 
@@ -878,6 +892,56 @@ DEF_ACCESS (nvt_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 12);
 DEF_ACCESS (nvt_iterator_solution, GET_ITERATOR_COLUMN_COUNT + 14);
 
 /**
+ * @brief Get the summary from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Summary, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 15);
+
+/**
+ * @brief Get the insight from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Insight, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_insight, GET_ITERATOR_COLUMN_COUNT + 16);
+
+/**
+ * @brief Get the affected from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Affected, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_affected, GET_ITERATOR_COLUMN_COUNT + 17);
+
+/**
+ * @brief Get the impact from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Impact, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_impact, GET_ITERATOR_COLUMN_COUNT + 18);
+
+/**
+ * @brief Get the detection from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Detection, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_detection, GET_ITERATOR_COLUMN_COUNT + 19);
+
+/**
  * @brief Get the default timeout of an NVT.
  *
  * @param[in]  oid  The OID of the NVT to get the timeout of.
@@ -1064,53 +1128,12 @@ get_tag (entity_t vt)
                                   "%scvss_base_vector=%s",
                                   first ? "" : "|",
                                   entity_text (severity));
-          first = 0;
         }
       else
         g_warning ("%s: no severity", __FUNCTION__);
     }
   else
     g_warning ("%s: no severities", __FUNCTION__);
-
-  child = entity_child (vt, "detection");
-  if (child)
-    {
-      if (strlen (entity_text (child)))
-        {
-          g_string_append_printf (tag,
-                                  "%svuldetect=%s",
-                                  first ? "" : "|",
-                                  entity_text (child));
-          first = 0;
-        }
-    }
-
-  child = entity_child (vt, "summary");
-  if (child)
-    {
-      g_string_append_printf (tag,
-                              "%ssummary=%s",
-                              first ? "" : "|",
-                              entity_text (child));
-      first = 0;
-    }
-
-  child = entity_child (vt, "insight");
-  if (child)
-    {
-      g_string_append_printf (tag,
-                              "%sinsight=%s",
-                              first ? "" : "|",
-                              entity_text (child));
-      first = 0;
-    }
-
-  child = entity_child (vt, "affected");
-  if (child)
-    g_string_append_printf (tag,
-                            "%saffected=%s",
-                            first ? "" : "|",
-                            entity_text (child));
 
   return g_string_free (tag, FALSE);
 }
@@ -1213,7 +1236,8 @@ nvti_from_vt (entity_t vt)
 {
   nvti_t *nvti = nvti_new ();
   const char *id;
-  entity_t name, detection, solution, refs, ref, custom, family, category;
+  entity_t name, summary, insight, affected, impact, detection, solution;
+  entity_t refs, ref, custom, family, category;
   entities_t children;
   gchar *tag, *cvss_base, *parsed_tags;
 
@@ -1235,9 +1259,26 @@ nvti_from_vt (entity_t vt)
     }
   nvti_set_name (nvti, entity_text (name));
 
+  summary = entity_child (vt, "summary");
+  if (summary)
+    nvti_set_summary (nvti, entity_text (summary));
+
+  insight = entity_child (vt, "insight");
+  if (insight)
+    nvti_set_insight (nvti, entity_text (insight));
+
+  affected = entity_child (vt, "affected");
+  if (affected)
+    nvti_set_affected (nvti, entity_text (affected));
+
+  impact = entity_child (vt, "impact");
+  if (impact)
+    nvti_set_impact (nvti, entity_text (impact));
+
   detection = entity_child (vt, "detection");
   if (detection)
     {
+      nvti_set_detection (nvti, entity_text (detection));
       nvti_set_qod_type (nvti, entity_attribute (detection, "qod_type"));
     }
 

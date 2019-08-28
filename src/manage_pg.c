@@ -2920,6 +2920,10 @@ create_tables ()
        "  oid text UNIQUE NOT NULL,"
        "  name text,"
        "  comment text,"
+       "  summary text,"
+       "  insight text,"
+       "  affected text,"
+       "  impact text,"
        "  cve text,"
        "  tag text,"
        "  category text,"
@@ -2929,6 +2933,7 @@ create_tables ()
        "  modification_time integer,"
        "  solution text,"
        "  solution_type text,"
+       "  detection text,"
        "  qod integer,"
        "  qod_type text);");
 
