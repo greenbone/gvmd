@@ -1271,6 +1271,7 @@ nvti_from_vt (entity_t vt)
   nvti_t *nvti = nvti_new ();
   const char *id;
   entity_t name, summary, insight, affected, impact, detection, solution;
+  entity_t creation_time, modification_time;
   entity_t refs, ref, custom, family, category;
   entities_t children;
   gchar *tag, *cvss_base, *parsed_tags;
@@ -1308,6 +1309,62 @@ nvti_from_vt (entity_t vt)
   impact = entity_child (vt, "impact");
   if (impact)
     nvti_set_impact (nvti, entity_text (impact));
+
+  creation_time = entity_child (vt, "creation_time");
+  if (creation_time)
+    {
+      gint time;
+
+      switch (parse_time (entity_text (creation_time), &time))
+        {
+          case -1:
+            g_warning ("%s: Failed to parse creation time of %s: %s",
+                       __FUNCTION__, nvti_oid (nvti),
+                       entity_text (creation_time));
+            time = 0;
+            break;
+          case -2:
+            g_warning ("%s: Failed to make time: %s", __FUNCTION__,
+                       entity_text (creation_time));
+            time = 0;
+            break;
+          case -3:
+            g_warning ("%s: Failed to parse timezone offset: %s",
+                       __FUNCTION__,
+                       entity_text (creation_time));
+            time = 0;
+            break;
+        }
+      nvti_set_creation_time (nvti, time);
+    }
+
+  modification_time = entity_child (vt, "modification_time");
+  if (modification_time)
+    {
+      gint time;
+
+      switch (parse_time (entity_text (modification_time), &time))
+        {
+          case -1:
+            g_warning ("%s: Failed to parse modification time of %s: %s",
+                       __FUNCTION__, nvti_oid (nvti),
+                       entity_text (modification_time));
+            time = 0;
+            break;
+          case -2:
+            g_warning ("%s: Failed to make time: %s", __FUNCTION__,
+                       entity_text (modification_time));
+            time = 0;
+            break;
+          case -3:
+            g_warning ("%s: Failed to parse timezone offset: %s",
+                       __FUNCTION__,
+                       entity_text (modification_time));
+            time = 0;
+            break;
+        }
+      nvti_set_modification_time (nvti, time);
+    }
 
   detection = entity_child (vt, "detection");
   if (detection)
