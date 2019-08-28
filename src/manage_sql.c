@@ -22627,7 +22627,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       /* Limit the number of results inserted at a time. */
       if (insert_count == CREATE_REPORT_INSERT_SIZE)
         {
-          sql (insert->str);
+          sql ("%s", insert->str);
           g_string_truncate (insert, 0);
           count++;
           insert_count = 0;
@@ -22657,7 +22657,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
   if (first == 0)
     {
-      sql (insert->str);
+      sql ("%s", insert->str);
       report_cache_counts (report, 1, 1, NULL);
       sql_commit ();
       gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
@@ -22752,7 +22752,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         /* Limit the number of details inserted at a time. */
         if (insert_count == CREATE_REPORT_INSERT_SIZE)
           {
-            sql (insert->str);
+            sql ("%s", insert->str);
             g_string_truncate (insert, 0);
             count++;
             insert_count = 0;
@@ -22770,7 +22770,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       }
 
   if (first == 0)
-    sql (insert->str);
+    sql ("%s", insert->str);
 
   sql_commit ();
   g_string_free (insert, TRUE);
@@ -33896,7 +33896,7 @@ init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
                            " FROM task_files"
                            " WHERE task = %llu;",
                            task);
-  init_iterator (iterator, sql);
+  init_iterator (iterator, "%s", sql);
   g_free (sql);
 }
 
@@ -37673,7 +37673,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
                            sort_field ? sort_field : "id",
                            ascending ? "ASC" : "DESC");
   g_free (columns);
-  init_iterator (iterator, sql);
+  init_iterator (iterator, "%s", sql);
   g_free (sql);
 }
 
@@ -37936,7 +37936,7 @@ init_preference_iterator (iterator_t* iterator, config_t config)
                          " FROM config_preferences"
                          " WHERE config = %llu;",
                          config);
-  init_iterator (iterator, sql);
+  init_iterator (iterator, "%s", sql);
   g_free (sql);
 }
 
@@ -40017,7 +40017,7 @@ init_nvt_selector_iterator (iterator_t* iterator, const char* selector,
                            " FROM nvt_selectors"
                            " WHERE type = %i;",
                            type);
-  init_iterator (iterator, sql);
+  init_iterator (iterator, "%s", sql);
   g_free (sql);
 }
 
@@ -54359,7 +54359,7 @@ update_from_slave_insert (GString *buffer, report_t report)
 
           g_string_append (buffer, " RETURNING id;");
 
-          init_iterator (&ids, buffer->str);
+          init_iterator (&ids, "%s", buffer->str);
           while (next (&ids))
             report_add_result_for_buffer (report, iterator_int64 (&ids, 0));
           cleanup_iterator (&ids);
@@ -54374,7 +54374,7 @@ update_from_slave_insert (GString *buffer, report_t report)
                report, report);
         }
       else
-        sql (buffer->str);
+        sql ("%s", buffer->str);
 
       g_string_truncate (buffer, 0);
     }

@@ -718,7 +718,7 @@ init_nvt_iterator (iterator_t *iterator,
                              " FROM nvts WHERE id = %llu;",
                              nvt_iterator_columns (),
                              nvt);
-      init_iterator (iterator, sql);
+      init_iterator (iterator, "%s", sql);
       g_free (sql);
     }
   else if (config)
@@ -729,7 +729,7 @@ init_nvt_iterator (iterator_t *iterator,
       sql = select_config_nvts (config, family, ascending, sort_field);
       if (sql)
         {
-          init_iterator (iterator, sql);
+          init_iterator (iterator, "%s", sql);
           g_free (sql);
         }
       else
