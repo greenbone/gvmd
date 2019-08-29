@@ -49,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix assignment of orphaned tickets to the current user [#685](https://github.com/greenbone/gvmd/pull/685)
 - Fix response from GET_VULNS when given vuln_id does not exists [#696](https://github.com/greenbone/gvmd/pull/696)
 - Make bulk tagging with a filter work if the resources are already tagged [#711](https://github.com/greenbone/gvmd/pull/711)
+- Check if the scan finished before deleting it and ensure that the task is set to done [#714](https://github.com/greenbone/gvmd/pull/714)
 - Fix columnless search phrase filter keywords with quotes [#715](https://github.com/greenbone/gvmd/pull/715)
 - Fix issues importing results or getting them from slaves if they contain "%s" [#723](https://github.com/greenbone/gvmd/pull/723)
 

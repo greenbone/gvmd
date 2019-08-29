@@ -3496,6 +3496,49 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
   return progress;
 }
 
+
+/**
+ * @brief Get an OSP scan's status.
+ *
+ * @param[in]   scan_id     Scan ID.
+ * @param[in]   host        Scanner host.
+ * @param[in]   port        Scanner port.
+ * @param[in]   ca_pub      CA Certificate.
+ * @param[in]   key_pub     Certificate.
+ * @param[in]   key_priv    Private key.
+ *
+ * @return 0 in success, -1 otherwise.
+ */
+static osp_scan_status_t
+get_osp_scan_status (const char *scan_id, const char *host, int port,
+                     const char *ca_pub, const char *key_pub, const char
+                     *key_priv)
+{
+  osp_connection_t *connection;
+  char *error = NULL;
+  osp_get_scan_status_opts_t get_scan_opts;
+  osp_scan_status_t status = OSP_SCAN_STATUS_ERROR;
+
+  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  if (!connection)
+    {
+      g_warning ("Couldn't connect to OSP scanner on %s:%d", host, port);
+      return status;;
+    }
+
+  get_scan_opts.scan_id = scan_id;
+  status = osp_get_scan_status_ext (connection, get_scan_opts, &error);
+  if (status == OSP_SCAN_STATUS_ERROR)
+    {
+      g_warning ("OSP %s %s: %s", __func__, scan_id, error);
+      g_free (error);
+      return status;
+    }
+
+  osp_connection_close (connection);
+  return status;
+}
+
 /**
  * @brief Handle an ongoing OSP scan, until success or failure.
  *
@@ -3518,12 +3561,12 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
-  rc = -1;
 
   while (1)
     {
       char *report_xml = NULL;
       int run_status;
+      osp_scan_status_t osp_scan_status;
 
       run_status = task_run_status (task);
       if (run_status == TASK_STATUS_STOPPED
@@ -3542,6 +3585,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT);
           report_add_result (report, result);
+          delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                           key_priv);
           rc = -1;
           break;
         }
@@ -3566,13 +3611,31 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               set_report_slave_progress (report, progress);
               parse_osp_report (task, report, report_xml);
               g_free (report_xml);
-              if (progress == 100)
+
+              osp_scan_status = get_osp_scan_status (scan_id, host, port,
+                                                     ca_pub, key_pub, key_priv);
+              if (progress >= 0 && progress < 100
+                  && osp_scan_status == OSP_SCAN_STATUS_STOPPED)
+                {
+                  result_t result = make_osp_result
+                    (task, "", "", "",
+                     threat_message_type ("Error"),
+                     "Scan stopped unexpectedly by the server", "", "",
+                     QOD_DEFAULT);
+                  report_add_result (report, result);
+                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                   key_priv);
+                  rc = -1;
+                  break;
+                }
+              else if (progress == 100
+                       && osp_scan_status == OSP_SCAN_STATUS_FINISHED)
                 {
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
+                  rc = 0;
                   break;
                 }
-              rc = 0;
             }
         }
     }
