@@ -485,7 +485,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
  * @param[in]  stmt   Statement.
  *
  * @return 0 complete, 1 row available in results, -1 error, -2 gave up,
- *         -3 lock unavailable.
+ *         -3 lock unavailable, -4 unique constraint violation.
  */
 int
 sql_exec_internal (int retry, sql_stmt_t *stmt)
@@ -513,17 +513,28 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
 
           sqlstate = PQresultErrorField (result, PG_DIAG_SQLSTATE);
           g_debug ("%s: sqlstate: %s", __FUNCTION__, sqlstate);
-          if (sqlstate && (strcmp (sqlstate, "57014") == 0)) /* query_canceled */
+          if (sqlstate && (strcmp (sqlstate, "57014") == 0))
             {
+              /* query_canceled */
               log_errors = 0;
               g_debug ("%s: canceled SQL: %s", __FUNCTION__, stmt->sql);
             }
           else if (sqlstate && (strcmp (sqlstate, "55P03") == 0))
             {
+              /* lock_not_available */
               g_debug ("%s: lock unavailable: %s",
                        __FUNCTION__,
                        PQresultErrorMessage(result));
               return -3;
+            }
+          else if (sqlstate && (strcmp (sqlstate, "23505") == 0))
+            {
+              /* unique_violation */
+              g_warning ("%s: constraint violation: %s",
+                         __FUNCTION__,
+                         PQresultErrorMessage (result));
+              g_warning ("%s: SQL: %s", __FUNCTION__, stmt->sql);
+              return -4;
             }
 
           if (log_errors)

@@ -4462,6 +4462,22 @@ type_named (const char *type)
 }
 
 /**
+ * @brief Check whether a type must have globally unique names.
+ *
+ * @param[in]  type          Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_globally_unique (const char *type)
+{
+  if (strcasecmp (type, "user") == 0)
+    return 1;
+  else
+    return 0;
+}
+
+/**
  * @brief Check whether a type has a comment.
  *
  * @param[in]  type  Type of resource.
@@ -4761,10 +4777,11 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
                     resource_t *old_resource)
 {
   gchar *quoted_name, *quoted_uuid, *uniquify, *command;
-  int named;
+  int named, globally_unique;
   user_t owner;
   resource_t resource;
   resource_t new;
+  int ret = -1;
 
   if (resource_id == NULL)
     return -1;
@@ -4805,6 +4822,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
     }
 
   named = type_named (type);
+  globally_unique = type_globally_unique (type);
 
   if (named && name && *name && resource_with_name_exists (name, type, 0))
     return 1;
@@ -4821,71 +4839,93 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
 
   /* Copy the existing resource. */
 
-  if (make_name_unique)
-    uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, '%cClone')",
+  if (globally_unique && make_name_unique)
+    uniquify = g_strdup_printf ("uniquify ('%s', name, NULL, '%cClone')",
                                 type,
-                                owner,
                                 strcmp (type, "user") ? ' ' : '_');
+  else if (make_name_unique)
+    uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, ' Clone')",
+                                type,
+                                owner);
   else
     uniquify = g_strdup ("name");
   if (named && comment && strlen (comment))
     {
       gchar *quoted_comment;
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO %ss"
-           " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
-           " SELECT make_uuid (),"
-           "        (SELECT id FROM users where users.uuid = '%s'),"
-           "        %s%s%s, '%s', m_now (), m_now ()%s%s"
-           " FROM %ss WHERE uuid = '%s';",
-           type,
-           columns ? ", " : "",
-           columns ? columns : "",
-           current_credentials.uuid,
-           quoted_name ? "'" : "",
-           quoted_name ? quoted_name : uniquify,
-           quoted_name ? "'" : "",
-           quoted_comment,
-           columns ? ", " : "",
-           columns ? columns : "",
-           type,
-           quoted_uuid);
+      ret = sql_error ("INSERT INTO %ss"
+                       " (uuid, owner, name, comment,"
+                       "  creation_time, modification_time%s%s)"
+                       " SELECT make_uuid (),"
+                       "        (SELECT id FROM users"
+                       "         where users.uuid = '%s'),"
+                       "        %s%s%s, '%s', m_now (), m_now ()%s%s"
+                       " FROM %ss WHERE uuid = '%s';",
+                       type,
+                       columns ? ", " : "",
+                       columns ? columns : "",
+                       current_credentials.uuid,
+                       quoted_name ? "'" : "",
+                       quoted_name ? quoted_name : uniquify,
+                       quoted_name ? "'" : "",
+                       quoted_comment,
+                       columns ? ", " : "",
+                       columns ? columns : "",
+                       type,
+                       quoted_uuid);
       g_free (quoted_comment);
     }
   else if (named)
-    sql ("INSERT INTO %ss"
-         " (uuid, owner, name%s, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (),"
-         "        (SELECT id FROM users where users.uuid = '%s'),"
-         "        %s%s%s%s, m_now (), m_now ()%s%s"
-         " FROM %ss WHERE uuid = '%s';",
-         type,
-         type_has_comment (type) ? ", comment" : "",
-         columns ? ", " : "",
-         columns ? columns : "",
-         current_credentials.uuid,
-         quoted_name ? "'" : "",
-         quoted_name ? quoted_name : uniquify,
-         quoted_name ? "'" : "",
-         type_has_comment (type) ? ", comment" : "",
-         columns ? ", " : "",
-         columns ? columns : "",
-         type,
-         quoted_uuid);
+    ret = sql_error ("INSERT INTO %ss"
+                      " (uuid, owner, name%s,"
+                      "  creation_time, modification_time%s%s)"
+                      " SELECT make_uuid (),"
+                      "        (SELECT id FROM users where users.uuid = '%s'),"
+                      "        %s%s%s%s, m_now (), m_now ()%s%s"
+                      " FROM %ss WHERE uuid = '%s';",
+                      type,
+                      type_has_comment (type) ? ", comment" : "",
+                      columns ? ", " : "",
+                      columns ? columns : "",
+                      current_credentials.uuid,
+                      quoted_name ? "'" : "",
+                      quoted_name ? quoted_name : uniquify,
+                      quoted_name ? "'" : "",
+                      type_has_comment (type) ? ", comment" : "",
+                      columns ? ", " : "",
+                      columns ? columns : "",
+                      type,
+                      quoted_uuid);
   else
-    sql ("INSERT INTO %ss"
-         " (uuid, owner, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), (SELECT id FROM users where users.uuid = '%s'),"
-         "        m_now (), m_now ()%s%s"
-         " FROM %ss WHERE uuid = '%s';",
-         type,
-         columns ? ", " : "",
-         columns ? columns : "",
-         current_credentials.uuid,
-         columns ? ", " : "",
-         columns ? columns : "",
-         type,
-         quoted_uuid);
+    ret = sql_error ("INSERT INTO %ss"
+                     " (uuid, owner, creation_time, modification_time%s%s)"
+                     " SELECT make_uuid (),"
+                     "        (SELECT id FROM users where users.uuid = '%s'),"
+                     "        m_now (), m_now ()%s%s"
+                     " FROM %ss WHERE uuid = '%s';",
+                     type,
+                     columns ? ", " : "",
+                     columns ? columns : "",
+                     current_credentials.uuid,
+                     columns ? ", " : "",
+                     columns ? columns : "",
+                     type,
+                     quoted_uuid);
+
+  if (ret == 3)
+    {
+      g_free (quoted_uuid);
+      g_free (quoted_name);
+      g_free (uniquify);
+      return 1;
+    }
+  else if (ret)
+    {
+      g_free (quoted_uuid);
+      g_free (quoted_name);
+      g_free (uniquify);
+      return -1;
+    }
 
   new = sql_last_insert_id ();
 
@@ -24233,6 +24273,78 @@ result_iterator_nvt_name (iterator_t *iterator)
 }
 
 /**
+ * @brief Get the NVT summary from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The summary of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_summary (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_summary (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT insight from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The insight of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_insight (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_insight (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT affected from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The affected of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_affected (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_affected (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT affected from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Impact text of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_impact (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_impact (nvti);
+  return NULL;
+}
+
+/**
  * @brief Get the NVT solution from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -24266,6 +24378,24 @@ result_iterator_nvt_solution_type (iterator_t *iterator)
   nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_solution_type (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT detection from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The detection of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_detection (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_detection (nvti);
   return NULL;
 }
 
@@ -59670,7 +59800,7 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   char *errstr, *uuid;
   gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
   gchar *quoted_comment, *clean, *generated;
-  int index, max;
+  int index, max, ret;
   user_t user;
   GArray *cache_users;
 
@@ -59767,24 +59897,27 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   quoted_method = sql_quote (allowed_methods
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "file");
-  sql ("INSERT INTO users"
-       " (uuid, owner, name, password, comment, hosts, hosts_allow,"
-       "  ifaces, ifaces_allow, method, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (),"
-       "  (SELECT id FROM users WHERE uuid = '%s'),"
-       "  '%s', '%s', '%s', '%s', %i,"
-       "  '%s', %i, '%s', m_now (), m_now ());",
-       current_credentials.uuid,
-       quoted_name,
-       hash,
-       quoted_comment,
-       quoted_hosts,
-       hosts_allow,
-       quoted_ifaces,
-       ifaces_allow,
-       quoted_method);
-  user = sql_last_insert_id ();
+
+  ret
+    = sql_error ("INSERT INTO users"
+                 " (uuid, owner, name, password, comment, hosts, hosts_allow,"
+                 "  ifaces, ifaces_allow, method, creation_time,"
+                 "  modification_time)"
+                 " VALUES"
+                 " (make_uuid (),"
+                 "  (SELECT id FROM users WHERE uuid = '%s'),"
+                 "  '%s', '%s', '%s', '%s', %i,"
+                 "  '%s', %i, '%s', m_now (),"
+                 "  m_now ());",
+                 current_credentials.uuid,
+                 quoted_name,
+                 hash,
+                 quoted_comment,
+                 quoted_hosts,
+                 hosts_allow,
+                 quoted_ifaces,
+                 ifaces_allow,
+                 quoted_method);
   g_free (generated);
   g_free (hash);
   g_free (quoted_comment);
@@ -59792,6 +59925,19 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   g_free (quoted_ifaces);
   g_free (quoted_method);
   g_free (quoted_name);
+
+  if (ret == 3)
+    {
+      sql_rollback ();
+      return -2;
+    }
+  else if (ret)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  user = sql_last_insert_id ();
 
   /* Add the user to any given groups. */
 

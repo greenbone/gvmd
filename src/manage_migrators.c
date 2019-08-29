@@ -1304,6 +1304,13 @@ migrate_217_to_218 ()
 
   /* Update the database. */
 
+  /* Ensure all user names are unique */
+
+  sql ("UPDATE users"
+       " SET name = uniquify('user', name, NULL, '')"
+       " WHERE id != (SELECT min(id) FROM users AS inner_users"
+       "              WHERE users.name = inner_users.name);");
+
   /* Add an UNIQUE constraint to the name column of users */
 
   sql ("ALTER TABLE users ADD UNIQUE (name);");
@@ -1311,6 +1318,43 @@ migrate_217_to_218 ()
   /* Set the database version to 218. */
 
   set_db_version (218);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 216 to version 217.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_218_to_219 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 218. */
+
+  if (manage_db_version () != 218)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Extend table "nvts" with additional columns "summary",
+   * "insight", "affected", "detection" and "impact" */
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN summary text;");
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN insight text;");
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN affected text;");
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN detection text;");
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN impact text;");
+
+  /* Set the database version to 219. */
+
+  set_db_version (219);
 
   sql_commit ();
 
@@ -1341,6 +1385,7 @@ static migrator_t database_migrators[] = {
   {216, migrate_215_to_216},
   {217, migrate_216_to_217},
   {218, migrate_217_to_218},
+  {219, migrate_218_to_219},
   /* End marker. */
   {-1, NULL}};
 
