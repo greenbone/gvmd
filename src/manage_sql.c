@@ -54466,7 +54466,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
             {
               uuid = report_uuid (global_current_report);
               host_notice (entity_text (ip), "ip", entity_text (ip),
-                          "Report Host", uuid, 1, 1);
+                           "Report Host", uuid, 1, 1);
               free (uuid);
             }
 
