@@ -7320,20 +7320,70 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       /* Add the elements that are expected as part of the pipe-separated tag list
        * via API although internally already explicitely stored. Once the API is
        * extended to have these elements explicitely, they do not need to be
-       * added to this string anymore. */
-      if (nvt_iterator_solution (nvts))
+       * added to this tag string anymore. */
+      if (nvt_iterator_summary (nvts) && nvt_iterator_summary (nvts)[0])
         {
           if (nvt_tags->str)
-            g_string_append_printf (nvt_tags, "|solution=%s", nvt_iterator_solution (nvts));
+            g_string_append_printf (nvt_tags, "|summary=%s",
+                                    nvt_iterator_summary (nvts));
           else
-            g_string_append_printf (nvt_tags, "solution=%s", result_iterator_nvt_solution (nvts));
+            g_string_append_printf (nvt_tags, "summary=%s",
+                                    nvt_iterator_summary (nvts));
         }
-      if (nvt_iterator_solution_type (nvts))
+      if (nvt_iterator_insight (nvts) && nvt_iterator_insight (nvts)[0])
         {
           if (nvt_tags->str)
-            g_string_append_printf (nvt_tags, "|solution_type=%s", nvt_iterator_solution_type (nvts));
+            g_string_append_printf (nvt_tags, "|insight=%s",
+                                    nvt_iterator_insight (nvts));
           else
-            g_string_append_printf (nvt_tags, "solution_type=%s", nvt_iterator_solution_type (nvts));
+            g_string_append_printf (nvt_tags, "insight=%s",
+                                    nvt_iterator_insight (nvts));
+        }
+      if (nvt_iterator_affected (nvts) && nvt_iterator_affected (nvts)[0])
+        {
+          if (nvt_tags->str)
+            g_string_append_printf (nvt_tags, "|affected=%s",
+                                    nvt_iterator_affected (nvts));
+          else
+            g_string_append_printf (nvt_tags, "affected=%s",
+                                    nvt_iterator_affected (nvts));
+        }
+      if (nvt_iterator_impact (nvts) && nvt_iterator_impact (nvts)[0])
+        {
+          if (nvt_tags->str)
+            g_string_append_printf (nvt_tags, "|impact=%s",
+                                    nvt_iterator_impact (nvts));
+          else
+            g_string_append_printf (nvt_tags, "impact=%s",
+                                    nvt_iterator_impact (nvts));
+        }
+      if (nvt_iterator_solution (nvts) && nvt_iterator_solution (nvts)[0])
+        {
+          if (nvt_tags->str)
+            g_string_append_printf (nvt_tags, "|solution=%s",
+                                    nvt_iterator_solution (nvts));
+          else
+            g_string_append_printf (nvt_tags, "solution=%s",
+                                    nvt_iterator_solution (nvts));
+        }
+      if (nvt_iterator_solution_type (nvts)
+          && nvt_iterator_solution_type (nvts)[0])
+        {
+          if (nvt_tags->str)
+            g_string_append_printf (nvt_tags, "|solution_type=%s",
+                                    nvt_iterator_solution_type (nvts));
+          else
+            g_string_append_printf (nvt_tags, "solution_type=%s",
+                                    nvt_iterator_solution_type (nvts));
+        }
+      if (nvt_iterator_detection (nvts) && nvt_iterator_detection (nvts)[0])
+        {
+          if (nvt_tags->str)
+            g_string_append_printf (nvt_tags, "|vuldetect=%s",
+                                    nvt_iterator_detection (nvts));
+          else
+            g_string_append_printf (nvt_tags, "vuldetect=%s",
+                                    nvt_iterator_detection (nvts));
         }
 
       refs_str = g_string_new ("");

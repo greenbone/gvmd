@@ -1445,10 +1445,25 @@ const char*
 result_iterator_nvt_name (iterator_t *);
 
 const char*
+result_iterator_nvt_summary (iterator_t *);
+
+const char*
+result_iterator_nvt_insight (iterator_t *);
+
+const char*
+result_iterator_nvt_affected (iterator_t *);
+
+const char*
+result_iterator_nvt_impact (iterator_t *);
+
+const char*
 result_iterator_nvt_solution (iterator_t *);
 
 const char*
 result_iterator_nvt_solution_type (iterator_t *);
+
+const char*
+result_iterator_nvt_detection (iterator_t *);
 
 const char*
 result_iterator_nvt_family (iterator_t *);
@@ -1991,6 +2006,18 @@ const char*
 nvt_iterator_name (iterator_t*);
 
 const char*
+nvt_iterator_summary (iterator_t*);
+
+const char*
+nvt_iterator_insight (iterator_t*);
+
+const char*
+nvt_iterator_affected (iterator_t*);
+
+const char*
+nvt_iterator_impact (iterator_t*);
+
+const char*
 nvt_iterator_description (iterator_t*);
 
 const char*
@@ -2004,6 +2031,9 @@ nvt_iterator_family (iterator_t*);
 
 const char*
 nvt_iterator_cvss_base (iterator_t*);
+
+const char*
+nvt_iterator_detection (iterator_t*);
 
 const char*
 nvt_iterator_qod (iterator_t*);
