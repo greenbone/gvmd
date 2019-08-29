@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix response from GET_VULNS when given vuln_id does not exists [#699](https://github.com/greenbone/gvmd/pull/699)
 - Make bulk tagging with a filter work if the resources are already tagged [#712](https://github.com/greenbone/gvmd/pull/712)
 - Fix columnless search phrase filter keywords with quotes [#716](https://github.com/greenbone/gvmd/pull/716)
+- Fix issues importing results or getting them from slaves if they contain "%s" [#724](https://github.com/greenbone/gvmd/pull/724)
 
 ### Removed
 
