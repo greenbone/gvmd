@@ -341,7 +341,7 @@ init_nvt_selector_iterator (iterator_t* iterator, const char* selector,
                            " FROM nvt_selectors"
                            " WHERE type = %i;",
                            type);
-  init_iterator (iterator, sql);
+  init_iterator (iterator, "%s", sql);
   g_free (sql);
 }
 
@@ -3082,7 +3082,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
                            sort_field ? sort_field : "id",
                            ascending ? "ASC" : "DESC");
   g_free (columns);
-  init_iterator (iterator, sql);
+  init_iterator (iterator, "%s", sql);
   g_free (sql);
 }
 
@@ -3360,7 +3360,7 @@ init_preference_iterator (iterator_t* iterator, config_t config)
                          " FROM config_preferences"
                          " WHERE config = %llu;",
                          config);
-  init_iterator (iterator, sql);
+  init_iterator (iterator, "%s", sql);
   g_free (sql);
 }
 
