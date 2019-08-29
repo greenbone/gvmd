@@ -22951,6 +22951,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>iso_time</type>
             <summary>Time the certificate was last collected</summary>
           </column>
+          <option>
+            <name>report_id</name>
+            <type>uuid</type>
+            <summary>UUID of the report the cerificate must appear in</summary>
+          </option>
         </filter_keywords>
       </attrib>
       <attrib>

@@ -181,6 +181,45 @@ tls_certificate_select_columns ()
 }
 
 /**
+ * @brief Get extra_where string for a TLS certificate iterator or count.
+ *
+ * @param[in]  filter           Filter string.
+ *
+ * @return     Newly allocated extra_where string.
+ */
+gchar *
+tls_certificate_extra_where (const char *filter)
+{
+  GString *ret;
+  gchar *report_id;
+
+  ret = g_string_new ("");
+
+  report_id = filter_term_value (filter, "report_id");
+
+  g_message ("report_id=\"%s\"", report_id);
+
+  if (report_id)
+    {
+      gchar *quoted_id;
+      quoted_id = sql_quote (report_id);
+      g_string_append_printf (ret,
+                              " AND"
+                              " (EXISTS (SELECT * FROM"
+                              "  tls_certificate_source_origins AS src_orig"
+                              "  WHERE tls_certificate = tls_certificates.id"
+                              "    AND origin_type = 'Report'"
+                              "    AND origin_id = '%s'))",
+                              quoted_id);
+      g_free (quoted_id);
+    }
+
+  g_free (report_id);
+
+  return g_string_free (ret, FALSE);
+}
+
+/**
  * @brief Count number of tls_certificates.
  *
  * @param[in]  get  GET params.
@@ -192,9 +231,33 @@ tls_certificate_count (const get_data_t *get)
 {
   static const char *filter_columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TLS_CERTIFICATE_ITERATOR_COLUMNS;
+  gchar *filter;
+  char *extra_where;
+  int ret;
 
-  return count ("tls_certificate", get, columns, NULL, filter_columns,
-                0, 0, 0, TRUE);
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    {
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  extra_where
+    = tls_certificate_extra_where (filter ? filter : get->filter);
+
+  ret = count ("tls_certificate", get, columns, NULL, filter_columns,
+               0, 0, extra_where, TRUE);
+
+  g_free (extra_where);
+  return ret;
 }
 
 /**
@@ -211,17 +274,41 @@ init_tls_certificate_iterator (iterator_t *iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TLS_CERTIFICATE_ITERATOR_COLUMNS;
+  gchar *filter;
+  char *extra_where;
+  int ret;
 
-  return init_get_iterator (iterator,
-                            "tls_certificate",
-                            get,
-                            columns,
-                            NULL,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    {
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  extra_where
+    = tls_certificate_extra_where (filter ? filter : get->filter);
+
+  ret = init_get_iterator (iterator,
+                           "tls_certificate",
+                           get,
+                           columns,
+                           NULL,
+                           filter_columns,
+                           0,
+                           NULL,
+                           extra_where,
+                           TRUE);
+
+  g_free (extra_where);
+  return ret;
 }
 
 /**
