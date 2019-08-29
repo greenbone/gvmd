@@ -2076,6 +2076,8 @@ split_filter (const gchar* given_filter)
                 keyword = g_malloc0 (sizeof (keyword_t));
                 if (*filter == '=')
                   keyword->equal = 1;
+                else
+                  keyword->approx = 1;
                 current_part = filter + 1;
                 between = 0;
                 break;
@@ -2168,9 +2170,11 @@ split_filter (const gchar* given_filter)
                 in_quote = 1;
                 current_part++;
               }
-            else if (keyword->equal && filter == current_part)
+            else if ((keyword->equal || keyword->approx)
+                     && filter == current_part)
               {
-                /* A quoted exact term, like ="abc". */
+                /* A quoted exact term, like ="abc"
+                 * or a prefixed approximate term, like ~"abc". */
                 in_quote = 1;
                 current_part++;
               }
@@ -2735,14 +2739,24 @@ manage_clean_filter_remove (const gchar *filter, const gchar *column)
               break;
           }
       else
-        if (keyword->quoted)
-          g_string_append_printf (clean, " %s\"%s\"",
-                                  keyword->equal ? "=" : "",
-                                  keyword->string);
-        else
-          g_string_append_printf (clean, " %s%s",
-                                  keyword->equal ? "=" : "",
-                                  keyword->string);
+        {
+          const char *relation_symbol;
+          if (keyword->equal)
+            relation_symbol = "=";
+          else if (keyword->approx)
+            relation_symbol = "~";
+          else
+            relation_symbol = "";
+
+          if (keyword->quoted)
+            g_string_append_printf (clean, " %s\"%s\"",
+                                    relation_symbol,
+                                    keyword->string);
+          else
+            g_string_append_printf (clean, " %s%s",
+                                    relation_symbol,
+                                    keyword->string);
+        }
       point++;
     }
   filter_free (split);
@@ -54432,7 +54446,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
     {
       if (strcmp (entity_name (host_start), "host") == 0)
         {
-          entity_t ip;
+          entity_t ip, end;
           char *uuid;
 
           ip = entity_child (host_start, "ip");
@@ -54443,10 +54457,18 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
           if (start == NULL)
             goto rollback_fail;
 
-          uuid = report_uuid (global_current_report);
-          host_notice (entity_text (ip), "ip", entity_text (ip),
-                       "Report Host", uuid, 1, 1);
-          free (uuid);
+          end = entity_child (host_start, "end");
+          if (end
+              && entity_text (end)
+              && strcmp (entity_text (end), "")
+              && report_host_noticeable (global_current_report,
+                                         entity_text (ip)))
+            {
+              uuid = report_uuid (global_current_report);
+              host_notice (entity_text (ip), "ip", entity_text (ip),
+                          "Report Host", uuid, 1, 1);
+              free (uuid);
+            }
 
           set_scan_host_start_time (global_current_report,
                                     entity_text (ip),
@@ -61808,6 +61830,9 @@ hosts_set_identifiers (report_t report)
           identifier_t *identifier;
           GString *select;
 
+          if (report_host_noticeable (report, ip) == 0)
+            continue;
+
           quoted_host_name = sql_quote (ip);
 
           select = g_string_new ("");
@@ -62154,8 +62179,6 @@ hosts_set_details (report_t report)
        "        value,"
        "        'Report',"
        "        (SELECT uuid FROM reports WHERE id = %llu),"
-       /*       Assume that every report host detail has a corresponding host
-        *       in the assets. */
        "        (SELECT host"
        "         FROM host_identifiers"
        "         WHERE source_id = (SELECT uuid FROM reports"
@@ -62172,6 +62195,15 @@ hosts_set_details (report_t report)
        " AND (SELECT value = 'yes' FROM task_preferences"
        "      WHERE task = (SELECT task FROM reports WHERE id = %llu)"
        "      AND name = 'in_assets')"
+       /* Ensure that every report host detail has a corresponding host
+        *  in the assets. */
+       " AND EXISTS (SELECT *"
+       "               FROM host_identifiers"
+       "              WHERE source_id = (SELECT uuid FROM reports"
+       "                                 WHERE id = %llu)"
+       "                AND (SELECT name FROM hosts WHERE id = host)"
+       "                      = (SELECT host FROM report_hosts"
+       "                         WHERE id = report_host_details.report_host))"
        " AND (name IN ('best_os_cpe', 'best_os_txt', 'traceroute'));",
        report,
        report,
@@ -67808,13 +67840,12 @@ manage_slave_check_period ()
  * @param[in]  uuid        The resource UUID.
  * @param[in]  resource    The resource row id.
  * @param[in]  location    Whether the resource is in the trashcan.
- * @param[in]  duplicates_check  Whether to check if resource already has tag.
- * 
+ *
  * @return  0 success, -1 error
  */
 static int
 tag_add_resource (tag_t tag, const char *type, const char *uuid,
-                  resource_t resource, int location, int duplicates_check)
+                  resource_t resource, int location)
 {
   int already_added, ret;
   gchar *quoted_resource_uuid;
@@ -67823,9 +67854,7 @@ tag_add_resource (tag_t tag, const char *type, const char *uuid,
 
   quoted_resource_uuid = uuid ? sql_insert (uuid) : g_strdup ("''");
 
-  if (duplicates_check == 0)
-    already_added = 0;
-  else if (type_is_info_subtype (type))
+  if (type_is_info_subtype (type))
     already_added = sql_int ("SELECT count(*) FROM tag_resources"
                              " WHERE resource_type = '%s'"
                              " AND resource_uuid = %s"
@@ -67899,7 +67928,7 @@ tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
   if (resource == 0)
     return 1;
 
-  return tag_add_resource (tag, type, uuid, resource, resource_location, 1);
+  return tag_add_resource (tag, type, uuid, resource, resource_location);
 }
 
 /**
@@ -67997,30 +68026,9 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             return 2;
           }
 
-        if (type_is_info_subtype (type))
-          init_iterator (&resources,
-                         "SELECT id, uuid FROM (%s) AS filter_selection"
-                         " WHERE NOT EXISTS"
-                         "  (SELECT * FROM tag_resources"
-                         "    WHERE resource_type = '%s'"
-                         "      AND resource_uuid = filter_selection.uuid"
-                         "      AND tag = %llu)",
-                         filtered_select,
-                         type,
-                         tag);
-        else
-          init_iterator (&resources,
-                         "SELECT id, uuid FROM (%s) AS filter_selection"
-                         " WHERE NOT EXISTS"
-                         "  (SELECT * FROM tag_resources"
-                         "    WHERE resource_type = '%s'"
-                         "      AND resource = filter_selection.id"
-                         "      AND resource_location = %d"
-                         "      AND tag = %llu)",
-                         filtered_select,
-                         type,
-                         LOCATION_TABLE,
-                         tag);
+        init_iterator (&resources,
+                       "%s",
+                       filtered_select);
 
         break;
       default:
@@ -68047,7 +68055,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
       current_uuid = iterator_string (&resources, 1);
 
       add_ret = tag_add_resource (tag, type, current_uuid, resource,
-                                  LOCATION_TABLE, 0);
+                                  LOCATION_TABLE);
       if (add_ret)
         {
           ret = add_ret;

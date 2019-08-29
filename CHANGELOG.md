@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add -f arg to sendmail call in email alert [#677](https://github.com/greenbone/gvmd/pull/677) [#679](https://github.com/greenbone/gvmd/pull/679)
 - Change get_tickets to use the status text for filtering. [#698](https://github.com/greenbone/gvmd/pull/698)
 - Also consider 0 of n NVTS as busy loading [#706](https://github.com/greenbone/gvmd/pull/706)
+- Check whether hosts are alive and have results when adding them in slave scans. [#718](https://github.com/greenbone/gvmd/pull/718)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#691](https://github.com/greenbone/gvmd/pull/691)
@@ -26,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix assignment of orphaned tickets to the current user [#686](https://github.com/greenbone/gvmd/pull/686)
 - Fix ORPHAN calculations in GET_TICKETS [#687](https://github.com/greenbone/gvmd/pull/687) [#700](https://github.com/greenbone/gvmd/pull/700)
 - Fix response from GET_VULNS when given vuln_id does not exists [#699](https://github.com/greenbone/gvmd/pull/699)
+- Make bulk tagging with a filter work if the resources are already tagged [#712](https://github.com/greenbone/gvmd/pull/712)
+- Fix columnless search phrase filter keywords with quotes [#716](https://github.com/greenbone/gvmd/pull/716)
 - Fix issues importing results or getting them from slaves if they contain "%s" [#724](https://github.com/greenbone/gvmd/pull/724)
 
 ### Removed
