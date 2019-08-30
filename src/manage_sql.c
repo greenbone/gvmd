@@ -58101,6 +58101,11 @@ add_assets_from_host_in_report (report_t report, const char *host_ip)
     }
 
   /* Create assets */
+  if (report_host_noticeable (report, host_ip))
+    {
+      host_notice (host_ip, "ip", host_ip, "Report Host", report_id, 1, 1);
+    }
+
   ret = add_tls_certificates_from_report_host (report_host,
                                                report_id,
                                                host_ip);
