@@ -7318,8 +7318,8 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       g_free (tag_text);
 
       /* Add the elements that are expected as part of the pipe-separated tag list
-       * via API although internally already explicitely stored. Once the API is
-       * extended to have these elements explicitely, they do not need to be
+       * via API although internally already explicitly stored. Once the API is
+       * extended to have these elements explicitly, they do not need to be
        * added to this tag string anymore. */
       if (nvt_iterator_summary (nvts) && nvt_iterator_summary (nvts)[0])
         {
