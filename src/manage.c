@@ -4238,6 +4238,9 @@ fork_osp_scan_handler (task_t task, target_t target, char **report_id_return)
   g_free (report_id);
   if (rc == 0)
     {
+      hosts_set_identifiers (global_current_report);
+      hosts_set_max_severity (global_current_report, NULL, NULL);
+      hosts_set_details (global_current_report);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }
