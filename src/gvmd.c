@@ -1795,7 +1795,8 @@ gvmd (int argc, char** argv)
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
           &osp_vt_update,
-          "Unix socket for OSP NVT update.  Default is to do an OTP update.",
+          "Unix socket for OSP NVT update.  Defaults to the path of the"
+          "'OpenVAS Default' scanner if it is an absolute path.",
           "<scanner-socket>" },
         { "password", '\0', 0, G_OPTION_ARG_STRING,
           &password,
