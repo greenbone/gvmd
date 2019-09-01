@@ -79,11 +79,21 @@ get_tls_certificates_reset ()
  */
 void
 get_tls_certificates_start (const gchar **attribute_names,
-                   const gchar **attribute_values)
+                            const gchar **attribute_values)
 {
+  const gchar *include_certificate_data;
+
   get_data_parse_attributes (&get_tls_certificates_data.get, "tls_certificate",
                              attribute_names,
                              attribute_values);
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "include_certificate_data", &include_certificate_data))
+    {
+       get_data_set_extra (&get_tls_certificates_data.get,
+                           "include_certificate_data",
+                           include_certificate_data);
+    }
 }
 
 /**
@@ -96,9 +106,20 @@ void
 get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
 {
   iterator_t tls_certificates;
-  int count, filtered, ret, first;
+  int count, filtered, ret, first, include_certificate_data;
+  const char *include_certificate_data_str;
 
   count = 0;
+
+  include_certificate_data_str
+    = get_data_get_extra (&get_tls_certificates_data.get,
+                          "include_certificate_data");
+  if (include_certificate_data_str
+      && strcmp (include_certificate_data_str, "")
+      && strcmp (include_certificate_data_str, "0"))
+    include_certificate_data = 1;
+  else
+    include_certificate_data = 0;
 
   ret = init_get ("get_tls_certificates",
                   &get_tls_certificates_data.get,
@@ -207,7 +228,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          tls_certificate_iterator_certificate_format (&tls_certificates)
             ? tls_certificate_iterator_certificate_format (&tls_certificates)
             : "unknown",
-         get_tls_certificates_data.get.details
+         (get_tls_certificates_data.get.details || include_certificate_data)
             ? tls_certificate_iterator_certificate (&tls_certificates)
             : "",
          tls_certificate_iterator_md5_fingerprint (&tls_certificates),
