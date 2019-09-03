@@ -71,7 +71,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </func:function>
 
   <xsl:template match="report">
-    <xsl:text>IP,Hostname,OS,Scan Start,Scan End,CVSS,Severity,High,Medium,Low,Log,False Positive,Total
+    <xsl:text>IP,Hostname,OS,Scan Start,Scan End,CVSS,Severity,High,Medium,Low,Log,False Positive,Total,Ports,Apps,Distance,Auth
 </xsl:text>
     <xsl:for-each select="host">
       <xsl:sort select="openvas:max-cvss (ip/text())" data-type="number" order="descending"/>
@@ -127,6 +127,30 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:value-of select="$cnt_fp"/><xsl:text>,</xsl:text>
 
       <xsl:value-of select="$cnt_high + $cnt_medium + $cnt_low + $cnt_log + $cnt_fp"/>
+      <xsl:text>,</xsl:text>
+
+      <xsl:value-of select="port_count/page"/>
+      <xsl:text>,</xsl:text>
+
+      <xsl:value-of select="count(detail[name/text() = 'App'])"/>
+      <xsl:text>,</xsl:text>
+
+      <xsl:variable name="traceroute" select="detail[name/text() = 'traceroute']"/>
+      <xsl:value-of select="string-length($traceroute) - string-length(translate($traceroute, ',', ''))"/>
+
+      <xsl:text>,</xsl:text>
+      <xsl:if test="detail[name/text() = 'Auth-SSH-Success']">
+        <xsl:text>SSH</xsl:text>
+      </xsl:if>
+      <xsl:if test="detail[name/text() = 'Auth-SMB-Success']">
+        <xsl:text>SMB</xsl:text>
+      </xsl:if>
+      <xsl:if test="detail[name/text() = 'Auth-SNMP-Success']">
+        <xsl:text>SNMP</xsl:text>
+      </xsl:if>
+      <xsl:if test="detail[name/text() = 'Auth-ESXi-Success']">
+        <xsl:text>ESXi</xsl:text>
+      </xsl:if>
 
       <!-- add newline -->
       <xsl:text>
