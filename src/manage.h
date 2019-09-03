@@ -120,7 +120,7 @@ int
 init_manage_helper (GSList *, const gchar *, int);
 
 void
-init_manage_process (int, const gchar*);
+init_manage_process (const gchar*);
 
 void
 cleanup_manage_process (gboolean);

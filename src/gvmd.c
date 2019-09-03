@@ -2652,7 +2652,7 @@ gvmd (int argc, char** argv)
 
   /* Initialise the process for manage_schedule. */
 
-  init_manage_process (0, database);
+  init_manage_process (database);
 
   /* Initialize the authentication system. */
 

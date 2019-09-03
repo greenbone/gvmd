@@ -79,11 +79,6 @@ buffer_size_t from_client_start = 0;
 buffer_size_t from_client_end = 0;
 
 /**
- * @brief Flag for running in NVT cache mode.
- */
-static int gmpd_nvt_cache_mode = 0;
-
-/**
  * @brief Initialise the GMP library for the GMP daemon.
  *
  * @param[in]  log_config      Log configuration
@@ -122,7 +117,7 @@ init_gmpd_process (const gchar *database, gchar **disable)
 {
   from_client_start = 0;
   from_client_end = 0;
-  init_gmp_process (0, database, NULL, NULL, disable);
+  init_gmp_process (database, NULL, NULL, disable);
 }
 
 /**
@@ -446,8 +441,6 @@ get_nfds (int socket)
  *
  * \endif
  *
- * If client socket is 0 or less, then update the NVT cache and exit.
- *
  * @param[in]  client_connection    Connection.
  * @param[in]  database             Location of manage database.
  * @param[in]  disable              Commands to disable.
@@ -463,15 +456,10 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
    * while the scanner is active. */
   short client_active = client_connection->socket > 0;
 
-  if (client_connection->socket < 0)
-    gmpd_nvt_cache_mode = client_connection->socket;
-
-  if (gmpd_nvt_cache_mode == 0)
-    g_debug ("   Serving GMP");
+  g_debug ("   Serving GMP");
 
   /* Initialise the XML parser and the manage library. */
-  init_gmp_process (gmpd_nvt_cache_mode,
-                    database,
+  init_gmp_process (database,
                     (int (*) (const char*, void*)) gmpd_send_to_client,
                     (void*) client_connection,
                     disable);
@@ -565,11 +553,8 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           ret = select (nfds, &readfds, &writefds, NULL, &timeout);
         }
       if ((ret < 0 && errno == EINTR) || ret == 0)
-        {
-          if (!gmpd_nvt_cache_mode)
-            continue;
-        }
-      else if (ret < 0)
+        continue;
+      if (ret < 0)
         {
           g_warning ("%s: child select failed: %s", __FUNCTION__,
                      strerror (errno));

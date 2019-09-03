@@ -53,7 +53,7 @@ init_gmp (GSList *, const gchar *, int, int, int, int,
           manage_connection_forker_t, int);
 
 void
-init_gmp_process (int, const gchar *, int (*) (const char *, void *), void *,
+init_gmp_process (const gchar *, int (*) (const char *, void *), void *,
                   gchar **);
 
 int

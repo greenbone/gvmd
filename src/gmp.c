@@ -29282,7 +29282,6 @@ init_gmp (GSList *log_config, const gchar *database,
 /**
  * @brief Initialise GMP library data for a process.
  *
- * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache.
  * @param[in]  database          Location of manage database.
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
@@ -29292,13 +29291,13 @@ init_gmp (GSList *log_config, const gchar *database,
  * process_gmp_client_input.
  */
 void
-init_gmp_process (int update_nvt_cache, const gchar *database,
+init_gmp_process (const gchar *database,
                   int (*write_to_client) (const char*, void*),
                   void* write_to_client_data, gchar **disable)
 {
   client_state = CLIENT_TOP;
   command_data_init (&command_data);
-  init_manage_process (update_nvt_cache, database);
+  init_manage_process (database);
   manage_reset_currents ();
   /* Create the XML parser. */
   xml_parser.start_element = gmp_xml_handle_start_element;
