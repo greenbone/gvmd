@@ -4681,11 +4681,6 @@ static run_wizard_data_t *run_wizard_data
  = (run_wizard_data_t*) &(command_data.wizard);
 
 /**
- * @brief Hack for returning fork status to caller.
- */
-static int forked;
-
-/**
  * @brief Buffer of output to the client.
  */
 char to_client[TO_CLIENT_BUFFER_SIZE];
@@ -27570,7 +27565,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       }
                     g_free (msg);
                   }
-                  forked = 1;
                   log_event ("task", "Task",
                              resume_task_data->task_id,
                              "resumed");
@@ -27869,7 +27863,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     log_event ("task", "Task", start_task_data->task_id,
                                "requested to start");
                   }
-                  forked = 1;
                   break;
                 case 1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -29344,7 +29337,6 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
                   int (*write_to_client) (const char*, void*),
                   void* write_to_client_data, gchar **disable)
 {
-  forked = 0;
   client_state = CLIENT_TOP;
   command_data_init (&command_data);
   init_manage_process (update_nvt_cache, database);
