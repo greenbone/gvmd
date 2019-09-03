@@ -452,9 +452,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
            gchar **disable)
 {
   int nfds, rc = 0;
-  /* Client status flag.  Set to 0 when the client closes the connection
-   * while the scanner is active. */
-  short client_active = client_connection->socket > 0;
 
   g_debug ("   Serving GMP");
 
@@ -513,15 +510,12 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
       /** @todo Shutdown on failure (for example, if a read fails). */
 
-      if (client_active)
-        {
-          /* See whether to read from the client.  */
-          if (from_client_end < from_buffer_size)
-            FD_SET (client_connection->socket, &readfds);
-          /* See whether to write to the client.  */
-          if (to_client_start < to_client_end)
-            FD_SET (client_connection->socket, &writefds);
-        }
+      /* See whether to read from the client.  */
+      if (from_client_end < from_buffer_size)
+        FD_SET (client_connection->socket, &readfds);
+      /* See whether to write to the client.  */
+      if (to_client_start < to_client_end)
+        FD_SET (client_connection->socket, &writefds);
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
        * we test for pending records first and emulate a select call
@@ -647,7 +641,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
     } /* while (1) */
 
 client_free:
-  if (client_active)
-    gvm_connection_free (client_connection);
+  gvm_connection_free (client_connection);
   return rc;
 }
