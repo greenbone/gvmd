@@ -27782,31 +27782,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "run");
                     break;
                   }
-
-                case -2:
-                  {
-                    gchar *msg;
-                    /* to_scanner buffer full. */
-                    msg = g_strdup_printf
-                           ("<run_wizard_response"
-                            " status=\"" STATUS_INTERNAL_ERROR "\""
-                            " status_text=\""
-                            STATUS_INTERNAL_ERROR_TEXT
-                            ": Wizard filled up to_scanner buffer\">"
-                            "</run_wizard_response>");
-                    if (send_to_client (msg,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (msg);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (msg);
-                    log_event_fail ("wizard", "Wizard", run_wizard_data->name,
-                                    "run: to_scanner buffer full");
-                    break;
-                  }
               }
           }
         else
