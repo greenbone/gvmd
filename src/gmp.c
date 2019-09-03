@@ -29483,13 +29483,10 @@ process_gmp_write (const char* msg, void* buffer)
  *
  * \endif
  *
- * @todo The -2 return has been replaced by send_to_client trying to write
- *       the to_client buffer to the client when it is full.  This is
- *       necessary, as the to_client buffer may fill up halfway through the
- *       processing of a GMP element.
- *
- * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
- *         or the scanner output buffer (respectively), -4 XML syntax error.
+ * @return 0 success,
+ *         3 success (when a process was forked),
+ *         -4 XML syntax error.
+ *         -1 error.
  */
 static int
 process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
