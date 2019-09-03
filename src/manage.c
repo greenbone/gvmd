@@ -8164,10 +8164,13 @@ manage_update_nvts_osp (const gchar *update_socket)
  *                                when return is 4, or NULL.
  * @param[out] ret_response      Address for response string of last command.
  *
- * @return 0 success, 1 name error, 2 process forked to run task, -10 process
- *         forked to run task where task start failed, -2 to_scanner buffer
- *         full, 4 command in wizard failed, 5 wizard not read only,
- *         6 Parameter validation failed, -1 internal error,
+ * @return 0 success,
+ *         1 name error,
+ *         3 success (when a process was forked),
+ *         4 command in wizard failed,
+ *         5 wizard not read only,
+ *         6 Parameter validation failed,
+ *         -1 internal error,
  *         99 permission denied.
  */
 int
