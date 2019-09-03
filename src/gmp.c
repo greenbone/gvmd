@@ -27983,19 +27983,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   stop_task_data->task_id,
                                   "stopped");
                   break;
-                case -5:
-                  SEND_XML_SERVICE_DOWN ("stop_task");
-                  log_event_fail ("task", "Task",
-                                  stop_task_data->task_id,
-                                  "stopped");
-                  break;
-                case -7:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("stop_task", "No CA certificate"));
-                  log_event_fail ("task", "Task",
-                                  resume_task_data->task_id,
-                                  "stopped");
-                  break;
                 default:  /* Programming error. */
                   assert (0);
                 case -1:

@@ -5107,8 +5107,7 @@ end_stop_osp:
  *
  * @param[in]  task  Task.
  *
- * @return 0 on success, 1 if stop requested, -1 if out of space in scanner
- *         output buffer, -5 scanner down, -7 no CA cert.
+ * @return 0 on success, 1 if stop requested.
  */
 int
 stop_task_internal (task_t task)
@@ -5151,8 +5150,7 @@ stop_task_internal (task_t task)
  * @param[in]  task_id  Task UUID.
  *
  * @return 0 on success, 1 if stop requested, 3 failed to find task,
- *         99 permission denied, -1 if out of space in scanner output buffer,
- *         -5 scanner down.
+ *         99 permission denied, -1 error.
  */
 int
 stop_task (const char *task_id)
