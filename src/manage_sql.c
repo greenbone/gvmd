@@ -31399,7 +31399,7 @@ report_host_ip (const char *host)
 int
 report_host_noticeable (report_t report, const gchar *host)
 {
-  report_host_t report_host;
+  report_host_t report_host = 0;
 
   sql_int64 (&report_host,
              "SELECT id FROM report_hosts"
