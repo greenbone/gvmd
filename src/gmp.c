@@ -27695,9 +27695,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                        &command_error_code,
                                        &response))
               {
-                case 3:
-                  /* Parent after a start_task fork. */
-                  forked = 1;
                 case 0:
                   {
                     gchar *msg;
