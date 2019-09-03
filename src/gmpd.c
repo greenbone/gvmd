@@ -624,15 +624,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           if (ret == 0)
             /* Processed all input. */
             ;
-          else if (ret == 3)
-            {
-              /* In the parent after a start_task fork. Free the scanner session
-               * without closing it, for usage by the child process. */
-              nfds = get_nfds (client_connection->socket);
-              /* Skip the rest of the loop because the scanner socket is
-               * a new socket.  This is asking for select trouble, really. */
-              continue;
-            }
           else if (ret == -1 || ret == -4)
             {
               /* Error.  Write rest of to_client to client, so that the

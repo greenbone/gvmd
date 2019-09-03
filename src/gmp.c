@@ -29384,7 +29384,6 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
  * \endif
  *
  * @return 0 success,
- *         3 success (when a process was forked),
  *         -1 error,
  *         -4 XML syntax error.
  */
@@ -29434,8 +29433,6 @@ process_gmp_client_input ()
       return err;
     }
   from_client_end = from_client_start = 0;
-  if (forked)
-    return 3;
   return 0;
 }
 
