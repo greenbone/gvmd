@@ -8557,33 +8557,6 @@ manage_run_wizard (const gchar *wizard_name,
             {
               /* Command succeeded. */
             }
-          else if (ret == 2)
-            {
-              /* Process forked to run a task. */
-              free_entity (entity);
-              g_free (response);
-              g_free (extra);
-              g_string_free (params_xml, TRUE);
-              return 2;
-            }
-          else if (ret == -10)
-            {
-              /* Process forked to run a task.  Task start failed. */
-              free_entity (entity);
-              g_free (response);
-              g_free (extra);
-              g_string_free (params_xml, TRUE);
-              return -10;
-            }
-          else if (ret == -2)
-            {
-              /* to_scanner buffer full. */
-              free_entity (entity);
-              g_free (response);
-              g_free (extra);
-              g_string_free (params_xml, TRUE);
-              return -2;
-            }
           else
             {
               free_entity (entity);
