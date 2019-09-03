@@ -29467,7 +29467,6 @@ process_gmp_write (const char* msg, void* buffer)
  * \endif
  *
  * @return 0 success,
- *         3 success (when a process was forked),
  *         -4 XML syntax error.
  *         -1 error.
  */
@@ -29547,7 +29546,5 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   else
     g_string_free (buffer, TRUE);
 
-  if (forked)
-    return 3;
   return 0;
 }

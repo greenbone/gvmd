@@ -8166,7 +8166,6 @@ manage_update_nvts_osp (const gchar *update_socket)
  *
  * @return 0 success,
  *         1 name error,
- *         3 success (when a process was forked),
  *         4 command in wizard failed,
  *         5 wizard not read only,
  *         6 Parameter validation failed,
@@ -8191,10 +8190,8 @@ manage_run_wizard (const gchar *wizard_name,
   entity_t entity, mode_entity, params_entity, read_only_entity;
   entity_t param_def, step;
   entities_t modes, steps, param_defs;
-  int ret, forked;
+  int ret;
   const gchar *point;
-
-  forked = 0;
 
   if (acl_user_may ("run_wizard") == 0)
     return 99;
@@ -8272,10 +8269,7 @@ manage_run_wizard (const gchar *wizard_name,
           if (ret_response)
             *ret_response = g_strdup ("");
 
-          if (forked)
-            return 3;
-          else
-            return 0;
+          return 0;
         }
     }
   else
@@ -8551,12 +8545,7 @@ manage_run_wizard (const gchar *wizard_name,
           g_free (response);
           response = NULL;
           ret = run_command (run_command_data, gmp, &response);
-          if (ret == 3)
-            {
-              /* Parent after a start_task fork. */
-              forked = 1;
-            }
-          else if (ret == 0)
+          if (ret == 0)
             {
               /* Command succeeded. */
             }
@@ -8734,7 +8723,7 @@ manage_run_wizard (const gchar *wizard_name,
   if (ret_response)
     *ret_response = response;
 
-  if (extra_wrapped && (forked == 0))
+  if (extra_wrapped)
     {
       entity_t extra_entity, status_entity, status_text_entity;
       ret = parse_entity (extra_wrapped, &extra_entity);
@@ -8768,8 +8757,6 @@ manage_run_wizard (const gchar *wizard_name,
 
   /* All the steps succeeded. */
 
-  if (forked)
-    return 3;
   return 0;
 }
 
