@@ -20142,10 +20142,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 default:   /* Programming error. */
                   assert (0);
                 case -1:
-                  /* to_scanner is full. */
-                  /** @todo Or some other error occurred. */
-                  /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_gmp_client_input must return -2. */
+                  /* Some other error occurred. */
+                  /** @todo Should respond with internal error. */
                   g_debug ("delete_task failed");
                   abort ();
                   break;
@@ -28001,9 +27999,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 default:  /* Programming error. */
                   assert (0);
                 case -1:
-                  /* to_scanner is full. */
-                  /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_gmp_client_input must return -2. */
+                  /* Some other error occurred. */
+                  /** @todo Should respond with internal error. */
                   abort ();
               }
           }
