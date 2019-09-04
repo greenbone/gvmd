@@ -3214,6 +3214,13 @@ create_tables ()
        "   UNION SELECT 1 AS autofp_selection"
        "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
 
+  sql ("CREATE OR REPLACE VIEW tls_certificate_source_origins AS"
+       " SELECT sources.id AS source_id, tls_certificate,"
+       "        origin_id, origin_type, origin_data"
+       "  FROM tls_certificate_sources AS sources"
+       "  JOIN tls_certificate_origins AS origins"
+       "    ON sources.origin = origins.id;");
+
   sql ("DROP VIEW IF EXISTS vulns;");
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"

@@ -63900,6 +63900,10 @@ type_extra_where (const char *type, int trash, const char *filter,
       else
         extra_where = g_strdup (" AND hidden = 0");
     }
+  else if (strcasecmp (type, "TLS_CERTIFICATE") == 0)
+    {
+      extra_where = tls_certificate_extra_where (filter);
+    }
   else if (strcasecmp (type, "REPORT") == 0)
     {
       if (trash)
