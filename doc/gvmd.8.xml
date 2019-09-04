@@ -259,7 +259,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <option>
       <p><opt>--osp-vt-update=<arg>SCANNER-SOCKET</arg></opt></p>
       <optdesc>
-        <p>Unix socket for OSP NVT update.  Default is to do an OTP update.</p>
+        <p>Unix socket for OSP NVT update.  Defaults to the path of the 'OpenVAS Default' scanner if it is an absolute path.</p>
       </optdesc>
     </option>
     <option>
