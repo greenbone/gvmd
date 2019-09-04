@@ -1136,7 +1136,7 @@ update_nvt_cache_retry ()
           else
             {
               g_warning ("%s: No OSP VT update socket set", __FUNCTION__);
-              exit (-1);
+              exit (EXIT_FAILURE);
             }
         }
     }
