@@ -120,7 +120,7 @@ int
 init_manage_helper (GSList *, const gchar *, int);
 
 void
-init_manage_process (int, const gchar*);
+init_manage_process (const gchar*);
 
 void
 cleanup_manage_process (gboolean);
@@ -2780,6 +2780,9 @@ scanner_password (scanner_t);
 
 int
 scanner_count (const get_data_t *);
+
+char *
+openvas_default_scanner_host ();
 
 int
 init_scanner_iterator (iterator_t*, const get_data_t *);

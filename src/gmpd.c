@@ -79,11 +79,6 @@ buffer_size_t from_client_start = 0;
 buffer_size_t from_client_end = 0;
 
 /**
- * @brief Flag for running in NVT cache mode.
- */
-static int gmpd_nvt_cache_mode = 0;
-
-/**
  * @brief Initialise the GMP library for the GMP daemon.
  *
  * @param[in]  log_config      Log configuration
@@ -122,7 +117,7 @@ init_gmpd_process (const gchar *database, gchar **disable)
 {
   from_client_start = 0;
   from_client_end = 0;
-  init_gmp_process (0, database, NULL, NULL, disable);
+  init_gmp_process (database, NULL, NULL, disable);
 }
 
 /**
@@ -446,8 +441,6 @@ get_nfds (int socket)
  *
  * \endif
  *
- * If client socket is 0 or less, then update the NVT cache and exit.
- *
  * @param[in]  client_connection    Connection.
  * @param[in]  database             Location of manage database.
  * @param[in]  disable              Commands to disable.
@@ -459,19 +452,11 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
            gchar **disable)
 {
   int nfds, rc = 0;
-  /* Client status flag.  Set to 0 when the client closes the connection
-   * while the scanner is active. */
-  short client_active = client_connection->socket > 0;
 
-  if (client_connection->socket < 0)
-    gmpd_nvt_cache_mode = client_connection->socket;
-
-  if (gmpd_nvt_cache_mode == 0)
-    g_debug ("   Serving GMP");
+  g_debug ("   Serving GMP");
 
   /* Initialise the XML parser and the manage library. */
-  init_gmp_process (gmpd_nvt_cache_mode,
-                    database,
+  init_gmp_process (database,
                     (int (*) (const char*, void*)) gmpd_send_to_client,
                     (void*) client_connection,
                     disable);
@@ -494,7 +479,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
    *     something to write,
    *   - similarly, the program need only select on the fds for reading
    *     if there is buffer space available,
-   *   - the buffers from_client can become full during reading
+   *   - the buffer from_client can become full during reading
    *   - a read from the client can be stalled by the to_client buffer
    *     filling up (in which case process_gmp_client_input will try to
    *     write the to_client buffer itself),
@@ -525,15 +510,12 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
       /** @todo Shutdown on failure (for example, if a read fails). */
 
-      if (client_active)
-        {
-          /* See whether to read from the client.  */
-          if (from_client_end < from_buffer_size)
-            FD_SET (client_connection->socket, &readfds);
-          /* See whether to write to the client.  */
-          if (to_client_start < to_client_end)
-            FD_SET (client_connection->socket, &writefds);
-        }
+      /* See whether to read from the client.  */
+      if (from_client_end < from_buffer_size)
+        FD_SET (client_connection->socket, &readfds);
+      /* See whether to write to the client.  */
+      if (to_client_start < to_client_end)
+        FD_SET (client_connection->socket, &writefds);
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
        * we test for pending records first and emulate a select call
@@ -565,11 +547,8 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           ret = select (nfds, &readfds, &writefds, NULL, &timeout);
         }
       if ((ret < 0 && errno == EINTR) || ret == 0)
-        {
-          if (!gmpd_nvt_cache_mode)
-            continue;
-        }
-      else if (ret < 0)
+        continue;
+      if (ret < 0)
         {
           g_warning ("%s: child select failed: %s", __FUNCTION__,
                      strerror (errno));
@@ -624,15 +603,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           if (ret == 0)
             /* Processed all input. */
             ;
-          else if (ret == 3)
-            {
-              /* In the parent after a start_task fork. Free the scanner session
-               * without closing it, for usage by the child process. */
-              nfds = get_nfds (client_connection->socket);
-              /* Skip the rest of the loop because the scanner socket is
-               * a new socket.  This is asking for select trouble, really. */
-              continue;
-            }
           else if (ret == -1 || ret == -4)
             {
               /* Error.  Write rest of to_client to client, so that the
@@ -671,7 +641,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
     } /* while (1) */
 
 client_free:
-  if (client_active)
-    gvm_connection_free (client_connection);
+  gvm_connection_free (client_connection);
   return rc;
 }

@@ -99,6 +99,7 @@
 #include <gvm/util/serverutils.h>
 
 #include "manage.h"
+#include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
 #include "gmpd.h"
 #include "utils.h"
@@ -291,11 +292,6 @@ static int update_in_progress = 0;
  * @brief Logging parameters, as passed to setup_log_handlers.
  */
 GSList *log_config = NULL;
-
-/**
- * @brief File socket for OSP NVT update.  NULL to update via OTP.
- */
-static gchar *osp_update_socket = NULL;
 
 
 /* Helpers. */
@@ -1133,8 +1129,15 @@ update_nvt_cache_retry ()
         }
       else if (child_pid == 0)
         {
+          const char *osp_update_socket;
+          osp_update_socket = get_osp_vt_update_socket ();
           if (osp_update_socket)
             exit (update_nvt_cache_osp (osp_update_socket));
+          else
+            {
+              g_warning ("%s: No OSP VT update socket set", __FUNCTION__);
+              exit (EXIT_FAILURE);
+            }
         }
     }
 }
@@ -1792,7 +1795,8 @@ gvmd (int argc, char** argv)
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
           &osp_vt_update,
-          "Unix socket for OSP NVT update.  Default is to do an OTP update.",
+          "Unix socket for OSP NVT update.  Defaults to the path of the"
+          "'OpenVAS Default' scanner if it is an absolute path.",
           "<scanner-socket>" },
         { "password", '\0', 0, G_OPTION_ARG_STRING,
           &password,
@@ -2158,7 +2162,7 @@ gvmd (int argc, char** argv)
    * release gvm-checking, via option_lock. */
 
   if (osp_vt_update)
-    osp_update_socket = osp_vt_update;
+    set_osp_vt_update_socket (osp_vt_update);
 
   if (disable_password_policy)
     gvm_disable_password_policy ();
@@ -2457,13 +2461,6 @@ gvmd (int argc, char** argv)
 
   /* Run the standard manager. */
 
-  if (osp_vt_update == NULL)
-    {
-      g_critical ("%s: --osp-vt-update required for now",
-                  __FUNCTION__);
-      return EXIT_FAILURE;
-    }
-
   if (lockfile_locked ("gvm-helping"))
     {
       g_warning ("%s: An option process is running", __FUNCTION__);
@@ -2652,13 +2649,38 @@ gvmd (int argc, char** argv)
 
   /* Initialise the process for manage_schedule. */
 
-  init_manage_process (0, database);
+  init_manage_process (database);
 
   /* Initialize the authentication system. */
 
   // TODO Should be part of manage init.
   if (gvm_auth_init ())
     exit (EXIT_FAILURE);
+
+  /* Try to get OSP VT update socket from default OpenVAS if it
+   *  was not set with the --osp-vt-update option.
+   */
+  if (get_osp_vt_update_socket () == NULL)
+    {
+      char *default_socket = openvas_default_scanner_host ();
+      if (default_socket)
+        {
+          g_debug ("%s: Using OSP VT update socket from default OpenVAS"
+                   " scanner: %s",
+                   __FUNCTION__,
+                   default_socket);
+          set_osp_vt_update_socket (default_socket);
+        }
+      else
+        {
+          g_critical ("%s: No OSP VT update socket found."
+                      " Use --osp-vt-update or change the 'OpenVAS Default'"
+                      " scanner to use the main ospd-openvas socket.",
+                      __FUNCTION__);
+          return EXIT_FAILURE;
+        }
+      free (default_socket);
+    }
 
   /* Enter the main forever-loop. */
 

@@ -62,6 +62,40 @@ blank_control_chars (char *string)
 }
 
 
+/* NVT related global options */
+
+/**
+ * @brief File socket for OSP NVT update.  NULL to update via OTP.
+ */
+static gchar *osp_vt_update_socket = NULL;
+
+/**
+ * @brief Get the current file socket for OSP NVT update.
+ *
+ * @return The path of the file socket for OSP NVT update.
+ */
+const gchar *
+get_osp_vt_update_socket ()
+{
+  return osp_vt_update_socket;
+}
+
+/**
+ * @brief Set the file socket for OSP NVT update.
+ *
+ * @param new_socket The new path of the file socket for OSP NVT update.
+ */
+void
+set_osp_vt_update_socket (const char *new_socket)
+{
+  if (new_socket)
+    {
+      g_free (osp_vt_update_socket);
+      osp_vt_update_socket = g_strdup (new_socket);
+    }
+}
+
+
 /* NVT's. */
 
 /**
