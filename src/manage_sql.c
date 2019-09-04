@@ -32492,7 +32492,7 @@ report_host_ip (const char *host)
 int
 report_host_noticeable (report_t report, const gchar *host)
 {
-  report_host_t report_host;
+  report_host_t report_host = 0;
 
   sql_int64 (&report_host,
              "SELECT id FROM report_hosts"
@@ -54433,7 +54433,7 @@ int
 update_from_slave (task_t task, entity_t get_report, entity_t *report,
                    int *next_result)
 {
-  entity_t entity, host_start, start;
+  entity_t entity, host, start;
   entities_t results, hosts, entities;
   int current_commit_size;
 
@@ -54465,33 +54465,19 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   sql_begin_immediate ();
   hosts = (*report)->entities;
   current_commit_size = 0;
-  while ((host_start = first_entity (hosts)))
+  while ((host = first_entity (hosts)))
     {
-      if (strcmp (entity_name (host_start), "host") == 0)
+      if (strcmp (entity_name (host), "host") == 0)
         {
-          entity_t ip, end;
-          char *uuid;
+          entity_t ip;
 
-          ip = entity_child (host_start, "ip");
+          ip = entity_child (host, "ip");
           if (ip == NULL)
             goto rollback_fail;
 
-          start = entity_child (host_start, "start");
+          start = entity_child (host, "start");
           if (start == NULL)
             goto rollback_fail;
-
-          end = entity_child (host_start, "end");
-          if (end
-              && entity_text (end)
-              && strcmp (entity_text (end), "")
-              && report_host_noticeable (current_report,
-                                         entity_text (ip)))
-            {
-              uuid = report_uuid (current_report);
-              host_notice (entity_text (ip), "ip", entity_text (ip),
-                           "Report Host", uuid, 1, 1);
-              free (uuid);
-            }
 
           set_scan_host_start_time (current_report,
                                     entity_text (ip),
@@ -54522,11 +54508,11 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
     {
       if (strcmp (entity_name (entity), "result") == 0)
         {
-          entity_t host, port, nvt, threat, description;
+          entity_t result_host, port, nvt, threat, description;
           const char *oid;
 
-          host = entity_child (entity, "host");
-          if (host == NULL)
+          result_host = entity_child (entity, "host");
+          if (result_host == NULL)
             goto rollback_fail;
 
           port = entity_child (entity, "port");
@@ -54552,7 +54538,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
             result_t result;
 
             result = make_result (task,
-                                  entity_text (host),
+                                  entity_text (result_host),
                                   entity_text (port),
                                   oid,
                                   threat_message_type (entity_text (threat)),
@@ -54571,6 +54557,47 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
           (*next_result)++;
         }
       results = next_entities (results);
+    }
+  sql_commit ();
+
+  sql_begin_immediate ();
+  current_commit_size = 0;
+  hosts = (*report)->entities;
+  while ((host = first_entity (hosts)))
+    {
+      if (strcmp (entity_name (host), "host") == 0)
+        {
+          entity_t ip, end;
+          char *uuid;
+
+          ip = entity_child (host, "ip");
+          if (ip == NULL)
+            goto rollback_fail;
+
+          end = entity_child (host, "end");
+          if (end
+              && entity_text (end)
+              && strcmp (entity_text (end), "")
+              && report_host_noticeable (current_report,
+                                         entity_text (ip)))
+            {
+              uuid = report_uuid (current_report);
+              host_notice (entity_text (ip), "ip", entity_text (ip),
+                           "Report Host", uuid, 1, 1);
+              free (uuid);
+
+              current_commit_size++;
+              if (slave_commit_size
+                  && current_commit_size >= slave_commit_size)
+                {
+                  sql_commit ();
+                  sql_begin_immediate ();
+                  current_commit_size = 0;
+                }
+            }
+        }
+
+      hosts = next_entities (hosts);
     }
   sql_commit ();
   return 0;
