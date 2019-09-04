@@ -197,19 +197,18 @@ tls_certificate_extra_where (const char *filter)
 
   report_id = filter_term_value (filter, "report_id");
 
-  g_message ("report_id=\"%s\"", report_id);
-
   if (report_id)
     {
       gchar *quoted_id;
       quoted_id = sql_quote (report_id);
       g_string_append_printf (ret,
                               " AND"
-                              " (EXISTS (SELECT * FROM"
-                              "  tls_certificate_source_origins AS src_orig"
-                              "  WHERE tls_certificate = tls_certificates.id"
-                              "    AND origin_type = 'Report'"
-                              "    AND origin_id = '%s'))",
+                              " (EXISTS"
+                              "   (SELECT * FROM"
+                              "    tls_certificate_source_origins AS src_orig"
+                              "    WHERE tls_certificate = tls_certificates.id"
+                              "      AND origin_type = 'Report'"
+                              "      AND origin_id = '%s'))",
                               quoted_id);
       g_free (quoted_id);
     }
