@@ -143,12 +143,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:text>SSH</xsl:text>
       </xsl:if>
       <xsl:if test="detail[name/text() = 'Auth-SMB-Success']">
+        <xsl:if test="detail[name/text() = 'Auth-SSH-Success']">
+          <xsl:text> </xsl:text>
+        </xsl:if>
         <xsl:text>SMB</xsl:text>
       </xsl:if>
       <xsl:if test="detail[name/text() = 'Auth-SNMP-Success']">
+        <xsl:if test="detail[name/text() = 'Auth-SSH-Success' or name/text() = 'Auth-SMB-Success']">
+          <xsl:text> </xsl:text>
+        </xsl:if>
         <xsl:text>SNMP</xsl:text>
       </xsl:if>
       <xsl:if test="detail[name/text() = 'Auth-ESXi-Success']">
+        <xsl:if test="detail[name/text() = 'Auth-SSH-Success' or name/text() = 'Auth-SMB-Success' or name/text() = 'Auth-SNMP-Success']">
+          <xsl:text> </xsl:text>
+        </xsl:if>
         <xsl:text>ESXi</xsl:text>
       </xsl:if>
 
