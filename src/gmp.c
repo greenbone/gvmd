@@ -4681,11 +4681,6 @@ static run_wizard_data_t *run_wizard_data
  = (run_wizard_data_t*) &(command_data.wizard);
 
 /**
- * @brief Hack for returning fork status to caller.
- */
-static int forked;
-
-/**
  * @brief Buffer of output to the client.
  */
 char to_client[TO_CLIENT_BUFFER_SIZE];
@@ -20147,10 +20142,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 default:   /* Programming error. */
                   assert (0);
                 case -1:
-                  /* to_scanner is full. */
-                  /** @todo Or some other error occurred. */
-                  /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_gmp_client_input must return -2. */
+                  /* Some other error occurred. */
+                  /** @todo Should respond with internal error. */
                   g_debug ("delete_task failed");
                   abort ();
                   break;
@@ -27544,131 +27537,123 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_RESUME_TASK:
         if (resume_task_data->task_id)
           {
-            if (forked == 2)
-              /* Prevent the forked child from forking again, as then both
-               * forked children would be using the same server session. */
-              abort (); /** @todo Respond with error or something. */
-            else
+            char *report_id;
+            switch (resume_task (resume_task_data->task_id, &report_id))
               {
-                char *report_id;
-                switch (resume_task (resume_task_data->task_id, &report_id))
+                case 0:
                   {
-                    case 0:
+                    gchar *msg;
+                    msg = g_strdup_printf
+                           ("<resume_task_response"
+                            " status=\"" STATUS_OK_REQUESTED "\""
+                            " status_text=\""
+                            STATUS_OK_REQUESTED_TEXT
+                            "\">"
+                            "<report_id>%s</report_id>"
+                            "</resume_task_response>",
+                            report_id);
+                    free (report_id);
+                    if (send_to_client (msg,
+                                        write_to_client,
+                                        write_to_client_data))
                       {
-                        gchar *msg;
-                        msg = g_strdup_printf
-                               ("<resume_task_response"
-                                " status=\"" STATUS_OK_REQUESTED "\""
-                                " status_text=\""
-                                STATUS_OK_REQUESTED_TEXT
-                                "\">"
-                                "<report_id>%s</report_id>"
-                                "</resume_task_response>",
-                                report_id);
-                        free (report_id);
-                        if (send_to_client (msg,
-                                            write_to_client,
-                                            write_to_client_data))
-                          {
-                            g_free (msg);
-                            error_send_to_client (error);
-                            return;
-                          }
                         g_free (msg);
+                        error_send_to_client (error);
+                        return;
                       }
-                      forked = 1;
-                      log_event ("task", "Task",
-                                 resume_task_data->task_id,
-                                 "resumed");
-                      break;
-                    case 1:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "Task is active already"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case 22:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "Task must be in Stopped or Interrupted state"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case 4:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "Resuming not supported"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case 3:   /* Find failed. */
-                      if (send_find_error_to_client
-                           ("resume_task", "task", resume_task_data->task_id,
-                            gmp_parser))
-                        {
-                          error_send_to_client (error);
-                          return;
-                        }
-                      break;
-                    case 99:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "Permission denied"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case -6:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "There is already a task running in"
-                                          " this process"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case -2:
-                      /* Task target lacks hosts.  This is checked when the
-                       * target is created. */
-                      assert (0);
-                      /* fallthrough */
-                    case -4:
-                      /* Task lacks target.  This is checked when the task is
-                       * created anyway. */
-                      assert (0);
-                      /* fallthrough */
-                    case -1:
-                    case -3: /* Failed to create report. */
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case -5:
-                      SEND_XML_SERVICE_DOWN ("resume_task");
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case -7:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task", "No CA certificate"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    default: /* Programming error. */
-                      assert (0);
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
+                    g_free (msg);
                   }
+                  log_event ("task", "Task",
+                             resume_task_data->task_id,
+                             "resumed");
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "Task is active already"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case 22:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "Task must be in Stopped or Interrupted state"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case 4:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "Resuming not supported"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case 3:   /* Find failed. */
+                  if (send_find_error_to_client
+                       ("resume_task", "task", resume_task_data->task_id,
+                        gmp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "Permission denied"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case -6:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "There is already a task running in"
+                                      " this process"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case -2:
+                  /* Task target lacks hosts.  This is checked when the
+                   * target is created. */
+                  assert (0);
+                  /* fallthrough */
+                case -4:
+                  /* Task lacks target.  This is checked when the task is
+                   * created anyway. */
+                  assert (0);
+                  /* fallthrough */
+                case -1:
+                case -3: /* Failed to create report. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case -5:
+                  SEND_XML_SERVICE_DOWN ("resume_task");
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case -7:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task", "No CA certificate"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                default: /* Programming error. */
+                  assert (0);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
               }
           }
         else
@@ -27702,9 +27687,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                        &command_error_code,
                                        &response))
               {
-                case 3:
-                  /* Parent after a start_task fork. */
-                  forked = 1;
                 case 0:
                   {
                     gchar *msg;
@@ -27800,31 +27782,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "run");
                     break;
                   }
-
-                case -2:
-                  {
-                    gchar *msg;
-                    /* to_scanner buffer full. */
-                    msg = g_strdup_printf
-                           ("<run_wizard_response"
-                            " status=\"" STATUS_INTERNAL_ERROR "\""
-                            " status_text=\""
-                            STATUS_INTERNAL_ERROR_TEXT
-                            ": Wizard filled up to_scanner buffer\">"
-                            "</run_wizard_response>");
-                    if (send_to_client (msg,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (msg);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (msg);
-                    log_event_fail ("wizard", "Wizard", run_wizard_data->name,
-                                    "run: to_scanner buffer full");
-                    break;
-                  }
               }
           }
         else
@@ -27850,123 +27807,115 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_START_TASK:
         if (start_task_data->task_id)
           {
-            if (forked == 2)
-              /* Prevent the forked child from forking again, as then both
-               * forked children would be using the same server session. */
-              abort (); /** @todo Respond with error or something. */
-            else
-              {
-                char *report_id = NULL;
+            char *report_id = NULL;
 
-                switch (start_task (start_task_data->task_id, &report_id))
+            switch (start_task (start_task_data->task_id, &report_id))
+              {
+                case 0:
                   {
-                    case 0:
+                    gchar *msg;
+                    msg = g_strdup_printf
+                           ("<start_task_response"
+                            " status=\"" STATUS_OK_REQUESTED "\""
+                            " status_text=\""
+                            STATUS_OK_REQUESTED_TEXT
+                            "\">"
+                            "<report_id>%s</report_id>"
+                            "</start_task_response>",
+                            report_id ?: "0");
+                    g_free (report_id);
+                    if (send_to_client (msg,
+                                        write_to_client,
+                                        write_to_client_data))
                       {
-                        gchar *msg;
-                        msg = g_strdup_printf
-                               ("<start_task_response"
-                                " status=\"" STATUS_OK_REQUESTED "\""
-                                " status_text=\""
-                                STATUS_OK_REQUESTED_TEXT
-                                "\">"
-                                "<report_id>%s</report_id>"
-                                "</start_task_response>",
-                                report_id ?: "0");
-                        g_free (report_id);
-                        if (send_to_client (msg,
-                                            write_to_client,
-                                            write_to_client_data))
-                          {
-                            g_free (msg);
-                            error_send_to_client (error);
-                            return;
-                          }
                         g_free (msg);
-                        log_event ("task", "Task", start_task_data->task_id,
-                                   "requested to start");
+                        error_send_to_client (error);
+                        return;
                       }
-                      forked = 1;
-                      break;
-                    case 1:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task",
-                                          "Task is active already"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case 3:   /* Find failed. */
-                      if (send_find_error_to_client ("start_task", "task",
-                                                     start_task_data->task_id,
-                                                     gmp_parser))
-                        {
-                          error_send_to_client (error);
-                          return;
-                        }
-                      break;
-                    case 99:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task",
-                                          "Permission denied"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -2:
-                      /* Task lacks target.  This is true for container
-                       * tasks. */
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task",
-                                          "Task must have a target"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -4:
-                      /* Task target lacks hosts.  This is checked when the
-                       * target is created. */
-                      assert (0);
-                      /* fallthrough */
-                    case -9:
-                      /* Fork failed. */
-                      /* fallthrough */
-                    case -3: /* Failed to create report. */
-                    case -1:
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -5:
-                      SEND_XML_SERVICE_DOWN ("start_task");
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -6:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task",
-                                          "There is already a task running in"
-                                          " this process"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -7:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task", "No CA certificate"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    default: /* Programming error. */
-                      assert (0);
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
+                    g_free (msg);
+                    log_event ("task", "Task", start_task_data->task_id,
+                               "requested to start");
                   }
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                                      "Task is active already"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case 3:   /* Find failed. */
+                  if (send_find_error_to_client ("start_task", "task",
+                                                 start_task_data->task_id,
+                                                 gmp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                                      "Permission denied"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -2:
+                  /* Task lacks target.  This is true for container
+                   * tasks. */
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                                      "Task must have a target"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -4:
+                  /* Task target lacks hosts.  This is checked when the
+                   * target is created. */
+                  assert (0);
+                  /* fallthrough */
+                case -9:
+                  /* Fork failed. */
+                  /* fallthrough */
+                case -3: /* Failed to create report. */
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -5:
+                  SEND_XML_SERVICE_DOWN ("start_task");
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -6:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                                      "There is already a task running in"
+                                      " this process"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -7:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task", "No CA certificate"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                default: /* Programming error. */
+                  assert (0);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
               }
           }
         else
@@ -28009,25 +27958,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   stop_task_data->task_id,
                                   "stopped");
                   break;
-                case -5:
-                  SEND_XML_SERVICE_DOWN ("stop_task");
-                  log_event_fail ("task", "Task",
-                                  stop_task_data->task_id,
-                                  "stopped");
-                  break;
-                case -7:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("stop_task", "No CA certificate"));
-                  log_event_fail ("task", "Task",
-                                  resume_task_data->task_id,
-                                  "stopped");
-                  break;
                 default:  /* Programming error. */
                   assert (0);
                 case -1:
-                  /* to_scanner is full. */
-                  /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_gmp_client_input must return -2. */
+                  /* Some other error occurred. */
+                  /** @todo Should respond with internal error. */
                   abort ();
               }
           }
@@ -29347,7 +29282,6 @@ init_gmp (GSList *log_config, const gchar *database,
 /**
  * @brief Initialise GMP library data for a process.
  *
- * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache.
  * @param[in]  database          Location of manage database.
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
@@ -29357,14 +29291,13 @@ init_gmp (GSList *log_config, const gchar *database,
  * process_gmp_client_input.
  */
 void
-init_gmp_process (int update_nvt_cache, const gchar *database,
+init_gmp_process (const gchar *database,
                   int (*write_to_client) (const char*, void*),
                   void* write_to_client_data, gchar **disable)
 {
-  forked = 0;
   client_state = CLIENT_TOP;
   command_data_init (&command_data);
-  init_manage_process (update_nvt_cache, database);
+  init_manage_process (database);
   manage_reset_currents ();
   /* Create the XML parser. */
   xml_parser.start_element = gmp_xml_handle_start_element;
@@ -29398,7 +29331,6 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
  * \endif
  *
  * @return 0 success,
- *         3 success (when a process was forked),
  *         -1 error,
  *         -4 XML syntax error.
  */
@@ -29448,8 +29380,6 @@ process_gmp_client_input ()
       return err;
     }
   from_client_end = from_client_start = 0;
-  if (forked)
-    return 3;
   return 0;
 }
 
@@ -29483,13 +29413,9 @@ process_gmp_write (const char* msg, void* buffer)
  *
  * \endif
  *
- * @todo The -2 return has been replaced by send_to_client trying to write
- *       the to_client buffer to the client when it is full.  This is
- *       necessary, as the to_client buffer may fill up halfway through the
- *       processing of a GMP element.
- *
- * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
- *         or the scanner output buffer (respectively), -4 XML syntax error.
+ * @return 0 success,
+ *         -4 XML syntax error.
+ *         -1 error.
  */
 static int
 process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
@@ -29567,7 +29493,5 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   else
     g_string_free (buffer, TRUE);
 
-  if (forked)
-    return 3;
   return 0;
 }

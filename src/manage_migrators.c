@@ -1403,7 +1403,7 @@ manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
   int db_version;
   g_log_set_handler (
     G_LOG_DOMAIN, ALL_LOG_LEVELS, (GLogFunc) gvm_log_func, log_config);
-  init_manage_process (0, database);
+  init_manage_process (database);
   db_version = manage_db_version ();
   cleanup_manage_process (TRUE);
   return db_version > 0 && db_version < 52;
@@ -1462,7 +1462,7 @@ manage_migrate (GSList *log_config, const gchar *database)
   g_log_set_handler (
     G_LOG_DOMAIN, ALL_LOG_LEVELS, (GLogFunc) gvm_log_func, log_config);
 
-  init_manage_process (0, database);
+  init_manage_process (database);
 
   old_version = manage_db_version ();
   new_version = manage_db_supported_version ();
@@ -1611,7 +1611,7 @@ manage_migrate (GSList *log_config, const gchar *database)
    *
    * Reopen the database before the ANALYZE, in case the schema has changed. */
   cleanup_manage_process (TRUE);
-  init_manage_process (0, database);
+  init_manage_process (database);
   sql ("ANALYZE;");
 
   cleanup_manage_process (TRUE);

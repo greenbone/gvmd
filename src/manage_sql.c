@@ -1283,7 +1283,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
         return ret;
     }
 
-  init_manage_process (0, db);
+  init_manage_process (db);
 
   return 0;
 }
@@ -15431,11 +15431,10 @@ task_average_scan_duration (task_t task)
  *
  * Open the SQL database, attach secondary databases, and define functions.
  *
- * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache.
  * @param[in]  database          Location of manage database.
  */
 void
-init_manage_process (int update_nvt_cache, const gchar *database)
+init_manage_process (const gchar *database)
 {
   lockfile_t lockfile;
 
@@ -15451,14 +15450,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   /* Attach the SCAP and CERT databases. */
   manage_attach_databases ();
-
-  if (update_nvt_cache)
-    {
-      sql ("CREATE TEMPORARY TABLE old_nvts"
-           " (oid TEXT, modification_time INTEGER);");
-      sql ("INSERT INTO old_nvts (oid, modification_time)"
-           " SELECT oid, modification_time FROM nvts;");
-    }
 
   /* Define functions for SQL. */
 
@@ -15485,7 +15476,7 @@ void
 reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
-  init_manage_process (0, gvmd_db_name);
+  init_manage_process (gvmd_db_name);
 }
 
 /**
@@ -18235,7 +18226,7 @@ init_manage_internal (GSList *log_config,
 
   memset (&current_credentials, '\0', sizeof (current_credentials));
 
-  init_manage_process (0, database);
+  init_manage_process (database);
 
   /* Check that the versions of the databases are correct. */
 
