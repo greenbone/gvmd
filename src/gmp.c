@@ -10171,8 +10171,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             cvss_base = "0.0";
 
           /* Add the elements that are expected as part of the pipe-separated
-           * tag list via API although internally already explicitely stored.
-           * Once the API is extended to have these elements explicitely, they
+           * tag list via API although internally already explicitly stored.
+           * Once the API is extended to have these elements explicitly, they
            * do not need to be added to this tag string anymore. */
           if (result_iterator_nvt_summary (results))
             {

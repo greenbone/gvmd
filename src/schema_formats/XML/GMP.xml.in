@@ -22958,6 +22958,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>ID of filter to use to filter query</summary>
         <type>uuid</type>
       </attrib>
+      <attrib>
+        <name>include_certificate_data</name>
+        <summary>Whether to include certificate_data even if details are not requested</summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
