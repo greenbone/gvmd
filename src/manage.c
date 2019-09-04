@@ -7322,66 +7322,66 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       if (nvt_iterator_summary (nvts) && nvt_iterator_summary (nvts)[0])
         {
           if (nvt_tags->str)
-            g_string_append_printf (nvt_tags, "|summary=%s",
-                                    nvt_iterator_summary (nvts));
+            xml_string_append (nvt_tags, "|summary=%s",
+                               nvt_iterator_summary (nvts));
           else
-            g_string_append_printf (nvt_tags, "summary=%s",
-                                    nvt_iterator_summary (nvts));
+            xml_string_append (nvt_tags, "summary=%s",
+                               nvt_iterator_summary (nvts));
         }
       if (nvt_iterator_insight (nvts) && nvt_iterator_insight (nvts)[0])
         {
           if (nvt_tags->str)
-            g_string_append_printf (nvt_tags, "|insight=%s",
-                                    nvt_iterator_insight (nvts));
+            xml_string_append (nvt_tags, "|insight=%s",
+                               nvt_iterator_insight (nvts));
           else
-            g_string_append_printf (nvt_tags, "insight=%s",
-                                    nvt_iterator_insight (nvts));
+            xml_string_append (nvt_tags, "insight=%s",
+                               nvt_iterator_insight (nvts));
         }
       if (nvt_iterator_affected (nvts) && nvt_iterator_affected (nvts)[0])
         {
           if (nvt_tags->str)
-            g_string_append_printf (nvt_tags, "|affected=%s",
-                                    nvt_iterator_affected (nvts));
+            xml_string_append (nvt_tags, "|affected=%s",
+                               nvt_iterator_affected (nvts));
           else
-            g_string_append_printf (nvt_tags, "affected=%s",
-                                    nvt_iterator_affected (nvts));
+            xml_string_append (nvt_tags, "affected=%s",
+                               nvt_iterator_affected (nvts));
         }
       if (nvt_iterator_impact (nvts) && nvt_iterator_impact (nvts)[0])
         {
           if (nvt_tags->str)
-            g_string_append_printf (nvt_tags, "|impact=%s",
-                                    nvt_iterator_impact (nvts));
+            xml_string_append (nvt_tags, "|impact=%s",
+                               nvt_iterator_impact (nvts));
           else
-            g_string_append_printf (nvt_tags, "impact=%s",
-                                    nvt_iterator_impact (nvts));
+            xml_string_append (nvt_tags, "impact=%s",
+                               nvt_iterator_impact (nvts));
         }
       if (nvt_iterator_solution (nvts) && nvt_iterator_solution (nvts)[0])
         {
           if (nvt_tags->str)
-            g_string_append_printf (nvt_tags, "|solution=%s",
-                                    nvt_iterator_solution (nvts));
+            xml_string_append (nvt_tags, "|solution=%s",
+                                nvt_iterator_solution (nvts));
           else
-            g_string_append_printf (nvt_tags, "solution=%s",
-                                    nvt_iterator_solution (nvts));
+            xml_string_append (nvt_tags, "solution=%s",
+                               nvt_iterator_solution (nvts));
         }
       if (nvt_iterator_solution_type (nvts)
           && nvt_iterator_solution_type (nvts)[0])
         {
           if (nvt_tags->str)
-            g_string_append_printf (nvt_tags, "|solution_type=%s",
-                                    nvt_iterator_solution_type (nvts));
+            xml_string_append (nvt_tags, "|solution_type=%s",
+                               nvt_iterator_solution_type (nvts));
           else
-            g_string_append_printf (nvt_tags, "solution_type=%s",
-                                    nvt_iterator_solution_type (nvts));
+            xml_string_append (nvt_tags, "solution_type=%s",
+                               nvt_iterator_solution_type (nvts));
         }
       if (nvt_iterator_detection (nvts) && nvt_iterator_detection (nvts)[0])
         {
           if (nvt_tags->str)
-            g_string_append_printf (nvt_tags, "|vuldetect=%s",
-                                    nvt_iterator_detection (nvts));
+            xml_string_append (nvt_tags, "|vuldetect=%s",
+                               nvt_iterator_detection (nvts));
           else
-            g_string_append_printf (nvt_tags, "vuldetect=%s",
-                                    nvt_iterator_detection (nvts));
+            xml_string_append (nvt_tags, "vuldetect=%s",
+                               nvt_iterator_detection (nvts));
         }
 
       refs_str = g_string_new ("");
@@ -7391,24 +7391,25 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
           init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
-              g_string_append_printf (refs_str,
-                                      "<ref type=\"cert-bund\" id=\"%s\"/>",
-                                      get_iterator_name (&cert_refs_iterator));
+              xml_string_append (refs_str,
+                                 "<ref type=\"cert-bund\" id=\"%s\"/>",
+                                 get_iterator_name (&cert_refs_iterator));
           }
           cleanup_iterator (&cert_refs_iterator);
 
           init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
-              g_string_append_printf (refs_str,
-                                      "<ref type=\"dfn-cert\" id=\"%s\"/>",
-                                      get_iterator_name (&cert_refs_iterator));
+              xml_string_append (refs_str,
+                                 "<ref type=\"dfn-cert\" id=\"%s\"/>",
+                                 get_iterator_name (&cert_refs_iterator));
           }
           cleanup_iterator (&cert_refs_iterator);
         }
       else
         {
-          g_string_append (refs_str, "<warning>database not available</warning>");
+          g_string_append (refs_str,
+                           "<warning>database not available</warning>");
         }
 
       nvti_refs_append_xml (refs_str, oid);
