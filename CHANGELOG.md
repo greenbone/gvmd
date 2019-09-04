@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - Check if NVT preferences exist before inserting. [#406](https://github.com/greenbone/gvmd/pull/406)
 - Raise minimum version for SQL functions. [#420](https://github.com/greenbone/gvmd/pull/420)
-- Run OpenVAS scans via OSP instead of OTP. [#422](https://github.com/greenbone/gvmd/pull/422) [#584](https://github.com/greenbone/gvmd/pull/584) [#623](https://github.com/greenbone/gvmd/pull/623) [#636](https://github.com/greenbone/gvmd/pull/636) [#704](https://github.com/greenbone/gvmd/pull/704)
+- Run OpenVAS scans via OSP instead of OTP. [#422](https://github.com/greenbone/gvmd/pull/422) [#584](https://github.com/greenbone/gvmd/pull/584) [#623](https://github.com/greenbone/gvmd/pull/623) [#636](https://github.com/greenbone/gvmd/pull/636) [#704](https://github.com/greenbone/gvmd/pull/704) [#729](https://github.com/greenbone/gvmd/pull/729)
 - Request nvti_cache update only at very end of NVT update. [#426](https://github.com/greenbone/gvmd/pull/426)
 - Consolidate NVT references into unified "refs" element. [#427](https://github.com/greenbone/gvmd/pull/427)
 - Update gvm-libs version requirements to v11.0. [#480](https://github.com/greenbone/gvmd/pull/480)

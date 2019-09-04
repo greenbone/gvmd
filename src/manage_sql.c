@@ -43640,6 +43640,18 @@ scanner_count (const get_data_t *get)
 }
 
 /**
+ * @brief Get the default scanner path or host.
+ *
+ * @return Newly allocated scanner path or host.
+ */
+char *
+openvas_default_scanner_host ()
+{
+  return sql_string ("SELECT host FROM scanners WHERE uuid = '%s'",
+                     SCANNER_UUID_DEFAULT);
+}
+
+/**
  * @brief Create a new connection to an OSP scanner.
  *
  * @param[in]   scanner     Scanner.
