@@ -36,7 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Made checks to prevent duplicate user names stricter. [#708](https://github.com/greenbone/gvmd/pull/708) [#722](https://github.com/greenbone/gvmd/pull/722)
 - Send delete command to ospd after stopping the task. [#710](https://github.com/greenbone/gvmd/pull/710)
 - Check whether hosts are alive and have results when adding them in slave scans. [#717](https://github.com/greenbone/gvmd/pull/717) [#736](https://github.com/greenbone/gvmd/pull/736)
-
+- New columns Ports, Apps, Distance, and Auth in the CSV Hosts report format [#733](https://github.com/greenbone/gvmd/pull/733)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)
