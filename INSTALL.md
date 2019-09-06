@@ -30,6 +30,13 @@ Prerequisites for building tests:
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
 
+Install prerequisites on Debian GNU/Linux 'Stretch' 9:
+
+    apt-get install gcc cmake libglib2.0-dev libgnutls28-dev libpq-dev postgresql-server-dev-9.6 pkg-config libical-dev
+
+Optional prerequisites on Debian GNU/Linux 'Stretch' 9:
+
+    apt-get install gnutls-bin gpgsm
 
 ## Compiling Greenbone Vulnerability Manager
 
