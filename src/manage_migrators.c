@@ -14136,6 +14136,12 @@ migrate_188_to_189 ()
 
   /* Update the database. */
 
+  /* The views result_overrides and results_autofp changed. */
+
+  sql ("DROP VIEW IF EXISTS result_overrides;");
+
+  sql ("DROP VIEW IF EXISTS results_autofp;");
+
   /* Table result_nvts was added, with links in results and overrides. */
 
   sql ("CREATE TABLE result_nvts (id SERIAL PRIMARY KEY,"
