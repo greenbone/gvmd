@@ -226,9 +226,9 @@ insert_nvt (const nvti_t *nvti)
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
-  gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
+  gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
   gchar *quoted_solution, *quoted_solution_type;
-  int creation_time, modification_time, qod, i;
+  int qod, i;
 
   cve = nvti_refs (nvti, "cve", "", 0);
 
@@ -249,58 +249,7 @@ insert_nvt (const nvti_t *nvti)
   quoted_detection = sql_quote (nvti_detection (nvti) ?
                                 nvti_detection (nvti) : "");
 
-  if (nvti_tag (nvti))
-    {
-      gchar **split, **point;
-      GString *tag;
-
-      /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
-
-      split = g_strsplit (nvti_tag (nvti), "|", 0);
-      point = split;
-
-      while (*point)
-        {
-          if (((strlen (*point) > strlen ("creation_date"))
-               && (strncmp (*point, "creation_date", strlen ("creation_date"))
-                   == 0)
-               && ((*point)[strlen ("creation_date")] == '='))
-              || ((strlen (*point) > strlen ("last_modification"))
-                  && (strncmp (*point, "last_modification",
-                               strlen ("last_modification"))
-                      == 0)
-                  && ((*point)[strlen ("last_modification")] == '=')))
-            {
-              gchar **move;
-              move = point;
-              g_free (*point);
-              while (*move)
-                {
-                  move[0] = move[1];
-                  move++;
-                }
-            }
-          else
-            point++;
-        }
-
-      point = split;
-      tag = g_string_new ("");
-      while (*point)
-        {
-          if (point[1])
-            g_string_append_printf (tag, "%s|", *point);
-          else
-            g_string_append_printf (tag, "%s", *point);
-          point++;
-        }
-      g_strfreev (split);
-
-      quoted_tag = sql_quote (tag->str);
-      g_string_free (tag, TRUE);
-    }
-  else
-    quoted_tag = g_strdup ("");
+  quoted_tag = sql_quote (nvti_tag (nvti) ?  nvti_tag (nvti) : "");
 
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti) ? nvti_cvss_base (nvti) : "");
 
@@ -316,48 +265,6 @@ insert_nvt (const nvti_t *nvti)
 
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
-  value = tag_value (nvti_tag (nvti), "creation_date");
-  switch (parse_time (value, &creation_time))
-    {
-      case -1:
-        g_warning ("%s: Failed to parse creation time of %s: %s",
-                   __FUNCTION__, nvti_oid (nvti), value);
-        creation_time = 0;
-        break;
-      case -2:
-        g_warning ("%s: Failed to make time: %s", __FUNCTION__, value);
-        creation_time = 0;
-        break;
-      case -3:
-        g_warning ("%s: Failed to parse timezone offset: %s",
-                   __FUNCTION__,
-                   value);
-        creation_time = 0;
-        break;
-    }
-  g_free (value);
-
-  value = tag_value (nvti_tag (nvti), "last_modification");
-  switch (parse_time (value, &modification_time))
-    {
-      case -1:
-        g_warning ("%s: Failed to parse last_modification time of %s: %s",
-                   __FUNCTION__, nvti_oid (nvti), value);
-        modification_time = 0;
-        break;
-      case -2:
-        g_warning ("%s: Failed to make time: %s", __FUNCTION__, value);
-        modification_time = 0;
-        break;
-      case -3:
-        g_warning ("%s: Failed to parse timezone offset: %s",
-                   __FUNCTION__,
-                   value);
-        modification_time = 0;
-        break;
-    }
-  g_free (value);
-
   if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
                nvti_oid (nvti)))
     sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
@@ -370,8 +277,9 @@ insert_nvt (const nvti_t *nvti)
        " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', '%s', %d, '%s');",
        nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
        quoted_affected, quoted_impact, quoted_cve, quoted_tag,
-       nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-       modification_time, nvti_oid (nvti), quoted_solution_type,
+       nvti_category (nvti), quoted_family, quoted_cvss_base,
+       nvti_creation_time (nvti), nvti_modification_time (nvti),
+       nvti_oid (nvti), quoted_solution_type,
        quoted_solution, quoted_detection, qod, quoted_qod_type);
 
   sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
@@ -1126,26 +1034,6 @@ get_tag (entity_t vt)
   first = 1;
   tag = g_string_new ("");
 
-  child = entity_child (vt, "creation_time");
-  if (child)
-    {
-      g_string_append_printf (tag,
-                              "%screation_date=%s",
-                              first ? "" : "|",
-                              entity_text (child));
-      first = 0;
-    }
-
-  child = entity_child (vt, "modification_time");
-  if (child)
-    {
-      g_string_append_printf (tag,
-                              "%slast_modification=%s",
-                              first ? "" : "|",
-                              entity_text (child));
-      first = 0;
-    }
-
   child = entity_child (vt, "severities");
   if (child)
     {
@@ -1271,6 +1159,7 @@ nvti_from_vt (entity_t vt)
   nvti_t *nvti = nvti_new ();
   const char *id;
   entity_t name, summary, insight, affected, impact, detection, solution;
+  entity_t creation_time, modification_time;
   entity_t refs, ref, custom, family, category;
   entities_t children;
   gchar *tag, *cvss_base, *parsed_tags;
@@ -1308,6 +1197,62 @@ nvti_from_vt (entity_t vt)
   impact = entity_child (vt, "impact");
   if (impact)
     nvti_set_impact (nvti, entity_text (impact));
+
+  creation_time = entity_child (vt, "creation_time");
+  if (creation_time)
+    {
+      gint time;
+
+      switch (parse_time (entity_text (creation_time), &time))
+        {
+          case -1:
+            g_warning ("%s: Failed to parse creation time of %s: %s",
+                       __FUNCTION__, nvti_oid (nvti),
+                       entity_text (creation_time));
+            time = 0;
+            break;
+          case -2:
+            g_warning ("%s: Failed to make time: %s", __FUNCTION__,
+                       entity_text (creation_time));
+            time = 0;
+            break;
+          case -3:
+            g_warning ("%s: Failed to parse timezone offset: %s",
+                       __FUNCTION__,
+                       entity_text (creation_time));
+            time = 0;
+            break;
+        }
+      nvti_set_creation_time (nvti, time);
+    }
+
+  modification_time = entity_child (vt, "modification_time");
+  if (modification_time)
+    {
+      gint time;
+
+      switch (parse_time (entity_text (modification_time), &time))
+        {
+          case -1:
+            g_warning ("%s: Failed to parse modification time of %s: %s",
+                       __FUNCTION__, nvti_oid (nvti),
+                       entity_text (modification_time));
+            time = 0;
+            break;
+          case -2:
+            g_warning ("%s: Failed to make time: %s", __FUNCTION__,
+                       entity_text (modification_time));
+            time = 0;
+            break;
+          case -3:
+            g_warning ("%s: Failed to parse timezone offset: %s",
+                       __FUNCTION__,
+                       entity_text (modification_time));
+            time = 0;
+            break;
+        }
+      nvti_set_modification_time (nvti, time);
+    }
 
   detection = entity_child (vt, "detection");
   if (detection)
