@@ -127,6 +127,7 @@
 #ifdef __FreeBSD__
 #include <sys/wait.h>
 #endif
+#include "manage_migrators_219_to_220_names.h"
 #include "manage_sql.h"
 #include "sql.h"
 #include "utils.h"
@@ -1361,6 +1362,111 @@ migrate_218_to_219 ()
   return 0;
 }
 
+/**
+ * @brief Get new name of a preference.
+ *
+ * @param[in]  old_name  Old name of preference.
+ *
+ * @return Static string containing new name for preference if found, else NULL.
+ */
+static const gchar *
+migrate_219_to_220_new_name (const char *old_name)
+{
+  int index;
+
+  for (index = 0; migrate_219_to_220_names[index][0]; index++)
+    if (strcmp (migrate_219_to_220_names[index][0], old_name) == 0)
+      return migrate_219_to_220_names[index][1];
+  return NULL;
+}
+
+/**
+ * @brief Converts old NVT preferences to the new format.
+ *
+ * @param[in]  table_name  The name of the table to update.
+ */
+static void
+replace_preference_names_219_to_220 (const char *table_name)
+{
+  iterator_t preferences;
+
+  /* 1.3.6.1.4.1.25623.1.0.14259:checkbox:Log nmap output
+   * =>
+   * 1.3.6.1.4.1.25623.1.0.14259:21:checkbox:Log nmap output */
+
+  init_iterator (&preferences,
+                 "SELECT id, name"
+                 " FROM \"%s\""
+                 " WHERE name LIKE '%%:%%:%%'"
+                 " AND name !~ '.*:[0-9]+:.*:.*';",
+                 table_name);
+
+  while (next (&preferences))
+    {
+      resource_t preference;
+      const char *old_name;
+      const gchar *new_name;
+
+      preference = iterator_int64 (&preferences, 0);
+      old_name = iterator_string (&preferences, 1);
+      new_name = migrate_219_to_220_new_name (old_name);
+      if (new_name)
+        {
+          gchar *quoted_new_name;
+
+          quoted_new_name = sql_quote (new_name);
+          sql ("UPDATE \"%s\" SET name = '%s' WHERE id = %llu;",
+               table_name,
+               quoted_new_name,
+               preference);
+          g_free (quoted_new_name);
+        }
+      else
+        g_warning ("%s: No new name for '%s'", __FUNCTION__, old_name);
+    }
+  cleanup_iterator (&preferences);
+}
+
+/**
+ * @brief Migrate the database from version 219 to version 220.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_219_to_220 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 219. */
+
+  if (manage_db_version () != 219)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Update config and nvt preferences from the 3 part format to the newer 4
+   * part format:
+   *
+   *     1.3.6.1.4.1.25623.1.0.14259:checkbox:Log nmap output
+   *     =>
+   *     1.3.6.1.4.1.25623.1.0.14259:21:checkbox:Log nmap output */
+
+  replace_preference_names_219_to_220 ("nvt_preferences");
+  replace_preference_names_219_to_220 ("config_preferences");
+  replace_preference_names_219_to_220 ("config_preferences_trash");
+
+  /* Set the database version to 220. */
+
+  set_db_version (220);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1386,6 +1492,7 @@ static migrator_t database_migrators[] = {
   {217, migrate_216_to_217},
   {218, migrate_217_to_218},
   {219, migrate_218_to_219},
+  {220, migrate_219_to_220},
   /* End marker. */
   {-1, NULL}};
 
