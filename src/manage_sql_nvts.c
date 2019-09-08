@@ -1298,7 +1298,7 @@ nvti_from_vt (entity_t vt)
           cvss_base = g_strdup_printf ("%.1f", get_cvss_score_from_base_metrics
                                            (entity_text (severity)));
           nvti_set_cvss_base (nvti, cvss_base);
-	  g_free (cvss_base);
+          g_free (cvss_base);
         }
       else
         g_warning ("%s: no severity", __FUNCTION__);
