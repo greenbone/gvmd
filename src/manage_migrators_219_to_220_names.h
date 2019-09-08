@@ -18,12 +18,15 @@
  */
 
 /**
- * @file  manage_migrators_219_to_220_names.c
+ * @file  manage_migrators_219_to_220_names.h
  * @brief The Greenbone Vulnerability Manager DB Migrators support.
  *
  * This file the preference names used by migrate_219_to_220.
  */
 
+/**
+ * @brief Preference name mapping for migrate_219_to_220.
+ */
 static const gchar *migrate_219_to_220_names[][2]
  = {{ "1.3.6.1.4.1.25623.1.0.10107:checkbox:Show full HTTP headers in output"
       "1.3.6.1.4.1.25623.1.0.10107:1:checkbox:Show full HTTP headers in output" },
