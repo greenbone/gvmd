@@ -27791,31 +27791,38 @@ report_error_count (report_t report)
  *
  * @param[in]   stream    Stream to write to.
  * @param[in]   details   Report host details iterator.
+ * @param[in]   lean      Whether to return reduced info.
  *
  * @return 0 success, -1 error.
  */
 static int
-print_report_host_detail (FILE *stream, iterator_t *details)
+print_report_host_detail (FILE *stream, iterator_t *details, int lean)
 {
   PRINT (stream,
         "<detail>"
         "<name>%s</name>"
         "<value>%s</value>"
-        "<source>"
-        "<type>%s</type>"
+        "<source>",
+        report_host_details_iterator_name (details),
+        report_host_details_iterator_value (details));
+
+  if (lean == 0)
+    PRINT (stream,
+           "<type>%s</type>",
+           report_host_details_iterator_source_type (details));
+
+  PRINT (stream,
         "<name>%s</name>"
         "<description>%s</description>"
         "</source>"
         "<extra>%s</extra>"
         "</detail>",
-        report_host_details_iterator_name (details),
-        report_host_details_iterator_value (details),
-        report_host_details_iterator_source_type (details),
         report_host_details_iterator_source_name (details),
         report_host_details_iterator_source_desc (details),
         report_host_details_iterator_extra (details) ?
          report_host_details_iterator_extra (details)
          : "");
+
   return 0;
 }
 
@@ -27823,18 +27830,20 @@ print_report_host_detail (FILE *stream, iterator_t *details)
  * @brief Print the XML for a report's host details to a file stream.
  * @param[in]  report_host  The report host.
  * @param[in]  stream       File stream to write to.
+ * @param[in]  lean         Report host details iterator.
  *
  * @return 0 on success, -1 error.
  */
 static int
-print_report_host_details_xml (report_host_t report_host, FILE *stream)
+print_report_host_details_xml (report_host_t report_host, FILE *stream,
+                               int lean)
 {
   iterator_t details;
 
   init_report_host_details_iterator
    (&details, report_host);
   while (next (&details))
-    if (print_report_host_detail (stream, &details))
+    if (print_report_host_detail (stream, &details, lean))
       return -1;
   cleanup_iterator (&details);
 
@@ -30234,7 +30243,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      false_positives_count);
 
               if (print_report_host_details_xml
-                   (host_iterator_report_host (&hosts), out))
+                   (host_iterator_report_host (&hosts), out, lean))
                 {
                   tz_revert (zone, tz, old_tz_override);
                   if (host_summary_buffer)
@@ -30324,7 +30333,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  false_positives_count);
 
           if (print_report_host_details_xml
-               (host_iterator_report_host (&hosts), out))
+               (host_iterator_report_host (&hosts), out, lean))
             {
               tz_revert (zone, tz, old_tz_override);
               if (host_summary_buffer)
