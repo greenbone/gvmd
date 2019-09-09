@@ -10306,7 +10306,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int changed, int cert_loaded, int lean)
 {
   const char *descr = result_iterator_descr (results);
-  const char *name, *comment, *creation_time, *modification_time;
+  const char *name, *comment, *creation_time;
   const char *detect_oid, *asset_id;
   gchar *nl_descr, *nl_descr_escaped;
   const char *qod = result_iterator_qod (results);
@@ -10342,13 +10342,19 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   if (lean == 0)
     {
-      const char *owner_name;
+      const char *owner_name, *modification_time;
 
       owner_name = get_iterator_owner_name (results);
       if (owner_name)
         buffer_xml_append_printf (buffer,
                                   "<owner><name>%s</name></owner>",
                                   owner_name);
+
+      modification_time = get_iterator_modification_time (results);
+      if (modification_time)
+        buffer_xml_append_printf (buffer,
+                                  "<modification_time>%s</modification_time>",
+                                  modification_time);
     }
 
   comment = get_iterator_comment (results);
@@ -10362,12 +10368,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     buffer_xml_append_printf (buffer,
                               "<creation_time>%s</creation_time>",
                               creation_time);
-
-  modification_time = get_iterator_modification_time (results);
-  if (modification_time)
-    buffer_xml_append_printf (buffer,
-                              "<modification_time>%s</modification_time>",
-                              modification_time);
 
   if (include_details)
     {
