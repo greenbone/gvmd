@@ -27798,13 +27798,42 @@ report_error_count (report_t report)
 static int
 print_report_host_detail (FILE *stream, iterator_t *details, int lean)
 {
+  const char *name, *value;
+
+  name = report_host_details_iterator_name (details);
+  value = report_host_details_iterator_value (details);
+
+  if (lean)
+    {
+      /* Skip certain host details. */
+
+      if (strcmp (name, "EXIT_CODE") == 0
+          && strcmp (value, "EXIT_NOTVULN") == 0)
+        return 0;
+
+      if (strcmp (name, "scanned_with_scanner") == 0)
+        return 0;
+
+      if (strcmp (name, "scanned_with_feedtype") == 0)
+        return 0;
+
+      if (strcmp (name, "scanned_with_feedversion") == 0)
+        return 0;
+
+      if (strcmp (name, "OS") == 0)
+        return 0;
+
+      if (strcmp (name, "traceroute") == 0)
+        return 0;
+    }
+
   PRINT (stream,
         "<detail>"
         "<name>%s</name>"
         "<value>%s</value>"
         "<source>",
-        report_host_details_iterator_name (details),
-        report_host_details_iterator_value (details));
+        name,
+        value);
 
   if (lean == 0)
     PRINT (stream,
