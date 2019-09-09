@@ -134,7 +134,7 @@
 /** @todo Exported for manage_sql.c. */
 void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
-                    int, int, const char *, iterator_t *, int, int);
+                    int, int, const char *, iterator_t *, int, int, int);
 
 
 /* Helper functions. */
@@ -2490,6 +2490,7 @@ typedef struct
   char *format_id;       ///< ID of report format.
   char *alert_id;        ///< ID of alert.
   char *report_id;       ///< ID of single report to get.
+  int lean;              ///< Boolean.  Whether to return lean report.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides_details; ///< Boolean.  Whether to include details of above.
   int result_tags;       ///< Boolean.  Whether to include result tags.
@@ -6309,6 +6310,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &get_reports_data->format_id);
 
             if (find_attribute (attribute_names, attribute_values,
+                                "lean", &attribute))
+              get_reports_data->lean = atoi (attribute);
+            else
+              get_reports_data->lean = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
                                 "notes_details", &attribute))
               get_reports_data->notes_details = strcmp (attribute, "0");
             else
@@ -9352,7 +9359,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     NULL,
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0); /* Lean. */
               cleanup_iterator (&results);
             }
           else
@@ -9634,7 +9642,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     NULL,
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0); /* Lean. */
               cleanup_iterator (&results);
             }
           else
@@ -10285,6 +10294,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
  * @param[in]  changed                Whether the result is a "changed" delta.
  * @param[in]  cert_loaded            Whether the CERT db is loaded.  0 not loaded,
  *                                    -1 needs to be checked, else loaded.
+ * @param[in]  lean                   Whether to include less info.
  */
 void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
@@ -10293,10 +10303,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_tags, int include_tags_details,
                     int include_details,
                     const char *delta_state, iterator_t *delta_results,
-                    int changed, int cert_loaded)
+                    int changed, int cert_loaded, int lean)
 {
   const char *descr = result_iterator_descr (results);
-  const char *name, *owner_name, *comment, *creation_time, *modification_time;
+  const char *name, *comment, *creation_time, *modification_time;
   const char *detect_oid, *asset_id;
   gchar *nl_descr, *nl_descr_escaped;
   const char *qod = result_iterator_qod (results);
@@ -10330,11 +10340,16 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               "<name>%s</name>",
                               name);
 
-  owner_name = get_iterator_owner_name (results);
-  if (owner_name)
-    buffer_xml_append_printf (buffer,
-                              "<owner><name>%s</name></owner>",
-                              owner_name);
+  if (lean == 0)
+    {
+      const char *owner_name;
+
+      owner_name = get_iterator_owner_name (results);
+      if (owner_name)
+        buffer_xml_append_printf (buffer,
+                                  "<owner><name>%s</name></owner>",
+                                  owner_name);
+    }
 
   comment = get_iterator_comment (results);
   if (comment)
@@ -10512,7 +10527,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               include_notes, include_notes_details,
                               include_overrides, include_overrides_details,
                               include_tags, include_tags_details,
-                              include_details, delta_state, NULL, 0, -1);
+                              include_details, delta_state, NULL, 0, -1, lean);
           delta_descr = result_iterator_descr (delta_results);
           delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                        : NULL;
@@ -15758,6 +15773,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 get_reports_data->overrides_details,
                                 get_reports_data->result_tags,
                                 get_reports_data->ignore_pagination,
+                                get_reports_data->lean,
                                 /* Special case the XML report, bah. */
                                 get_reports_data->format_id
                                 && strcmp
@@ -16375,7 +16391,8 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                   NULL,
                                   NULL,
                                   0,
-                                  -1);
+                                  -1,
+                                  1);   /* Lean. */
               SEND_TO_CLIENT_OR_FAIL (buffer->str);
               g_string_free (buffer, TRUE);
               count ++;

@@ -26766,7 +26766,7 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 /** @todo Defined in gmp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int,
                          int, int, int, int, const char *, iterator_t *,
-                         int, int);
+                         int, int, int);
 
 /**
  * @brief Comparison returns.
@@ -27095,7 +27095,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "changed",
                                   delta_results,
                                   1,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27125,7 +27126,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "gone",
                                   delta_results,
                                   0,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27155,7 +27157,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "new",
                                   delta_results,
                                   0,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27185,7 +27188,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "same",
                                   delta_results,
                                   0,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -28657,7 +28661,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     "new",
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -28703,7 +28708,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     "gone",
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -29227,6 +29233,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  ignore_pagination   Whether to ignore pagination data.
+ * @param[in]  lean                Whether to return lean report.
  * @param[out] filter_term_return  Filter term used in report.
  * @param[out] zone_return         Actual timezone used in report.
  * @param[out] host_summary    Summary of results per host.
@@ -29237,7 +29244,7 @@ static int
 print_report_xml_start (report_t report, report_t delta, task_t task,
                         gchar* xml_start, const get_data_t *get,
                         int notes_details, int overrides_details,
-                        int result_tags, int ignore_pagination,
+                        int result_tags, int ignore_pagination, int lean,
                         gchar **filter_term_return, gchar **zone_return,
                         gchar **host_summary)
 {
@@ -30028,7 +30035,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                               NULL,
                               NULL,
                               0,
-                              cert_loaded);
+                              cert_loaded,
+                              lean);
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)
@@ -30491,6 +30499,7 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
                                 notes_details, overrides_details,
                                 1 /* result_tags */,
                                 0 /* ignore_pagination */,
+                                0 /* lean */,
                                 filter_term_return, zone_return, host_summary);
   if (ret)
     {
@@ -31147,6 +31156,7 @@ apply_report_format (gchar *report_format_id,
  * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  ignore_pagination  Whether to ignore pagination.
+ * @param[in]  lean               Whether to send lean report.
  * @param[in]  base64             Whether to base64 encode the report.
  * @param[in]  send               Function to write to client.
  * @param[in]  send_data_1        Second argument to \p send.
@@ -31164,7 +31174,7 @@ int
 manage_send_report (report_t report, report_t delta_report,
                     report_format_t report_format, const get_data_t *get,
                     int notes_details, int overrides_details, int result_tags,
-                    int ignore_pagination, int base64,
+                    int ignore_pagination, int lean, int base64,
                     gboolean (*send) (const char *,
                                       int (*) (const char *, void*),
                                       void*),
@@ -31230,7 +31240,7 @@ manage_send_report (report_t report, report_t delta_report,
   xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
   ret = print_report_xml_start (report, delta_report, task, xml_start, get,
                                 notes_details, overrides_details, result_tags,
-                                ignore_pagination, NULL, NULL, NULL);
+                                ignore_pagination, lean, NULL, NULL, NULL);
   if (ret)
     {
       g_free (xml_start);
