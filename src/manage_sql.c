@@ -24616,7 +24616,7 @@ result_iterator_original_severity (iterator_t *iterator)
  * @return The severity of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-static const char*
+const char*
 result_iterator_severity (iterator_t *iterator)
 {
   const char* ret;

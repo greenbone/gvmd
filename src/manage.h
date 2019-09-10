@@ -1492,6 +1492,9 @@ result_iterator_scan_nvt_version (iterator_t*);
 const char*
 result_iterator_original_severity (iterator_t*);
 
+const char*
+result_iterator_severity (iterator_t *);
+
 double
 result_iterator_severity_double (iterator_t *);
 

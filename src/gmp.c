@@ -10556,9 +10556,16 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                           descr ? nl_descr_escaped : "");
 
   if (include_overrides && lean)
-    buffer_xml_append_printf (buffer,
-                              "<original_severity>%s</original_severity>",
-                              result_iterator_original_severity (results));
+    {
+      /* Only send the original severity if it has changed. */
+      if (strncmp (result_iterator_original_severity (results),
+                   result_iterator_severity (results),
+                   /* Avoid rounding differences. */
+                   3))
+        buffer_xml_append_printf (buffer,
+                                  "<original_severity>%s</original_severity>",
+                                  result_iterator_original_severity (results));
+    }
   else if (include_overrides)
     buffer_xml_append_printf (buffer,
                               "<original_threat>%s</original_threat>"
