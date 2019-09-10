@@ -9982,6 +9982,8 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
     {
       get_data_t get;
       iterator_t overrides;
+      GString *temp_buffer;
+
       memset (&get, '\0', sizeof (get));
       /* Most recent first. */
       get.filter = "sort-reverse=created owner=any permission=any";
@@ -9995,15 +9997,19 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
                               result,
                               task);
 
-      if (lean == 0 || next (&overrides))
-        g_string_append (buffer, "<overrides>");
-      buffer_overrides_xml (buffer,
+      temp_buffer = g_string_new ("");
+      buffer_overrides_xml (temp_buffer,
                             &overrides,
                             include_overrides_details,
                             0,
                             NULL);
-      if (lean == 0 || next (&overrides))
-        g_string_append (buffer, "</overrides>");
+      if (lean == 0 || strlen (temp_buffer->str))
+        {
+          g_string_append (buffer, "<overrides>");
+          g_string_append (buffer, temp_buffer->str);
+          g_string_append (buffer, "</overrides>");
+        }
+      g_string_free (temp_buffer, TRUE);
 
       cleanup_iterator (&overrides);
     }
