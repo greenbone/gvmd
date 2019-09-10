@@ -1530,8 +1530,19 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       g_info ("Updating VTs in database ... done (%i VTs).",
               sql_int ("SELECT count (*) FROM nvts;"));
 
-      check_preference_names ("config_preferences");
-      check_preference_names ("config_preferences_trash");
+      if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
+                   "                  FROM meta"
+                   "                  WHERE name = 'checked_preferences'),"
+                   "                 0);")
+          == 0)
+        {
+          check_preference_names ("config_preferences");
+          check_preference_names ("config_preferences_trash");
+
+          sql ("INSERT INTO meta (name, value)"
+               " VALUES ('checked_preferences', 1)"
+               " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+        }
     }
 
   return 0;
