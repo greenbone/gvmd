@@ -10499,12 +10499,20 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   buffer_xml_append_printf (buffer,
                             "<host>"
-                            "%s"
-                            "<asset asset_id=\"%s\"/>"
+                            "%s",
+                            result_iterator_host (results) ?: "");
+
+  if (asset_id && strlen (asset_id))
+    buffer_xml_append_printf (buffer,
+                              "<asset asset_id=\"%s\"/>",
+                              asset_id);
+  else if (lean == 0)
+    buffer_xml_append_printf (buffer,
+                              "<asset asset_id=\"\"/>");
+
+  buffer_xml_append_printf (buffer,
                             "<hostname>%s</hostname>"
                             "</host>",
-                            result_iterator_host (results) ?: "",
-                            asset_id ? asset_id : "",
                             result_iterator_hostname (results) ?: "");
 
   buffer_xml_append_printf (buffer,
