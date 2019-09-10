@@ -1427,6 +1427,31 @@ update_nvts_from_vts (entity_t *get_vts_response,
 }
 
 /**
+ * @brief Check that preference names are in the new format.
+ *
+ * @param[in]  table  Table name.
+ */
+static void
+check_preference_names (const gchar *table)
+{
+  /* 1.3.6.1.4.1.25623.1.0.14259:checkbox:Log nmap output
+   * =>
+   * 1.3.6.1.4.1.25623.1.0.14259:21:checkbox:Log nmap output */
+
+  sql ("UPDATE %s"
+       " SET name = nvt_preferences.name"
+       " FROM nvt_preferences"
+       " WHERE %s.name ~ '.*:.*:.*'"
+       " AND nvt_preferences.name ~ '.*:.*:.*:.*'"
+       " AND %s.name = regexp_replace (nvt_preferences.name,"
+       "                               E'([^:]+):[^:]+:(.*)', '\\1:\\2');",
+       table,
+       table,
+       table,
+       table);
+}
+
+/**
  * @brief Update VTs via OSP.
  *
  * Expect to be called in the child after a fork.
@@ -1504,6 +1529,9 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
       g_info ("Updating VTs in database ... done (%i VTs).",
               sql_int ("SELECT count (*) FROM nvts;"));
+
+      check_preference_names ("config_preferences");
+      check_preference_names ("config_preferences_trash");
     }
 
   return 0;
