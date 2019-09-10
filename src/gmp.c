@@ -10523,14 +10523,18 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     cert_loaded = manage_cert_loaded ();
   results_xml_append_nvt (results, buffer, cert_loaded);
 
+  if (lean == 0)
+    buffer_xml_append_printf
+     (buffer,
+      "<scan_nvt_version>%s</scan_nvt_version>"
+      "<threat>%s</threat>",
+      result_iterator_scan_nvt_version (results),
+      result_iterator_level (results));
+
   buffer_xml_append_printf
    (buffer,
-    "<scan_nvt_version>%s</scan_nvt_version>"
-    "<threat>%s</threat>"
     "<severity>%.1f</severity>"
     "<qod><value>%s</value>",
-    result_iterator_scan_nvt_version (results),
-    result_iterator_level (results),
     result_iterator_severity_double (results),
     qod ? qod : "");
 
@@ -10545,7 +10549,11 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                           "<description>%s</description>",
                           descr ? nl_descr_escaped : "");
 
-  if (include_overrides)
+  if (include_overrides && lean)
+    buffer_xml_append_printf (buffer,
+                              "<original_severity>%s</original_severity>",
+                              result_iterator_original_severity (results));
+  else if (include_overrides)
     buffer_xml_append_printf (buffer,
                               "<original_threat>%s</original_threat>"
                               "<original_severity>%s</original_severity>",
