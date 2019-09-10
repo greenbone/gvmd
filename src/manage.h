@@ -1472,7 +1472,7 @@ const char*
 result_iterator_nvt_cvss_base (iterator_t *);
 
 void
-result_iterator_nvt_refs_append (GString *, iterator_t *);
+result_iterator_nvt_refs_append (GString *, iterator_t *, int *);
 
 const char*
 result_iterator_nvt_tag (iterator_t *);
@@ -2143,7 +2143,7 @@ int
 nvt_preference_count (const char *);
 
 void
-nvti_refs_append_xml (GString *, const char *);
+nvti_refs_append_xml (GString *, const char *, int *);
 
 gchar*
 get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);

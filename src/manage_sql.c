@@ -24431,9 +24431,10 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
  *
  * @param[in]  xml       The buffer where to append to.
  * @param[in]  oid       The oid of the nvti object from where to collect the refs.
+ * @param[in]  first     Marker for first element.
  */
 void
-nvti_refs_append_xml (GString *xml, const char *oid)
+nvti_refs_append_xml (GString *xml, const char *oid, int *first)
 {
   nvti_t *nvti = lookup_nvti (oid);
   int i;
@@ -24443,7 +24444,15 @@ nvti_refs_append_xml (GString *xml, const char *oid)
 
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
-      vtref_t *ref = nvti_vtref (nvti, i);
+      vtref_t *ref;
+
+      if (first && *first)
+        {
+          xml_string_append (xml, "<refs>");
+          *first = 0;
+        }
+
+      ref = nvti_vtref (nvti, i);
       xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", vtref_type (ref), vtref_id (ref));
     }
 }
@@ -24453,13 +24462,14 @@ nvti_refs_append_xml (GString *xml, const char *oid)
  *
  * @param[in]  xml       The buffer where to append to.
  * @param[in]  iterator  Iterator.
+ * @param[in]  first     Marker for first element.
  */
 void
-result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
+result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator, int *first)
 {
   if (iterator->done) return;
 
-  nvti_refs_append_xml (xml, result_iterator_nvt_oid (iterator));
+  nvti_refs_append_xml (xml, result_iterator_nvt_oid (iterator), first);
 }
 
 /**

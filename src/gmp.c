@@ -10036,10 +10036,11 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
  * @param[in]  cert_loaded     Whether CERT db is loaded.
  * @param[in]  has_cert_bunds  Whether results has CERT-Bund advisories.
  * @param[in]  has_dfn_certs   Whether results has DFN-CERT advisories.
+ * @param[in]  first           Marker for first element.
  */
 static void
 results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
-                         int has_cert_bunds, int has_dfn_certs)
+                         int has_cert_bunds, int has_dfn_certs, int *first)
 {
   iterator_t cert_refs_iterator;
 
@@ -10050,6 +10051,11 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
+              if (first && *first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  *first = 0;
+                }
               g_string_append_printf
                (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
@@ -10062,6 +10068,11 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
+              if (*first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  *first = 0;
+                }
               g_string_append_printf
                (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
@@ -10070,8 +10081,15 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
         }
     }
   else
-    g_string_append_printf (buffer,
-                            "<warning>database not available</warning>");
+    {
+      if (*first)
+        {
+          buffer_xml_append_printf (buffer, "<refs>");
+          *first = 0;
+        }
+      g_string_append_printf (buffer,
+                              "<warning>database not available</warning>");
+    }
 }
 
 /**
@@ -10114,7 +10132,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
       if (g_str_has_prefix (oid, "oval:"))
         {
-          int ret;
+          int ret, first;
           char *cves;
           gchar **split, **item;
           get_data_t get;
@@ -10141,8 +10159,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
           g_free (get.id);
           cleanup_iterator (&iterator);
 
-          buffer_xml_append_printf (buffer, "<refs>");
-
+          first = 1;
           cves = ovaldef_cves (oid);
           split = g_strsplit (cves, ",", 0);
           item = split;
@@ -10159,6 +10176,11 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                   continue;
                 }
 
+              if (first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  first = 0;
+                }
               buffer_xml_append_printf (buffer, "<ref type=\"cve\" id=\"%s\"/>", id);
 
               item++;
@@ -10168,14 +10190,17 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
           results_xml_append_cert (buffer, oid, cert_loaded,
                                    result_iterator_has_cert_bunds (results),
-                                   result_iterator_has_dfn_certs (results));
+                                   result_iterator_has_dfn_certs (results),
+                                   &first);
 
-          buffer_xml_append_printf (buffer, "</refs>");
+          if (first == 0)
+            buffer_xml_append_printf (buffer, "</refs>");
         }
       else
         {
           const char *cvss_base = result_iterator_nvt_cvss_base (results);
           GString *tags = g_string_new (result_iterator_nvt_tag (results));
+          int first;
 
           if (!cvss_base && !strcmp (oid, "0"))
             cvss_base = "0.0";
@@ -10261,12 +10286,14 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     cvss_base ?: "",
                                     tags->str ?: "");
 
-          buffer_xml_append_printf (buffer, "<refs>");
-          result_iterator_nvt_refs_append (buffer, results);
+          first = 1;
+          result_iterator_nvt_refs_append (buffer, results, &first);
           results_xml_append_cert (buffer, oid, cert_loaded,
                                    result_iterator_has_cert_bunds (results),
-                                   result_iterator_has_dfn_certs (results));
-          buffer_xml_append_printf (buffer, "</refs>");
+                                   result_iterator_has_dfn_certs (results),
+                                   &first);
+          if (first == 0)
+            buffer_xml_append_printf (buffer, "</refs>");
 
           g_string_free (tags, TRUE);
         }
