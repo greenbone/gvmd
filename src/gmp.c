@@ -9928,10 +9928,11 @@ strdiff (const gchar *one, const gchar *two)
  * @param[in]  result                 Result.
  * @param[in]  task                   Task associated with result.
  * @param[in]  include_notes_details  Whether to include details of notes.
+ * @param[in]  lean                   Whether to include less info.
  */
 static void
 buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
-                         int include_notes_details)
+                         int include_notes_details, int lean)
 {
   if (task)
     {
@@ -9950,13 +9951,15 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
                           result,
                           task);
 
-      g_string_append (buffer, "<notes>");
+      if (lean == 0 || next (&notes))
+        g_string_append (buffer, "<notes>");
       buffer_notes_xml (buffer,
                         &notes,
                         include_notes_details,
                         0,
                         NULL);
-      g_string_append (buffer, "</notes>");
+      if (lean == 0 || next (&notes))
+        g_string_append (buffer, "</notes>");
 
       cleanup_iterator (&notes);
     }
@@ -9969,10 +9972,11 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
  * @param[in]  result                 Result.
  * @param[in]  task                   Task associated with result.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
+ * @param[in]  lean                       Whether to include less info.
  */
 static void
 buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
-                             int include_overrides_details)
+                             int include_overrides_details, int lean)
 {
   if (task)
     {
@@ -9991,13 +9995,15 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
                               result,
                               task);
 
-      g_string_append (buffer, "<overrides>");
+      if (lean == 0 || next (&overrides))
+        g_string_append (buffer, "<overrides>");
       buffer_overrides_xml (buffer,
                             &overrides,
                             include_overrides_details,
                             0,
                             NULL);
-      g_string_append (buffer, "</overrides>");
+      if (lean == 0 || next (&overrides))
+        g_string_append (buffer, "</overrides>");
 
       cleanup_iterator (&overrides);
     }
@@ -10358,7 +10364,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     }
 
   comment = get_iterator_comment (results);
-  if (comment)
+  if (comment
+      && (lean == 0 || strlen (comment)))
     buffer_xml_append_printf (buffer,
                               "<comment>%s</comment>",
                               comment);
@@ -10507,12 +10514,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   if (include_notes
       && result_iterator_may_have_notes (results))
     buffer_result_notes_xml (buffer, result,
-                             selected_task, include_notes_details);
+                             selected_task, include_notes_details, lean);
 
   if (include_overrides
       && result_iterator_may_have_overrides (results))
     buffer_result_overrides_xml (buffer, result,
-                                 selected_task, include_overrides_details);
+                                 selected_task, include_overrides_details,
+                                 lean);
 
   if (delta_state || delta_results)
     {
@@ -10562,13 +10570,15 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             buffer_result_notes_xml (buffer,
                                      result_iterator_result (delta_results),
                                      selected_task,
-                                     include_notes_details);
+                                     include_notes_details,
+                                     lean);
 
           if (include_overrides)
             buffer_result_overrides_xml (buffer,
                                          result_iterator_result (delta_results),
                                          selected_task,
-                                         include_overrides_details);
+                                         include_overrides_details,
+                                         lean);
         }
       g_string_append (buffer, "</delta>");
     }
