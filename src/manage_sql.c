@@ -27841,16 +27841,32 @@ print_report_host_detail (FILE *stream, iterator_t *details, int lean)
            report_host_details_iterator_source_type (details));
 
   PRINT (stream,
-        "<name>%s</name>"
-        "<description>%s</description>"
-        "</source>"
-        "<extra>%s</extra>"
-        "</detail>",
-        report_host_details_iterator_source_name (details),
-        report_host_details_iterator_source_desc (details),
-        report_host_details_iterator_extra (details) ?
-         report_host_details_iterator_extra (details)
-         : "");
+        "<name>%s</name>",
+        report_host_details_iterator_source_name (details));
+
+  if (report_host_details_iterator_source_desc (details)
+      && strlen (report_host_details_iterator_source_desc (details)))
+    PRINT (stream,
+           "<description>%s</description>",
+           report_host_details_iterator_source_desc (details));
+  else if (lean == 0)
+    PRINT (stream,
+           "<description></description>");
+
+  PRINT (stream,
+        "</source>");
+
+  if (report_host_details_iterator_extra (details)
+      && strlen (report_host_details_iterator_extra (details)))
+    PRINT (stream,
+           "<extra>%s</extra>",
+           report_host_details_iterator_extra (details));
+  else if (lean == 0)
+    PRINT (stream,
+           "<extra></extra>");
+
+  PRINT (stream,
+        "</detail>");
 
   return 0;
 }
