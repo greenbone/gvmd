@@ -30267,8 +30267,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                    host_iterator_end_time (&hosts));
               PRINT (out,
                      "<host>"
-                     "<ip>%s</ip>"
-                     "<asset asset_id=\"%s\"/>"
+                     "<ip>%s</ip>",
+                     result_host);
+
+              if (host_iterator_asset_uuid (&hosts)
+                  && strlen (host_iterator_asset_uuid (&hosts)))
+                PRINT (out,
+                       "<asset asset_id=\"%s\"/>",
+                       host_iterator_asset_uuid (&hosts));
+              else if (lean == 0)
+                PRINT (out,
+                       "<asset asset_id=\"\"/>");
+
+              PRINT (out,
                      "<start>%s</start>"
                      "<end>%s</end>"
                      "<port_count><page>%d</page></port_count>"
@@ -30280,10 +30291,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      "<log><page>%d</page></log>"
                      "<false_positive><page>%d</page></false_positive>"
                      "</result_count>",
-                     result_host,
-                     host_iterator_asset_uuid (&hosts)
-                       ? host_iterator_asset_uuid (&hosts)
-                       : "",
                      host_iterator_start_time (&hosts),
                      host_iterator_end_time (&hosts)
                        ? host_iterator_end_time (&hosts)
@@ -30357,8 +30364,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                host_iterator_end_time (&hosts));
           PRINT (out,
                  "<host>"
-                 "<ip>%s</ip>"
-                 "<asset asset_id=\"%s\"/>"
+                 "<ip>%s</ip>",
+                 host_iterator_host (&hosts));
+
+          if (host_iterator_asset_uuid (&hosts)
+              && strlen (host_iterator_asset_uuid (&hosts)))
+            PRINT (out,
+                   "<asset asset_id=\"%s\"/>",
+                   host_iterator_asset_uuid (&hosts));
+          else if (lean == 0)
+            PRINT (out,
+                   "<asset asset_id=\"\"/>");
+
+          PRINT (out,
                  "<start>%s</start>"
                  "<end>%s</end>"
                  "<port_count><page>%d</page></port_count>"
@@ -30370,10 +30388,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  "<log><page>%d</page></log>"
                  "<false_positive><page>%d</page></false_positive>"
                  "</result_count>",
-                 host_iterator_host (&hosts),
-                 host_iterator_asset_uuid (&hosts)
-                   ? host_iterator_asset_uuid (&hosts)
-                   : "",
                  host_iterator_start_time (&hosts),
                  host_iterator_end_time (&hosts)
                    ? host_iterator_end_time (&hosts)
