@@ -10528,12 +10528,18 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<scan_nvt_version>%s</scan_nvt_version>"
     "<threat>%s</threat>"
     "<severity>%.1f</severity>"
-    "<qod><value>%s</value><type>%s</type></qod>",
+    "<qod><value>%s</value>",
     result_iterator_scan_nvt_version (results),
     result_iterator_level (results),
     result_iterator_severity_double (results),
-    qod ? qod : "",
-    qod_type ? qod_type : "");
+    qod ? qod : "");
+
+  if (qod_type && strlen (qod_type))
+    buffer_xml_append_printf (buffer, "<type>%s</type>", qod_type);
+  else if (lean == 0)
+    buffer_xml_append_printf (buffer, "<type></type>");
+
+  buffer_xml_append_printf (buffer, "</qod>");
 
   g_string_append_printf (buffer,
                           "<description>%s</description>",
