@@ -4712,7 +4712,7 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 }
 
 /**
- * @brief Start a slave/GMP task.
+ * @brief Start a slave GMP task.
  *
  * A process is forked to run the task, but the forked process never returns.
  *
@@ -4730,10 +4730,10 @@ run_task_prepare_report (task_t task, char **report_id, int from,
  *         -9 failed to fork.
  */
 static int
-run_slave_or_gmp_task (task_t task, int from, char **report_id,
-                       gvm_connection_t *connection,
-                       const gchar *slave_id,
-                       const gchar *slave_name)
+run_gmp_slave_task (task_t task, int from, char **report_id,
+                    gvm_connection_t *connection,
+                    const gchar *slave_id,
+                    const gchar *slave_name)
 {
   int ret, pid;
   task_status_t run_status;
@@ -4838,7 +4838,7 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
 
   uuid = report_uuid (global_current_report);
   snprintf (title, sizeof (title),
-            "gvmd: OTP: Handling slave scan %s",
+            "gvmd: GMP: Handling slave scan %s",
             uuid);
   free (uuid);
   proctitle_set (title);
@@ -4941,8 +4941,8 @@ run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
 
   connection.tls = 1;
 
-  ret = run_slave_or_gmp_task (task, from, report_id, &connection, scanner_id,
-                               name);
+  ret = run_gmp_slave_task (task, from, report_id, &connection, scanner_id,
+                            name);
 
   free (connection.host_string);
   free (connection.username);
