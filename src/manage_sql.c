@@ -56278,8 +56278,8 @@ hosts_set_identifiers (report_t report)
 
               host_new = host = sql_last_insert_id ();
 
-              /* Make sure the Report Host identifiers added for OTP HOST_START in
-               * otp.c refer to the new host. */
+              /* Make sure the Report Host identifiers added when the host was
+               * first noticed now refer to the new host. */
 
               sql ("UPDATE host_identifiers SET host = %llu"
                    " WHERE source_id = (SELECT uuid FROM reports"
