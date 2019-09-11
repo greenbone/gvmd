@@ -42517,8 +42517,7 @@ create_scanner (const char* name, const char *comment, const char *host,
     return 2;
   if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
     return 2;
-  /* XXX: Workaround for unix socket case. Should add a host type flag, or
-   * remove otp over tcp case entirely. */
+  /* XXX: Workaround for unix socket case. */
   if (gvm_get_host_type (host) == -1 && !unix_socket)
     return 2;
   if (resource_with_name_exists (name, "scanner", 0))
