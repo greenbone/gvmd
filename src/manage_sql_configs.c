@@ -3429,7 +3429,7 @@ DEF_ACCESS (preference_iterator_hr_name, 4);
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  config    Config containing preferences.
- * @param[in]  section   Preference section, NULL for general preferences.
+ * @param[in]  section   Preference section.
  */
 void
 init_otp_pref_iterator (iterator_t* iterator,
