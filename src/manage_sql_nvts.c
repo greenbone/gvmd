@@ -65,7 +65,7 @@ blank_control_chars (char *string)
 /* NVT related global options */
 
 /**
- * @brief File socket for OSP NVT update.  NULL to update via OTP.
+ * @brief File socket for OSP NVT update.
  */
 static gchar *osp_vt_update_socket = NULL;
 
