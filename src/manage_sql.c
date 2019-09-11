@@ -19474,7 +19474,7 @@ set_task_run_status (task_t task, task_status_t status)
 /**
  * @brief Atomically set the run state of a task to requested.
  *
- * Only used by run_slave_or_gmp_task and run_otp_task.
+ * Only used by run_gmp_slave_task.
  *
  * @param[in]  task    Task.
  * @param[out] status  Old run status of task.
