@@ -3429,7 +3429,7 @@ DEF_ACCESS (preference_iterator_hr_name, 4);
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  config    Config containing preferences.
- * @param[in]  section   Preference section, NULL for general preferences.
+ * @param[in]  section   Preference section.
  */
 void
 init_otp_pref_iterator (iterator_t* iterator,
@@ -3451,7 +3451,7 @@ init_otp_pref_iterator (iterator_t* iterator,
                  " WHERE config_preferences.config = %llu"
                  " AND config_preferences.type = '%s'"
                  " AND (config_preferences.name = nvt_preferences.name"
-                 "      OR config_preferences.name LIKE 'timeout.%')"
+                 "      OR config_preferences.name LIKE 'timeout.%%')"
                  " AND config_preferences.name != 'max_checks'"
                  " AND config_preferences.name != 'max_hosts'"
                  " UNION"
