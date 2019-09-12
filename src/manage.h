@@ -3633,12 +3633,6 @@ int
 manage_empty_trashcan ();
 
 
-/* Scanner tags. */
-
-void
-parse_tags (const char *, gchar **, gchar **);
-
-
 /* SecInfo */
 
 int
