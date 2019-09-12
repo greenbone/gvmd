@@ -4003,12 +4003,12 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   /* Setup general scanner preferences */
   scanner_options
     = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-  init_otp_pref_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
+  init_preference_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
   while (next (&scanner_prefs_iter))
     {
       const char *name, *value;
-      name = otp_pref_iterator_name (&scanner_prefs_iter);
-      value = otp_pref_iterator_value (&scanner_prefs_iter);
+      name = preference_iterator_name (&scanner_prefs_iter);
+      value = preference_iterator_value (&scanner_prefs_iter);
       if (name && value)
         {
           const char *osp_value;
@@ -4056,15 +4056,15 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   cleanup_iterator (&families);
 
   /* Setup VT preferences */
-  init_otp_pref_iterator (&prefs, config, "PLUGINS_PREFS");
+  init_preference_iterator (&prefs, config, "PLUGINS_PREFS");
   while (next (&prefs))
     {
       const char *full_name, *value;
       osp_vt_single_t *osp_vt;
       gchar **split_name;
 
-      full_name = otp_pref_iterator_name (&prefs);
-      value = otp_pref_iterator_value (&prefs);
+      full_name = preference_iterator_name (&prefs);
+      value = preference_iterator_value (&prefs);
       split_name = g_strsplit (full_name, ":", 4);
 
       osp_vt = NULL;
