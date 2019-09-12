@@ -31889,6 +31889,51 @@ copy_task (const char* name, const char* comment, const char *task_id,
 }
 
 /**
+ * @brief Complete deletion of a task.
+ *
+ * This sets up a transaction around the delete.
+ *
+ * @param[in]  task      The task.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 on success, 1 if task is hidden, -1 on error.
+ */
+static int
+delete_task_lock (task_t task, int ultimate)
+{
+  int ret;
+
+  g_debug ("   delete task %llu", task);
+
+  sql_begin_immediate ();
+
+  /* This prevents other processes (for example a START_TASK) from getting
+   * a reference to a report ID or the task ID, and then using that
+   * reference to try access the deleted report or task.
+   *
+   * If the task is already active then delete_report (via delete_task)
+   * will fail and rollback. */
+  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  ret = delete_task (task, ultimate);
+  if (ret)
+    sql_rollback ();
+  else
+    sql_commit ();
+  return ret;
+}
+
+/**
  * @brief Request deletion of a task.
  *
  * Stop the task beforehand with \ref stop_task_internal, if it is running.
@@ -32175,51 +32220,6 @@ delete_task (task_t task, int ultimate)
   delete_permissions_cache_for_resource ("task", task);
 
   return 0;
-}
-
-/**
- * @brief Complete deletion of a task.
- *
- * This sets up a transaction around the delete.
- *
- * @param[in]  task      The task.
- * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
- *
- * @return 0 on success, 1 if task is hidden, -1 on error.
- */
-int
-delete_task_lock (task_t task, int ultimate)
-{
-  int ret;
-
-  g_debug ("   delete task %llu", task);
-
-  sql_begin_immediate ();
-
-  /* This prevents other processes (for example a START_TASK) from getting
-   * a reference to a report ID or the task ID, and then using that
-   * reference to try access the deleted report or task.
-   *
-   * If the task is already active then delete_report (via delete_task)
-   * will fail and rollback. */
-  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  ret = delete_task (task, ultimate);
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-  return ret;
 }
 
 /**

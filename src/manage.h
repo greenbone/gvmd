@@ -994,10 +994,6 @@ request_delete_task (task_t*);
 int
 delete_task (task_t, int);
 
-/* For otp.c. */
-int
-delete_task_lock (task_t, int);
-
 void
 append_to_task_comment (task_t, const char*, int);
 
