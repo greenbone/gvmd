@@ -76,7 +76,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <gvm/base/cvss.h>
 #include <gvm/base/hosts.h>
 #include <gvm/base/proctitle.h>
 #include <gvm/osp/osp.h>
@@ -6876,72 +6875,6 @@ file_iterator_content_64 (file_iterator_t* iterator)
     }
 
   return content;
-}
-
-
-/* Scanner Tags. */
-
-/**
- * @brief Split up the tags received from the scanner.
- *
- * @param[in]  scanner_tags  The tags sent by the scanner.
- * @param[out] tags          Tags.
- * @param[out] cvss_base     CVSS base.
- */
-void
-parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base)
-{
-  gchar **split, **point;
-  GString *tags_buffer;
-  gboolean first;
-
-  tags_buffer = g_string_new ("");
-  split = g_strsplit (scanner_tags, "|", 0);
-  point = split;
-  *cvss_base = NULL;
-  first = TRUE;
-
-  while (*point)
-    {
-      if (strncmp (*point, "cvss_base=", strlen ("cvss_base=")) == 0)
-        {
-          /* Skip this tag. */
-        }
-      else if (strncmp (*point,
-                        "cvss_base_vector=",
-                        strlen ("cvss_base_vector="))
-               == 0)
-        {
-          if (*cvss_base == NULL)
-            *cvss_base = g_strdup_printf ("%.1f",
-                                          get_cvss_score_from_base_metrics
-                                           (*point
-                                            + strlen ("cvss_base_vector=")));
-          if (first)
-            first = FALSE;
-          else
-            g_string_append_c (tags_buffer, '|');
-          g_string_append (tags_buffer, *point);
-        }
-      else
-        {
-          if (first)
-            first = FALSE;
-          else
-            g_string_append_c (tags_buffer, '|');
-          g_string_append (tags_buffer, *point);
-        }
-      point++;
-    }
-
-  if (tags_buffer->len == 0)
-    {
-      g_string_free (tags_buffer, TRUE);
-      *tags = g_strdup ("NOTAG");
-    }
-  else
-    *tags = g_string_free (tags_buffer, FALSE);
-  g_strfreev (split);
 }
 
 

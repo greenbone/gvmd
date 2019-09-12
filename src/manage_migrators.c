@@ -1325,7 +1325,7 @@ migrate_217_to_218 ()
 }
 
 /**
- * @brief Migrate the database from version 216 to version 217.
+ * @brief Migrate the database from version 218 to version 219.
  *
  * @return 0 success, -1 error.
  */

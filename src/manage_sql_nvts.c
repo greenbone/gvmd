@@ -36,6 +36,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <gvm/base/cvss.h>
+
 #include "manage_sql.h"
 #include "manage_sql_nvts.h"
 #include "sql.h"
@@ -1018,49 +1020,6 @@ set_nvts_check_time ()
 }
 
 /**
- * @brief Get tag field from VT.
- *
- * @param[in]  vt  VT.
- *
- * @return Freshly allocated string for tag field.
- */
-static gchar *
-get_tag (entity_t vt)
-{
-  entity_t child;
-  GString *tag;
-  int first;
-
-  first = 1;
-  tag = g_string_new ("");
-
-  child = entity_child (vt, "severities");
-  if (child)
-    {
-      entity_t severity;
-
-      severity = entity_child (child, "severity");
-      if (severity
-          && entity_attribute (severity, "type")
-          && (strcmp (entity_attribute (severity, "type"),
-                      "cvss_base_v2")
-              == 0))
-        {
-          g_string_append_printf (tag,
-                                  "%scvss_base_vector=%s",
-                                  first ? "" : "|",
-                                  entity_text (severity));
-        }
-      else
-        g_warning ("%s: no severity", __FUNCTION__);
-    }
-  else
-    g_warning ("%s: no severities", __FUNCTION__);
-
-  return g_string_free (tag, FALSE);
-}
-
-/**
  * @brief Update NVT from VT XML.
  *
  * @param[in]  vt           OSP GET_VTS VT element.
@@ -1161,8 +1120,9 @@ nvti_from_vt (entity_t vt)
   entity_t name, summary, insight, affected, impact, detection, solution;
   entity_t creation_time, modification_time;
   entity_t refs, ref, custom, family, category;
+  entity_t severities;
+
   entities_t children;
-  gchar *tag, *cvss_base, *parsed_tags;
 
   id = entity_attribute (vt, "id");
   if (id == NULL)
@@ -1319,15 +1279,38 @@ nvti_from_vt (entity_t vt)
       children = next_entities (children);
     }
 
-  tag = get_tag (vt);
-  nvti_set_tag (nvti, tag);
+  severities = entity_child (vt, "severities");
+  if (severities)
+    {
+      entity_t severity;
+
+      severity = entity_child (severities, "severity");
+      if (severity
+          && entity_attribute (severity, "type")
+          && (strcmp (entity_attribute (severity, "type"),
+                      "cvss_base_v2")
+              == 0))
+        {
+          gchar * cvss_base;
+
+          nvti_add_tag (nvti, "cvss_base_vector", entity_text (severity));
+
+          cvss_base = g_strdup_printf ("%.1f",
+            get_cvss_score_from_base_metrics (entity_text (severity)));
+          nvti_set_cvss_base (nvti, cvss_base);
+          g_free (cvss_base);
+        }
+      else
+        g_warning ("%s: no severity", __FUNCTION__);
+    }
+  else
+    g_warning ("%s: no severities", __FUNCTION__);
 
   custom = entity_child (vt, "custom");
   if (custom == NULL)
     {
       g_warning ("%s: VT missing CUSTOM", __FUNCTION__);
       nvti_free (nvti);
-      g_free (tag);
       return NULL;
     }
 
@@ -1336,7 +1319,6 @@ nvti_from_vt (entity_t vt)
     {
       g_warning ("%s: VT/CUSTOM missing FAMILY", __FUNCTION__);
       nvti_free (nvti);
-      g_free (tag);
       return NULL;
     }
   nvti_set_family (nvti, entity_text (family));
@@ -1346,18 +1328,9 @@ nvti_from_vt (entity_t vt)
     {
       g_warning ("%s: VT/CUSTOM missing CATEGORY", __FUNCTION__);
       nvti_free (nvti);
-      g_free (tag);
       return NULL;
     }
   nvti_set_category (nvti, atoi (entity_text (category)));
-
-  parse_tags (tag, &parsed_tags, &cvss_base);
-
-  nvti_set_cvss_base (nvti, cvss_base);
-
-  g_free (parsed_tags);
-  g_free (cvss_base);
-  g_free (tag);
 
   return nvti;
 }
