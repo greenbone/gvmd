@@ -14231,7 +14231,7 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   if (result)
     report_add_result (report, result);
   set_scan_host_end_time_ctime (report, "127.0.0.1", clean);
-  set_scan_end_time_otp (report, clean);
+  set_scan_end_time_ctime (report, clean);
   g_free (clean);
   ret = manage_alert (alert_id,
                       task_id,
@@ -25437,7 +25437,7 @@ set_scan_end_time (report_t report, const char* timestamp)
  *                        time.
  */
 void
-set_scan_end_time_otp (report_t report, const char* timestamp)
+set_scan_end_time_ctime (report_t report, const char* timestamp)
 {
   if (timestamp)
     sql ("UPDATE reports SET end_time = %i WHERE id = %llu;",

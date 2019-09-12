@@ -1378,7 +1378,7 @@ void
 set_scan_end_time (report_t, const char*);
 
 void
-set_scan_end_time_otp (report_t, const char*);
+set_scan_end_time_ctime (report_t, const char*);
 
 void
 set_scan_end_time_epoch (report_t, time_t);
