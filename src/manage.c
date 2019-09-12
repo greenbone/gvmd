@@ -3346,23 +3346,23 @@ task_scanner_options (task_t task, target_t target)
   iterator_t prefs;
 
   config = task_config (task);
-  init_preference_iterator (&prefs, config);
+  init_config_preference_iterator (&prefs, config);
   table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   while (next (&prefs))
     {
       char *name, *value = NULL;
       const char *type;
 
-      name = g_strdup (preference_iterator_name (&prefs));
-      type = preference_iterator_type (&prefs);
+      name = g_strdup (config_preference_iterator_name (&prefs));
+      type = config_preference_iterator_type (&prefs);
 
       if (g_str_has_prefix (type, "credential_"))
         {
           credential_t credential = 0;
           iterator_t iter;
-          const char *uuid = preference_iterator_value (&prefs);
+          const char *uuid = config_preference_iterator_value (&prefs);
 
-          if (!strcmp (preference_iterator_value (&prefs), "0"))
+          if (!strcmp (config_preference_iterator_value (&prefs), "0"))
             credential = target_ssh_credential (target);
           else if (find_resource ("credential", uuid, &credential))
             {
@@ -3409,16 +3409,16 @@ task_scanner_options (task_t task, target_t target)
         {
           char *fname;
 
-          if (!preference_iterator_value (&prefs))
+          if (!config_preference_iterator_value (&prefs))
             continue;
           fname = g_strdup_printf ("%s/%s", GVM_SCAP_DATA_DIR "/",
-                                   preference_iterator_value (&prefs));
+                                   config_preference_iterator_value (&prefs));
           value = gvm_file_as_base64 (fname);
           if (!value)
             continue;
         }
       else
-        value = g_strdup (preference_iterator_value (&prefs));
+        value = g_strdup (config_preference_iterator_value (&prefs));
       g_hash_table_insert (table, name, value);
     }
   cleanup_iterator (&prefs);

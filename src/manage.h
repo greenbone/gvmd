@@ -1922,22 +1922,22 @@ manage_set_config_preference (const gchar *, const char*, const char*,
                               const char*);
 
 void
-init_preference_iterator (iterator_t *, config_t);
+init_config_preference_iterator (iterator_t *, config_t);
 
 const char*
-preference_iterator_name (iterator_t *);
+config_preference_iterator_name (iterator_t *);
 
 const char*
-preference_iterator_value (iterator_t *);
+config_preference_iterator_value (iterator_t *);
 
 const char*
-preference_iterator_type (iterator_t *);
+config_preference_iterator_type (iterator_t *);
 
 const char*
-preference_iterator_default (iterator_t *);
+config_preference_iterator_default (iterator_t *);
 
 const char*
-preference_iterator_hr_name (iterator_t *);
+config_preference_iterator_hr_name (iterator_t *);
 
 int
 manage_set_config (const gchar *, const char*, const char *, const char *);

@@ -3352,7 +3352,7 @@ trash_config_readable_uuid (const gchar *config_id)
  * @param[in]  config    Config.
  */
 void
-init_preference_iterator (iterator_t* iterator, config_t config)
+init_config_preference_iterator (iterator_t* iterator, config_t config)
 {
   gchar* sql;
 
@@ -3374,7 +3374,7 @@ init_preference_iterator (iterator_t* iterator, config_t config)
  * @return The name of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_name, 0);
+DEF_ACCESS (config_preference_iterator_name, 0);
 
 /**
  * @brief Get the value from a preference iterator.
@@ -3384,7 +3384,7 @@ DEF_ACCESS (preference_iterator_name, 0);
  * @return The value of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_value, 1);
+DEF_ACCESS (config_preference_iterator_value, 1);
 
 /**
  * @brief Get the type from a preference iterator.
@@ -3394,7 +3394,7 @@ DEF_ACCESS (preference_iterator_value, 1);
  * @return The value of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_type, 2);
+DEF_ACCESS (config_preference_iterator_type, 2);
 
 /**
  * @brief Get the default from a preference iterator.
@@ -3404,7 +3404,7 @@ DEF_ACCESS (preference_iterator_type, 2);
  * @return The default of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_default, 3);
+DEF_ACCESS (config_preference_iterator_default, 3);
 
 /**
  * @brief Get the hr_name from a preference iterator.
@@ -3417,7 +3417,7 @@ DEF_ACCESS (preference_iterator_default, 3);
  * @return The hr_name of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_hr_name, 4);
+DEF_ACCESS (config_preference_iterator_hr_name, 4);
 
 /**
  * @brief Initialise an "OTP" preference iterator.
