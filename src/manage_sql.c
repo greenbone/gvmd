@@ -25354,7 +25354,7 @@ set_scan_start_time_epoch (report_t report, time_t timestamp)
  * @brief Set the start time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  Start time.  In OTP format (ctime).
+ * @param[in]  timestamp  Start time.  In UTC ctime format.
  */
 void
 set_scan_start_time_ctime (report_t report, const char* timestamp)
@@ -25433,7 +25433,7 @@ set_scan_end_time (report_t report, const char* timestamp)
  * @brief Set the end time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  End time.  OTP format (ctime).  If NULL, clear end
+ * @param[in]  timestamp  End time.  In UTC ctime format.  If NULL, clear end
  *                        time.
  */
 void
@@ -25498,7 +25498,7 @@ set_scan_host_end_time (report_t report, const char* host,
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
- * @param[in]  timestamp  End time.  OTP format (ctime).
+ * @param[in]  timestamp  End time.  In UTC ctime format.
  */
 void
 set_scan_host_end_time_ctime (report_t report, const char* host,
@@ -25546,7 +25546,7 @@ set_scan_host_start_time (report_t report, const char* host,
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
- * @param[in]  timestamp  Start time.  OTP format (ctime).
+ * @param[in]  timestamp  Start time.  In UTC ctime format.
  */
 void
 set_scan_host_start_time_ctime (report_t report, const char* host,
