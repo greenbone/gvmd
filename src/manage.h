@@ -240,33 +240,6 @@ manage_transaction_stop (gboolean);
 
 /* Task structures. */
 
-extern short scanner_active;
-
-/** @todo Should be in otp.c/h. */
-/**
- * @brief A port.
- */
-typedef struct
-{
-  unsigned int number;       ///< Port number.
-  port_protocol_t protocol;  ///< Port protocol (TCP, UDP, ...).
-  char* string;              ///< Original string describing port.
-} port_t;
-
-/** @todo Should be in otp.c/h. */
-/**
- * @brief The record of a message.
- */
-typedef struct
-{
-  char* host;           ///< Host message describes.
-  char* hostname;       ///< Hostname message describes.
-  port_t port;          ///< The port.
-  char* description;    ///< Description of the message.
-  char* oid;            ///< NVT identifier.
-} message_t;
-
-
 /**
  * @brief Task statuses, also used as scan/report statuses.
  *
