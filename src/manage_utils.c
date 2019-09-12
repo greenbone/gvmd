@@ -496,7 +496,7 @@ next_time (time_t first, int period, int period_months, int byday,
 }
 
 /**
- * @brief Try convert an OTP NVT tag time string into epoch time.
+ * @brief Try convert an NVT time string into epoch time.
  *
  * @param[in]   string   String.
  * @param[out]  seconds  Time as seconds since the epoch.

@@ -1152,7 +1152,7 @@ vector_find_filter (const gchar **vector, const gchar *string)
 }
 
 /**
- * @brief Extract a tag from an OTP tag list.
+ * @brief Extract a tag from a pipe separated tag list.
  *
  * @param[in]   tags  Tag list.
  * @param[out]  tag   Tag name.
@@ -34913,7 +34913,7 @@ target_port_list (target_t target)
 }
 
 /**
- * @brief Return the port range of a target, in OTP format.
+ * @brief Return the port range of a target, in GMP port range list format.
  *
  * For "OpenVAS Default", return the explicit port ranges instead of "default".
  *
@@ -51631,7 +51631,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
  *
  * @param[in]   name            Name of port list.
  * @param[in]   comment         Comment on port list.
- * @param[in]   port_range      Traditional OTP style port range.  NULL for "default".
+ * @param[in]   port_range      GMP style port range list.  NULL for "default".
  * @param[out]  port_list       Created port list.
  *
  * @return 0 success, 4 error in port range.
