@@ -62,6 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove --backup command line option [#615](https://github.com/greenbone/gvmd/pull/615)
 - Remove GET_REPORTS type "assets" [#617](https://github.com/greenbone/gvmd/pull/617) [#620](https://github.com/greenbone/gvmd/pull/620)
 - Remove errors for unknown elements [#619](https://github.com/greenbone/gvmd/pull/619)
+- Eliminate get_tag() and parse_tags() [#743](https://github.com/greenbone/gvmd/pull/743)
 
 
 [Unreleased]: https://github.com/greenbone/openvas/compare/gvmd-8.0...master
