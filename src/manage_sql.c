@@ -14226,8 +14226,8 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   if (clean[strlen (clean) - 1] == '\n')
     clean[strlen (clean) - 1] = '\0';
   set_task_start_time_ctime (task, g_strdup (clean));
-  set_scan_start_time_otp (report, g_strdup (clean));
-  set_scan_host_start_time_otp (report, "127.0.0.1", clean);
+  set_scan_start_time_ctime (report, g_strdup (clean));
+  set_scan_host_start_time_ctime (report, "127.0.0.1", clean);
   if (result)
     report_add_result (report, result);
   set_scan_host_end_time_otp (report, "127.0.0.1", clean);
@@ -25357,7 +25357,7 @@ set_scan_start_time_epoch (report_t report, time_t timestamp)
  * @param[in]  timestamp  Start time.  In OTP format (ctime).
  */
 void
-set_scan_start_time_otp (report_t report, const char* timestamp)
+set_scan_start_time_ctime (report_t report, const char* timestamp)
 {
   sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
        parse_utc_ctime (timestamp),
@@ -25549,7 +25549,7 @@ set_scan_host_start_time (report_t report, const char* host,
  * @param[in]  timestamp  Start time.  OTP format (ctime).
  */
 void
-set_scan_host_start_time_otp (report_t report, const char* host,
+set_scan_host_start_time_ctime (report_t report, const char* host,
                               const char* timestamp)
 {
   gchar *quoted_host;
@@ -31533,7 +31533,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
         }
       else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_START") == 0))
         {
-          set_scan_host_start_time_otp (report, host, desc);
+          set_scan_host_start_time_ctime (report, host, desc);
         }
       else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_END") == 0))
         {

@@ -1369,7 +1369,7 @@ char*
 scan_end_time_uuid (const char *);
 
 void
-set_scan_start_time_otp (report_t, const char*);
+set_scan_start_time_ctime (report_t, const char*);
 
 void
 set_scan_start_time_epoch (report_t, time_t);
@@ -1384,7 +1384,7 @@ void
 set_scan_end_time_epoch (report_t, time_t);
 
 void
-set_scan_host_start_time_otp (report_t, const char*, const char*);
+set_scan_host_start_time_ctime (report_t, const char*, const char*);
 
 int
 scan_host_end_time (report_t, const char*);
