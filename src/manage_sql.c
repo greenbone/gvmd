@@ -19695,14 +19695,14 @@ set_task_start_time_epoch (task_t task, int time)
  * @brief Set the start time of a task.
  *
  * @param[in]  task  Task.
- * @param[in]  time  New time.  OTP format (ctime).  Freed before return.
+ * @param[in]  time  New time.  UTC ctime format.  Freed before return.
  */
 void
 set_task_start_time_otp (task_t task, char* time)
 {
   sql ("UPDATE tasks SET start_time = %i, modification_time = m_now ()"
        " WHERE id = %llu;",
-       parse_otp_time (time),
+       parse_utc_ctime (time),
        task);
   free (time);
 }
@@ -25360,7 +25360,7 @@ void
 set_scan_start_time_otp (report_t report, const char* timestamp)
 {
   sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
-       parse_otp_time (timestamp),
+       parse_utc_ctime (timestamp),
        report);
 }
 
@@ -25441,7 +25441,7 @@ set_scan_end_time_otp (report_t report, const char* timestamp)
 {
   if (timestamp)
     sql ("UPDATE reports SET end_time = %i WHERE id = %llu;",
-         parse_otp_time (timestamp), report);
+         parse_utc_ctime (timestamp), report);
   else
     sql ("UPDATE reports SET end_time = NULL WHERE id = %llu;",
          report);
@@ -25511,9 +25511,9 @@ set_scan_host_end_time_otp (report_t report, const char* host,
                report, quoted_host))
     sql ("UPDATE report_hosts SET end_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_otp_time (timestamp), report, quoted_host);
+         parse_utc_ctime (timestamp), report, quoted_host);
   else
-    manage_report_host_add (report, host, 0, parse_otp_time (timestamp));
+    manage_report_host_add (report, host, 0, parse_utc_ctime (timestamp));
   g_free (quoted_host);
 }
 
@@ -25559,9 +25559,9 @@ set_scan_host_start_time_otp (report_t report, const char* host,
                report, quoted_host))
     sql ("UPDATE report_hosts SET start_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_otp_time (timestamp), report, quoted_host);
+         parse_utc_ctime (timestamp), report, quoted_host);
   else
-    manage_report_host_add (report, host, parse_otp_time (timestamp), 0);
+    manage_report_host_add (report, host, parse_utc_ctime (timestamp), 0);
   g_free (quoted_host);
 }
 
