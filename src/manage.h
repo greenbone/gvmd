@@ -1393,7 +1393,7 @@ void
 set_scan_host_end_time (report_t, const char*, const char*);
 
 void
-set_scan_host_end_time_otp (report_t, const char*, const char*);
+set_scan_host_end_time_ctime (report_t, const char*, const char*);
 
 int
 report_timestamp (const char*, gchar**);
