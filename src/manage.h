@@ -907,7 +907,7 @@ void
 set_task_start_time_epoch (task_t, int);
 
 void
-set_task_start_time_otp (task_t, char*);
+set_task_start_time_ctime (task_t, char*);
 
 void
 set_task_end_time (task_t task, char* time);

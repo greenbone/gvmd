@@ -14225,7 +14225,7 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   clean = g_strdup (now_string);
   if (clean[strlen (clean) - 1] == '\n')
     clean[strlen (clean) - 1] = '\0';
-  set_task_start_time_otp (task, g_strdup (clean));
+  set_task_start_time_ctime (task, g_strdup (clean));
   set_scan_start_time_otp (report, g_strdup (clean));
   set_scan_host_start_time_otp (report, "127.0.0.1", clean);
   if (result)
@@ -19698,7 +19698,7 @@ set_task_start_time_epoch (task_t task, int time)
  * @param[in]  time  New time.  UTC ctime format.  Freed before return.
  */
 void
-set_task_start_time_otp (task_t task, char* time)
+set_task_start_time_ctime (task_t task, char* time)
 {
   sql ("UPDATE tasks SET start_time = %i, modification_time = m_now ()"
        " WHERE id = %llu;",
