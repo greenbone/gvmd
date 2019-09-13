@@ -392,9 +392,9 @@ void set_task_schedule_next_time (task_t, time_t);
 
 void set_task_schedule_next_time_uuid (const gchar *, time_t);
 
-void init_otp_pref_iterator (iterator_t *, config_t, const char *);
-const char *otp_pref_iterator_name (iterator_t *);
-const char *otp_pref_iterator_value (iterator_t *);
+void init_preference_iterator (iterator_t *, config_t, const char *);
+const char *preference_iterator_name (iterator_t *);
+const char *preference_iterator_value (iterator_t *);
 
 port_list_t target_port_list (target_t);
 credential_t target_ssh_credential (target_t);
