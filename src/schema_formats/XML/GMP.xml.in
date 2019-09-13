@@ -27186,6 +27186,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <version>9.0</version>
   </change>
+  <change>
     <command>GET_REPORTS</command>
     <summary>Remove report type "assets"</summary>
     <description>
