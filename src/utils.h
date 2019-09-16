@@ -35,7 +35,7 @@ int
 gvm_sleep (unsigned int);
 
 int
-parse_otp_time (const char *);
+parse_utc_ctime (const char *);
 
 int
 parse_feed_timestamp (const char *);

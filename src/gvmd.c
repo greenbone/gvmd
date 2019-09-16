@@ -171,14 +171,14 @@
 /**
  * @brief Scanner port.
  *
- * Used if /etc/services "otp" and --port missing.
+ * Used if --scanner-port is missing.
  */
 #define OPENVASSD_PORT 9391
 
 /**
  * @brief Manager port.
  *
- * Used if /etc/services "gmp" and --sport are missing.
+ * Used if /etc/services "otp" and --port are missing.
  */
 #define GVMD_PORT 9390
 

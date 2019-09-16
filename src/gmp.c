@@ -13015,19 +13015,19 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
           g_free (s_name);
           SEND_TO_CLIENT_OR_FAIL ("<preferences>");
 
-          init_preference_iterator (&prefs, config);
+          init_config_preference_iterator (&prefs, config);
           while (next (&prefs))
             {
               const char *name, *hr_name, *value, *type, *def;
               char *ovaldi_files = NULL;
 
-              hr_name = preference_iterator_hr_name (&prefs);
-              name = preference_iterator_name (&prefs);
-              value = preference_iterator_value (&prefs);
-              def = preference_iterator_default (&prefs);
+              hr_name = config_preference_iterator_hr_name (&prefs);
+              name = config_preference_iterator_name (&prefs);
+              value = config_preference_iterator_value (&prefs);
+              def = config_preference_iterator_default (&prefs);
               if (!strcmp (name, "definitions_file"))
                 ovaldi_files = get_ovaldi_files ();
-              type = preference_iterator_type (&prefs);
+              type = config_preference_iterator_type (&prefs);
               SENDF_TO_CLIENT_OR_FAIL
                ("<preference>"
                 "<nvt oid=\"\"><name/></nvt>"
