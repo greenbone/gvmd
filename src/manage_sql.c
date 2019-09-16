@@ -4350,6 +4350,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
          || (strcasecmp (type, "ticket") == 0)
+         || (strcasecmp (type, "tls_certificate") == 0)
          || (strcasecmp (type, "user") == 0)
          || (strcasecmp (type, "vuln") == 0);
 }
@@ -4410,6 +4411,8 @@ type_db_name (const char* type)
     return "task";
   if (strcasecmp (type, "Ticket") == 0)
     return "ticket";
+  if (strcasecmp (type, "TLS Certificate") == 0)
+    return "tls_certificate";
   if (strcasecmp (type, "SecInfo") == 0)
     return "info";
   return NULL;
