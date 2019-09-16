@@ -4350,6 +4350,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
          || (strcasecmp (type, "ticket") == 0)
+         || (strcasecmp (type, "tls_certificate") == 0)
          || (strcasecmp (type, "user") == 0)
          || (strcasecmp (type, "vuln") == 0);
 }
@@ -4410,6 +4411,8 @@ type_db_name (const char* type)
     return "task";
   if (strcasecmp (type, "Ticket") == 0)
     return "ticket";
+  if (strcasecmp (type, "TLS Certificate") == 0)
+    return "tls_certificate";
   if (strcasecmp (type, "SecInfo") == 0)
     return "info";
   return NULL;
@@ -58895,6 +58898,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Tasks Filter");
       else if (strcmp (uuid, "801544de-f06d-4377-bb77-bbb23369bad4") == 0)
         setting_name = g_strdup ("Tickets Filter");
+      else if (strcmp (uuid, "34a176c1-0278-4c29-b84d-3d72117b2169") == 0)
+        setting_name = g_strdup ("TLS Certificates Filter");
       else if (strcmp (uuid, "a33635be-7263-4549-bd80-c04d2dba89b4") == 0)
         setting_name = g_strdup ("Users Filter");
       else if (strcmp (uuid, "17c9d269-95e7-4bfa-b1b2-bc106a2175c7") == 0)
