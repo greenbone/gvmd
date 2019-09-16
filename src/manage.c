@@ -3346,23 +3346,23 @@ task_scanner_options (task_t task, target_t target)
   iterator_t prefs;
 
   config = task_config (task);
-  init_preference_iterator (&prefs, config);
+  init_config_preference_iterator (&prefs, config);
   table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   while (next (&prefs))
     {
       char *name, *value = NULL;
       const char *type;
 
-      name = g_strdup (preference_iterator_name (&prefs));
-      type = preference_iterator_type (&prefs);
+      name = g_strdup (config_preference_iterator_name (&prefs));
+      type = config_preference_iterator_type (&prefs);
 
       if (g_str_has_prefix (type, "credential_"))
         {
           credential_t credential = 0;
           iterator_t iter;
-          const char *uuid = preference_iterator_value (&prefs);
+          const char *uuid = config_preference_iterator_value (&prefs);
 
-          if (!strcmp (preference_iterator_value (&prefs), "0"))
+          if (!strcmp (config_preference_iterator_value (&prefs), "0"))
             credential = target_ssh_credential (target);
           else if (find_resource ("credential", uuid, &credential))
             {
@@ -3409,16 +3409,16 @@ task_scanner_options (task_t task, target_t target)
         {
           char *fname;
 
-          if (!preference_iterator_value (&prefs))
+          if (!config_preference_iterator_value (&prefs))
             continue;
           fname = g_strdup_printf ("%s/%s", GVM_SCAP_DATA_DIR "/",
-                                   preference_iterator_value (&prefs));
+                                   config_preference_iterator_value (&prefs));
           value = gvm_file_as_base64 (fname);
           if (!value)
             continue;
         }
       else
-        value = g_strdup (preference_iterator_value (&prefs));
+        value = g_strdup (config_preference_iterator_value (&prefs));
       g_hash_table_insert (table, name, value);
     }
   cleanup_iterator (&prefs);
@@ -4003,12 +4003,12 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   /* Setup general scanner preferences */
   scanner_options
     = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-  init_otp_pref_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
+  init_preference_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
   while (next (&scanner_prefs_iter))
     {
       const char *name, *value;
-      name = otp_pref_iterator_name (&scanner_prefs_iter);
-      value = otp_pref_iterator_value (&scanner_prefs_iter);
+      name = preference_iterator_name (&scanner_prefs_iter);
+      value = preference_iterator_value (&scanner_prefs_iter);
       if (name && value)
         {
           const char *osp_value;
@@ -4056,15 +4056,15 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   cleanup_iterator (&families);
 
   /* Setup VT preferences */
-  init_otp_pref_iterator (&prefs, config, "PLUGINS_PREFS");
+  init_preference_iterator (&prefs, config, "PLUGINS_PREFS");
   while (next (&prefs))
     {
       const char *full_name, *value;
       osp_vt_single_t *osp_vt;
       gchar **split_name;
 
-      full_name = otp_pref_iterator_name (&prefs);
-      value = otp_pref_iterator_value (&prefs);
+      full_name = preference_iterator_name (&prefs);
+      value = preference_iterator_value (&prefs);
       split_name = g_strsplit (full_name, ":", 4);
 
       osp_vt = NULL;
@@ -4711,7 +4711,7 @@ run_task_prepare_report (task_t task, char **report_id, int from,
 }
 
 /**
- * @brief Start a slave/GMP task.
+ * @brief Start a slave GMP task.
  *
  * A process is forked to run the task, but the forked process never returns.
  *
@@ -4729,10 +4729,10 @@ run_task_prepare_report (task_t task, char **report_id, int from,
  *         -9 failed to fork.
  */
 static int
-run_slave_or_gmp_task (task_t task, int from, char **report_id,
-                       gvm_connection_t *connection,
-                       const gchar *slave_id,
-                       const gchar *slave_name)
+run_gmp_slave_task (task_t task, int from, char **report_id,
+                    gvm_connection_t *connection,
+                    const gchar *slave_id,
+                    const gchar *slave_name)
 {
   int ret, pid;
   task_status_t run_status;
@@ -4837,7 +4837,7 @@ run_slave_or_gmp_task (task_t task, int from, char **report_id,
 
   uuid = report_uuid (global_current_report);
   snprintf (title, sizeof (title),
-            "gvmd: OTP: Handling slave scan %s",
+            "gvmd: GMP: Handling slave scan %s",
             uuid);
   free (uuid);
   proctitle_set (title);
@@ -4940,8 +4940,8 @@ run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
 
   connection.tls = 1;
 
-  ret = run_slave_or_gmp_task (task, from, report_id, &connection, scanner_id,
-                               name);
+  ret = run_gmp_slave_task (task, from, report_id, &connection, scanner_id,
+                            name);
 
   free (connection.host_string);
   free (connection.username);
