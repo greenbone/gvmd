@@ -27177,6 +27177,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <change>
     <command>GET_REPORTS</command>
+    <summary>Default of "details" attribute is now 0</summary>
+    <description>
+      <p>
+        The default of the "details" attribute has changed from 1 to 0.
+        This matches the defaults of all the other GET commands.
+      </p>
+    </description>
+    <version>9.0</version>
+  </change>
+  <change>
+    <command>GET_REPORTS</command>
     <summary>Remove report type "assets"</summary>
     <description>
       <p>
