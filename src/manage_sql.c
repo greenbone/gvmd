@@ -3554,12 +3554,25 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY lower (%s) ASC",
-                                          column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) ASC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) ASC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) ASC",
+                                            column);
                 }
               else
                 /* Special case for notes text sorting. */
@@ -3731,15 +3744,25 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
-                  g_debug ("   %s: select_columns: %p", __FUNCTION__, select_columns);
-                  g_debug ("   %s: where_columns: %p", __FUNCTION__, where_columns);
-                  g_debug ("   %s: keyword->string: %p", __FUNCTION__, keyword->string);
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY lower (%s) DESC",
-                                          column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) DESC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) DESC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) DESC",
+                                            column);
                 }
               else
                 /* Special case for notes text sorting. */
