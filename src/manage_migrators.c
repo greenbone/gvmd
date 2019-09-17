@@ -1447,12 +1447,26 @@ migrate_219_to_220 ()
 
   /* Update the database. */
 
-  /* Update config and nvt preferences from the 3 part format to the newer 4
-   * part format:
+  /* OSP uses lowercase for timeout NVT preferences where OTP used a capital,
+   * so update those first:
+   *
+   *     1.3.6.1.4.1.25623.1.0.107305:entry:Timeout
+   *     =>
+   *     1.3.6.1.4.1.25623.1.0.107305:entry:timeout  */
+
+  sql ("UPDATE nvt_preferences"
+       " SET name = split_part (name, ':', 1) || ':entry:timeout'"
+       " WHERE name = split_part (name, ':', 1) || ':entry:Timeout';");
+
+  /* Then update config and NVT preferences from the 3 part format to the
+   * newer 4 part format:
    *
    *     1.3.6.1.4.1.25623.1.0.14259:checkbox:Log nmap output
    *     =>
-   *     1.3.6.1.4.1.25623.1.0.14259:21:checkbox:Log nmap output */
+   *     1.3.6.1.4.1.25623.1.0.14259:21:checkbox:Log nmap output
+   *
+   * Any preferences that aren't in our hardcoded list will be updated after
+   * the first NVT sync. */
 
   replace_preference_names_219_to_220 ("nvt_preferences");
   replace_preference_names_219_to_220 ("config_preferences");
