@@ -53,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check if the scan finished before deleting it and ensure that the task is set to done [#714](https://github.com/greenbone/gvmd/pull/714)
 - Fix columnless search phrase filter keywords with quotes [#715](https://github.com/greenbone/gvmd/pull/715)
 - Fix issues importing results or getting them from slaves if they contain "%s" [#723](https://github.com/greenbone/gvmd/pull/723)
+- Fix sorting by numeric filter columns [#751](https://github.com/greenbone/gvmd/pull/751)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
