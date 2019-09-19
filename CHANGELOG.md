@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - New usage_type property to distinguish normal scan tasks and configs from compliance audits and policies [#613](https://github.com/greenbone/gvmd/pull/613) [#625](https://github.com/greenbone/gvmd/pull/625) [#633](https://github.com/greenbone/gvmd/pull/633)
 - Command cleanup-report-formats for --optimize option [#652](https://github.com/greenbone/gvmd/pull/652)
 - Document container tasks in GMP doc [#688](https://github.com/greenbone/gvmd/pull/688)
+- Add lean option to GET_REPORTS [#745](https://github.com/greenbone/gvmd/pull/745)
 
 ### Changed
 - Check if NVT preferences exist before inserting. [#406](https://github.com/greenbone/gvmd/pull/406)

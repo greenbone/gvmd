@@ -15756,6 +15756,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The XML report format is sent as XML.  All other formats are sent in
         Base64 encoding.
       </p>
+      <p>
+        The "lean" attribute requests a reduced report.  This option is
+        specifically to support GSA performance when loading big reports, so
+        the effect of "lean" may change between versions, even between minor
+        versions.
+      </p>
+      <p>
+        Currently "lean" skips certain result elements (MODIFICATION_TIME,
+        SCAN_NVT_VERSION, THREAT, ORIGINAL_THREAT), skips SOURCE/TYPE of host
+        details, skips certain host details ("EXIT_CODE" when equal to
+        "EXIT_NONVULN", "scanned_with_scanner", "scanned_with_feedtype",
+        "scanned_with_feedversion", "OS" and "traceroute"), skips certain
+        elements when they are empty (REFS, QOD/TYPE, ...), and skips
+        ORIGINAL_SEVERITY when it is the same as SEVERITY.
+      </p>
+      <p>
+        "lean" will always work with the XML report format, but will not
+        necessarily work with any others.
+      </p>
     </description>
     <pattern>
       <attrib>
@@ -16107,6 +16126,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </p>
         </description>
         <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>lean</name>
+        <summary>Whether to return a streamlined response</summary>
+        <type>boolean</type>
       </attrib>
       <attrib>
         <name>notes_details</name>

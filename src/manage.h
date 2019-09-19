@@ -1441,7 +1441,7 @@ const char*
 result_iterator_nvt_cvss_base (iterator_t *);
 
 void
-result_iterator_nvt_refs_append (GString *, iterator_t *);
+result_iterator_nvt_refs_append (GString *, iterator_t *, int *);
 
 const char*
 result_iterator_nvt_tag (iterator_t *);
@@ -1460,6 +1460,9 @@ result_iterator_scan_nvt_version (iterator_t*);
 
 const char*
 result_iterator_original_severity (iterator_t*);
+
+const char*
+result_iterator_severity (iterator_t *);
 
 double
 result_iterator_severity_double (iterator_t *);
@@ -1540,7 +1543,7 @@ manage_report (report_t, report_t, const get_data_t *, report_format_t,
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
-                    int, int, int, int, int,
+                    int, int, int, int, int, int,
                     gboolean (*) (const char *,
                                   int (*) (const char*, void*),
                                   void*),
@@ -2112,7 +2115,7 @@ int
 nvt_preference_count (const char *);
 
 void
-nvti_refs_append_xml (GString *, const char *);
+nvti_refs_append_xml (GString *, const char *, int *);
 
 gchar*
 get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);

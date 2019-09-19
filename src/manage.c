@@ -7345,7 +7345,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                            "<warning>database not available</warning>");
         }
 
-      nvti_refs_append_xml (refs_str, oid);
+      nvti_refs_append_xml (refs_str, oid, NULL);
 
       tags_str = g_string_new ("");
       tag_count = resource_tag_count ("nvt",
