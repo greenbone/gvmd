@@ -1152,7 +1152,7 @@ vector_find_filter (const gchar **vector, const gchar *string)
 }
 
 /**
- * @brief Extract a tag from an OTP tag list.
+ * @brief Extract a tag from a pipe separated tag list.
  *
  * @param[in]   tags  Tag list.
  * @param[out]  tag   Tag name.
@@ -3554,12 +3554,25 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY lower (%s) ASC",
-                                          column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) ASC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) ASC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) ASC",
+                                            column);
                 }
               else
                 /* Special case for notes text sorting. */
@@ -3731,15 +3744,25 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
-                  g_debug ("   %s: select_columns: %p", __FUNCTION__, select_columns);
-                  g_debug ("   %s: where_columns: %p", __FUNCTION__, where_columns);
-                  g_debug ("   %s: keyword->string: %p", __FUNCTION__, keyword->string);
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY lower (%s) DESC",
-                                          column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) DESC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) DESC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) DESC",
+                                            column);
                 }
               else
                 /* Special case for notes text sorting. */
@@ -4350,6 +4373,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
          || (strcasecmp (type, "ticket") == 0)
+         || (strcasecmp (type, "tls_certificate") == 0)
          || (strcasecmp (type, "user") == 0)
          || (strcasecmp (type, "vuln") == 0);
 }
@@ -4410,6 +4434,8 @@ type_db_name (const char* type)
     return "task";
   if (strcasecmp (type, "Ticket") == 0)
     return "ticket";
+  if (strcasecmp (type, "TLS Certificate") == 0)
+    return "tls_certificate";
   if (strcasecmp (type, "SecInfo") == 0)
     return "info";
   return NULL;
@@ -14225,13 +14251,13 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   clean = g_strdup (now_string);
   if (clean[strlen (clean) - 1] == '\n')
     clean[strlen (clean) - 1] = '\0';
-  set_task_start_time_otp (task, g_strdup (clean));
-  set_scan_start_time_otp (report, g_strdup (clean));
-  set_scan_host_start_time_otp (report, "127.0.0.1", clean);
+  set_task_start_time_ctime (task, g_strdup (clean));
+  set_scan_start_time_ctime (report, g_strdup (clean));
+  set_scan_host_start_time_ctime (report, "127.0.0.1", clean);
   if (result)
     report_add_result (report, result);
-  set_scan_host_end_time_otp (report, "127.0.0.1", clean);
-  set_scan_end_time_otp (report, clean);
+  set_scan_host_end_time_ctime (report, "127.0.0.1", clean);
+  set_scan_end_time_ctime (report, clean);
   g_free (clean);
   ret = manage_alert (alert_id,
                       task_id,
@@ -19474,7 +19500,7 @@ set_task_run_status (task_t task, task_status_t status)
 /**
  * @brief Atomically set the run state of a task to requested.
  *
- * Only used by run_slave_or_gmp_task and run_otp_task.
+ * Only used by run_gmp_slave_task.
  *
  * @param[in]  task    Task.
  * @param[out] status  Old run status of task.
@@ -19695,14 +19721,14 @@ set_task_start_time_epoch (task_t task, int time)
  * @brief Set the start time of a task.
  *
  * @param[in]  task  Task.
- * @param[in]  time  New time.  OTP format (ctime).  Freed before return.
+ * @param[in]  time  New time.  UTC ctime format.  Freed before return.
  */
 void
-set_task_start_time_otp (task_t task, char* time)
+set_task_start_time_ctime (task_t task, char* time)
 {
   sql ("UPDATE tasks SET start_time = %i, modification_time = m_now ()"
        " WHERE id = %llu;",
-       parse_otp_time (time),
+       parse_utc_ctime (time),
        task);
   free (time);
 }
@@ -25364,13 +25390,13 @@ set_scan_start_time_epoch (report_t report, time_t timestamp)
  * @brief Set the start time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  Start time.  In OTP format (ctime).
+ * @param[in]  timestamp  Start time.  In UTC ctime format.
  */
 void
-set_scan_start_time_otp (report_t report, const char* timestamp)
+set_scan_start_time_ctime (report_t report, const char* timestamp)
 {
   sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
-       parse_otp_time (timestamp),
+       parse_utc_ctime (timestamp),
        report);
 }
 
@@ -25443,15 +25469,15 @@ set_scan_end_time (report_t report, const char* timestamp)
  * @brief Set the end time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  End time.  OTP format (ctime).  If NULL, clear end
+ * @param[in]  timestamp  End time.  In UTC ctime format.  If NULL, clear end
  *                        time.
  */
 void
-set_scan_end_time_otp (report_t report, const char* timestamp)
+set_scan_end_time_ctime (report_t report, const char* timestamp)
 {
   if (timestamp)
     sql ("UPDATE reports SET end_time = %i WHERE id = %llu;",
-         parse_otp_time (timestamp), report);
+         parse_utc_ctime (timestamp), report);
   else
     sql ("UPDATE reports SET end_time = NULL WHERE id = %llu;",
          report);
@@ -25508,10 +25534,10 @@ set_scan_host_end_time (report_t report, const char* host,
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
- * @param[in]  timestamp  End time.  OTP format (ctime).
+ * @param[in]  timestamp  End time.  In UTC ctime format.
  */
 void
-set_scan_host_end_time_otp (report_t report, const char* host,
+set_scan_host_end_time_ctime (report_t report, const char* host,
                             const char* timestamp)
 {
   gchar *quoted_host;
@@ -25521,9 +25547,9 @@ set_scan_host_end_time_otp (report_t report, const char* host,
                report, quoted_host))
     sql ("UPDATE report_hosts SET end_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_otp_time (timestamp), report, quoted_host);
+         parse_utc_ctime (timestamp), report, quoted_host);
   else
-    manage_report_host_add (report, host, 0, parse_otp_time (timestamp));
+    manage_report_host_add (report, host, 0, parse_utc_ctime (timestamp));
   g_free (quoted_host);
 }
 
@@ -25556,10 +25582,10 @@ set_scan_host_start_time (report_t report, const char* host,
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
- * @param[in]  timestamp  Start time.  OTP format (ctime).
+ * @param[in]  timestamp  Start time.  In UTC ctime format.
  */
 void
-set_scan_host_start_time_otp (report_t report, const char* host,
+set_scan_host_start_time_ctime (report_t report, const char* host,
                               const char* timestamp)
 {
   gchar *quoted_host;
@@ -25569,9 +25595,9 @@ set_scan_host_start_time_otp (report_t report, const char* host,
                report, quoted_host))
     sql ("UPDATE report_hosts SET start_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_otp_time (timestamp), report, quoted_host);
+         parse_utc_ctime (timestamp), report, quoted_host);
   else
-    manage_report_host_add (report, host, parse_otp_time (timestamp), 0);
+    manage_report_host_add (report, host, parse_utc_ctime (timestamp), 0);
   g_free (quoted_host);
 }
 
@@ -31621,11 +31647,11 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
         }
       else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_START") == 0))
         {
-          set_scan_host_start_time_otp (report, host, desc);
+          set_scan_host_start_time_ctime (report, host, desc);
         }
       else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_END") == 0))
         {
-          set_scan_host_end_time_otp (report, host, desc);
+          set_scan_host_end_time_ctime (report, host, desc);
           add_assets_from_host_in_report (report, host);
         }
       else
@@ -31977,6 +32003,51 @@ copy_task (const char* name, const char* comment, const char *task_id,
 }
 
 /**
+ * @brief Complete deletion of a task.
+ *
+ * This sets up a transaction around the delete.
+ *
+ * @param[in]  task      The task.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 on success, 1 if task is hidden, -1 on error.
+ */
+static int
+delete_task_lock (task_t task, int ultimate)
+{
+  int ret;
+
+  g_debug ("   delete task %llu", task);
+
+  sql_begin_immediate ();
+
+  /* This prevents other processes (for example a START_TASK) from getting
+   * a reference to a report ID or the task ID, and then using that
+   * reference to try access the deleted report or task.
+   *
+   * If the task is already active then delete_report (via delete_task)
+   * will fail and rollback. */
+  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  ret = delete_task (task, ultimate);
+  if (ret)
+    sql_rollback ();
+  else
+    sql_commit ();
+  return ret;
+}
+
+/**
  * @brief Request deletion of a task.
  *
  * Stop the task beforehand with \ref stop_task_internal, if it is running.
@@ -32263,51 +32334,6 @@ delete_task (task_t task, int ultimate)
   delete_permissions_cache_for_resource ("task", task);
 
   return 0;
-}
-
-/**
- * @brief Complete deletion of a task.
- *
- * This sets up a transaction around the delete.
- *
- * @param[in]  task      The task.
- * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
- *
- * @return 0 on success, 1 if task is hidden, -1 on error.
- */
-int
-delete_task_lock (task_t task, int ultimate)
-{
-  int ret;
-
-  g_debug ("   delete task %llu", task);
-
-  sql_begin_immediate ();
-
-  /* This prevents other processes (for example a START_TASK) from getting
-   * a reference to a report ID or the task ID, and then using that
-   * reference to try access the deleted report or task.
-   *
-   * If the task is already active then delete_report (via delete_task)
-   * will fail and rollback. */
-  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  ret = delete_task (task, ultimate);
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-  return ret;
 }
 
 /**
@@ -35001,7 +35027,7 @@ target_port_list (target_t target)
 }
 
 /**
- * @brief Return the port range of a target, in OTP format.
+ * @brief Return the port range of a target, in GMP port range list format.
  *
  * For "OpenVAS Default", return the explicit port ranges instead of "default".
  *
@@ -42605,8 +42631,7 @@ create_scanner (const char* name, const char *comment, const char *host,
     return 2;
   if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
     return 2;
-  /* XXX: Workaround for unix socket case. Should add a host type flag, or
-   * remove otp over tcp case entirely. */
+  /* XXX: Workaround for unix socket case. */
   if (gvm_get_host_type (host) == -1 && !unix_socket)
     return 2;
   if (resource_with_name_exists (name, "scanner", 0))
@@ -51720,7 +51745,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
  *
  * @param[in]   name            Name of port list.
  * @param[in]   comment         Comment on port list.
- * @param[in]   port_range      Traditional OTP style port range.  NULL for "default".
+ * @param[in]   port_range      GMP style port range list.  NULL for "default".
  * @param[out]  port_list       Created port list.
  *
  * @return 0 success, 4 error in port range.
@@ -56366,8 +56391,8 @@ hosts_set_identifiers (report_t report)
 
               host_new = host = sql_last_insert_id ();
 
-              /* Make sure the Report Host identifiers added for OTP HOST_START in
-               * otp.c refer to the new host. */
+              /* Make sure the Report Host identifiers added when the host was
+               * first noticed now refer to the new host. */
 
               sql ("UPDATE host_identifiers SET host = %llu"
                    " WHERE source_id = (SELECT uuid FROM reports"
@@ -58984,6 +59009,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Tasks Filter");
       else if (strcmp (uuid, "801544de-f06d-4377-bb77-bbb23369bad4") == 0)
         setting_name = g_strdup ("Tickets Filter");
+      else if (strcmp (uuid, "34a176c1-0278-4c29-b84d-3d72117b2169") == 0)
+        setting_name = g_strdup ("TLS Certificates Filter");
       else if (strcmp (uuid, "a33635be-7263-4549-bd80-c04d2dba89b4") == 0)
         setting_name = g_strdup ("Users Filter");
       else if (strcmp (uuid, "17c9d269-95e7-4bfa-b1b2-bc106a2175c7") == 0)

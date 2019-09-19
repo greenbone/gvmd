@@ -240,33 +240,6 @@ manage_transaction_stop (gboolean);
 
 /* Task structures. */
 
-extern short scanner_active;
-
-/** @todo Should be in otp.c/h. */
-/**
- * @brief A port.
- */
-typedef struct
-{
-  unsigned int number;       ///< Port number.
-  port_protocol_t protocol;  ///< Port protocol (TCP, UDP, ...).
-  char* string;              ///< Original string describing port.
-} port_t;
-
-/** @todo Should be in otp.c/h. */
-/**
- * @brief The record of a message.
- */
-typedef struct
-{
-  char* host;           ///< Host message describes.
-  char* hostname;       ///< Hostname message describes.
-  port_t port;          ///< The port.
-  char* description;    ///< Description of the message.
-  char* oid;            ///< NVT identifier.
-} message_t;
-
-
 /**
  * @brief Task statuses, also used as scan/report statuses.
  *
@@ -907,7 +880,7 @@ void
 set_task_start_time_epoch (task_t, int);
 
 void
-set_task_start_time_otp (task_t, char*);
+set_task_start_time_ctime (task_t, char*);
 
 void
 set_task_end_time (task_t task, char* time);
@@ -1020,10 +993,6 @@ request_delete_task (task_t*);
 
 int
 delete_task (task_t, int);
-
-/* For otp.c. */
-int
-delete_task_lock (task_t, int);
 
 void
 append_to_task_comment (task_t, const char*, int);
@@ -1369,7 +1338,7 @@ char*
 scan_end_time_uuid (const char *);
 
 void
-set_scan_start_time_otp (report_t, const char*);
+set_scan_start_time_ctime (report_t, const char*);
 
 void
 set_scan_start_time_epoch (report_t, time_t);
@@ -1378,13 +1347,13 @@ void
 set_scan_end_time (report_t, const char*);
 
 void
-set_scan_end_time_otp (report_t, const char*);
+set_scan_end_time_ctime (report_t, const char*);
 
 void
 set_scan_end_time_epoch (report_t, time_t);
 
 void
-set_scan_host_start_time_otp (report_t, const char*, const char*);
+set_scan_host_start_time_ctime (report_t, const char*, const char*);
 
 int
 scan_host_end_time (report_t, const char*);
@@ -1393,7 +1362,7 @@ void
 set_scan_host_end_time (report_t, const char*, const char*);
 
 void
-set_scan_host_end_time_otp (report_t, const char*, const char*);
+set_scan_host_end_time_ctime (report_t, const char*, const char*);
 
 int
 report_timestamp (const char*, gchar**);
@@ -1925,22 +1894,22 @@ manage_set_config_preference (const gchar *, const char*, const char*,
                               const char*);
 
 void
-init_preference_iterator (iterator_t *, config_t);
+init_config_preference_iterator (iterator_t *, config_t);
 
 const char*
-preference_iterator_name (iterator_t *);
+config_preference_iterator_name (iterator_t *);
 
 const char*
-preference_iterator_value (iterator_t *);
+config_preference_iterator_value (iterator_t *);
 
 const char*
-preference_iterator_type (iterator_t *);
+config_preference_iterator_type (iterator_t *);
 
 const char*
-preference_iterator_default (iterator_t *);
+config_preference_iterator_default (iterator_t *);
 
 const char*
-preference_iterator_hr_name (iterator_t *);
+config_preference_iterator_hr_name (iterator_t *);
 
 int
 manage_set_config (const gchar *, const char*, const char *, const char *);

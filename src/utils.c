@@ -171,16 +171,14 @@ parse_utc_time (const char *format, const char *text_time)
 }
 
 /**
- * @brief Convert an OTP time into seconds since epoch.
- *
- * Use UTC as timezone.
+ * @brief Convert a UTC ctime string into seconds since the epoch.
  *
  * @param[in]  text_time  Time as text in ctime format.
  *
  * @return Time since epoch.  0 on error.
  */
 int
-parse_otp_time (const char *text_time)
+parse_utc_ctime (const char *text_time)
 {
   return parse_utc_time ("%a %b %d %H:%M:%S %Y", text_time);
 }

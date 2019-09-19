@@ -536,16 +536,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
         }
 
       if (!ret)
-        {
-          /* Timeout periodically.  This was needed in the past so that OTP
-           * scan handling processes could check if the client had stopped
-           * the task. */
-          struct timeval timeout;
-
-          timeout.tv_usec = 0;
-          timeout.tv_sec = 1;
-          ret = select (nfds, &readfds, &writefds, NULL, &timeout);
-        }
+        ret = select (nfds, &readfds, &writefds, NULL, NULL);
       if ((ret < 0 && errno == EINTR) || ret == 0)
         continue;
       if (ret < 0)
