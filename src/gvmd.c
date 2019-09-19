@@ -1646,6 +1646,7 @@ gvmd (int argc, char** argv)
   static gchar *modify_setting = NULL;
   static gchar *scanner_name = NULL;
   static gchar *rc_name = NULL;
+  static gchar *relay_mapper = NULL;
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
@@ -1810,6 +1811,10 @@ gvmd (int argc, char** argv)
           &manager_port_string_2,
           "Use port number <number> for address 2.",
           "<number>" },
+        { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
+          &relay_mapper,
+          "Excecutable for mapping scanner hosts to relays.",
+          "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,
           "Role for --create-user and --get-users.",
@@ -2014,6 +2019,36 @@ gvmd (int argc, char** argv)
         gnutls_global_set_log_level (atoi (s));
       }
   }
+
+  /* Set relay mapper */
+  if (relay_mapper)
+    {
+      if (strcmp (relay_mapper, ""))
+        {
+          if (g_file_test (relay_mapper, G_FILE_TEST_EXISTS) == 0)
+            g_warning ("Relay mapper '%s' not found.", relay_mapper);
+          else if (g_file_test (relay_mapper, G_FILE_TEST_IS_EXECUTABLE) == 0)
+            g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
+          else
+            {
+              g_debug ("Using relay mapper '%s'.", relay_mapper);
+              set_relay_mapper_path (relay_mapper);
+            }
+        }
+      else
+        g_debug ("Relay mapper disabled.");
+    }
+  else
+    {
+      gchar *default_mapper = g_find_program_in_path ("gvm-relay-mapper");
+      if (default_mapper)
+        {
+          g_message ("Using default relay mapper '%s'.", default_mapper);
+          set_relay_mapper_path (default_mapper);
+        }
+      else
+        g_debug ("No default relay mapper found.");
+    }
 
 #ifdef GVMD_GIT_REVISION
   g_message ("   Greenbone Vulnerability Manager version %s (GIT revision %s) (DB revision %i)",

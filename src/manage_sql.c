@@ -43803,14 +43803,40 @@ connection_open (gvm_connection_t *connection,
   if (address == NULL)
     return -1;
 
+  connection->socket = -1;
   connection->tls = *address != '/';
 
   if (connection->tls)
     {
-      connection->socket = gvm_server_open (&connection->session,
-                                            address,
-                                            port);
+      gchar *new_host, *new_ca_cert;
+      int new_port, ret;
+
+      new_host = NULL;
+      new_port = 0;
+      new_ca_cert = NULL;
+
+      ret = slave_get_relay (address,
+                             port,
+                             NULL, /* original_ca_cert */
+                             "GMP",
+                             &new_host,
+                             &new_port,
+                             &new_ca_cert);
+
+      if (ret == 0)
+        {
+          connection->socket
+            = gvm_server_open_verify (&connection->session,
+                                      new_host,
+                                      new_port,
+                                      new_ca_cert,
+                                      NULL,
+                                      NULL,
+                                      1);
+        }
       connection->credentials = NULL;
+      g_free (new_host);
+      g_free (new_ca_cert);
     }
   else
     connection->socket = connect_unix (address);

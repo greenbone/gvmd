@@ -165,6 +165,11 @@
 extern volatile int termination_signal;
 
 /**
+ * @brief Path to the relay mapper excutable, NULL to disable relays.
+ */
+static gchar *relay_mapper_path = NULL;
+
+/**
  * @brief Number of minutes before overdue tasks timeout.
  */
 static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
@@ -4874,6 +4879,218 @@ run_gmp_slave_task (task_t task, int from, char **report_id,
 }
 
 /**
+ * @brief Gets the current path of the relay mapper excecutable.
+ *
+ * @return The current relay mapper path.
+ */
+const char *
+get_relay_mapper_path ()
+{
+  return relay_mapper_path;
+}
+
+/**
+ * @brief Gets the current path of the relay mapper excecutable.
+ *
+ * @param[in]  new_path  The new relay mapper path.
+ */
+void
+set_relay_mapper_path (const char *new_path)
+{
+  g_free (relay_mapper_path);
+  relay_mapper_path = new_path ? g_strdup (new_path) : NULL;
+}
+
+/**
+ * @brief Gets a relay hostname and port for a sensor scanner.
+ *
+ * If no mapper is available, a copy of the original host, port and
+ *  CA certificate are returned.
+ *
+ * @param[in]  original_host    The original hostname or IP address.
+ * @param[in]  original_port    The original port number.
+ * @param[in]  original_ca_cert The original CA certificate.
+ * @param[in]  protocol         The protocol to look for, e.g. "GMP" or "OSP".
+ * @param[out] new_host         The hostname or IP address of the relay.
+ * @param[out] new_port         The port number of the relay.
+ * @param[in]  new_ca_cert      The CA certificate of the relay.
+ *
+ * @return 0 success, 1 relay not found, -1 error.
+ */
+int
+slave_get_relay (const char *original_host,
+                 int original_port,
+                 const char *original_ca_cert,
+                 const char *protocol,
+                 gchar **new_host,
+                 int *new_port,
+                 gchar **new_ca_cert)
+{
+  int ret = -1;
+
+  assert (new_host);
+  assert (new_port);
+  assert (new_ca_cert);
+
+  if (relay_mapper_path == NULL)
+    {
+      *new_host = original_host ? g_strdup (original_host) : NULL;
+      *new_port = original_port;
+      *new_ca_cert = original_ca_cert ? g_strdup (original_ca_cert) : NULL;
+
+      return 0;
+    }
+  else
+    {
+      gchar **cmd, *stdout_str, *stderr_str;
+      int exit_code = -1;
+      GError *err = NULL;
+      entity_t relay_entity;
+
+      stdout_str = NULL;
+      stderr_str = NULL;
+
+      cmd = (gchar **) g_malloc (8 * sizeof (gchar *));
+      cmd[0] = g_strdup (relay_mapper_path);
+      cmd[1] = g_strdup ("--host");
+      cmd[2] = g_strdup (original_host);
+      cmd[3] = g_strdup ("--port");
+      cmd[4] = g_strdup_printf ("%d", original_port);
+      cmd[5] = g_strdup ("--protocol");
+      cmd[6] = g_strdup (protocol);
+      cmd[7] = NULL;
+
+      if (g_spawn_sync (NULL,
+                        cmd,
+                        NULL,
+                        G_SPAWN_SEARCH_PATH,
+                        NULL,
+                        NULL,
+                        &stdout_str,
+                        &stderr_str,
+                        &exit_code,
+                        &err) == FALSE)
+        {
+          g_warning ("%s: g_spawn_sync failed: %s",
+                     __FUNCTION__, err ? err->message : "");
+          g_strfreev (cmd);
+          g_free (stdout_str);
+          g_free (stderr_str);
+          return -1;
+        }
+      else if (exit_code)
+        {
+          g_warning ("%s: mapper exited with code %d",
+                     __FUNCTION__, exit_code);
+          g_message ("%s: mapper stderr:\n%s", __FUNCTION__, stderr_str);
+          g_debug ("%s: mapper stdout:\n%s", __FUNCTION__, stdout_str);
+          g_strfreev (cmd);
+          g_free (stdout_str);
+          g_free (stderr_str);
+          return -1;
+        }
+
+      relay_entity = NULL;
+      if (parse_entity (stdout_str, &relay_entity))
+        {
+          g_warning ("%s: failed to parse mapper output",
+                     __FUNCTION__);
+          g_message ("%s: mapper stdout:\n%s", __FUNCTION__, stdout_str);
+          g_message ("%s: mapper stderr:\n%s", __FUNCTION__, stderr_str);
+        }
+      else
+        {
+          entity_t host_entity, port_entity, ca_cert_entity;
+
+          host_entity = entity_child (relay_entity, "host");
+          port_entity = entity_child (relay_entity, "port");
+          ca_cert_entity = entity_child (relay_entity, "ca_cert");
+
+          if (host_entity && port_entity && ca_cert_entity)
+            {
+              if (entity_text (host_entity)
+                  && entity_text (port_entity)
+                  && strcmp (entity_text (host_entity), "")
+                  && strcmp (entity_text (port_entity), ""))
+                {
+                  *new_host = g_strdup (entity_text (host_entity));
+                  *new_port = atoi (entity_text (port_entity));
+
+                  if (entity_text (ca_cert_entity)
+                      && strcmp (entity_text (ca_cert_entity), ""))
+                    {
+                      *new_ca_cert = g_strdup (entity_text (ca_cert_entity));
+                    }
+                  else
+                    {
+                      *new_ca_cert = NULL;
+                    }
+                  ret = 0;
+                }
+              else
+                {
+                  // Consider relay not found if host or port is empty
+                  ret = 1; 
+                }
+            }
+          else
+            {
+              g_warning ("%s: mapper output did not contain"
+                         " HOST, PORT and CA_CERT",
+                         __FUNCTION__);
+            }
+          free_entity (relay_entity);
+        }
+      g_strfreev (cmd);
+      g_free (stdout_str);
+      g_free (stderr_str);
+    }
+
+  return ret;
+}
+
+/**
+ * @brief Sets up modified connection data to connect to a sensors list host.
+ *
+ * @param[in]     old_conn  Connection data for the original host.
+ * @param[in,out] new_conn  Struct to write local connection data to.
+ *
+ * @return 0 success, 1 relay not found, -1 error.
+ */
+int
+slave_relay_connection (gvm_connection_t *old_conn,
+                        gvm_connection_t *new_conn)
+{
+  int ret;
+
+  assert (old_conn);
+  assert (new_conn);
+  assert (old_conn->host_string);
+
+  memset (new_conn, 0, sizeof (*new_conn));
+
+  ret = slave_get_relay (old_conn->host_string,
+                         old_conn->port,
+                         old_conn->ca_cert,
+                         "GMP",
+                         &new_conn->host_string,
+                         &new_conn->port,
+                         &new_conn->ca_cert);
+
+  if (ret)
+    return ret;
+
+  new_conn->tls = old_conn->tls;
+  new_conn->session = old_conn->session;
+  new_conn->username
+    = old_conn->username ? g_strdup (old_conn->username) : NULL;
+  new_conn->password
+    = old_conn->password ? g_strdup (old_conn->password) : NULL;
+
+  return 0;
+}
+
+/**
  * @brief Start a task on a GMP scanner.
  *
  * A process is forked to run the task, but the forked process never returns.
@@ -4893,7 +5110,7 @@ static int
 run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
 {
   int ret;
-  gvm_connection_t connection;
+  gvm_connection_t connection, relay_connection;
   char *scanner_id, *name;
 
   memset (&connection, 0, sizeof (connection));
@@ -4940,8 +5157,21 @@ run_gmp_task (task_t task, scanner_t scanner, int from, char **report_id)
 
   connection.tls = 1;
 
-  ret = run_gmp_slave_task (task, from, report_id, &connection, scanner_id,
-                            name);
+  ret = slave_relay_connection (&connection, &relay_connection);
+  if (ret)
+    {
+      free (connection.host_string);
+      free (connection.username);
+      free (connection.password);
+      free (connection.ca_cert);
+      free (scanner_id);
+      free (name);
+      return -1;
+    }
+
+  // TODO: Relay only when actual connection is established.
+  ret = run_gmp_slave_task (task, from, report_id, &relay_connection,
+                            scanner_id, name);
 
   free (connection.host_string);
   free (connection.username);
@@ -5390,11 +5620,12 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
                                gchar ***types, const char *slave_id)
 {
   scanner_t slave = 0;
-  char *host, **end;
-  int port, socket;
+  char *original_host, *original_ca_cert, **end;
+  int original_port, new_port, socket;
   gnutls_session_t session;
   entity_t get, report;
   entities_t reports;
+  gchar *new_host, *new_ca_cert;
   int ret;
 
   if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
@@ -5402,21 +5633,60 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   if (slave == 0)
     return 2;
 
-  host = scanner_host (slave);
-  if (host == NULL) return -1;
+  original_host = scanner_host (slave);
+  if (original_host == NULL)
+    return -1;
 
-  g_debug ("   %s: host: %s", __FUNCTION__, host);
+  g_debug ("   %s: host: %s", __FUNCTION__, original_host);
 
-  port = scanner_port (slave);
-  if (port == -1)
+  original_port = scanner_port (slave);
+  if (original_port == -1)
     {
-      free (host);
+      free (original_host);
       return -1;
     }
 
-  socket = gvm_server_open (&session, host, port);
-  free (host);
-  if (socket == -1) return 4;
+  original_ca_cert = scanner_ca_pub (slave);
+
+  ret = slave_get_relay (original_host,
+                         original_port,
+                         original_ca_cert,
+                         "GMP",
+                         &new_host,
+                         &new_port,
+                         &new_ca_cert);
+
+  if (ret == 1)
+    {
+      g_message ("%s: no relay found for %s:%d",
+                 __FUNCTION__, original_host, original_port);
+      free (original_host);
+      free (original_ca_cert);
+      return 4;
+    }
+  else if (ret)
+    {
+      free (original_host);
+      free (original_ca_cert);
+      return -1;
+    }
+
+  free (original_host);
+  free (original_ca_cert);
+
+  socket = gvm_server_open_verify (&session,
+                                   new_host,
+                                   new_port,
+                                   new_ca_cert,
+                                   NULL,
+                                   NULL,
+                                   1);
+
+  g_free (new_host);
+  g_free (new_ca_cert);
+
+  if (socket == -1)
+    return 4;
 
   g_debug ("   %s: connected", __FUNCTION__);
 
@@ -5695,12 +5965,13 @@ slave_system_report (const char *name, const char *duration,
                      const char *slave_id, char **report)
 {
   scanner_t slave = 0;
-  char *host;
-  int port, socket;
+  char *original_host, *original_ca_cert;
+  int original_port, new_port, socket;
   gnutls_session_t session;
   entity_t get, entity;
   entities_t reports;
   gmp_get_system_reports_opts_t opts;
+  gchar *new_host, *new_ca_cert;
   int ret;
 
   if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
@@ -5708,21 +5979,60 @@ slave_system_report (const char *name, const char *duration,
   if (slave == 0)
     return 2;
 
-  host = scanner_host (slave);
-  if (host == NULL) return -1;
+  original_host = scanner_host (slave);
+  if (original_host == NULL)
+    return -1;
 
-  g_debug ("   %s: host: %s", __FUNCTION__, host);
+  g_debug ("   %s: host: %s", __FUNCTION__, original_host);
 
-  port = scanner_port (slave);
-  if (port == -1)
+  original_port = scanner_port (slave);
+  if (original_port == -1)
     {
-      free (host);
+      free (original_host);
       return -1;
     }
 
-  socket = gvm_server_open (&session, host, port);
-  free (host);
-  if (socket == -1) return 4;
+  original_ca_cert = scanner_ca_pub (slave);
+
+  ret = slave_get_relay (original_host,
+                         original_port,
+                         original_ca_cert,
+                         "GMP",
+                         &new_host,
+                         &new_port,
+                         &new_ca_cert);
+
+  if (ret == 1)
+    {
+      g_message ("%s: no relay found for %s:%d",
+                 __FUNCTION__, original_host, original_port);
+      free (original_host);
+      free (original_ca_cert);
+      return 4;
+    }
+  else if (ret)
+    {
+      free (original_host);
+      free (original_ca_cert);
+      return -1;
+    }
+
+  free (original_host);
+  free (original_ca_cert);
+
+  socket = gvm_server_open_verify (&session,
+                                   new_host,
+                                   new_port,
+                                   new_ca_cert,
+                                   NULL,
+                                   NULL,
+                                   1);
+
+  g_free (new_host);
+  g_free (new_ca_cert);
+
+  if (socket == -1)
+    return 4;
 
   g_debug ("   %s: connected", __FUNCTION__);
 

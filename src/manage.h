@@ -2835,6 +2835,24 @@ verify_scanner (const char *, char **);
 void
 set_slave_commit_size (int);
 
+const char *
+get_relay_mapper_path ();
+
+void
+set_relay_mapper_path (const char *);
+
+int
+slave_get_relay (const char *,
+                 int,
+                 const char *,
+                 const char *,
+                 gchar **,
+                 int *,
+                 gchar **);
+
+int
+slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
+
 /* Scheduling. */
 
 /**
@@ -4245,5 +4263,9 @@ get_termination_signal ();
 
 int
 sql_cancel ();
+
+/* Extra sensor handling functions */
+
+
 
 #endif /* not _GVMD_MANAGE_H */
