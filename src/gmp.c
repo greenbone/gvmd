@@ -134,7 +134,7 @@
 /** @todo Exported for manage_sql.c. */
 void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
-                    int, int, const char *, iterator_t *, int, int);
+                    int, int, const char *, iterator_t *, int, int, int);
 
 
 /* Helper functions. */
@@ -2490,6 +2490,7 @@ typedef struct
   char *format_id;       ///< ID of report format.
   char *alert_id;        ///< ID of alert.
   char *report_id;       ///< ID of single report to get.
+  int lean;              ///< Boolean.  Whether to return lean report.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides_details; ///< Boolean.  Whether to include details of above.
   int result_tags;       ///< Boolean.  Whether to include result tags.
@@ -6299,6 +6300,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &get_reports_data->format_id);
 
             if (find_attribute (attribute_names, attribute_values,
+                                "lean", &attribute))
+              get_reports_data->lean = atoi (attribute);
+            else
+              get_reports_data->lean = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
                                 "notes_details", &attribute))
               get_reports_data->notes_details = strcmp (attribute, "0");
             else
@@ -9342,7 +9349,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     NULL,
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0); /* Lean. */
               cleanup_iterator (&results);
             }
           else
@@ -9624,7 +9632,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     NULL,
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0); /* Lean. */
               cleanup_iterator (&results);
             }
           else
@@ -9909,10 +9918,11 @@ strdiff (const gchar *one, const gchar *two)
  * @param[in]  result                 Result.
  * @param[in]  task                   Task associated with result.
  * @param[in]  include_notes_details  Whether to include details of notes.
+ * @param[in]  lean                   Whether to include less info.
  */
 static void
 buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
-                         int include_notes_details)
+                         int include_notes_details, int lean)
 {
   if (task)
     {
@@ -9931,13 +9941,15 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
                           result,
                           task);
 
-      g_string_append (buffer, "<notes>");
+      if (lean == 0 || next (&notes))
+        g_string_append (buffer, "<notes>");
       buffer_notes_xml (buffer,
                         &notes,
                         include_notes_details,
                         0,
                         NULL);
-      g_string_append (buffer, "</notes>");
+      if (lean == 0 || next (&notes))
+        g_string_append (buffer, "</notes>");
 
       cleanup_iterator (&notes);
     }
@@ -9950,15 +9962,18 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
  * @param[in]  result                 Result.
  * @param[in]  task                   Task associated with result.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
+ * @param[in]  lean                       Whether to include less info.
  */
 static void
 buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
-                             int include_overrides_details)
+                             int include_overrides_details, int lean)
 {
   if (task)
     {
       get_data_t get;
       iterator_t overrides;
+      GString *temp_buffer;
+
       memset (&get, '\0', sizeof (get));
       /* Most recent first. */
       get.filter = "sort-reverse=created owner=any permission=any";
@@ -9972,13 +9987,19 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
                               result,
                               task);
 
-      g_string_append (buffer, "<overrides>");
-      buffer_overrides_xml (buffer,
+      temp_buffer = g_string_new ("");
+      buffer_overrides_xml (temp_buffer,
                             &overrides,
                             include_overrides_details,
                             0,
                             NULL);
-      g_string_append (buffer, "</overrides>");
+      if (lean == 0 || strlen (temp_buffer->str))
+        {
+          g_string_append (buffer, "<overrides>");
+          g_string_append (buffer, temp_buffer->str);
+          g_string_append (buffer, "</overrides>");
+        }
+      g_string_free (temp_buffer, TRUE);
 
       cleanup_iterator (&overrides);
     }
@@ -10011,10 +10032,11 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
  * @param[in]  cert_loaded     Whether CERT db is loaded.
  * @param[in]  has_cert_bunds  Whether results has CERT-Bund advisories.
  * @param[in]  has_dfn_certs   Whether results has DFN-CERT advisories.
+ * @param[in]  first           Marker for first element.
  */
 static void
 results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
-                         int has_cert_bunds, int has_dfn_certs)
+                         int has_cert_bunds, int has_dfn_certs, int *first)
 {
   iterator_t cert_refs_iterator;
 
@@ -10025,6 +10047,11 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
+              if (first && *first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  *first = 0;
+                }
               g_string_append_printf
                (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
@@ -10037,6 +10064,11 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
+              if (*first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  *first = 0;
+                }
               g_string_append_printf
                (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
@@ -10045,8 +10077,15 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
         }
     }
   else
-    g_string_append_printf (buffer,
-                            "<warning>database not available</warning>");
+    {
+      if (*first)
+        {
+          buffer_xml_append_printf (buffer, "<refs>");
+          *first = 0;
+        }
+      g_string_append_printf (buffer,
+                              "<warning>database not available</warning>");
+    }
 }
 
 /**
@@ -10089,7 +10128,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
       if (g_str_has_prefix (oid, "oval:"))
         {
-          int ret;
+          int ret, first;
           char *cves;
           gchar **split, **item;
           get_data_t get;
@@ -10116,8 +10155,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
           g_free (get.id);
           cleanup_iterator (&iterator);
 
-          buffer_xml_append_printf (buffer, "<refs>");
-
+          first = 1;
           cves = ovaldef_cves (oid);
           split = g_strsplit (cves, ",", 0);
           item = split;
@@ -10134,6 +10172,11 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                   continue;
                 }
 
+              if (first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  first = 0;
+                }
               buffer_xml_append_printf (buffer, "<ref type=\"cve\" id=\"%s\"/>", id);
 
               item++;
@@ -10143,14 +10186,17 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
           results_xml_append_cert (buffer, oid, cert_loaded,
                                    result_iterator_has_cert_bunds (results),
-                                   result_iterator_has_dfn_certs (results));
+                                   result_iterator_has_dfn_certs (results),
+                                   &first);
 
-          buffer_xml_append_printf (buffer, "</refs>");
+          if (first == 0)
+            buffer_xml_append_printf (buffer, "</refs>");
         }
       else
         {
           const char *cvss_base = result_iterator_nvt_cvss_base (results);
           GString *tags = g_string_new (result_iterator_nvt_tag (results));
+          int first;
 
           if (!cvss_base && !strcmp (oid, "0"))
             cvss_base = "0.0";
@@ -10236,12 +10282,14 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     cvss_base ?: "",
                                     tags->str ?: "");
 
-          buffer_xml_append_printf (buffer, "<refs>");
-          result_iterator_nvt_refs_append (buffer, results);
+          first = 1;
+          result_iterator_nvt_refs_append (buffer, results, &first);
           results_xml_append_cert (buffer, oid, cert_loaded,
                                    result_iterator_has_cert_bunds (results),
-                                   result_iterator_has_dfn_certs (results));
-          buffer_xml_append_printf (buffer, "</refs>");
+                                   result_iterator_has_dfn_certs (results),
+                                   &first);
+          if (first == 0)
+            buffer_xml_append_printf (buffer, "</refs>");
 
           g_string_free (tags, TRUE);
         }
@@ -10275,6 +10323,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
  * @param[in]  changed                Whether the result is a "changed" delta.
  * @param[in]  cert_loaded            Whether the CERT db is loaded.  0 not loaded,
  *                                    -1 needs to be checked, else loaded.
+ * @param[in]  lean                   Whether to include less info.
  */
 void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
@@ -10283,10 +10332,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_tags, int include_tags_details,
                     int include_details,
                     const char *delta_state, iterator_t *delta_results,
-                    int changed, int cert_loaded)
+                    int changed, int cert_loaded, int lean)
 {
   const char *descr = result_iterator_descr (results);
-  const char *name, *owner_name, *comment, *creation_time, *modification_time;
+  const char *name, *comment, *creation_time;
   const char *detect_oid, *asset_id;
   gchar *nl_descr, *nl_descr_escaped;
   const char *qod = result_iterator_qod (results);
@@ -10320,14 +10369,26 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               "<name>%s</name>",
                               name);
 
-  owner_name = get_iterator_owner_name (results);
-  if (owner_name)
-    buffer_xml_append_printf (buffer,
-                              "<owner><name>%s</name></owner>",
-                              owner_name);
+  if (lean == 0)
+    {
+      const char *owner_name, *modification_time;
+
+      owner_name = get_iterator_owner_name (results);
+      if (owner_name)
+        buffer_xml_append_printf (buffer,
+                                  "<owner><name>%s</name></owner>",
+                                  owner_name);
+
+      modification_time = get_iterator_modification_time (results);
+      if (modification_time)
+        buffer_xml_append_printf (buffer,
+                                  "<modification_time>%s</modification_time>",
+                                  modification_time);
+    }
 
   comment = get_iterator_comment (results);
-  if (comment)
+  if (comment
+      && (lean == 0 || strlen (comment)))
     buffer_xml_append_printf (buffer,
                               "<comment>%s</comment>",
                               comment);
@@ -10337,12 +10398,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     buffer_xml_append_printf (buffer,
                               "<creation_time>%s</creation_time>",
                               creation_time);
-
-  modification_time = get_iterator_modification_time (results);
-  if (modification_time)
-    buffer_xml_append_printf (buffer,
-                              "<modification_time>%s</modification_time>",
-                              modification_time);
 
   if (include_details)
     {
@@ -10440,12 +10495,20 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   buffer_xml_append_printf (buffer,
                             "<host>"
-                            "%s"
-                            "<asset asset_id=\"%s\"/>"
+                            "%s",
+                            result_iterator_host (results) ?: "");
+
+  if (asset_id && strlen (asset_id))
+    buffer_xml_append_printf (buffer,
+                              "<asset asset_id=\"%s\"/>",
+                              asset_id);
+  else if (lean == 0)
+    buffer_xml_append_printf (buffer,
+                              "<asset asset_id=\"\"/>");
+
+  buffer_xml_append_printf (buffer,
                             "<hostname>%s</hostname>"
                             "</host>",
-                            result_iterator_host (results) ?: "",
-                            asset_id ? asset_id : "",
                             result_iterator_hostname (results) ?: "");
 
   buffer_xml_append_printf (buffer,
@@ -10456,23 +10519,44 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     cert_loaded = manage_cert_loaded ();
   results_xml_append_nvt (results, buffer, cert_loaded);
 
+  if (lean == 0)
+    buffer_xml_append_printf
+     (buffer,
+      "<scan_nvt_version>%s</scan_nvt_version>"
+      "<threat>%s</threat>",
+      result_iterator_scan_nvt_version (results),
+      result_iterator_level (results));
+
   buffer_xml_append_printf
    (buffer,
-    "<scan_nvt_version>%s</scan_nvt_version>"
-    "<threat>%s</threat>"
     "<severity>%.1f</severity>"
-    "<qod><value>%s</value><type>%s</type></qod>",
-    result_iterator_scan_nvt_version (results),
-    result_iterator_level (results),
+    "<qod><value>%s</value>",
     result_iterator_severity_double (results),
-    qod ? qod : "",
-    qod_type ? qod_type : "");
+    qod ? qod : "");
+
+  if (qod_type && strlen (qod_type))
+    buffer_xml_append_printf (buffer, "<type>%s</type>", qod_type);
+  else if (lean == 0)
+    buffer_xml_append_printf (buffer, "<type></type>");
+
+  buffer_xml_append_printf (buffer, "</qod>");
 
   g_string_append_printf (buffer,
                           "<description>%s</description>",
                           descr ? nl_descr_escaped : "");
 
-  if (include_overrides)
+  if (include_overrides && lean)
+    {
+      /* Only send the original severity if it has changed. */
+      if (strncmp (result_iterator_original_severity (results),
+                   result_iterator_severity (results),
+                   /* Avoid rounding differences. */
+                   3))
+        buffer_xml_append_printf (buffer,
+                                  "<original_severity>%s</original_severity>",
+                                  result_iterator_original_severity (results));
+    }
+  else if (include_overrides)
     buffer_xml_append_printf (buffer,
                               "<original_threat>%s</original_threat>"
                               "<original_severity>%s</original_severity>",
@@ -10482,12 +10566,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   if (include_notes
       && result_iterator_may_have_notes (results))
     buffer_result_notes_xml (buffer, result,
-                             selected_task, include_notes_details);
+                             selected_task, include_notes_details, lean);
 
   if (include_overrides
       && result_iterator_may_have_overrides (results))
     buffer_result_overrides_xml (buffer, result,
-                                 selected_task, include_overrides_details);
+                                 selected_task, include_overrides_details,
+                                 lean);
 
   if (delta_state || delta_results)
     {
@@ -10502,7 +10587,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               include_notes, include_notes_details,
                               include_overrides, include_overrides_details,
                               include_tags, include_tags_details,
-                              include_details, delta_state, NULL, 0, -1);
+                              include_details, delta_state, NULL, 0, -1, lean);
           delta_descr = result_iterator_descr (delta_results);
           delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                        : NULL;
@@ -10537,13 +10622,15 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             buffer_result_notes_xml (buffer,
                                      result_iterator_result (delta_results),
                                      selected_task,
-                                     include_notes_details);
+                                     include_notes_details,
+                                     lean);
 
           if (include_overrides)
             buffer_result_overrides_xml (buffer,
                                          result_iterator_result (delta_results),
                                          selected_task,
-                                         include_overrides_details);
+                                         include_overrides_details,
+                                         lean);
         }
       g_string_append (buffer, "</delta>");
     }
@@ -15748,6 +15835,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 get_reports_data->overrides_details,
                                 get_reports_data->result_tags,
                                 get_reports_data->ignore_pagination,
+                                get_reports_data->lean,
                                 /* Special case the XML report, bah. */
                                 get_reports_data->format_id
                                 && strcmp
@@ -16365,7 +16453,8 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                   NULL,
                                   NULL,
                                   0,
-                                  -1);
+                                  -1,
+                                  1);   /* Lean. */
               SEND_TO_CLIENT_OR_FAIL (buffer->str);
               g_string_free (buffer, TRUE);
               count ++;
