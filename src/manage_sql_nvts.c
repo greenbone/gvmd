@@ -1358,6 +1358,25 @@ update_nvts_from_vts (entity_t *get_vts_response,
 
   sql_begin_immediate ();
 
+  if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
+               "                  FROM meta"
+               "                  WHERE name = 'checked_preferences'),"
+               "                 0);")
+      == 0)
+    /* We're in the first NVT sync after migrating preference names.
+     *
+     * If a preference was removed from an NVT then the preference will be in
+     * nvt_preferences in the old format, but we will not get a new version
+     * of the preference name from the sync.  For example "Alle Dateien
+     * Auflisten" was removed from 1.3.6.1.4.1.25623.1.0.94023.
+     *
+     * If a preference was not in the migrator then the new version of the
+     * preference would be inserted alongside the old version, resulting in a
+     * duplicate when the name of the old version was corrected.
+     *
+     * To solve both cases, we remove all nvt_preferences. */
+    sql ("TRUNCATE nvt_preferences;");
+
   sql ("CREATE TEMPORARY TABLE old_nvts"
        " (oid TEXT, modification_time INTEGER);");
   sql ("INSERT INTO old_nvts (oid, modification_time)"
