@@ -930,11 +930,6 @@ inherit_tls_certificates (user_t user, user_t inheritor)
 
   sql ("UPDATE tls_certificates SET owner = %llu WHERE owner = %llu;",
        inheritor, user);
-
-  /* Trash TLS certificates. */
-
-  sql ("UPDATE tls_certificate_trash SET owner = %llu WHERE owner = %llu;",
-       inheritor, user);
 }
 
 /**
