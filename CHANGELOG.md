@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673) [#695](https://github.com/greenbone/gvmd/pull/695) [#703](https://github.com/greenbone/gvmd/pull/703) [#728](https://github.com/greenbone/gvmd/pull/728) [#732](https://github.com/greenbone/gvmd/pull/732) [#750](https://github.com/greenbone/gvmd/pull/750)
+- Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673) [#695](https://github.com/greenbone/gvmd/pull/695) [#703](https://github.com/greenbone/gvmd/pull/703) [#728](https://github.com/greenbone/gvmd/pull/728) [#732](https://github.com/greenbone/gvmd/pull/732) [#750](https://github.com/greenbone/gvmd/pull/750) [#752](https://github.com/greenbone/gvmd/pull/752)
 - Update NVTs via OSP [#392](https://github.com/greenbone/gvmd/pull/392) [#609](https://github.com/greenbone/gvmd/pull/609) [#626](https://github.com/greenbone/gvmd/pull/626)
 - Handle addition of ID to NVT preferences. [#413](https://github.com/greenbone/gvmd/pull/413) [#744](https://github.com/greenbone/gvmd/pull/744)
 - Add setting 'OMP Slave Check Period' [#491](https://github.com/greenbone/gvmd/pull/491)
@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - New usage_type property to distinguish normal scan tasks and configs from compliance audits and policies [#613](https://github.com/greenbone/gvmd/pull/613) [#625](https://github.com/greenbone/gvmd/pull/625) [#633](https://github.com/greenbone/gvmd/pull/633)
 - Command cleanup-report-formats for --optimize option [#652](https://github.com/greenbone/gvmd/pull/652)
 - Document container tasks in GMP doc [#688](https://github.com/greenbone/gvmd/pull/688)
+- Add lean option to GET_REPORTS [#745](https://github.com/greenbone/gvmd/pull/745)
 
 ### Changed
 - Check if NVT preferences exist before inserting. [#406](https://github.com/greenbone/gvmd/pull/406)
@@ -53,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check if the scan finished before deleting it and ensure that the task is set to done [#714](https://github.com/greenbone/gvmd/pull/714)
 - Fix columnless search phrase filter keywords with quotes [#715](https://github.com/greenbone/gvmd/pull/715)
 - Fix issues importing results or getting them from slaves if they contain "%s" [#723](https://github.com/greenbone/gvmd/pull/723)
+- Fix sorting by numeric filter columns [#751](https://github.com/greenbone/gvmd/pull/751)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)

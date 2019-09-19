@@ -3554,12 +3554,25 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY lower (%s) ASC",
-                                          column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) ASC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) ASC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) ASC",
+                                            column);
                 }
               else
                 /* Special case for notes text sorting. */
@@ -3731,15 +3744,25 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
-                  g_debug ("   %s: select_columns: %p", __FUNCTION__, select_columns);
-                  g_debug ("   %s: where_columns: %p", __FUNCTION__, where_columns);
-                  g_debug ("   %s: keyword->string: %p", __FUNCTION__, keyword->string);
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY lower (%s) DESC",
-                                          column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) DESC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) DESC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) DESC",
+                                            column);
                 }
               else
                 /* Special case for notes text sorting. */
@@ -24434,9 +24457,10 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
  *
  * @param[in]  xml       The buffer where to append to.
  * @param[in]  oid       The oid of the nvti object from where to collect the refs.
+ * @param[in]  first     Marker for first element.
  */
 void
-nvti_refs_append_xml (GString *xml, const char *oid)
+nvti_refs_append_xml (GString *xml, const char *oid, int *first)
 {
   nvti_t *nvti = lookup_nvti (oid);
   int i;
@@ -24446,7 +24470,15 @@ nvti_refs_append_xml (GString *xml, const char *oid)
 
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
-      vtref_t *ref = nvti_vtref (nvti, i);
+      vtref_t *ref;
+
+      if (first && *first)
+        {
+          xml_string_append (xml, "<refs>");
+          *first = 0;
+        }
+
+      ref = nvti_vtref (nvti, i);
       xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", vtref_type (ref), vtref_id (ref));
     }
 }
@@ -24456,13 +24488,14 @@ nvti_refs_append_xml (GString *xml, const char *oid)
  *
  * @param[in]  xml       The buffer where to append to.
  * @param[in]  iterator  Iterator.
+ * @param[in]  first     Marker for first element.
  */
 void
-result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
+result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator, int *first)
 {
   if (iterator->done) return;
 
-  nvti_refs_append_xml (xml, result_iterator_nvt_oid (iterator));
+  nvti_refs_append_xml (xml, result_iterator_nvt_oid (iterator), first);
 }
 
 /**
@@ -24609,7 +24642,7 @@ result_iterator_original_severity (iterator_t *iterator)
  * @return The severity of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-static const char*
+const char*
 result_iterator_severity (iterator_t *iterator)
 {
   const char* ret;
@@ -26769,7 +26802,7 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 /** @todo Defined in gmp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int,
                          int, int, int, int, const char *, iterator_t *,
-                         int, int);
+                         int, int, int);
 
 /**
  * @brief Comparison returns.
@@ -27098,7 +27131,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "changed",
                                   delta_results,
                                   1,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27128,7 +27162,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "gone",
                                   delta_results,
                                   0,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27158,7 +27193,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "new",
                                   delta_results,
                                   0,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27188,7 +27224,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "same",
                                   delta_results,
                                   0,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27790,31 +27827,83 @@ report_error_count (report_t report)
  *
  * @param[in]   stream    Stream to write to.
  * @param[in]   details   Report host details iterator.
+ * @param[in]   lean      Whether to return reduced info.
  *
  * @return 0 success, -1 error.
  */
 static int
-print_report_host_detail (FILE *stream, iterator_t *details)
+print_report_host_detail (FILE *stream, iterator_t *details, int lean)
 {
+  const char *name, *value;
+
+  name = report_host_details_iterator_name (details);
+  value = report_host_details_iterator_value (details);
+
+  if (lean)
+    {
+      /* Skip certain host details. */
+
+      if (strcmp (name, "EXIT_CODE") == 0
+          && strcmp (value, "EXIT_NOTVULN") == 0)
+        return 0;
+
+      if (strcmp (name, "scanned_with_scanner") == 0)
+        return 0;
+
+      if (strcmp (name, "scanned_with_feedtype") == 0)
+        return 0;
+
+      if (strcmp (name, "scanned_with_feedversion") == 0)
+        return 0;
+
+      if (strcmp (name, "OS") == 0)
+        return 0;
+
+      if (strcmp (name, "traceroute") == 0)
+        return 0;
+    }
+
   PRINT (stream,
         "<detail>"
         "<name>%s</name>"
         "<value>%s</value>"
-        "<source>"
-        "<type>%s</type>"
-        "<name>%s</name>"
-        "<description>%s</description>"
-        "</source>"
-        "<extra>%s</extra>"
-        "</detail>",
-        report_host_details_iterator_name (details),
-        report_host_details_iterator_value (details),
-        report_host_details_iterator_source_type (details),
-        report_host_details_iterator_source_name (details),
-        report_host_details_iterator_source_desc (details),
-        report_host_details_iterator_extra (details) ?
-         report_host_details_iterator_extra (details)
-         : "");
+        "<source>",
+        name,
+        value);
+
+  if (lean == 0)
+    PRINT (stream,
+           "<type>%s</type>",
+           report_host_details_iterator_source_type (details));
+
+  PRINT (stream,
+        "<name>%s</name>",
+        report_host_details_iterator_source_name (details));
+
+  if (report_host_details_iterator_source_desc (details)
+      && strlen (report_host_details_iterator_source_desc (details)))
+    PRINT (stream,
+           "<description>%s</description>",
+           report_host_details_iterator_source_desc (details));
+  else if (lean == 0)
+    PRINT (stream,
+           "<description></description>");
+
+  PRINT (stream,
+        "</source>");
+
+  if (report_host_details_iterator_extra (details)
+      && strlen (report_host_details_iterator_extra (details)))
+    PRINT (stream,
+           "<extra>%s</extra>",
+           report_host_details_iterator_extra (details));
+  else if (lean == 0)
+    PRINT (stream,
+           "<extra></extra>");
+
+  PRINT (stream,
+        "</detail>");
+
   return 0;
 }
 
@@ -27822,18 +27911,20 @@ print_report_host_detail (FILE *stream, iterator_t *details)
  * @brief Print the XML for a report's host details to a file stream.
  * @param[in]  report_host  The report host.
  * @param[in]  stream       File stream to write to.
+ * @param[in]  lean         Report host details iterator.
  *
  * @return 0 on success, -1 error.
  */
 static int
-print_report_host_details_xml (report_host_t report_host, FILE *stream)
+print_report_host_details_xml (report_host_t report_host, FILE *stream,
+                               int lean)
 {
   iterator_t details;
 
   init_report_host_details_iterator
    (&details, report_host);
   while (next (&details))
-    if (print_report_host_detail (stream, &details))
+    if (print_report_host_detail (stream, &details, lean))
       return -1;
   cleanup_iterator (&details);
 
@@ -28660,7 +28751,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     "new",
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -28706,7 +28798,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     "gone",
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -29230,6 +29323,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  ignore_pagination   Whether to ignore pagination data.
+ * @param[in]  lean                Whether to return lean report.
  * @param[out] filter_term_return  Filter term used in report.
  * @param[out] zone_return         Actual timezone used in report.
  * @param[out] host_summary    Summary of results per host.
@@ -29240,7 +29334,7 @@ static int
 print_report_xml_start (report_t report, report_t delta, task_t task,
                         gchar* xml_start, const get_data_t *get,
                         int notes_details, int overrides_details,
-                        int result_tags, int ignore_pagination,
+                        int result_tags, int ignore_pagination, int lean,
                         gchar **filter_term_return, gchar **zone_return,
                         gchar **host_summary)
 {
@@ -30031,7 +30125,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                               NULL,
                               NULL,
                               0,
-                              cert_loaded);
+                              cert_loaded,
+                              lean);
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)
@@ -30198,8 +30293,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                    host_iterator_end_time (&hosts));
               PRINT (out,
                      "<host>"
-                     "<ip>%s</ip>"
-                     "<asset asset_id=\"%s\"/>"
+                     "<ip>%s</ip>",
+                     result_host);
+
+              if (host_iterator_asset_uuid (&hosts)
+                  && strlen (host_iterator_asset_uuid (&hosts)))
+                PRINT (out,
+                       "<asset asset_id=\"%s\"/>",
+                       host_iterator_asset_uuid (&hosts));
+              else if (lean == 0)
+                PRINT (out,
+                       "<asset asset_id=\"\"/>");
+
+              PRINT (out,
                      "<start>%s</start>"
                      "<end>%s</end>"
                      "<port_count><page>%d</page></port_count>"
@@ -30211,10 +30317,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      "<log><page>%d</page></log>"
                      "<false_positive><page>%d</page></false_positive>"
                      "</result_count>",
-                     result_host,
-                     host_iterator_asset_uuid (&hosts)
-                       ? host_iterator_asset_uuid (&hosts)
-                       : "",
                      host_iterator_start_time (&hosts),
                      host_iterator_end_time (&hosts)
                        ? host_iterator_end_time (&hosts)
@@ -30229,7 +30331,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      false_positives_count);
 
               if (print_report_host_details_xml
-                   (host_iterator_report_host (&hosts), out))
+                   (host_iterator_report_host (&hosts), out, lean))
                 {
                   tz_revert (zone, tz, old_tz_override);
                   if (host_summary_buffer)
@@ -30288,8 +30390,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                host_iterator_end_time (&hosts));
           PRINT (out,
                  "<host>"
-                 "<ip>%s</ip>"
-                 "<asset asset_id=\"%s\"/>"
+                 "<ip>%s</ip>",
+                 host_iterator_host (&hosts));
+
+          if (host_iterator_asset_uuid (&hosts)
+              && strlen (host_iterator_asset_uuid (&hosts)))
+            PRINT (out,
+                   "<asset asset_id=\"%s\"/>",
+                   host_iterator_asset_uuid (&hosts));
+          else if (lean == 0)
+            PRINT (out,
+                   "<asset asset_id=\"\"/>");
+
+          PRINT (out,
                  "<start>%s</start>"
                  "<end>%s</end>"
                  "<port_count><page>%d</page></port_count>"
@@ -30301,10 +30414,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  "<log><page>%d</page></log>"
                  "<false_positive><page>%d</page></false_positive>"
                  "</result_count>",
-                 host_iterator_host (&hosts),
-                 host_iterator_asset_uuid (&hosts)
-                   ? host_iterator_asset_uuid (&hosts)
-                   : "",
                  host_iterator_start_time (&hosts),
                  host_iterator_end_time (&hosts)
                    ? host_iterator_end_time (&hosts)
@@ -30319,7 +30428,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  false_positives_count);
 
           if (print_report_host_details_xml
-               (host_iterator_report_host (&hosts), out))
+               (host_iterator_report_host (&hosts), out, lean))
             {
               tz_revert (zone, tz, old_tz_override);
               if (host_summary_buffer)
@@ -30494,6 +30603,7 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
                                 notes_details, overrides_details,
                                 1 /* result_tags */,
                                 0 /* ignore_pagination */,
+                                0 /* lean */,
                                 filter_term_return, zone_return, host_summary);
   if (ret)
     {
@@ -31150,6 +31260,7 @@ apply_report_format (gchar *report_format_id,
  * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  ignore_pagination  Whether to ignore pagination.
+ * @param[in]  lean               Whether to send lean report.
  * @param[in]  base64             Whether to base64 encode the report.
  * @param[in]  send               Function to write to client.
  * @param[in]  send_data_1        Second argument to \p send.
@@ -31167,7 +31278,7 @@ int
 manage_send_report (report_t report, report_t delta_report,
                     report_format_t report_format, const get_data_t *get,
                     int notes_details, int overrides_details, int result_tags,
-                    int ignore_pagination, int base64,
+                    int ignore_pagination, int lean, int base64,
                     gboolean (*send) (const char *,
                                       int (*) (const char *, void*),
                                       void*),
@@ -31233,7 +31344,7 @@ manage_send_report (report_t report, report_t delta_report,
   xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
   ret = print_report_xml_start (report, delta_report, task, xml_start, get,
                                 notes_details, overrides_details, result_tags,
-                                ignore_pagination, NULL, NULL, NULL);
+                                ignore_pagination, lean, NULL, NULL, NULL);
   if (ret)
     {
       g_free (xml_start);
