@@ -3446,10 +3446,9 @@ delete_osp_scan (const char *report_id, const char *host, int port,
 {
   osp_connection_t *connection;
 
-  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
   if (!connection)
     {
-      g_warning ("Couldn't connect to OSP scanner on %s:%d", host, port);
       return;
     }
   osp_delete_scan (connection, report_id);
@@ -3481,10 +3480,9 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
   int progress;
   char *error = NULL;
 
-  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
   if (!connection)
     {
-      g_warning ("Couldn't connect to OSP scanner on %s:%d", host, port);
       return -1;
     }
   progress = osp_get_scan_pop (connection, scan_id, report_xml, details,
@@ -3523,11 +3521,10 @@ get_osp_scan_status (const char *scan_id, const char *host, int port,
   osp_get_scan_status_opts_t get_scan_opts;
   osp_scan_status_t status = OSP_SCAN_STATUS_ERROR;
 
-  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
   if (!connection)
     {
-      g_warning ("Couldn't connect to OSP scanner on %s:%d", host, port);
-      return status;;
+      return status;
     }
 
   get_scan_opts.scan_id = scan_id;
@@ -4202,7 +4199,8 @@ fork_osp_scan_handler (task_t task, target_t target, char **report_id_return)
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS)
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
+      || scanner_type (task_scanner (task) == SCANNER_TYPE_OSP_SENSOR))
     {
       rc = launch_osp_openvas_task (task, target, report_id, &error);
     }
@@ -5245,7 +5243,8 @@ run_task (const char *task_id, char **report_id, int from)
     return run_gmp_task (task, scanner, from, report_id);
 
   if (scanner_type (scanner) == SCANNER_TYPE_OPENVAS
-      || scanner_type (scanner) == SCANNER_TYPE_OSP)
+      || scanner_type (scanner) == SCANNER_TYPE_OSP
+      || scanner_type (scanner) == SCANNER_TYPE_OSP_SENSOR)
     return run_osp_task (task, report_id);
 
   return -1; // Unknown scanner type

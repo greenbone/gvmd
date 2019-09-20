@@ -302,6 +302,7 @@ typedef enum scanner_type
   SCANNER_TYPE_OPENVAS,
   SCANNER_TYPE_CVE,
   SCANNER_TYPE_GMP,
+  SCANNER_TYPE_OSP_SENSOR,
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 
@@ -2828,6 +2829,13 @@ osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,
 
 int
 osp_get_details_from_iterator (iterator_t *, char **, GSList **);
+
+osp_connection_t *
+osp_connect_with_data (const char *,
+                       int,
+                       const char *,
+                       const char *,
+                       const char *);
 
 osp_connection_t *
 osp_scanner_connect (scanner_t);

@@ -43756,6 +43756,109 @@ openvas_default_scanner_host ()
 }
 
 /**
+ * @brief Create a new connection to an OSP scanner relay.
+ *
+ * @param[in]   host     Original host name or IP address.
+ * @param[in]   port     Original port.
+ * @param[in]   ca_pub   Original CA certificate.
+ *
+ * @return New connection if success, NULL otherwise.
+ */
+static osp_connection_t *
+osp_scanner_relay_connect (const char *host, int port, const char *ca_pub)
+{
+  int ret, new_port;
+  gchar *new_host, *new_ca_pub;
+  osp_connection_t *connection;
+
+  new_host = NULL;
+  new_ca_pub = NULL;
+  new_port = 0;
+
+  ret = slave_get_relay (host,
+                         port,
+                         ca_pub,
+                         "OSP",
+                         &new_host,
+                         &new_port,
+                         &new_ca_pub);
+
+  switch (ret)
+    {
+      case 0:
+        break;
+      case 1:
+        g_warning ("No relay found for Scanner at %s:%d", host, port);
+        return NULL;
+      default:
+        g_warning ("%s: Error getting relay for Scanner at %s:%d",
+                   __FUNCTION__, host, port);
+        return NULL;
+    }
+
+  connection
+    = osp_connection_new (new_host, new_port, new_ca_pub, NULL, NULL);
+
+  if (connection == NULL)
+    {
+      if (new_port)
+        g_warning ("Could not connect to relay at %s:%d"
+                    " for Scanner at %s:%d",
+                    new_host, new_port, host, port);
+      else
+        g_warning ("Could not connect to relay at %s"
+                    " for Scanner at %s:%d",
+                    new_host, host, port);
+    }
+
+  g_free (new_host);
+  g_free (new_ca_pub);
+
+  return connection;
+}
+
+/**
+ * @brief Create a new connection to an OSP scanner using the scanner data.
+ *
+ * @param[in]   host     Host name or IP address.
+ * @param[in]   port     Port.
+ * @param[in]   ca_pub   CA certificate.
+ * @param[in]   key_pub  Public key.
+ * @param[in]   key_priv Private key.
+ *
+ * @return New connection if success, NULL otherwise.
+ */
+osp_connection_t *
+osp_connect_with_data (const char *host,
+                       int port,
+                       const char *ca_pub,
+                       const char *key_pub,
+                       const char *key_priv)
+{
+  osp_connection_t *connection;
+  int is_unix_socket = (host && *host == '/') ? 1 : 0;
+
+  if (is_unix_socket == 0
+      && get_relay_mapper_path ())
+    {
+      connection = osp_scanner_relay_connect (host, port, ca_pub);
+    }
+  else
+    {
+      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+
+      if (connection == NULL)
+        {
+          if (is_unix_socket)
+            g_warning ("Could not connect to Scanner at %s:%d", host, port);
+          else
+            g_warning ("Could not connect to Scanner at %s", host);
+        }
+    }
+  return connection;
+}
+
+/**
  * @brief Create a new connection to an OSP scanner.
  *
  * @param[in]   scanner     Scanner.
@@ -43785,15 +43888,8 @@ osp_scanner_connect (scanner_t scanner)
       key_pub = scanner_key_pub (scanner);
       key_priv = scanner_key_priv (scanner);
     }
-  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
 
-  if (connection == NULL)
-    {
-      if (port)
-        g_warning ("Could not connect to Scanner at %s:%d", host, port);
-      else
-        g_warning ("Could not connect to Scanner at %s", host);
-    }
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
 
   g_free (host);
   g_free (ca_pub);
@@ -43823,11 +43919,11 @@ osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
   osp_connection_t *connection;
 
   assert (iterator);
-  connection = osp_connection_new (scanner_iterator_host (iterator),
-                                   scanner_iterator_port (iterator),
-                                   scanner_iterator_ca_pub (iterator),
-                                   scanner_iterator_key_pub (iterator),
-                                   scanner_iterator_key_priv (iterator));
+  connection = osp_connect_with_data (scanner_iterator_host (iterator),
+                                      scanner_iterator_port (iterator),
+                                      scanner_iterator_ca_pub (iterator),
+                                      scanner_iterator_key_pub (iterator),
+                                      scanner_iterator_key_priv (iterator));
   if (!connection)
     return 1;
   if (osp_get_version (connection, s_name, s_ver, d_name, d_ver, p_name, p_ver))
@@ -43852,11 +43948,11 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
   osp_connection_t *connection;
 
   assert (iterator);
-  connection = osp_connection_new (scanner_iterator_host (iterator),
-                                   scanner_iterator_port (iterator),
-                                   scanner_iterator_ca_pub (iterator),
-                                   scanner_iterator_key_pub (iterator),
-                                   scanner_iterator_key_priv (iterator));
+  connection = osp_connect_with_data (scanner_iterator_host (iterator),
+                                      scanner_iterator_port (iterator),
+                                      scanner_iterator_ca_pub (iterator),
+                                      scanner_iterator_key_pub (iterator),
+                                      scanner_iterator_key_priv (iterator));
   if (!connection)
     return 1;
   if (osp_get_scanner_details (connection, desc, params))
@@ -44015,7 +44111,8 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP
-           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_SENSOR)
     {
       int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
                                                NULL, NULL, NULL);
