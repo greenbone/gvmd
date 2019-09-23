@@ -1358,6 +1358,25 @@ update_nvts_from_vts (entity_t *get_vts_response,
 
   sql_begin_immediate ();
 
+  if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
+               "                  FROM meta"
+               "                  WHERE name = 'checked_preferences'),"
+               "                 0);")
+      == 0)
+    /* We're in the first NVT sync after migrating preference names.
+     *
+     * If a preference was removed from an NVT then the preference will be in
+     * nvt_preferences in the old format, but we will not get a new version
+     * of the preference name from the sync.  For example "Alle Dateien
+     * Auflisten" was removed from 1.3.6.1.4.1.25623.1.0.94023.
+     *
+     * If a preference was not in the migrator then the new version of the
+     * preference would be inserted alongside the old version, resulting in a
+     * duplicate when the name of the old version was corrected.
+     *
+     * To solve both cases, we remove all nvt_preferences. */
+    sql ("TRUNCATE nvt_preferences;");
+
   sql ("CREATE TEMPORARY TABLE old_nvts"
        " (oid TEXT, modification_time INTEGER);");
   sql ("INSERT INTO old_nvts (oid, modification_time)"
@@ -1397,6 +1416,31 @@ update_nvts_from_vts (entity_t *get_vts_response,
   update_all_config_caches ();
 
   sql_commit ();
+}
+
+/**
+ * @brief Check that preference names are in the new format.
+ *
+ * @param[in]  table  Table name.
+ */
+static void
+check_preference_names (const gchar *table)
+{
+  /* 1.3.6.1.4.1.25623.1.0.14259:checkbox:Log nmap output
+   * =>
+   * 1.3.6.1.4.1.25623.1.0.14259:21:checkbox:Log nmap output */
+
+  sql ("UPDATE %s"
+       " SET name = nvt_preferences.name"
+       " FROM nvt_preferences"
+       " WHERE %s.name ~ '.*:.*:.*'"
+       " AND nvt_preferences.name ~ '.*:.*:.*:.*'"
+       " AND %s.name = regexp_replace (nvt_preferences.name,"
+       "                               E'([^:]+):[^:]+:(.*)', '\\1:\\2');",
+       table,
+       table,
+       table,
+       table);
 }
 
 /**
@@ -1480,6 +1524,20 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
       g_info ("Updating VTs in database ... done (%i VTs).",
               sql_int ("SELECT count (*) FROM nvts;"));
+
+      if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
+                   "                  FROM meta"
+                   "                  WHERE name = 'checked_preferences'),"
+                   "                 0);")
+          == 0)
+        {
+          check_preference_names ("config_preferences");
+          check_preference_names ("config_preferences_trash");
+
+          sql ("INSERT INTO meta (name, value)"
+               " VALUES ('checked_preferences', 1)"
+               " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+        }
     }
 
   return 0;
