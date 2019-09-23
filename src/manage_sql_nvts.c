@@ -1501,7 +1501,10 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
           return -1;
         }
 
-      get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version); 
+      if (db_feed_version)
+        get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version);
+      else
+        get_vts_opts.filter = NULL;
       if (osp_get_vts_ext (connection, get_vts_opts, &vts))
         {
           g_warning ("%s: failed to get VTs", __FUNCTION__);
