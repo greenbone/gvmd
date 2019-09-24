@@ -42735,7 +42735,7 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
  *         3 scanner_id required, 4 invalid value, 5 credential not found,
  *         6 credential should be 'cc', 7 credential should be 'up',
- *         99 permission denied, -1 internal error.
+ *         8 credential missing, 99 permission denied, -1 internal error.
  */
 int
 modify_scanner (const char *scanner_id, const char *name, const char *comment,
@@ -42745,7 +42745,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   gchar *quoted_name, *quoted_comment, *quoted_host, *new_port, *new_type;
   scanner_t scanner = 0;
   credential_t credential = 0;
-  int iport, itype, unix_socket;
+  int iport, itype, unix_socket, credential_given;
 
   assert (current_credentials.uuid);
 
@@ -42803,7 +42803,16 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       g_free (old_host);
     }
 
-  if (credential_id && !unix_socket)
+  if (itype == 0)
+    itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+
+  if (credential_id
+      && (strcmp (credential_id, "") == 0 || strcmp (credential_id, "0") == 0))
+    {
+      credential = 0;
+      credential_given = 1;
+    }
+  else if (credential_id && !unix_socket)
     {
       if (find_credential_with_permission (credential_id, &credential,
                                            "get_credentials"))
@@ -42818,9 +42827,19 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
           return 5;
         }
 
-      if (itype == 0)
-        itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+      credential_given = 1;
+    }
+  else
+    {
+      credential = 0;
+      credential_given = 1;
+      sql_int64 (&credential,
+                 "SELECT credential FROM scanners WHERE id = %llu;",
+                 scanner);
+    }
 
+  if (credential)
+    {
       if (itype == SCANNER_TYPE_GMP)
         {
           if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
@@ -42836,6 +42855,11 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
           sql_rollback ();
           return 6;
         }
+    }
+  else if (itype == SCANNER_TYPE_GMP)
+    {
+      sql_rollback ();
+      return 8;
     }
 
   /* Check whether a scanner with the same name exists already. */
@@ -42887,10 +42911,14 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         sql ("UPDATE scanners SET ca_pub = NULL WHERE id = %llu;", scanner);
     }
 
-  if (credential_id && !unix_socket)
+  if (credential_given)
     {
-      sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;",
-           credential, scanner);
+      if (credential)
+        sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;",
+             credential, scanner);
+      else
+        sql ("UPDATE scanners SET credential = NULL WHERE id = %llu;",
+             scanner);
     }
   sql_commit ();
   return 0;
