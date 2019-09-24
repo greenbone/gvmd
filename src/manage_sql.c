@@ -43801,11 +43801,14 @@ openvas_default_scanner_host ()
  * @param[in]   host     Original host name or IP address.
  * @param[in]   port     Original port.
  * @param[in]   ca_pub   Original CA certificate.
+ * @param[in]   key_pub  Public key for authentication.
+ * @param[in]   key_priv Private key for authentication.
  *
  * @return New connection if success, NULL otherwise.
  */
 static osp_connection_t *
-osp_scanner_relay_connect (const char *host, int port, const char *ca_pub)
+osp_scanner_relay_connect (const char *host, int port, const char *ca_pub,
+                           const char *key_pub, const char *key_priv)
 {
   int ret, new_port;
   gchar *new_host, *new_ca_pub;
@@ -43837,7 +43840,7 @@ osp_scanner_relay_connect (const char *host, int port, const char *ca_pub)
     }
 
   connection
-    = osp_connection_new (new_host, new_port, new_ca_pub, NULL, NULL);
+    = osp_connection_new (new_host, new_port, new_ca_pub, key_pub, key_priv);
 
   if (connection == NULL)
     {
@@ -43881,7 +43884,8 @@ osp_connect_with_data (const char *host,
   if (is_unix_socket == 0
       && get_relay_mapper_path ())
     {
-      connection = osp_scanner_relay_connect (host, port, ca_pub);
+      connection
+        = osp_scanner_relay_connect (host, port, ca_pub, key_pub, key_priv);
     }
   else
     {
