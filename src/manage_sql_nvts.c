@@ -1302,6 +1302,14 @@ update_nvts_from_vts (entity_t *get_vts_response,
   entity_t vts, vt;
   entities_t children;
   GList *preferences;
+  int count_modified_vts = 0;
+  int count_new_vts = 0;
+  time_t feed_version_epoch = 0;
+  struct tm tm;
+
+  memset (&tm, 0, sizeof (struct tm));
+  strptime (nvts_feed_version(), "%Y%m%d%H%M%S", &tm);
+  feed_version_epoch = mktime (&tm);
 
   vts = entity_child (*get_vts_response, "vts");
   if (vts == NULL)
@@ -1341,6 +1349,11 @@ update_nvts_from_vts (entity_t *get_vts_response,
   while ((vt = first_entity (children)))
     {
       nvti_t *nvti = nvti_from_vt (vt);
+
+      if (nvti_creation_time (nvti) > feed_version_epoch)
+        count_new_vts += 1;
+      else
+        count_modified_vts += 1;
 
       insert_nvt (nvti);
 
