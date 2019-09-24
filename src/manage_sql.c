@@ -42596,7 +42596,8 @@ insert_scanner (const char* name, const char *comment, const char *host,
  *
  * @return 0 success, 1 scanner exists already, 2 Invalid value,
  *         3 credential not found, 4 credential should be 'up',
- *         5 credential should be 'cc', 99 permission denied.
+ *         5 credential should be 'cc', 6 credential required,
+ *         99 permission denied.
  */
 int
 create_scanner (const char* name, const char *comment, const char *host,
@@ -42623,8 +42624,6 @@ create_scanner (const char* name, const char *comment, const char *host,
       unix_socket = 1;
       ca_pub = NULL;
     }
-  if (!unix_socket && !credential_id)
-    return 2;
   iport = atoi (port);
   itype = atoi (type);
   if (iport <= 0 || iport > 65535)
@@ -42640,42 +42639,55 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 1;
     }
 
-  if (unix_socket)
+  if (!unix_socket && itype == SCANNER_TYPE_GMP && credential_id == NULL)
+    {
+      sql_rollback ();
+      return 6;
+    }
+  else if (unix_socket)
     insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
   else
     {
-      if (find_credential_with_permission
-           (credential_id, &credential, "get_credentials"))
+      credential = 0;
+      if (credential_id)
         {
-          sql_rollback ();
-          return -1;
-        }
-
-      if (credential == 0)
-        {
-          sql_rollback ();
-          return 3;
-        }
-      if (itype == SCANNER_TYPE_GMP)
-        {
-          if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
-                       credential))
+          if (find_credential_with_permission
+              (credential_id, &credential, "get_credentials"))
             {
               sql_rollback ();
-              return 4;
+              return -1;
             }
-        }
-      else if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
-                        credential))
-        {
-          sql_rollback ();
-          return 5;
+          if (credential == 0)
+            {
+              sql_rollback ();
+              return 3;
+            }
+          if (itype == SCANNER_TYPE_GMP)
+            {
+              if (sql_int ("SELECT type != 'up' FROM credentials"
+                          " WHERE id = %llu;",
+                          credential))
+                {
+                  sql_rollback ();
+                  return 4;
+                }
+            }
+          else if (sql_int ("SELECT type != 'cc' FROM credentials"
+                            " WHERE id = %llu;",
+                            credential))
+            {
+              sql_rollback ();
+              return 5;
+            }
         }
 
       insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
 
-      sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;", credential,
-           sql_last_insert_id ());
+      if (credential)
+        {
+          sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;",
+              credential, sql_last_insert_id ());
+        }
     }
 
   sql_commit ();
