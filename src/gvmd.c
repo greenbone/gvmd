@@ -1813,7 +1813,8 @@ gvmd (int argc, char** argv)
           "<number>" },
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,
-          "Excecutable for mapping scanner hosts to relays.",
+          "Executable for mapping scanner hosts to relays."
+          " Will check $PATH for the default. Use empty string to disable.",
           "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,
@@ -2043,7 +2044,7 @@ gvmd (int argc, char** argv)
       gchar *default_mapper = g_find_program_in_path ("gvm-relay-mapper");
       if (default_mapper)
         {
-          g_message ("Using default relay mapper '%s'.", default_mapper);
+          g_debug ("Using default relay mapper '%s'.", default_mapper);
           set_relay_mapper_path (default_mapper);
         }
       else
