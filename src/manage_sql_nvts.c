@@ -1160,11 +1160,13 @@ nvti_from_vt (entity_t vt)
 
   creation_time = entity_child (vt, "creation_time");
   if (creation_time)
-    nvti_set_creation_time (nvti, atoi (entity_text (creation_time)));
+    nvti_set_creation_time (nvti, strtol (entity_text (creation_time),
+                                          NULL, 10));
 
   modification_time = entity_child (vt, "modification_time");
   if (modification_time)
-    nvti_set_modification_time (nvti, atoi (entity_text (modification_time)));
+    nvti_set_modification_time (nvti, strtol (entity_text (modification_time),
+                                              NULL, 10));
 
   detection = entity_child (vt, "detection");
   if (detection)
