@@ -1353,6 +1353,9 @@ update_nvts_from_vts (entity_t *get_vts_response,
                __FUNCTION__);
   update_all_config_caches ();
 
+  g_info ("Updating VTs in database ... %i new VTs, %i changed VTs",
+          count_new_vts, count_modified_vts);
+
   sql_commit ();
 }
 
