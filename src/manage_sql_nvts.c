@@ -972,6 +972,9 @@ insert_nvt_preferences_list (GList *nvt_preferences_list)
 
 /**
  * @brief Set the NVT update check time in the meta table.
+ *
+ * @param[in]  count_new       Number of new VTs with current update.
+ * @param[in]  count_modified  Number of modified VTs with current update.
  */
 static void
 set_nvts_check_time (int count_new, int count_modified)
