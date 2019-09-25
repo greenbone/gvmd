@@ -1160,59 +1160,13 @@ nvti_from_vt (entity_t vt)
 
   creation_time = entity_child (vt, "creation_time");
   if (creation_time)
-    {
-      gint time;
-
-      switch (parse_time (entity_text (creation_time), &time))
-        {
-          case -1:
-            g_warning ("%s: Failed to parse creation time of %s: %s",
-                       __FUNCTION__, nvti_oid (nvti),
-                       entity_text (creation_time));
-            time = 0;
-            break;
-          case -2:
-            g_warning ("%s: Failed to make time: %s", __FUNCTION__,
-                       entity_text (creation_time));
-            time = 0;
-            break;
-          case -3:
-            g_warning ("%s: Failed to parse timezone offset: %s",
-                       __FUNCTION__,
-                       entity_text (creation_time));
-            time = 0;
-            break;
-        }
-      nvti_set_creation_time (nvti, time);
-    }
+    nvti_set_creation_time (nvti, strtol (entity_text (creation_time),
+                                          NULL, 10));
 
   modification_time = entity_child (vt, "modification_time");
   if (modification_time)
-    {
-      gint time;
-
-      switch (parse_time (entity_text (modification_time), &time))
-        {
-          case -1:
-            g_warning ("%s: Failed to parse modification time of %s: %s",
-                       __FUNCTION__, nvti_oid (nvti),
-                       entity_text (modification_time));
-            time = 0;
-            break;
-          case -2:
-            g_warning ("%s: Failed to make time: %s", __FUNCTION__,
-                       entity_text (modification_time));
-            time = 0;
-            break;
-          case -3:
-            g_warning ("%s: Failed to parse timezone offset: %s",
-                       __FUNCTION__,
-                       entity_text (modification_time));
-            time = 0;
-            break;
-        }
-      nvti_set_modification_time (nvti, time);
-    }
+    nvti_set_modification_time (nvti, strtol (entity_text (modification_time),
+                                              NULL, 10));
 
   detection = entity_child (vt, "detection");
   if (detection)
