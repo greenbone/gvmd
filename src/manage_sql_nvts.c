@@ -1000,7 +1000,7 @@ check_for_updated_nvts ()
  * @brief Set the NVT update check time in the meta table.
  */
 static void
-set_nvts_check_time ()
+set_nvts_check_time (int count_new, int count_modified)
 {
   if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
                "                   WHERE name = 'nvts_check_time')"))
@@ -1012,8 +1012,12 @@ set_nvts_check_time ()
          " WHERE name = 'nvts_check_time';");
   else
     {
-      check_for_new_nvts ();
-      check_for_updated_nvts ();
+      if (count_new > 0)
+        event (EVENT_NEW_SECINFO, "nvt", 0, 0);
+
+      if (count_modified > 0)
+        event (EVENT_UPDATED_SECINFO, "nvt", 0, 0);
+
       sql ("UPDATE meta SET value = m_now ()"
            " WHERE name = 'nvts_check_time';");
     }
@@ -1370,7 +1374,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   insert_nvt_preferences_list (preferences);
   g_list_free_full (preferences, g_free);
 
-  set_nvts_check_time ();
+  set_nvts_check_time (count_new_vts, count_modified_vts);
 
   sql ("DROP TABLE old_nvts;");
 
