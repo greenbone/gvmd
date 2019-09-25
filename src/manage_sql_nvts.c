@@ -1317,11 +1317,6 @@ update_nvts_from_vts (entity_t *get_vts_response,
      * To solve both cases, we remove all nvt_preferences. */
     sql ("TRUNCATE nvt_preferences;");
 
-  sql ("CREATE TEMPORARY TABLE old_nvts"
-       " (oid TEXT, modification_time INTEGER);");
-  sql ("INSERT INTO old_nvts (oid, modification_time)"
-       " SELECT oid, modification_time FROM nvts;");
-
   preferences = NULL;
   children = vts->entities;
   while ((vt = first_entity (children)))
@@ -1349,8 +1344,6 @@ update_nvts_from_vts (entity_t *get_vts_response,
   g_list_free_full (preferences, g_free);
 
   set_nvts_check_time (count_new_vts, count_modified_vts);
-
-  sql ("DROP TABLE old_nvts;");
 
   set_nvts_feed_version (scanner_feed_version);
 
