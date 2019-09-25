@@ -971,32 +971,6 @@ insert_nvt_preferences_list (GList *nvt_preferences_list)
 }
 
 /**
- * @brief Check for new NVTs after an update.
- */
-static void
-check_for_new_nvts ()
-{
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM nvts"
-               "  WHERE oid NOT IN (SELECT oid FROM old_nvts));"))
-    event (EVENT_NEW_SECINFO, "nvt", 0, 0);
-}
-
-/**
- * @brief Check for updated NVTS after an update.
- */
-static void
-check_for_updated_nvts ()
-{
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM nvts"
-               "  WHERE modification_time > (SELECT modification_time"
-               "                             FROM old_nvts"
-               "                             WHERE old_nvts.oid = nvts.oid));"))
-    event (EVENT_UPDATED_SECINFO, "nvt", 0, 0);
-}
-
-/**
  * @brief Set the NVT update check time in the meta table.
  */
 static void
