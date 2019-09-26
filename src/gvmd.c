@@ -1814,7 +1814,9 @@ gvmd (int argc, char** argv)
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,
           "Executable for mapping scanner hosts to relays."
-          " Will check $PATH for the default. Use empty string to disable.",
+          " Use an empty string to explicitly disable."
+          " If the option is not given, $PATH is checked for"
+          " gvm-relay-mapper.",
           "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,

@@ -125,7 +125,7 @@ Use port number NUMBER.
 Use port number NUMBER for address 2.
 .TP
 \fB--relay-mapper=\fIFILE\fB\f1
-Executable for mapping scanner hosts to relays. Will check $PATH for the default. Use empty string to disable.
+Executable for mapping scanner hosts to relays. Use an empty string to explicitly disable. If the option is not given, $PATH is checked for gvm-relay-mapper. 
 .TP
 \fB--role=\fIROLE\fB\f1
 Role for --create-user and --get-users.
