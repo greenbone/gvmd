@@ -6021,14 +6021,13 @@ report_type_iterator_title (report_type_iterator_t* iterator)
 }
 
 /**
- * @brief Get a system report from a slave.
+ * @brief Get a system report from a GMP slave.
  *
  * @param[in]  name       Name of report.
  * @param[in]  duration   Time range of report, in seconds.
  * @param[in]  start_time Time of first data point in report.
  * @param[in]  end_time   Time of last data point in report.
- * @param[in]  slave_id   ID of GMP scanner slave to get report from.
- *                        0 for local.
+ * @param[in]  slave      GMP scanner slave to get report from.
  * @param[out] report     On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
  *
@@ -6037,11 +6036,10 @@ report_type_iterator_title (report_type_iterator_t* iterator)
  * -1 otherwise.
  */
 static int
-slave_system_report (const char *name, const char *duration,
-                     const char *start_time, const char *end_time,
-                     const char *slave_id, char **report)
+gmp_slave_system_report (const char *name, const char *duration,
+                         const char *start_time, const char *end_time,
+                         scanner_t slave, char **report)
 {
-  scanner_t slave = 0;
   char *original_host, *original_ca_cert;
   int original_port, new_port, socket;
   gnutls_session_t session;
@@ -6050,11 +6048,6 @@ slave_system_report (const char *name, const char *duration,
   gmp_get_system_reports_opts_t opts;
   gchar *new_host, *new_ca_cert;
   int ret;
-
-  if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
-    return -1;
-  if (slave == 0)
-    return 2;
 
   original_host = scanner_host (slave);
   if (original_host == NULL)
@@ -6173,6 +6166,103 @@ slave_system_report (const char *name, const char *duration,
 #define DEFAULT_DURATION 86400L
 
 /**
+ * @brief Generate params for gvmcg or OSP get_performance.
+ *
+ * @param[in]  duration     The duration as a string
+ * @param[in]  start_time   The start time as a string
+ * @param[in]  end_time     The end time as a string
+ * @param[out] param_1      Output of the first parameter (start or duration)
+ * @param[out] param_2      Output of the second parameter (end time)
+ * @param[out] params_count The number of valid parameters
+ */
+void
+parse_performance_params (const char *duration,
+                          const char *start_time,
+                          const char *end_time,
+                          time_t *param_1,
+                          time_t *param_2,
+                          int *params_count)
+{
+  time_t start_time_num, end_time_num, duration_num;
+  start_time_num = 0;
+  end_time_num = 0;
+  duration_num = 0;
+
+  *param_1 = 0;
+  *param_2 = 0;
+  *params_count = 0;
+
+  if (duration && strcmp (duration, ""))
+    {
+      duration_num = atol (duration);
+      if (duration_num == 0)
+        return;
+    }
+  if (start_time && strcmp (start_time, ""))
+    {
+      start_time_num = parse_iso_time (start_time);
+      if (start_time_num == 0)
+        return;
+    }
+  if (end_time && strcmp (end_time, ""))
+    {
+      end_time_num = parse_iso_time (end_time);
+      if (end_time_num == 0)
+        return;
+    }
+
+  if (start_time && strcmp (start_time, ""))
+    {
+      if (end_time && strcmp (end_time, ""))
+        {
+          *param_1 = start_time_num;
+          *param_2 = end_time_num;
+          *params_count = 2;
+        }
+      else if (duration && strcmp (duration, ""))
+        {
+          *param_1 = start_time_num;
+          *param_2 = start_time_num + duration_num;
+          *params_count = 2;
+        }
+      else
+        {
+          *param_1 = start_time_num;
+          *param_2 = start_time_num + DEFAULT_DURATION;
+          *params_count = 2;
+        }
+    }
+  else if (end_time && strcmp (end_time, ""))
+    {
+      if (duration && strcmp (duration, ""))
+        {
+          *param_1 = end_time_num - duration_num;
+          *param_2 = end_time_num;
+          *params_count = 2;
+        }
+      else
+        {
+          *param_1 = end_time_num - DEFAULT_DURATION,
+          *param_1 = end_time_num,
+          *params_count = 2;
+        }
+    }
+  else
+    {
+      if (duration && strcmp (duration, ""))
+        {
+          *param_1 = duration_num;
+          *params_count = 1;
+        }
+      else
+        {
+          *param_1 = DEFAULT_DURATION;
+          *params_count = 1;
+        }
+    }
+}
+
+/**
  * @brief Get a system report.
  *
  * @param[in]  name       Name of report.
@@ -6184,6 +6274,7 @@ slave_system_report (const char *name, const char *duration,
  *                        else NULL.  Arbitrary on error.
  *
  * @return 0 if successful (including failure to find report), -1 on error,
+ *         2 could not find slave scanner,
  *         3 if used the fallback report,  4 could not connect to slave,
  *         5 authentication failed, 6 failed to get system report.
  */
@@ -6197,96 +6288,68 @@ manage_system_report (const char *name, const char *duration,
   GError *err = NULL;
   gint exit_status;
   gchar *command;
-  time_t start_time_num, end_time_num, duration_num;
-  start_time_num = 0;
-  end_time_num = 0;
-  duration_num = 0;
+  time_t cmd_param_1, cmd_param_2;
+  int params_count;
 
   assert (name);
 
-  if (duration && strcmp (duration, ""))
-    {
-      duration_num = atol (duration);
-      if (duration_num == 0)
-        return manage_system_report ("blank", NULL, NULL, NULL,
-                                     NULL, report);
-    }
-  if (start_time && strcmp (start_time, ""))
-    {
-      start_time_num = parse_iso_time (start_time);
-      if (start_time_num == 0)
-        return manage_system_report ("blank", NULL, NULL, NULL,
-                                     NULL, report);
-    }
-  if (end_time && strcmp (end_time, ""))
-    {
-      end_time_num = parse_iso_time (end_time);
-      if (end_time_num == 0)
-        return manage_system_report ("blank", NULL, NULL, NULL,
-                                     NULL, report);
-    }
+  parse_performance_params (duration, start_time, end_time,
+                            &cmd_param_1, &cmd_param_2, &params_count);
+
+  if (params_count == 0)
+    return manage_system_report ("blank", NULL, NULL, NULL, NULL, report);
 
   if (slave_id && strcmp (slave_id, "0"))
-    return slave_system_report (name, duration, start_time, end_time,
-                                slave_id, report);
+    {
+      scanner_t slave;
+      scanner_type_t slave_type;
+
+      slave = 0;
+
+      if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
+        return -1;
+      if (slave == 0)
+        return 2;
+
+      slave_type = scanner_type (slave);
+      if (slave_type == SCANNER_TYPE_GMP)
+        return gmp_slave_system_report (name, duration, start_time, end_time,
+                                        slave, report);
+      else
+        {
+          if (params_count == 1)
+            {
+              // only duration
+              time_t now;
+              now = time (NULL);
+              return get_osp_performance_string (slave,
+                                                 now - cmd_param_1,
+                                                 now,
+                                                 name,
+                                                 report);
+            }
+          else
+            {
+              // start and end time
+              return get_osp_performance_string (slave,
+                                                 cmd_param_1,
+                                                 cmd_param_2,
+                                                 name,
+                                                 report);
+            }
+        }
+    }
 
   /* For simplicity, it's up to the command to do the base64 encoding. */
-  if (start_time && strcmp (start_time, ""))
-    {
-      if (end_time && strcmp (end_time, ""))
-        {
-          command = g_strdup_printf ("gvmcg %ld %ld %s",
-                                     start_time_num,
-                                     end_time_num,
-                                     name);
-        }
-      else if (duration && strcmp (duration, ""))
-        {
-          command = g_strdup_printf ("gvmcg %ld %ld %s",
-                                     start_time_num,
-                                     start_time_num + duration_num,
-                                     name);
-        }
-      else
-        {
-          command = g_strdup_printf ("gvmcg %ld %ld %s",
-                                     start_time_num,
-                                     start_time_num + DEFAULT_DURATION,
-                                     name);
-        }
-    }
-  else if (end_time && strcmp (end_time, ""))
-    {
-      if (duration && strcmp (duration, ""))
-        {
-          command = g_strdup_printf ("gvmcg %ld %ld %s",
-                                     end_time_num - duration_num,
-                                     end_time_num,
-                                     name);
-        }
-      else
-        {
-          command = g_strdup_printf ("gvmcg %ld %ld %s",
-                                     end_time_num - DEFAULT_DURATION,
-                                     end_time_num,
-                                     name);
-        }
-    }
+  if (params_count == 1)
+    command = g_strdup_printf ("gvmcg %ld %s",
+                               cmd_param_1,
+                               name);
   else
-    {
-      if (duration && strcmp (duration, ""))
-        {
-          command = g_strdup_printf ("gvmcg %ld %s",
-                                     duration_num,
-                                     name);
-        }
-      else
-        {
-          command = g_strdup_printf ("gvmcg %ld %s",
-                                     DEFAULT_DURATION,
-                                     name);
-        }
-    }
+    command = g_strdup_printf ("gvmcg %ld %ld %s",
+                               cmd_param_1,
+                               cmd_param_2,
+                               name);
 
   g_debug ("   command: %s", command);
 
