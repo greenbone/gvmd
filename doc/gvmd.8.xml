@@ -281,6 +281,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </optdesc>
     </option>
     <option>
+      <p><opt>--relay-mapper=<arg>FILE</arg></opt></p>
+      <optdesc>
+        <p>Executable for mapping scanner hosts to relays.
+          Use an empty string to explicitly disable.
+          If the option is not given, $PATH is checked for gvm-relay-mapper.
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--role=<arg>ROLE</arg></opt></p>
       <optdesc>
         <p>Role for --create-user and --get-users.</p>

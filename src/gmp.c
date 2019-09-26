@@ -19500,12 +19500,31 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
           goto create_scanner_leave;
       }
 
-  if (!create_scanner_data->name || !create_scanner_data->host
-      || !create_scanner_data->port || !create_scanner_data->type
-      || !create_scanner_data->credential_id)
+  if (!create_scanner_data->name)
     {
       SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("create_scanner", "Missing entity"));
+       (XML_ERROR_SYNTAX ("create_scanner", "Missing NAME"));
+      goto create_scanner_leave;
+    }
+
+  if (!create_scanner_data->host)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Missing HOST"));
+      goto create_scanner_leave;
+    }
+
+  if (!create_scanner_data->port)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Missing PORT"));
+      goto create_scanner_leave;
+    }
+
+  if (!create_scanner_data->type)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Missing TYPE"));
       goto create_scanner_leave;
     }
 
@@ -19570,6 +19589,12 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("create_scanner",
                             "Credential must be of type 'cc'"
                             " (client certificate)"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case 6:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Scanner type requires a credential"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
       case 99:
@@ -19683,6 +19708,13 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("modify_scanner",
                             "Credential must be of type 'up'"
                             " (username + password)"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case 8:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner",
+                            "Scanner type requires a credential"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
