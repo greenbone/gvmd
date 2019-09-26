@@ -4911,7 +4911,7 @@ set_relay_mapper_path (const char *new_path)
  * @param[in]  protocol         The protocol to look for, e.g. "GMP" or "OSP".
  * @param[out] new_host         The hostname or IP address of the relay.
  * @param[out] new_port         The port number of the relay.
- * @param[in]  new_ca_cert      The CA certificate of the relay.
+ * @param[out] new_ca_cert      The CA certificate of the relay.
  *
  * @return 0 success, 1 relay not found, -1 error.
  */
