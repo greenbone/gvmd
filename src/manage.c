@@ -5634,6 +5634,11 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 
   connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
 
+  free (host);
+  free (ca_pub);
+  free (key_pub);
+  free (key_priv);
+
   if (connection == NULL)
     return 4;
 
