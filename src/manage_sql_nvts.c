@@ -172,7 +172,7 @@ nvts_feed_version_epoch ()
   struct tm tm;
 
   memset (&tm, 0, sizeof (struct tm));
-  strptime (nvts_feed_version(), "%Y%m%d%H%M%S", &tm);
+  strptime (nvts_feed_version (), "%Y%m%d%H%M%S", &tm);
   return mktime (&tm);
 }
 
@@ -1298,9 +1298,11 @@ update_nvts_from_vts (entity_t *get_vts_response,
   entity_t vts, vt;
   entities_t children;
   GList *preferences;
-  int count_modified_vts = 0;
-  int count_new_vts = 0;
+  int count_modified_vts, count_new_vts;
   time_t feed_version_epoch;
+
+  count_modified_vts = 0;
+  count_new_vts = 0;
 
   feed_version_epoch = nvts_feed_version_epoch();
 
