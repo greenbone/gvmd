@@ -162,6 +162,21 @@ nvts_feed_version ()
 }
 
 /**
+ * @brief Return feed version of the plugins as seconds since epoch.
+ *
+ * @return Feed version in seconds since epoch of plugins.
+ */
+time_t
+nvts_feed_version_epoch ()
+{
+  struct tm tm;
+
+  memset (&tm, 0, sizeof (struct tm));
+  strptime (nvts_feed_version(), "%Y%m%d%H%M%S", &tm);
+  return mktime (&tm);
+}
+
+/**
  * @brief Set the feed version of the plugins in the plugin cache.
  *
  * @param[in]  feed_version  New feed version.
@@ -1285,12 +1300,9 @@ update_nvts_from_vts (entity_t *get_vts_response,
   GList *preferences;
   int count_modified_vts = 0;
   int count_new_vts = 0;
-  time_t feed_version_epoch = 0;
-  struct tm tm;
+  time_t feed_version_epoch;
 
-  memset (&tm, 0, sizeof (struct tm));
-  strptime (nvts_feed_version(), "%Y%m%d%H%M%S", &tm);
-  feed_version_epoch = mktime (&tm);
+  feed_version_epoch = nvts_feed_version_epoch();
 
   vts = entity_child (*get_vts_response, "vts");
   if (vts == NULL)
