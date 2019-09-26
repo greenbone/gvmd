@@ -43894,9 +43894,9 @@ osp_connect_with_data (const char *host,
       if (connection == NULL)
         {
           if (is_unix_socket)
-            g_warning ("Could not connect to Scanner at %s:%d", host, port);
-          else
             g_warning ("Could not connect to Scanner at %s", host);
+          else
+            g_warning ("Could not connect to Scanner at %s:%d", host, port);
         }
     }
   return connection;
