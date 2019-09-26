@@ -4941,12 +4941,14 @@ slave_get_relay (const char *original_host,
   else
     {
       gchar **cmd, *stdout_str, *stderr_str;
-      int exit_code = -1;
-      GError *err = NULL;
+      int exit_code;
+      GError *err;
       entity_t relay_entity;
 
       stdout_str = NULL;
       stderr_str = NULL;
+      exit_code = -1;
+      err = NULL;
 
       cmd = (gchar **) g_malloc (8 * sizeof (gchar *));
       cmd[0] = g_strdup (relay_mapper_path);
