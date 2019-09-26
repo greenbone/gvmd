@@ -5670,9 +5670,8 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
  * @param[out]  start          Actual start of types, which caller must free.
  * @param[out]  slave          GMP slave.
  *
- * @return 0 if successful, 2 unused, 3 unused, 4 could not
- * connect to slave, 5 authentication failed, 6 failed to get system report,
- * -1 otherwise.
+ * @return 0 if successful, 4 could not connect to slave, 5 authentication
+ * failed, 6 failed to get system report, -1 otherwise.
  */
 static int
 get_slave_system_report_types (const char *required_type, gchar ***start,
@@ -5687,7 +5686,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   int ret;
 
   if (slave == 0)
-    return 2;
+    return -1;
 
   original_host = scanner_host (slave);
   if (original_host == NULL)
@@ -6036,9 +6035,8 @@ report_type_iterator_title (report_type_iterator_t* iterator)
  * @param[out] report     On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
  *
- * @return 0 if successful, 2 failed to find slave, 3 unused, 4 could not
- * connect to slave, 5 authentication failed, 6 failed to get system report,
- * -1 otherwise.
+ * @return 0 if successful, 4 could not connect to slave, 5 authentication
+ * failed, 6 failed to get system report, -1 otherwise.
  */
 static int
 gmp_slave_system_report (const char *name, const char *duration,
@@ -6053,6 +6051,9 @@ gmp_slave_system_report (const char *name, const char *duration,
   gmp_get_system_reports_opts_t opts;
   gchar *new_host, *new_ca_cert;
   int ret;
+
+  if (slave == 0)
+    return -1;
 
   original_host = scanner_host (slave);
   if (original_host == NULL)
