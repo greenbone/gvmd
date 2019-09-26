@@ -5605,22 +5605,74 @@ credential_full_type (const char* abbreviation)
 /* System reports. */
 
 /**
- * @brief Get system report types from a slave.
+ * @brief Get a performance report from an OSP scanner.
+ *
+ * @param[in]  scanner          The scanner to get the performance report from.
+ * @param[in]  start            The start time of the performance report.
+ * @param[in]  end              The end time of the performance report.
+ * @param[in]  titles           The end titles for the performance report.
+ * @param[in]  performance_str  The performance string.
+ *
+ * @return 0 if successful, 4 could not connect to scanner,
+ *         6 failed to get performance report, -1 error
+ */
+static int
+get_osp_performance_string (scanner_t scanner, int start, int end,
+                            const char *titles, gchar **performance_str)
+{
+  char *host, *ca_pub, *key_pub, *key_priv;
+  int port;
+  osp_connection_t *connection;
+  osp_get_performance_opts_t opts;
+  gchar *error;
+
+  host = scanner_host (scanner);
+  port = scanner_port (scanner);
+  ca_pub = scanner_ca_pub (scanner);
+  key_pub = scanner_key_pub (scanner);
+  key_priv = scanner_key_priv (scanner);
+
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+
+  if (connection == NULL)
+    return 4;
+
+  opts.start = start;
+  opts.end = end;
+  opts.titles = g_strdup (titles);
+  error = NULL;
+
+  if (osp_get_performance_ext (connection, opts, performance_str, &error))
+    {
+      osp_connection_close (connection);
+      g_warning ("Error getting OSP performance report: %s", error);
+      g_free (error);
+      g_free (opts.titles);
+      return 4;
+    }
+
+  osp_connection_close (connection);
+  g_free (opts.titles);
+
+  return 0;
+}
+
+/**
+ * @brief Get system report types from a GMP slave.
  *
  * @param[in]   required_type  Single type to limit types to.
  * @param[out]  types          Types on success.
  * @param[out]  start          Actual start of types, which caller must free.
- * @param[out]  slave_id       ID of GMP slave.
+ * @param[out]  slave          GMP slave.
  *
- * @return 0 if successful, 2 failed to find slave, 3 unused, 4 could not
+ * @return 0 if successful, 2 unused, 3 unused, 4 could not
  * connect to slave, 5 authentication failed, 6 failed to get system report,
  * -1 otherwise.
  */
 static int
 get_slave_system_report_types (const char *required_type, gchar ***start,
-                               gchar ***types, const char *slave_id)
+                               gchar ***types, scanner_t slave)
 {
-  scanner_t slave = 0;
   char *original_host, *original_ca_cert, **end;
   int original_port, new_port, socket;
   gnutls_session_t session;
@@ -5629,8 +5681,6 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
   gchar *new_host, *new_ca_cert;
   int ret;
 
-  if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
-    return -1;
   if (slave == 0)
     return 2;
 
@@ -5778,30 +5828,56 @@ get_system_report_types (const char *required_type, gchar ***start,
   gint exit_status;
 
   if (slave_id && strcmp (slave_id, "0"))
-    return get_slave_system_report_types (required_type, start, types,
-                                          slave_id);
-
-  g_debug ("   command: " COMMAND);
-
-  if ((g_spawn_command_line_sync (COMMAND,
-                                  &astdout,
-                                  &astderr,
-                                  &exit_status,
-                                  &err)
-       == FALSE)
-      || (WIFEXITED (exit_status) == 0)
-      || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: gvmcg failed with %d", __FUNCTION__, exit_status);
-      g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
-      g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
-      g_free (astdout);
-      g_free (astderr);
-      *start = *types = g_malloc0 (sizeof (gchar*) * 2);
-      (*start)[0] = g_strdup ("fallback Fallback Report");
-      (*start)[0][strlen ("fallback")] = '\0';
-      return 3;
+      scanner_t slave;
+      scanner_type_t slave_type;
+
+      slave = 0;
+      slave_type = SCANNER_TYPE_NONE;
+
+      if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
+        return -1;
+      if (slave == 0)
+        return 2;
+
+      if (slave_type == SCANNER_TYPE_GMP)
+        return get_slave_system_report_types (required_type, start, types,
+                                              slave);
+      else
+        {
+          // Assume OSP scanner
+          int ret;
+          ret = get_osp_performance_string (slave, 0, 0, "titles", &astdout);
+
+          if (ret)
+            return ret;
+        }
     }
+  else
+    {
+      g_debug ("   command: " COMMAND);
+
+      if ((g_spawn_command_line_sync (COMMAND,
+                                      &astdout,
+                                      &astderr,
+                                      &exit_status,
+                                      &err)
+          == FALSE)
+          || (WIFEXITED (exit_status) == 0)
+          || WEXITSTATUS (exit_status))
+        {
+          g_debug ("%s: gvmcg failed with %d", __FUNCTION__, exit_status);
+          g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
+          g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
+          g_free (astdout);
+          g_free (astderr);
+          *start = *types = g_malloc0 (sizeof (gchar*) * 2);
+          (*start)[0] = g_strdup ("fallback Fallback Report");
+          (*start)[0][strlen ("fallback")] = '\0';
+          return 3;
+        }
+    }
+
   if (astdout)
     {
       char **type;
