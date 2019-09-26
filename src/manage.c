@@ -5849,8 +5849,9 @@ get_system_report_types (const char *required_type, gchar ***start,
                                               slave);
       else
         {
-          // Assume OSP scanner
           int ret;
+
+          // Assume OSP scanner
           ret = get_osp_performance_string (slave, 0, 0, "titles", &astdout);
 
           if (ret)
