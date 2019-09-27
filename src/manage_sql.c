@@ -42639,7 +42639,11 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 1;
     }
 
-  if (!unix_socket && itype == SCANNER_TYPE_GMP && credential_id == NULL)
+  if (!unix_socket
+      && itype == SCANNER_TYPE_GMP
+      && (credential_id == NULL
+          || strcmp (credential_id, "") == 0
+          || strcmp (credential_id, "0") == 0))
     {
       sql_rollback ();
       return 6;
@@ -42649,7 +42653,9 @@ create_scanner (const char* name, const char *comment, const char *host,
   else
     {
       credential = 0;
-      if (credential_id)
+      if (credential_id
+          && strcmp (credential_id, "")
+          && strcmp (credential_id, "0"))
         {
           if (find_credential_with_permission
               (credential_id, &credential, "get_credentials"))
