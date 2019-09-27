@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Command cleanup-report-formats for --optimize option [#652](https://github.com/greenbone/gvmd/pull/652)
 - Document container tasks in GMP doc [#688](https://github.com/greenbone/gvmd/pull/688)
 - Add lean option to GET_REPORTS [#745](https://github.com/greenbone/gvmd/pull/745)
-- Add scanner relays and OSP sensor scanner type [#756](https://github.com/greenbone/gvmd/pull/756)
+- Add scanner relays and OSP sensor scanner type [#756](https://github.com/greenbone/gvmd/pull/756) [#759](https://github.com/greenbone/gvmd/pull/759)
 
 ### Changed
 - Check if NVT preferences exist before inserting. [#406](https://github.com/greenbone/gvmd/pull/406)
