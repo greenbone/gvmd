@@ -129,11 +129,6 @@
 #endif
 
 /**
- * @brief Scanner (openvassd) address.
- */
-#define OPENVASSD_ADDRESS GVM_RUN_DIR "/openvassd.sock"
-
-/**
  * @brief Location of scanner certificate.
  */
 #ifndef SCANNERCERT
@@ -1828,8 +1823,7 @@ gvmd (int argc, char** argv)
           "<scanner-ca-pub>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_host,
-          "Scanner host for --create-scanner and --modify-scanner."
-          " Default is " OPENVASSD_ADDRESS ".",
+          "Scanner host for --create-scanner and --modify-scanner.",
           "<scanner-host>" },
         { "scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_key_priv,
@@ -2247,7 +2241,10 @@ gvmd (int argc, char** argv)
         return EXIT_FAILURE;
 
       if (!scanner_host)
-        scanner_host = OPENVASSD_ADDRESS;
+        {
+          printf ("A --scanner-host is required\n");
+          return EXIT_FAILURE;
+        }
       if (!scanner_port)
         scanner_port = G_STRINGIFY (OPENVASSD_PORT);
       if (!scanner_ca_pub)
