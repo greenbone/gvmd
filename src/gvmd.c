@@ -421,8 +421,6 @@ watch_client_connection (void* data)
 /**
  * @brief Serve the client.
  *
- * Connect to the openvassd scanner, then call \ref serve_gmp to serve GMP.
- *
  * In all cases, close client_socket before returning.
  *
  * @param[in]  server_socket      The socket connected to the Manager.
