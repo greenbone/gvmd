@@ -164,13 +164,6 @@
 #endif
 
 /**
- * @brief Scanner port.
- *
- * Used if --scanner-port is missing.
- */
-#define OPENVASSD_PORT 9391
-
-/**
  * @brief Manager port.
  *
  * Used if /etc/services "otp" and --port are missing.
@@ -1840,7 +1833,7 @@ gvmd (int argc, char** argv)
         { "scanner-port", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_port,
           "Scanner port for --create-scanner and --modify-scanner."
-          " Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
+          " Default is " G_STRINGIFY (GVMD_PORT) ".",
           "<scanner-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
@@ -2246,7 +2239,7 @@ gvmd (int argc, char** argv)
           return EXIT_FAILURE;
         }
       if (!scanner_port)
-        scanner_port = G_STRINGIFY (OPENVASSD_PORT);
+        scanner_port = G_STRINGIFY (GVMD_PORT);
       if (!scanner_ca_pub)
         scanner_ca_pub = CACERT;
       if (!scanner_key_pub)
