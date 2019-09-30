@@ -2538,6 +2538,8 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
     return 1;
   if (ctype == 0 && stype == SCANNER_TYPE_GMP)
     return 1;
+  if (ctype == 0 && stype == SCANNER_TYPE_OSP_SENSOR)
+    return 1;
   if (ctype == 1 && stype == SCANNER_TYPE_OSP)
     return 1;
 
@@ -2613,6 +2615,10 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
 
   /* GMP Scanner with OpenVAS config. */
   if (stype == SCANNER_TYPE_GMP && ctype == 0)
+    return 0;
+
+  /* OSP Sensor with OpenVAS config. */
+  if (stype == SCANNER_TYPE_OSP_SENSOR && ctype == 0)
     return 0;
 
   /* Default Scanner with OpenVAS Config. */
