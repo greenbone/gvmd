@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Request nvti_cache update only at very end of NVT update. [#426](https://github.com/greenbone/gvmd/pull/426)
 - Consolidate NVT references into unified "refs" element. [#427](https://github.com/greenbone/gvmd/pull/427)
 - Update gvm-libs version requirements to v11.0. [#480](https://github.com/greenbone/gvmd/pull/480)
--Adjust to use new API for vt references. [#526](https://github.com/greenbone/gvmd/pull/526)
+- Adjust to use new API for vt references. [#526](https://github.com/greenbone/gvmd/pull/526)
 - Expect NVT sync script in bin directory. [#546](https://github.com/greenbone/gvmd/pull/546)
 - Change internal handling of NVT XML to use nvti_t. [#562](https://github.com/greenbone/gvmd/pull/562)
 - Change NVT references like CVEs and BID to general vt_refs. [#570](https://github.com/greenbone/gvmd/pull/570) [#574](https://github.com/greenbone/gvmd/pull/574) [#582](https://github.com/greenbone/gvmd/pull/582)
@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - New columns Ports, Apps, Distance, and Auth in the CSV Hosts report format [#733](https://github.com/greenbone/gvmd/pull/733)
 - The details attribute of GET_REPORTS now defaults to 0 [#747](https://github.com/greenbone/gvmd/pull/747)
 - Incoming VT timestamps via OSP are now assumed to be seconds since epoch [#754](https://github.com/greenbone/gvmd/pull/754)
+- Accelerate NVT feed update [#757](https://github.com/greenbone/gvmd/pull/757)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)

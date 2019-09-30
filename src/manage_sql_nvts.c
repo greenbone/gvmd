@@ -162,6 +162,21 @@ nvts_feed_version ()
 }
 
 /**
+ * @brief Return feed version of the plugins as seconds since epoch.
+ *
+ * @return Feed version in seconds since epoch of plugins.
+ */
+time_t
+nvts_feed_version_epoch ()
+{
+  struct tm tm;
+
+  memset (&tm, 0, sizeof (struct tm));
+  strptime (nvts_feed_version (), "%Y%m%d%H%M%S", &tm);
+  return mktime (&tm);
+}
+
+/**
  * @brief Set the feed version of the plugins in the plugin cache.
  *
  * @param[in]  feed_version  New feed version.
@@ -971,36 +986,13 @@ insert_nvt_preferences_list (GList *nvt_preferences_list)
 }
 
 /**
- * @brief Check for new NVTs after an update.
- */
-static void
-check_for_new_nvts ()
-{
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM nvts"
-               "  WHERE oid NOT IN (SELECT oid FROM old_nvts));"))
-    event (EVENT_NEW_SECINFO, "nvt", 0, 0);
-}
-
-/**
- * @brief Check for updated NVTS after an update.
- */
-static void
-check_for_updated_nvts ()
-{
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM nvts"
-               "  WHERE modification_time > (SELECT modification_time"
-               "                             FROM old_nvts"
-               "                             WHERE old_nvts.oid = nvts.oid));"))
-    event (EVENT_UPDATED_SECINFO, "nvt", 0, 0);
-}
-
-/**
  * @brief Set the NVT update check time in the meta table.
+ *
+ * @param[in]  count_new       Number of new VTs with current update.
+ * @param[in]  count_modified  Number of modified VTs with current update.
  */
 static void
-set_nvts_check_time ()
+set_nvts_check_time (int count_new, int count_modified)
 {
   if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
                "                   WHERE name = 'nvts_check_time')"))
@@ -1012,8 +1004,12 @@ set_nvts_check_time ()
          " WHERE name = 'nvts_check_time';");
   else
     {
-      check_for_new_nvts ();
-      check_for_updated_nvts ();
+      if (count_new > 0)
+        event (EVENT_NEW_SECINFO, "nvt", 0, 0);
+
+      if (count_modified > 0)
+        event (EVENT_UPDATED_SECINFO, "nvt", 0, 0);
+
       sql ("UPDATE meta SET value = m_now ()"
            " WHERE name = 'nvts_check_time';");
     }
@@ -1302,6 +1298,13 @@ update_nvts_from_vts (entity_t *get_vts_response,
   entity_t vts, vt;
   entities_t children;
   GList *preferences;
+  int count_modified_vts, count_new_vts;
+  time_t feed_version_epoch;
+
+  count_modified_vts = 0;
+  count_new_vts = 0;
+
+  feed_version_epoch = nvts_feed_version_epoch();
 
   vts = entity_child (*get_vts_response, "vts");
   if (vts == NULL)
@@ -1331,16 +1334,16 @@ update_nvts_from_vts (entity_t *get_vts_response,
      * To solve both cases, we remove all nvt_preferences. */
     sql ("TRUNCATE nvt_preferences;");
 
-  sql ("CREATE TEMPORARY TABLE old_nvts"
-       " (oid TEXT, modification_time INTEGER);");
-  sql ("INSERT INTO old_nvts (oid, modification_time)"
-       " SELECT oid, modification_time FROM nvts;");
-
   preferences = NULL;
   children = vts->entities;
   while ((vt = first_entity (children)))
     {
       nvti_t *nvti = nvti_from_vt (vt);
+
+      if (nvti_creation_time (nvti) > feed_version_epoch)
+        count_new_vts += 1;
+      else
+        count_modified_vts += 1;
 
       insert_nvt (nvti);
 
@@ -1357,9 +1360,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   insert_nvt_preferences_list (preferences);
   g_list_free_full (preferences, g_free);
 
-  set_nvts_check_time ();
-
-  sql ("DROP TABLE old_nvts;");
+  set_nvts_check_time (count_new_vts, count_modified_vts);
 
   set_nvts_feed_version (scanner_feed_version);
 
@@ -1368,6 +1369,9 @@ update_nvts_from_vts (entity_t *get_vts_response,
                "  One or more configs refer to an outdated family of an NVT.",
                __FUNCTION__);
   update_all_config_caches ();
+
+  g_info ("Updating VTs in database ... %i new VTs, %i changed VTs",
+          count_new_vts, count_modified_vts);
 
   sql_commit ();
 }
