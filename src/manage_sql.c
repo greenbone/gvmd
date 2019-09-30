@@ -49912,7 +49912,10 @@ modify_group (const char *group_id, const char *name, const char *comment,
       for (index = 0; index < affected_users->len && found_user == 0; index++)
         {
           if (g_array_index (affected_users, user_t, index) == user)
-            found_user = 1;
+            {
+              found_user = 1;
+              break;
+            }
         }
 
       if (found_user)
@@ -53673,7 +53676,10 @@ modify_role (const char *role_id, const char *name, const char *comment,
       for (index = 0; index < affected_users->len && found_user == 0; index++)
         {
           if (g_array_index (affected_users, user_t, index) == user)
-            found_user = 1;
+            {
+              found_user = 1;
+              break;
+            }
         }
 
       if (found_user)
