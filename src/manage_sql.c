@@ -82,9 +82,9 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
- * @brief Scanner (openvassd) address.
+ * @brief Socket of default scanner.
  */
-#define OPENVASSD_ADDRESS GVM_RUN_DIR "/openvassd.sock"
+#define OPENVAS_DEFAULT_SOCKET "/tmp/ospd.sock"
 
 #ifdef DEBUG_FUNCTION_NAMES
 #include <dlfcn.h>
@@ -16352,7 +16352,8 @@ check_db_scanners ()
            " (uuid, owner, name, host, port, type, ca_pub, credential,"
            "  creation_time, modification_time)"
            " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '" OPENVASSD_ADDRESS "', 0, %d, NULL, NULL, m_now (), m_now ());",
+           " '" OPENVAS_DEFAULT_SOCKET "', 0, %d, NULL, NULL, m_now (),"
+           " m_now ());",
            SCANNER_TYPE_OPENVAS);
     }
 
