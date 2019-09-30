@@ -35377,6 +35377,9 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
   int count;
   char *details_url;
   const gchar *type;
+  time_t feed_version_epoch;
+
+  feed_version_epoch = nvts_feed_version_epoch();
 
   details_url = alert_data (alert, "method", "details_url");
   type = (gchar*) event_data;
@@ -35395,15 +35398,13 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
   else if (event == EVENT_NEW_SECINFO)
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE oid NOT IN (SELECT oid FROM old_nvts)"
-                   " ORDER BY creation_time DESC;");
+                   " WHERE creation_time > %d"
+                   " ORDER BY creation_time DESC;", (int)feed_version_epoch);
   else
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE modification_time > (SELECT modification_time"
-                   "                            FROM old_nvts"
-                   "                            WHERE old_nvts.oid = nvts.oid)"
-                   " ORDER BY modification_time DESC;");
+                   " WHERE modification_time > %d"
+                   " ORDER BY modification_time DESC;", (int)feed_version_epoch);
 
   while (next (&rows))
     {
