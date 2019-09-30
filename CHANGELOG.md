@@ -7,15 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673) [#695](https://github.com/greenbone/gvmd/pull/695) [#703](https://github.com/greenbone/gvmd/pull/703) [#728](https://github.com/greenbone/gvmd/pull/728) [#732](https://github.com/greenbone/gvmd/pull/732) [#750](https://github.com/greenbone/gvmd/pull/750) [#752](https://github.com/greenbone/gvmd/pull/752)
-- Update NVTs via OSP [#392](https://github.com/greenbone/gvmd/pull/392) [#609](https://github.com/greenbone/gvmd/pull/609) [#626](https://github.com/greenbone/gvmd/pull/626)
+- Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673) [#674](https://github.com/greenbone/gvmd/pull/674) [#689](https://github.com/greenbone/gvmd/pull/689) [#695](https://github.com/greenbone/gvmd/pull/695) [#703](https://github.com/greenbone/gvmd/pull/703) [#728](https://github.com/greenbone/gvmd/pull/728) [#732](https://github.com/greenbone/gvmd/pull/732) [#750](https://github.com/greenbone/gvmd/pull/750) [#752](https://github.com/greenbone/gvmd/pull/752)
+- Update NVTs via OSP [#392](https://github.com/greenbone/gvmd/pull/392) [#609](https://github.com/greenbone/gvmd/pull/609) [#626](https://github.com/greenbone/gvmd/pull/626) [#753](https://github.com/greenbone/gvmd/pull/753)
 - Handle addition of ID to NVT preferences. [#413](https://github.com/greenbone/gvmd/pull/413) [#744](https://github.com/greenbone/gvmd/pull/744)
 - Add setting 'OMP Slave Check Period' [#491](https://github.com/greenbone/gvmd/pull/491)
 - Document switching between releases when using Postgres. [#563](https://github.com/greenbone/gvmd/pull/563)
 - Cgreen based unit tests for gvmd has been added. [#579](https://github.com/greenbone/gvmd/pull/579)
 - New usage_type property to distinguish normal scan tasks and configs from compliance audits and policies [#613](https://github.com/greenbone/gvmd/pull/613) [#625](https://github.com/greenbone/gvmd/pull/625) [#633](https://github.com/greenbone/gvmd/pull/633)
 - Command cleanup-report-formats for --optimize option [#652](https://github.com/greenbone/gvmd/pull/652)
+- Enable SecInfo alert checks [#670](https://github.com/greenbone/gvmd/pull/670)
+- Add an explicit solution column to NVTs [#681](https://github.com/greenbone/gvmd/pull/681) [#702](https://github.com/greenbone/gvmd/pull/702) [#730](https://github.com/greenbone/gvmd/pull/730)
 - Document container tasks in GMP doc [#688](https://github.com/greenbone/gvmd/pull/688)
+- Add explicit columns for the NVT tags "summary", "insight", "detection", "impact" and "affected" [#719](https://github.com/greenbone/gvmd/pull/719) [#746](https://github.com/greenbone/gvmd/pull/746)
 - Add lean option to GET_REPORTS [#745](https://github.com/greenbone/gvmd/pull/745)
 - Add scanner relays and OSP sensor scanner type [#756](https://github.com/greenbone/gvmd/pull/756) [#759](https://github.com/greenbone/gvmd/pull/759)
 
@@ -24,9 +27,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Raise minimum version for SQL functions. [#420](https://github.com/greenbone/gvmd/pull/420)
 - Run OpenVAS scans via OSP instead of OTP. [#422](https://github.com/greenbone/gvmd/pull/422) [#584](https://github.com/greenbone/gvmd/pull/584) [#623](https://github.com/greenbone/gvmd/pull/623) [#636](https://github.com/greenbone/gvmd/pull/636) [#704](https://github.com/greenbone/gvmd/pull/704) [#729](https://github.com/greenbone/gvmd/pull/729)
 - Request nvti_cache update only at very end of NVT update. [#426](https://github.com/greenbone/gvmd/pull/426)
-- Consolidate NVT references into unified "refs" element. [#427](https://github.com/greenbone/gvmd/pull/427)
+- Consolidate NVT references into unified "refs" element. [#427](https://github.com/greenbone/gvmd/pull/427) [#739](https://github.com/greenbone/gvmd/pull/739)
 - Update gvm-libs version requirements to v11.0. [#480](https://github.com/greenbone/gvmd/pull/480)
--Adjust to use new API for vt references. [#526](https://github.com/greenbone/gvmd/pull/526)
+- Adjust to use new API for vt references. [#526](https://github.com/greenbone/gvmd/pull/526)
 - Expect NVT sync script in bin directory. [#546](https://github.com/greenbone/gvmd/pull/546)
 - Change internal handling of NVT XML to use nvti_t. [#562](https://github.com/greenbone/gvmd/pull/562)
 - Change NVT references like CVEs and BID to general vt_refs. [#570](https://github.com/greenbone/gvmd/pull/570) [#574](https://github.com/greenbone/gvmd/pull/574) [#582](https://github.com/greenbone/gvmd/pull/582)
@@ -37,7 +40,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Change get_tickets to use the status text for filtering. [#697](https://github.com/greenbone/gvmd/pull/697)
 - Made checks to prevent duplicate user names stricter. [#708](https://github.com/greenbone/gvmd/pull/708) [#722](https://github.com/greenbone/gvmd/pull/722)
 - Send delete command to ospd after stopping the task. [#710](https://github.com/greenbone/gvmd/pull/710)
-- Check whether hosts are alive and have results when adding them in slave scans. [#717](https://github.com/greenbone/gvmd/pull/717) [#736](https://github.com/greenbone/gvmd/pull/736)
+- Check whether hosts are alive and have results when adding them in slave scans. [#717](https://github.com/greenbone/gvmd/pull/717) [#726](https://github.com/greenbone/gvmd/pull/726) [#736](https://github.com/greenbone/gvmd/pull/736)
+- Use explicit nvti timestamps [#725](https://github.com/greenbone/gvmd/pull/725)
 - New columns Ports, Apps, Distance, and Auth in the CSV Hosts report format [#733](https://github.com/greenbone/gvmd/pull/733)
 - The details attribute of GET_REPORTS now defaults to 0 [#747](https://github.com/greenbone/gvmd/pull/747)
 - Incoming VT timestamps via OSP are now assumed to be seconds since epoch [#754](https://github.com/greenbone/gvmd/pull/754)
@@ -67,7 +71,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove --backup command line option [#615](https://github.com/greenbone/gvmd/pull/615)
 - Remove GET_REPORTS type "assets" [#617](https://github.com/greenbone/gvmd/pull/617) [#620](https://github.com/greenbone/gvmd/pull/620)
 - Remove errors for unknown elements [#619](https://github.com/greenbone/gvmd/pull/619)
+- Remove unused reports column nbefile [#675](https://github.com/greenbone/gvmd/pull/675)
 - Eliminate get_tag() and parse_tags() [#743](https://github.com/greenbone/gvmd/pull/743)
+- Remove helper functions and other code for handling OTP [#705](https://github.com/greenbone/gvmd/pull/705) [#709](https://github.com/greenbone/gvmd/pull/709) [#713](https://github.com/greenbone/gvmd/pull/713) [#735](https://github.com/greenbone/gvmd/pull/735) [#748](https://github.com/greenbone/gvmd/pull/748) [#749](https://github.com/greenbone/gvmd/pull/749)
+- Remove stray prototype nvt_iterator_copyright [#721](https://github.com/greenbone/gvmd/pull/721)
 
 
 [Unreleased]: https://github.com/greenbone/openvas/compare/gvmd-8.0...master
