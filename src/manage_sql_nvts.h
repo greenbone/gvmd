@@ -56,6 +56,11 @@
    { "solution_type", NULL, KEYWORD_TYPE_STRING },                          \
    { "tag", "script_tags", KEYWORD_TYPE_STRING},                            \
    { "solution", NULL, KEYWORD_TYPE_STRING},                                \
+   { "summary", NULL, KEYWORD_TYPE_STRING },                                \
+   { "insight", NULL, KEYWORD_TYPE_STRING },                                \
+   { "affected", NULL, KEYWORD_TYPE_STRING },                               \
+   { "impact", NULL, KEYWORD_TYPE_STRING },                                 \
+   { "detection", NULL, KEYWORD_TYPE_STRING },                              \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
@@ -81,9 +86,20 @@
    { "qod_type", NULL, KEYWORD_TYPE_STRING },                               \
    { "solution_type", NULL, KEYWORD_TYPE_STRING },                          \
    { "tag", "script_tags", KEYWORD_TYPE_STRING },                           \
-   { "solution", NULL, KEYWORD_TYPE_STRING},                                \
+   { "solution", NULL, KEYWORD_TYPE_STRING },                               \
+   { "summary", NULL, KEYWORD_TYPE_STRING },                                \
+   { "insight", NULL, KEYWORD_TYPE_STRING },                                \
+   { "affected", NULL, KEYWORD_TYPE_STRING },                               \
+   { "impact", NULL, KEYWORD_TYPE_STRING },                                 \
+   { "detection", NULL, KEYWORD_TYPE_STRING },                              \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
+
+const char *
+get_osp_vt_update_socket ();
+
+void
+set_osp_vt_update_socket (const char *new_socket);
 
 void
 check_db_nvts ();

@@ -33,6 +33,9 @@ tls_certificate_filter_columns ();
 column_t*
 tls_certificate_select_columns ();
 
+gchar *
+tls_certificate_extra_where (const char *);
+
 int
 delete_tls_certificate (const char *, int);
 

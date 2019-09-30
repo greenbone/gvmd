@@ -99,8 +99,8 @@
 #include <gvm/util/serverutils.h>
 
 #include "manage.h"
+#include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
-#include "scanner.h"
 #include "gmpd.h"
 #include "utils.h"
 
@@ -127,11 +127,6 @@
 #ifndef GVM_OS_NAME
 #define GVM_OS_NAME "-1"
 #endif
-
-/**
- * @brief Scanner (openvassd) address.
- */
-#define OPENVASSD_ADDRESS GVM_RUN_DIR "/openvassd.sock"
 
 /**
  * @brief Location of scanner certificate.
@@ -169,16 +164,9 @@
 #endif
 
 /**
- * @brief Scanner port.
- *
- * Used if /etc/services "otp" and --port missing.
- */
-#define OPENVASSD_PORT 9391
-
-/**
  * @brief Manager port.
  *
- * Used if /etc/services "gmp" and --sport are missing.
+ * Used if /etc/services "otp" and --port are missing.
  */
 #define GVMD_PORT 9390
 
@@ -292,11 +280,6 @@ static int update_in_progress = 0;
  * @brief Logging parameters, as passed to setup_log_handlers.
  */
 GSList *log_config = NULL;
-
-/**
- * @brief File socket for OSP NVT update.  NULL to update via OTP.
- */
-static gchar *osp_update_socket = NULL;
 
 
 /* Helpers. */
@@ -437,8 +420,6 @@ watch_client_connection (void* data)
 
 /**
  * @brief Serve the client.
- *
- * Connect to the openvassd scanner, then call \ref serve_gmp to serve GMP.
  *
  * In all cases, close client_socket before returning.
  *
@@ -1134,8 +1115,15 @@ update_nvt_cache_retry ()
         }
       else if (child_pid == 0)
         {
+          const char *osp_update_socket;
+          osp_update_socket = get_osp_vt_update_socket ();
           if (osp_update_socket)
             exit (update_nvt_cache_osp (osp_update_socket));
+          else
+            {
+              g_warning ("%s: No OSP VT update socket set", __FUNCTION__);
+              exit (EXIT_FAILURE);
+            }
         }
     }
 }
@@ -1644,6 +1632,7 @@ gvmd (int argc, char** argv)
   static gchar *modify_setting = NULL;
   static gchar *scanner_name = NULL;
   static gchar *rc_name = NULL;
+  static gchar *relay_mapper = NULL;
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
@@ -1793,7 +1782,8 @@ gvmd (int argc, char** argv)
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
           &osp_vt_update,
-          "Unix socket for OSP NVT update.  Default is to do an OTP update.",
+          "Unix socket for OSP NVT update.  Defaults to the path of the"
+          "'OpenVAS Default' scanner if it is an absolute path.",
           "<scanner-socket>" },
         { "password", '\0', 0, G_OPTION_ARG_STRING,
           &password,
@@ -1807,6 +1797,13 @@ gvmd (int argc, char** argv)
           &manager_port_string_2,
           "Use port number <number> for address 2.",
           "<number>" },
+        { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
+          &relay_mapper,
+          "Executable for mapping scanner hosts to relays."
+          " Use an empty string to explicitly disable."
+          " If the option is not given, $PATH is checked for"
+          " gvm-relay-mapper.",
+          "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,
           "Role for --create-user and --get-users.",
@@ -1817,8 +1814,7 @@ gvmd (int argc, char** argv)
           "<scanner-ca-pub>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_host,
-          "Scanner host for --create-scanner and --modify-scanner."
-          " Default is " OPENVASSD_ADDRESS ".",
+          "Scanner host for --create-scanner and --modify-scanner.",
           "<scanner-host>" },
         { "scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_key_priv,
@@ -1835,7 +1831,7 @@ gvmd (int argc, char** argv)
         { "scanner-port", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_port,
           "Scanner port for --create-scanner and --modify-scanner."
-          " Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
+          " Default is " G_STRINGIFY (GVMD_PORT) ".",
           "<scanner-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
@@ -2012,6 +2008,36 @@ gvmd (int argc, char** argv)
       }
   }
 
+  /* Set relay mapper */
+  if (relay_mapper)
+    {
+      if (strcmp (relay_mapper, ""))
+        {
+          if (g_file_test (relay_mapper, G_FILE_TEST_EXISTS) == 0)
+            g_warning ("Relay mapper '%s' not found.", relay_mapper);
+          else if (g_file_test (relay_mapper, G_FILE_TEST_IS_EXECUTABLE) == 0)
+            g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
+          else
+            {
+              g_debug ("Using relay mapper '%s'.", relay_mapper);
+              set_relay_mapper_path (relay_mapper);
+            }
+        }
+      else
+        g_debug ("Relay mapper disabled.");
+    }
+  else
+    {
+      gchar *default_mapper = g_find_program_in_path ("gvm-relay-mapper");
+      if (default_mapper)
+        {
+          g_debug ("Using default relay mapper '%s'.", default_mapper);
+          set_relay_mapper_path (default_mapper);
+        }
+      else
+        g_debug ("No default relay mapper found.");
+    }
+
 #ifdef GVMD_GIT_REVISION
   g_message ("   Greenbone Vulnerability Manager version %s (GIT revision %s) (DB revision %i)",
              GVMD_VERSION,
@@ -2159,7 +2185,7 @@ gvmd (int argc, char** argv)
    * release gvm-checking, via option_lock. */
 
   if (osp_vt_update)
-    osp_update_socket = osp_vt_update;
+    set_osp_vt_update_socket (osp_vt_update);
 
   if (disable_password_policy)
     gvm_disable_password_policy ();
@@ -2206,9 +2232,12 @@ gvmd (int argc, char** argv)
         return EXIT_FAILURE;
 
       if (!scanner_host)
-        scanner_host = OPENVASSD_ADDRESS;
+        {
+          printf ("A --scanner-host is required\n");
+          return EXIT_FAILURE;
+        }
       if (!scanner_port)
-        scanner_port = G_STRINGIFY (OPENVASSD_PORT);
+        scanner_port = G_STRINGIFY (GVMD_PORT);
       if (!scanner_ca_pub)
         scanner_ca_pub = CACERT;
       if (!scanner_key_pub)
@@ -2458,13 +2487,6 @@ gvmd (int argc, char** argv)
 
   /* Run the standard manager. */
 
-  if (osp_vt_update == NULL)
-    {
-      g_critical ("%s: --osp-vt-update required for now",
-                  __FUNCTION__);
-      return EXIT_FAILURE;
-    }
-
   if (lockfile_locked ("gvm-helping"))
     {
       g_warning ("%s: An option process is running", __FUNCTION__);
@@ -2653,13 +2675,38 @@ gvmd (int argc, char** argv)
 
   /* Initialise the process for manage_schedule. */
 
-  init_manage_process (0, database);
+  init_manage_process (database);
 
   /* Initialize the authentication system. */
 
   // TODO Should be part of manage init.
   if (gvm_auth_init ())
     exit (EXIT_FAILURE);
+
+  /* Try to get OSP VT update socket from default OpenVAS if it
+   *  was not set with the --osp-vt-update option.
+   */
+  if (get_osp_vt_update_socket () == NULL)
+    {
+      char *default_socket = openvas_default_scanner_host ();
+      if (default_socket)
+        {
+          g_debug ("%s: Using OSP VT update socket from default OpenVAS"
+                   " scanner: %s",
+                   __FUNCTION__,
+                   default_socket);
+          set_osp_vt_update_socket (default_socket);
+        }
+      else
+        {
+          g_critical ("%s: No OSP VT update socket found."
+                      " Use --osp-vt-update or change the 'OpenVAS Default'"
+                      " scanner to use the main ospd-openvas socket.",
+                      __FUNCTION__);
+          return EXIT_FAILURE;
+        }
+      free (default_socket);
+    }
 
   /* Enter the main forever-loop. */
 

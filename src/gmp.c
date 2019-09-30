@@ -134,7 +134,7 @@
 /** @todo Exported for manage_sql.c. */
 void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
-                    int, int, const char *, iterator_t *, int, int);
+                    int, int, const char *, iterator_t *, int, int, int);
 
 
 /* Helper functions. */
@@ -2490,6 +2490,7 @@ typedef struct
   char *format_id;       ///< ID of report format.
   char *alert_id;        ///< ID of alert.
   char *report_id;       ///< ID of single report to get.
+  int lean;              ///< Boolean.  Whether to return lean report.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides_details; ///< Boolean.  Whether to include details of above.
   int result_tags;       ///< Boolean.  Whether to include result tags.
@@ -4681,16 +4682,6 @@ static run_wizard_data_t *run_wizard_data
  = (run_wizard_data_t*) &(command_data.wizard);
 
 /**
- * @brief Hack for returning forked process status from the callbacks.
- */
-static int current_error;
-
-/**
- * @brief Hack for returning fork status to caller.
- */
-static int forked;
-
-/**
  * @brief Buffer of output to the client.
  */
 char to_client[TO_CLIENT_BUFFER_SIZE];
@@ -6283,16 +6274,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                        attribute_names,
                                        attribute_values);
 
-            /* Special case details with default 1, for backward
-             * compatibility. */
-            if (find_attribute (attribute_names, attribute_values,
-                                "details", &attribute))
-              get_reports_data->report_get.details = strcmp (attribute, "0");
-            else
-              get_reports_data->report_get.details = 1;
-            get_reports_data->get.details
-             = get_reports_data->report_get.details;
-
             g_free (get_reports_data->report_get.filt_id);
             get_reports_data->report_get.filt_id = NULL;
             append_attribute (attribute_names, attribute_values,
@@ -6317,6 +6298,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "format_id",
                               &get_reports_data->format_id);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "lean", &attribute))
+              get_reports_data->lean = atoi (attribute);
+            else
+              get_reports_data->lean = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "notes_details", &attribute))
@@ -9362,7 +9349,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     NULL,
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0); /* Lean. */
               cleanup_iterator (&results);
             }
           else
@@ -9644,7 +9632,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     NULL,
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0); /* Lean. */
               cleanup_iterator (&results);
             }
           else
@@ -9929,10 +9918,11 @@ strdiff (const gchar *one, const gchar *two)
  * @param[in]  result                 Result.
  * @param[in]  task                   Task associated with result.
  * @param[in]  include_notes_details  Whether to include details of notes.
+ * @param[in]  lean                   Whether to include less info.
  */
 static void
 buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
-                         int include_notes_details)
+                         int include_notes_details, int lean)
 {
   if (task)
     {
@@ -9951,13 +9941,15 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
                           result,
                           task);
 
-      g_string_append (buffer, "<notes>");
+      if (lean == 0 || next (&notes))
+        g_string_append (buffer, "<notes>");
       buffer_notes_xml (buffer,
                         &notes,
                         include_notes_details,
                         0,
                         NULL);
-      g_string_append (buffer, "</notes>");
+      if (lean == 0 || next (&notes))
+        g_string_append (buffer, "</notes>");
 
       cleanup_iterator (&notes);
     }
@@ -9970,15 +9962,18 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
  * @param[in]  result                 Result.
  * @param[in]  task                   Task associated with result.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
+ * @param[in]  lean                       Whether to include less info.
  */
 static void
 buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
-                             int include_overrides_details)
+                             int include_overrides_details, int lean)
 {
   if (task)
     {
       get_data_t get;
       iterator_t overrides;
+      GString *temp_buffer;
+
       memset (&get, '\0', sizeof (get));
       /* Most recent first. */
       get.filter = "sort-reverse=created owner=any permission=any";
@@ -9992,13 +9987,19 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
                               result,
                               task);
 
-      g_string_append (buffer, "<overrides>");
-      buffer_overrides_xml (buffer,
+      temp_buffer = g_string_new ("");
+      buffer_overrides_xml (temp_buffer,
                             &overrides,
                             include_overrides_details,
                             0,
                             NULL);
-      g_string_append (buffer, "</overrides>");
+      if (lean == 0 || strlen (temp_buffer->str))
+        {
+          g_string_append (buffer, "<overrides>");
+          g_string_append (buffer, temp_buffer->str);
+          g_string_append (buffer, "</overrides>");
+        }
+      g_string_free (temp_buffer, TRUE);
 
       cleanup_iterator (&overrides);
     }
@@ -10031,10 +10032,11 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
  * @param[in]  cert_loaded     Whether CERT db is loaded.
  * @param[in]  has_cert_bunds  Whether results has CERT-Bund advisories.
  * @param[in]  has_dfn_certs   Whether results has DFN-CERT advisories.
+ * @param[in]  first           Marker for first element.
  */
 static void
 results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
-                         int has_cert_bunds, int has_dfn_certs)
+                         int has_cert_bunds, int has_dfn_certs, int *first)
 {
   iterator_t cert_refs_iterator;
 
@@ -10045,6 +10047,11 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
+              if (first && *first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  *first = 0;
+                }
               g_string_append_printf
                (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
@@ -10057,6 +10064,11 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
           init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
+              if (*first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  *first = 0;
+                }
               g_string_append_printf
                (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>",
                 get_iterator_name (&cert_refs_iterator));
@@ -10065,8 +10077,15 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
         }
     }
   else
-    g_string_append_printf (buffer,
-                            "<warning>database not available</warning>");
+    {
+      if (*first)
+        {
+          buffer_xml_append_printf (buffer, "<refs>");
+          *first = 0;
+        }
+      g_string_append_printf (buffer,
+                              "<warning>database not available</warning>");
+    }
 }
 
 /**
@@ -10109,7 +10128,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
       if (g_str_has_prefix (oid, "oval:"))
         {
-          int ret;
+          int ret, first;
           char *cves;
           gchar **split, **item;
           get_data_t get;
@@ -10136,8 +10155,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
           g_free (get.id);
           cleanup_iterator (&iterator);
 
-          buffer_xml_append_printf (buffer, "<refs>");
-
+          first = 1;
           cves = ovaldef_cves (oid);
           split = g_strsplit (cves, ",", 0);
           item = split;
@@ -10154,6 +10172,11 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                   continue;
                 }
 
+              if (first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  first = 0;
+                }
               buffer_xml_append_printf (buffer, "<ref type=\"cve\" id=\"%s\"/>", id);
 
               item++;
@@ -10163,35 +10186,87 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
           results_xml_append_cert (buffer, oid, cert_loaded,
                                    result_iterator_has_cert_bunds (results),
-                                   result_iterator_has_dfn_certs (results));
+                                   result_iterator_has_dfn_certs (results),
+                                   &first);
 
-          buffer_xml_append_printf (buffer, "</refs>");
+          if (first == 0)
+            buffer_xml_append_printf (buffer, "</refs>");
         }
       else
         {
           const char *cvss_base = result_iterator_nvt_cvss_base (results);
           GString *tags = g_string_new (result_iterator_nvt_tag (results));
+          int first;
 
           if (!cvss_base && !strcmp (oid, "0"))
             cvss_base = "0.0";
 
-          /* Add the elements that are expected as part of the pipe-separated tag list
-           * via API although internally already explicitely stored. Once the API is
-           * extended to have these elements explicitely, they do not need to be
-           * added to this string anymore. */
+          /* Add the elements that are expected as part of the pipe-separated
+           * tag list via API although internally already explicitly stored.
+           * Once the API is extended to have these elements explicitly, they
+           * do not need to be added to this tag string anymore. */
+          if (result_iterator_nvt_summary (results))
+            {
+              if (tags->str)
+                g_string_append_printf (tags, "|summary=%s",
+                                        result_iterator_nvt_summary (results));
+              else
+                g_string_append_printf (tags, "summary=%s",
+                                        result_iterator_nvt_summary (results));
+            }
+          if (result_iterator_nvt_insight (results))
+            {
+              if (tags->str)
+                g_string_append_printf (tags, "|insight=%s",
+                                        result_iterator_nvt_insight (results));
+              else
+                g_string_append_printf (tags, "insight=%s",
+                                        result_iterator_nvt_insight (results));
+            }
+          if (result_iterator_nvt_affected (results))
+            {
+              if (tags->str)
+                g_string_append_printf (tags, "|affected=%s",
+                                        result_iterator_nvt_affected (results));
+              else
+                g_string_append_printf (tags, "affected=%s",
+                                        result_iterator_nvt_affected (results));
+            }
+          if (result_iterator_nvt_impact (results))
+            {
+              if (tags->str)
+                g_string_append_printf (tags, "|impact=%s",
+                                        result_iterator_nvt_impact (results));
+              else
+                g_string_append_printf (tags, "impact=%s",
+                                        result_iterator_nvt_impact (results));
+            }
           if (result_iterator_nvt_solution (results))
             {
               if (tags->str)
-                g_string_append_printf (tags, "|solution=%s", result_iterator_nvt_solution (results));
+                g_string_append_printf (tags, "|solution=%s",
+                                        result_iterator_nvt_solution (results));
               else
-                g_string_append_printf (tags, "solution=%s", result_iterator_nvt_solution (results));
+                g_string_append_printf (tags, "solution=%s",
+                                        result_iterator_nvt_solution (results));
+            }
+          if (result_iterator_nvt_detection (results))
+            {
+              if (tags->str)
+                g_string_append_printf (tags, "|vuldetect=%s",
+                                        result_iterator_nvt_detection (results));
+              else
+                g_string_append_printf (tags, "vuldetect=%s",
+                                        result_iterator_nvt_detection (results));
             }
           if (result_iterator_nvt_solution_type (results))
             {
               if (tags->str)
-                g_string_append_printf (tags, "|solution_type=%s", result_iterator_nvt_solution_type (results));
+                g_string_append_printf (tags, "|solution_type=%s",
+                                        result_iterator_nvt_solution_type (results));
               else
-                g_string_append_printf (tags, "solution_type=%s", result_iterator_nvt_solution_type (results));
+                g_string_append_printf (tags, "solution_type=%s",
+                                        result_iterator_nvt_solution_type (results));
             }
 
           buffer_xml_append_printf (buffer,
@@ -10207,12 +10282,14 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     cvss_base ?: "",
                                     tags->str ?: "");
 
-          buffer_xml_append_printf (buffer, "<refs>");
-          result_iterator_nvt_refs_append (buffer, results);
+          first = 1;
+          result_iterator_nvt_refs_append (buffer, results, &first);
           results_xml_append_cert (buffer, oid, cert_loaded,
                                    result_iterator_has_cert_bunds (results),
-                                   result_iterator_has_dfn_certs (results));
-          buffer_xml_append_printf (buffer, "</refs>");
+                                   result_iterator_has_dfn_certs (results),
+                                   &first);
+          if (first == 0)
+            buffer_xml_append_printf (buffer, "</refs>");
 
           g_string_free (tags, TRUE);
         }
@@ -10246,6 +10323,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
  * @param[in]  changed                Whether the result is a "changed" delta.
  * @param[in]  cert_loaded            Whether the CERT db is loaded.  0 not loaded,
  *                                    -1 needs to be checked, else loaded.
+ * @param[in]  lean                   Whether to include less info.
  */
 void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
@@ -10254,10 +10332,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_tags, int include_tags_details,
                     int include_details,
                     const char *delta_state, iterator_t *delta_results,
-                    int changed, int cert_loaded)
+                    int changed, int cert_loaded, int lean)
 {
   const char *descr = result_iterator_descr (results);
-  const char *name, *owner_name, *comment, *creation_time, *modification_time;
+  const char *name, *comment, *creation_time;
   const char *detect_oid, *asset_id;
   gchar *nl_descr, *nl_descr_escaped;
   const char *qod = result_iterator_qod (results);
@@ -10291,14 +10369,26 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               "<name>%s</name>",
                               name);
 
-  owner_name = get_iterator_owner_name (results);
-  if (owner_name)
-    buffer_xml_append_printf (buffer,
-                              "<owner><name>%s</name></owner>",
-                              owner_name);
+  if (lean == 0)
+    {
+      const char *owner_name, *modification_time;
+
+      owner_name = get_iterator_owner_name (results);
+      if (owner_name)
+        buffer_xml_append_printf (buffer,
+                                  "<owner><name>%s</name></owner>",
+                                  owner_name);
+
+      modification_time = get_iterator_modification_time (results);
+      if (modification_time)
+        buffer_xml_append_printf (buffer,
+                                  "<modification_time>%s</modification_time>",
+                                  modification_time);
+    }
 
   comment = get_iterator_comment (results);
-  if (comment)
+  if (comment
+      && (lean == 0 || strlen (comment)))
     buffer_xml_append_printf (buffer,
                               "<comment>%s</comment>",
                               comment);
@@ -10308,12 +10398,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     buffer_xml_append_printf (buffer,
                               "<creation_time>%s</creation_time>",
                               creation_time);
-
-  modification_time = get_iterator_modification_time (results);
-  if (modification_time)
-    buffer_xml_append_printf (buffer,
-                              "<modification_time>%s</modification_time>",
-                              modification_time);
 
   if (include_details)
     {
@@ -10411,12 +10495,20 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   buffer_xml_append_printf (buffer,
                             "<host>"
-                            "%s"
-                            "<asset asset_id=\"%s\"/>"
+                            "%s",
+                            result_iterator_host (results) ?: "");
+
+  if (asset_id && strlen (asset_id))
+    buffer_xml_append_printf (buffer,
+                              "<asset asset_id=\"%s\"/>",
+                              asset_id);
+  else if (lean == 0)
+    buffer_xml_append_printf (buffer,
+                              "<asset asset_id=\"\"/>");
+
+  buffer_xml_append_printf (buffer,
                             "<hostname>%s</hostname>"
                             "</host>",
-                            result_iterator_host (results) ?: "",
-                            asset_id ? asset_id : "",
                             result_iterator_hostname (results) ?: "");
 
   buffer_xml_append_printf (buffer,
@@ -10427,23 +10519,44 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     cert_loaded = manage_cert_loaded ();
   results_xml_append_nvt (results, buffer, cert_loaded);
 
+  if (lean == 0)
+    buffer_xml_append_printf
+     (buffer,
+      "<scan_nvt_version>%s</scan_nvt_version>"
+      "<threat>%s</threat>",
+      result_iterator_scan_nvt_version (results),
+      result_iterator_level (results));
+
   buffer_xml_append_printf
    (buffer,
-    "<scan_nvt_version>%s</scan_nvt_version>"
-    "<threat>%s</threat>"
     "<severity>%.1f</severity>"
-    "<qod><value>%s</value><type>%s</type></qod>",
-    result_iterator_scan_nvt_version (results),
-    result_iterator_level (results),
+    "<qod><value>%s</value>",
     result_iterator_severity_double (results),
-    qod ? qod : "",
-    qod_type ? qod_type : "");
+    qod ? qod : "");
+
+  if (qod_type && strlen (qod_type))
+    buffer_xml_append_printf (buffer, "<type>%s</type>", qod_type);
+  else if (lean == 0)
+    buffer_xml_append_printf (buffer, "<type></type>");
+
+  buffer_xml_append_printf (buffer, "</qod>");
 
   g_string_append_printf (buffer,
                           "<description>%s</description>",
                           descr ? nl_descr_escaped : "");
 
-  if (include_overrides)
+  if (include_overrides && lean)
+    {
+      /* Only send the original severity if it has changed. */
+      if (strncmp (result_iterator_original_severity (results),
+                   result_iterator_severity (results),
+                   /* Avoid rounding differences. */
+                   3))
+        buffer_xml_append_printf (buffer,
+                                  "<original_severity>%s</original_severity>",
+                                  result_iterator_original_severity (results));
+    }
+  else if (include_overrides)
     buffer_xml_append_printf (buffer,
                               "<original_threat>%s</original_threat>"
                               "<original_severity>%s</original_severity>",
@@ -10453,12 +10566,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   if (include_notes
       && result_iterator_may_have_notes (results))
     buffer_result_notes_xml (buffer, result,
-                             selected_task, include_notes_details);
+                             selected_task, include_notes_details, lean);
 
   if (include_overrides
       && result_iterator_may_have_overrides (results))
     buffer_result_overrides_xml (buffer, result,
-                                 selected_task, include_overrides_details);
+                                 selected_task, include_overrides_details,
+                                 lean);
 
   if (delta_state || delta_results)
     {
@@ -10473,7 +10587,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               include_notes, include_notes_details,
                               include_overrides, include_overrides_details,
                               include_tags, include_tags_details,
-                              include_details, delta_state, NULL, 0, -1);
+                              include_details, delta_state, NULL, 0, -1, lean);
           delta_descr = result_iterator_descr (delta_results);
           delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                        : NULL;
@@ -10508,13 +10622,15 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             buffer_result_notes_xml (buffer,
                                      result_iterator_result (delta_results),
                                      selected_task,
-                                     include_notes_details);
+                                     include_notes_details,
+                                     lean);
 
           if (include_overrides)
             buffer_result_overrides_xml (buffer,
                                          result_iterator_result (delta_results),
                                          selected_task,
-                                         include_overrides_details);
+                                         include_overrides_details,
+                                         lean);
         }
       g_string_append (buffer, "</delta>");
     }
@@ -12986,19 +13102,19 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
           g_free (s_name);
           SEND_TO_CLIENT_OR_FAIL ("<preferences>");
 
-          init_preference_iterator (&prefs, config);
+          init_config_preference_iterator (&prefs, config);
           while (next (&prefs))
             {
               const char *name, *hr_name, *value, *type, *def;
               char *ovaldi_files = NULL;
 
-              hr_name = preference_iterator_hr_name (&prefs);
-              name = preference_iterator_name (&prefs);
-              value = preference_iterator_value (&prefs);
-              def = preference_iterator_default (&prefs);
+              hr_name = config_preference_iterator_hr_name (&prefs);
+              name = config_preference_iterator_name (&prefs);
+              value = config_preference_iterator_value (&prefs);
+              def = config_preference_iterator_default (&prefs);
               if (!strcmp (name, "definitions_file"))
                 ovaldi_files = get_ovaldi_files ();
-              type = preference_iterator_type (&prefs);
+              type = config_preference_iterator_type (&prefs);
               SENDF_TO_CLIENT_OR_FAIL
                ("<preference>"
                 "<nvt oid=\"\"><name/></nvt>"
@@ -15719,6 +15835,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 get_reports_data->overrides_details,
                                 get_reports_data->result_tags,
                                 get_reports_data->ignore_pagination,
+                                get_reports_data->lean,
                                 /* Special case the XML report, bah. */
                                 get_reports_data->format_id
                                 && strcmp
@@ -16336,7 +16453,8 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                   NULL,
                                   NULL,
                                   0,
-                                  -1);
+                                  -1,
+                                  1);   /* Lean. */
               SEND_TO_CLIENT_OR_FAIL (buffer->str);
               g_string_free (buffer, TRUE);
               count ++;
@@ -19382,12 +19500,31 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
           goto create_scanner_leave;
       }
 
-  if (!create_scanner_data->name || !create_scanner_data->host
-      || !create_scanner_data->port || !create_scanner_data->type
-      || !create_scanner_data->credential_id)
+  if (!create_scanner_data->name)
     {
       SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("create_scanner", "Missing entity"));
+       (XML_ERROR_SYNTAX ("create_scanner", "Missing NAME"));
+      goto create_scanner_leave;
+    }
+
+  if (!create_scanner_data->host)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Missing HOST"));
+      goto create_scanner_leave;
+    }
+
+  if (!create_scanner_data->port)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Missing PORT"));
+      goto create_scanner_leave;
+    }
+
+  if (!create_scanner_data->type)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Missing TYPE"));
       goto create_scanner_leave;
     }
 
@@ -19452,6 +19589,12 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("create_scanner",
                             "Credential must be of type 'cc'"
                             " (client certificate)"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case 6:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Scanner type requires a credential"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
       case 99:
@@ -19565,6 +19708,13 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("modify_scanner",
                             "Credential must be of type 'up'"
                             " (username + password)"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case 8:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner",
+                            "Scanner type requires a credential"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
@@ -20103,10 +20253,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 default:   /* Programming error. */
                   assert (0);
                 case -1:
-                  /* to_scanner is full. */
-                  /** @todo Or some other error occurred. */
-                  /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_gmp_client_input must return -2. */
+                  /* Some other error occurred. */
+                  /** @todo Should respond with internal error. */
                   g_debug ("delete_task failed");
                   abort ();
                   break;
@@ -27291,16 +27439,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             case 0:
               SEND_TO_CLIENT_OR_FAIL (XML_OK ("move_task"));
               break;
-            case 1:
-              /* Forked task process: success. */
-              forked = 1;
-              current_error = 2;
-              g_debug ("   %s: move_task fork success", __FUNCTION__);
-              g_set_error (error,
-                            G_MARKUP_ERROR,
-                            G_MARKUP_ERROR_INVALID_CONTENT,
-                            "Dummy error for current_error");
-              break;
             case 2:
               if (send_find_error_to_client ("move_task",
                                               "Task",
@@ -27510,149 +27648,123 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_RESUME_TASK:
         if (resume_task_data->task_id)
           {
-            if (forked == 2)
-              /* Prevent the forked child from forking again, as then both
-               * forked children would be using the same server session. */
-              abort (); /** @todo Respond with error or something. */
-            else
+            char *report_id;
+            switch (resume_task (resume_task_data->task_id, &report_id))
               {
-                char *report_id;
-                switch (resume_task (resume_task_data->task_id, &report_id))
+                case 0:
                   {
-                    case 0:
+                    gchar *msg;
+                    msg = g_strdup_printf
+                           ("<resume_task_response"
+                            " status=\"" STATUS_OK_REQUESTED "\""
+                            " status_text=\""
+                            STATUS_OK_REQUESTED_TEXT
+                            "\">"
+                            "<report_id>%s</report_id>"
+                            "</resume_task_response>",
+                            report_id);
+                    free (report_id);
+                    if (send_to_client (msg,
+                                        write_to_client,
+                                        write_to_client_data))
                       {
-                        gchar *msg;
-                        msg = g_strdup_printf
-                               ("<resume_task_response"
-                                " status=\"" STATUS_OK_REQUESTED "\""
-                                " status_text=\""
-                                STATUS_OK_REQUESTED_TEXT
-                                "\">"
-                                "<report_id>%s</report_id>"
-                                "</resume_task_response>",
-                                report_id);
-                        free (report_id);
-                        if (send_to_client (msg,
-                                            write_to_client,
-                                            write_to_client_data))
-                          {
-                            g_free (msg);
-                            error_send_to_client (error);
-                            return;
-                          }
                         g_free (msg);
+                        error_send_to_client (error);
+                        return;
                       }
-                      forked = 1;
-                      log_event ("task", "Task",
-                                 resume_task_data->task_id,
-                                 "resumed");
-                      break;
-                    case 1:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "Task is active already"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case 22:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "Task must be in Stopped or Interrupted state"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case 2:
-                      /* Forked task process: success. */
-                      current_error = 2;
-                      g_debug ("   %s: resume_task fork success", __FUNCTION__);
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
-                      break;
-                    case 4:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "Resuming not supported"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case 3:   /* Find failed. */
-                      if (send_find_error_to_client
-                           ("resume_task", "task", resume_task_data->task_id,
-                            gmp_parser))
-                        {
-                          error_send_to_client (error);
-                          return;
-                        }
-                      break;
-                    case 99:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "Permission denied"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case -10:
-                      /* Forked task process: error. */
-                      current_error = -10;
-                      g_debug ("   %s: resume_task fork error", __FUNCTION__);
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
-                      break;
-                    case -6:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task",
-                                          "There is already a task running in"
-                                          " this process"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case -2:
-                      /* Task target lacks hosts.  This is checked when the
-                       * target is created. */
-                      assert (0);
-                      /* fallthrough */
-                    case -4:
-                      /* Task lacks target.  This is checked when the task is
-                       * created anyway. */
-                      assert (0);
-                      /* fallthrough */
-                    case -1:
-                    case -3: /* Failed to create report. */
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case -5:
-                      SEND_XML_SERVICE_DOWN ("resume_task");
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case -7:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_task", "No CA certificate"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
-                    default: /* Programming error. */
-                      assert (0);
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
-                      log_event_fail ("task", "Task",
-                                      resume_task_data->task_id,
-                                      "resumed");
-                      break;
+                    g_free (msg);
                   }
+                  log_event ("task", "Task",
+                             resume_task_data->task_id,
+                             "resumed");
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "Task is active already"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case 22:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "Task must be in Stopped or Interrupted state"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case 4:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "Resuming not supported"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case 3:   /* Find failed. */
+                  if (send_find_error_to_client
+                       ("resume_task", "task", resume_task_data->task_id,
+                        gmp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "Permission denied"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case -6:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "There is already a task running in"
+                                      " this process"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case -2:
+                  /* Task target lacks hosts.  This is checked when the
+                   * target is created. */
+                  assert (0);
+                  /* fallthrough */
+                case -4:
+                  /* Task lacks target.  This is checked when the task is
+                   * created anyway. */
+                  assert (0);
+                  /* fallthrough */
+                case -1:
+                case -3: /* Failed to create report. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case -5:
+                  SEND_XML_SERVICE_DOWN ("resume_task");
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                case -7:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task", "No CA certificate"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
+                default: /* Programming error. */
+                  assert (0);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
               }
           }
         else
@@ -27686,9 +27798,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                        &command_error_code,
                                        &response))
               {
-                case 3:
-                  /* Parent after a start_task fork. */
-                  forked = 1;
                 case 0:
                   {
                     gchar *msg;
@@ -27730,18 +27839,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         " or underscore"));
                     run_wizard_data_reset (run_wizard_data);
                     set_client_state (CLIENT_AUTHENTIC);
-                    break;
-                  }
-
-                case 2:
-                  {
-                    /* Process forked to run a task. */
-                    current_error = 2;
-                    g_debug ("   %s: run_wizard fork success", __FUNCTION__);
-                    g_set_error (error,
-                                 G_MARKUP_ERROR,
-                                 G_MARKUP_ERROR_INVALID_CONTENT,
-                                 "Dummy error for current_error");
                     break;
                   }
 
@@ -27796,43 +27893,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "run");
                     break;
                   }
-
-                case -2:
-                  {
-                    gchar *msg;
-                    /* to_scanner buffer full. */
-                    msg = g_strdup_printf
-                           ("<run_wizard_response"
-                            " status=\"" STATUS_INTERNAL_ERROR "\""
-                            " status_text=\""
-                            STATUS_INTERNAL_ERROR_TEXT
-                            ": Wizard filled up to_scanner buffer\">"
-                            "</run_wizard_response>");
-                    if (send_to_client (msg,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (msg);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (msg);
-                    log_event_fail ("wizard", "Wizard", run_wizard_data->name,
-                                    "run: to_scanner buffer full");
-                    break;
-                  }
-
-                case -10:
-                  {
-                    /* Process forked to run a task.  Task start failed. */
-                    current_error = -10;
-                    g_debug ("   %s: run_wizard fork error", __FUNCTION__);
-                    g_set_error (error,
-                                 G_MARKUP_ERROR,
-                                 G_MARKUP_ERROR_INVALID_CONTENT,
-                                 "Dummy error for current_error");
-                    break;
-                  }
               }
           }
         else
@@ -27858,141 +27918,115 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_START_TASK:
         if (start_task_data->task_id)
           {
-            if (forked == 2)
-              /* Prevent the forked child from forking again, as then both
-               * forked children would be using the same server session. */
-              abort (); /** @todo Respond with error or something. */
-            else
-              {
-                char *report_id = NULL;
+            char *report_id = NULL;
 
-                switch (start_task (start_task_data->task_id, &report_id))
+            switch (start_task (start_task_data->task_id, &report_id))
+              {
+                case 0:
                   {
-                    case 0:
+                    gchar *msg;
+                    msg = g_strdup_printf
+                           ("<start_task_response"
+                            " status=\"" STATUS_OK_REQUESTED "\""
+                            " status_text=\""
+                            STATUS_OK_REQUESTED_TEXT
+                            "\">"
+                            "<report_id>%s</report_id>"
+                            "</start_task_response>",
+                            report_id ?: "0");
+                    g_free (report_id);
+                    if (send_to_client (msg,
+                                        write_to_client,
+                                        write_to_client_data))
                       {
-                        gchar *msg;
-                        msg = g_strdup_printf
-                               ("<start_task_response"
-                                " status=\"" STATUS_OK_REQUESTED "\""
-                                " status_text=\""
-                                STATUS_OK_REQUESTED_TEXT
-                                "\">"
-                                "<report_id>%s</report_id>"
-                                "</start_task_response>",
-                                report_id ?: "0");
-                        g_free (report_id);
-                        if (send_to_client (msg,
-                                            write_to_client,
-                                            write_to_client_data))
-                          {
-                            g_free (msg);
-                            error_send_to_client (error);
-                            return;
-                          }
                         g_free (msg);
-                        log_event ("task", "Task", start_task_data->task_id,
-                                   "requested to start");
+                        error_send_to_client (error);
+                        return;
                       }
-                      forked = 1;
-                      break;
-                    case 1:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task",
-                                          "Task is active already"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case 2:
-                      /* Forked task process: success. */
-                      current_error = 2;
-                      g_debug ("   %s: start_task fork success", __FUNCTION__);
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
-                      break;
-                    case 3:   /* Find failed. */
-                      if (send_find_error_to_client ("start_task", "task",
-                                                     start_task_data->task_id,
-                                                     gmp_parser))
-                        {
-                          error_send_to_client (error);
-                          return;
-                        }
-                      break;
-                    case 99:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task",
-                                          "Permission denied"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -2:
-                      /* Task lacks target.  This is true for container
-                       * tasks. */
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task",
-                                          "Task must have a target"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -4:
-                      /* Task target lacks hosts.  This is checked when the
-                       * target is created. */
-                      assert (0);
-                      /* fallthrough */
-                    case -9:
-                      /* Fork failed. */
-                      /* fallthrough */
-                    case -3: /* Failed to create report. */
-                    case -1:
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -5:
-                      SEND_XML_SERVICE_DOWN ("start_task");
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -6:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task",
-                                          "There is already a task running in"
-                                          " this process"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -7:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task", "No CA certificate"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -10:
-                      /* Forked task process: error. */
-                      current_error = -10;
-                      g_debug ("   %s: start_task fork error", __FUNCTION__);
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
-                      break;
-                    default: /* Programming error. */
-                      assert (0);
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
+                    g_free (msg);
+                    log_event ("task", "Task", start_task_data->task_id,
+                               "requested to start");
                   }
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                                      "Task is active already"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case 3:   /* Find failed. */
+                  if (send_find_error_to_client ("start_task", "task",
+                                                 start_task_data->task_id,
+                                                 gmp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                                      "Permission denied"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -2:
+                  /* Task lacks target.  This is true for container
+                   * tasks. */
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                                      "Task must have a target"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -4:
+                  /* Task target lacks hosts.  This is checked when the
+                   * target is created. */
+                  assert (0);
+                  /* fallthrough */
+                case -9:
+                  /* Fork failed. */
+                  /* fallthrough */
+                case -3: /* Failed to create report. */
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -5:
+                  SEND_XML_SERVICE_DOWN ("start_task");
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -6:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                                      "There is already a task running in"
+                                      " this process"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -7:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task", "No CA certificate"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                default: /* Programming error. */
+                  assert (0);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
               }
           }
         else
@@ -28035,25 +28069,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   stop_task_data->task_id,
                                   "stopped");
                   break;
-                case -5:
-                  SEND_XML_SERVICE_DOWN ("stop_task");
-                  log_event_fail ("task", "Task",
-                                  stop_task_data->task_id,
-                                  "stopped");
-                  break;
-                case -7:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("stop_task", "No CA certificate"));
-                  log_event_fail ("task", "Task",
-                                  resume_task_data->task_id,
-                                  "stopped");
-                  break;
                 default:  /* Programming error. */
                   assert (0);
                 case -1:
-                  /* to_scanner is full. */
-                  /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_gmp_client_input must return -2. */
+                  /* Some other error occurred. */
+                  /** @todo Should respond with internal error. */
                   abort ();
               }
           }
@@ -29373,7 +29393,6 @@ init_gmp (GSList *log_config, const gchar *database,
 /**
  * @brief Initialise GMP library data for a process.
  *
- * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache.
  * @param[in]  database          Location of manage database.
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
@@ -29383,14 +29402,13 @@ init_gmp (GSList *log_config, const gchar *database,
  * process_gmp_client_input.
  */
 void
-init_gmp_process (int update_nvt_cache, const gchar *database,
+init_gmp_process (const gchar *database,
                   int (*write_to_client) (const char*, void*),
                   void* write_to_client_data, gchar **disable)
 {
-  forked = 0;
   client_state = CLIENT_TOP;
   command_data_init (&command_data);
-  init_manage_process (update_nvt_cache, database);
+  init_manage_process (database);
   manage_reset_currents ();
   /* Create the XML parser. */
   xml_parser.start_element = gmp_xml_handle_start_element;
@@ -29423,13 +29441,9 @@ init_gmp_process (int update_nvt_cache, const gchar *database,
  *
  * \endif
  *
- * @todo The -2 return has been replaced by send_to_client trying to write
- *       the to_client buffer to the client when it is full.  This is
- *       necessary, as the to_client buffer may fill up halfway through the
- *       processing of a GMP element.
- *
- * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
- *         or the scanner output buffer (respectively), -4 XML syntax error.
+ * @return 0 success,
+ *         -1 error,
+ *         -4 XML syntax error.
  */
 int
 process_gmp_client_input ()
@@ -29442,7 +29456,6 @@ process_gmp_client_input ()
 
   if (xml_context == NULL) return -1;
 
-  current_error = 0;
   success = g_markup_parse_context_parse (xml_context,
                                           from_client + from_client_start,
                                           from_client_end - from_client_start,
@@ -29460,16 +29473,7 @@ process_gmp_client_input ()
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_INVALID_CONTENT))
-            {
-              if (current_error)
-                {
-                  /* This is the return status for a forked child. */
-                  forked = 2; /* Prevent further forking. */
-                  g_error_free (error);
-                  return current_error;
-                }
-              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
-            }
+            g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
@@ -29487,8 +29491,6 @@ process_gmp_client_input ()
       return err;
     }
   from_client_end = from_client_start = 0;
-  if (forked)
-    return 3;
   return 0;
 }
 
@@ -29522,13 +29524,9 @@ process_gmp_write (const char* msg, void* buffer)
  *
  * \endif
  *
- * @todo The -2 return has been replaced by send_to_client trying to write
- *       the to_client buffer to the client when it is full.  This is
- *       necessary, as the to_client buffer may fill up halfway through the
- *       processing of a GMP element.
- *
- * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
- *         or the scanner output buffer (respectively), -4 XML syntax error.
+ * @return 0 success,
+ *         -4 XML syntax error.
+ *         -1 error.
  */
 static int
 process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
@@ -29564,7 +29562,6 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   client_writer_data = parser->client_writer_data;
   parser->client_writer = process_gmp_write;
   parser->client_writer_data = buffer;
-  current_error = 0;
   success = g_markup_parse_context_parse (xml_context,
                                           command,
                                           strlen (command),
@@ -29587,16 +29584,7 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_INVALID_CONTENT))
-            {
-              if (current_error)
-                {
-                  /* This is the return status for a forked child. */
-                  forked = 2; /* Prevent further forking. */
-                  g_error_free (error);
-                  return current_error;
-                }
-              g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
-            }
+            g_debug ("   client error: G_MARKUP_ERROR_INVALID_CONTENT");
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
@@ -29616,7 +29604,5 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   else
     g_string_free (buffer, TRUE);
 
-  if (forked)
-    return 3;
   return 0;
 }

@@ -120,7 +120,7 @@ int
 init_manage_helper (GSList *, const gchar *, int);
 
 void
-init_manage_process (int, const gchar*);
+init_manage_process (const gchar*);
 
 void
 cleanup_manage_process (gboolean);
@@ -240,33 +240,6 @@ manage_transaction_stop (gboolean);
 
 /* Task structures. */
 
-extern short scanner_active;
-
-/** @todo Should be in otp.c/h. */
-/**
- * @brief A port.
- */
-typedef struct
-{
-  unsigned int number;       ///< Port number.
-  port_protocol_t protocol;  ///< Port protocol (TCP, UDP, ...).
-  char* string;              ///< Original string describing port.
-} port_t;
-
-/** @todo Should be in otp.c/h. */
-/**
- * @brief The record of a message.
- */
-typedef struct
-{
-  char* host;           ///< Host message describes.
-  char* hostname;       ///< Hostname message describes.
-  port_t port;          ///< The port.
-  char* description;    ///< Description of the message.
-  char* oid;            ///< NVT identifier.
-} message_t;
-
-
 /**
  * @brief Task statuses, also used as scan/report statuses.
  *
@@ -329,6 +302,7 @@ typedef enum scanner_type
   SCANNER_TYPE_OPENVAS,
   SCANNER_TYPE_CVE,
   SCANNER_TYPE_GMP,
+  SCANNER_TYPE_OSP_SENSOR,
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 
@@ -907,7 +881,7 @@ void
 set_task_start_time_epoch (task_t, int);
 
 void
-set_task_start_time_otp (task_t, char*);
+set_task_start_time_ctime (task_t, char*);
 
 void
 set_task_end_time (task_t task, char* time);
@@ -1020,10 +994,6 @@ request_delete_task (task_t*);
 
 int
 delete_task (task_t, int);
-
-/* For otp.c. */
-int
-delete_task_lock (task_t, int);
 
 void
 append_to_task_comment (task_t, const char*, int);
@@ -1369,7 +1339,7 @@ char*
 scan_end_time_uuid (const char *);
 
 void
-set_scan_start_time_otp (report_t, const char*);
+set_scan_start_time_ctime (report_t, const char*);
 
 void
 set_scan_start_time_epoch (report_t, time_t);
@@ -1378,13 +1348,13 @@ void
 set_scan_end_time (report_t, const char*);
 
 void
-set_scan_end_time_otp (report_t, const char*);
+set_scan_end_time_ctime (report_t, const char*);
 
 void
 set_scan_end_time_epoch (report_t, time_t);
 
 void
-set_scan_host_start_time_otp (report_t, const char*, const char*);
+set_scan_host_start_time_ctime (report_t, const char*, const char*);
 
 int
 scan_host_end_time (report_t, const char*);
@@ -1393,7 +1363,7 @@ void
 set_scan_host_end_time (report_t, const char*, const char*);
 
 void
-set_scan_host_end_time_otp (report_t, const char*, const char*);
+set_scan_host_end_time_ctime (report_t, const char*, const char*);
 
 int
 report_timestamp (const char*, gchar**);
@@ -1445,10 +1415,25 @@ const char*
 result_iterator_nvt_name (iterator_t *);
 
 const char*
+result_iterator_nvt_summary (iterator_t *);
+
+const char*
+result_iterator_nvt_insight (iterator_t *);
+
+const char*
+result_iterator_nvt_affected (iterator_t *);
+
+const char*
+result_iterator_nvt_impact (iterator_t *);
+
+const char*
 result_iterator_nvt_solution (iterator_t *);
 
 const char*
 result_iterator_nvt_solution_type (iterator_t *);
+
+const char*
+result_iterator_nvt_detection (iterator_t *);
 
 const char*
 result_iterator_nvt_family (iterator_t *);
@@ -1457,7 +1442,7 @@ const char*
 result_iterator_nvt_cvss_base (iterator_t *);
 
 void
-result_iterator_nvt_refs_append (GString *, iterator_t *);
+result_iterator_nvt_refs_append (GString *, iterator_t *, int *);
 
 const char*
 result_iterator_nvt_tag (iterator_t *);
@@ -1476,6 +1461,9 @@ result_iterator_scan_nvt_version (iterator_t*);
 
 const char*
 result_iterator_original_severity (iterator_t*);
+
+const char*
+result_iterator_severity (iterator_t *);
 
 double
 result_iterator_severity_double (iterator_t *);
@@ -1556,7 +1544,7 @@ manage_report (report_t, report_t, const get_data_t *, report_format_t,
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
-                    int, int, int, int, int,
+                    int, int, int, int, int, int,
                     gboolean (*) (const char *,
                                   int (*) (const char*, void*),
                                   void*),
@@ -1907,22 +1895,22 @@ manage_set_config_preference (const gchar *, const char*, const char*,
                               const char*);
 
 void
-init_preference_iterator (iterator_t *, config_t);
+init_config_preference_iterator (iterator_t *, config_t);
 
 const char*
-preference_iterator_name (iterator_t *);
+config_preference_iterator_name (iterator_t *);
 
 const char*
-preference_iterator_value (iterator_t *);
+config_preference_iterator_value (iterator_t *);
 
 const char*
-preference_iterator_type (iterator_t *);
+config_preference_iterator_type (iterator_t *);
 
 const char*
-preference_iterator_default (iterator_t *);
+config_preference_iterator_default (iterator_t *);
 
 const char*
-preference_iterator_hr_name (iterator_t *);
+config_preference_iterator_hr_name (iterator_t *);
 
 int
 manage_set_config (const gchar *, const char*, const char *, const char *);
@@ -1962,6 +1950,9 @@ nvt_name (const char *);
 char*
 nvts_feed_version ();
 
+time_t
+nvts_feed_version_epoch ();
+
 void
 set_nvts_feed_version (const char*);
 
@@ -1991,10 +1982,19 @@ const char*
 nvt_iterator_name (iterator_t*);
 
 const char*
-nvt_iterator_description (iterator_t*);
+nvt_iterator_summary (iterator_t*);
 
 const char*
-nvt_iterator_copyright (iterator_t*);
+nvt_iterator_insight (iterator_t*);
+
+const char*
+nvt_iterator_affected (iterator_t*);
+
+const char*
+nvt_iterator_impact (iterator_t*);
+
+const char*
+nvt_iterator_description (iterator_t*);
 
 const char*
 nvt_iterator_tag (iterator_t*);
@@ -2007,6 +2007,9 @@ nvt_iterator_family (iterator_t*);
 
 const char*
 nvt_iterator_cvss_base (iterator_t*);
+
+const char*
+nvt_iterator_detection (iterator_t*);
 
 const char*
 nvt_iterator_qod (iterator_t*);
@@ -2116,7 +2119,7 @@ int
 nvt_preference_count (const char *);
 
 void
-nvti_refs_append_xml (GString *, const char *);
+nvti_refs_append_xml (GString *, const char *, int *);
 
 gchar*
 get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);
@@ -2754,6 +2757,9 @@ scanner_password (scanner_t);
 int
 scanner_count (const get_data_t *);
 
+char *
+openvas_default_scanner_host ();
+
 int
 init_scanner_iterator (iterator_t*, const get_data_t *);
 
@@ -2828,6 +2834,13 @@ int
 osp_get_details_from_iterator (iterator_t *, char **, GSList **);
 
 osp_connection_t *
+osp_connect_with_data (const char *,
+                       int,
+                       const char *,
+                       const char *,
+                       const char *);
+
+osp_connection_t *
 osp_scanner_connect (scanner_t);
 
 int
@@ -2835,6 +2848,24 @@ verify_scanner (const char *, char **);
 
 void
 set_slave_commit_size (int);
+
+const char *
+get_relay_mapper_path ();
+
+void
+set_relay_mapper_path (const char *);
+
+int
+slave_get_relay (const char *,
+                 int,
+                 const char *,
+                 const char *,
+                 gchar **,
+                 int *,
+                 gchar **);
+
+int
+slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 
 /* Scheduling. */
 
@@ -3482,6 +3513,7 @@ typedef enum
 struct keyword
 {
   gchar *column;                 ///< The column prefix, or NULL.
+  int approx;                    ///< Whether the keyword is like "~example".
   int equal;                     ///< Whether the keyword is like "=example".
   int integer_value;             ///< Integer value of the keyword.
   double double_value;           ///< Floating point value of the keyword.
@@ -3600,12 +3632,6 @@ manage_restore (const char *);
 
 int
 manage_empty_trashcan ();
-
-
-/* Scanner tags. */
-
-void
-parse_tags (const char *, gchar **, gchar **);
 
 
 /* SecInfo */
@@ -3910,9 +3936,6 @@ manage_user_uuid (const gchar *, auth_method_t);
 
 int
 manage_user_exists (const gchar *, auth_method_t);
-
-int
-manage_scanner_set_default ();
 
 int
 copy_user (const char*, const char*, const char*, user_t*);
@@ -4254,5 +4277,9 @@ get_termination_signal ();
 
 int
 sql_cancel ();
+
+/* Extra sensor handling functions */
+
+
 
 #endif /* not _GVMD_MANAGE_H */

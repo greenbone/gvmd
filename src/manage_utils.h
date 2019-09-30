@@ -59,9 +59,6 @@ time_t
 next_time (time_t, int, int, int, const char *, int);
 
 int
-parse_time (const gchar *, int *);
-
-int
 manage_count_hosts_max (const char *, const char *, int);
 
 double

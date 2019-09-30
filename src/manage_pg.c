@@ -1039,7 +1039,7 @@ manage_create_sql_functions ()
        "   LOOP"
        "     EXECUTE 'SELECT count (*) = 0 FROM ' || type || 's"
        "              WHERE name = $1"
-       "              AND ((owner IS NULL) OR (owner = $2))'"
+       "              AND (($2 IS NULL) OR (owner IS NULL) OR (owner = $2))'"
        "       INTO unique_candidate"
        "       USING candidate, owner;"
        "     EXIT WHEN unique_candidate;"
@@ -1309,13 +1309,6 @@ manage_create_sql_functions ()
 
   sql ("CREATE OR REPLACE FUNCTION make_uuid () RETURNS text AS $$"
        "  SELECT uuid_generate_v4 ()::text AS result;"
-       "$$ LANGUAGE SQL;");
-
-  sql ("CREATE OR REPLACE FUNCTION tag (text, text) RETURNS text AS $$"
-       /* Extract a tag from an OTP tag list. */
-       "  SELECT split_part (unnest, '=', 2)"
-       "  FROM unnest (string_to_array ($1, '|'))"
-       "  WHERE split_part (unnest, '=', 1) = $2;"
        "$$ LANGUAGE SQL;");
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
@@ -2058,7 +2051,7 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text NOT NULL,"
+       "  name text UNIQUE NOT NULL,"
        "  comment text,"
        "  password text,"
        "  timezone text,"
@@ -2920,6 +2913,10 @@ create_tables ()
        "  oid text UNIQUE NOT NULL,"
        "  name text,"
        "  comment text,"
+       "  summary text,"
+       "  insight text,"
+       "  affected text,"
+       "  impact text,"
        "  cve text,"
        "  tag text,"
        "  category text,"
@@ -2929,6 +2926,7 @@ create_tables ()
        "  modification_time integer,"
        "  solution text,"
        "  solution_type text,"
+       "  detection text,"
        "  qod integer,"
        "  qod_type text);");
 
@@ -3208,6 +3206,13 @@ create_tables ()
        "  (SELECT 0 AS autofp_selection"
        "   UNION SELECT 1 AS autofp_selection"
        "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
+
+  sql ("CREATE OR REPLACE VIEW tls_certificate_source_origins AS"
+       " SELECT sources.id AS source_id, tls_certificate,"
+       "        origin_id, origin_type, origin_data"
+       "  FROM tls_certificate_sources AS sources"
+       "  JOIN tls_certificate_origins AS origins"
+       "    ON sources.origin = origins.id;");
 
   sql ("DROP VIEW IF EXISTS vulns;");
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"

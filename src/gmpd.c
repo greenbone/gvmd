@@ -33,7 +33,6 @@
  */
 
 #include "gmpd.h"
-#include "scanner.h"
 #include "gmp.h"
 
 #include <assert.h>
@@ -80,11 +79,6 @@ buffer_size_t from_client_start = 0;
 buffer_size_t from_client_end = 0;
 
 /**
- * @brief Flag for running in NVT cache mode.
- */
-static int gmpd_nvt_cache_mode = 0;
-
-/**
  * @brief Initialise the GMP library for the GMP daemon.
  *
  * @param[in]  log_config      Log configuration
@@ -121,10 +115,9 @@ init_gmpd (GSList *log_config, const gchar *database,
 void
 init_gmpd_process (const gchar *database, gchar **disable)
 {
-  openvas_scanner_fork ();
   from_client_start = 0;
   from_client_end = 0;
-  init_gmp_process (0, database, NULL, NULL, disable);
+  init_gmp_process (database, NULL, NULL, disable);
 }
 
 /**
@@ -418,23 +411,16 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
 }
 
 /**
- * @brief Clean session.
+ * @brief Get nfds value.
  *
- * @param[in]  client_connection  Connection.
+ * @param[in]  socket  Highest socket number.
+ *
+ * @return nfds value for select.
  */
-static void
-session_clean (gvm_connection_t *client_connection)
+static int
+get_nfds (int socket)
 {
-  if (client_connection->session)
-    {
-      gnutls_deinit (client_connection->session);
-      client_connection->session = NULL;
-    }
-  if (client_connection->credentials)
-    {
-      gnutls_certificate_free_credentials (client_connection->credentials);
-      client_connection->credentials = NULL;
-    }
+  return 1 + socket;
 }
 
 /**
@@ -450,61 +436,41 @@ session_clean (gvm_connection_t *client_connection)
  *
  * \if STATIC
  *
- * Read input with \ref read_from_client and \ref openvas_scanner_read.
- * Write the results with \ref write_to_client.  Write to the server
- * with \ref openvas_scanner_write.
+ * Read input with \ref read_from_client.
+ * Write the results with \ref write_to_client.
  *
  * \endif
- *
- * If client socket is 0 or less, then update the NVT cache and exit.
  *
  * @param[in]  client_connection    Connection.
  * @param[in]  database             Location of manage database.
  * @param[in]  disable              Commands to disable.
  *
- * @return 0 success, 1 scanner still loading, -1 error, -2 scanner has no cert.
+ * @return 0 success, -1 error.
  */
 int
 serve_gmp (gvm_connection_t *client_connection, const gchar *database,
            gchar **disable)
 {
-  int nfds, scan_handler = 0, rc = 0;
-  /* True if processing of the client input is waiting for space in the
-   * to_scanner or to_client buffer. */
-  short client_input_stalled;
-  /* Client status flag.  Set to 0 when the client closes the connection
-   * while the scanner is active. */
-  short client_active = client_connection->socket > 0;
+  int nfds, rc = 0;
 
-  if (client_connection->socket < 0)
-    gmpd_nvt_cache_mode = client_connection->socket;
-
-  if (gmpd_nvt_cache_mode == 0)
-    g_debug ("   Serving GMP");
+  g_debug ("   Serving GMP");
 
   /* Initialise the XML parser and the manage library. */
-  init_gmp_process (gmpd_nvt_cache_mode,
-                    database,
+  init_gmp_process (database,
                     (int (*) (const char*, void*)) gmpd_send_to_client,
                     (void*) client_connection,
                     disable);
-
-  client_input_stalled = 0;
 
   /** @todo Confirm and clarify complications, especially last one. */
   /* Loop handling input from the sockets.
    *
    * That is, select on all the socket fds and then, as necessary
    *   - read from the client into buffer from_client
-   *   - write to the scanner from buffer to_scanner
-   *   - read from the scanner into buffer from_scanner
    *   - write to the client from buffer to_client.
    *
    * On reading from an fd, immediately try react to the input.  On reading
    * from the client call process_gmp_client_input, which parses GMP
-   * commands and may write to to_scanner and to_client.  On reading from
-   * the scanner call process_otp_scanner_input, which updates information
-   * kept about the scanner.
+   * commands and may write to to_client.
    *
    * There are a few complications here
    *   - the program must read from or write to an fd returned by select
@@ -513,17 +479,13 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
    *     something to write,
    *   - similarly, the program need only select on the fds for reading
    *     if there is buffer space available,
-   *   - the buffers from_client and from_scanner can become full during
-   *     reading
-   *   - a read from the client can be stalled by the to_scanner buffer
-   *     filling up, or the to_client buffer filling up (in which case
-   *     process_gmp_client_input will try to write the to_client buffer
-   *     itself),
-   *   - a read from the scanner can, theoretically, be stalled by the
-   *     to_scanner buffer filling up (during initialisation).
+   *   - the buffer from_client can become full during reading
+   *   - a read from the client can be stalled by the to_client buffer
+   *     filling up (in which case process_gmp_client_input will try to
+   *     write the to_client buffer itself),
    */
 
-  nfds = openvas_scanner_get_nfds (client_connection->socket);
+  nfds = get_nfds (client_connection->socket);
   while (1)
     {
       int ret;
@@ -535,11 +497,6 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           g_debug ("%s: Received %s signal.",
                    __FUNCTION__,
                    sys_siglist[get_termination_signal()]);
-
-          if (openvas_scanner_connected ())
-            {
-              openvas_scanner_close ();
-            }
 
           goto client_free;
         }
@@ -553,15 +510,12 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
 
       /** @todo Shutdown on failure (for example, if a read fails). */
 
-      if (client_active)
-        {
-          /* See whether to read from the client.  */
-          if (from_client_end < from_buffer_size)
-            FD_SET (client_connection->socket, &readfds);
-          /* See whether to write to the client.  */
-          if (to_client_start < to_client_end)
-            FD_SET (client_connection->socket, &writefds);
-        }
+      /* See whether to read from the client.  */
+      if (from_client_end < from_buffer_size)
+        FD_SET (client_connection->socket, &readfds);
+      /* See whether to write to the client.  */
+      if (to_client_start < to_client_end)
+        FD_SET (client_connection->socket, &writefds);
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
        * we test for pending records first and emulate a select call
@@ -580,43 +534,12 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           ret++;
           FD_SET (client_connection->socket, &readfds);
         }
-      if (openvas_scanner_fd_isset (&readfds))
-        {
-          if (openvas_scanner_session_peek ())
-            {
-              if (!ret)
-                {
-                  FD_ZERO (&readfds);
-                  FD_ZERO (&writefds);
-                }
-              ret++;
-              openvas_scanner_fd_set (&readfds);
-            }
-          else if (openvas_scanner_peek () == 0)
-            {
-              /* Scanner has gone down.  Exit. */
-              rc = -1;
-              goto client_free;
-            }
-        }
 
       if (!ret)
-        {
-          /* Timeout periodically.  This was needed in the past so that OTP
-           * scan handling processes could check if the client had stopped
-           * the task. */
-          struct timeval timeout;
-
-          timeout.tv_usec = 0;
-          timeout.tv_sec = 1;
-          ret = select (nfds, &readfds, &writefds, NULL, &timeout);
-        }
+        ret = select (nfds, &readfds, &writefds, NULL, NULL);
       if ((ret < 0 && errno == EINTR) || ret == 0)
-        {
-          if (!scan_handler && !gmpd_nvt_cache_mode)
-            continue;
-        }
-      else if (ret < 0)
+        continue;
+      if (ret < 0)
         {
           g_warning ("%s: child select failed: %s", __FUNCTION__,
                      strerror (errno));
@@ -670,45 +593,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
           ret = process_gmp_client_input ();
           if (ret == 0)
             /* Processed all input. */
-            client_input_stalled = 0;
-          else if (ret == 3)
-            {
-              /* In the parent after a start_task fork. Free the scanner session
-               * without closing it, for usage by the child process. */
-              openvas_scanner_free ();
-              nfds = openvas_scanner_get_nfds (client_connection->socket);
-              client_input_stalled = 0;
-              /* Skip the rest of the loop because the scanner socket is
-               * a new socket.  This is asking for select trouble, really. */
-              continue;
-            }
-          else if (ret == 2)
-            {
-              /* Now in a process forked to run a task, which has
-               * successfully started the task.  Close the client
-               * connection, as the parent process has continued the
-               * session with the client. */
-              session_clean (client_connection);
-              client_active = 0;
-              client_input_stalled = 0;
-              scan_handler = 1;
-            }
-          else if (ret == 4)
-            {
-              /* Now in a process forked for some operation which has
-               * successfully completed.  Close the client connection,
-               * and exit, as the parent process has continued the
-               * session with the client. */
-              session_clean (client_connection);
-              return 0;
-            }
-          else if (ret == -10)
-            {
-              /* Now in a process forked to run a task, which has
-               * failed in starting the task. */
-              session_clean (client_connection);
-              return -1;
-            }
+            ;
           else if (ret == -1 || ret == -4)
             {
               /* Error.  Write rest of to_client to client, so that the
@@ -718,54 +603,10 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
               rc = -1;
               goto client_free;
             }
-          else if (ret == -2)
-            {
-              /* to_scanner buffer full. */
-              g_debug ("   client input stalled 1");
-              client_input_stalled = 1;
-              /* Carry on to write to_scanner. */
-            }
-          else if (ret == -3)
-            {
-              /* to_client buffer full. */
-              g_debug ("   client input stalled 2");
-              client_input_stalled = 2;
-              /* Carry on to write to_client. */
-            }
           else
             {
               /* Programming error. */
               assert (0);
-              client_input_stalled = 0;
-            }
-        }
-
-      /* Read any data from the scanner. */
-      if (openvas_scanner_connected ()
-          && (openvas_scanner_fd_isset (&readfds) || scan_handler))
-        {
-          switch (openvas_scanner_read ())
-            {
-              case  0:       /* Read everything. */
-                break;
-              case -1:       /* Error. */
-                /* This may be because the scanner closed the connection
-                 * at the end of a command. */
-                /** @todo Then should get EOF (-3). */
-                rc = -1;
-                goto client_free;
-              case -2:       /* from_scanner buffer full. */
-                /* There may be more to read. */
-                break;
-              case -3:       /* End of file. */
-                if (client_active == 0)
-                  /* The client has closed the connection, so exit. */
-                  return 0;
-                /* Scanner went down, exit. */
-                rc = -1;
-                goto client_free;
-              default:       /* Programming error. */
-                assert (0);
             }
         }
 
@@ -788,84 +629,9 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
                 assert (0);
             }
         }
-
-      if (client_input_stalled)
-        {
-          /* Try process the client input, in case writing to the scanner
-           * or client has freed some space in to_scanner or to_client. */
-
-          ret = process_gmp_client_input ();
-          if (ret == 0)
-            /* Processed all input. */
-            client_input_stalled = 0;
-          else if (ret == 3)
-            {
-              /* In the parent after a start_task fork. Free the scanner session
-               * without closing it, for usage by the child process. */
-              openvas_scanner_free ();
-              nfds = openvas_scanner_get_nfds (client_connection->socket);
-              /* Skip the rest of the loop because the scanner socket is
-               * a new socket.  This is asking for select trouble, really. */
-              continue;
-            }
-          else if (ret == 2)
-            {
-              /* Now in a process forked to run a task, which has
-               * successfully started the task.  Close the client
-               * connection, as the parent process has continued the
-               * session with the client. */
-              session_clean (client_connection);
-              scan_handler = 1;
-              client_active = 0;
-            }
-          else if (ret == 4)
-            {
-              /* Now in a process forked for some operation which has
-               * successfully completed.  Close the client connection,
-               * and exit, as the parent process has continued the
-               * session with the client. */
-              session_clean (client_connection);
-              return 0;
-            }
-          else if (ret == -10)
-            {
-              /* Now in a process forked to run a task, which has
-               * failed in starting the task. */
-              session_clean (client_connection);
-              return -1;
-            }
-          else if (ret == -1)
-            {
-              /* Error.  Write rest of to_client to client, so that the
-               * client gets any buffered output and the response to the
-               * error. */
-              write_to_client (client_connection);
-              rc = -1;
-              goto client_free;
-            }
-          else if (ret == -2)
-            {
-              /* to_scanner buffer full. */
-              g_debug ("   client input still stalled (1)");
-              client_input_stalled = 1;
-            }
-          else if (ret == -3)
-            {
-              /* to_client buffer full. */
-              g_debug ("   client input still stalled (2)");
-              client_input_stalled = 2;
-            }
-          else
-            {
-              /* Programming error. */
-              assert (0);
-              client_input_stalled = 0;
-            }
-        }
     } /* while (1) */
 
 client_free:
-  if (client_active)
-    gvm_connection_free (client_connection);
+  gvm_connection_free (client_connection);
   return rc;
 }

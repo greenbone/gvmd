@@ -127,6 +127,7 @@
 #ifdef __FreeBSD__
 #include <sys/wait.h>
 #endif
+#include "manage_migrators_219_to_220_names.h"
 #include "manage_sql.h"
 #include "sql.h"
 #include "utils.h"
@@ -1284,6 +1285,202 @@ migrate_216_to_217 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 217 to version 218.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_217_to_218 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 217. */
+
+  if (manage_db_version () != 217)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ensure all user names are unique */
+
+  sql ("UPDATE users"
+       " SET name = uniquify('user', name, NULL, '')"
+       " WHERE id != (SELECT min(id) FROM users AS inner_users"
+       "              WHERE users.name = inner_users.name);");
+
+  /* Add an UNIQUE constraint to the name column of users */
+
+  sql ("ALTER TABLE users ADD UNIQUE (name);");
+
+  /* Set the database version to 218. */
+
+  set_db_version (218);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 218 to version 219.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_218_to_219 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 218. */
+
+  if (manage_db_version () != 218)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Extend table "nvts" with additional columns "summary",
+   * "insight", "affected", "detection" and "impact" */
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN summary text;");
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN insight text;");
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN affected text;");
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN detection text;");
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN impact text;");
+
+  /* Set the database version to 219. */
+
+  set_db_version (219);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Get new name of a preference.
+ *
+ * @param[in]  old_name  Old name of preference.
+ *
+ * @return Static string containing new name for preference if found, else NULL.
+ */
+static const gchar *
+migrate_219_to_220_new_name (const char *old_name)
+{
+  int index;
+
+  for (index = 0; migrate_219_to_220_names[index][0]; index++)
+    if (strcmp (migrate_219_to_220_names[index][0], old_name) == 0)
+      return migrate_219_to_220_names[index][1];
+  return NULL;
+}
+
+/**
+ * @brief Converts old NVT preferences to the new format.
+ *
+ * @param[in]  table_name  The name of the table to update.
+ */
+static void
+replace_preference_names_219_to_220 (const char *table_name)
+{
+  iterator_t preferences;
+
+  /* 1.3.6.1.4.1.25623.1.0.14259:checkbox:Log nmap output
+   * =>
+   * 1.3.6.1.4.1.25623.1.0.14259:21:checkbox:Log nmap output */
+
+  init_iterator (&preferences,
+                 "SELECT id, name"
+                 " FROM \"%s\""
+                 " WHERE name LIKE '%%:%%:%%'"
+                 " AND name !~ '.*:[0-9]+:.*:.*';",
+                 table_name);
+
+  while (next (&preferences))
+    {
+      resource_t preference;
+      const char *old_name;
+      const gchar *new_name;
+
+      preference = iterator_int64 (&preferences, 0);
+      old_name = iterator_string (&preferences, 1);
+      new_name = migrate_219_to_220_new_name (old_name);
+      if (new_name)
+        {
+          gchar *quoted_new_name;
+
+          quoted_new_name = sql_quote (new_name);
+          sql ("UPDATE \"%s\" SET name = '%s' WHERE id = %llu;",
+               table_name,
+               quoted_new_name,
+               preference);
+          g_free (quoted_new_name);
+        }
+      else
+        g_warning ("%s: No new name for '%s'", __FUNCTION__, old_name);
+    }
+  cleanup_iterator (&preferences);
+}
+
+/**
+ * @brief Migrate the database from version 219 to version 220.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_219_to_220 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 219. */
+
+  if (manage_db_version () != 219)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* OSP uses lowercase for timeout NVT preferences where OTP used a capital,
+   * so update those first:
+   *
+   *     1.3.6.1.4.1.25623.1.0.107305:entry:Timeout
+   *     =>
+   *     1.3.6.1.4.1.25623.1.0.107305:entry:timeout  */
+
+  sql ("UPDATE nvt_preferences"
+       " SET name = split_part (name, ':', 1) || ':entry:timeout'"
+       " WHERE name = split_part (name, ':', 1) || ':entry:Timeout';");
+
+  /* Then update config and NVT preferences from the 3 part format to the
+   * newer 4 part format:
+   *
+   *     1.3.6.1.4.1.25623.1.0.14259:checkbox:Log nmap output
+   *     =>
+   *     1.3.6.1.4.1.25623.1.0.14259:21:checkbox:Log nmap output
+   *
+   * Any preferences that aren't in our hardcoded list will be updated after
+   * the first NVT sync. */
+
+  replace_preference_names_219_to_220 ("nvt_preferences");
+  replace_preference_names_219_to_220 ("config_preferences");
+  replace_preference_names_219_to_220 ("config_preferences_trash");
+
+  /* Set the database version to 220. */
+
+  set_db_version (220);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1307,6 +1504,9 @@ static migrator_t database_migrators[] = {
   {215, migrate_214_to_215},
   {216, migrate_215_to_216},
   {217, migrate_216_to_217},
+  {218, migrate_217_to_218},
+  {219, migrate_218_to_219},
+  {220, migrate_219_to_220},
   /* End marker. */
   {-1, NULL}};
 
@@ -1324,7 +1524,7 @@ manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
   int db_version;
   g_log_set_handler (
     G_LOG_DOMAIN, ALL_LOG_LEVELS, (GLogFunc) gvm_log_func, log_config);
-  init_manage_process (0, database);
+  init_manage_process (database);
   db_version = manage_db_version ();
   cleanup_manage_process (TRUE);
   return db_version > 0 && db_version < 52;
@@ -1383,7 +1583,7 @@ manage_migrate (GSList *log_config, const gchar *database)
   g_log_set_handler (
     G_LOG_DOMAIN, ALL_LOG_LEVELS, (GLogFunc) gvm_log_func, log_config);
 
-  init_manage_process (0, database);
+  init_manage_process (database);
 
   old_version = manage_db_version ();
   new_version = manage_db_supported_version ();
@@ -1532,7 +1732,7 @@ manage_migrate (GSList *log_config, const gchar *database)
    *
    * Reopen the database before the ANALYZE, in case the schema has changed. */
   cleanup_manage_process (TRUE);
-  init_manage_process (0, database);
+  init_manage_process (database);
   sql ("ANALYZE;");
 
   cleanup_manage_process (TRUE);
