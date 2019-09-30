@@ -1950,6 +1950,9 @@ nvt_name (const char *);
 char*
 nvts_feed_version ();
 
+time_t
+nvts_feed_version_epoch ();
+
 void
 set_nvts_feed_version (const char*);
 
