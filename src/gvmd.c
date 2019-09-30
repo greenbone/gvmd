@@ -129,11 +129,6 @@
 #endif
 
 /**
- * @brief Scanner (openvassd) address.
- */
-#define OPENVASSD_ADDRESS GVM_RUN_DIR "/openvassd.sock"
-
-/**
  * @brief Location of scanner certificate.
  */
 #ifndef SCANNERCERT
@@ -167,13 +162,6 @@
 #ifndef CLIENTKEY
 #define CLIENTKEY  "/var/lib/openvas/private/CA/clientkey.pem"
 #endif
-
-/**
- * @brief Scanner port.
- *
- * Used if --scanner-port is missing.
- */
-#define OPENVASSD_PORT 9391
 
 /**
  * @brief Manager port.
@@ -432,8 +420,6 @@ watch_client_connection (void* data)
 
 /**
  * @brief Serve the client.
- *
- * Connect to the openvassd scanner, then call \ref serve_gmp to serve GMP.
  *
  * In all cases, close client_socket before returning.
  *
@@ -1828,8 +1814,7 @@ gvmd (int argc, char** argv)
           "<scanner-ca-pub>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_host,
-          "Scanner host for --create-scanner and --modify-scanner."
-          " Default is " OPENVASSD_ADDRESS ".",
+          "Scanner host for --create-scanner and --modify-scanner.",
           "<scanner-host>" },
         { "scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_key_priv,
@@ -1846,7 +1831,7 @@ gvmd (int argc, char** argv)
         { "scanner-port", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_port,
           "Scanner port for --create-scanner and --modify-scanner."
-          " Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
+          " Default is " G_STRINGIFY (GVMD_PORT) ".",
           "<scanner-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
@@ -2247,9 +2232,12 @@ gvmd (int argc, char** argv)
         return EXIT_FAILURE;
 
       if (!scanner_host)
-        scanner_host = OPENVASSD_ADDRESS;
+        {
+          printf ("A --scanner-host is required\n");
+          return EXIT_FAILURE;
+        }
       if (!scanner_port)
-        scanner_port = G_STRINGIFY (OPENVASSD_PORT);
+        scanner_port = G_STRINGIFY (GVMD_PORT);
       if (!scanner_ca_pub)
         scanner_ca_pub = CACERT;
       if (!scanner_key_pub)
