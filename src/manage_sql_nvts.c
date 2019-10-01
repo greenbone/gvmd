@@ -1415,7 +1415,6 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 {
   osp_connection_t *connection;
   gchar *db_feed_version, *scanner_feed_version;
-  GSList *scanner_prefs;
 
   /* Re-open DB after fork. */
 
@@ -1446,6 +1445,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
   if ((db_feed_version == NULL)
       || strcmp (scanner_feed_version, db_feed_version))
     {
+      GSList *scanner_prefs;
       entity_t vts;
       osp_get_vts_opts_t get_vts_opts;
 
