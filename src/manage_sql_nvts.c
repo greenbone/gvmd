@@ -1511,7 +1511,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
               gchar *quoted_name, *quoted_value;
 
               param = point->data;
-              quoted_name = sql_quote (osp_param_name (param));
+              quoted_name = sql_quote (osp_param_id (param));
               quoted_value = sql_quote (osp_param_default (param));
 
               g_string_append_printf (prefs_sql,
