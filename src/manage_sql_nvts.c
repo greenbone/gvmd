@@ -1415,6 +1415,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 {
   osp_connection_t *connection;
   gchar *db_feed_version, *scanner_feed_version;
+  GSList *scanner_prefs;
 
   /* Re-open DB after fork. */
 
@@ -1495,6 +1496,65 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
           sql ("INSERT INTO meta (name, value)"
                " VALUES ('checked_preferences', 1)"
                " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+        }
+
+      /* Update scanner preferences */
+      connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
+      if (!connection)
+        {
+          g_warning ("%s: failed to connect to %s (3)",
+                    __FUNCTION__, update_socket);
+          return -1;
+        }
+
+      scanner_prefs = NULL;
+      if (osp_get_scanner_details (connection, NULL, &scanner_prefs))
+        {
+          g_warning ("%s: failed to get scanner preferences", __FUNCTION__);
+          osp_connection_close (connection);
+          return -1;
+        }
+      else
+        {
+          GString *prefs_sql;
+          GSList *point;
+          int first;
+
+          point = scanner_prefs;
+          first = 1;
+
+          osp_connection_close (connection);
+          prefs_sql = g_string_new ("INSERT INTO nvt_preferences (name, value)"
+                                    " VALUES");
+          while (point)
+            {
+              osp_param_t *param;
+              gchar *quoted_name, *quoted_value;
+
+              param = point->data;
+              quoted_name = sql_quote (osp_param_name (param));
+              quoted_value = sql_quote (osp_param_default (param));
+
+              g_string_append_printf (prefs_sql,
+                                      "%s ('%s', '%s')",
+                                      first ? "" : ",",
+                                      quoted_name,
+                                      quoted_value);
+              first = 0;
+              point = g_slist_next (point);
+              g_free (quoted_name);
+              g_free (quoted_value);
+            }
+          g_string_append (prefs_sql,
+                           " ON CONFLICT (name)"
+                           " DO UPDATE SET value = EXCLUDED.value;");
+
+          if (first == 0)
+            {
+              sql ("%s", prefs_sql->str);
+            }
+
+          g_string_free (prefs_sql, TRUE);
         }
     }
 
