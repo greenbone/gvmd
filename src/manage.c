@@ -165,7 +165,7 @@
 extern volatile int termination_signal;
 
 /**
- * @brief Path to the relay mapper excutable, NULL to disable relays.
+ * @brief Path to the relay mapper executable, NULL to disable relays.
  */
 static gchar *relay_mapper_path = NULL;
 
@@ -4877,7 +4877,7 @@ run_gmp_slave_task (task_t task, int from, char **report_id,
 }
 
 /**
- * @brief Gets the current path of the relay mapper excecutable.
+ * @brief Gets the current path of the relay mapper executable.
  *
  * @return The current relay mapper path.
  */
@@ -4888,7 +4888,7 @@ get_relay_mapper_path ()
 }
 
 /**
- * @brief Gets the current path of the relay mapper excecutable.
+ * @brief Gets the current path of the relay mapper executable.
  *
  * @param[in]  new_path  The new relay mapper path.
  */
