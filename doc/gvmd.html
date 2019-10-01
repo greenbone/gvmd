@@ -242,7 +242,7 @@
     
       <p><b>--osp-vt-update=<em>SCANNER-SOCKET</em></b></p>
       
-        <p>Unix socket for OSP NVT update.  Default is to do an OTP update.</p>
+        <p>Unix socket for OSP NVT update.  Defaults to the path of the 'OpenVAS Default' scanner if it is an absolute path.</p>
       
     
     
@@ -261,6 +261,15 @@
       <p><b>--port2=<em>NUMBER</em></b></p>
       
         <p>Use port number NUMBER for address 2.</p>
+      
+    
+    
+      <p><b>--relay-mapper=<em>FILE</em></b></p>
+      
+        <p>Executable for mapping scanner hosts to relays.
+          Use an empty string to explicitly disable.
+          If the option is not given, $PATH is checked for gvm-relay-mapper.
+        </p>
       
     
     

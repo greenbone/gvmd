@@ -82,9 +82,9 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
- * @brief Scanner (openvassd) address.
+ * @brief Socket of default scanner.
  */
-#define OPENVASSD_ADDRESS GVM_RUN_DIR "/openvassd.sock"
+#define OPENVAS_DEFAULT_SOCKET "/tmp/ospd.sock"
 
 #ifdef DEBUG_FUNCTION_NAMES
 #include <dlfcn.h>
@@ -1152,7 +1152,7 @@ vector_find_filter (const gchar **vector, const gchar *string)
 }
 
 /**
- * @brief Extract a tag from an OTP tag list.
+ * @brief Extract a tag from a pipe separated tag list.
  *
  * @param[in]   tags  Tag list.
  * @param[out]  tag   Tag name.
@@ -1283,7 +1283,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
         return ret;
     }
 
-  init_manage_process (0, db);
+  init_manage_process (db);
 
   return 0;
 }
@@ -3554,12 +3554,25 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY lower (%s) ASC",
-                                          column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) ASC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) ASC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) ASC",
+                                            column);
                 }
               else
                 /* Special case for notes text sorting. */
@@ -3731,15 +3744,25 @@ filter_clause (const char* type, const char* filter,
                            && strcmp (keyword->string, "name")))
                 {
                   gchar *column;
-                  g_debug ("   %s: select_columns: %p", __FUNCTION__, select_columns);
-                  g_debug ("   %s: where_columns: %p", __FUNCTION__, where_columns);
-                  g_debug ("   %s: keyword->string: %p", __FUNCTION__, keyword->string);
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY lower (%s) DESC",
-                                          column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) DESC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) DESC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) DESC",
+                                            column);
                 }
               else
                 /* Special case for notes text sorting. */
@@ -4350,6 +4373,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
          || (strcasecmp (type, "ticket") == 0)
+         || (strcasecmp (type, "tls_certificate") == 0)
          || (strcasecmp (type, "user") == 0)
          || (strcasecmp (type, "vuln") == 0);
 }
@@ -4410,6 +4434,8 @@ type_db_name (const char* type)
     return "task";
   if (strcasecmp (type, "Ticket") == 0)
     return "ticket";
+  if (strcasecmp (type, "TLS Certificate") == 0)
+    return "tls_certificate";
   if (strcasecmp (type, "SecInfo") == 0)
     return "info";
   return NULL;
@@ -14225,13 +14251,13 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   clean = g_strdup (now_string);
   if (clean[strlen (clean) - 1] == '\n')
     clean[strlen (clean) - 1] = '\0';
-  set_task_start_time_otp (task, g_strdup (clean));
-  set_scan_start_time_otp (report, g_strdup (clean));
-  set_scan_host_start_time_otp (report, "127.0.0.1", clean);
+  set_task_start_time_ctime (task, g_strdup (clean));
+  set_scan_start_time_ctime (report, g_strdup (clean));
+  set_scan_host_start_time_ctime (report, "127.0.0.1", clean);
   if (result)
     report_add_result (report, result);
-  set_scan_host_end_time_otp (report, "127.0.0.1", clean);
-  set_scan_end_time_otp (report, clean);
+  set_scan_host_end_time_ctime (report, "127.0.0.1", clean);
+  set_scan_end_time_ctime (report, clean);
   g_free (clean);
   ret = manage_alert (alert_id,
                       task_id,
@@ -15431,11 +15457,10 @@ task_average_scan_duration (task_t task)
  *
  * Open the SQL database, attach secondary databases, and define functions.
  *
- * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache.
  * @param[in]  database          Location of manage database.
  */
 void
-init_manage_process (int update_nvt_cache, const gchar *database)
+init_manage_process (const gchar *database)
 {
   lockfile_t lockfile;
 
@@ -15451,14 +15476,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   /* Attach the SCAP and CERT databases. */
   manage_attach_databases ();
-
-  if (update_nvt_cache)
-    {
-      sql ("CREATE TEMPORARY TABLE old_nvts"
-           " (oid TEXT, modification_time INTEGER);");
-      sql ("INSERT INTO old_nvts (oid, modification_time)"
-           " SELECT oid, modification_time FROM nvts;");
-    }
 
   /* Define functions for SQL. */
 
@@ -15485,7 +15502,7 @@ void
 reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
-  init_manage_process (0, gvmd_db_name);
+  init_manage_process (gvmd_db_name);
 }
 
 /**
@@ -16335,7 +16352,8 @@ check_db_scanners ()
            " (uuid, owner, name, host, port, type, ca_pub, credential,"
            "  creation_time, modification_time)"
            " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '" OPENVASSD_ADDRESS "', 0, %d, NULL, NULL, m_now (), m_now ());",
+           " '" OPENVAS_DEFAULT_SOCKET "', 0, %d, NULL, NULL, m_now (),"
+           " m_now ());",
            SCANNER_TYPE_OPENVAS);
     }
 
@@ -18235,7 +18253,7 @@ init_manage_internal (GSList *log_config,
 
   memset (&current_credentials, '\0', sizeof (current_credentials));
 
-  init_manage_process (0, database);
+  init_manage_process (database);
 
   /* Check that the versions of the databases are correct. */
 
@@ -19483,7 +19501,7 @@ set_task_run_status (task_t task, task_status_t status)
 /**
  * @brief Atomically set the run state of a task to requested.
  *
- * Only used by run_slave_or_gmp_task and run_otp_task.
+ * Only used by run_gmp_slave_task.
  *
  * @param[in]  task    Task.
  * @param[out] status  Old run status of task.
@@ -19704,14 +19722,14 @@ set_task_start_time_epoch (task_t task, int time)
  * @brief Set the start time of a task.
  *
  * @param[in]  task  Task.
- * @param[in]  time  New time.  OTP format (ctime).  Freed before return.
+ * @param[in]  time  New time.  UTC ctime format.  Freed before return.
  */
 void
-set_task_start_time_otp (task_t task, char* time)
+set_task_start_time_ctime (task_t task, char* time)
 {
   sql ("UPDATE tasks SET start_time = %i, modification_time = m_now ()"
        " WHERE id = %llu;",
-       parse_otp_time (time),
+       parse_utc_ctime (time),
        task);
   free (time);
 }
@@ -24440,9 +24458,10 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
  *
  * @param[in]  xml       The buffer where to append to.
  * @param[in]  oid       The oid of the nvti object from where to collect the refs.
+ * @param[in]  first     Marker for first element.
  */
 void
-nvti_refs_append_xml (GString *xml, const char *oid)
+nvti_refs_append_xml (GString *xml, const char *oid, int *first)
 {
   nvti_t *nvti = lookup_nvti (oid);
   int i;
@@ -24452,7 +24471,15 @@ nvti_refs_append_xml (GString *xml, const char *oid)
 
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
-      vtref_t *ref = nvti_vtref (nvti, i);
+      vtref_t *ref;
+
+      if (first && *first)
+        {
+          xml_string_append (xml, "<refs>");
+          *first = 0;
+        }
+
+      ref = nvti_vtref (nvti, i);
       xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", vtref_type (ref), vtref_id (ref));
     }
 }
@@ -24462,13 +24489,14 @@ nvti_refs_append_xml (GString *xml, const char *oid)
  *
  * @param[in]  xml       The buffer where to append to.
  * @param[in]  iterator  Iterator.
+ * @param[in]  first     Marker for first element.
  */
 void
-result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator)
+result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator, int *first)
 {
   if (iterator->done) return;
 
-  nvti_refs_append_xml (xml, result_iterator_nvt_oid (iterator));
+  nvti_refs_append_xml (xml, result_iterator_nvt_oid (iterator), first);
 }
 
 /**
@@ -24615,7 +24643,7 @@ result_iterator_original_severity (iterator_t *iterator)
  * @return The severity of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-static const char*
+const char*
 result_iterator_severity (iterator_t *iterator)
 {
   const char* ret;
@@ -25363,13 +25391,13 @@ set_scan_start_time_epoch (report_t report, time_t timestamp)
  * @brief Set the start time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  Start time.  In OTP format (ctime).
+ * @param[in]  timestamp  Start time.  In UTC ctime format.
  */
 void
-set_scan_start_time_otp (report_t report, const char* timestamp)
+set_scan_start_time_ctime (report_t report, const char* timestamp)
 {
   sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
-       parse_otp_time (timestamp),
+       parse_utc_ctime (timestamp),
        report);
 }
 
@@ -25442,15 +25470,15 @@ set_scan_end_time (report_t report, const char* timestamp)
  * @brief Set the end time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  End time.  OTP format (ctime).  If NULL, clear end
+ * @param[in]  timestamp  End time.  In UTC ctime format.  If NULL, clear end
  *                        time.
  */
 void
-set_scan_end_time_otp (report_t report, const char* timestamp)
+set_scan_end_time_ctime (report_t report, const char* timestamp)
 {
   if (timestamp)
     sql ("UPDATE reports SET end_time = %i WHERE id = %llu;",
-         parse_otp_time (timestamp), report);
+         parse_utc_ctime (timestamp), report);
   else
     sql ("UPDATE reports SET end_time = NULL WHERE id = %llu;",
          report);
@@ -25507,10 +25535,10 @@ set_scan_host_end_time (report_t report, const char* host,
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
- * @param[in]  timestamp  End time.  OTP format (ctime).
+ * @param[in]  timestamp  End time.  In UTC ctime format.
  */
 void
-set_scan_host_end_time_otp (report_t report, const char* host,
+set_scan_host_end_time_ctime (report_t report, const char* host,
                             const char* timestamp)
 {
   gchar *quoted_host;
@@ -25520,9 +25548,9 @@ set_scan_host_end_time_otp (report_t report, const char* host,
                report, quoted_host))
     sql ("UPDATE report_hosts SET end_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_otp_time (timestamp), report, quoted_host);
+         parse_utc_ctime (timestamp), report, quoted_host);
   else
-    manage_report_host_add (report, host, 0, parse_otp_time (timestamp));
+    manage_report_host_add (report, host, 0, parse_utc_ctime (timestamp));
   g_free (quoted_host);
 }
 
@@ -25555,10 +25583,10 @@ set_scan_host_start_time (report_t report, const char* host,
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
- * @param[in]  timestamp  Start time.  OTP format (ctime).
+ * @param[in]  timestamp  Start time.  In UTC ctime format.
  */
 void
-set_scan_host_start_time_otp (report_t report, const char* host,
+set_scan_host_start_time_ctime (report_t report, const char* host,
                               const char* timestamp)
 {
   gchar *quoted_host;
@@ -25568,9 +25596,9 @@ set_scan_host_start_time_otp (report_t report, const char* host,
                report, quoted_host))
     sql ("UPDATE report_hosts SET start_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_otp_time (timestamp), report, quoted_host);
+         parse_utc_ctime (timestamp), report, quoted_host);
   else
-    manage_report_host_add (report, host, parse_otp_time (timestamp), 0);
+    manage_report_host_add (report, host, parse_utc_ctime (timestamp), 0);
   g_free (quoted_host);
 }
 
@@ -26775,7 +26803,7 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 /** @todo Defined in gmp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int,
                          int, int, int, int, const char *, iterator_t *,
-                         int, int);
+                         int, int, int);
 
 /**
  * @brief Comparison returns.
@@ -27104,7 +27132,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "changed",
                                   delta_results,
                                   1,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27134,7 +27163,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "gone",
                                   delta_results,
                                   0,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27164,7 +27194,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "new",
                                   delta_results,
                                   0,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27194,7 +27225,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   "same",
                                   delta_results,
                                   0,
-                                  -1);
+                                  -1,
+                                  0);
           }
         break;
 
@@ -27796,31 +27828,83 @@ report_error_count (report_t report)
  *
  * @param[in]   stream    Stream to write to.
  * @param[in]   details   Report host details iterator.
+ * @param[in]   lean      Whether to return reduced info.
  *
  * @return 0 success, -1 error.
  */
 static int
-print_report_host_detail (FILE *stream, iterator_t *details)
+print_report_host_detail (FILE *stream, iterator_t *details, int lean)
 {
+  const char *name, *value;
+
+  name = report_host_details_iterator_name (details);
+  value = report_host_details_iterator_value (details);
+
+  if (lean)
+    {
+      /* Skip certain host details. */
+
+      if (strcmp (name, "EXIT_CODE") == 0
+          && strcmp (value, "EXIT_NOTVULN") == 0)
+        return 0;
+
+      if (strcmp (name, "scanned_with_scanner") == 0)
+        return 0;
+
+      if (strcmp (name, "scanned_with_feedtype") == 0)
+        return 0;
+
+      if (strcmp (name, "scanned_with_feedversion") == 0)
+        return 0;
+
+      if (strcmp (name, "OS") == 0)
+        return 0;
+
+      if (strcmp (name, "traceroute") == 0)
+        return 0;
+    }
+
   PRINT (stream,
         "<detail>"
         "<name>%s</name>"
         "<value>%s</value>"
-        "<source>"
-        "<type>%s</type>"
-        "<name>%s</name>"
-        "<description>%s</description>"
-        "</source>"
-        "<extra>%s</extra>"
-        "</detail>",
-        report_host_details_iterator_name (details),
-        report_host_details_iterator_value (details),
-        report_host_details_iterator_source_type (details),
-        report_host_details_iterator_source_name (details),
-        report_host_details_iterator_source_desc (details),
-        report_host_details_iterator_extra (details) ?
-         report_host_details_iterator_extra (details)
-         : "");
+        "<source>",
+        name,
+        value);
+
+  if (lean == 0)
+    PRINT (stream,
+           "<type>%s</type>",
+           report_host_details_iterator_source_type (details));
+
+  PRINT (stream,
+        "<name>%s</name>",
+        report_host_details_iterator_source_name (details));
+
+  if (report_host_details_iterator_source_desc (details)
+      && strlen (report_host_details_iterator_source_desc (details)))
+    PRINT (stream,
+           "<description>%s</description>",
+           report_host_details_iterator_source_desc (details));
+  else if (lean == 0)
+    PRINT (stream,
+           "<description></description>");
+
+  PRINT (stream,
+        "</source>");
+
+  if (report_host_details_iterator_extra (details)
+      && strlen (report_host_details_iterator_extra (details)))
+    PRINT (stream,
+           "<extra>%s</extra>",
+           report_host_details_iterator_extra (details));
+  else if (lean == 0)
+    PRINT (stream,
+           "<extra></extra>");
+
+  PRINT (stream,
+        "</detail>");
+
   return 0;
 }
 
@@ -27828,18 +27912,20 @@ print_report_host_detail (FILE *stream, iterator_t *details)
  * @brief Print the XML for a report's host details to a file stream.
  * @param[in]  report_host  The report host.
  * @param[in]  stream       File stream to write to.
+ * @param[in]  lean         Report host details iterator.
  *
  * @return 0 on success, -1 error.
  */
 static int
-print_report_host_details_xml (report_host_t report_host, FILE *stream)
+print_report_host_details_xml (report_host_t report_host, FILE *stream,
+                               int lean)
 {
   iterator_t details;
 
   init_report_host_details_iterator
    (&details, report_host);
   while (next (&details))
-    if (print_report_host_detail (stream, &details))
+    if (print_report_host_detail (stream, &details, lean))
       return -1;
   cleanup_iterator (&details);
 
@@ -28666,7 +28752,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     "new",
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -28712,7 +28799,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     "gone",
                                     NULL,
                                     0,
-                                    -1);
+                                    -1,
+                                    0);
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -29236,6 +29324,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  ignore_pagination   Whether to ignore pagination data.
+ * @param[in]  lean                Whether to return lean report.
  * @param[out] filter_term_return  Filter term used in report.
  * @param[out] zone_return         Actual timezone used in report.
  * @param[out] host_summary    Summary of results per host.
@@ -29246,7 +29335,7 @@ static int
 print_report_xml_start (report_t report, report_t delta, task_t task,
                         gchar* xml_start, const get_data_t *get,
                         int notes_details, int overrides_details,
-                        int result_tags, int ignore_pagination,
+                        int result_tags, int ignore_pagination, int lean,
                         gchar **filter_term_return, gchar **zone_return,
                         gchar **host_summary)
 {
@@ -30037,7 +30126,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                               NULL,
                               NULL,
                               0,
-                              cert_loaded);
+                              cert_loaded,
+                              lean);
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)
@@ -30204,8 +30294,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                    host_iterator_end_time (&hosts));
               PRINT (out,
                      "<host>"
-                     "<ip>%s</ip>"
-                     "<asset asset_id=\"%s\"/>"
+                     "<ip>%s</ip>",
+                     result_host);
+
+              if (host_iterator_asset_uuid (&hosts)
+                  && strlen (host_iterator_asset_uuid (&hosts)))
+                PRINT (out,
+                       "<asset asset_id=\"%s\"/>",
+                       host_iterator_asset_uuid (&hosts));
+              else if (lean == 0)
+                PRINT (out,
+                       "<asset asset_id=\"\"/>");
+
+              PRINT (out,
                      "<start>%s</start>"
                      "<end>%s</end>"
                      "<port_count><page>%d</page></port_count>"
@@ -30217,10 +30318,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      "<log><page>%d</page></log>"
                      "<false_positive><page>%d</page></false_positive>"
                      "</result_count>",
-                     result_host,
-                     host_iterator_asset_uuid (&hosts)
-                       ? host_iterator_asset_uuid (&hosts)
-                       : "",
                      host_iterator_start_time (&hosts),
                      host_iterator_end_time (&hosts)
                        ? host_iterator_end_time (&hosts)
@@ -30235,7 +30332,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                      false_positives_count);
 
               if (print_report_host_details_xml
-                   (host_iterator_report_host (&hosts), out))
+                   (host_iterator_report_host (&hosts), out, lean))
                 {
                   tz_revert (zone, tz, old_tz_override);
                   if (host_summary_buffer)
@@ -30294,8 +30391,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                host_iterator_end_time (&hosts));
           PRINT (out,
                  "<host>"
-                 "<ip>%s</ip>"
-                 "<asset asset_id=\"%s\"/>"
+                 "<ip>%s</ip>",
+                 host_iterator_host (&hosts));
+
+          if (host_iterator_asset_uuid (&hosts)
+              && strlen (host_iterator_asset_uuid (&hosts)))
+            PRINT (out,
+                   "<asset asset_id=\"%s\"/>",
+                   host_iterator_asset_uuid (&hosts));
+          else if (lean == 0)
+            PRINT (out,
+                   "<asset asset_id=\"\"/>");
+
+          PRINT (out,
                  "<start>%s</start>"
                  "<end>%s</end>"
                  "<port_count><page>%d</page></port_count>"
@@ -30307,10 +30415,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  "<log><page>%d</page></log>"
                  "<false_positive><page>%d</page></false_positive>"
                  "</result_count>",
-                 host_iterator_host (&hosts),
-                 host_iterator_asset_uuid (&hosts)
-                   ? host_iterator_asset_uuid (&hosts)
-                   : "",
                  host_iterator_start_time (&hosts),
                  host_iterator_end_time (&hosts)
                    ? host_iterator_end_time (&hosts)
@@ -30325,7 +30429,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  false_positives_count);
 
           if (print_report_host_details_xml
-               (host_iterator_report_host (&hosts), out))
+               (host_iterator_report_host (&hosts), out, lean))
             {
               tz_revert (zone, tz, old_tz_override);
               if (host_summary_buffer)
@@ -30500,6 +30604,7 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
                                 notes_details, overrides_details,
                                 1 /* result_tags */,
                                 0 /* ignore_pagination */,
+                                0 /* lean */,
                                 filter_term_return, zone_return, host_summary);
   if (ret)
     {
@@ -31156,6 +31261,7 @@ apply_report_format (gchar *report_format_id,
  * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[in]  result_tags        Whether to include tags in results.
  * @param[in]  ignore_pagination  Whether to ignore pagination.
+ * @param[in]  lean               Whether to send lean report.
  * @param[in]  base64             Whether to base64 encode the report.
  * @param[in]  send               Function to write to client.
  * @param[in]  send_data_1        Second argument to \p send.
@@ -31173,7 +31279,7 @@ int
 manage_send_report (report_t report, report_t delta_report,
                     report_format_t report_format, const get_data_t *get,
                     int notes_details, int overrides_details, int result_tags,
-                    int ignore_pagination, int base64,
+                    int ignore_pagination, int lean, int base64,
                     gboolean (*send) (const char *,
                                       int (*) (const char *, void*),
                                       void*),
@@ -31239,7 +31345,7 @@ manage_send_report (report_t report, report_t delta_report,
   xml_start = g_strdup_printf ("%s/report-start.xml", xml_dir);
   ret = print_report_xml_start (report, delta_report, task, xml_start, get,
                                 notes_details, overrides_details, result_tags,
-                                ignore_pagination, NULL, NULL, NULL);
+                                ignore_pagination, lean, NULL, NULL, NULL);
   if (ret)
     {
       g_free (xml_start);
@@ -31399,7 +31505,7 @@ report_host_ip (const char *host)
 int
 report_host_noticeable (report_t report, const gchar *host)
 {
-  report_host_t report_host;
+  report_host_t report_host = 0;
 
   sql_int64 (&report_host,
              "SELECT id FROM report_hosts"
@@ -31542,11 +31648,11 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
         }
       else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_START") == 0))
         {
-          set_scan_host_start_time_otp (report, host, desc);
+          set_scan_host_start_time_ctime (report, host, desc);
         }
       else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_END") == 0))
         {
-          set_scan_host_end_time_otp (report, host, desc);
+          set_scan_host_end_time_ctime (report, host, desc);
           add_assets_from_host_in_report (report, host);
         }
       else
@@ -31898,6 +32004,51 @@ copy_task (const char* name, const char* comment, const char *task_id,
 }
 
 /**
+ * @brief Complete deletion of a task.
+ *
+ * This sets up a transaction around the delete.
+ *
+ * @param[in]  task      The task.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 on success, 1 if task is hidden, -1 on error.
+ */
+static int
+delete_task_lock (task_t task, int ultimate)
+{
+  int ret;
+
+  g_debug ("   delete task %llu", task);
+
+  sql_begin_immediate ();
+
+  /* This prevents other processes (for example a START_TASK) from getting
+   * a reference to a report ID or the task ID, and then using that
+   * reference to try access the deleted report or task.
+   *
+   * If the task is already active then delete_report (via delete_task)
+   * will fail and rollback. */
+  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  ret = delete_task (task, ultimate);
+  if (ret)
+    sql_rollback ();
+  else
+    sql_commit ();
+  return ret;
+}
+
+/**
  * @brief Request deletion of a task.
  *
  * Stop the task beforehand with \ref stop_task_internal, if it is running.
@@ -32184,51 +32335,6 @@ delete_task (task_t task, int ultimate)
   delete_permissions_cache_for_resource ("task", task);
 
   return 0;
-}
-
-/**
- * @brief Complete deletion of a task.
- *
- * This sets up a transaction around the delete.
- *
- * @param[in]  task      The task.
- * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
- *
- * @return 0 on success, 1 if task is hidden, -1 on error.
- */
-int
-delete_task_lock (task_t task, int ultimate)
-{
-  int ret;
-
-  g_debug ("   delete task %llu", task);
-
-  sql_begin_immediate ();
-
-  /* This prevents other processes (for example a START_TASK) from getting
-   * a reference to a report ID or the task ID, and then using that
-   * reference to try access the deleted report or task.
-   *
-   * If the task is already active then delete_report (via delete_task)
-   * will fail and rollback. */
-  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  ret = delete_task (task, ultimate);
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-  return ret;
 }
 
 /**
@@ -34922,7 +35028,7 @@ target_port_list (target_t target)
 }
 
 /**
- * @brief Return the port range of a target, in OTP format.
+ * @brief Return the port range of a target, in GMP port range list format.
  *
  * For "OpenVAS Default", return the explicit port ranges instead of "default".
  *
@@ -35272,6 +35378,9 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
   int count;
   char *details_url;
   const gchar *type;
+  time_t feed_version_epoch;
+
+  feed_version_epoch = nvts_feed_version_epoch();
 
   details_url = alert_data (alert, "method", "details_url");
   type = (gchar*) event_data;
@@ -35290,15 +35399,13 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
   else if (event == EVENT_NEW_SECINFO)
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE oid NOT IN (SELECT oid FROM old_nvts)"
-                   " ORDER BY creation_time DESC;");
+                   " WHERE creation_time > %d"
+                   " ORDER BY creation_time DESC;", (int)feed_version_epoch);
   else
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE modification_time > (SELECT modification_time"
-                   "                            FROM old_nvts"
-                   "                            WHERE old_nvts.oid = nvts.oid)"
-                   " ORDER BY modification_time DESC;");
+                   " WHERE modification_time > %d"
+                   " ORDER BY modification_time DESC;", (int)feed_version_epoch);
 
   while (next (&rows))
     {
@@ -42491,7 +42598,8 @@ insert_scanner (const char* name, const char *comment, const char *host,
  *
  * @return 0 success, 1 scanner exists already, 2 Invalid value,
  *         3 credential not found, 4 credential should be 'up',
- *         5 credential should be 'cc', 99 permission denied.
+ *         5 credential should be 'cc', 6 credential required,
+ *         99 permission denied.
  */
 int
 create_scanner (const char* name, const char *comment, const char *host,
@@ -42518,16 +42626,13 @@ create_scanner (const char* name, const char *comment, const char *host,
       unix_socket = 1;
       ca_pub = NULL;
     }
-  if (!unix_socket && !credential_id)
-    return 2;
   iport = atoi (port);
   itype = atoi (type);
   if (iport <= 0 || iport > 65535)
     return 2;
   if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
     return 2;
-  /* XXX: Workaround for unix socket case. Should add a host type flag, or
-   * remove otp over tcp case entirely. */
+  /* XXX: Workaround for unix socket case. */
   if (gvm_get_host_type (host) == -1 && !unix_socket)
     return 2;
   if (resource_with_name_exists (name, "scanner", 0))
@@ -42536,42 +42641,61 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 1;
     }
 
-  if (unix_socket)
+  if (!unix_socket
+      && itype == SCANNER_TYPE_GMP
+      && (credential_id == NULL
+          || strcmp (credential_id, "") == 0
+          || strcmp (credential_id, "0") == 0))
+    {
+      sql_rollback ();
+      return 6;
+    }
+  else if (unix_socket)
     insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
   else
     {
-      if (find_credential_with_permission
-           (credential_id, &credential, "get_credentials"))
+      credential = 0;
+      if (credential_id
+          && strcmp (credential_id, "")
+          && strcmp (credential_id, "0"))
         {
-          sql_rollback ();
-          return -1;
-        }
-
-      if (credential == 0)
-        {
-          sql_rollback ();
-          return 3;
-        }
-      if (itype == SCANNER_TYPE_GMP)
-        {
-          if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
-                       credential))
+          if (find_credential_with_permission
+              (credential_id, &credential, "get_credentials"))
             {
               sql_rollback ();
-              return 4;
+              return -1;
             }
-        }
-      else if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
-                        credential))
-        {
-          sql_rollback ();
-          return 5;
+          if (credential == 0)
+            {
+              sql_rollback ();
+              return 3;
+            }
+          if (itype == SCANNER_TYPE_GMP)
+            {
+              if (sql_int ("SELECT type != 'up' FROM credentials"
+                          " WHERE id = %llu;",
+                          credential))
+                {
+                  sql_rollback ();
+                  return 4;
+                }
+            }
+          else if (sql_int ("SELECT type != 'cc' FROM credentials"
+                            " WHERE id = %llu;",
+                            credential))
+            {
+              sql_rollback ();
+              return 5;
+            }
         }
 
       insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
 
-      sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;", credential,
-           sql_last_insert_id ());
+      if (credential)
+        {
+          sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;",
+              credential, sql_last_insert_id ());
+        }
     }
 
   sql_commit ();
@@ -42619,7 +42743,7 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
  *         3 scanner_id required, 4 invalid value, 5 credential not found,
  *         6 credential should be 'cc', 7 credential should be 'up',
- *         99 permission denied, -1 internal error.
+ *         8 credential missing, 99 permission denied, -1 internal error.
  */
 int
 modify_scanner (const char *scanner_id, const char *name, const char *comment,
@@ -42629,7 +42753,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   gchar *quoted_name, *quoted_comment, *quoted_host, *new_port, *new_type;
   scanner_t scanner = 0;
   credential_t credential = 0;
-  int iport, itype, unix_socket;
+  int iport, itype, unix_socket, credential_given;
 
   assert (current_credentials.uuid);
 
@@ -42687,7 +42811,16 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       g_free (old_host);
     }
 
-  if (credential_id && !unix_socket)
+  if (itype == 0)
+    itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+
+  if (credential_id
+      && (strcmp (credential_id, "") == 0 || strcmp (credential_id, "0") == 0))
+    {
+      credential = 0;
+      credential_given = 1;
+    }
+  else if (credential_id && !unix_socket)
     {
       if (find_credential_with_permission (credential_id, &credential,
                                            "get_credentials"))
@@ -42702,9 +42835,19 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
           return 5;
         }
 
-      if (itype == 0)
-        itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+      credential_given = 1;
+    }
+  else
+    {
+      credential = 0;
+      credential_given = 1;
+      sql_int64 (&credential,
+                 "SELECT credential FROM scanners WHERE id = %llu;",
+                 scanner);
+    }
 
+  if (credential)
+    {
       if (itype == SCANNER_TYPE_GMP)
         {
           if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
@@ -42720,6 +42863,11 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
           sql_rollback ();
           return 6;
         }
+    }
+  else if (itype == SCANNER_TYPE_GMP)
+    {
+      sql_rollback ();
+      return 8;
     }
 
   /* Check whether a scanner with the same name exists already. */
@@ -42771,10 +42919,14 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         sql ("UPDATE scanners SET ca_pub = NULL WHERE id = %llu;", scanner);
     }
 
-  if (credential_id && !unix_socket)
+  if (credential_given)
     {
-      sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;",
-           credential, scanner);
+      if (credential)
+        sql ("UPDATE scanners SET credential = %llu WHERE id = %llu;",
+             credential, scanner);
+      else
+        sql ("UPDATE scanners SET credential = NULL WHERE id = %llu;",
+             scanner);
     }
   sql_commit ();
   return 0;
@@ -43640,6 +43792,125 @@ scanner_count (const get_data_t *get)
 }
 
 /**
+ * @brief Get the default scanner path or host.
+ *
+ * @return Newly allocated scanner path or host.
+ */
+char *
+openvas_default_scanner_host ()
+{
+  return sql_string ("SELECT host FROM scanners WHERE uuid = '%s'",
+                     SCANNER_UUID_DEFAULT);
+}
+
+/**
+ * @brief Create a new connection to an OSP scanner relay.
+ *
+ * @param[in]   host     Original host name or IP address.
+ * @param[in]   port     Original port.
+ * @param[in]   ca_pub   Original CA certificate.
+ * @param[in]   key_pub  Public key for authentication.
+ * @param[in]   key_priv Private key for authentication.
+ *
+ * @return New connection if success, NULL otherwise.
+ */
+static osp_connection_t *
+osp_scanner_relay_connect (const char *host, int port, const char *ca_pub,
+                           const char *key_pub, const char *key_priv)
+{
+  int ret, new_port;
+  gchar *new_host, *new_ca_pub;
+  osp_connection_t *connection;
+
+  new_host = NULL;
+  new_ca_pub = NULL;
+  new_port = 0;
+
+  ret = slave_get_relay (host,
+                         port,
+                         ca_pub,
+                         "OSP",
+                         &new_host,
+                         &new_port,
+                         &new_ca_pub);
+
+  switch (ret)
+    {
+      case 0:
+        break;
+      case 1:
+        g_warning ("No relay found for Scanner at %s:%d", host, port);
+        return NULL;
+      default:
+        g_warning ("%s: Error getting relay for Scanner at %s:%d",
+                   __FUNCTION__, host, port);
+        return NULL;
+    }
+
+  connection
+    = osp_connection_new (new_host, new_port, new_ca_pub, key_pub, key_priv);
+
+  if (connection == NULL)
+    {
+      if (new_port)
+        g_warning ("Could not connect to relay at %s:%d"
+                    " for Scanner at %s:%d",
+                    new_host, new_port, host, port);
+      else
+        g_warning ("Could not connect to relay at %s"
+                    " for Scanner at %s:%d",
+                    new_host, host, port);
+    }
+
+  g_free (new_host);
+  g_free (new_ca_pub);
+
+  return connection;
+}
+
+/**
+ * @brief Create a new connection to an OSP scanner using the scanner data.
+ *
+ * @param[in]   host     Host name or IP address.
+ * @param[in]   port     Port.
+ * @param[in]   ca_pub   CA certificate.
+ * @param[in]   key_pub  Public key.
+ * @param[in]   key_priv Private key.
+ *
+ * @return New connection if success, NULL otherwise.
+ */
+osp_connection_t *
+osp_connect_with_data (const char *host,
+                       int port,
+                       const char *ca_pub,
+                       const char *key_pub,
+                       const char *key_priv)
+{
+  osp_connection_t *connection;
+  int is_unix_socket = (host && *host == '/') ? 1 : 0;
+
+  if (is_unix_socket == 0
+      && get_relay_mapper_path ())
+    {
+      connection
+        = osp_scanner_relay_connect (host, port, ca_pub, key_pub, key_priv);
+    }
+  else
+    {
+      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+
+      if (connection == NULL)
+        {
+          if (is_unix_socket)
+            g_warning ("Could not connect to Scanner at %s", host);
+          else
+            g_warning ("Could not connect to Scanner at %s:%d", host, port);
+        }
+    }
+  return connection;
+}
+
+/**
  * @brief Create a new connection to an OSP scanner.
  *
  * @param[in]   scanner     Scanner.
@@ -43669,15 +43940,8 @@ osp_scanner_connect (scanner_t scanner)
       key_pub = scanner_key_pub (scanner);
       key_priv = scanner_key_priv (scanner);
     }
-  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
 
-  if (connection == NULL)
-    {
-      if (port)
-        g_warning ("Could not connect to Scanner at %s:%d", host, port);
-      else
-        g_warning ("Could not connect to Scanner at %s", host);
-    }
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
 
   g_free (host);
   g_free (ca_pub);
@@ -43707,11 +43971,11 @@ osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
   osp_connection_t *connection;
 
   assert (iterator);
-  connection = osp_connection_new (scanner_iterator_host (iterator),
-                                   scanner_iterator_port (iterator),
-                                   scanner_iterator_ca_pub (iterator),
-                                   scanner_iterator_key_pub (iterator),
-                                   scanner_iterator_key_priv (iterator));
+  connection = osp_connect_with_data (scanner_iterator_host (iterator),
+                                      scanner_iterator_port (iterator),
+                                      scanner_iterator_ca_pub (iterator),
+                                      scanner_iterator_key_pub (iterator),
+                                      scanner_iterator_key_priv (iterator));
   if (!connection)
     return 1;
   if (osp_get_version (connection, s_name, s_ver, d_name, d_ver, p_name, p_ver))
@@ -43736,11 +44000,11 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
   osp_connection_t *connection;
 
   assert (iterator);
-  connection = osp_connection_new (scanner_iterator_host (iterator),
-                                   scanner_iterator_port (iterator),
-                                   scanner_iterator_ca_pub (iterator),
-                                   scanner_iterator_key_pub (iterator),
-                                   scanner_iterator_key_priv (iterator));
+  connection = osp_connect_with_data (scanner_iterator_host (iterator),
+                                      scanner_iterator_port (iterator),
+                                      scanner_iterator_ca_pub (iterator),
+                                      scanner_iterator_key_pub (iterator),
+                                      scanner_iterator_key_priv (iterator));
   if (!connection)
     return 1;
   if (osp_get_scanner_details (connection, desc, params))
@@ -43798,14 +44062,40 @@ connection_open (gvm_connection_t *connection,
   if (address == NULL)
     return -1;
 
+  connection->socket = -1;
   connection->tls = *address != '/';
 
   if (connection->tls)
     {
-      connection->socket = gvm_server_open (&connection->session,
-                                            address,
-                                            port);
+      gchar *new_host, *new_ca_cert;
+      int new_port, ret;
+
+      new_host = NULL;
+      new_port = 0;
+      new_ca_cert = NULL;
+
+      ret = slave_get_relay (address,
+                             port,
+                             NULL, /* original_ca_cert */
+                             "GMP",
+                             &new_host,
+                             &new_port,
+                             &new_ca_cert);
+
+      if (ret == 0)
+        {
+          connection->socket
+            = gvm_server_open_verify (&connection->session,
+                                      new_host,
+                                      new_port,
+                                      new_ca_cert,
+                                      NULL,
+                                      NULL,
+                                      1);
+        }
       connection->credentials = NULL;
+      g_free (new_host);
+      g_free (new_ca_cert);
     }
   else
     connection->socket = connect_unix (address);
@@ -43873,7 +44163,8 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP
-           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_SENSOR)
     {
       int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
                                                NULL, NULL, NULL);
@@ -48736,7 +49027,7 @@ int
 update_from_slave (task_t task, entity_t get_report, entity_t *report,
                    int *next_result)
 {
-  entity_t entity, host_start, start;
+  entity_t entity, host, start;
   entities_t results, hosts, entities;
   int current_commit_size;
   GString *buffer;
@@ -48770,33 +49061,19 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   sql_begin_immediate ();
   hosts = (*report)->entities;
   current_commit_size = 0;
-  while ((host_start = first_entity (hosts)))
+  while ((host = first_entity (hosts)))
     {
-      if (strcmp (entity_name (host_start), "host") == 0)
+      if (strcmp (entity_name (host), "host") == 0)
         {
-          entity_t ip, end;
-          char *uuid;
+          entity_t ip;
 
-          ip = entity_child (host_start, "ip");
+          ip = entity_child (host, "ip");
           if (ip == NULL)
             goto rollback_fail;
 
-          start = entity_child (host_start, "start");
+          start = entity_child (host, "start");
           if (start == NULL)
             goto rollback_fail;
-
-          end = entity_child (host_start, "end");
-          if (end
-              && entity_text (end)
-              && strcmp (entity_text (end), "")
-              && report_host_noticeable (global_current_report,
-                                         entity_text (ip)))
-            {
-              uuid = report_uuid (global_current_report);
-              host_notice (entity_text (ip), "ip", entity_text (ip),
-                           "Report Host", uuid, 1, 1);
-              free (uuid);
-            }
 
           set_scan_host_start_time (global_current_report,
                                     entity_text (ip),
@@ -48831,14 +49108,14 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
     {
       if (strcmp (entity_name (entity), "result") == 0)
         {
-          entity_t host, hostname, port, nvt, threat, description;
+          entity_t result_host, hostname, port, nvt, threat, description;
           const char *oid;
 
-          host = entity_child (entity, "host");
-          if (host == NULL)
+          result_host = entity_child (entity, "host");
+          if (result_host == NULL)
             goto rollback_fail;
 
-          hostname = entity_child (host, "hostname");
+          hostname = entity_child (result_host, "hostname");
 
           port = entity_child (entity, "port");
           if (port == NULL)
@@ -48861,7 +49138,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 
           buffer_insert (buffer,
                          task,
-                         entity_text (host),
+                         entity_text (result_host),
                          hostname ? entity_text (hostname) : "",
                          entity_text (port),
                          oid,
@@ -48885,6 +49162,47 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
     }
   update_from_slave_insert (buffer, global_current_report);
   g_string_free (buffer, TRUE);
+  sql_commit ();
+
+  sql_begin_immediate ();
+  current_commit_size = 0;
+  hosts = (*report)->entities;
+  while ((host = first_entity (hosts)))
+    {
+      if (strcmp (entity_name (host), "host") == 0)
+        {
+          entity_t ip, end;
+          char *uuid;
+
+          ip = entity_child (host, "ip");
+          if (ip == NULL)
+            goto rollback_fail;
+
+          end = entity_child (host, "end");
+          if (end
+              && entity_text (end)
+              && strcmp (entity_text (end), "")
+              && report_host_noticeable (global_current_report,
+                                         entity_text (ip)))
+            {
+              uuid = report_uuid (global_current_report);
+              host_notice (entity_text (ip), "ip", entity_text (ip),
+                           "Report Host", uuid, 1, 1);
+              free (uuid);
+
+              current_commit_size++;
+              if (slave_commit_size
+                  && current_commit_size >= slave_commit_size)
+                {
+                  sql_commit ();
+                  sql_begin_immediate ();
+                  current_commit_size = 0;
+                }
+            }
+        }
+
+      hosts = next_entities (hosts);
+    }
   sql_commit ();
   return 0;
 
@@ -49594,7 +49912,10 @@ modify_group (const char *group_id, const char *name, const char *comment,
       for (index = 0; index < affected_users->len && found_user == 0; index++)
         {
           if (g_array_index (affected_users, user_t, index) == user)
-            found_user = 1;
+            {
+              found_user = 1;
+              break;
+            }
         }
 
       if (found_user)
@@ -51602,7 +51923,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
  *
  * @param[in]   name            Name of port list.
  * @param[in]   comment         Comment on port list.
- * @param[in]   port_range      Traditional OTP style port range.  NULL for "default".
+ * @param[in]   port_range      GMP style port range list.  NULL for "default".
  * @param[out]  port_list       Created port list.
  *
  * @return 0 success, 4 error in port range.
@@ -53355,7 +53676,10 @@ modify_role (const char *role_id, const char *name, const char *comment,
       for (index = 0; index < affected_users->len && found_user == 0; index++)
         {
           if (g_array_index (affected_users, user_t, index) == user)
-            found_user = 1;
+            {
+              found_user = 1;
+              break;
+            }
         }
 
       if (found_user)
@@ -56248,8 +56572,8 @@ hosts_set_identifiers (report_t report)
 
               host_new = host = sql_last_insert_id ();
 
-              /* Make sure the Report Host identifiers added for OTP HOST_START in
-               * otp.c refer to the new host. */
+              /* Make sure the Report Host identifiers added when the host was
+               * first noticed now refer to the new host. */
 
               sql ("UPDATE host_identifiers SET host = %llu"
                    " WHERE source_id = (SELECT uuid FROM reports"
@@ -58871,6 +59195,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Tasks Filter");
       else if (strcmp (uuid, "801544de-f06d-4377-bb77-bbb23369bad4") == 0)
         setting_name = g_strdup ("Tickets Filter");
+      else if (strcmp (uuid, "34a176c1-0278-4c29-b84d-3d72117b2169") == 0)
+        setting_name = g_strdup ("TLS Certificates Filter");
       else if (strcmp (uuid, "a33635be-7263-4549-bd80-c04d2dba89b4") == 0)
         setting_name = g_strdup ("Users Filter");
       else if (strcmp (uuid, "17c9d269-95e7-4bfa-b1b2-bc106a2175c7") == 0)
@@ -59024,12 +59350,16 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("All SecInfo Top Dashboard Configuration");
 
       /*
-       * Remediation dashboards
+       * Resilience / Remediation dashboards
        */
 
       /* Tickets */
       else if (strcmp (uuid, "70b0626f-a835-478e-8194-e09f97887a15") == 0)
         setting_name = g_strdup ("Tickets Top Dashboard Configuration");
+
+      /* Business Process Model (BPM) */
+      else if (strcmp (uuid, "3232d608-e5bb-415e-99aa-019f16eede8d") == 0)
+        setting_name = g_strdup ("BPM Dashboard Configuration");
     }
 
   if (setting_name)
@@ -63904,6 +64234,10 @@ type_extra_where (const char *type, int trash, const char *filter,
         extra_where = g_strdup (" AND hidden = 2");
       else
         extra_where = g_strdup (" AND hidden = 0");
+    }
+  else if (strcasecmp (type, "TLS_CERTIFICATE") == 0)
+    {
+      extra_where = tls_certificate_extra_where (filter);
     }
   else if (strcasecmp (type, "REPORT") == 0)
     {

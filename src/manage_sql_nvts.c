@@ -36,6 +36,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <gvm/base/cvss.h>
+
 #include "manage_sql.h"
 #include "manage_sql_nvts.h"
 #include "sql.h"
@@ -59,6 +61,40 @@ blank_control_chars (char *string)
 {
   for (; *string; string++)
     if (iscntrl (*string) && *string != '\n') *string = ' ';
+}
+
+
+/* NVT related global options */
+
+/**
+ * @brief File socket for OSP NVT update.
+ */
+static gchar *osp_vt_update_socket = NULL;
+
+/**
+ * @brief Get the current file socket for OSP NVT update.
+ *
+ * @return The path of the file socket for OSP NVT update.
+ */
+const gchar *
+get_osp_vt_update_socket ()
+{
+  return osp_vt_update_socket;
+}
+
+/**
+ * @brief Set the file socket for OSP NVT update.
+ *
+ * @param new_socket The new path of the file socket for OSP NVT update.
+ */
+void
+set_osp_vt_update_socket (const char *new_socket)
+{
+  if (new_socket)
+    {
+      g_free (osp_vt_update_socket);
+      osp_vt_update_socket = g_strdup (new_socket);
+    }
 }
 
 
@@ -123,6 +159,21 @@ nvts_feed_version ()
   return sql_string ("SELECT value FROM %s.meta"
                      " WHERE name = 'nvts_feed_version';",
                      sql_schema ());
+}
+
+/**
+ * @brief Return feed version of the plugins as seconds since epoch.
+ *
+ * @return Feed version in seconds since epoch of plugins.
+ */
+time_t
+nvts_feed_version_epoch ()
+{
+  struct tm tm;
+
+  memset (&tm, 0, sizeof (struct tm));
+  strptime (nvts_feed_version (), "%Y%m%d%H%M%S", &tm);
+  return mktime (&tm);
 }
 
 /**
@@ -192,9 +243,9 @@ insert_nvt (const nvti_t *nvti)
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
-  gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
+  gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
   gchar *quoted_solution, *quoted_solution_type;
-  int creation_time, modification_time, qod, i;
+  int qod, i;
 
   cve = nvti_refs (nvti, "cve", "", 0);
 
@@ -215,58 +266,7 @@ insert_nvt (const nvti_t *nvti)
   quoted_detection = sql_quote (nvti_detection (nvti) ?
                                 nvti_detection (nvti) : "");
 
-  if (nvti_tag (nvti))
-    {
-      gchar **split, **point;
-      GString *tag;
-
-      /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
-
-      split = g_strsplit (nvti_tag (nvti), "|", 0);
-      point = split;
-
-      while (*point)
-        {
-          if (((strlen (*point) > strlen ("creation_date"))
-               && (strncmp (*point, "creation_date", strlen ("creation_date"))
-                   == 0)
-               && ((*point)[strlen ("creation_date")] == '='))
-              || ((strlen (*point) > strlen ("last_modification"))
-                  && (strncmp (*point, "last_modification",
-                               strlen ("last_modification"))
-                      == 0)
-                  && ((*point)[strlen ("last_modification")] == '=')))
-            {
-              gchar **move;
-              move = point;
-              g_free (*point);
-              while (*move)
-                {
-                  move[0] = move[1];
-                  move++;
-                }
-            }
-          else
-            point++;
-        }
-
-      point = split;
-      tag = g_string_new ("");
-      while (*point)
-        {
-          if (point[1])
-            g_string_append_printf (tag, "%s|", *point);
-          else
-            g_string_append_printf (tag, "%s", *point);
-          point++;
-        }
-      g_strfreev (split);
-
-      quoted_tag = sql_quote (tag->str);
-      g_string_free (tag, TRUE);
-    }
-  else
-    quoted_tag = g_strdup ("");
+  quoted_tag = sql_quote (nvti_tag (nvti) ?  nvti_tag (nvti) : "");
 
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti) ? nvti_cvss_base (nvti) : "");
 
@@ -282,48 +282,6 @@ insert_nvt (const nvti_t *nvti)
 
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
-  value = tag_value (nvti_tag (nvti), "creation_date");
-  switch (parse_time (value, &creation_time))
-    {
-      case -1:
-        g_warning ("%s: Failed to parse creation time of %s: %s",
-                   __FUNCTION__, nvti_oid (nvti), value);
-        creation_time = 0;
-        break;
-      case -2:
-        g_warning ("%s: Failed to make time: %s", __FUNCTION__, value);
-        creation_time = 0;
-        break;
-      case -3:
-        g_warning ("%s: Failed to parse timezone offset: %s",
-                   __FUNCTION__,
-                   value);
-        creation_time = 0;
-        break;
-    }
-  g_free (value);
-
-  value = tag_value (nvti_tag (nvti), "last_modification");
-  switch (parse_time (value, &modification_time))
-    {
-      case -1:
-        g_warning ("%s: Failed to parse last_modification time of %s: %s",
-                   __FUNCTION__, nvti_oid (nvti), value);
-        modification_time = 0;
-        break;
-      case -2:
-        g_warning ("%s: Failed to make time: %s", __FUNCTION__, value);
-        modification_time = 0;
-        break;
-      case -3:
-        g_warning ("%s: Failed to parse timezone offset: %s",
-                   __FUNCTION__,
-                   value);
-        modification_time = 0;
-        break;
-    }
-  g_free (value);
-
   if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
                nvti_oid (nvti)))
     sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
@@ -336,8 +294,9 @@ insert_nvt (const nvti_t *nvti)
        " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', '%s', %d, '%s');",
        nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
        quoted_affected, quoted_impact, quoted_cve, quoted_tag,
-       nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-       modification_time, nvti_oid (nvti), quoted_solution_type,
+       nvti_category (nvti), quoted_family, quoted_cvss_base,
+       nvti_creation_time (nvti), nvti_modification_time (nvti),
+       nvti_oid (nvti), quoted_solution_type,
        quoted_solution, quoted_detection, qod, quoted_qod_type);
 
   sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
@@ -1027,36 +986,13 @@ insert_nvt_preferences_list (GList *nvt_preferences_list)
 }
 
 /**
- * @brief Check for new NVTs after an update.
- */
-static void
-check_for_new_nvts ()
-{
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM nvts"
-               "  WHERE oid NOT IN (SELECT oid FROM old_nvts));"))
-    event (EVENT_NEW_SECINFO, "nvt", 0, 0);
-}
-
-/**
- * @brief Check for updated NVTS after an update.
- */
-static void
-check_for_updated_nvts ()
-{
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM nvts"
-               "  WHERE modification_time > (SELECT modification_time"
-               "                             FROM old_nvts"
-               "                             WHERE old_nvts.oid = nvts.oid));"))
-    event (EVENT_UPDATED_SECINFO, "nvt", 0, 0);
-}
-
-/**
  * @brief Set the NVT update check time in the meta table.
+ *
+ * @param[in]  count_new       Number of new VTs with current update.
+ * @param[in]  count_modified  Number of modified VTs with current update.
  */
 static void
-set_nvts_check_time ()
+set_nvts_check_time (int count_new, int count_modified)
 {
   if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
                "                   WHERE name = 'nvts_check_time')"))
@@ -1068,74 +1004,15 @@ set_nvts_check_time ()
          " WHERE name = 'nvts_check_time';");
   else
     {
-      check_for_new_nvts ();
-      check_for_updated_nvts ();
+      if (count_new > 0)
+        event (EVENT_NEW_SECINFO, "nvt", 0, 0);
+
+      if (count_modified > 0)
+        event (EVENT_UPDATED_SECINFO, "nvt", 0, 0);
+
       sql ("UPDATE meta SET value = m_now ()"
            " WHERE name = 'nvts_check_time';");
     }
-}
-
-/**
- * @brief Get tag field from VT.
- *
- * @param[in]  vt  VT.
- *
- * @return Freshly allocated string for tag field.
- */
-static gchar *
-get_tag (entity_t vt)
-{
-  entity_t child;
-  GString *tag;
-  int first;
-
-  first = 1;
-  tag = g_string_new ("");
-
-  child = entity_child (vt, "creation_time");
-  if (child)
-    {
-      g_string_append_printf (tag,
-                              "%screation_date=%s",
-                              first ? "" : "|",
-                              entity_text (child));
-      first = 0;
-    }
-
-  child = entity_child (vt, "modification_time");
-  if (child)
-    {
-      g_string_append_printf (tag,
-                              "%slast_modification=%s",
-                              first ? "" : "|",
-                              entity_text (child));
-      first = 0;
-    }
-
-  child = entity_child (vt, "severities");
-  if (child)
-    {
-      entity_t severity;
-
-      severity = entity_child (child, "severity");
-      if (severity
-          && entity_attribute (severity, "type")
-          && (strcmp (entity_attribute (severity, "type"),
-                      "cvss_base_v2")
-              == 0))
-        {
-          g_string_append_printf (tag,
-                                  "%scvss_base_vector=%s",
-                                  first ? "" : "|",
-                                  entity_text (severity));
-        }
-      else
-        g_warning ("%s: no severity", __FUNCTION__);
-    }
-  else
-    g_warning ("%s: no severities", __FUNCTION__);
-
-  return g_string_free (tag, FALSE);
 }
 
 /**
@@ -1237,9 +1114,11 @@ nvti_from_vt (entity_t vt)
   nvti_t *nvti = nvti_new ();
   const char *id;
   entity_t name, summary, insight, affected, impact, detection, solution;
+  entity_t creation_time, modification_time;
   entity_t refs, ref, custom, family, category;
+  entity_t severities;
+
   entities_t children;
-  gchar *tag, *cvss_base, *parsed_tags;
 
   id = entity_attribute (vt, "id");
   if (id == NULL)
@@ -1274,6 +1153,16 @@ nvti_from_vt (entity_t vt)
   impact = entity_child (vt, "impact");
   if (impact)
     nvti_set_impact (nvti, entity_text (impact));
+
+  creation_time = entity_child (vt, "creation_time");
+  if (creation_time)
+    nvti_set_creation_time (nvti, strtol (entity_text (creation_time),
+                                          NULL, 10));
+
+  modification_time = entity_child (vt, "modification_time");
+  if (modification_time)
+    nvti_set_modification_time (nvti, strtol (entity_text (modification_time),
+                                              NULL, 10));
 
   detection = entity_child (vt, "detection");
   if (detection)
@@ -1340,15 +1229,38 @@ nvti_from_vt (entity_t vt)
       children = next_entities (children);
     }
 
-  tag = get_tag (vt);
-  nvti_set_tag (nvti, tag);
+  severities = entity_child (vt, "severities");
+  if (severities)
+    {
+      entity_t severity;
+
+      severity = entity_child (severities, "severity");
+      if (severity
+          && entity_attribute (severity, "type")
+          && (strcmp (entity_attribute (severity, "type"),
+                      "cvss_base_v2")
+              == 0))
+        {
+          gchar * cvss_base;
+
+          nvti_add_tag (nvti, "cvss_base_vector", entity_text (severity));
+
+          cvss_base = g_strdup_printf ("%.1f",
+            get_cvss_score_from_base_metrics (entity_text (severity)));
+          nvti_set_cvss_base (nvti, cvss_base);
+          g_free (cvss_base);
+        }
+      else
+        g_warning ("%s: no severity", __FUNCTION__);
+    }
+  else
+    g_warning ("%s: no severities", __FUNCTION__);
 
   custom = entity_child (vt, "custom");
   if (custom == NULL)
     {
       g_warning ("%s: VT missing CUSTOM", __FUNCTION__);
       nvti_free (nvti);
-      g_free (tag);
       return NULL;
     }
 
@@ -1357,7 +1269,6 @@ nvti_from_vt (entity_t vt)
     {
       g_warning ("%s: VT/CUSTOM missing FAMILY", __FUNCTION__);
       nvti_free (nvti);
-      g_free (tag);
       return NULL;
     }
   nvti_set_family (nvti, entity_text (family));
@@ -1367,18 +1278,9 @@ nvti_from_vt (entity_t vt)
     {
       g_warning ("%s: VT/CUSTOM missing CATEGORY", __FUNCTION__);
       nvti_free (nvti);
-      g_free (tag);
       return NULL;
     }
   nvti_set_category (nvti, atoi (entity_text (category)));
-
-  parse_tags (tag, &parsed_tags, &cvss_base);
-
-  nvti_set_cvss_base (nvti, cvss_base);
-
-  g_free (parsed_tags);
-  g_free (cvss_base);
-  g_free (tag);
 
   return nvti;
 }
@@ -1396,6 +1298,13 @@ update_nvts_from_vts (entity_t *get_vts_response,
   entity_t vts, vt;
   entities_t children;
   GList *preferences;
+  int count_modified_vts, count_new_vts;
+  time_t feed_version_epoch;
+
+  count_modified_vts = 0;
+  count_new_vts = 0;
+
+  feed_version_epoch = nvts_feed_version_epoch();
 
   vts = entity_child (*get_vts_response, "vts");
   if (vts == NULL)
@@ -1406,16 +1315,35 @@ update_nvts_from_vts (entity_t *get_vts_response,
 
   sql_begin_immediate ();
 
-  sql ("CREATE TEMPORARY TABLE old_nvts"
-       " (oid TEXT, modification_time INTEGER);");
-  sql ("INSERT INTO old_nvts (oid, modification_time)"
-       " SELECT oid, modification_time FROM nvts;");
+  if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
+               "                  FROM meta"
+               "                  WHERE name = 'checked_preferences'),"
+               "                 0);")
+      == 0)
+    /* We're in the first NVT sync after migrating preference names.
+     *
+     * If a preference was removed from an NVT then the preference will be in
+     * nvt_preferences in the old format, but we will not get a new version
+     * of the preference name from the sync.  For example "Alle Dateien
+     * Auflisten" was removed from 1.3.6.1.4.1.25623.1.0.94023.
+     *
+     * If a preference was not in the migrator then the new version of the
+     * preference would be inserted alongside the old version, resulting in a
+     * duplicate when the name of the old version was corrected.
+     *
+     * To solve both cases, we remove all nvt_preferences. */
+    sql ("TRUNCATE nvt_preferences;");
 
   preferences = NULL;
   children = vts->entities;
   while ((vt = first_entity (children)))
     {
       nvti_t *nvti = nvti_from_vt (vt);
+
+      if (nvti_creation_time (nvti) > feed_version_epoch)
+        count_new_vts += 1;
+      else
+        count_modified_vts += 1;
 
       insert_nvt (nvti);
 
@@ -1432,9 +1360,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   insert_nvt_preferences_list (preferences);
   g_list_free_full (preferences, g_free);
 
-  set_nvts_check_time ();
-
-  sql ("DROP TABLE old_nvts;");
+  set_nvts_check_time (count_new_vts, count_modified_vts);
 
   set_nvts_feed_version (scanner_feed_version);
 
@@ -1444,7 +1370,35 @@ update_nvts_from_vts (entity_t *get_vts_response,
                __FUNCTION__);
   update_all_config_caches ();
 
+  g_info ("Updating VTs in database ... %i new VTs, %i changed VTs",
+          count_new_vts, count_modified_vts);
+
   sql_commit ();
+}
+
+/**
+ * @brief Check that preference names are in the new format.
+ *
+ * @param[in]  table  Table name.
+ */
+static void
+check_preference_names (const gchar *table)
+{
+  /* 1.3.6.1.4.1.25623.1.0.14259:checkbox:Log nmap output
+   * =>
+   * 1.3.6.1.4.1.25623.1.0.14259:21:checkbox:Log nmap output */
+
+  sql ("UPDATE %s"
+       " SET name = nvt_preferences.name"
+       " FROM nvt_preferences"
+       " WHERE %s.name ~ '.*:.*:.*'"
+       " AND nvt_preferences.name ~ '.*:.*:.*:.*'"
+       " AND %s.name = regexp_replace (nvt_preferences.name,"
+       "                               E'([^:]+):[^:]+:(.*)', '\\1:\\2');",
+       table,
+       table,
+       table,
+       table);
 }
 
 /**
@@ -1505,7 +1459,10 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
           return -1;
         }
 
-      get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version); 
+      if (db_feed_version)
+        get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version);
+      else
+        get_vts_opts.filter = NULL;
       if (osp_get_vts_ext (connection, get_vts_opts, &vts))
         {
           g_warning ("%s: failed to get VTs", __FUNCTION__);
@@ -1525,6 +1482,20 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
       g_info ("Updating VTs in database ... done (%i VTs).",
               sql_int ("SELECT count (*) FROM nvts;"));
+
+      if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
+                   "                  FROM meta"
+                   "                  WHERE name = 'checked_preferences'),"
+                   "                 0);")
+          == 0)
+        {
+          check_preference_names ("config_preferences");
+          check_preference_names ("config_preferences_trash");
+
+          sql ("INSERT INTO meta (name, value)"
+               " VALUES ('checked_preferences', 1)"
+               " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+        }
     }
 
   return 0;

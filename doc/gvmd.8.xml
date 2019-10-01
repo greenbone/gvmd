@@ -259,7 +259,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <option>
       <p><opt>--osp-vt-update=<arg>SCANNER-SOCKET</arg></opt></p>
       <optdesc>
-        <p>Unix socket for OSP NVT update.  Default is to do an OTP update.</p>
+        <p>Unix socket for OSP NVT update.  Defaults to the path of the 'OpenVAS Default' scanner if it is an absolute path.</p>
       </optdesc>
     </option>
     <option>
@@ -278,6 +278,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p><opt>--port2=<arg>NUMBER</arg></opt></p>
       <optdesc>
         <p>Use port number NUMBER for address 2.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--relay-mapper=<arg>FILE</arg></opt></p>
+      <optdesc>
+        <p>Executable for mapping scanner hosts to relays.
+          Use an empty string to explicitly disable.
+          If the option is not given, $PATH is checked for gvm-relay-mapper.
+        </p>
       </optdesc>
     </option>
     <option>

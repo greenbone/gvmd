@@ -2538,6 +2538,8 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
     return 1;
   if (ctype == 0 && stype == SCANNER_TYPE_GMP)
     return 1;
+  if (ctype == 0 && stype == SCANNER_TYPE_OSP_SENSOR)
+    return 1;
   if (ctype == 1 && stype == SCANNER_TYPE_OSP)
     return 1;
 
@@ -2613,6 +2615,10 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
 
   /* GMP Scanner with OpenVAS config. */
   if (stype == SCANNER_TYPE_GMP && ctype == 0)
+    return 0;
+
+  /* OSP Sensor with OpenVAS config. */
+  if (stype == SCANNER_TYPE_OSP_SENSOR && ctype == 0)
     return 0;
 
   /* Default Scanner with OpenVAS Config. */
@@ -3352,7 +3358,7 @@ trash_config_readable_uuid (const gchar *config_id)
  * @param[in]  config    Config.
  */
 void
-init_preference_iterator (iterator_t* iterator, config_t config)
+init_config_preference_iterator (iterator_t* iterator, config_t config)
 {
   gchar* sql;
 
@@ -3374,7 +3380,7 @@ init_preference_iterator (iterator_t* iterator, config_t config)
  * @return The name of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_name, 0);
+DEF_ACCESS (config_preference_iterator_name, 0);
 
 /**
  * @brief Get the value from a preference iterator.
@@ -3384,7 +3390,7 @@ DEF_ACCESS (preference_iterator_name, 0);
  * @return The value of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_value, 1);
+DEF_ACCESS (config_preference_iterator_value, 1);
 
 /**
  * @brief Get the type from a preference iterator.
@@ -3394,7 +3400,7 @@ DEF_ACCESS (preference_iterator_value, 1);
  * @return The value of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_type, 2);
+DEF_ACCESS (config_preference_iterator_type, 2);
 
 /**
  * @brief Get the default from a preference iterator.
@@ -3404,7 +3410,7 @@ DEF_ACCESS (preference_iterator_type, 2);
  * @return The default of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_default, 3);
+DEF_ACCESS (config_preference_iterator_default, 3);
 
 /**
  * @brief Get the hr_name from a preference iterator.
@@ -3417,24 +3423,24 @@ DEF_ACCESS (preference_iterator_default, 3);
  * @return The hr_name of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-DEF_ACCESS (preference_iterator_hr_name, 4);
+DEF_ACCESS (config_preference_iterator_hr_name, 4);
 
 /**
- * @brief Initialise an "OTP" preference iterator.
+ * @brief Initialise a config preference iterator, with defaults.
  *
  * Assume the caller has permission to access the config.
  *
- * This version substitutes the scanner preference when the NVT preference
+ * This version substitutes the NVT preference when the config preference
  * is missing.
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  config    Config containing preferences.
- * @param[in]  section   Preference section, NULL for general preferences.
+ * @param[in]  section   Preference section.
  */
 void
-init_otp_pref_iterator (iterator_t* iterator,
-                        config_t config,
-                        const char* section)
+init_preference_iterator (iterator_t* iterator,
+                          config_t config,
+                          const char* section)
 {
   gchar *quoted_section;
 
@@ -3451,7 +3457,7 @@ init_otp_pref_iterator (iterator_t* iterator,
                  " WHERE config_preferences.config = %llu"
                  " AND config_preferences.type = '%s'"
                  " AND (config_preferences.name = nvt_preferences.name"
-                 "      OR config_preferences.name LIKE 'timeout.%')"
+                 "      OR config_preferences.name LIKE 'timeout.%%')"
                  " AND config_preferences.name != 'max_checks'"
                  " AND config_preferences.name != 'max_hosts'"
                  " UNION"
@@ -3470,24 +3476,24 @@ init_otp_pref_iterator (iterator_t* iterator,
 }
 
 /**
- * @brief Get the NAME from a host iterator.
+ * @brief Get the NAME from a preference iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return NAME, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (otp_pref_iterator_name, 0);
+DEF_ACCESS (preference_iterator_name, 0);
 
 /**
- * @brief Get the value from a otp_pref iterator.
+ * @brief Get the value from a preference iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Value, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (otp_pref_iterator_value, 1);
+DEF_ACCESS (preference_iterator_value, 1);
 
 /**
  * @brief Return the NVT selector associated with a config.
