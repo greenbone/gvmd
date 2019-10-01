@@ -59345,12 +59345,16 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("All SecInfo Top Dashboard Configuration");
 
       /*
-       * Remediation dashboards
+       * Resilience / Remediation dashboards
        */
 
       /* Tickets */
       else if (strcmp (uuid, "70b0626f-a835-478e-8194-e09f97887a15") == 0)
         setting_name = g_strdup ("Tickets Top Dashboard Configuration");
+
+      /* Business Process Model (BPM) */
+      else if (strcmp (uuid, "3232d608-e5bb-415e-99aa-019f16eede8d") == 0)
+        setting_name = g_strdup ("BPM Dashboard Configuration");
     }
 
   if (setting_name)
