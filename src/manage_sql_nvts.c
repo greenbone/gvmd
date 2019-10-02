@@ -169,10 +169,19 @@ nvts_feed_version ()
 time_t
 nvts_feed_version_epoch ()
 {
+  gchar *feed_version;
   struct tm tm;
 
+  feed_version = nvts_feed_version ();
+
+  if (feed_version == NULL)
+    return 0;
+
   memset (&tm, 0, sizeof (struct tm));
-  strptime (nvts_feed_version (), "%Y%m%d%H%M%S", &tm);
+  strptime (feed_version, "%Y%m%d%H%M%S", &tm);
+
+  g_free (feed_version);
+
   return mktime (&tm);
 }
 
