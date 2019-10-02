@@ -28,6 +28,7 @@
 #include "manage_acl.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_sql.h"
+#include "utils.h"
 #include "sql.h"
 
 #include <stdlib.h>
@@ -1646,4 +1647,80 @@ add_tls_certificates_from_report_host (report_host_t report_host,
   cleanup_iterator (&tls_certs);
 
   return 0;
+}
+
+gchar *
+tls_certificate_origin_extra_xml (const char *origin_type,
+                                  const char *origin_id,
+                                  const char *orgin_data)
+{
+  gchar *ret;
+
+  ret = NULL;
+
+  if (strcasecmp (origin_type, "Report") == 0)
+    {
+      report_t report;
+
+      report = 0;
+      if (find_report_with_permission (origin_id, &report, "get_reports"))
+        {
+          g_warning ("%s : error getting report", __FUNCTION__);
+        }
+
+      if (report)
+        {
+          task_t task;
+          gchar *timestamp, *report_task_id, *report_task_name;
+
+          timestamp = NULL;
+          report_task_id = NULL;
+          report_task_name = NULL;
+          report_timestamp (origin_id, &timestamp);
+
+          task = 0;
+          if (report_task (report, &task))
+            {
+              g_warning ("%s : error getting report task", __FUNCTION__);
+            }
+
+          if (task)
+            {
+              task_uuid (task, &report_task_id);
+              report_task_name = task_name (task);
+            }
+
+          ret = g_strdup_printf ("<report id=\"%s\">"
+                                 "<date>%s</date>"
+                                 "<task id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</task>"
+                                 "</report>",
+                                 origin_id,
+                                 timestamp ? timestamp : "",
+                                 report_task_id ? report_task_id : "",
+                                 report_task_name ? report_task_name : "");
+
+          g_free (timestamp);
+          g_free (report_task_id);
+          g_free (report_task_name);
+        }
+    }
+
+  return ret;
+}
+
+char *
+tls_certificate_host_asset_id (const char *host_ip, const char *origin_id)
+{
+  return sql_string ("SELECT hosts.uuid"
+                    " FROM host_identifiers"
+                    " JOIN hosts ON hosts.id = host_identifiers.host"
+                    " WHERE host_identifiers.name='ip'"
+                    "   AND host_identifiers.value='%s'"
+                    "   AND host_identifiers.source_id='%s'"
+                    " ORDER BY host_identifiers.modification_time DESC"
+                    " LIMIT 1;",
+                    host_ip,
+                    origin_id);
 }
