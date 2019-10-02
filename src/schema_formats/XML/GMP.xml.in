@@ -23236,11 +23236,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <summary>Host where the certificate was found</summary>
                 <pattern>
                   <e>ip</e>
+                  <e>asset</e>
                 </pattern>
                 <ele>
                   <name>ip</name>
                   <summary>IP address of the host</summary>
                   <pattern>text</pattern>
+                </ele>
+                <ele>
+                  <name>asset</name>
+                  <summary>Host asset</summary>
+                  <pattern>
+                    <attrib>
+                      <name>id</name>
+                      <summary>UUID of the host asset</summary>
+                      <type>uuid</type>
+                      <required>0</required>
+                    </attrib>
+                  </pattern>
                 </ele>
               </ele>
               <ele>
@@ -23262,6 +23275,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <e>origin_type</e>
                 <e>origin_id</e>
                 <e>origin_data</e>
+                <o><e>report</e></o>
               </pattern>
               <ele>
                 <name>origin_type</name>
@@ -23277,6 +23291,45 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <name>origin_data</name>
                 <summary>Extra origin data, e.g. OID of the detection NVT</summary>
                 <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>report</name>
+                <summary>Report data if the origin is a report</summary>
+                <pattern>
+                  <attrib>
+                    <name>id</name>
+                    <summary>UUID of the report</summary>
+                    <type>uuid</type>
+                    <required>0</required>
+                  </attrib>
+                  <e>date</e>
+                  <e>task</e>
+                </pattern>
+                <ele>
+                  <name>date</name>
+                  <summary>Timestamp of the report</summary>
+                  <pattern>
+                    <t>iso_time</t>
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>task</name>
+                  <summary>Task the report belongs to</summary>
+                  <pattern>
+                    <attrib>
+                      <name>id</name>
+                      <summary>UUID of the task</summary>
+                      <type>uuid</type>
+                      <required>1</required>
+                    </attrib>
+                    <e>name</e>
+                  </pattern>
+                  <ele>
+                    <name>name</name>
+                    <summary>Name of the task</summary>
+                    <pattern>text</pattern>
+                  </ele>
+                </ele>
               </ele>
             </ele>
           </ele>

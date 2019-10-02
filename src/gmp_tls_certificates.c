@@ -254,6 +254,19 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
 
           while (next (&sources))
             {
+              const char *location_host_ip;
+              const char *origin_type, *origin_id, *origin_data;
+
+              location_host_ip
+                = tls_certificate_source_iterator_location_host_ip (&sources);
+
+              origin_type
+                = tls_certificate_source_iterator_origin_type (&sources);
+              origin_id
+                = tls_certificate_source_iterator_origin_id (&sources);
+              origin_data
+                = tls_certificate_source_iterator_origin_data (&sources);
+
               SENDF_TO_CLIENT_OR_FAIL
                  ("<source id=\"%s\">"
                   "<timestamp>%s</timestamp>"
@@ -266,31 +279,57 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
 
               if (tls_certificate_source_iterator_location_uuid (&sources))
                 {
+                  gchar *asset_id;
+
+                  asset_id
+                    = tls_certificate_host_asset_id (location_host_ip,
+                                                     origin_id);
+
                   SENDF_TO_CLIENT_OR_FAIL
                      ("<location id=\"%s\">"
-                      "<host><ip>%s</ip></host>"
+                      "<host>"
+                      "<ip>%s</ip>"
+                      "<asset id=\"%s\"/>"
+                      "</host>"
                       "<port>%s</port>"
                       "</location>",
                       tls_certificate_source_iterator_location_uuid
                          (&sources),
-                      tls_certificate_source_iterator_location_host_ip
-                         (&sources),
+                      location_host_ip,
+                      asset_id ? asset_id : "",
                       tls_certificate_source_iterator_location_port
                          (&sources));
+
+                  free (asset_id);
                 }
 
               if (tls_certificate_source_iterator_origin_uuid (&sources))
                 {
+
+                  gchar *extra_xml;
+
                   SENDF_TO_CLIENT_OR_FAIL 
                      ("<origin id=\"%s\">"
                       "<origin_type>%s</origin_type>"
                       "<origin_id>%s</origin_id>"
-                      "<origin_data>%s</origin_data>"
-                      "</origin>",
+                      "<origin_data>%s</origin_data>",
                       tls_certificate_source_iterator_origin_uuid (&sources),
-                      tls_certificate_source_iterator_origin_type (&sources),
-                      tls_certificate_source_iterator_origin_id (&sources),
-                      tls_certificate_source_iterator_origin_data (&sources));
+                      origin_type,
+                      origin_id,
+                      origin_data);
+
+                  extra_xml = tls_certificate_origin_extra_xml (origin_type,
+                                                                origin_id,
+                                                                origin_data);
+                  if (extra_xml)
+                    {
+                      SEND_TO_CLIENT_OR_FAIL (extra_xml);
+                    }
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                     ("</origin>");
+
+                  g_free (extra_xml);
                 }
 
               SEND_TO_CLIENT_OR_FAIL ("</source>");
