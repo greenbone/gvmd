@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [20.04] (unreleased)
 
 ### Added
 - Add setting "BPM Dashboard Configuration" [#764](https://github.com/greenbone/gvmd/pull/764)
@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/gvmd-9.0...master
+[20.04]: https://github.com/greenbone/gvmd/compare/gvmd-9.0...master
 
 ## [9.0.0] (unreleased)
 
