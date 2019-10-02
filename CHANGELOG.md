@@ -40,7 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Change get_tickets to use the status text for filtering. [#697](https://github.com/greenbone/gvmd/pull/697)
 - Made checks to prevent duplicate user names stricter. [#708](https://github.com/greenbone/gvmd/pull/708) [#722](https://github.com/greenbone/gvmd/pull/722)
 - Send delete command to ospd after stopping the task. [#710](https://github.com/greenbone/gvmd/pull/710)
-- Check whether hosts are alive and have results when adding them in slave scans. [#717](https://github.com/greenbone/gvmd/pull/717) [#726](https://github.com/greenbone/gvmd/pull/726) [#736](https://github.com/greenbone/gvmd/pull/736)
+- Check whether hosts are alive and have results when adding them in slave scans. [#717](https://github.com/greenbone/gvmd/pull/717) [#726](https://github.com/greenbone/gvmd/pull/726) [#736](https://github.com/greenbone/gvmd/pull/736) [#771](https://github.com/greenbone/gvmd/pull/771)
 - Use explicit nvti timestamps [#725](https://github.com/greenbone/gvmd/pull/725)
 - New columns Ports, Apps, Distance, and Auth in the CSV Hosts report format [#733](https://github.com/greenbone/gvmd/pull/733)
 - The details attribute of GET_REPORTS now defaults to 0 [#747](https://github.com/greenbone/gvmd/pull/747)
