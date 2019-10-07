@@ -858,3 +858,72 @@ modify_tls_certificate_element_text (const gchar *text, gsize text_len)
   xml_handle_text (modify_tls_certificate_data.context, text, text_len);
 }
 
+/**
+ * @brief Generate extra XML for special TLS certificate origins like reports
+ *
+ * @param[in]  origin_type  The origin type (e.g. "Report")
+ * @param[in]  origin_id    The id of the origin resource (e.g. report id)
+ * @param[in]  origin_data  The extra origin data
+ *
+ * @return Newly allocated XML string or NULL.
+ */
+gchar *
+tls_certificate_origin_extra_xml (const char *origin_type,
+                                  const char *origin_id,
+                                  const char *origin_data)
+{
+  gchar *ret;
+
+  ret = NULL;
+
+  if (strcasecmp (origin_type, "Report") == 0)
+    {
+      report_t report;
+
+      report = 0;
+      if (find_report_with_permission (origin_id, &report, "get_reports"))
+        {
+          g_warning ("%s : error getting report", __FUNCTION__);
+        }
+
+      if (report)
+        {
+          task_t task;
+          gchar *timestamp, *report_task_id, *report_task_name;
+
+          timestamp = NULL;
+          report_task_id = NULL;
+          report_task_name = NULL;
+          report_timestamp (origin_id, &timestamp);
+
+          task = 0;
+          if (report_task (report, &task))
+            {
+              g_warning ("%s : error getting report task", __FUNCTION__);
+            }
+
+          if (task)
+            {
+              task_uuid (task, &report_task_id);
+              report_task_name = task_name (task);
+            }
+
+          ret = g_strdup_printf ("<report id=\"%s\">"
+                                 "<date>%s</date>"
+                                 "<task id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</task>"
+                                 "</report>",
+                                 origin_id,
+                                 timestamp ? timestamp : "",
+                                 report_task_id ? report_task_id : "",
+                                 report_task_name ? report_task_name : "");
+
+          g_free (timestamp);
+          g_free (report_task_id);
+          g_free (report_task_name);
+        }
+    }
+
+  return ret;
+}
