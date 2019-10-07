@@ -70,7 +70,7 @@ const char*
 tls_certificate_iterator_serial (iterator_t*);
 
 const char*
-tls_certificate_iterator_last_collected (iterator_t*);
+tls_certificate_iterator_last_seen (iterator_t*);
 
 const char*
 tls_certificate_iterator_time_status (iterator_t*);

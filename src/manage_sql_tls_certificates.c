@@ -55,7 +55,7 @@ user_tls_certificate_match_internal (tls_certificate_t,
  */
 #define TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "subject_dn", "issuer_dn", "md5_fingerprint", \
-   "activates", "expires", "valid", "certificate_format", "last_collected",   \
+   "activates", "expires", "valid", "certificate_format", "last_seen",        \
    "sha256_fingerprint", "serial", "time_status", NULL }
 
 /**
@@ -151,7 +151,7 @@ user_tls_certificate_match_internal (tls_certificate_t,
    {                                                                          \
      "(SELECT max(timestamp) FROM tls_certificate_sources"                    \
      " WHERE tls_certificate = tls_certificates.id)",                         \
-     "last_collected",                                                        \
+     "last_seen",                                                             \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
@@ -439,7 +439,7 @@ DEF_ACCESS (tls_certificate_iterator_serial,
  *
  * @return Value of the column or NULL if iteration is complete.
  */
-DEF_ACCESS (tls_certificate_iterator_last_collected,
+DEF_ACCESS (tls_certificate_iterator_last_seen,
             GET_ITERATOR_COLUMN_COUNT + 11);
 
 /**
