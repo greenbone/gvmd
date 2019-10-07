@@ -28,6 +28,7 @@
 #include "manage_acl.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_sql.h"
+#include "utils.h"
 #include "sql.h"
 
 #include <stdlib.h>
@@ -54,7 +55,7 @@ user_tls_certificate_match_internal (tls_certificate_t,
  */
 #define TLS_CERTIFICATE_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "subject_dn", "issuer_dn", "md5_fingerprint", \
-   "activates", "expires", "valid", "certificate_format", "last_collected",   \
+   "activates", "expires", "valid", "certificate_format", "last_seen",        \
    "sha256_fingerprint", "serial", "time_status", NULL }
 
 /**
@@ -150,7 +151,7 @@ user_tls_certificate_match_internal (tls_certificate_t,
    {                                                                          \
      "(SELECT max(timestamp) FROM tls_certificate_sources"                    \
      " WHERE tls_certificate = tls_certificates.id)",                         \
-     "last_collected",                                                        \
+     "last_seen",                                                             \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
@@ -438,7 +439,7 @@ DEF_ACCESS (tls_certificate_iterator_serial,
  *
  * @return Value of the column or NULL if iteration is complete.
  */
-DEF_ACCESS (tls_certificate_iterator_last_collected,
+DEF_ACCESS (tls_certificate_iterator_last_seen,
             GET_ITERATOR_COLUMN_COUNT + 11);
 
 /**
@@ -1646,4 +1647,27 @@ add_tls_certificates_from_report_host (report_host_t report_host,
   cleanup_iterator (&tls_certs);
 
   return 0;
+}
+
+/**
+ * @brief Get the host asset UUID of a TLS certificate location.
+ *
+ * @param[in]  host_ip    IP address of the host.
+ * @param[in]  origin_id  UUID of the origin report.
+ *
+ * @return The newly allocated host asset UUID.
+ */
+char *
+tls_certificate_host_asset_id (const char *host_ip, const char *origin_id)
+{
+  return sql_string ("SELECT hosts.uuid"
+                    " FROM host_identifiers"
+                    " JOIN hosts ON hosts.id = host_identifiers.host"
+                    " WHERE host_identifiers.name='ip'"
+                    "   AND host_identifiers.value='%s'"
+                    "   AND host_identifiers.source_id='%s'"
+                    " ORDER BY host_identifiers.modification_time DESC"
+                    " LIMIT 1;",
+                    host_ip,
+                    origin_id);
 }
