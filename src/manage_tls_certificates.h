@@ -142,9 +142,6 @@ get_or_make_tls_certificate_source (tls_certificate_t,
                                     const char *,
                                     const char *);
 
-gchar *
-tls_certificate_origin_extra_xml (const char *, const char *, const char *);
-
 char *
 tls_certificate_host_asset_id (const char *, const char *);
 
