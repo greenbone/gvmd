@@ -64,4 +64,7 @@ modify_tls_certificate_element_end (gmp_parser_t *, GError **error,
 void
 modify_tls_certificate_element_text (const gchar *, gsize);
 
+gchar *
+tls_certificate_origin_extra_xml (const char *, const char *, const char *);
+
 #endif /* not _GVMD_GMP_TLS_CERTIFICATES_H */

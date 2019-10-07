@@ -224,7 +224,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          "<subject_dn>%s</subject_dn>"
          "<issuer_dn>%s</issuer_dn>"
          "<serial>%s</serial>"
-         "<last_collected>%s</last_collected>",
+         "<last_seen>%s</last_seen>",
          tls_certificate_iterator_certificate_format (&tls_certificates)
             ? tls_certificate_iterator_certificate_format (&tls_certificates)
             : "unknown",
@@ -241,7 +241,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          tls_certificate_iterator_subject_dn (&tls_certificates),
          tls_certificate_iterator_issuer_dn (&tls_certificates),
          tls_certificate_iterator_serial (&tls_certificates),
-         tls_certificate_iterator_last_collected (&tls_certificates));
+         tls_certificate_iterator_last_seen (&tls_certificates));
 
       if (get_tls_certificates_data.get.details)
         {
@@ -254,6 +254,19 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
 
           while (next (&sources))
             {
+              const char *location_host_ip;
+              const char *origin_type, *origin_id, *origin_data;
+
+              location_host_ip
+                = tls_certificate_source_iterator_location_host_ip (&sources);
+
+              origin_type
+                = tls_certificate_source_iterator_origin_type (&sources);
+              origin_id
+                = tls_certificate_source_iterator_origin_id (&sources);
+              origin_data
+                = tls_certificate_source_iterator_origin_data (&sources);
+
               SENDF_TO_CLIENT_OR_FAIL
                  ("<source id=\"%s\">"
                   "<timestamp>%s</timestamp>"
@@ -266,31 +279,57 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
 
               if (tls_certificate_source_iterator_location_uuid (&sources))
                 {
+                  gchar *asset_id;
+
+                  asset_id
+                    = tls_certificate_host_asset_id (location_host_ip,
+                                                     origin_id);
+
                   SENDF_TO_CLIENT_OR_FAIL
                      ("<location id=\"%s\">"
-                      "<host><ip>%s</ip></host>"
+                      "<host>"
+                      "<ip>%s</ip>"
+                      "<asset id=\"%s\"/>"
+                      "</host>"
                       "<port>%s</port>"
                       "</location>",
                       tls_certificate_source_iterator_location_uuid
                          (&sources),
-                      tls_certificate_source_iterator_location_host_ip
-                         (&sources),
+                      location_host_ip,
+                      asset_id ? asset_id : "",
                       tls_certificate_source_iterator_location_port
                          (&sources));
+
+                  free (asset_id);
                 }
 
               if (tls_certificate_source_iterator_origin_uuid (&sources))
                 {
+
+                  gchar *extra_xml;
+
                   SENDF_TO_CLIENT_OR_FAIL 
                      ("<origin id=\"%s\">"
                       "<origin_type>%s</origin_type>"
                       "<origin_id>%s</origin_id>"
-                      "<origin_data>%s</origin_data>"
-                      "</origin>",
+                      "<origin_data>%s</origin_data>",
                       tls_certificate_source_iterator_origin_uuid (&sources),
-                      tls_certificate_source_iterator_origin_type (&sources),
-                      tls_certificate_source_iterator_origin_id (&sources),
-                      tls_certificate_source_iterator_origin_data (&sources));
+                      origin_type,
+                      origin_id,
+                      origin_data);
+
+                  extra_xml = tls_certificate_origin_extra_xml (origin_type,
+                                                                origin_id,
+                                                                origin_data);
+                  if (extra_xml)
+                    {
+                      SEND_TO_CLIENT_OR_FAIL (extra_xml);
+                    }
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                     ("</origin>");
+
+                  g_free (extra_xml);
                 }
 
               SEND_TO_CLIENT_OR_FAIL ("</source>");
@@ -819,3 +858,72 @@ modify_tls_certificate_element_text (const gchar *text, gsize text_len)
   xml_handle_text (modify_tls_certificate_data.context, text, text_len);
 }
 
+/**
+ * @brief Generate extra XML for special TLS certificate origins like reports
+ *
+ * @param[in]  origin_type  The origin type (e.g. "Report")
+ * @param[in]  origin_id    The id of the origin resource (e.g. report id)
+ * @param[in]  origin_data  The extra origin data
+ *
+ * @return Newly allocated XML string or NULL.
+ */
+gchar *
+tls_certificate_origin_extra_xml (const char *origin_type,
+                                  const char *origin_id,
+                                  const char *origin_data)
+{
+  gchar *ret;
+
+  ret = NULL;
+
+  if (strcasecmp (origin_type, "Report") == 0)
+    {
+      report_t report;
+
+      report = 0;
+      if (find_report_with_permission (origin_id, &report, "get_reports"))
+        {
+          g_warning ("%s : error getting report", __FUNCTION__);
+        }
+
+      if (report)
+        {
+          task_t task;
+          gchar *timestamp, *report_task_id, *report_task_name;
+
+          timestamp = NULL;
+          report_task_id = NULL;
+          report_task_name = NULL;
+          report_timestamp (origin_id, &timestamp);
+
+          task = 0;
+          if (report_task (report, &task))
+            {
+              g_warning ("%s : error getting report task", __FUNCTION__);
+            }
+
+          if (task)
+            {
+              task_uuid (task, &report_task_id);
+              report_task_name = task_name (task);
+            }
+
+          ret = g_strdup_printf ("<report id=\"%s\">"
+                                 "<date>%s</date>"
+                                 "<task id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</task>"
+                                 "</report>",
+                                 origin_id,
+                                 timestamp ? timestamp : "",
+                                 report_task_id ? report_task_id : "",
+                                 report_task_name ? report_task_name : "");
+
+          g_free (timestamp);
+          g_free (report_task_id);
+          g_free (report_task_name);
+        }
+    }
+
+  return ret;
+}

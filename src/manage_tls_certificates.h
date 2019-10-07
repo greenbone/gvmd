@@ -70,7 +70,7 @@ const char*
 tls_certificate_iterator_serial (iterator_t*);
 
 const char*
-tls_certificate_iterator_last_collected (iterator_t*);
+tls_certificate_iterator_last_seen (iterator_t*);
 
 const char*
 tls_certificate_iterator_time_status (iterator_t*);
@@ -141,5 +141,8 @@ get_or_make_tls_certificate_source (tls_certificate_t,
                                     const char *,
                                     const char *,
                                     const char *);
+
+char *
+tls_certificate_host_asset_id (const char *, const char *);
 
 #endif /* not _GVMD_MANAGE_TLS_CERTIFICATES_H */
