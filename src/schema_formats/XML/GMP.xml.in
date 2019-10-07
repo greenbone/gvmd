@@ -22971,9 +22971,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </summary>
           </column>
           <column>
-            <name>last_collected</name>
+            <name>last_seen</name>
             <type>iso_time</type>
-            <summary>Time the certificate was last collected</summary>
+            <summary>Most recent time the TLS certificate was imported or found in a scan</summary>
           </column>
           <option>
             <name>report_id</name>
@@ -23038,7 +23038,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>subject_dn</e>
           <e>issuer_dn</e>
           <e>serial</e>
-          <e>last_collected</e>
+          <e>last_seen</e>
           <o><e>sources</e></o>
         </pattern>
         <ele>
@@ -23183,7 +23183,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
         <ele>
-          <name>last_collected</name>
+          <name>last_seen</name>
           <summary>Most recent time the TLS certificate was imported or found in a scan</summary>
           <pattern><t>iso_time</t></pattern>
         </ele>
