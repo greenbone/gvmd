@@ -1649,10 +1649,19 @@ add_tls_certificates_from_report_host (report_host_t report_host,
   return 0;
 }
 
+/**
+ * @brief Generate extra XML for special TLS certificate origins like reports
+ *
+ * @param[in]  origin_type  The origin type (e.g. "Report")
+ * @param[in]  origin_id    The id of the origin resource (e.g. report id)
+ * @param[in]  origin_data  The extra origin data
+ *
+ * @return Newly allocated XML string or NULL.
+ */
 gchar *
 tls_certificate_origin_extra_xml (const char *origin_type,
                                   const char *origin_id,
-                                  const char *orgin_data)
+                                  const char *origin_data)
 {
   gchar *ret;
 
@@ -1710,6 +1719,14 @@ tls_certificate_origin_extra_xml (const char *origin_type,
   return ret;
 }
 
+/**
+ * @brief Get the host asset UUID of a TLS certificate location.
+ *
+ * @param[in]  host_ip    IP address of the host.
+ * @param[in]  origin_id  UUID of the origin report.
+ *
+ * @return The newly allocated host asset UUID.
+ */
 char *
 tls_certificate_host_asset_id (const char *host_ip, const char *origin_id)
 {
