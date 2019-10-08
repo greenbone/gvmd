@@ -1486,7 +1486,8 @@ migrate_219_to_220 ()
  *
  * @param[in]  trash  Whether to convert the trash table.
  */
-static void convert_schedules_221 (gboolean trash)
+static void
+convert_schedules_221 (gboolean trash)
 {
   iterator_t schedules;
 
