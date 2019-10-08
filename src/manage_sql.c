@@ -58624,11 +58624,15 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    "SELECT %s"
                    " FROM settings"
                    " WHERE uuid = '%s'"
-                   " AND " ACL_GLOBAL_OR_USER_OWNS ()
-                   /* Force the user's setting to come before the default. */
-                   " ORDER BY coalesce (owner, 0) DESC;",
+                   " AND (owner = (SELECT id FROM users WHERE uuid = '%s')"
+                   "      OR (owner IS NULL"
+                   "          AND uuid"
+                   "          NOT IN (SELECT uuid FROM settings"
+                   "                  WHERE owner = (SELECT id FROM users"
+                   "                                 WHERE uuid = '%s'))))",
                    columns,
                    quoted_uuid,
+                   current_credentials.uuid,
                    current_credentials.uuid);
   else
     init_iterator (iterator,
