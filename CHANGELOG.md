@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add scanner relays and OSP sensor scanner type [#756](https://github.com/greenbone/gvmd/pull/756) [#759](https://github.com/greenbone/gvmd/pull/759)
 
 ### Changed
+- Always convert iCalendar strings to use UTC. [#777](https://github.com/greenbone/gvmd/pull/777)
 - Check if NVT preferences exist before inserting. [#406](https://github.com/greenbone/gvmd/pull/406)
 - Raise minimum version for SQL functions. [#420](https://github.com/greenbone/gvmd/pull/420)
 - Run OpenVAS scans via OSP instead of OTP. [#422](https://github.com/greenbone/gvmd/pull/422) [#584](https://github.com/greenbone/gvmd/pull/584) [#623](https://github.com/greenbone/gvmd/pull/623) [#636](https://github.com/greenbone/gvmd/pull/636) [#704](https://github.com/greenbone/gvmd/pull/704) [#729](https://github.com/greenbone/gvmd/pull/729)
