@@ -74,8 +74,7 @@ int
 hosts_str_contains (const char *, const char *, int);
 
 icalcomponent *
-icalendar_from_old_schedule_data (time_t, time_t, time_t, time_t, int,
-                                  const char *);
+icalendar_from_old_schedule_data (time_t, time_t, time_t, time_t, int);
 
 icalcomponent *
 icalendar_from_string (const char *, gchar **);
