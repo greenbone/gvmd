@@ -50,9 +50,6 @@ sql_prepare_internal (int, int, const char*, va_list, sql_stmt_t **);
 int
 sql_exec_internal (int, sql_stmt_t *);
 
-int
-sql_explain_internal (const char*, va_list);
-
 
 /* Variables. */
 
@@ -523,26 +520,6 @@ sql_int64_0 (char* sql, ...)
     }
   ret = sql_column_int64 (stmt, 0);
   sql_finalize (stmt);
-  return ret;
-}
-
-/**
- * @brief Write debug messages with the query plan for an SQL query to the log.
- *
- * @param[in] sql   Format string for the SQL query.
- * @param[in] ...   Format string arguments.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_explain (const char *sql, ...)
-{
-  int ret;
-  va_list args;
-  va_start (args, sql);
-  ret = sql_explain_internal (sql, args);
-  va_end (args);
-
   return ret;
 }
 
