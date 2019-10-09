@@ -49,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Accelerate NVT feed update [#757](https://github.com/greenbone/gvmd/pull/757)
 
 ### Fixed
+- Make get_settings return only one setting when setting_id is given [#779](https://github.com/greenbone/gvmd/pull/779)
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)
 - Fix iCalendar recurrence and timezone handling [#654](https://github.com/greenbone/gvmd/pull/654)
 - Fix issues with some scheduled tasks by using iCalendar more instead of old period fields [#656](https://github.com/greenbone/gvmd/pull/655)
