@@ -1115,52 +1115,6 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
 /* All SecInfo data. */
 
 /**
- * @brief Count number of all SecInfo entries.
- *
- * @param[in]   get  GET params.
- * @param[in]   filtered Whether to count entries in filtered set only.
- *
- * @return Total number of SecInfo entries.
- */
-int
-total_info_count (const get_data_t *get, int filtered)
-{
-  gchar *clause;
-
-  if (filtered)
-    {
-      static const char *filter_columns[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
-      static column_t select_columns[] = ALL_INFO_ITERATOR_COLUMNS;
-      gchar *filter;
-
-      if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
-        {
-          filter = filter_term (get->filt_id);
-          if (filter == NULL)
-            return -1;
-        }
-      else
-        filter = NULL;
-
-      clause = filter_clause ("allinfo", filter ? filter : get->filter,
-                              filter_columns, select_columns, NULL, get->trash,
-                              NULL, NULL, NULL, NULL, NULL);
-      if (clause)
-        return sql_int ("SELECT count (id) FROM"
-                        ALL_INFO_UNION_COLUMNS
-                        " WHERE %s;",
-                        clause);
-    }
-
-  return sql_int ("SELECT (SELECT count (*) FROM cves)"
-                  " + (SELECT count (*) FROM cpes)"
-                  " + (SELECT count (*) FROM nvts)"
-                  " + (SELECT count (*) FROM cert_bund_advs)"
-                  " + (SELECT count (*) FROM dfn_cert_advs)"
-                  " + (SELECT count (*) FROM ovaldefs);");
-}
-
-/**
  * @brief Initialise an info iterator.
  *
  * @param[in]  iterator        Iterator.
