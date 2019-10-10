@@ -14567,9 +14567,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                   ? info_name_count (get_info_data->type, get_info_data->name)
                   : info_count (&get_info_data->get));
 
-  send_get_end ("info", &get_info_data->get, count, filtered,
-                total_info_count (&get_info_data->get, 0),
-                gmp_parser->client_writer, gmp_parser->client_writer_data);
+  SEND_GET_END ("info", &get_info_data->get, count, filtered);
 
   get_info_data_reset (get_info_data);
   set_client_state (CLIENT_AUTHENTIC);
