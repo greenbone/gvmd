@@ -63841,7 +63841,6 @@ type_select_columns (const char *type)
 {
   static column_t agent_columns[] = AGENT_ITERATOR_COLUMNS;
   static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
-  static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
   static column_t config_columns[] = CONFIG_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
@@ -63877,8 +63876,6 @@ type_select_columns (const char *type)
     return agent_columns;
   if (strcasecmp (type, "ALERT") == 0)
     return alert_columns;
-  if (strcasecmp (type, "ALLINFO") == 0)
-    return allinfo_columns;
   if (strcasecmp (type, "CERT_BUND_ADV") == 0)
     return cert_bund_adv_columns;
   if (strcasecmp (type, "CONFIG") == 0)
@@ -63992,11 +63989,6 @@ type_filter_columns (const char *type)
   if (strcasecmp (type, "ALERT") == 0)
     {
       static const char *ret[] = ALERT_ITERATOR_FILTER_COLUMNS;
-      return ret;
-    }
-  if (strcasecmp (type, "ALLINFO") == 0)
-    {
-      static const char *ret[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   if (strcasecmp (type, "CERT_BUND_ADV") == 0)
@@ -64199,8 +64191,6 @@ type_table (const char *type, int trash)
 {
   if (type == NULL)
     return NULL;
-  if (strcasecmp (type, "ALLINFO") == 0)
-    return g_strdup (ALL_INFO_UNION_COLUMNS);
   if (trash && type_trash_in_table (type) == 0)
     return g_strdup_printf ("%ss_trash", type);
   if (trash == 0 || type_trash_in_table (type))
