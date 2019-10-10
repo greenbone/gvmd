@@ -1115,39 +1115,6 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
 /* All SecInfo data. */
 
 /**
- * @brief Get the secinfo type from an all info iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The type of a secinfo entry,
- *         or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (all_info_iterator_type, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Get the secinfo extra information from an all info iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return extra info secinfo entry,
- *         or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
- * @brief Get the severity from an all info iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return extra info secinfo entry,
- *         or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (all_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
  * @brief Initialise an ovaldi file iterator.
  *
  * @param[in]  iterator        Iterator.
