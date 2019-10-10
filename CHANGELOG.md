@@ -80,6 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix array index error when modifying roles and groups [#762](https://github.com/greenbone/gvmd/pull/762)
 - Make get_settings return only one setting when setting_id is given [#780](https://github.com/greenbone/gvmd/pull/780)
 - Fix percent sign escaping in report_port_count [#783](https://github.com/greenbone/gvmd/pull/783)
+- If the nvt preference is "file" type, encode it into Base64 format [#784](https://github.com/greenbone/gvmd/pull/784)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
