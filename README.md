@@ -3,8 +3,8 @@
 # Greenbone Vulnerability Manager
 
 [![GitHub releases](https://img.shields.io/github/release/greenbone/gvmd.svg)](https://github.com/greenbone/gvmd/releases)
-[![Code Documentation Coverage](https://img.shields.io/codecov/c/github/greenbone/gvmd.svg?label=Doc%20Coverage&logo=codecov)](https://codecov.io/gh/greenbone/gvmd)
-[![CircleCI](https://circleci.com/gh/greenbone/gvmd/tree/master.svg?style=svg)](https://circleci.com/gh/greenbone/gvmd/tree/master)
+[![Code Documentation Coverage](https://img.shields.io/codecov/c/github/greenbone/gvmd/gvmd-9.0.svg?label=Doc%20Coverage&logo=codecov)](https://codecov.io/gh/greenbone/gvmd)
+[![CircleCI](https://circleci.com/gh/greenbone/gvmd/tree/gvmd-9.0.svg?style=svg)](https://circleci.com/gh/greenbone/gvmd/tree/master)
 
 The Greenbone Vulnerability Manager is the central management service between
 security scanners and the user clients.
@@ -14,6 +14,13 @@ scan results. Access to data, control commands and workflows is offered via the
 XML-based Greenbone Management Protocol (GMP). Controlling scanners like
 *[OpenVAS](https://github.com/greenbone/openvas)* is done via the Open Scanner
 Protocol (OSP).
+
+## Releases
+￼
+All [release files](https://github.com/greenbone/gvmd/releases) are signed with
+the [Greenbone Community Feed integrity key](https://community.greenbone.net/t/gcf-managing-the-digital-signatures/101).
+This gpg key can be downloaded at https://www.greenbone.net/GBCommunitySigningKey.asc
+and the fingerprint is `8AE4 BE42 9B60 A59B 311C  2E73 9823 FAA6 0ED1 E580`.
 
 ## Installation and Usage
 
