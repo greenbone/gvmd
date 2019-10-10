@@ -27712,7 +27712,7 @@ report_port_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT port) FROM results"
                   " WHERE report = %llu AND port != ''"
-                  "  AND port NOT %s 'general/%';",
+                  "  AND port NOT %s 'general/%%';",
                   report,
                   sql_ilike_op ());
 }
@@ -44392,7 +44392,7 @@ create_schedule (const char* name, const char *comment,
     {
       ical_component = icalendar_from_old_schedule_data
                           (first_time, period, period_months, duration,
-                           byday_mask, zone);
+                           byday_mask);
       quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
     }
 
@@ -45427,7 +45427,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update basic data */
   quoted_comment = comment ? sql_quote (comment) : NULL;
-  quoted_timezone = timezone ? sql_quote (zone) : NULL;
+  quoted_timezone = zone ? sql_quote (zone) : NULL;
 
   sql ("UPDATE schedules SET"
        " name = %s%s%s,"
@@ -45596,8 +45596,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
       ical_component = icalendar_from_old_schedule_data
                           (real_first_time,
                            real_period, real_period_months,
-                           real_duration, real_byday,
-                           real_timezone);
+                           real_duration, real_byday);
       quoted_icalendar
         = sql_quote (icalcomponent_as_ical_string (ical_component));
 

@@ -1481,6 +1481,89 @@ migrate_219_to_220 ()
   return 0;
 }
 
+/**
+ * @brief Convert iCalendar strings of schedules to new format for version 221.
+ *
+ * @param[in]  trash  Whether to convert the trash table.
+ */
+static void
+convert_schedules_221 (gboolean trash)
+{
+  iterator_t schedules;
+
+  init_iterator (&schedules,
+                 "SELECT id, icalendar, uuid FROM %s;",
+                 trash ? "schedules_trash" : "schedules");
+
+  while (next (&schedules))
+    {
+      schedule_t schedule;
+      const char *ical_string, *schedule_id;
+      icalcomponent *ical_component;
+      gchar *error_out;
+
+      error_out = NULL;
+      schedule = iterator_int64 (&schedules, 0);
+      ical_string = iterator_string (&schedules, 1);
+      schedule_id = iterator_string (&schedules, 2);
+
+      ical_component = icalendar_from_string (ical_string, &error_out);
+      if (ical_component == NULL)
+        g_warning ("Error converting schedule %s: %s", schedule_id, error_out);
+      else
+        {
+          gchar *quoted_ical;
+
+          quoted_ical
+            = sql_quote (icalcomponent_as_ical_string (ical_component));
+
+          sql ("UPDATE %s SET icalendar = '%s' WHERE id = %llu",
+               trash ? "schedules_trash" : "schedules",
+               quoted_ical,
+               schedule);
+
+          g_free (quoted_ical);
+        }
+
+      g_free (error_out);
+    }
+
+  cleanup_iterator (&schedules);
+}
+
+/**
+ * @brief Migrate the database from version 220 to version 221.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_220_to_221 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 220. */
+
+  if (manage_db_version () != 220)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Convert iCalendar strings of all schedules */
+  convert_schedules_221 (FALSE);
+  convert_schedules_221 (TRUE);
+
+  /* Set the database version to 221. */
+
+  set_db_version (221);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1507,6 +1590,7 @@ static migrator_t database_migrators[] = {
   {218, migrate_217_to_218},
   {219, migrate_218_to_219},
   {220, migrate_219_to_220},
+  {221, migrate_220_to_221},
   /* End marker. */
   {-1, NULL}};
 
