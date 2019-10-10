@@ -164,6 +164,19 @@ sql_stmt_init (sql_stmt_t *stmt)
 }
 
 /**
+ * @brief Return SQL of a statement.
+ *
+ * @param[in]  stmt          Statement.
+ *
+ * @return SQL.
+ */
+const gchar *
+sql_stmt_sql (sql_stmt_t *stmt)
+{
+  return stmt->sql;
+}
+
+/**
  * @brief Get case insensitive LIKE operator.
  *
  * @return Like operator.

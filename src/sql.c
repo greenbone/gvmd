@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -49,6 +50,9 @@ sql_prepare_internal (int, int, const char*, va_list, sql_stmt_t **);
 
 int
 sql_exec_internal (int, sql_stmt_t *);
+
+const gchar *
+sql_stmt_sql (sql_stmt_t *);
 
 
 /* Variables. */
@@ -145,6 +149,62 @@ sql_insert (const char *string)
 }
 
 /**
+ * @brief Subtract timevals.
+ *
+ * @param[in]  x       Timeval to subtract from.
+ * @param[in]  y       Timeval to subtract.
+ * @param[out] result  Difference.
+ *
+ * @return 1 if the difference is negative, otherwise 0.
+ */
+int
+timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y)
+{
+  /* Perform the carry for the later subtraction by updating y. */
+  if (x->tv_usec < y->tv_usec)
+    {
+      int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+      y->tv_usec -= 1000000 * nsec;
+      y->tv_sec += nsec;
+    }
+  if (x->tv_usec - y->tv_usec > 1000000)
+    {
+      int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+      y->tv_usec += 1000000 * nsec;
+      y->tv_sec -= nsec;
+    }
+
+  /* Compute the time remaining to wait.
+   * tv_usec is certainly positive. */
+  result->tv_sec = x->tv_sec - y->tv_sec;
+  result->tv_usec = x->tv_usec - y->tv_usec;
+
+  /* Return 1 if result is negative. */
+  return x->tv_sec < y->tv_sec;
+}
+
+/**
+ * @brief Log SQL for timing info.
+ *
+ * @param[in]  sql       SQL.
+ * @param[in]  tv_start  Start time.
+ * @param[in]  loop      Whether it's an iteration.
+ */
+static void
+log_sql (const char* sql, struct timeval *tv_start, int loop)
+{
+  struct timeval tv_diff, tv_end;
+
+  gettimeofday (&tv_end, NULL);
+  timeval_subtract (&tv_diff, &tv_end, tv_start);
+  g_debug ("TIME:SQL:%li.%06li:%s: %s",
+           tv_diff.tv_sec,
+           tv_diff.tv_usec,
+           loop ? "ITER" : "",
+           sql);
+}
+
+/**
  * @brief Perform an SQL statement.
  *
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
@@ -163,6 +223,9 @@ sqlv (int retry, char* sql, va_list args)
       int ret;
       sql_stmt_t* stmt;
       va_list args_copy;
+      struct timeval tv_start;
+
+      gettimeofday (&tv_start, NULL);
 
       /* Prepare statement.
        * Copy args for this because a va_list can only be used once.
@@ -180,6 +243,10 @@ sqlv (int retry, char* sql, va_list args)
       while ((ret = sql_exec_internal (retry, stmt)) == 1);
       if ((ret == -1) && log_errors)
         g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
+
+      if (ret == 0)
+        log_sql (sql_stmt_sql (stmt), &tv_start, 0);
+
       sql_finalize (stmt);
       if (ret == 2)
         continue;
@@ -190,6 +257,7 @@ sqlv (int retry, char* sql, va_list args)
       if (ret == -4)
         return 3;
       assert (ret == -1 || ret == 0);
+
       return ret;
     }
 }
@@ -293,10 +361,15 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 
   while (1)
     {
+      va_list args_copy;
+      struct timeval tv_start;
+
+      gettimeofday (&tv_start, NULL);
+
       /* Prepare statement.
        * Copy args for this because a va_list can only be used once.
        */
-      va_list args_copy;
+
       va_copy (args_copy, args);
       ret = sql_prepare_internal (1, 1, sql, args_copy, stmt_return);
       va_end (args_copy);
@@ -325,6 +398,9 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
           sql_finalize (*stmt_return);
           continue;
         }
+
+      log_sql (sql_stmt_sql (*stmt_return), &tv_start, 0);
+
       break;
     }
   assert (ret == 1);
@@ -652,6 +728,10 @@ next (iterator_t* iterator)
     lsc_crypt_flush (iterator->crypt_ctx);
   while (1)
     {
+      struct timeval tv_start;
+
+      gettimeofday (&tv_start, NULL);
+
       ret = sql_exec_internal (1, iterator->stmt);
       if (ret == 0)
         {
@@ -671,6 +751,9 @@ next (iterator_t* iterator)
           g_warning ("%s: stepping after reset", __FUNCTION__);
           continue;
         }
+
+      log_sql (sql_stmt_sql (iterator->stmt), &tv_start, 1);
+
       break;
     }
   assert (ret == 1);
