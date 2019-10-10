@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix issues importing results or getting them from slaves if they contain "%s" [#724](https://github.com/greenbone/gvmd/pull/724)
 - A possible database migration issue from GVMd-7 to GVMd-8 has been addressed [#742](https://github.com/greenbone/gvmd/pull/742)
 - Fix escaping that was preventing start_task from running [#758](https://github.com/greenbone/gvmd/pull/758)
+- Fix percent sign escaping in report_port_count [#781](https://github.com/greenbone/gvmd/pull/781)
 
 ### Removed
 
