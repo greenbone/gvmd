@@ -197,11 +197,13 @@ log_sql (const char* sql, struct timeval *tv_start, int loop)
 
   gettimeofday (&tv_end, NULL);
   timeval_subtract (&tv_diff, &tv_end, tv_start);
-  g_debug ("TIME:SQL:%li.%06li:%s: %s",
-           tv_diff.tv_sec,
-           tv_diff.tv_usec,
-           loop ? "ITER" : "",
-           sql);
+  g_log ("md timing",
+         G_LOG_LEVEL_DEBUG,
+         "TIME:SQL:%li.%06li:%s: %s",
+         tv_diff.tv_sec,
+         tv_diff.tv_usec,
+         loop ? "ITER" : "",
+         sql);
 }
 
 /**
