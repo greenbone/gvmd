@@ -3787,7 +3787,8 @@ target_osp_ssh_credential (target_t target)
           const char *private_key = credential_iterator_private_key (&iter);
           osp_credential_set_auth_data (osp_credential,
                                         "private",
-                                        private_key);
+                                        g_base64_encode ((guchar *) private_key,
+                                                         strlen(private_key)));
         }
       cleanup_iterator (&iter);
       return osp_credential;
@@ -4091,6 +4092,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
               osp_value = g_strdup (split_value[0]);
               g_strfreev (split_value);
             }
+          else if (strcmp (type, "file") == 0)
+            osp_value = g_base64_encode ((guchar*) value, strlen(value));
 
           osp_vt = g_hash_table_lookup (vts_hash_table, oid);
           if (osp_vt)
