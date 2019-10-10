@@ -734,7 +734,6 @@ icalendar_timezone_from_tzid (const char *tzid)
  * @param[in]  period_months  The period in months.
  * @param[in]  duration       The duration in seconds.
  * @param[in]  byday_mask     The byday mask.
- * @param[in]  zone           The timezone id / city name.
  *
  * @return  The generated iCalendar component.
  */
@@ -742,12 +741,10 @@ icalcomponent *
 icalendar_from_old_schedule_data (time_t first_time,
                                   time_t period, time_t period_months,
                                   time_t duration,
-                                  int byday_mask,
-                                  const char *zone)
+                                  int byday_mask)
 {
   gchar *uid;
   icalcomponent *ical_new, *vevent;
-  icaltimezone *ical_timezone;
   icaltimetype dtstart, dtstamp;
   int has_recurrence;
   struct icalrecurrencetype recurrence;
@@ -774,15 +771,9 @@ icalendar_from_old_schedule_data (time_t first_time,
   icalcomponent_set_dtstamp (vevent, dtstamp);
 
   // Get timezone and set first start time
-  if (zone)
-    {
-      ical_timezone = icalendar_timezone_from_tzid (zone);
-    }
-  else
-    {
-      ical_timezone = NULL;
-    }
-  dtstart = icaltime_from_timet_with_zone (first_time, 0, ical_timezone);
+  dtstart = icaltime_from_timet_with_zone (first_time, 0,
+                                           icaltimezone_get_utc_timezone ());
+
   icalcomponent_set_dtstart (vevent, dtstart);
 
   // Get recurrence rule if applicable
@@ -874,21 +865,19 @@ icalendar_from_old_schedule_data (time_t first_time,
  * @brief Simplify an VEVENT iCal component.
  *
  * @param[in]  vevent          The VEVENT component to simplify.
- * @param[in]  used_tzids      GHashTable to collect ids of the used timezones.
  * @param[out] error           Output of iCal errors or warnings.
  * @param[out] warnings_buffer GString buffer to write warnings to.
  *
  * @return  A newly allocated, simplified VEVENT component.
  */
 static icalcomponent *
-icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
+icalendar_simplify_vevent (icalcomponent *vevent,
                            gchar **error, GString *warnings_buffer)
 {
   icalproperty *error_prop;
   gchar *uid;
   icalcomponent *vevent_simplified;
-  icaltimetype dtstart, dtstamp;
-  const char *start_tzid;
+  icaltimetype original_dtstart, dtstart, dtstamp;
   struct icaldurationtype duration;
   icalproperty *rrule_prop, *rdate_prop, *exdate_prop, *exrule_prop;
 
@@ -908,33 +897,36 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
     }
 
   // Get mandatory first start time
-  dtstart = icalcomponent_get_dtstart (vevent);
-  if (icaltime_is_null_time (dtstart))
+  original_dtstart = icalcomponent_get_dtstart (vevent);
+  if (icaltime_is_null_time (original_dtstart))
     {
       if (error)
         *error = g_strdup_printf ("VEVENT must have a dtstart property");
       return NULL;
     }
 
-  // Get timezone id used in start time
-  start_tzid = icaltime_get_tzid (dtstart);
-  if (start_tzid && used_tzids)
-    g_hash_table_add (used_tzids, g_strdup (start_tzid));
+  dtstart = icaltime_convert_to_zone (original_dtstart,
+                                      icaltimezone_get_utc_timezone ());
 
   // Get duration or try to calculate it from end time
   duration = icalcomponent_get_duration (vevent);
   if (icaldurationtype_is_null_duration (duration))
     {
-      icaltimetype dtend;
-      dtend = icalcomponent_get_dtend (vevent);
+      icaltimetype original_dtend;
+      original_dtend = icalcomponent_get_dtend (vevent);
 
-      if (icaltime_is_null_time (dtend))
+      if (icaltime_is_null_time (original_dtend))
         {
           duration = icaldurationtype_null_duration ();
         }
       else
         {
-          duration = icaltime_subtract (dtend, dtstart);
+          icaltimetype dtend_utc;
+          dtend_utc
+            = icaltime_convert_to_zone (original_dtend,
+                                        icaltimezone_get_utc_timezone ());
+
+          duration = icaltime_subtract (dtend_utc, dtstart);
         }
     }
 
@@ -982,11 +974,15 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
       new_datetimeperiod.period = icalperiodtype_null_period ();
       if (icalperiodtype_is_null_period (old_datetimeperiod.period))
         {
-          new_datetimeperiod.time = old_datetimeperiod.time;
+          new_datetimeperiod.time
+            = icaltime_convert_to_zone (old_datetimeperiod.time,
+                                        icaltimezone_get_utc_timezone ());
         }
       else
         {
-          new_datetimeperiod.time = old_datetimeperiod.period.start;
+          new_datetimeperiod.time
+            = icaltime_convert_to_zone (old_datetimeperiod.period.start,
+                                        icaltimezone_get_utc_timezone ());
         }
       new_rdate = icalproperty_new_rdate (new_datetimeperiod);
       icalcomponent_add_property (vevent_simplified, new_rdate);
@@ -1000,9 +996,15 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
                                                   ICAL_EXDATE_PROPERTY);
   while (exdate_prop)
     {
+      icaltimetype original_exdate_time, exdate_time;
       icalproperty *prop_clone;
 
-      prop_clone = icalproperty_new_clone (exdate_prop);
+      original_exdate_time = icalproperty_get_exdate (exdate_prop);
+      exdate_time
+        = icaltime_convert_to_zone (original_exdate_time,
+                                    icaltimezone_get_utc_timezone ());
+
+      prop_clone = icalproperty_new_exdate (exdate_time);
       icalcomponent_add_property (vevent_simplified, prop_clone);
 
       exdate_prop
@@ -1033,7 +1035,6 @@ icalendar_simplify_vevent (icalcomponent *vevent, GHashTable *used_tzids,
       icalcomponent_free (ical_parsed);         \
       icalcomponent_free (ical_new);            \
       g_string_free (warnings_buffer, TRUE);    \
-      g_hash_table_destroy (tzids);             \
       return NULL;                              \
     }                                           \
   while (0)
@@ -1051,13 +1052,10 @@ icalendar_from_string (const char *ical_string, gchar **error)
 {
   icalcomponent *ical_new, *ical_parsed;
   icalproperty *error_prop;
-  GHashTable *tzids;
   GString *warnings_buffer;
   int vevent_count = 0;
   int other_component_count = 0;
   icalcompiter ical_iter;
-  GHashTableIter tzids_iter;
-  gchar *tzid;
 
   // Parse the iCalendar string
   ical_parsed = icalcomponent_new_from_string (ical_string);
@@ -1083,7 +1081,6 @@ icalendar_from_string (const char *ical_string, gchar **error)
 
   // Create buffers and new VCALENDAR
   warnings_buffer = g_string_new ("");
-  tzids = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
   ical_new = icalcomponent_new_vcalendar ();
   icalcomponent_add_property (ical_new, icalproperty_new_version ("2.0"));
@@ -1114,7 +1111,9 @@ icalendar_from_string (const char *ical_string, gchar **error)
                   if (vevent_count == 0)
                     {
                       new_vevent = icalendar_simplify_vevent
-                                      (subcomp, tzids, error, warnings_buffer);
+                                      (subcomp,
+                                       error,
+                                       warnings_buffer);
                       if (new_vevent == NULL)
                         ICAL_RETURN_ERROR (*error);
                       icalcomponent_add_component (ical_new, new_vevent);
@@ -1169,8 +1168,9 @@ icalendar_from_string (const char *ical_string, gchar **error)
         {
           icalcomponent *new_vevent;
 
-          new_vevent = icalendar_simplify_vevent (ical_parsed, tzids,
-                                                  error, warnings_buffer);
+          new_vevent = icalendar_simplify_vevent (ical_parsed,
+                                                  error,
+                                                  warnings_buffer);
           if (new_vevent == NULL)
             ICAL_RETURN_ERROR (*error);
           icalcomponent_add_component (ical_new, new_vevent);
@@ -1183,26 +1183,6 @@ icalendar_from_string (const char *ical_string, gchar **error)
         break;
     }
 
-  g_hash_table_iter_init (&tzids_iter, tzids);
-  while (g_hash_table_iter_next (&tzids_iter, (gpointer*)(&tzid), NULL))
-    {
-      icaltimezone *tz;
-      tz = icalcomponent_get_timezone (ical_parsed, tzid);
-      if (tz)
-        {
-          icalcomponent *tz_component;
-
-          tz_component = icaltimezone_get_component (tz);
-          if (tz_component)
-            {
-              icalcomponent *tz_component_copy;
-              tz_component_copy = icalcomponent_new_clone (tz_component);
-              icalcomponent_add_component (ical_new, tz_component_copy);
-            }
-        }
-    }
-
-  g_hash_table_destroy (tzids);
   icalcomponent_free (ical_parsed);
 
   if (error)
