@@ -78,6 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix sorting by numeric filter columns [#751](https://github.com/greenbone/gvmd/pull/751)
 - Fix array index error when modifying roles and groups [#762](https://github.com/greenbone/gvmd/pull/762)
 - Make get_settings return only one setting when setting_id is given [#780](https://github.com/greenbone/gvmd/pull/780)
+- Fix percent sign escaping in report_port_count [#783](https://github.com/greenbone/gvmd/pull/783)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
