@@ -28575,7 +28575,7 @@ report_port_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT port) FROM results"
                   " WHERE report = %llu AND port != ''"
-                  "  AND port NOT %s 'general/%';",
+                  "  AND port NOT %s 'general/%%';",
                   report,
                   sql_ilike_op ());
 }

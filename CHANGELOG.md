@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - A possible database migration issue from GVMd-7 to GVMd-8 has been addressed [#742](https://github.com/greenbone/gvmd/pull/742)
 - Fix escaping that was preventing start_task from running [#758](https://github.com/greenbone/gvmd/pull/758)
 - Fix array index error when modifying roles and groups [#763](https://github.com/greenbone/gvmd/pull/763)
+- Fix percent sign escaping in report_port_count [#781](https://github.com/greenbone/gvmd/pull/781)
 
 ### Removed
 
