@@ -14166,8 +14166,6 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
         name = g_strdup ("DFN-CERT");
       else if (strcmp (get_info_data->type, "nvt") == 0)
         name = g_strdup ("NVT");
-      else if (strcmp (get_info_data->type, "allinfo") == 0)
-        name = g_strdup ("All SecInfo");
       else
         {
           if (send_find_error_to_client ("get_info", "type",
@@ -14272,12 +14270,6 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       init_info_iterator = init_dfn_cert_adv_info_iterator;
       info_count = dfn_cert_adv_info_count;
       get_info_data->get.subtype = g_strdup ("dfn_cert_adv");
-    }
-  else if (g_strcmp0 ("allinfo", get_info_data->type) == 0)
-    {
-      init_info_iterator = init_all_info_iterator;
-      info_count = all_info_count;
-      get_info_data->get.subtype = g_strdup ("allinfo");
     }
   else
     {
@@ -14542,18 +14534,6 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
               return;
             }
         }
-      else if (g_strcmp0 ("allinfo", get_info_data->type) == 0)
-        {
-          const char *extra = all_info_iterator_extra (&info);
-          xml_string_append (result,
-                             "<allinfo>"
-                             "<type>%s</type>"
-                             "<extra>%s</extra>"
-                             "<severity>%s</severity>",
-                             all_info_iterator_type (&info),
-                             extra ? extra : "",
-                             all_info_iterator_severity (&info));
-        }
 
       /* Append raw data if full details are requested */
 
@@ -14587,12 +14567,9 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                   ? info_name_count (get_info_data->type, get_info_data->name)
                   : info_count (&get_info_data->get));
 
-  if (strcmp (get_info_data->type, "allinfo"))
-    SEND_GET_END ("info", &get_info_data->get, count, filtered);
-  else
-    send_get_end ("info", &get_info_data->get, count, filtered,
-                  total_info_count (&get_info_data->get, 0),
-                  gmp_parser->client_writer, gmp_parser->client_writer_data);
+  send_get_end ("info", &get_info_data->get, count, filtered,
+                total_info_count (&get_info_data->get, 0),
+                gmp_parser->client_writer, gmp_parser->client_writer_data);
 
   get_info_data_reset (get_info_data);
   set_client_state (CLIENT_AUTHENTIC);
