@@ -61,6 +61,13 @@ file=syslog
 syslog_facility=local0
 level=128
 
+[md timing]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=0
+
 [*]
 prepend=%t %s %p
 separator=:
