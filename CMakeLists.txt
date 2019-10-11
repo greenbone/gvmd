@@ -23,7 +23,7 @@ message ("-- Configuring Greenbone Vulnerability Manager...")
 # VERSION: Set patch version for stable releases, e.g. "9.0.0",
 #          unset patch version for prereleases, e.g. "9.0"
 project (gvm
-         VERSION 9.0
+         VERSION 9.0.0
          LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -58,7 +58,7 @@ endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
 # set if this is in prerelease status, starting at 0 before first beta release,
 # unset if this is a stable release series.
-set (PROJECT_BETA_RELEASE 0)
+# set (PROJECT_BETA_RELEASE 0)
 
 if (GIT_REVISION)
   set (PROJECT_VERSION_GIT "${GIT_REVISION}")
