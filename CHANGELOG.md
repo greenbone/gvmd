@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [9.0.0] (2019-10-10)
+## [9.0.0] (2019-10-11)
 
 ### Added
 - Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673) [#674](https://github.com/greenbone/gvmd/pull/674) [#689](https://github.com/greenbone/gvmd/pull/689) [#695](https://github.com/greenbone/gvmd/pull/695) [#703](https://github.com/greenbone/gvmd/pull/703) [#728](https://github.com/greenbone/gvmd/pull/728) [#732](https://github.com/greenbone/gvmd/pull/732) [#750](https://github.com/greenbone/gvmd/pull/750) [#752](https://github.com/greenbone/gvmd/pull/752) [#774](https://github.com/greenbone/gvmd/pull/774)
