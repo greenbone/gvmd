@@ -83,7 +83,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove helper functions and other code for handling OTP [#705](https://github.com/greenbone/gvmd/pull/705) [#709](https://github.com/greenbone/gvmd/pull/709) [#713](https://github.com/greenbone/gvmd/pull/713) [#735](https://github.com/greenbone/gvmd/pull/735) [#748](https://github.com/greenbone/gvmd/pull/748) [#749](https://github.com/greenbone/gvmd/pull/749)
 - Remove stray prototype nvt_iterator_copyright [#721](https://github.com/greenbone/gvmd/pull/721)
 
-[9.0.0]: https://github.com/greenbone/openvas/compare/v8.0.1...v9.0.0
+[9.0.0]: https://github.com/greenbone/gvmd/compare/v8.0.1...v9.0.0
 
 ## [8.0.1] (2019-07-17)
 
@@ -135,7 +135,7 @@ long schedule XML, not just if only the schedules are requested. [#500](https://
 - Remove -m SMB3 for smbclient in SMB alert, which allows changing the maximum protocol version via the smbclient config instead of forcing a particular one in the alert script. [#505](https://github.com/greenbone/gvmd/pull/505)
 - Remove "slave" from valid_db_resource_type. [#558](https://github.com/greenbone/gvmd/pull/558)
 
-[8.0.1]: https://github.com/greenbone/openvas/compare/v8.0.0...gvmd-8.0
+[8.0.1]: https://github.com/greenbone/gvmd/compare/v8.0.0...v8.0.1
 
 ## [8.0.0] (2019-04-05)
 
@@ -185,4 +185,4 @@ long schedule XML, not just if only the schedules are requested. [#500](https://
 - The compile-time LOG option has been removed.
 - Report format special case has been removed from send_get_common [#456](https://github.com/greenbone/gvmd/pull/456)
 
-[8.0.0]: https://github.com/greenbone/openvas/compare/v8.0+beta2...v8.0.0
+[8.0.0]: https://github.com/greenbone/gvmd/compare/v8.0+beta2...v8.0.0
