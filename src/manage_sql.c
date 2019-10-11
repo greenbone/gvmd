@@ -2987,32 +2987,6 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
       || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
       || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
     {
-      if (strcasecmp (type, "allinfo") == 0)
-        g_string_append_printf
-           (clause,
-            "%s"
-            "(EXISTS"
-            "  (SELECT * FROM tags"
-            "   WHERE tags.name = '%s'"
-            "   AND tags.active != 0"
-            "   AND EXISTS (SELECT * FROM tag_resources"
-            "                WHERE tag_resources.resource_uuid"
-            "                        = allinfo.uuid"
-            "                  AND tag_resources.resource_type"
-            "                        = allinfo.type"
-            "                  AND tag = tags.id)"
-            "   %s%s%s))",
-            get_join (first_keyword, last_was_and,
-                      last_was_not),
-            tag_name,
-            (value_given
-              ? "AND tags.value = '"
-              : ""),
-            value_given ? tag_value : "",
-            (value_given
-              ? "'"
-              : ""));
-      else
         g_string_append_printf
            (clause,
             "%s"
@@ -3042,28 +3016,6 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
     }
   else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
     {
-      if (strcasecmp (type, "allinfo") == 0)
-        g_string_append_printf
-           (clause,
-            "%s"
-            "(EXISTS"
-            "  (SELECT * FROM tags"
-            "   WHERE tags.name %s '%%%%%s%%%%'"
-            "   AND tags.active != 0"
-            "   AND EXISTS (SELECT * FROM tag_resources"
-            "                WHERE tag_resources.resource_uuid"
-            "                        = allinfo.uuid"
-            "                  AND tag_resources.resource_type"
-            "                        = allinfo.type"
-            "                  AND tag = tags.id)"
-            "   AND tags.value %s '%%%%%s%%%%'))",
-            get_join (first_keyword, last_was_and,
-                      last_was_not),
-            sql_ilike_op (),
-            tag_name,
-            sql_ilike_op (),
-            tag_value);
-      else
         g_string_append_printf
            (clause,
             "%s"
@@ -3089,29 +3041,6 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
     }
   else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
     {
-      if (strcasecmp (type, "allinfo") == 0)
-        g_string_append_printf
-           (clause,
-            "%s"
-            "(EXISTS"
-            "  (SELECT * FROM tags"
-            "   WHERE tags.name %s '%s'"
-            "   AND tags.active != 0"
-            "   AND EXISTS (SELECT * FROM tag_resources"
-            "                WHERE tag_resources.resource_uuid"
-            "                        = allinfo.uuid"
-            "                  AND tag_resources.resource_type"
-            "                        = allinfo.type"
-            "                  AND tag = tags.id)"
-            "   AND tags.value"
-            "       %s '%s'))",
-            get_join (first_keyword, last_was_and,
-                      last_was_not),
-            sql_regexp_op (),
-            tag_name,
-            sql_regexp_op (),
-            tag_value);
-      else
         g_string_append_printf
            (clause,
             "%s"
@@ -3166,24 +3095,6 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
       || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
       || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
     {
-      if (strcasecmp (type, "allinfo") == 0)
-        g_string_append_printf
-           (clause,
-            "%s"
-            "(EXISTS"
-            "  (SELECT * FROM tags"
-            "   WHERE tags.uuid = '%s'"
-            "   AND tags.active != 0"
-            "   AND EXISTS (SELECT * FROM tag_resources"
-            "                WHERE tag_resources.resource_uuid"
-            "                        = allinfo.uuid"
-            "                  AND tag_resources.resource_type"
-            "                        = allinfo.type"
-            "                  AND tag = tags.id)))",
-            get_join (first_keyword, last_was_and,
-                      last_was_not),
-            quoted_keyword);
-      else
         g_string_append_printf
            (clause,
             "%s"
@@ -3205,25 +3116,6 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
     }
   else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
     {
-      if (strcasecmp (type, "allinfo") == 0)
-        g_string_append_printf
-           (clause,
-            "%s"
-            "(EXISTS"
-            "  (SELECT * FROM tags"
-            "   WHERE tags.uuid %s '%%%%%s%%%%'"
-            "   AND tags.active != 0"
-            "   AND EXISTS (SELECT * FROM tag_resources"
-            "                WHERE tag_resources.resource_uuid"
-            "                        = allinfo.uuid"
-            "                  AND tag_resources.resource_type"
-            "                        = allinfo.type"
-            "                  AND tag = tags.id)))",
-            get_join (first_keyword, last_was_and,
-                      last_was_not),
-            sql_ilike_op (),
-            quoted_keyword);
-      else
         g_string_append_printf
            (clause,
             "%s"
@@ -3246,25 +3138,6 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
     }
   else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
     {
-      if (strcasecmp (type, "allinfo") == 0)
-        g_string_append_printf
-           (clause,
-            "%s"
-            "(EXISTS"
-            "  (SELECT * FROM tags"
-            "   WHERE tags.uuid %s '%s'"
-            "   AND tags.active != 0"
-            "   AND EXISTS (SELECT * FROM tag_resources"
-            "                WHERE tag_resources.resource_uuid"
-            "                        = allinfo.uuid"
-            "                  AND tag_resources.resource_type"
-            "                        = allinfo.type"
-            "                  AND tag = tags.id)))",
-            get_join (first_keyword, last_was_and,
-                      last_was_not),
-            sql_regexp_op (),
-            quoted_keyword);
-      else
         g_string_append_printf
            (clause,
             "%s"
@@ -4456,7 +4329,7 @@ type_is_asset_subtype (const char *type)
 }
 
 /**
- * @brief Check whether a resource type is an info subtype, excluding allinfo.
+ * @brief Check whether a resource type is an info subtype.
  *
  * @param[in]  type  Type of resource.
  *
@@ -4530,7 +4403,6 @@ type_has_trash (const char *type)
           && strcasecmp (type, "result")
           && strcasecmp (type, "info")
           && type_is_info_subtype (type) == 0
-          && strcasecmp (type, "allinfo")
           && strcasecmp (type, "vuln")
           && strcasecmp (type, "user")
           && strcasecmp (type, "tls_certificate"));
@@ -4548,7 +4420,6 @@ type_owned (const char* type)
 {
   return (strcasecmp (type, "info")
           && type_is_info_subtype (type) == 0
-          && strcasecmp (type, "allinfo")
           && strcasecmp (type, "vuln"));
 }
 
@@ -5614,12 +5485,10 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   if ((manage_scap_loaded () == FALSE
        && (strcmp (type, "cve") == 0
            || strcmp (type, "cpe") == 0
-           || strcmp (type, "ovaldef") == 0
-           || strcmp (type, "allinfo") == 0))
+           || strcmp (type, "ovaldef") == 0))
       || (manage_cert_loaded () == FALSE
           && (strcmp (type, "cert_bund_adv") == 0
-              || strcmp (type, "dfn_cert_adv") == 0
-              || strcmp (type, "allinfo") == 0)))
+              || strcmp (type, "dfn_cert_adv") == 0)))
     {
       // Init a dummy iterator if SCAP or CERT DB is required but unavailable.
       init_iterator (iterator,
