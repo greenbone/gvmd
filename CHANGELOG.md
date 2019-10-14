@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add scanner relays and OSP sensor scanner type [#756](https://github.com/greenbone/gvmd/pull/756) [#759](https://github.com/greenbone/gvmd/pull/759)
 
 ### Changed
+- Always convert iCalendar strings to use UTC. [#778](https://github.com/greenbone/gvmd/pull/778)
 - Check if NVT preferences exist before inserting. [#406](https://github.com/greenbone/gvmd/pull/406)
 - Raise minimum version for SQL functions. [#420](https://github.com/greenbone/gvmd/pull/420)
 - Run OpenVAS scans via OSP instead of OTP. [#422](https://github.com/greenbone/gvmd/pull/422) [#584](https://github.com/greenbone/gvmd/pull/584) [#623](https://github.com/greenbone/gvmd/pull/623) [#636](https://github.com/greenbone/gvmd/pull/636) [#704](https://github.com/greenbone/gvmd/pull/704) [#729](https://github.com/greenbone/gvmd/pull/729)
@@ -79,6 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
 - Make get_settings return only one setting when setting_id is given [#780](https://github.com/greenbone/gvmd/pull/780)
 - Fix percent sign escaping in report_port_count [#783](https://github.com/greenbone/gvmd/pull/783)
+- If the nvt preference is "file" type, encode it into Base64 format [#784](https://github.com/greenbone/gvmd/pull/784)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
