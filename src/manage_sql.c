@@ -28013,6 +28013,7 @@ print_report_errors_xml (report_t report, FILE *stream)
  * @param[in]  sort_order       Whether to sort ascending or descending.
  * @param[in]  sort_field       Field to sort on.
  * @param[out] host_ports       Hash table for counting ports per host.
+ * @param[in,out] results       Result iterator.  For caller to reuse.
  *
  * @return 0 on success, -1 error.
  */
@@ -28020,24 +28021,23 @@ static int
 print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
                        int first_result, int max_results,
                        int sort_order, const char *sort_field,
-                       GHashTable *host_ports)
+                       GHashTable *host_ports, iterator_t *results)
 {
-  iterator_t results;
   result_buffer_t *last_item;
   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
-  init_result_get_iterator (&results, get, report, NULL, NULL);
+  init_result_get_iterator (results, get, report, NULL, NULL);
 
   /* Buffer the results, removing duplicates. */
 
   last_item = NULL;
-  while (next (&results))
+  while (next (results))
     {
-      const char *port = result_iterator_port (&results);
-      const char *host = result_iterator_host (&results);
+      const char *port = result_iterator_port (results);
+      const char *host = result_iterator_host (results);
       double cvss_double;
 
-      cvss_double = result_iterator_severity_double (&results);
+      cvss_double = result_iterator_severity_double (results);
 
       if (last_item
           && strcmp (port, last_item->port) == 0
@@ -28046,14 +28046,14 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
         {
           last_item->severity_double = cvss_double;
           g_free (last_item->severity);
-          last_item->severity = g_strdup (result_iterator_severity (&results));
+          last_item->severity = g_strdup (result_iterator_severity (results));
         }
       else
         {
           const char *cvss;
           result_buffer_t *item;
 
-          cvss = result_iterator_severity (&results);
+          cvss = result_iterator_severity (results);
           if (cvss == NULL)
             {
               cvss_double = 0.0;
@@ -28157,7 +28157,6 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
     g_array_free (ports, TRUE);
   }
   PRINT (out, "</ports>");
-  cleanup_iterator (&results);
 
   return 0;
 }
@@ -29352,6 +29351,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int total_result_count, filtered_result_count;
   array_t *result_hosts;
+  int reuse_result_iterator;
   iterator_t results, delta_results;
   int debugs, holes, infos, logs, warnings, false_positives;
   int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
@@ -29990,10 +29990,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
                                         g_free, NULL);
 
+  reuse_result_iterator = 0;
   if (get->details && (delta == 0))
     {
+      reuse_result_iterator = 1;
       if (print_report_port_xml (report, out, get, first_result, max_results,
-                                 sort_order, sort_field, f_host_ports))
+                                 sort_order, sort_field, f_host_ports, &results))
         {
           g_free (term);
           tz_revert (zone, tz, old_tz_override);
@@ -30030,11 +30032,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     {
       int res;
       g_free (term);
-      res = init_result_get_iterator (&results, get, report, NULL, NULL);
-      if (res)
+      if (reuse_result_iterator)
+        iterator_rewind (&results);
+      else
         {
-          g_hash_table_destroy (f_host_ports);
-          return -1;
+          res = init_result_get_iterator (&results, get, report, NULL, NULL);
+          if (res)
+            {
+              g_hash_table_destroy (f_host_ports);
+              return -1;
+            }
         }
     }
   else
