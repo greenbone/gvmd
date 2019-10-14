@@ -51,8 +51,6 @@ if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
     else (GIT_FOUND)
       set (GIT_REVISION "~git")
     endif (GIT_FOUND)
-  else (EXISTS "${CMAKE_SOURCE_DIR}/.git/")
-    set (GIT_REVISION "~git")
   endif (EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
