@@ -10071,7 +10071,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
                 }
               g_string_append_printf
                (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>",
-                get_iterator_name (&cert_refs_iterator));
+                nvt_dfn_cert_adv_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
         }

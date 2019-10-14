@@ -3825,6 +3825,9 @@ init_cve_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
 void
 init_nvt_dfn_cert_adv_iterator (iterator_t*, const char*);
 
+const char*
+nvt_dfn_cert_adv_iterator_name (iterator_t*);
+
 /* All SecInfo Data */
 
 int
