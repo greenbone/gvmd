@@ -7791,7 +7791,8 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
             {
               xml_string_append (refs_str,
                                  "<ref type=\"cert-bund\" id=\"%s\"/>",
-                                 get_iterator_name (&cert_refs_iterator));
+                                 nvt_cert_bund_adv_iterator_name
+                                  (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
 

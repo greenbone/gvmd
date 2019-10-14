@@ -10054,7 +10054,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
                 }
               g_string_append_printf
                (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
-                get_iterator_name (&cert_refs_iterator));
+                nvt_cert_bund_adv_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
         }
