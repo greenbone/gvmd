@@ -10061,7 +10061,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
 
       if (has_dfn_certs)
         {
-          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid);
           while (next (&cert_refs_iterator))
             {
               if (*first)

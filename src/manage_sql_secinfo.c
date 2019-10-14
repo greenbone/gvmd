@@ -1082,12 +1082,9 @@ init_cve_dfn_cert_adv_iterator (iterator_t *iterator, const char *cve,
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  oid         OID of the NVT.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
-                                int ascending, const char *sort_field)
+init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid)
 {
   static column_t select_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
   gchar *columns;
@@ -1103,11 +1100,9 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
 		 "                                   AND type = 'cve'))"
-                 " ORDER BY %s %s;",
+                 " ORDER BY name DESC;",
                  columns,
-                 oid,
-                 sort_field ? sort_field : "name",
-                 ascending ? "ASC" : "DESC");
+                 oid);
   g_free (columns);
 }
 

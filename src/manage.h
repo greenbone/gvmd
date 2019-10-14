@@ -3823,7 +3823,7 @@ void
 init_cve_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
 
 void
-init_nvt_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
+init_nvt_dfn_cert_adv_iterator (iterator_t*, const char*);
 
 /* All SecInfo Data */
 

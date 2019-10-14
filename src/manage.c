@@ -7795,7 +7795,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
             }
           cleanup_iterator (&cert_refs_iterator);
 
-          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid);
           while (next (&cert_refs_iterator))
             {
               xml_string_append (refs_str,
