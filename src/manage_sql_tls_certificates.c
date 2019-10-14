@@ -563,6 +563,8 @@ make_tls_certificate (const char *name,
   quoted_serial
     = sql_quote (serial ? serial : "");
 
+  new_tls_certificate = 0;
+
   if (old_tls_certificate)
     {
       if (update == 1)
@@ -608,9 +610,9 @@ make_tls_certificate (const char *name,
                quoted_serial,
                tls_certificate_format_str (certificate_format),
                old_tls_certificate);
-
-          new_tls_certificate = old_tls_certificate;
         }
+
+      new_tls_certificate = old_tls_certificate;
     }
   else
     {
