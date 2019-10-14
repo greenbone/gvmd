@@ -3797,7 +3797,7 @@ void
 init_cve_cert_bund_adv_iterator (iterator_t*, const char*, int, const char*);
 
 void
-init_nvt_cert_bund_adv_iterator (iterator_t*, const char*, int, const char*);
+init_nvt_cert_bund_adv_iterator (iterator_t*, const char*);
 
 /* DFN-CERT */
 

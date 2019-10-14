@@ -10044,7 +10044,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
     {
       if (has_cert_bunds)
         {
-          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid);
           while (next (&cert_refs_iterator))
             {
               if (first && *first)
