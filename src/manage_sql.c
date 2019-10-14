@@ -29357,7 +29357,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
-  int search_phrase_exact, apply_overrides;
+  int search_phrase_exact, apply_overrides, count_filtered;
   double severity, f_severity;
   gchar *tz, *zone;
   char *old_tz_override;
@@ -30004,11 +30004,26 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Prepare result counts. */
 
-  report_counts_id_full (report, &debugs, &holes, &infos, &logs,
-                         &warnings, &false_positives, &severity,
-                         get, NULL,
-                         &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
-                         &f_false_positives, &f_severity);
+  count_filtered = 0;
+  if (delta == 0 && ignore_pagination && get->details)
+    {
+      /* We're getting all the filtered results, so we can count them as we
+       * print them, to save time. */
+
+      count_filtered = 1;
+      report_counts_id_full (report, &debugs, &holes, &infos, &logs,
+                             &warnings, &false_positives, &severity,
+                             get, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                             NULL);
+      f_debugs = f_holes = f_infos = f_logs = f_warnings = 0;
+      f_false_positives = f_severity = 0;
+    }
+  else
+    report_counts_id_full (report, &debugs, &holes, &infos, &logs,
+                           &warnings, &false_positives, &severity,
+                           get, NULL,
+                           &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
+                           &f_false_positives, &f_severity);
 
   /* Results. */
 
@@ -30136,15 +30151,35 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
           level = result_iterator_level (&results);
           if (strcasecmp (level, "log") == 0)
-            f_host_result_counts = f_host_logs;
+            {
+              f_host_result_counts = f_host_logs;
+              if (count_filtered)
+                f_logs++;
+            }
           else if (strcasecmp (level, "high") == 0)
-            f_host_result_counts = f_host_holes;
+            {
+              f_host_result_counts = f_host_holes;
+              if (count_filtered)
+                f_holes++;
+            }
           else if (strcasecmp (level, "medium") == 0)
-            f_host_result_counts = f_host_warnings;
+            {
+              f_host_result_counts = f_host_warnings;
+              if (count_filtered)
+                f_warnings++;
+            }
           else if (strcasecmp (level, "low") == 0)
-            f_host_result_counts = f_host_infos;
+            {
+              f_host_result_counts = f_host_infos;
+              if (count_filtered)
+                f_infos++;
+            }
           else if (strcasecmp (level, "false positive") == 0)
-            f_host_result_counts = f_host_false_positives;
+            {
+              f_host_result_counts = f_host_false_positives;
+              if (count_filtered)
+                f_false_positives++;
+            }
           else
             f_host_result_counts = NULL;
 
