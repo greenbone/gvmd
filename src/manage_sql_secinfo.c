@@ -901,34 +901,32 @@ init_cve_cert_bund_adv_iterator (iterator_t *iterator, const char *cve,
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  oid         OID of the NVT.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid,
-                                int ascending, const char *sort_field)
+init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid)
 {
-  static column_t select_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
-  gchar *columns;
-
   assert (oid);
 
-  columns = columns_build_select (select_columns);
   init_iterator (iterator,
-                 "SELECT %s"
+                 "SELECT name"
                  " FROM cert_bund_advs"
                  " WHERE id IN (SELECT adv_id FROM cert_bund_cves"
                  "              WHERE cve_name IN (SELECT ref_id"
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
 		 "                                   AND type = 'cve'))"
-                 " ORDER BY %s %s;",
-                 columns,
-                 oid,
-                 sort_field ? sort_field : "name",
-                 ascending ? "ASC" : "DESC");
-  g_free (columns);
+                 " ORDER BY name DESC;",
+                 oid);
 }
+
+/**
+ * @brief Get a column value from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (nvt_cert_bund_adv_iterator_name, GET_ITERATOR_COLUMN_COUNT);
 
 
 /* DFN-CERT data. */
@@ -1082,34 +1080,32 @@ init_cve_dfn_cert_adv_iterator (iterator_t *iterator, const char *cve,
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  oid         OID of the NVT.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
-init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
-                                int ascending, const char *sort_field)
+init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid)
 {
-  static column_t select_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
-  gchar *columns;
-
   assert (oid);
 
-  columns = columns_build_select (select_columns);
   init_iterator (iterator,
-                 "SELECT %s"
+                 "SELECT name"
                  " FROM dfn_cert_advs"
                  " WHERE id IN (SELECT adv_id FROM dfn_cert_cves"
                  "              WHERE cve_name IN (SELECT ref_id"
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
 		 "                                   AND type = 'cve'))"
-                 " ORDER BY %s %s;",
-                 columns,
-                 oid,
-                 sort_field ? sort_field : "name",
-                 ascending ? "ASC" : "DESC");
-  g_free (columns);
+                 " ORDER BY name DESC;",
+                 oid);
 }
+
+/**
+ * @brief Get a column value from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value of the column or NULL if iteration is complete.
+ */
+DEF_ACCESS (nvt_dfn_cert_adv_iterator_name, GET_ITERATOR_COLUMN_COUNT);
 
 
 /* All SecInfo data. */
