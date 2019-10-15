@@ -29595,6 +29595,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</delta>");
     }
 
+  count_filtered = (delta == 0 && ignore_pagination && get->details);
+
   if (report)
     {
       if (delta == 0)
@@ -29615,12 +29617,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           free (all_results_get);
         }
 
-      if (delta == 0 && ignore_pagination && get->details)
+      if (count_filtered)
         {
           /* We're getting all the filtered results, so we can count them as we
            * print them, to save time. */
 
-          count_filtered = 1;
           debugs = holes = infos = logs = warnings = false_positives = 0;
           filtered_result_count = 0;
         }
@@ -30017,13 +30018,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Prepare result counts. */
 
-  count_filtered = 0;
-  if (delta == 0 && ignore_pagination && get->details)
+  if (count_filtered)
     {
       /* We're getting all the filtered results, so we can count them as we
        * print them, to save time. */
 
-      count_filtered = 1;
       report_counts_id_full (report, &debugs, &holes, &infos, &logs,
                              &warnings, &false_positives, &severity,
                              get, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
