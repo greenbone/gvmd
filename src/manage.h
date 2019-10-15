@@ -3827,24 +3827,6 @@ init_nvt_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
 
 /* All SecInfo Data */
 
-int
-all_info_count (const get_data_t *);
-
-int
-total_info_count (const get_data_t *, int);
-
-int
-init_all_info_iterator (iterator_t*, get_data_t*, const char*);
-
-const char*
-all_info_iterator_type (iterator_t*);
-
-const char*
-all_info_iterator_extra (iterator_t*);
-
-const char*
-all_info_iterator_severity (iterator_t*);
-
 void
 init_ovaldi_file_iterator (iterator_t*);
 
