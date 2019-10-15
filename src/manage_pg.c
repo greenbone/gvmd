@@ -1787,16 +1787,10 @@ manage_create_sql_functions ()
                sql_database ()))
     {
       sql ("CREATE OR REPLACE FUNCTION severity_in_level (double precision,"
+           "                                              text,"
            "                                              text)"
            " RETURNS boolean AS $$"
-           "  SELECT CASE (SELECT value FROM settings"
-           "               WHERE name = 'Severity Class'"
-           "               AND ((owner IS NULL)"
-           "                    OR (owner = (SELECT id FROM users"
-           "                                 WHERE users.uuid"
-           "                                       = (SELECT uuid"
-           "                                          FROM current_credentials))))"
-           "               ORDER BY coalesce (owner, 0) DESC LIMIT 1)"
+           "  SELECT CASE $3"
            "         WHEN 'pci-dss'"
            "         THEN (CASE lower ($2)"
            "               WHEN 'high'"
@@ -1826,6 +1820,23 @@ manage_create_sql_functions ()
            "               END)"
            "         END;"
            "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION severity_in_level (double precision,"
+           "                                              text)"
+           " RETURNS boolean AS $$"
+           " SELECT severity_in_level"
+           "         ($1,"
+           "          $2,"
+           "          (SELECT value FROM settings"
+           "           WHERE name = 'Severity Class'"
+           "           AND ((owner IS NULL)"
+           "                OR (owner = (SELECT id FROM users"
+           "                             WHERE users.uuid"
+           "                                   = (SELECT uuid"
+           "                                      FROM current_credentials))))"
+           "           ORDER BY coalesce (owner, 0) DESC LIMIT 1))"
+           "$$ LANGUAGE SQL"
+           " STABLE;");
 
       sql ("CREATE OR REPLACE FUNCTION severity_to_level (text, integer)"
            " RETURNS text AS $$"
