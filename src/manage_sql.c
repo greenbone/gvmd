@@ -30140,6 +30140,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           const char* level;
           GHashTable *f_host_result_counts;
           GString *buffer = g_string_new ("");
+          double result_severity;
 
           buffer_results_xml (buffer,
                               &results,
@@ -30161,6 +30162,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           if (result_hosts_only)
             array_add_new_string (result_hosts,
                                   result_iterator_host (&results));
+
+          result_severity = result_iterator_severity_double (&results);
+          if (result_severity > f_severity)
+            f_severity = result_severity;
 
           level = result_iterator_level (&results);
           if (strcasecmp (level, "log") == 0)
