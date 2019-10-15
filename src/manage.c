@@ -7786,22 +7786,24 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
       if (manage_cert_loaded())
         {
-          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid);
           while (next (&cert_refs_iterator))
             {
               xml_string_append (refs_str,
                                  "<ref type=\"cert-bund\" id=\"%s\"/>",
-                                 get_iterator_name (&cert_refs_iterator));
-          }
+                                 nvt_cert_bund_adv_iterator_name
+                                  (&cert_refs_iterator));
+            }
           cleanup_iterator (&cert_refs_iterator);
 
-          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid);
           while (next (&cert_refs_iterator))
             {
               xml_string_append (refs_str,
                                  "<ref type=\"dfn-cert\" id=\"%s\"/>",
-                                 get_iterator_name (&cert_refs_iterator));
-          }
+                                 nvt_dfn_cert_adv_iterator_name
+                                  (&cert_refs_iterator));
+            }
           cleanup_iterator (&cert_refs_iterator);
         }
       else
