@@ -608,9 +608,9 @@ make_tls_certificate (const char *name,
                quoted_serial,
                tls_certificate_format_str (certificate_format),
                old_tls_certificate);
-
-          new_tls_certificate = old_tls_certificate;
         }
+
+      new_tls_certificate = old_tls_certificate;
     }
   else
     {

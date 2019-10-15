@@ -12298,7 +12298,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <attrib>
         <name>type</name>
-        <summary>Type must be either CERT_BUND_ADV, CPE, CVE, DFN_CERT_ADV, OVALDEF, NVT or ALLINFO</summary>
+        <summary>Type must be either CERT_BUND_ADV, CPE, CVE, DFN_CERT_ADV, OVALDEF or NVT</summary>
         <type>text</type>
         <required>1</required>
       </attrib>
@@ -12563,19 +12563,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Alias for severity</summary>
           </column>
         </filter_keywords>
-        <filter_keywords>
-          <condition>type is "allinfo"</condition>
-          <column>
-            <name>type</name>
-            <type>text</type>
-            <summary>Type of SecInfo as given in the "type" parameter</summary>
-          </column>
-          <column>
-            <name>extra</name>
-            <type>text</type>
-            <summary>Title or similar text</summary>
-          </column>
-        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -12629,7 +12616,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>dfn_cert_adv</e>
             <e>ovaldef</e>
             <e>nvt</e>
-            <e>allinfo</e>
           </or>
         </pattern>
         <ele>
@@ -13131,36 +13117,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Source representation of the information. Only when details were requested</summary>
             <pattern>
               text
-            </pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>allinfo</name>
-          <pattern>
-            <e>type</e>
-            <e>extra</e>
-            <e>severity</e>
-          </pattern>
-          <summary>A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory</summary>
-          <ele>
-            <name>type</name>
-            <summary>Type of SecInfo entry</summary>
-            <pattern>
-              <t>text</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>extra</name>
-            <summary>Extra information from the entry like title or description</summary>
-            <pattern>
-              <t>text</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>severity</name>
-            <summary>Severity rating (CVSS score) of the entry</summary>
-            <pattern>
-              <t>severity</t>
             </pattern>
           </ele>
         </ele>
@@ -27251,6 +27207,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
 
   <!-- Compatibility changes between versions. -->
+
+  <change>
+    <command>GET_INFO</command>
+    <summary>Attribute "type" can not be "ALLINFO" anymore</summary>
+    <description>
+      <p>
+        The type "ALLINFO" is not supported aymore.
+      </p>
+    </description>
+    <version>20.04</version>
+  </change>
 
   <change>
     <command>GET_REPORTS</command>
