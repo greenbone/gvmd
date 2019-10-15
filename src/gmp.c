@@ -10044,7 +10044,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
     {
       if (has_cert_bunds)
         {
-          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid);
           while (next (&cert_refs_iterator))
             {
               if (first && *first)
@@ -10054,14 +10054,14 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
                 }
               g_string_append_printf
                (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
-                get_iterator_name (&cert_refs_iterator));
+                nvt_cert_bund_adv_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
         }
 
       if (has_dfn_certs)
         {
-          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid);
           while (next (&cert_refs_iterator))
             {
               if (*first)
@@ -10071,7 +10071,7 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
                 }
               g_string_append_printf
                (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>",
-                get_iterator_name (&cert_refs_iterator));
+                nvt_dfn_cert_adv_iterator_name (&cert_refs_iterator));
             }
           cleanup_iterator (&cert_refs_iterator);
         }
