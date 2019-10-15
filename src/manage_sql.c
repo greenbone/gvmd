@@ -60611,6 +60611,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE results SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
+      sql ("UPDATE results_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
 
       sql ("UPDATE overrides SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
@@ -60747,6 +60749,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   /* Results. */
   sql ("DELETE FROM results"
+       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM results_trash"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
 
