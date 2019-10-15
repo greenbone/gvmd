@@ -29614,10 +29614,23 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           get_data_reset (all_results_get);
           free (all_results_get);
         }
-      report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
-                        &false_positives, NULL, get, NULL);
-      filtered_result_count = debugs + holes + infos + logs + warnings
-                              + false_positives;
+
+      if (delta == 0 && ignore_pagination && get->details)
+        {
+          /* We're getting all the filtered results, so we can count them as we
+           * print them, to save time. */
+
+          count_filtered = 1;
+          debugs = holes = infos = logs = warnings = false_positives = 0;
+          filtered_result_count = 0;
+        }
+      else
+        {
+          report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+                            &false_positives, NULL, get, NULL);
+          filtered_result_count = debugs + holes + infos + logs + warnings
+                                  + false_positives;
+        }
       report_scan_run_status (report, &run_status);
     }
 
@@ -30228,6 +30241,18 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
            (strchr (levels, 'f') ? orig_f_false_positives : 0));
   else
     {
+      if (count_filtered)
+        {
+          debugs = f_debugs;
+          holes = f_holes;
+          infos = f_infos;
+          logs = f_logs;
+          warnings = f_warnings;
+          false_positives = f_false_positives;
+          filtered_result_count = debugs + holes + infos + logs + warnings
+                                  + false_positives;
+        }
+
       PRINT (out,
              "<result_count>"
              "%i"
