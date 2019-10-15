@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [20.04] (unreleased)
+## [20.4] (unreleased)
 
 ### Added
 - Add setting "BPM Dashboard Configuration" [#764](https://github.com/greenbone/gvmd/pull/764)
@@ -12,17 +12,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 ### Fixed
-- Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
 
 ### Removed
 - Remove suport for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
 
-[20.04]: https://github.com/greenbone/gvmd/compare/gvmd-9.0...master
+[20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 
-## [9.0.0] (unreleased)
+## [9.0.0] (2019-10-11)
 
 ### Added
-- Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673) [#674](https://github.com/greenbone/gvmd/pull/674) [#689](https://github.com/greenbone/gvmd/pull/689) [#695](https://github.com/greenbone/gvmd/pull/695) [#703](https://github.com/greenbone/gvmd/pull/703) [#728](https://github.com/greenbone/gvmd/pull/728) [#732](https://github.com/greenbone/gvmd/pull/732) [#750](https://github.com/greenbone/gvmd/pull/750) [#752](https://github.com/greenbone/gvmd/pull/752) [#775](https://github.com/greenbone/gvmd/pull/774)
+- Added TLS certificates as a new resource type [#585](https://github.com/greenbone/gvmd/pull/585) [#663](https://github.com/greenbone/gvmd/pull/663) [#673](https://github.com/greenbone/gvmd/pull/673) [#674](https://github.com/greenbone/gvmd/pull/674) [#689](https://github.com/greenbone/gvmd/pull/689) [#695](https://github.com/greenbone/gvmd/pull/695) [#703](https://github.com/greenbone/gvmd/pull/703) [#728](https://github.com/greenbone/gvmd/pull/728) [#732](https://github.com/greenbone/gvmd/pull/732) [#750](https://github.com/greenbone/gvmd/pull/750) [#752](https://github.com/greenbone/gvmd/pull/752) [#775](https://github.com/greenbone/gvmd/pull/775) [#796](https://github.com/greenbone/gvmd/pull/796)
 - Update NVTs via OSP [#392](https://github.com/greenbone/gvmd/pull/392) [#609](https://github.com/greenbone/gvmd/pull/609) [#626](https://github.com/greenbone/gvmd/pull/626) [#753](https://github.com/greenbone/gvmd/pull/753) [#766](https://github.com/greenbone/gvmd/pull/766)
 - Handle addition of ID to NVT preferences. [#413](https://github.com/greenbone/gvmd/pull/413) [#744](https://github.com/greenbone/gvmd/pull/744)
 - Add setting 'OMP Slave Check Period' [#491](https://github.com/greenbone/gvmd/pull/491)
@@ -79,6 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix issues importing results or getting them from slaves if they contain "%s" [#723](https://github.com/greenbone/gvmd/pull/723)
 - Fix sorting by numeric filter columns [#751](https://github.com/greenbone/gvmd/pull/751)
 - Fix array index error when modifying roles and groups [#762](https://github.com/greenbone/gvmd/pull/762)
+- Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
 - Make get_settings return only one setting when setting_id is given [#780](https://github.com/greenbone/gvmd/pull/780)
 - Fix percent sign escaping in report_port_count [#783](https://github.com/greenbone/gvmd/pull/783)
 - If the nvt preference is "file" type, encode it into Base64 format [#784](https://github.com/greenbone/gvmd/pull/784)
@@ -97,9 +97,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove helper functions and other code for handling OTP [#705](https://github.com/greenbone/gvmd/pull/705) [#709](https://github.com/greenbone/gvmd/pull/709) [#713](https://github.com/greenbone/gvmd/pull/713) [#735](https://github.com/greenbone/gvmd/pull/735) [#748](https://github.com/greenbone/gvmd/pull/748) [#749](https://github.com/greenbone/gvmd/pull/749)
 - Remove stray prototype nvt_iterator_copyright [#721](https://github.com/greenbone/gvmd/pull/721)
 
-[9.0.0]: https://github.com/greenbone/gvmd/compare/gvmd-8.0...gvmd-9.0
+[9.0.0]: https://github.com/greenbone/gvmd/compare/v8.0.1...v9.0.0
 
-## [8.0.1] (unreleased)
+## [8.0.1] (2019-07-17)
 
 ### Added
 - Special characters in credential login names are allowed. [#475](https://github.com/greenbone/gvmd/pull/475)
@@ -149,7 +149,7 @@ long schedule XML, not just if only the schedules are requested. [#500](https://
 - Remove -m SMB3 for smbclient in SMB alert, which allows changing the maximum protocol version via the smbclient config instead of forcing a particular one in the alert script. [#505](https://github.com/greenbone/gvmd/pull/505)
 - Remove "slave" from valid_db_resource_type. [#558](https://github.com/greenbone/gvmd/pull/558)
 
-[8.0.1]: https://github.com/greenbone/gvmd/compare/v8.0.0...gvmd-8.0
+[8.0.1]: https://github.com/greenbone/gvmd/compare/v8.0.0...v8.0.1
 
 ## [8.0.0] (2019-04-05)
 
