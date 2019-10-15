@@ -23,7 +23,7 @@ message ("-- Configuring Greenbone Vulnerability Manager...")
 # VERSION: Set patch version for stable releases, e.g. "9.0.0",
 #          unset patch version for prereleases, e.g. "9.0"
 project (gvm
-         VERSION 9.0.0
+         VERSION 9.0.1
          LANGUAGES C)
 
 if (POLICY CMP0005)
