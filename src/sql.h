@@ -141,7 +141,7 @@ void
 init_iterator (iterator_t *, const char *, ...);
 
 void
-iterator_rewind (iterator_t* iterator);
+iterator_rewind (iterator_t *iterator);
 
 double
 iterator_double (iterator_t *, int);
