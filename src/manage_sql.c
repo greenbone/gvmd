@@ -29468,6 +29468,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (report)
     {
+      /* Get total counts of full results. */
+
       if (delta == 0)
         {
           int total_debugs, total_holes, total_infos, total_logs;
@@ -29486,21 +29488,28 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           free (all_results_get);
         }
 
+      /* Get total counts of filtered results. */
+
       if (count_filtered)
         {
           /* We're getting all the filtered results, so we can count them as we
            * print them, to save time. */
 
-          debugs = holes = infos = logs = warnings = false_positives = 0;
           filtered_result_count = 0;
         }
       else
         {
+          /* Beware, we're using the full variables temporarily here, but
+           * report_counts_id counts the filtered results. */
           report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
                             &false_positives, NULL, get, NULL);
+
           filtered_result_count = debugs + holes + infos + logs + warnings
                                   + false_positives;
         }
+
+      /* Get report run status. */
+
       report_scan_run_status (report, &run_status);
     }
 
@@ -29896,6 +29905,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                              &warnings, &false_positives, &severity,
                              get, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
                              NULL);
+
       f_debugs = f_holes = f_infos = f_logs = f_warnings = 0;
       f_false_positives = f_severity = 0;
     }
@@ -30115,16 +30125,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     {
       if (count_filtered)
-        {
-          debugs = f_debugs;
-          holes = f_holes;
-          infos = f_infos;
-          logs = f_logs;
-          warnings = f_warnings;
-          false_positives = f_false_positives;
-          filtered_result_count = debugs + holes + infos + logs + warnings
-                                  + false_positives;
-        }
+        filtered_result_count = f_debugs + f_holes + f_infos + f_logs
+                                + f_warnings + false_positives;
 
       PRINT (out,
              "<result_count>"
