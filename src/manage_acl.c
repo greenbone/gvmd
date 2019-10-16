@@ -41,6 +41,53 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
+ * @brief Get commands that the current user may run.
+ *
+ * @param[in]  disabled_commands  All disabled commands.
+ *
+ * @return Freshly allocated list of commands.  Free with g_free.
+ */
+command_t *
+acl_commands (gchar **disabled_commands)
+{
+  command_t *all, *commands;
+  int index, length;
+
+  /* Count maximum number of commands. */
+
+  length = 1;
+  all = gmp_commands;
+  while ((*all).name)
+    {
+      length++;
+      all++;
+    }
+
+  /* Fill return array with allowed commands. */
+
+  commands = g_malloc0 (length * sizeof (*commands));
+  all = gmp_commands;
+  index = 0;
+  while ((*all).name)
+    {
+      if ((disabled_commands == NULL
+           || g_strv_contains ((const char * const *) disabled_commands,
+                               (*all).name)
+              == 0)
+          && ((current_credentials.uuid == NULL)
+              || acl_user_may ((*all).name)))
+        {
+          commands[index].name = (*all).name;
+          commands[index].summary = (*all).summary;
+          index++;
+        }
+      all++;
+    }
+
+  return commands;
+}
+
+/**
  * @brief Test whether a user may perform an operation.
  *
  * @param[in]  operation  Name of operation.
