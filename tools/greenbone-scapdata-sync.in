@@ -127,7 +127,7 @@ else
   RESTRICTED=0
 
   if [ -z "$FEED_NAME" ] ; then
-    FEED_NAME="Greenbone Community CERT Feed"
+    FEED_NAME="Greenbone Community SCAP Feed"
   fi
 
   if [ -z "$FEED_VENDOR" ] ; then
