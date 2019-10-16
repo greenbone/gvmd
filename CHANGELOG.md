@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 ### Changed
+- Update SCAP and CERT feed info in sync scripts [#809](https://github.com/greenbone/gvmd/pull/809)
 
 ### Fixed
 - Consider results_trash when deleting users [#799](https://github.com/greenbone/gvmd/pull/799)
