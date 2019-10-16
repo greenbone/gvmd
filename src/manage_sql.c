@@ -44204,11 +44204,27 @@ manage_get_scanners (GSList *log_config, const gchar *database)
   if (ret)
     return ret;
 
-  init_iterator (&scanners, "SELECT uuid, name FROM scanners;");
-  while (next (&scanners))
-    printf ("%s  %s\n", iterator_string (&scanners, 0),
-            iterator_string (&scanners, 1));
+  init_iterator (&scanners,
+                 "SELECT uuid, type, host, port, name FROM scanners;");
 
+  while (next (&scanners))
+    {
+      const char *scanner_id, *scanner_type, *scanner_host, *scanner_port;
+      const char *scanner_name;
+
+      scanner_id = iterator_string (&scanners, 0);
+      scanner_type = iterator_string (&scanners, 1);
+      scanner_host = iterator_string (&scanners, 2);
+      scanner_port = iterator_string (&scanners, 3);
+      scanner_name = iterator_string (&scanners, 4);
+
+      printf ("%s  %s  %s  %s  %s\n",
+              scanner_id,
+              scanner_type,
+              scanner_host,
+              scanner_port,
+              scanner_name);
+    }
   cleanup_iterator (&scanners);
 
   manage_option_cleanup ();
