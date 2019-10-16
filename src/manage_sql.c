@@ -15343,6 +15343,9 @@ init_manage_process (const gchar *database)
       abort ();
     }
 
+  /* Ensure the user session variable always exists. */
+  sql ("SET SESSION \"gvmd.user.uuid\" = '';");
+
   /* Attach the SCAP and CERT databases. */
   manage_attach_databases ();
 
@@ -23130,10 +23133,11 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
   class = sql_string ("SELECT value FROM settings"
                       " WHERE name = 'Severity Class'"
                       " AND ((owner IS NULL)"
-                      "      OR (owner = (SELECT id FROM users"
-                      "                   WHERE users.uuid"
-                      "                         = (SELECT uuid"
-                      "                            FROM current_credentials))))"
+                      "      OR (owner"
+                      "          = (SELECT id FROM users"
+                      "             WHERE users.uuid"
+                      "                   = (SELECT current_setting"
+                      "                              ('gvmd.user.uuid')))))"
                       " ORDER BY coalesce (owner, 0) DESC LIMIT 1;");
 
   /* High. */
@@ -23484,8 +23488,10 @@ where_qod (int min_qod)
       "                  WHERE result_new_severities.result = results.id"     \
       "                  AND result_new_severities.user"                      \
       "                      = (SELECT users.id"                              \
-      "                         FROM current_credentials, users"              \
-      "                         WHERE current_credentials.uuid = users.uuid)" \
+      "                         FROM users"                                   \
+      "                         WHERE users.uuid"                             \
+      "                               = (SELECT current_setting"              \
+      "                                          ('gvmd.user.uuid')))"        \
       "                  AND result_new_severities.override = opts.override"  \
       "                  AND result_new_severities.dynamic = opts.dynamic"    \
       "                  LIMIT 1))",                                          \
@@ -23507,8 +23513,9 @@ where_qod (int min_qod)
       " WHERE result_new_severities.result = results.id"                      \
       " AND result_new_severities.user"                                       \
       "     = (SELECT users.id"                                               \
-      "        FROM current_credentials, users"                               \
-      "        WHERE current_credentials.uuid = users.uuid)"                  \
+      "        FROM users"                                                    \
+      "        WHERE users.uuid"                                              \
+      "              = (SELECT current_setting ('gvmd.user.uuid')))"          \
       " AND result_new_severities.override = opts.override"                   \
       " AND result_new_severities.dynamic = opts.dynamic"                     \
       " LIMIT 1)",                                                            \
@@ -23809,8 +23816,10 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                      "   WHERE result_new_severities.result = results.id"
                      "   AND result_new_severities.user"
                      "       = (SELECT users.id"
-                     "          FROM current_credentials, users"
-                     "          WHERE current_credentials.uuid = users.uuid)"
+                     "          FROM users"
+                     "          WHERE users.uuid"
+                     "                = (SELECT current_setting"
+                     "                           ('gvmd.user.uuid')))"
                      "   AND result_new_severities.override = %i"
                      "   AND result_new_severities.dynamic = %i"
                      "   LIMIT 1))",
@@ -61986,9 +61995,11 @@ user_resources_in_use (user_t user,
      "    AND (opts.host IS NULL OR results.host = opts.host)"               \
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
      "    AND (SELECT has_permission FROM permissions_get_tasks"             \
-     "         WHERE \"user\" = (SELECT id FROM users"                       \
-     "                           WHERE uuid ="                               \
-     "                             (SELECT uuid FROM current_credentials))"  \
+     "         WHERE \"user\""                                               \
+     "                = (SELECT id FROM users"                               \
+     "                   WHERE uuid"                                         \
+     "                         = (SELECT current_setting"                    \
+     "                                    ('gvmd.user.uuid')))"              \
      "           AND task = results.task)"
 
 /**
