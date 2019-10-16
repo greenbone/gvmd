@@ -59177,8 +59177,6 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("CERT-Bund Filter");
       else if (strcmp (uuid, "312350ed-bc06-44f3-8b3f-ab9eb828b80b") == 0)
         setting_name = g_strdup ("DFN-CERT Filter");
-      else if (strcmp (uuid, "feefe56b-e2da-4913-81cc-1a6ae3b36e64") == 0)
-        setting_name = g_strdup ("All SecInfo Filter");
       else if (strcmp (uuid, "32b3d606-461b-4770-b3e1-b9ea3cf0f84c") == 0)
         setting_name = g_strdup ("Notes Filter");
       else if (strcmp (uuid, "956d13bd-3baa-4404-a138-5e7eb8f9630e") == 0)
