@@ -20668,6 +20668,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         else if (help_data->type && (strcmp (help_data->type, "brief") == 0))
           {
             command_t *commands;
+            int index;
+
             SEND_TO_CLIENT_OR_FAIL ("<help_response"
                                     " status=\"" STATUS_OK "\""
                                     " status_text=\"" STATUS_OK_TEXT "\">\n"
@@ -20675,20 +20677,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " format=\"XML\""
                                     " extension=\"xml\""
                                     " content_type=\"text/xml\">");
-            commands = gmp_commands;
-            while ((*commands).name)
-              {
-                if ((command_disabled (gmp_parser, (*commands).name) == 0)
-                    && ((current_credentials.uuid == NULL)
-                        || acl_user_may ((*commands).name)))
-                  SENDF_TO_CLIENT_OR_FAIL ("<command>"
-                                           "<name>%s</name>"
-                                           "<summary>%s</summary>"
-                                           "</command>",
-                                           (*commands).name,
-                                           (*commands).summary);
-                commands++;
-              }
+            commands = acl_commands (gmp_parser->disabled_commands);
+            for (index = 0; commands[index].name; index++)
+              SENDF_TO_CLIENT_OR_FAIL ("<command>"
+                                       "<name>%s</name>"
+                                       "<summary>%s</summary>"
+                                       "</command>",
+                                       commands[index].name,
+                                       commands[index].summary);
+            g_free (commands);
             SEND_TO_CLIENT_OR_FAIL ("</schema>"
                                     "</help_response>");
           }

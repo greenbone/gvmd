@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add setting "BPM Dashboard Configuration" [#764](https://github.com/greenbone/gvmd/pull/764)
 - Faster SecInfo REF retrieval for GET_REPORTS [#793](https://github.com/greenbone/gvmd/pull/793)
 - Improve performance of GET_REPORTS [#801](https://github.com/greenbone/gvmd/pull/801)
+- Speed up the HELP 'brief' case [#807](https://github.com/greenbone/gvmd/pull/807)
 
 ### Changed
 
