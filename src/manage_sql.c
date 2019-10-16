@@ -23490,9 +23490,7 @@ where_qod (int min_qod)
       "                  AND result_new_severities.user"                      \
       "                      = (SELECT users.id"                              \
       "                         FROM users"                                   \
-      "                         WHERE users.uuid"                             \
-      "                               = (SELECT current_setting"              \
-      "                                          ('gvmd.user.uuid')))"        \
+      "                         WHERE users.uuid = opts.user_uuid)"           \
       "                  AND result_new_severities.override = opts.override"  \
       "                  AND result_new_severities.dynamic = opts.dynamic"    \
       "                  LIMIT 1))",                                          \
@@ -23515,8 +23513,7 @@ where_qod (int min_qod)
       " AND result_new_severities.user"                                       \
       "     = (SELECT users.id"                                               \
       "        FROM users"                                                    \
-      "        WHERE users.uuid"                                              \
-      "              = (SELECT current_setting ('gvmd.user.uuid')))"          \
+      "        WHERE users.uuid = opts.user_uuid)"                            \
       " AND result_new_severities.override = opts.override"                   \
       " AND result_new_severities.dynamic = opts.dynamic"                     \
       " LIMIT 1)",                                                            \
@@ -23642,13 +23639,15 @@ where_qod (int min_qod)
 static gchar*
 result_iterator_opts_table (int autofp, int override, int dynamic)
 {
-  return g_strdup_printf (", (SELECT"
-                          "   %d AS autofp,"
-                          "   %d AS override,"
-                          "   %d AS dynamic) AS opts",
-                          autofp,
-                          override,
-                          dynamic);
+  return g_strdup_printf
+          (", (SELECT"
+           "   (SELECT current_setting ('gvmd.user.uuid')) AS user_uuid,"
+           "   %d AS autofp,"
+           "   %d AS override,"
+           "   %d AS dynamic) AS opts",
+           autofp,
+           override,
+           dynamic);
 }
 
 /**
@@ -23818,9 +23817,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                      "   AND result_new_severities.user"
                      "       = (SELECT users.id"
                      "          FROM users"
-                     "          WHERE users.uuid"
-                     "                = (SELECT current_setting"
-                     "                           ('gvmd.user.uuid')))"
+                     "          WHERE users.uuid = opts.user_uuid)"
                      "   AND result_new_severities.override = %i"
                      "   AND result_new_severities.dynamic = %i"
                      "   LIMIT 1))",
