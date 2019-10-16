@@ -51,7 +51,7 @@ command_t *
 acl_commands (gchar **disabled_commands)
 {
   command_t *all, *commands;
-  int index, length;
+  int index, length, special_user;
 
   /* Count maximum number of commands. */
 
@@ -65,6 +65,8 @@ acl_commands (gchar **disabled_commands)
 
   /* Fill return array with allowed commands. */
 
+  special_user = (current_credentials.uuid == NULL);
+
   commands = g_malloc0 (length * sizeof (*commands));
   all = gmp_commands;
   index = 0;
@@ -74,7 +76,7 @@ acl_commands (gchar **disabled_commands)
            || g_strv_contains ((const char * const *) disabled_commands,
                                (*all).name)
               == 0)
-          && ((current_credentials.uuid == NULL)
+          && (special_user
               || acl_user_may ((*all).name)))
         {
           commands[index].name = (*all).name;
