@@ -27901,6 +27901,7 @@ print_report_errors_xml (report_t report, FILE *stream)
  * @param[in]  sort_order       Whether to sort ascending or descending.
  * @param[in]  sort_field       Field to sort on.
  * @param[out] host_ports       Hash table for counting ports per host.
+ * @param[in,out] results       Result iterator.  For caller to reuse.
  *
  * @return 0 on success, -1 error.
  */
@@ -27908,24 +27909,23 @@ static int
 print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
                        int first_result, int max_results,
                        int sort_order, const char *sort_field,
-                       GHashTable *host_ports)
+                       GHashTable *host_ports, iterator_t *results)
 {
-  iterator_t results;
   result_buffer_t *last_item;
   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
-  init_result_get_iterator (&results, get, report, NULL, NULL);
+  init_result_get_iterator (results, get, report, NULL, NULL);
 
   /* Buffer the results, removing duplicates. */
 
   last_item = NULL;
-  while (next (&results))
+  while (next (results))
     {
-      const char *port = result_iterator_port (&results);
-      const char *host = result_iterator_host (&results);
+      const char *port = result_iterator_port (results);
+      const char *host = result_iterator_host (results);
       double cvss_double;
 
-      cvss_double = result_iterator_severity_double (&results);
+      cvss_double = result_iterator_severity_double (results);
 
       if (last_item
           && strcmp (port, last_item->port) == 0
@@ -27934,14 +27934,14 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
         {
           last_item->severity_double = cvss_double;
           g_free (last_item->severity);
-          last_item->severity = g_strdup (result_iterator_severity (&results));
+          last_item->severity = g_strdup (result_iterator_severity (results));
         }
       else
         {
           const char *cvss;
           result_buffer_t *item;
 
-          cvss = result_iterator_severity (&results);
+          cvss = result_iterator_severity (results);
           if (cvss == NULL)
             {
               cvss_double = 0.0;
@@ -28045,7 +28045,6 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
     g_array_free (ports, TRUE);
   }
   PRINT (out, "</ports>");
-  cleanup_iterator (&results);
 
   return 0;
 }
@@ -29240,12 +29239,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int total_result_count, filtered_result_count;
   array_t *result_hosts;
+  int reuse_result_iterator;
   iterator_t results, delta_results;
   int debugs, holes, infos, logs, warnings, false_positives;
   int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
-  int search_phrase_exact, apply_overrides;
+  int search_phrase_exact, apply_overrides, count_filtered;
   double severity, f_severity;
   gchar *tz, *zone;
   char *old_tz_override;
@@ -29483,8 +29483,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</delta>");
     }
 
+  count_filtered = (delta == 0 && ignore_pagination && get->details);
+
   if (report)
     {
+      /* Get total counts of full results. */
+
       if (delta == 0)
         {
           int total_debugs, total_holes, total_infos, total_logs;
@@ -29502,10 +29506,29 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           get_data_reset (all_results_get);
           free (all_results_get);
         }
-      report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
-                        &false_positives, NULL, get, NULL);
-      filtered_result_count = debugs + holes + infos + logs + warnings
-                              + false_positives;
+
+      /* Get total counts of filtered results. */
+
+      if (count_filtered)
+        {
+          /* We're getting all the filtered results, so we can count them as we
+           * print them, to save time. */
+
+          filtered_result_count = 0;
+        }
+      else
+        {
+          /* Beware, we're using the full variables temporarily here, but
+           * report_counts_id counts the filtered results. */
+          report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+                            &false_positives, NULL, get, NULL);
+
+          filtered_result_count = debugs + holes + infos + logs + warnings
+                                  + false_positives;
+        }
+
+      /* Get report run status. */
+
       report_scan_run_status (report, &run_status);
     }
 
@@ -29878,10 +29901,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
                                         g_free, NULL);
 
+  reuse_result_iterator = 0;
   if (get->details && (delta == 0))
     {
+      reuse_result_iterator = 1;
       if (print_report_port_xml (report, out, get, first_result, max_results,
-                                 sort_order, sort_field, f_host_ports))
+                                 sort_order, sort_field, f_host_ports, &results))
         {
           g_free (term);
           tz_revert (zone, tz, old_tz_override);
@@ -29892,11 +29917,25 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Prepare result counts. */
 
-  report_counts_id_full (report, &debugs, &holes, &infos, &logs,
-                         &warnings, &false_positives, &severity,
-                         get, NULL,
-                         &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
-                         &f_false_positives, &f_severity);
+  if (count_filtered)
+    {
+      /* We're getting all the filtered results, so we can count them as we
+       * print them, to save time. */
+
+      report_counts_id_full (report, &debugs, &holes, &infos, &logs,
+                             &warnings, &false_positives, &severity,
+                             get, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                             NULL);
+
+      f_debugs = f_holes = f_infos = f_logs = f_warnings = 0;
+      f_false_positives = f_severity = 0;
+    }
+  else
+    report_counts_id_full (report, &debugs, &holes, &infos, &logs,
+                           &warnings, &false_positives, &severity,
+                           get, NULL,
+                           &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
+                           &f_false_positives, &f_severity);
 
   /* Results. */
 
@@ -29918,11 +29957,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     {
       int res;
       g_free (term);
-      res = init_result_get_iterator (&results, get, report, NULL, NULL);
-      if (res)
+      if (reuse_result_iterator)
+        iterator_rewind (&results);
+      else
         {
-          g_hash_table_destroy (f_host_ports);
-          return -1;
+          res = init_result_get_iterator (&results, get, report, NULL, NULL);
+          if (res)
+            {
+              g_hash_table_destroy (f_host_ports);
+              return -1;
+            }
         }
     }
   else
@@ -30000,6 +30044,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           const char* level;
           GHashTable *f_host_result_counts;
           GString *buffer = g_string_new ("");
+          double result_severity;
 
           buffer_results_xml (buffer,
                               &results,
@@ -30022,17 +30067,41 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             array_add_new_string (result_hosts,
                                   result_iterator_host (&results));
 
+          result_severity = result_iterator_severity_double (&results);
+          if (result_severity > f_severity)
+            f_severity = result_severity;
+
           level = result_iterator_level (&results);
           if (strcasecmp (level, "log") == 0)
-            f_host_result_counts = f_host_logs;
+            {
+              f_host_result_counts = f_host_logs;
+              if (count_filtered)
+                f_logs++;
+            }
           else if (strcasecmp (level, "high") == 0)
-            f_host_result_counts = f_host_holes;
+            {
+              f_host_result_counts = f_host_holes;
+              if (count_filtered)
+                f_holes++;
+            }
           else if (strcasecmp (level, "medium") == 0)
-            f_host_result_counts = f_host_warnings;
+            {
+              f_host_result_counts = f_host_warnings;
+              if (count_filtered)
+                f_warnings++;
+            }
           else if (strcasecmp (level, "low") == 0)
-            f_host_result_counts = f_host_infos;
+            {
+              f_host_result_counts = f_host_infos;
+              if (count_filtered)
+                f_infos++;
+            }
           else if (strcasecmp (level, "false positive") == 0)
-            f_host_result_counts = f_host_false_positives;
+            {
+              f_host_result_counts = f_host_false_positives;
+              if (count_filtered)
+                f_false_positives++;
+            }
           else
             f_host_result_counts = NULL;
 
@@ -30081,6 +30150,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
            (strchr (levels, 'f') ? orig_f_false_positives : 0));
   else
     {
+      if (count_filtered)
+        filtered_result_count = f_debugs + f_holes + f_infos + f_logs
+                                + f_warnings + false_positives;
+
       PRINT (out,
              "<result_count>"
              "%i"
