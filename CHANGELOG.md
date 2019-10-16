@@ -8,12 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Add setting "BPM Dashboard Configuration" [#764](https://github.com/greenbone/gvmd/pull/764)
+- Faster SecInfo REF retrieval for GET_REPORTS [#793](https://github.com/greenbone/gvmd/pull/793)
+- Improve performance of GET_REPORTS [#801](https://github.com/greenbone/gvmd/pull/801)
 
 ### Changed
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
 - Faster counting in GET_REPORTS when ignoring pagination [#795](https://github.com/greenbone/gvmd/pull/795)
+- Improve performance of GET_REPORTS [#797](https://github.com/greenbone/gvmd/pull/797)
+- Consider results_trash when deleting users [#800](https://github.com/greenbone/gvmd/pull/800)
 
 ### Removed
 - Remove suport for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
