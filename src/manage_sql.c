@@ -15343,8 +15343,9 @@ init_manage_process (const gchar *database)
       abort ();
     }
 
-  /* Ensure the user session variable always exists. */
+  /* Ensure the user session variables always exists. */
   sql ("SET SESSION \"gvmd.user.uuid\" = '';");
+  sql ("SET SESSION \"gvmd.tz_override\" = '';");
 
   /* Attach the SCAP and CERT databases. */
   manage_attach_databases ();
@@ -28306,7 +28307,7 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
         unsetenv ("TZ");
 
       quoted_old_tz_override = sql_insert (old_tz_override);
-      sql ("UPDATE current_credentials SET tz_override = %s",
+      sql ("SET SESSION \"gvmd.tz_override\" = %s;",
            quoted_old_tz_override);
       g_free (quoted_old_tz_override);
 
@@ -29413,11 +29414,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           return -1;
         }
 
-      old_tz_override = sql_string ("SELECT tz_override"
-                                    " FROM current_credentials;");
+      old_tz_override = sql_string ("SELECT current_setting"
+                                    "        ('gvmd.tz_override');");
 
       quoted_zone = sql_insert (zone);
-      sql ("UPDATE current_credentials SET tz_override = %s", quoted_zone);
+      sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
       g_free (quoted_zone);
 
       tzset ();

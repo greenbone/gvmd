@@ -51,6 +51,7 @@ void
 manage_session_init (const char *uuid)
 {
   sql ("SET SESSION \"gvmd.user.uuid\" = '%s';", uuid);
+  sql ("SET SESSION \"gvmd.tz_override\" = '';");
 
   sql ("CREATE TEMPORARY TABLE IF NOT EXISTS current_credentials"
        " (id SERIAL PRIMARY KEY,"
@@ -959,7 +960,7 @@ manage_create_sql_functions ()
        "   user_offset interval;"
        " BEGIN"
        "   user_zone :="
-       "     coalesce ((SELECT tz_override FROM current_credentials),"
+       "     coalesce ((SELECT current_setting ('gvmd.tz_override')),"
        "               (SELECT timezone FROM users"
        "                WHERE uuid"
        "                      = (SELECT current_setting ('gvmd.user.uuid'))));"
