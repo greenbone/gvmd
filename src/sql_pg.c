@@ -680,6 +680,20 @@ iterator_null (iterator_t* iterator, int col)
   return PQgetisnull (iterator->stmt->result, 0, col);
 }
 
+/**
+ * @brief Rewind an iterator to the beginning.
+ *
+ * This lets the caller iterate over the data again.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+iterator_rewind (iterator_t* iterator)
+{
+  iterator->done = FALSE;
+  iterator->stmt->current_row = -1;
+}
+
 
 /* Prepared statements. */
 
