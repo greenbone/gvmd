@@ -41,6 +41,39 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
+ * @brief Test whether the current user may perform an operation.
+ *
+ * Does not check if the user is special.
+ *
+ * @param[in]  operation  Name of operation.
+ *
+ * @return 1 if user has permission, else 0.
+ */
+static int
+user_may_internal (const char *operation)
+{
+  int ret;
+  gchar *quoted_operation;
+
+  assert (operation);
+
+  quoted_operation = sql_quote (operation);
+
+  ret = sql_int (ACL_USER_MAY ("0"),
+                 current_credentials.uuid,
+                 current_credentials.uuid,
+                 current_credentials.uuid,
+                 quoted_operation,
+                 quoted_operation,
+                 quoted_operation,
+                 quoted_operation);
+
+  g_free (quoted_operation);
+
+  return ret;
+}
+
+/**
  * @brief Get commands that the current user may run.
  *
  * @param[in]  disabled_commands  All disabled commands.
@@ -82,7 +115,7 @@ acl_commands (gchar **disabled_commands)
                                (*all).name)
               == 0)
           && (special_user
-              || acl_user_may ((*all).name)))
+              || user_may_internal ((*all).name)))
         {
           commands[index].name = (*all).name;
           commands[index].summary = (*all).summary;
@@ -104,11 +137,6 @@ acl_commands (gchar **disabled_commands)
 int
 acl_user_may (const char *operation)
 {
-  int ret;
-  gchar *quoted_operation;
-
-  assert (operation);
-
   if (strlen (current_credentials.uuid) == 0)
     /* Allow the dummy user in init_manage to do anything. */
     return 1;
@@ -117,20 +145,7 @@ acl_user_may (const char *operation)
                current_credentials.uuid))
     return 1;
 
-  quoted_operation = sql_quote (operation);
-
-  ret = sql_int (ACL_USER_MAY ("0"),
-                 current_credentials.uuid,
-                 current_credentials.uuid,
-                 current_credentials.uuid,
-                 quoted_operation,
-                 quoted_operation,
-                 quoted_operation,
-                 quoted_operation);
-
-  g_free (quoted_operation);
-
-  return ret;
+  return user_may_internal (operation);
 }
 
 /**
