@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix escaping that was preventing start_task from running [#758](https://github.com/greenbone/gvmd/pull/758)
 - Fix array index error when modifying roles and groups [#763](https://github.com/greenbone/gvmd/pull/763)
 - Fix percent sign escaping in report_port_count [#781](https://github.com/greenbone/gvmd/pull/781)
+- Consider results_trash when deleting users [#804](https://github.com/greenbone/gvmd/pull/804)
 
 ### Removed
 
