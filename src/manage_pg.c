@@ -52,14 +52,6 @@ manage_session_init (const char *uuid)
 {
   sql ("SET SESSION \"gvmd.user.uuid\" = '%s';", uuid);
   sql ("SET SESSION \"gvmd.tz_override\" = '';");
-
-  sql ("CREATE TEMPORARY TABLE IF NOT EXISTS current_credentials"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  tz_override text);");
-  sql ("DELETE FROM current_credentials;");
-  if (uuid)
-    sql ("INSERT INTO current_credentials (uuid) VALUES ('%s');", uuid);
 }
 
 /**
@@ -2052,12 +2044,6 @@ void
 create_tables ()
 {
   gchar *owned_clause;
-
-  sql ("DROP TABLE IF EXISTS current_credentials");
-  sql ("CREATE TEMPORARY TABLE IF NOT EXISTS current_credentials"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  tz_override text);");
 
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id SERIAL PRIMARY KEY,"
