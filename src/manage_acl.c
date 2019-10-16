@@ -65,7 +65,12 @@ acl_commands (gchar **disabled_commands)
 
   /* Fill return array with allowed commands. */
 
-  special_user = (current_credentials.uuid == NULL);
+  special_user = ((current_credentials.uuid == NULL)
+                  || (strlen (current_credentials.uuid) == 0));
+
+  if (special_user == 0)
+    special_user = sql_int ("SELECT user_can_everything ('%s');",
+                            current_credentials.uuid);
 
   commands = g_malloc0 (length * sizeof (*commands));
   all = gmp_commands;
