@@ -285,6 +285,14 @@
       
     
     
+      <p><b>--scanner-credential=<em>SCANNER-CREDENTIAL</em></b></p>
+      
+        <p>Scanner credential for --create-scanner and --modify-scanner.</p>
+        <p>Can be blank to unset or a credential UUID. If omitted, a new
+          credential can be created instead.</p>
+      
+    
+    
       <p><b>--scanner-host=<em>SCANNER-HOST</em></b></p>
       
         <p>Scanner host for --create-scanner and --modify-scanner.</p>
@@ -293,13 +301,15 @@
     
       <p><b>--scanner-key-priv=<em>SCANNER-KEY-PRIVATE</em></b></p>
       
-        <p>Scanner private key path for --[create|modify]-scanner.</p>
+        <p>Scanner private key path for --[create|modify]-scanner
+          if --scanner-credential is not given.</p>
       
     
     
       <p><b>--scanner-key-pub=<em>SCANNER-KEY-PUBLIC</em></b></p>
       
-        <p>Scanner Certificate path for --[create|modify]-scanner.</p>
+        <p>Scanner Certificate path for --[create|modify]-scanner
+          if --scanner-credential is not given.</p>
       
     
     
