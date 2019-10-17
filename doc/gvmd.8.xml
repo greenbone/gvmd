@@ -302,6 +302,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </optdesc>
     </option>
     <option>
+      <p><opt>--scanner-credential=<arg>SCANNER-CREDENTIAL</arg></opt></p>
+      <optdesc>
+        <p>Scanner credential for --create-scanner and --modify-scanner.</p>
+        <p>Can be blank to unset or a credential UUID. If omitted, a new
+          credential can be created instead.</p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--scanner-host=<arg>SCANNER-HOST</arg></opt></p>
       <optdesc>
         <p>Scanner host for --create-scanner and --modify-scanner.</p>
@@ -310,13 +318,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <option>
       <p><opt>--scanner-key-priv=<arg>SCANNER-KEY-PRIVATE</arg></opt></p>
       <optdesc>
-        <p>Scanner private key path for --[create|modify]-scanner.</p>
+        <p>Scanner private key path for --[create|modify]-scanner
+          if --scanner-credential is not given.</p>
       </optdesc>
     </option>
     <option>
       <p><opt>--scanner-key-pub=<arg>SCANNER-KEY-PUBLIC</arg></opt></p>
       <optdesc>
-        <p>Scanner Certificate path for --[create|modify]-scanner.</p>
+        <p>Scanner Certificate path for --[create|modify]-scanner
+          if --scanner-credential is not given.</p>
       </optdesc>
     </option>
     <option>
