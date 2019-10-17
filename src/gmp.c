@@ -10028,6 +10028,7 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
  * @brief Append a REFS element to an XML buffer.
  *
  * @param[in]  buffer       Buffer.
+ * @param[in]  results      Result iterator.
  * @param[in]  oid          OID.
  * @param[in]  cert_loaded     Whether CERT db is loaded.
  * @param[in]  has_cert_bunds  Whether results has CERT-Bund advisories.
