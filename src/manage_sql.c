@@ -23640,34 +23640,51 @@ where_qod (int min_qod)
 static gchar*
 result_iterator_opts_table (int autofp, int override, int dynamic)
 {
+  user_t user_id;
+  gchar *user_zone, *quoted_user_zone, *ret;
+
   if (current_credentials.uuid)
-    return g_strdup_printf
-            (", (SELECT"
-             "   coalesce ((SELECT current_setting ('gvmd.tz_override')),"
-             "             (SELECT timezone FROM users"
-             "              WHERE uuid = '%s'))"
-             "   AS user_zone,"
-             "   (SELECT id FROM users WHERE uuid = '%s') AS user_id,"
-             "   %d AS autofp,"
-             "   %d AS override,"
-             "   %d AS dynamic) AS opts",
-             current_credentials.uuid,
-             current_credentials.uuid,
-             autofp,
-             override,
-             dynamic);
-  return g_strdup_printf
-          (", (SELECT"
-           "   coalesce ((SELECT current_setting ('gvmd.tz_override')),"
-           "             'UTC')"
-           "   AS user_zone,"
-           "   '':text AS user_id,"
-           "   %d AS autofp,"
-           "   %d AS override,"
-           "   %d AS dynamic) AS opts",
-           autofp,
-           override,
-           dynamic);
+    {
+      user_id = sql_int64_0 ("SELECT id FROM users WHERE uuid = '%s';",
+                             current_credentials.uuid);
+      if (user_id > 0)
+        user_zone = sql_string ("SELECT"
+                                " coalesce ((SELECT current_setting"
+                                "                    ('gvmd.tz_override')),"
+                                "           (SELECT timezone FROM users"
+                                "            WHERE id = %llu));",
+                                user_id);
+      else
+        user_zone = g_strdup ("UTC");
+    }
+  else
+    {
+      user_id = 0;
+      user_zone = sql_string ("SELECT"
+                              " coalesce ((SELECT current_setting"
+                              "                    ('gvmd.tz_override')),"
+                              "           'UTC');");
+    }
+
+  quoted_user_zone = sql_quote ("user_zone");
+  g_free (user_zone);
+
+  ret = g_strdup_printf
+         (", (SELECT"
+          "   '%s'::text AS user_zone,"
+          "   %llu AS user_id,"
+          "   %d AS autofp,"
+          "   %d AS override,"
+          "   %d AS dynamic) AS opts",
+          quoted_user_zone,
+          user_id,
+          autofp,
+          override,
+          dynamic);
+
+  g_free (quoted_user_zone);
+
+  return ret;
 }
 
 /**
