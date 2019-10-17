@@ -23331,8 +23331,12 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time ( date )", "creation_time", KEYWORD_TYPE_STRING },           \
-    { " iso_time ( date )", "modification_time", KEYWORD_TYPE_STRING },       \
+    { " iso_time (date, opts.user_zone)",                                     \
+      "creation_time",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
+    { " iso_time (date, opts.user_zone)",                                     \
+      "modification_time",                                                    \
+      KEYWORD_TYPE_STRING },                                                  \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
     { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -23935,13 +23939,10 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   autofp = filter_term_autofp (filter ? filter : get->filter);
 
   if (autofp == 0)
-    {
-      columns[0].select = "0";
-      extra_tables = NULL;
-    }
-  else
-    extra_tables = result_iterator_opts_table (autofp, apply_overrides,
-                                               dynamic_severity);
+    columns[0].select = "0";
+
+  extra_tables = result_iterator_opts_table (autofp, apply_overrides,
+                                             dynamic_severity);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      autofp, apply_overrides, dynamic_severity,
