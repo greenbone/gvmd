@@ -10038,14 +10038,15 @@ static void
 results_xml_append_cert (GString *buffer, iterator_t *results, const char *oid, int cert_loaded,
                          int has_cert_bunds, int has_dfn_certs, int *first)
 {
-  iterator_t cert_refs_iterator;
-
   if (cert_loaded)
     {
       if (has_cert_bunds)
         {
-          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid);
-          while (next (&cert_refs_iterator))
+          gchar **point, **cert_bunds;
+
+          cert_bunds = result_iterator_cert_bunds (results);
+          point = cert_bunds;
+          while (*point)
             {
               if (first && *first)
                 {
@@ -10053,10 +10054,11 @@ results_xml_append_cert (GString *buffer, iterator_t *results, const char *oid, 
                   *first = 0;
                 }
               g_string_append_printf
-               (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
-                nvt_cert_bund_adv_iterator_name (&cert_refs_iterator));
+               (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>", *point);
+
+              point++;
             }
-          cleanup_iterator (&cert_refs_iterator);
+          g_strfreev (cert_bunds);
         }
 
       if (has_dfn_certs)

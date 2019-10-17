@@ -1511,6 +1511,9 @@ int
 result_iterator_has_dfn_certs (iterator_t*);
 
 gchar **
+result_iterator_cert_bunds (iterator_t*);
+
+gchar **
 result_iterator_dfn_certs (iterator_t*);
 
 void
