@@ -23641,10 +23641,11 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
 {
   return g_strdup_printf
           (", (SELECT"
-           "   (SELECT current_setting ('gvmd.user.uuid')) AS user_uuid,"
+           "   '%s'::text AS user_uuid,"
            "   %d AS autofp,"
            "   %d AS override,"
            "   %d AS dynamic) AS opts",
+           current_credentials.uuid ? current_credentials.uuid : "",
            autofp,
            override,
            dynamic);
