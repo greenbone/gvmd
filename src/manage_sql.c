@@ -15343,6 +15343,10 @@ init_manage_process (const gchar *database)
       abort ();
     }
 
+  /* Ensure the user session variables always exists. */
+  sql ("SET SESSION \"gvmd.user.uuid\" = '';");
+  sql ("SET SESSION \"gvmd.tz_override\" = '';");
+
   /* Attach the SCAP and CERT databases. */
   manage_attach_databases ();
 
@@ -23130,11 +23134,11 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
   class = sql_string ("SELECT value FROM settings"
                       " WHERE name = 'Severity Class'"
                       " AND ((owner IS NULL)"
-                      "      OR (owner = (SELECT id FROM users"
-                      "                   WHERE users.uuid"
-                      "                         = (SELECT uuid"
-                      "                            FROM current_credentials))))"
-                      " ORDER BY coalesce (owner, 0) DESC LIMIT 1;");
+                      "      OR (owner"
+                      "          = (SELECT id FROM users"
+                      "             WHERE users.uuid = '%s')))"
+                      " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
+                      current_credentials.uuid ? current_credentials.uuid : "");
 
   /* High. */
   if (strchr (levels, 'h'))
@@ -23327,8 +23331,12 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time ( date )", "creation_time", KEYWORD_TYPE_STRING },           \
-    { " iso_time ( date )", "modification_time", KEYWORD_TYPE_STRING },       \
+    { " iso_time (date, opts.user_zone)",                                     \
+      "creation_time",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
+    { " iso_time (date, opts.user_zone)",                                     \
+      "modification_time",                                                    \
+      KEYWORD_TYPE_STRING },                                                  \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
     { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -23468,8 +23476,12 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time ( date )", "creation_time", KEYWORD_TYPE_STRING },           \
-    { " iso_time ( date )", "modification_time", KEYWORD_TYPE_STRING },       \
+    { " iso_time (date, opts.user_zone)",                                     \
+      "creation_time",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
+    { " iso_time (date, opts.user_zone)",                                     \
+      "modification_time",                                                    \
+      KEYWORD_TYPE_STRING },                                                  \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
     { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -23482,10 +23494,7 @@ where_qod (int min_qod)
     { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
     { "severity_to_type ((SELECT new_severity FROM result_new_severities"     \
       "                  WHERE result_new_severities.result = results.id"     \
-      "                  AND result_new_severities.user"                      \
-      "                      = (SELECT users.id"                              \
-      "                         FROM current_credentials, users"              \
-      "                         WHERE current_credentials.uuid = users.uuid)" \
+      "                  AND result_new_severities.user = opts.user_id"       \
       "                  AND result_new_severities.override = opts.override"  \
       "                  AND result_new_severities.dynamic = opts.dynamic"    \
       "                  LIMIT 1))",                                          \
@@ -23505,10 +23514,7 @@ where_qod (int min_qod)
     { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
     { "(SELECT new_severity FROM result_new_severities"                       \
       " WHERE result_new_severities.result = results.id"                      \
-      " AND result_new_severities.user"                                       \
-      "     = (SELECT users.id"                                               \
-      "        FROM current_credentials, users"                               \
-      "        WHERE current_credentials.uuid = users.uuid)"                  \
+      " AND result_new_severities.user = opts.user_id"                        \
       " AND result_new_severities.override = opts.override"                   \
       " AND result_new_severities.dynamic = opts.dynamic"                     \
       " LIMIT 1)",                                                            \
@@ -23634,13 +23640,51 @@ where_qod (int min_qod)
 static gchar*
 result_iterator_opts_table (int autofp, int override, int dynamic)
 {
-  return g_strdup_printf (", (SELECT"
-                          "   %d AS autofp,"
-                          "   %d AS override,"
-                          "   %d AS dynamic) AS opts",
-                          autofp,
-                          override,
-                          dynamic);
+  user_t user_id;
+  gchar *user_zone, *quoted_user_zone, *ret;
+
+  if (current_credentials.uuid)
+    {
+      user_id = sql_int64_0 ("SELECT id FROM users WHERE uuid = '%s';",
+                             current_credentials.uuid);
+      if (user_id > 0)
+        user_zone = sql_string ("SELECT"
+                                " coalesce ((SELECT current_setting"
+                                "                    ('gvmd.tz_override')),"
+                                "           (SELECT timezone FROM users"
+                                "            WHERE id = %llu));",
+                                user_id);
+      else
+        user_zone = g_strdup ("UTC");
+    }
+  else
+    {
+      user_id = 0;
+      user_zone = sql_string ("SELECT"
+                              " coalesce ((SELECT current_setting"
+                              "                    ('gvmd.tz_override')),"
+                              "           'UTC');");
+    }
+
+  quoted_user_zone = sql_quote ("user_zone");
+  g_free (user_zone);
+
+  ret = g_strdup_printf
+         (", (SELECT"
+          "   '%s'::text AS user_zone,"
+          "   %llu AS user_id,"
+          "   %d AS autofp,"
+          "   %d AS override,"
+          "   %d AS dynamic) AS opts",
+          quoted_user_zone,
+          user_id,
+          autofp,
+          override,
+          dynamic);
+
+  g_free (quoted_user_zone);
+
+  return ret;
 }
 
 /**
@@ -23807,10 +23851,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
     g_strdup_printf ("severity_to_type"
                      " ((SELECT new_severity FROM result_new_severities"
                      "   WHERE result_new_severities.result = results.id"
-                     "   AND result_new_severities.user"
-                     "       = (SELECT users.id"
-                     "          FROM current_credentials, users"
-                     "          WHERE current_credentials.uuid = users.uuid)"
+                     "   AND result_new_severities.user = opts.user_id"
                      "   AND result_new_severities.override = %i"
                      "   AND result_new_severities.dynamic = %i"
                      "   LIMIT 1))",
@@ -23915,13 +23956,10 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   autofp = filter_term_autofp (filter ? filter : get->filter);
 
   if (autofp == 0)
-    {
-      columns[0].select = "0";
-      extra_tables = NULL;
-    }
-  else
-    extra_tables = result_iterator_opts_table (autofp, apply_overrides,
-                                               dynamic_severity);
+    columns[0].select = "0";
+
+  extra_tables = result_iterator_opts_table (autofp, apply_overrides,
+                                             dynamic_severity);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      autofp, apply_overrides, dynamic_severity,
@@ -28297,7 +28335,7 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
         unsetenv ("TZ");
 
       quoted_old_tz_override = sql_insert (old_tz_override);
-      sql ("UPDATE current_credentials SET tz_override = %s",
+      sql ("SET SESSION \"gvmd.tz_override\" = %s;",
            quoted_old_tz_override);
       g_free (quoted_old_tz_override);
 
@@ -29404,11 +29442,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           return -1;
         }
 
-      old_tz_override = sql_string ("SELECT tz_override"
-                                    " FROM current_credentials;");
+      old_tz_override = sql_string ("SELECT current_setting"
+                                    "        ('gvmd.tz_override');");
 
       quoted_zone = sql_insert (zone);
-      sql ("UPDATE current_credentials SET tz_override = %s", quoted_zone);
+      sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
       g_free (quoted_zone);
 
       tzset ();
@@ -61984,9 +62022,11 @@ user_resources_in_use (user_t user,
      "    AND (opts.host IS NULL OR results.host = opts.host)"               \
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
      "    AND (SELECT has_permission FROM permissions_get_tasks"             \
-     "         WHERE \"user\" = (SELECT id FROM users"                       \
-     "                           WHERE uuid ="                               \
-     "                             (SELECT uuid FROM current_credentials))"  \
+     "         WHERE \"user\""                                               \
+     "                = (SELECT id FROM users"                               \
+     "                   WHERE uuid"                                         \
+     "                         = (SELECT current_setting"                    \
+     "                                    ('gvmd.user.uuid')))"              \
      "           AND task = results.task)"
 
 /**
