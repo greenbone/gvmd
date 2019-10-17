@@ -654,6 +654,21 @@ iterator_string (iterator_t* iterator, int col)
 }
 
 /**
+ * @brief Get a string column from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  col       Column offset.
+ *
+ * @return Value of given column.
+ */
+gchar **
+iterator_array (iterator_t* iterator, int col)
+{
+  if (iterator->done) abort ();
+  return sql_column_array (iterator->stmt, col);
+}
+
+/**
  * @brief Cleanup an iterator.
  *
  * @param[in]  iterator  Iterator.
