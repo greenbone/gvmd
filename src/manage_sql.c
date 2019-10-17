@@ -44257,21 +44257,51 @@ manage_get_scanners (GSList *log_config, const gchar *database)
 
   while (next (&scanners))
     {
-      const char *scanner_id, *scanner_type, *scanner_host, *scanner_port;
-      const char *scanner_name;
+      const char *scanner_id, *scanner_host, *scanner_port, *scanner_name;
+      scanner_type_t scanner_type;
+      const char *scanner_type_str;
 
       scanner_id = iterator_string (&scanners, 0);
-      scanner_type = iterator_string (&scanners, 1);
+      scanner_type = iterator_int (&scanners, 1);
       scanner_host = iterator_string (&scanners, 2);
       scanner_port = iterator_string (&scanners, 3);
       scanner_name = iterator_string (&scanners, 4);
 
-      printf ("%s  %s  %s  %s  %s\n",
-              scanner_id,
-              scanner_type,
-              scanner_host,
-              scanner_port,
-              scanner_name);
+      switch (scanner_type)
+        {
+          case SCANNER_TYPE_OSP:
+            scanner_type_str = "OSP";
+            break;
+          case SCANNER_TYPE_OPENVAS:
+            scanner_type_str = "OpenVAS";
+            break;
+          case SCANNER_TYPE_CVE:
+            scanner_type_str = "CVE";
+            break;
+          case SCANNER_TYPE_GMP:
+            scanner_type_str = "GMP";
+            break;
+          case SCANNER_TYPE_OSP_SENSOR:
+            scanner_type_str = "OSP-Sensor";
+            break;
+          default:
+            scanner_type_str = NULL;
+        }
+
+      if (scanner_type_str)
+        printf ("%s  %s  %s  %s  %s\n",
+                scanner_id,
+                scanner_type_str,
+                scanner_host,
+                scanner_port,
+                scanner_name);
+      else
+        printf ("%s  Unknown-%d  %s  %s  %s\n",
+                scanner_id,
+                scanner_type,
+                scanner_host,
+                scanner_port,
+                scanner_name);
     }
   cleanup_iterator (&scanners);
 
