@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
+- Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
 - Extend GMP API for nvt object to carry a explicit solution element [#849](https://github.com/greenbone/gvmd/pull/849)
 
 ### Fixed
