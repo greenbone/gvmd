@@ -23136,10 +23136,9 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
                       " AND ((owner IS NULL)"
                       "      OR (owner"
                       "          = (SELECT id FROM users"
-                      "             WHERE users.uuid"
-                      "                   = (SELECT current_setting"
-                      "                              ('gvmd.user.uuid')))))"
-                      " ORDER BY coalesce (owner, 0) DESC LIMIT 1;");
+                      "             WHERE users.uuid = '%s')))"
+                      " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
+                      current_credentials.uuid ? current_credentials.uuid : "");
 
   /* High. */
   if (strchr (levels, 'h'))
