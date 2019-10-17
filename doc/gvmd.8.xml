@@ -335,6 +335,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p><opt>--scanner-type=<arg>SCANNER-TYPE</arg></opt></p>
       <optdesc>
         <p>Scanner type for --create-scanner and --modify-scanner.</p>
+        <p>Either 'OpenVAS', 'OSP', 'GMP', 'OSP-Sensor' or a number
+           as used in GMP.</p>
       </optdesc>
     </option>
     <option>
