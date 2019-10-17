@@ -25852,6 +25852,19 @@ cache_report_counts (report_t report, int override, int min_qod,
 }
 
 /**
+ * @brief Get count of all results in a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Number of results in report.
+ */
+static int
+report_count_all (report_t report)
+{
+  return sql_int ("SELECT count(*) FROM results WHERE report = %llu;", report);
+}
+
+/**
  * @brief Get the message counts for a report.
  *
  * @param[in]   report    Report.
@@ -29490,22 +29503,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       /* Get total counts of full results. */
 
       if (delta == 0)
-        {
-          int total_debugs, total_holes, total_infos, total_logs;
-          int total_warnings, total_false_positives;
-          get_data_t *all_results_get;
-
-          all_results_get = report_results_get_data (1, -1, 0, 0, 0);
-          report_counts_id (report, &total_debugs, &total_holes, &total_infos,
-                            &total_logs, &total_warnings,
-                            &total_false_positives, NULL, all_results_get,
-                            NULL);
-          total_result_count = total_debugs + total_holes + total_infos
-                               + total_logs + total_warnings
-                               + total_false_positives;
-          get_data_reset (all_results_get);
-          free (all_results_get);
-        }
+        total_result_count = report_count_all (report);
 
       /* Get total counts of filtered results. */
 
