@@ -23487,10 +23487,7 @@ where_qod (int min_qod)
     { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
     { "severity_to_type ((SELECT new_severity FROM result_new_severities"     \
       "                  WHERE result_new_severities.result = results.id"     \
-      "                  AND result_new_severities.user"                      \
-      "                      = (SELECT users.id"                              \
-      "                         FROM users"                                   \
-      "                         WHERE users.uuid = opts.user_uuid)"           \
+      "                  AND result_new_severities.user = opts.user_id"       \
       "                  AND result_new_severities.override = opts.override"  \
       "                  AND result_new_severities.dynamic = opts.dynamic"    \
       "                  LIMIT 1))",                                          \
@@ -23510,10 +23507,7 @@ where_qod (int min_qod)
     { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
     { "(SELECT new_severity FROM result_new_severities"                       \
       " WHERE result_new_severities.result = results.id"                      \
-      " AND result_new_severities.user"                                       \
-      "     = (SELECT users.id"                                               \
-      "        FROM users"                                                    \
-      "        WHERE users.uuid = opts.user_uuid)"                            \
+      " AND result_new_severities.user = opts.user_id"                        \
       " AND result_new_severities.override = opts.override"                   \
       " AND result_new_severities.dynamic = opts.dynamic"                     \
       " LIMIT 1)",                                                            \
@@ -23639,13 +23633,23 @@ where_qod (int min_qod)
 static gchar*
 result_iterator_opts_table (int autofp, int override, int dynamic)
 {
+  if (current_credentials.uuid)
+    return g_strdup_printf
+            (", (SELECT"
+             "   (SELECT id FROM users WHERE uuid = '%s') AS user_id,"
+             "   %d AS autofp,"
+             "   %d AS override,"
+             "   %d AS dynamic) AS opts",
+             current_credentials.uuid,
+             autofp,
+             override,
+             dynamic);
   return g_strdup_printf
           (", (SELECT"
-           "   '%s'::text AS user_uuid,"
+           "   '':text AS user_id,"
            "   %d AS autofp,"
            "   %d AS override,"
            "   %d AS dynamic) AS opts",
-           current_credentials.uuid ? current_credentials.uuid : "",
            autofp,
            override,
            dynamic);
@@ -23815,10 +23819,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
     g_strdup_printf ("severity_to_type"
                      " ((SELECT new_severity FROM result_new_severities"
                      "   WHERE result_new_severities.result = results.id"
-                     "   AND result_new_severities.user"
-                     "       = (SELECT users.id"
-                     "          FROM users"
-                     "          WHERE users.uuid = opts.user_uuid)"
+                     "   AND result_new_severities.user = opts.user_id"
                      "   AND result_new_severities.override = %i"
                      "   AND result_new_severities.dynamic = %i"
                      "   LIMIT 1))",
