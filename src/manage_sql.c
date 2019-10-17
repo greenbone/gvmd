@@ -42182,6 +42182,18 @@ manage_create_scanner (GSList *log_config, const gchar *database,
       case 2:
         fprintf (stderr, "Invalid value provided.\n");
         break;
+      case 3:
+        fprintf (stderr, "Credential not found.\n");
+        break;
+      case 4:
+        fprintf (stderr, "Credential should be 'up'.\n");
+        break;
+      case 5:
+        fprintf (stderr, "Credential should be 'cc'.\n");
+        break;
+      case 6:
+        fprintf (stderr, "Credential required.\n");
+        break;
       default:
         fprintf (stderr, "Failed to create scanner.\n");
         break;
@@ -42449,6 +42461,18 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
         break;
       case 4:
         fprintf (stderr, "Invalid value.\n");
+        break;
+      case 5:
+        fprintf (stderr, "Credential not found.\n");
+        break;
+      case 6:
+        fprintf (stderr, "Credential should be 'cc'.\n");
+        break;
+      case 7:
+        fprintf (stderr, "Credential should be 'up'.\n");
+        break;
+      case 8:
+        fprintf (stderr, "Credential missing.\n");
         break;
       case 99:
         fprintf (stderr, "Permission denied.\n");

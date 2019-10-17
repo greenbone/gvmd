@@ -2249,10 +2249,20 @@ gvmd (int argc, char** argv)
         type = SCANNER_TYPE_OPENVAS;
       else if (!strcasecmp (scanner_type, "OSP"))
         type = SCANNER_TYPE_OSP;
+      else if (!strcasecmp (scanner_type, "GMP"))
+        type = SCANNER_TYPE_GMP;
+      else if (!strcasecmp (scanner_type, "OSP-Sensor"))
+        type = SCANNER_TYPE_OSP_SENSOR;
       else
         {
-          printf ("Invalid scanner type value.\n");
-          return EXIT_FAILURE;
+          type = atoi (scanner_type);
+          if (type <= SCANNER_TYPE_NONE
+              || type >= SCANNER_TYPE_MAX
+              || type == SCANNER_TYPE_CVE)
+            {
+              fprintf (stderr, "Invalid scanner type value.\n");
+              return EXIT_FAILURE;
+            }
         }
       stype = g_strdup_printf ("%u", type);
       ret = manage_create_scanner (log_config, database, create_scanner,
@@ -2286,10 +2296,20 @@ gvmd (int argc, char** argv)
             type = SCANNER_TYPE_OPENVAS;
           else if (strcasecmp (scanner_type, "OSP") == 0)
             type = SCANNER_TYPE_OSP;
+          else if (!strcasecmp (scanner_type, "GMP"))
+            type = SCANNER_TYPE_GMP;
+          else if (!strcasecmp (scanner_type, "OSP-Sensor"))
+            type = SCANNER_TYPE_OSP_SENSOR;
           else
             {
-              g_warning ("Invalid scanner type value");
-              return EXIT_FAILURE;
+              type = atoi (scanner_type);
+              if (type <= SCANNER_TYPE_NONE
+                  || type >= SCANNER_TYPE_MAX
+                  || type == SCANNER_TYPE_CVE)
+                {
+                  fprintf (stderr, "Invalid scanner type value.\n");
+                  return EXIT_FAILURE;
+                }
             }
 
           stype = g_strdup_printf ("%u", type);
