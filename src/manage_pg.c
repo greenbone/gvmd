@@ -674,7 +674,7 @@ manage_create_sql_functions ()
            " BEGIN"
            "   CASE"
            "   WHEN NOT valid_db_resource_type ($1)"
-           "   THEN RAISE EXCEPTION 'Invalid resource type argument: %', $1;"
+           "   THEN RAISE EXCEPTION 'Invalid resource type argument: %%', $1;"
            "   WHEN $1 = 'note'"
            "        AND $3 = "  G_STRINGIFY (LOCATION_TABLE)
            "   THEN RETURN (SELECT 'Note for: '"
@@ -937,7 +937,7 @@ manage_create_sql_functions ()
        "   ELSIF $1 > 0.0 AND $1 <= 10.0 THEN"
        "     RETURN 'Alarm';"
        "   ELSE"
-       "     RAISE EXCEPTION 'Invalid severity score given: %', $1;"
+       "     RAISE EXCEPTION 'Invalid severity score given: %%', $1;"
        "   END IF;"
        " END;"
        "$$ LANGUAGE plpgsql"
