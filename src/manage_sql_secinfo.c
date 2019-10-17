@@ -926,7 +926,7 @@ init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid)
  *
  * @return Value of the column or NULL if iteration is complete.
  */
-DEF_ACCESS (nvt_cert_bund_adv_iterator_name, GET_ITERATOR_COLUMN_COUNT);
+DEF_ACCESS (nvt_cert_bund_adv_iterator_name, 0);
 
 
 /* DFN-CERT data. */
@@ -1105,7 +1105,7 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid)
  *
  * @return Value of the column or NULL if iteration is complete.
  */
-DEF_ACCESS (nvt_dfn_cert_adv_iterator_name, GET_ITERATOR_COLUMN_COUNT);
+DEF_ACCESS (nvt_dfn_cert_adv_iterator_name, 0);
 
 
 /* All SecInfo data. */
