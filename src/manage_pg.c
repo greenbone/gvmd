@@ -945,17 +945,11 @@ manage_create_sql_functions ()
 
   sql ("DROP FUNCTION IF EXISTS iso_time (seconds integer);");
 
-  sql ("CREATE OR REPLACE FUNCTION iso_time (seconds bigint)"
+  sql ("CREATE OR REPLACE FUNCTION iso_time (seconds bigint, user_zone text)"
        " RETURNS text AS $$"
        " DECLARE"
-       "   user_zone text;"
        "   user_offset interval;"
        " BEGIN"
-       "   user_zone :="
-       "     coalesce ((SELECT current_setting ('gvmd.tz_override')),"
-       "               (SELECT timezone FROM users"
-       "                WHERE uuid"
-       "                      = (SELECT current_setting ('gvmd.user.uuid'))));"
        "   BEGIN"
        "     user_offset := age (now () AT TIME ZONE user_zone,"
        "                         now () AT TIME ZONE 'UTC');"
@@ -985,6 +979,20 @@ manage_create_sql_functions ()
        "                                ::integer),"
        "                           'FM00')"
        "          END;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION iso_time (seconds bigint)"
+       " RETURNS text AS $$"
+       " DECLARE"
+       "   user_zone text;"
+       " BEGIN"
+       "   user_zone :="
+       "     coalesce ((SELECT current_setting ('gvmd.tz_override')),"
+       "               (SELECT timezone FROM users"
+       "                WHERE uuid"
+       "                      = (SELECT current_setting ('gvmd.user.uuid'))));"
+       " RETURN iso_time (seconds, user_zone);"
        " END;"
        "$$ LANGUAGE plpgsql;");
 

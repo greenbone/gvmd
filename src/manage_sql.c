@@ -23472,8 +23472,12 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time ( date )", "creation_time", KEYWORD_TYPE_STRING },           \
-    { " iso_time ( date )", "modification_time", KEYWORD_TYPE_STRING },       \
+    { " iso_time (date, opts.user_zone)",                                     \
+      "creation_time",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
+    { " iso_time (date, opts.user_zone)",                                     \
+      "modification_time",                                                    \
+      KEYWORD_TYPE_STRING },                                                  \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
     { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -23635,16 +23639,24 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
   if (current_credentials.uuid)
     return g_strdup_printf
             (", (SELECT"
+             "   coalesce ((SELECT current_setting ('gvmd.tz_override')),"
+             "             (SELECT timezone FROM users"
+             "              WHERE uuid = '%s'))"
+             "   AS user_zone,"
              "   (SELECT id FROM users WHERE uuid = '%s') AS user_id,"
              "   %d AS autofp,"
              "   %d AS override,"
              "   %d AS dynamic) AS opts",
+             current_credentials.uuid,
              current_credentials.uuid,
              autofp,
              override,
              dynamic);
   return g_strdup_printf
           (", (SELECT"
+           "   coalesce ((SELECT current_setting ('gvmd.tz_override')),"
+           "             'UTC')"
+           "   AS user_zone,"
            "   '':text AS user_id,"
            "   %d AS autofp,"
            "   %d AS override,"
