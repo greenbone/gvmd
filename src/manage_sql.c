@@ -23604,6 +23604,9 @@ where_qod (int min_qod)
     { SECINFO_SQL_RESULT_HAS_DFN_CERTS,                                       \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
+    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -24761,6 +24764,20 @@ result_iterator_has_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
+}
+
+/**
+ * @brief Get DFN-CERTs from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return DFN-CERT names if any, else NULL.
+ */
+gchar **
+result_iterator_dfn_certs (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 29);
 }
 
 /**
