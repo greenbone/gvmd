@@ -23434,12 +23434,6 @@ where_qod (int min_qod)
 #define RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                           \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                          \
-    { SECINFO_SQL_RESULT_HAS_CERT_BUNDS,                                      \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { SECINFO_SQL_RESULT_HAS_DFN_CERTS,                                       \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23598,12 +23592,6 @@ where_qod (int min_qod)
 #define RESULT_ITERATOR_COLUMNS                                               \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
-    { SECINFO_SQL_RESULT_HAS_CERT_BUNDS,                                      \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { SECINFO_SQL_RESULT_HAS_DFN_CERTS,                                       \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
     { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -24742,34 +24730,6 @@ result_iterator_may_have_tickets (iterator_t* iterator)
 }
 
 /**
- * @brief Get whether CERT-Bunds may exist from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if notes may exist, else 0.
- */
-int
-result_iterator_has_cert_bunds (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 27);
-}
-
-/**
- * @brief Get whether DFN-CERTs may exist from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if notes may exist, else 0.
- */
-int
-result_iterator_has_dfn_certs (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
-}
-
-/**
  * @brief Get CERT-BUNDs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -24780,7 +24740,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 29);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 27);
 }
 
 /**
@@ -24794,7 +24754,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 30);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
 }
 
 /**

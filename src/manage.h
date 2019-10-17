@@ -1504,12 +1504,6 @@ result_iterator_may_have_overrides (iterator_t*);
 int
 result_iterator_may_have_tickets (iterator_t*);
 
-int
-result_iterator_has_cert_bunds (iterator_t*);
-
-int
-result_iterator_has_dfn_certs (iterator_t*);
-
 gchar **
 result_iterator_cert_bunds (iterator_t*);
 
