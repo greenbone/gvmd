@@ -2077,6 +2077,14 @@ get_nvt_preference_by_id_or_name (const char *nvt_oid,
   name = strdup (full_name_split[3]);
   g_strfreev (full_name_split);
 
+  if (find_id && strcmp (find_id, "") && strcmp (find_id, id))
+    g_warning ("%s: id %s of preference %s:'%s' has changed to %s.",
+               __FUNCTION__, find_id, nvt_oid, name, id);
+
+  if (find_name && strcmp (find_name, "") && strcmp (find_name, name))
+    g_message ("%s: Name of preference %s:%s changed from '%s' to '%s'",
+               __FUNCTION__, nvt_oid, id, find_name, name);
+
   new_pref = preference_new (id,
                              name,
                              type,
