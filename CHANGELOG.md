@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check whether hosts are alive and have results when adding them in slave scans. [#718](https://github.com/greenbone/gvmd/pull/718) [#737](https://github.com/greenbone/gvmd/pull/737)
 
 ### Fixed
+- Allow to migrate gvmd 8 sqlite3 database to postgres with gvm-migrate-to-postgres script
+  [#820](https://github.com/greenbone/gvmd/pull/820)
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#691](https://github.com/greenbone/gvmd/pull/691)
 - Fix iCalendar recurrence and timezone handling [#653](https://github.com/greenbone/gvmd/pull/653)
 - Fix issues with some scheduled tasks by using iCalendar more instead of old period fields [#655](https://github.com/greenbone/gvmd/pull/655)
