@@ -2039,13 +2039,13 @@ get_nvt_preference_by_id_or_name (const char *nvt_oid,
                             " WHERE name LIKE '%s:%s:%%:%%'",
                             quoted_oid,
                             quoted_id);
+  else
+    g_message ("%s: No id given, selecting %s:'%s' by name",
+               __FUNCTION__, nvt_oid, find_name);
 
   /* Try to get by name if id is missing or not found */
   if (full_name == NULL && find_name && strcmp (find_name, ""))
     {
-      g_message ("%s: Preference for NVT %s not found by id %s,"
-               " trying name '%s'",
-               __FUNCTION__, nvt_oid, find_id, find_name);
       full_name = sql_string ("SELECT name FROM nvt_preferences"
                               " WHERE name LIKE '%s:%%:%%:%s'",
                               quoted_oid,
