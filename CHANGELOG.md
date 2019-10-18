@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Consider results_trash when deleting users [#799](https://github.com/greenbone/gvmd/pull/799)
+- Try to get NVT preferences by id in create_config [#821](https://github.com/greenbone/gvmd/pull/821)
 
 ### Removed
 
