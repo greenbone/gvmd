@@ -1986,6 +1986,111 @@ find_config_with_permission (const char* uuid, config_t* config,
 }
 
 /**
+ * @brief Gets an NVT preference by id or by name.
+ *
+ * Note: This currently only gets the fields needed by create_config.
+ *
+ * @param[in]  nvt_oid    OID of the NVT the preference belongs to.
+ * @param[in]  find_id    Preference id to find, or NULL.
+ * @param[in]  find_name  Preference name to find if id is missing / not found.
+ * @param[in]  value      Value to assign to the preference.
+ *
+ * @return  Newly allocated preference, to be freed with preference_free.
+ */
+static preference_t *
+get_nvt_preference_by_id_or_name (const char *nvt_oid,
+                                  const char *find_id,
+                                  const char *find_name,
+                                  const char *value)
+{
+  preference_t *new_pref;
+  char *full_name, *id, *name, *type, *nvt_name, *default_value, *hr_name;
+  array_t *alts;
+  gchar *quoted_oid, *quoted_id, *quoted_name;
+  char **full_name_split;
+
+  full_name = name = type = nvt_name = default_value = hr_name = NULL;
+  alts = NULL;
+
+  /* Check parameters */
+  if (nvt_oid == NULL)
+    {
+      g_warning ("%s: Missing nvt_oid", __FUNCTION__);
+      return NULL;
+    }
+  if (find_id == NULL && find_name == NULL)
+    {
+      g_warning ("%s: Missing find_id and find_name", __FUNCTION__);
+      return NULL;
+    }
+  if (value == NULL)
+    {
+      g_warning ("%s: Missing value", __FUNCTION__);
+      return NULL;
+    }
+
+  /* Try to get by id first */
+  quoted_oid = sql_quote (nvt_oid);
+  quoted_id = find_id ? sql_quote (find_id) : NULL;
+  quoted_name = find_name ? sql_quote (find_name) : NULL;
+
+  if (find_id && strcmp (find_id, ""))
+    full_name = sql_string ("SELECT name FROM nvt_preferences"
+                            " WHERE name LIKE '%s:%s:%%:%%'",
+                            quoted_oid,
+                            quoted_id);
+
+  /* Try to get by name if id is missing or not found */
+  if (full_name == NULL && find_name && strcmp (find_name, ""))
+    {
+      g_message ("%s: Preference for NVT %s not found by id %s,"
+               " trying name '%s'",
+               __FUNCTION__, nvt_oid, find_id, find_name);
+      full_name = sql_string ("SELECT name FROM nvt_preferences"
+                              " WHERE name LIKE '%s:%%:%%:%s'",
+                              quoted_oid,
+                              quoted_name);
+    }
+
+  g_free (quoted_oid);
+  g_free (quoted_id);
+  g_free (quoted_name);
+
+  if (full_name == NULL)
+    return NULL;
+
+  /* Try to get components of the full name */
+  full_name_split = g_strsplit (full_name, ":", 4);
+
+  if (g_strv_length (full_name_split) != 4)
+    {
+      g_warning ("%s: Preference name %s does not have 4 parts",
+                 __FUNCTION__, full_name);
+      g_strfreev (full_name_split);
+      free (full_name);
+      return NULL;
+    }
+  free (full_name);
+
+  id = strdup (full_name_split[1]);
+  type = strdup (full_name_split[2]);
+  name = strdup (full_name_split[3]);
+  g_strfreev (full_name_split);
+
+  new_pref = preference_new (id,
+                             name,
+                             type,
+                             strdup (value),
+                             nvt_name,
+                             strdup (nvt_oid),
+                             alts,
+                             default_value,
+                             hr_name);
+
+  return new_pref;
+}
+
+/**
  * @brief Insert preferences into a config.
  *
  * @param[in]  config       Config.
@@ -2039,6 +2144,7 @@ config_insert_preferences (config_t config,
           {
             gchar *quoted_type, *quoted_nvt_oid, *quoted_preference_name;
             gchar *quoted_default, *quoted_preference_hr_name;
+            gchar *quoted_preference_id;
 
             /* Presume NVT or OSP preference. */
 
@@ -2051,15 +2157,6 @@ config_insert_preferences (config_t config,
               g_string_append_printf (value, ";%s", alt);
 
             quoted_nvt_oid = sql_quote (preference->nvt_oid ?: "");
-            quoted_preference_name = sql_quote (preference->name);
-            quoted_preference_hr_name
-              = preference->hr_name
-                  ? sql_quote (preference->hr_name)
-                  : NULL;
-            quoted_type
-              = g_str_has_prefix (preference->type, "osp_")
-                  ? sql_quote (preference->type + strlen ("osp_"))
-                  : sql_quote (preference->type);
             quoted_value = sql_quote (value->str);
             g_string_free (value, TRUE);
             quoted_default = preference->default_value
@@ -2069,20 +2166,68 @@ config_insert_preferences (config_t config,
             if (config_type == NULL || strcmp (config_type, "0") == 0)
               {
                 /* NVT preference */
+                preference_t *new_pref;
+                const preference_t *used_pref;
+
+                /* Try to get preference by id */
+                new_pref
+                  = get_nvt_preference_by_id_or_name (preference->nvt_oid,
+                                                      preference->id,
+                                                      preference->name,
+                                                      preference->value);
+
+                if (new_pref == NULL)
+                  g_warning ("%s: Preference not found: %s, id: %s, name: %s",
+                             __FUNCTION__,
+                             preference->nvt_oid,
+                             preference->id,
+                             preference->name);
+
+                /* Use new name and type from NVT preferences if possible,
+                   otherwise fall back to given name and type */
+                if (new_pref)
+                  used_pref = new_pref;
+                else
+                  used_pref = preference;
+
+                quoted_preference_name = sql_quote (used_pref->name);
+                quoted_preference_hr_name
+                  = used_pref->hr_name
+                      ? sql_quote (used_pref->hr_name)
+                      : NULL;
+                quoted_type
+                  = g_str_has_prefix (used_pref->type, "osp_")
+                      ? sql_quote (used_pref->type + strlen ("osp_"))
+                      : sql_quote (used_pref->type);
+                quoted_preference_id = sql_quote (used_pref->id);
+
                 /* OID:PrefID:PrefType:PrefName value */
                 sql ("INSERT INTO config_preferences"
                      " (config, type, name, value)"
                      " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s:%s', '%s');",
                      config,
                      quoted_nvt_oid,
-                     preference->id,
+                     quoted_preference_id,
                      quoted_type,
                      quoted_preference_name,
                      quoted_value);
+
+                preference_free (new_pref);
               }
             else
               {
                 /* OSP preference */
+                quoted_preference_name = sql_quote (preference->name);
+                quoted_preference_hr_name
+                  = preference->hr_name
+                      ? sql_quote (preference->hr_name)
+                      : NULL;
+                quoted_type
+                  = g_str_has_prefix (preference->type, "osp_")
+                      ? sql_quote (preference->type + strlen ("osp_"))
+                      : sql_quote (preference->type);
+                quoted_preference_id = NULL;
+
                 sql ("INSERT into config_preferences"
                      " (config, type, name, value, default_value, hr_name)"
                      " VALUES (%llu, '%s', '%s', '%s', '%s', '%s');",
@@ -2100,6 +2245,7 @@ config_insert_preferences (config_t config,
             g_free (quoted_value);
             g_free (quoted_default);
             g_free (quoted_preference_hr_name);
+            g_free (quoted_preference_id);
           }
         else
           {
