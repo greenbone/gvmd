@@ -90,7 +90,7 @@ nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
  *
  * @return Newly allocated preference.
  */
-static gpointer
+gpointer
 preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
                 char *nvt_oid, array_t *alts, char* default_value,
                 char *hr_name)
@@ -109,6 +109,31 @@ preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
   preference->hr_name = hr_name;
 
   return preference;
+}
+
+/**
+ * @brief Frees a preference including its assigned values.
+ *
+ * @param[in]  preference  The preference to free.
+ */
+void
+preference_free (preference_t *preference)
+{
+  if (preference == NULL)
+    return;
+
+  free (preference->id);
+  free (preference->name);
+  free (preference->type);
+  free (preference->value);
+  free (preference->nvt_name);
+  free (preference->nvt_oid);
+  if (preference->alts)
+    g_ptr_array_free (preference->alts, TRUE);
+  free (preference->default_value);
+  free (preference->hr_name);
+
+  g_free (preference);
 }
 
 
