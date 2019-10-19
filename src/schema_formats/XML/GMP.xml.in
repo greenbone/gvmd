@@ -3146,7 +3146,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_override</c>
           <c>modify_permission</c>
           <c>modify_port_list</c>
-          <c>modify_report</c>
           <c>modify_report_format</c>
           <c>modify_role</c>
           <c>modify_scanner</c>
@@ -3277,7 +3276,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_override</r>
             <r>modify_permission</r>
             <r>modify_port_list</r>
-            <r>modify_report</r>
             <r>modify_report_format</r>
             <r>modify_role</r>
             <r>modify_scanner</r>
@@ -25408,58 +25406,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>modify_report</name>
-    <summary>Modify an existing report</summary>
-    <description>
-      <p>
-        The client uses the modify_report command to change an existing
-        report.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>report_id</name>
-        <summary>ID of report to modify</summary>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <e>comment</e>
-    </pattern>
-    <ele>
-      <name>comment</name>
-      <summary>The comment on the report</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Modify a report comment</summary>
-      <request>
-        <modify_report report_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-          <comment>Monthly scan of the webserver.</comment>
-        </modify_report>
-      </request>
-      <response>
-        <modify_report_response status="200" status_text="OK">
-        </modify_report_response>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>modify_report_format</name>
     <summary>Update an existing report format</summary>
     <description>
@@ -27214,6 +27160,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The type "ALLINFO" is not supported aymore.
+      </p>
+    </description>
+    <version>20.04</version>
+  </change>
+
+  <change>
+    <command>MODIFY_REPORT</command>
+    <summary>The command MODIFY_REPORT is removed</summary>
+    <description>
+      <p>
+        The command "MODIFY_REPORT" is not supported aymore.
       </p>
     </description>
     <version>20.04</version>
