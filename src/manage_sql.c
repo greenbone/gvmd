@@ -630,7 +630,6 @@ command_t gmp_commands[]
     {"MODIFY_OVERRIDE", "Modify an existing override."},
     {"MODIFY_PERMISSION", "Modify an existing permission."},
     {"MODIFY_PORT_LIST", "Modify an existing port list."},
-    {"MODIFY_REPORT", "Modify an existing report."},
     {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
     {"MODIFY_ROLE", "Modify an existing role."},
     {"MODIFY_SCANNER", "Modify an existing scanner."},
@@ -26254,65 +26253,6 @@ delete_report_internal (report_t report)
         return -1;
         break;
     }
-
-  return 0;
-}
-
-/**
- * @brief Modify a report.
- *
- * @param[in]   report_id       UUID of report.
- * @param[in]   comment         Comment on report.
- *
- * @return 0 success, 1 failed to find report, 2 report_id required, 3 comment
- * required, 99 permission denied, -1 internal error.
- */
-int
-modify_report (const char *report_id, const char *comment)
-{
-  gchar *quoted_comment;
-  report_t report;
-
-  if (report_id == NULL)
-    return 2;
-
-  if (comment == NULL)
-    return 3;
-
-  sql_begin_immediate ();
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_may ("modify_report") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  report = 0;
-  if (find_report_with_permission (report_id, &report, "modify_report"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (report == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  quoted_comment = sql_quote (comment ? comment : "");
-
-  sql ("UPDATE reports SET"
-       " comment = '%s'"
-       " WHERE id = %llu;",
-       quoted_comment,
-       report);
-
-  g_free (quoted_comment);
-
-  sql_commit ();
 
   return 0;
 }
