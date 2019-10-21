@@ -116,22 +116,22 @@ then
   fi
 
   if [ -z "$FEED_HOME" ] ; then
-    FEED_HOME="http://www.greenbone.net/technology/gsf.html"
+    FEED_HOME="https://www.greenbone.net/en/security-feed/"
   fi
 
 else
   RESTRICTED=0
 
   if [ -z "$FEED_NAME" ] ; then
-    FEED_NAME="OpenVAS CERT Feed"
+    FEED_NAME="Greenbone Community CERT Feed"
   fi
 
   if [ -z "$FEED_VENDOR" ] ; then
-    FEED_VENDOR="The OpenVAS Project"
+    FEED_VENDOR="Greenbone Networks GmbH"
   fi
 
   if [ -z "$FEED_HOME" ] ; then
-    FEED_HOME="http://www.openvas.org/"
+    FEED_HOME="https://community.greenbone.net/t/about-greenbone-community-feed-gcf/1224"
   fi
 
   if [ -z "$COMMUNITY_CERT_RSYNC_FEED" ]; then
