@@ -119,8 +119,9 @@ ticket_status_integer (const char *status)
      "                LIMIT 1)"                                               \
      "       AND result_new_severities.user"                                  \
      "           = (SELECT users.id"                                          \
-     "              FROM current_credentials, users"                          \
-     "              WHERE current_credentials.uuid = users.uuid)"             \
+     "              FROM users"                                               \
+     "              WHERE users.uuid"                                         \
+     "                    = SELECT current_setting ('gvmd.user.uuid'))"       \
      "       AND result_new_severities.override = 1"                          \
      "       AND result_new_severities.dynamic = 0"                           \
      "       LIMIT 1)"                                                        \

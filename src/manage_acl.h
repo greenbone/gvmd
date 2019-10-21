@@ -98,6 +98,9 @@
   "  OR (owner = (SELECT users.id FROM users"                  \
   "               WHERE users.uuid = '%s')))"
 
+command_t *
+acl_commands (gchar **);
+
 int
 acl_user_may (const char *);
 

@@ -50,13 +50,8 @@
 void
 manage_session_init (const char *uuid)
 {
-  sql ("CREATE TEMPORARY TABLE IF NOT EXISTS current_credentials"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  tz_override text);");
-  sql ("DELETE FROM current_credentials;");
-  if (uuid)
-    sql ("INSERT INTO current_credentials (uuid) VALUES ('%s');", uuid);
+  sql ("SET SESSION \"gvmd.user.uuid\" = '%s';", uuid);
+  sql ("SET SESSION \"gvmd.tz_override\" = '';");
 }
 
 /**
@@ -508,11 +503,11 @@ sql_rename_column (const char *old_table, const char *new_table,
  "    FROM overrides"                                       \
  "    WHERE overrides.result_nvt = results.result_nvt"      \
  "    AND ((overrides.owner IS NULL)"                       \
- "         OR (overrides.owner ="                           \
- "             (SELECT id FROM users"                       \
- "              WHERE users.uuid"                           \
- "                    = (SELECT uuid"                       \
- "                       FROM current_credentials))))"      \
+ "         OR (overrides.owner"                             \
+ "             = (SELECT id FROM users"                     \
+ "                WHERE users.uuid"                         \
+ "                      = (SELECT current_setting"          \
+ "                                 ('gvmd.user.uuid')))))"  \
  "    AND ((overrides.end_time = 0)"                        \
  "         OR (overrides.end_time >= m_now ()))"            \
  "    AND (overrides.task = results.task"                   \
@@ -679,7 +674,7 @@ manage_create_sql_functions ()
            " BEGIN"
            "   CASE"
            "   WHEN NOT valid_db_resource_type ($1)"
-           "   THEN RAISE EXCEPTION 'Invalid resource type argument: %', $1;"
+           "   THEN RAISE EXCEPTION 'Invalid resource type argument: %%', $1;"
            "   WHEN $1 = 'note'"
            "        AND $3 = "  G_STRINGIFY (LOCATION_TABLE)
            "   THEN RETURN (SELECT 'Note for: '"
@@ -942,7 +937,7 @@ manage_create_sql_functions ()
        "   ELSIF $1 > 0.0 AND $1 <= 10.0 THEN"
        "     RETURN 'Alarm';"
        "   ELSE"
-       "     RAISE EXCEPTION 'Invalid severity score given: %', $1;"
+       "     RAISE EXCEPTION 'Invalid severity score given: %%', $1;"
        "   END IF;"
        " END;"
        "$$ LANGUAGE plpgsql"
@@ -950,17 +945,11 @@ manage_create_sql_functions ()
 
   sql ("DROP FUNCTION IF EXISTS iso_time (seconds integer);");
 
-  sql ("CREATE OR REPLACE FUNCTION iso_time (seconds bigint)"
+  sql ("CREATE OR REPLACE FUNCTION iso_time (seconds bigint, user_zone text)"
        " RETURNS text AS $$"
        " DECLARE"
-       "   user_zone text;"
        "   user_offset interval;"
        " BEGIN"
-       "   user_zone :="
-       "     coalesce ((SELECT tz_override FROM current_credentials),"
-       "               (SELECT timezone FROM users"
-       "                WHERE uuid = (SELECT uuid"
-       "                              FROM current_credentials)));"
        "   BEGIN"
        "     user_offset := age (now () AT TIME ZONE user_zone,"
        "                         now () AT TIME ZONE 'UTC');"
@@ -990,6 +979,20 @@ manage_create_sql_functions ()
        "                                ::integer),"
        "                           'FM00')"
        "          END;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION iso_time (seconds bigint)"
+       " RETURNS text AS $$"
+       " DECLARE"
+       "   user_zone text;"
+       " BEGIN"
+       "   user_zone :="
+       "     coalesce ((SELECT current_setting ('gvmd.tz_override')),"
+       "               (SELECT timezone FROM users"
+       "                WHERE uuid"
+       "                      = (SELECT current_setting ('gvmd.user.uuid'))));"
+       " RETURN iso_time (seconds, user_zone);"
        " END;"
        "$$ LANGUAGE plpgsql;");
 
@@ -1118,8 +1121,8 @@ manage_create_sql_functions ()
        "                  AND subject"
        "                      = (SELECT id FROM users"
        "                         WHERE users.uuid"
-       "                               = (SELECT uuid"
-       "                                  FROM current_credentials)))"
+       "                               = (SELECT current_setting"
+       "                                          (''gvmd.user.uuid''))))"
        "                 OR (subject_type = ''group''"
        "                     AND subject"
        "                         IN (SELECT DISTINCT \"group\""
@@ -1129,8 +1132,8 @@ manage_create_sql_functions ()
        "                             = (SELECT id"
        "                                FROM users"
        "                                WHERE users.uuid"
-       "                                      = (SELECT uuid"
-       "                                         FROM current_credentials))))"
+       "                                      = (SELECT current_setting"
+       "                                                 (''gvmd.user.uuid'')))))"
        "                 OR (subject_type = ''role''"
        "                     AND subject"
        "                         IN (SELECT DISTINCT role"
@@ -1140,8 +1143,8 @@ manage_create_sql_functions ()
        "                             = (SELECT id"
        "                                FROM users"
        "                                WHERE users.uuid"
-       "                                      = (SELECT uuid"
-       "                                         FROM current_credentials))))))'"
+       "                                      = (SELECT current_setting"
+       "                                                 (''gvmd.user.uuid'')))))))'"
        "   USING arg_type, arg_id"
        "   INTO owns;"
        "   RETURN owns;"
@@ -1175,8 +1178,8 @@ manage_create_sql_functions ()
        "                          OR (reports.owner"
        "                              = (SELECT id FROM users"
        "                                 WHERE users.uuid"
-       "                                       = (SELECT uuid"
-       "                                          FROM current_credentials)))))"
+       "                                       = (SELECT current_setting"
+       "                                                  ('gvmd.user.uuid'))))))"
        "        THEN RETURN true;"
        "        ELSE RETURN false;"
        "        END CASE;"
@@ -1189,8 +1192,8 @@ manage_create_sql_functions ()
        "                          OR (owner"
        "                              = (SELECT id FROM users"
        "                                 WHERE users.uuid"
-       "                                       = (SELECT uuid"
-       "                                          FROM current_credentials)))))"
+       "                                       = (SELECT current_setting"
+       "                                                  ('gvmd.user.uuid'))))))"
        "        THEN RETURN true;"
        "        ELSE RETURN false;"
        "        END CASE;"
@@ -1200,8 +1203,9 @@ manage_create_sql_functions ()
        "      WHERE id = $2"
        "      AND ((owner IS NULL)"
        "           OR (owner = (SELECT id FROM users"
-       "                        WHERE users.uuid = (SELECT uuid"
-       "                                            FROM current_credentials))))'"
+       "                        WHERE users.uuid"
+       "                              = (SELECT current_setting"
+       "                                         (''gvmd.user.uuid'')))))'"
        "     USING arg_type, arg_id"
        "     INTO owns;"
        "     RETURN owns;"
@@ -1246,7 +1250,8 @@ manage_create_sql_functions ()
        "  END CASE;"
        "  is_get = substr (arg_permission, 0, 4) = 'get';"
        "  user_id = (SELECT id FROM users"
-       "              WHERE uuid = (SELECT uuid FROM current_credentials));"
+       "              WHERE uuid = (SELECT current_setting"
+       "                                    ('gvmd.user.uuid')));"
        "  ret = (SELECT count(*) FROM permissions"
        "          WHERE resource_uuid = coalesce (task_uuid, arg_uuid)"
        "            AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
@@ -1362,8 +1367,8 @@ manage_create_sql_functions ()
            "  AND ((owner IS NULL)"
            "       OR (owner = (SELECT id FROM users"
            "                    WHERE users.uuid"
-           "                          = (SELECT uuid"
-           "                             FROM current_credentials))))"
+           "                          = (SELECT current_setting"
+           "                                     ('gvmd.user.uuid')))))"
            "  ORDER BY coalesce (owner, 0) DESC LIMIT 1;"
            "$$ LANGUAGE SQL;");
 
@@ -1458,8 +1463,9 @@ manage_create_sql_functions ()
            "  WHERE name = 'Severity Class'"
            "  AND ((owner IS NULL)"
            "       OR (owner = (SELECT id FROM users"
-           "                    WHERE users.uuid = (SELECT uuid"
-           "                                        FROM current_credentials))))"
+           "                    WHERE users.uuid"
+           "                          = (SELECT current_setting"
+           "                                     ('gvmd.user.uuid')))))"
            "  ORDER BY coalesce (owner, 0) DESC LIMIT 1;"
            "$$ LANGUAGE SQL;");
 
@@ -1600,8 +1606,7 @@ manage_create_sql_functions ()
            "         AND scan_run_status = %u)"
            "   THEN RETURN ''::text;"
            /*  Get trend only for authenticated users. */
-           "   WHEN NOT EXISTS (SELECT uuid FROM current_credentials)"
-           "        OR (SELECT uuid = '' FROM current_credentials)"
+           "   WHEN (SELECT current_setting ('gvmd.user.uuid') = '')"
            "   THEN RETURN ''::text;"
            /*  Skip running and container tasks. */
            "   WHEN (SELECT run_status = %u OR target = 0"
@@ -1832,8 +1837,8 @@ manage_create_sql_functions ()
            "           AND ((owner IS NULL)"
            "                OR (owner = (SELECT id FROM users"
            "                             WHERE users.uuid"
-           "                                   = (SELECT uuid"
-           "                                      FROM current_credentials))))"
+           "                                   = (SELECT current_setting"
+           "                                              ('gvmd.user.uuid')))))"
            "           ORDER BY coalesce (owner, 0) DESC LIMIT 1))"
            "$$ LANGUAGE SQL"
            " STABLE;");
@@ -2005,8 +2010,9 @@ manage_create_sql_functions ()
            "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
            "   AND (SELECT has_permission FROM permissions_get_tasks"
            "         WHERE \"user\" = (SELECT id FROM users"
-           "                           WHERE uuid ="
-           "                            (SELECT uuid FROM current_credentials))"
+           "                           WHERE uuid"
+           "                                 = (SELECT current_setting"
+           "                                            ('gvmd.user.uuid')))"
            "           AND task = results.task)"
            "$$ LANGUAGE SQL;");
     }
@@ -2046,12 +2052,6 @@ void
 create_tables ()
 {
   gchar *owned_clause;
-
-  sql ("DROP TABLE IF EXISTS current_credentials");
-  sql ("CREATE TABLE IF NOT EXISTS current_credentials"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  tz_override text);");
 
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id SERIAL PRIMARY KEY,"
