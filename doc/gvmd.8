@@ -133,14 +133,19 @@ Role for --create-user and --get-users.
 \fB--scanner-ca-pub=\fISCANNER-CA-PUB\fB\f1
 Scanner CA Certificate path for --[create|modify]-scanner.
 .TP
+\fB--scanner-credential=\fISCANNER-CREDENTIAL\fB\f1
+Scanner credential for --create-scanner and --modify-scanner.
+
+Can be blank to unset or a credential UUID. If omitted, a new credential can be created instead.
+.TP
 \fB--scanner-host=\fISCANNER-HOST\fB\f1
 Scanner host for --create-scanner and --modify-scanner.
 .TP
 \fB--scanner-key-priv=\fISCANNER-KEY-PRIVATE\fB\f1
-Scanner private key path for --[create|modify]-scanner.
+Scanner private key path for --[create|modify]-scanner if --scanner-credential is not given.
 .TP
 \fB--scanner-key-pub=\fISCANNER-KEY-PUBLIC\fB\f1
-Scanner Certificate path for --[create|modify]-scanner.
+Scanner Certificate path for --[create|modify]-scanner if --scanner-credential is not given.
 .TP
 \fB--scanner-name=\fINAME\fB\f1
 Name for --modify-scanner.
@@ -150,6 +155,8 @@ Scanner port for --create-scanner and --modify-scanner.
 .TP
 \fB--scanner-type=\fISCANNER-TYPE\fB\f1
 Scanner type for --create-scanner and --modify-scanner.
+
+Either 'OpenVAS', 'OSP', 'GMP', 'OSP-Sensor' or a number as used in GMP.
 .TP
 \fB--schedule-timeout=\fITIME\fB\f1
 Time out tasks that are more than TIME minutes overdue. -1 to disable, 0 for minimum time.
