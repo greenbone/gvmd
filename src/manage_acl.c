@@ -41,27 +41,21 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
- * @brief Test whether a user may perform an operation.
+ * @brief Test whether the current user may perform an operation.
+ *
+ * Does not check if the user is special.
  *
  * @param[in]  operation  Name of operation.
  *
  * @return 1 if user has permission, else 0.
  */
-int
-acl_user_may (const char *operation)
+static int
+user_may_internal (const char *operation)
 {
   int ret;
   gchar *quoted_operation;
 
   assert (operation);
-
-  if (strlen (current_credentials.uuid) == 0)
-    /* Allow the dummy user in init_manage to do anything. */
-    return 1;
-
-  if (sql_int ("SELECT user_can_everything ('%s');",
-               current_credentials.uuid))
-    return 1;
 
   quoted_operation = sql_quote (operation);
 
@@ -77,6 +71,81 @@ acl_user_may (const char *operation)
   g_free (quoted_operation);
 
   return ret;
+}
+
+/**
+ * @brief Get commands that the current user may run.
+ *
+ * @param[in]  disabled_commands  All disabled commands.
+ *
+ * @return Freshly allocated list of commands.  Free with g_free.
+ */
+command_t *
+acl_commands (gchar **disabled_commands)
+{
+  command_t *all, *commands;
+  int index, length, special_user;
+
+  /* Count maximum number of commands. */
+
+  length = 1;
+  all = gmp_commands;
+  while ((*all).name)
+    {
+      length++;
+      all++;
+    }
+
+  /* Fill return array with allowed commands. */
+
+  special_user = ((current_credentials.uuid == NULL)
+                  || (strlen (current_credentials.uuid) == 0));
+
+  if (special_user == 0)
+    special_user = sql_int ("SELECT user_can_everything ('%s');",
+                            current_credentials.uuid);
+
+  commands = g_malloc0 (length * sizeof (*commands));
+  all = gmp_commands;
+  index = 0;
+  while ((*all).name)
+    {
+      if ((disabled_commands == NULL
+           || g_strv_contains ((const char * const *) disabled_commands,
+                               (*all).name)
+              == 0)
+          && (special_user
+              || user_may_internal ((*all).name)))
+        {
+          commands[index].name = (*all).name;
+          commands[index].summary = (*all).summary;
+          index++;
+        }
+      all++;
+    }
+
+  return commands;
+}
+
+/**
+ * @brief Test whether a user may perform an operation.
+ *
+ * @param[in]  operation  Name of operation.
+ *
+ * @return 1 if user has permission, else 0.
+ */
+int
+acl_user_may (const char *operation)
+{
+  if (strlen (current_credentials.uuid) == 0)
+    /* Allow the dummy user in init_manage to do anything. */
+    return 1;
+
+  if (sql_int ("SELECT user_can_everything ('%s');",
+               current_credentials.uuid))
+    return 1;
+
+  return user_may_internal (operation);
 }
 
 /**

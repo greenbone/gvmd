@@ -392,10 +392,15 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
       if (length > strlen (msg))
         break;
 
-      memmove (to_client + to_client_end, msg, length);
-      g_debug ("-> client: %.*s", (int) length, msg);
-      to_client_end += length;
-      msg += length;
+      /* length can be 0 if write_to_client returns -2. */
+
+      if (length > 0)
+        {
+          memmove (to_client + to_client_end, msg, length);
+          g_debug ("-> client: %.*s", (int) length, msg);
+          to_client_end += length;
+          msg += length;
+        }
     }
 
   if (strlen (msg))
