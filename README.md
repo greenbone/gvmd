@@ -11,10 +11,9 @@ security scanners and the user clients.
 
 It manages the storage of any vulnerability management configurations and of the
 scan results. Access to data, control commands and workflows is offered via the
-XML-based Greenbone Management Protocol (GMP). The primary scanner
-*[OpenVAS Scanner](https://github.com/greenbone/openvas-scanner)*
-is controlled directly via protocol OTP while any other remote scanner is coupled
-with the Open Scanner Protocol (OSP).
+XML-based Greenbone Management Protocol (GMP). Controlling scanners like
+*[OpenVAS](https://github.com/greenbone/openvas)* is done via the Open Scanner
+Protocol (OSP).
 
 ## Installation and Usage
 
@@ -27,8 +26,8 @@ make install
 
 For detailed installation requirements and instructions, please see the file
 [INSTALL.md](INSTALL.md). The file also contains instructions for setting up
-`gvmd` and for connecting `gvmd` to vulnerability scanners and to the *GSA* web
-interface.
+`gvmd` and for connecting `gvmd` to vulnerability scanners and to the
+*[GSA](https://github.com/greenbone/gsa)* web interface.
 
 In case everything was installed using the defaults, then starting the manager
 daemon can be done with this simple command:
@@ -69,6 +68,6 @@ GitHub](https://github.com/greenbone/gvmd/issues) first.
 
 ## License
 
-Copyright (C) 2009-2018 [Greenbone Networks GmbH](https://www.greenbone.net/)
+Copyright (C) 2009-2019 [Greenbone Networks GmbH](https://www.greenbone.net/)
 
 Licensed under the [GNU General Public License v2.0 or later](COPYING).
