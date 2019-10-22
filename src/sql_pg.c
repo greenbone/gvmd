@@ -923,6 +923,9 @@ sql_column_array (sql_stmt_t *stmt, int position)
     {
       gchar **array, **point, **last;
 
+      if (text[1] == '}')
+        return NULL;
+
       array = g_strsplit (text + 1, ",", 0);
       point = last = array;
       while (*point)
