@@ -10039,39 +10039,49 @@ results_xml_append_cert (GString *buffer, iterator_t *results, const char *oid,
 {
   if (cert_loaded)
     {
-      gchar **point, **cert_bunds, **dfn_certs;
+      gchar **cert_bunds, **dfn_certs;
 
       cert_bunds = result_iterator_cert_bunds (results);
-      point = cert_bunds;
-      while (*point)
+      if (cert_bunds)
         {
-          if (first && *first)
-            {
-              buffer_xml_append_printf (buffer, "<refs>");
-              *first = 0;
-            }
-          g_string_append_printf
-           (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>", *point);
+          gchar **point;
 
-          point++;
+          point = cert_bunds;
+          while (*point)
+            {
+              if (first && *first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  *first = 0;
+                }
+              g_string_append_printf
+               (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>", *point);
+
+              point++;
+            }
+          g_strfreev (cert_bunds);
         }
-      g_strfreev (cert_bunds);
 
       dfn_certs = result_iterator_dfn_certs (results);
-      point = dfn_certs;
-      while (*point)
+      if (dfn_certs)
         {
-          if (first && *first)
-            {
-              buffer_xml_append_printf (buffer, "<refs>");
-              *first = 0;
-            }
-          g_string_append_printf
-           (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>", *point);
+          gchar **point;
 
-          point++;
+          point = dfn_certs;
+          while (*point)
+            {
+              if (first && *first)
+                {
+                  buffer_xml_append_printf (buffer, "<refs>");
+                  *first = 0;
+                }
+              g_string_append_printf
+               (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>", *point);
+
+              point++;
+            }
+          g_strfreev (dfn_certs);
         }
-      g_strfreev (dfn_certs);
     }
   else
     {
