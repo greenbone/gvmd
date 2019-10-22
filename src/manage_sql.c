@@ -21074,8 +21074,8 @@ make_result (task_t task, const char* host, const char *hostname,
       if (nvti)
         {
           gchar *qod_str, *qod_type;
-          qod_str = tag_value (nvti_tag (nvti), "qod");
-          qod_type = tag_value (nvti_tag (nvti), "qod_type");
+          qod_str = nvti_get_tag (nvti, "qod");
+          qod_type = nvti_get_tag (nvti, "qod_type");
 
           if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
             qod = qod_from_type (qod_type);
@@ -48909,8 +48909,8 @@ buffer_insert (GString *buffer, task_t task, const char* host,
       if (nvti)
         {
           gchar *qod_str, *qod_type;
-          qod_str = tag_value (nvti_tag (nvti), "qod");
-          qod_type = tag_value (nvti_tag (nvti), "qod_type");
+          qod_str = nvti_get_tag (nvti, "qod");
+          qod_type = nvti_get_tag (nvti, "qod_type");
 
           if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
             qod = qod_from_type (qod_type);

@@ -279,7 +279,7 @@ insert_nvt (const nvti_t *nvti)
 
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti) ? nvti_cvss_base (nvti) : "");
 
-  qod_str = tag_value (nvti_tag (nvti), "qod");
+  qod_str = nvti_get_tag (nvti, "qod");
   qod_type = nvti_qod_type (nvti);
 
   if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
