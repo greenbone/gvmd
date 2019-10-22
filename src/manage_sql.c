@@ -1152,44 +1152,6 @@ vector_find_filter (const gchar **vector, const gchar *string)
 }
 
 /**
- * @brief Extract a tag from a pipe separated tag list.
- *
- * @param[in]   tags  Tag list.
- * @param[out]  tag   Tag name.
- *
- * @return Newly allocated tag value.
- */
-gchar *
-tag_value (const gchar *tags, const gchar *tag)
-{
-  gchar **split, **point;
-
-  /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
-
-  if (tags == NULL)
-    return g_strdup ("");
-
-  split = g_strsplit (tags, "|", 0);
-  point = split;
-
-  while (*point)
-    {
-      if ((strlen (*point) > strlen (tag))
-          && (strncmp (*point, tag, strlen (tag)) == 0)
-          && ((*point)[strlen (tag)] == '='))
-        {
-          gchar *ret;
-          ret = g_strdup (*point + strlen (tag) + 1);
-          g_strfreev (split);
-          return ret;
-        }
-      point++;
-    }
-  g_strfreev (split);
-  return g_strdup ("");
-}
-
-/**
  * @brief Get last time NVT alerts were checked.
  *
  * @return Last check time.

@@ -368,8 +368,6 @@ host_nthlast_report_host (const char *, report_host_t *, int);
 char*
 report_host_ip (const char *);
 
-gchar *tag_value (const gchar *, const gchar *);
-
 void trim_report (report_t);
 
 int delete_report_internal (report_t);
