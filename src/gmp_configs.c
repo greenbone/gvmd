@@ -75,67 +75,6 @@ nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
   return selector;
 }
 
-/**
- * @brief Create a new preference.
- *
- * @param[in]  id        ID of preference.
- * @param[in]  name      Name of preference.
- * @param[in]  type      Type of preference.
- * @param[in]  value     Value of preference.
- * @param[in]  nvt_name  Name of NVT of preference.
- * @param[in]  nvt_oid   OID of NVT of preference.
- * @param[in]  alts      Array of gchar's.  Alternative values for type radio.
- * @param[in]  default_value   Default value of preference.
- * @param[in]  hr_name   Extended, more human-readable name of the preference.
- *
- * @return Newly allocated preference.
- */
-gpointer
-preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
-                char *nvt_oid, array_t *alts, char* default_value,
-                char *hr_name)
-{
-  preference_t *preference;
-
-  preference = (preference_t*) g_malloc0 (sizeof (preference_t));
-  preference->id = id;
-  preference->name = name;
-  preference->type = type;
-  preference->value = value;
-  preference->nvt_name = nvt_name;
-  preference->nvt_oid = nvt_oid;
-  preference->alts = alts;
-  preference->default_value = default_value;
-  preference->hr_name = hr_name;
-
-  return preference;
-}
-
-/**
- * @brief Frees a preference including its assigned values.
- *
- * @param[in]  preference  The preference to free.
- */
-void
-preference_free (preference_t *preference)
-{
-  if (preference == NULL)
-    return;
-
-  free (preference->id);
-  free (preference->name);
-  free (preference->type);
-  free (preference->value);
-  free (preference->nvt_name);
-  free (preference->nvt_oid);
-  if (preference->alts)
-    g_ptr_array_free (preference->alts, TRUE);
-  free (preference->default_value);
-  free (preference->hr_name);
-
-  g_free (preference);
-}
-
 
 /* CREATE_CONFIG. */
 
