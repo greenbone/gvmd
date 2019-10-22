@@ -13,12 +13,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Speed up the HELP 'brief' case [#807](https://github.com/greenbone/gvmd/pull/807)
 
 ### Changed
+- Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
 - Faster counting in GET_REPORTS when ignoring pagination [#795](https://github.com/greenbone/gvmd/pull/795)
 - Improve performance of GET_REPORTS [#797](https://github.com/greenbone/gvmd/pull/797)
 - Consider results_trash when deleting users [#800](https://github.com/greenbone/gvmd/pull/800)
+- Update to gvm-portnames-update to use new nomenclature [#802](https://github.com/greenbone/gvmd/pull/802)
+- Escaping correctly the percent sign in sql statements [#818](https://github.com/greenbone/gvmd/pull/818)
 
 ### Removed
 - Remove suport for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
