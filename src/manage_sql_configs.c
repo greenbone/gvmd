@@ -2096,7 +2096,8 @@ get_nvt_preference_by_id_or_name (const char *nvt_oid,
                              strdup (nvt_oid),
                              alts,
                              default_value,
-                             hr_name);
+                             hr_name,
+                             1);
 
   return new_pref;
 }

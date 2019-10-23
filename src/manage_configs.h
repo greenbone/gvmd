@@ -31,7 +31,7 @@
 gpointer
 preference_new (char *, char *, char *, char *, char *,
                 char *, array_t *, char*,
-                char *);
+                char *, int);
 
 void
 preference_free (preference_t *);
