@@ -273,9 +273,10 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
           while ((preference = first_entity (children)))
             {
               entity_t pref_name, pref_nvt_name, hr_name, nvt, alt;
-              char *preference_hr_name;
+              char *preference_hr_name, *preference_nvt_oid;
               array_t *import_alts;
               entities_t alts;
+              preference_t *new_preference;
 
               pref_name = entity_child (preference, "name");
 
@@ -305,17 +306,48 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                 }
               array_terminate (import_alts);
 
-              array_add (import_preferences,
-                         preference_new
+              preference_nvt_oid = attr_or_null (nvt, "oid");
+
+              if ((type == NULL || strcmp (entity_text (type), "0") == 0)
+                  && preference_nvt_oid
+                  && strcmp (preference_nvt_oid, ""))
+                {
+                  /* Preference in an OpenVAS config:
+                   * Get the preference from nvt_preferences */
+                  char *preference_id, *preference_name, *preference_value;
+
+                  preference_id
+                    = text_or_null (entity_child (preference, "id"));
+                  preference_name
+                    = text_or_null (entity_child (preference, "name"));
+                  preference_value
+                    = text_or_null (entity_child (preference, "value"));
+
+                  new_preference
+                    = get_nvt_preference_by_id_or_name (preference_nvt_oid,
+                                                        preference_id,
+                                                        preference_name,
+                                                        preference_value ?: "");
+                }
+              else
+                {
+                  /* Scanner preference (for OpenVAS or OSP configs):
+                   * Use directly from imported config.
+                   */
+                  new_preference
+                    = preference_new
                           (text_or_null (entity_child (preference, "id")),
                            text_or_null (pref_name),
                            text_or_null (entity_child (preference, "type")),
                            text_or_null (entity_child (preference, "value")),
                            text_or_null (pref_nvt_name),
-                           attr_or_null (nvt, "oid"),
+                           preference_nvt_oid,
                            import_alts,
                            text_or_null (entity_child (preference, "default")),
-                           preference_hr_name));
+                           preference_hr_name);
+                }
+
+              array_add (import_preferences, new_preference);
 
               children = next_entities (children);
             }
