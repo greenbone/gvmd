@@ -1993,6 +1993,7 @@ find_config_with_permission (const char* uuid, config_t* config,
  * @param[in]  nvt_oid    OID of the NVT the preference belongs to.
  * @param[in]  find_id    Preference id to find, or NULL.
  * @param[in]  check_name Preference name to check.
+ * @param[in]  check_type Preference name to check.
  * @param[in]  value      Value to assign to the preference.
  *
  * @return Newly allocated preference, freed with preference_free,
@@ -2002,6 +2003,7 @@ preference_t *
 get_nvt_preference_by_id (const char *nvt_oid,
                           const char *find_id,
                           const char *check_name,
+                          const char *check_type,
                           const char *value)
 {
   preference_t *new_pref;
@@ -2062,6 +2064,10 @@ get_nvt_preference_by_id (const char *nvt_oid,
   type = strdup (full_name_split[2]);
   name = strdup (full_name_split[3]);
   g_strfreev (full_name_split);
+
+  if (check_type && strcmp (check_type, "") && strcmp (check_type, type))
+    g_warning ("%s: type of preference %s:%s (%s) has changed from %s to %s.",
+               __FUNCTION__, nvt_oid, find_id, name, check_type, type);
 
   if (check_name && strcmp (check_name, "") && strcmp (check_name, name))
     g_message ("%s: name of preference %s:%s has changed from '%s' to '%s'.",
