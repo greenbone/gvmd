@@ -1997,7 +1997,7 @@ find_config_with_permission (const char* uuid, config_t* config,
  *
  * @return  Newly allocated preference, to be freed with preference_free.
  */
-static preference_t *
+preference_t *
 get_nvt_preference_by_id_or_name (const char *nvt_oid,
                                   const char *find_id,
                                   const char *find_name,
@@ -2085,6 +2085,9 @@ get_nvt_preference_by_id_or_name (const char *nvt_oid,
     g_message ("%s: Name of preference %s:%s changed from '%s' to '%s'",
                __FUNCTION__, nvt_oid, id, find_name, name);
 
+  alts = make_array ();
+  array_terminate (alts);
+
   new_pref = preference_new (id,
                              name,
                              type,
@@ -2161,10 +2164,23 @@ config_insert_preferences (config_t config,
               return -4;
 
             value = g_string_new (preference->value);
-            while ((alt = (gchar*) g_ptr_array_index (preference->alts, alt_index++)))
-              g_string_append_printf (value, ";%s", alt);
+            while ((alt = (gchar*) g_ptr_array_index (preference->alts,
+                                                      alt_index++)))
+              {
+                g_string_append_printf (value, ";%s", alt);
+              }
 
             quoted_nvt_oid = sql_quote (preference->nvt_oid ?: "");
+            quoted_preference_id = sql_quote (preference->id ?: "");
+            quoted_preference_name = sql_quote (preference->name);
+            quoted_preference_hr_name
+              = preference->hr_name
+                  ? sql_quote (preference->hr_name)
+                  : NULL;
+            quoted_type
+              = g_str_has_prefix (preference->type, "osp_")
+                  ? sql_quote (preference->type + strlen ("osp_"))
+                  : sql_quote (preference->type);
             quoted_value = sql_quote (value->str);
             g_string_free (value, TRUE);
             quoted_default = preference->default_value
@@ -2174,41 +2190,6 @@ config_insert_preferences (config_t config,
             if (config_type == NULL || strcmp (config_type, "0") == 0)
               {
                 /* NVT preference */
-                preference_t *new_pref;
-                const preference_t *used_pref;
-
-                /* Try to get preference by id */
-                new_pref
-                  = get_nvt_preference_by_id_or_name (preference->nvt_oid,
-                                                      preference->id,
-                                                      preference->name,
-                                                      preference->value);
-
-                if (new_pref == NULL)
-                  g_warning ("%s: Preference not found: %s, id: %s, name: %s",
-                             __FUNCTION__,
-                             preference->nvt_oid,
-                             preference->id,
-                             preference->name);
-
-                /* Use new name and type from NVT preferences if possible,
-                   otherwise fall back to given name and type */
-                if (new_pref)
-                  used_pref = new_pref;
-                else
-                  used_pref = preference;
-
-                quoted_preference_name = sql_quote (used_pref->name);
-                quoted_preference_hr_name
-                  = used_pref->hr_name
-                      ? sql_quote (used_pref->hr_name)
-                      : NULL;
-                quoted_type
-                  = g_str_has_prefix (used_pref->type, "osp_")
-                      ? sql_quote (used_pref->type + strlen ("osp_"))
-                      : sql_quote (used_pref->type);
-                quoted_preference_id = sql_quote (used_pref->id);
-
                 /* OID:PrefID:PrefType:PrefName value */
                 sql ("INSERT INTO config_preferences"
                      " (config, type, name, value)"
@@ -2219,23 +2200,10 @@ config_insert_preferences (config_t config,
                      quoted_type,
                      quoted_preference_name,
                      quoted_value);
-
-                preference_free (new_pref);
               }
             else
               {
                 /* OSP preference */
-                quoted_preference_name = sql_quote (preference->name);
-                quoted_preference_hr_name
-                  = preference->hr_name
-                      ? sql_quote (preference->hr_name)
-                      : NULL;
-                quoted_type
-                  = g_str_has_prefix (preference->type, "osp_")
-                      ? sql_quote (preference->type + strlen ("osp_"))
-                      : sql_quote (preference->type);
-                quoted_preference_id = NULL;
-
                 sql ("INSERT into config_preferences"
                      " (config, type, name, value, default_value, hr_name)"
                      " VALUES (%llu, '%s', '%s', '%s', '%s', '%s');",
