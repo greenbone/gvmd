@@ -344,7 +344,8 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                            preference_nvt_oid,
                            import_alts,
                            text_or_null (entity_child (preference, "default")),
-                           preference_hr_name);
+                           preference_hr_name,
+                           0 /* do not free strings */);
                 }
 
               array_add (import_preferences, new_preference);
@@ -436,10 +437,11 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
               pref = (preference_t*) g_ptr_array_index (import_preferences,
                                                         index);
               if (pref)
-                g_ptr_array_free (pref->alts, TRUE);
+                preference_free (pref);
             }
+          g_ptr_array_free (import_preferences, TRUE);
         }
-      array_free (import_preferences);
+
       array_free (import_nvt_selectors);
 
       create_config_reset ();

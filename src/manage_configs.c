@@ -41,13 +41,14 @@
  * @param[in]  alts      Array of gchar's.  Alternative values for type radio.
  * @param[in]  default_value   Default value of preference.
  * @param[in]  hr_name   Extended, more human-readable name of the preference.
+ * @param[in]  free_strings Whether string fields are freed by preference_free.
  *
  * @return Newly allocated preference.
  */
 gpointer
 preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
                 char *nvt_oid, array_t *alts, char* default_value,
-                char *hr_name)
+                char *hr_name, int free_strings)
 {
   preference_t *preference;
 
@@ -61,6 +62,7 @@ preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
   preference->alts = alts;
   preference->default_value = default_value;
   preference->hr_name = hr_name;
+  preference->free_strings = free_strings;
 
   return preference;
 }
@@ -76,16 +78,19 @@ preference_free (preference_t *preference)
   if (preference == NULL)
     return;
 
-  free (preference->id);
-  free (preference->name);
-  free (preference->type);
-  free (preference->value);
-  free (preference->nvt_name);
-  free (preference->nvt_oid);
   if (preference->alts)
     g_ptr_array_free (preference->alts, TRUE);
-  free (preference->default_value);
-  free (preference->hr_name);
+  if (preference->free_strings)
+    {
+      free (preference->id);
+      free (preference->name);
+      free (preference->type);
+      free (preference->value);
+      free (preference->nvt_name);
+      free (preference->nvt_oid);
+      free (preference->default_value);
+      free (preference->hr_name);
+    }
 
   g_free (preference);
 }
