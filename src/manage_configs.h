@@ -40,6 +40,7 @@ preference_t *
 get_nvt_preference_by_id (const char *,
                           const char *,
                           const char *,
+                          const char *,
                           const char *);
 
 #endif /* not _GVMD_MANAGE_CONFIGS_H */

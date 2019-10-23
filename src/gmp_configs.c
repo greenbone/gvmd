@@ -314,12 +314,15 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                 {
                   /* Preference in an OpenVAS config:
                    * Get the preference from nvt_preferences */
-                  char *preference_id, *preference_name, *preference_value;
+                  char *preference_id, *preference_name, *preference_type;
+                  char *preference_value;
 
                   preference_id
                     = text_or_null (entity_child (preference, "id"));
                   preference_name
                     = text_or_null (entity_child (preference, "name"));
+                  preference_type
+                    = text_or_null (entity_child (preference, "type"));
                   preference_value
                     = text_or_null (entity_child (preference, "value"));
 
@@ -329,6 +332,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                         = get_nvt_preference_by_id (preference_nvt_oid,
                                                     preference_id,
                                                     preference_name,
+                                                    preference_type,
                                                     preference_value ?: "");
                       if (new_preference == NULL)
                         g_warning ("%s: Preference %s:%s not found",
