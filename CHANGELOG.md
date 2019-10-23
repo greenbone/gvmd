@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Faster SecInfo REF retrieval for GET_REPORTS [#793](https://github.com/greenbone/gvmd/pull/793)
 - Improve performance of GET_REPORTS [#801](https://github.com/greenbone/gvmd/pull/801) [#811](https://github.com/greenbone/gvmd/pull/811)
 - Speed up the HELP 'brief' case [#807](https://github.com/greenbone/gvmd/pull/807)
+- Faster startup [#826](https://github.com/greenbone/gvmd/pull/826)
 
 ### Changed
 
