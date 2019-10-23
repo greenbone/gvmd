@@ -1992,21 +1992,22 @@ find_config_with_permission (const char* uuid, config_t* config,
  *
  * @param[in]  nvt_oid    OID of the NVT the preference belongs to.
  * @param[in]  find_id    Preference id to find, or NULL.
- * @param[in]  find_name  Preference name to find if id is missing / not found.
+ * @param[in]  check_name Preference name to check.
  * @param[in]  value      Value to assign to the preference.
  *
- * @return  Newly allocated preference, to be freed with preference_free.
+ * @return Newly allocated preference, freed with preference_free,
+ *          or NULL (on error or if not found).
  */
 preference_t *
-get_nvt_preference_by_id_or_name (const char *nvt_oid,
-                                  const char *find_id,
-                                  const char *find_name,
-                                  const char *value)
+get_nvt_preference_by_id (const char *nvt_oid,
+                          const char *find_id,
+                          const char *check_name,
+                          const char *value)
 {
   preference_t *new_pref;
   char *full_name, *id, *name, *type, *nvt_name, *default_value, *hr_name;
   array_t *alts;
-  gchar *quoted_oid, *quoted_id, *quoted_name;
+  gchar *quoted_oid, *quoted_id;
   char **full_name_split;
 
   full_name = name = type = nvt_name = default_value = hr_name = NULL;
@@ -2018,9 +2019,9 @@ get_nvt_preference_by_id_or_name (const char *nvt_oid,
       g_warning ("%s: Missing nvt_oid", __FUNCTION__);
       return NULL;
     }
-  if (find_id == NULL && find_name == NULL)
+  if (find_id == NULL || strcmp (find_id, "") == 0)
     {
-      g_warning ("%s: Missing find_id and find_name", __FUNCTION__);
+      g_warning ("%s: Missing or empty find_id", __FUNCTION__);
       return NULL;
     }
   if (value == NULL)
@@ -2032,29 +2033,14 @@ get_nvt_preference_by_id_or_name (const char *nvt_oid,
   /* Try to get by id first */
   quoted_oid = sql_quote (nvt_oid);
   quoted_id = find_id ? sql_quote (find_id) : NULL;
-  quoted_name = find_name ? sql_quote (find_name) : NULL;
 
-  if (find_id && strcmp (find_id, ""))
-    full_name = sql_string ("SELECT name FROM nvt_preferences"
-                            " WHERE name LIKE '%s:%s:%%:%%'",
-                            quoted_oid,
-                            quoted_id);
-  else
-    g_message ("%s: No id given, selecting %s:'%s' by name",
-               __FUNCTION__, nvt_oid, find_name);
-
-  /* Try to get by name if id is missing or not found */
-  if (full_name == NULL && find_name && strcmp (find_name, ""))
-    {
-      full_name = sql_string ("SELECT name FROM nvt_preferences"
-                              " WHERE name LIKE '%s:%%:%%:%s'",
-                              quoted_oid,
-                              quoted_name);
-    }
+  full_name = sql_string ("SELECT name FROM nvt_preferences"
+                          " WHERE name LIKE '%s:%s:%%:%%'",
+                          quoted_oid,
+                          quoted_id);
 
   g_free (quoted_oid);
   g_free (quoted_id);
-  g_free (quoted_name);
 
   if (full_name == NULL)
     return NULL;
@@ -2077,13 +2063,9 @@ get_nvt_preference_by_id_or_name (const char *nvt_oid,
   name = strdup (full_name_split[3]);
   g_strfreev (full_name_split);
 
-  if (find_id && strcmp (find_id, "") && strcmp (find_id, id))
-    g_warning ("%s: id %s of preference %s:'%s' has changed to %s.",
-               __FUNCTION__, find_id, nvt_oid, name, id);
-
-  if (find_name && strcmp (find_name, "") && strcmp (find_name, name))
-    g_message ("%s: Name of preference %s:%s changed from '%s' to '%s'",
-               __FUNCTION__, nvt_oid, id, find_name, name);
+  if (check_name && strcmp (check_name, "") && strcmp (check_name, name))
+    g_message ("%s: name of preference %s:%s has changed from '%s' to '%s'.",
+               __FUNCTION__, nvt_oid, find_id, check_name, name);
 
   alts = make_array ();
   array_terminate (alts);

@@ -37,9 +37,9 @@ void
 preference_free (preference_t *);
 
 preference_t *
-get_nvt_preference_by_id_or_name (const char *,
-                                  const char *,
-                                  const char *,
-                                  const char *);
+get_nvt_preference_by_id (const char *,
+                          const char *,
+                          const char *,
+                          const char *);
 
 #endif /* not _GVMD_MANAGE_CONFIGS_H */
