@@ -323,11 +323,28 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                   preference_value
                     = text_or_null (entity_child (preference, "value"));
 
-                  new_preference
-                    = get_nvt_preference_by_id_or_name (preference_nvt_oid,
-                                                        preference_id,
-                                                        preference_name,
-                                                        preference_value ?: "");
+                  if (preference_id && strcmp (preference_id, ""))
+                    {
+                      new_preference
+                        = get_nvt_preference_by_id (preference_nvt_oid,
+                                                    preference_id,
+                                                    preference_name,
+                                                    preference_value ?: "");
+                      if (new_preference == NULL)
+                        g_warning ("%s: Preference %s:%s not found",
+                                    __FUNCTION__,
+                                    preference_nvt_oid,
+                                    preference_id);
+                    }
+                  else
+                    {
+                      g_warning ("%s: Config contains a preference for NVT %s"
+                                 " without a preference id: %s",
+                                 __FUNCTION__,
+                                 preference_nvt_oid,
+                                 preference_name);
+                      new_preference = NULL;
+                    }
                 }
               else
                 {
