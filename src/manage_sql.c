@@ -15490,37 +15490,41 @@ update_nvti_cache ()
   nvti_cache = nvtis_new ();
 
   init_iterator (&nvts,
-                 "SELECT oid, name, family, cvss_base, tag, solution, solution_type FROM nvts;");
+                 "SELECT nvts.oid, nvts.name, nvts.family, nvts.cvss_base,"
+                 "       nvts.tag, nvts.solution, nvts.solution_type,"
+                 /*      7 */
+                 "       vt_refs.type, vt_refs.ref_id, vt_refs.ref_text"
+                 " FROM nvts"
+                 " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
+
   while (next (&nvts))
     {
-      iterator_t refs;
+      nvti_t *nvti;
 
-      nvti_t *nvti = nvti_new ();
-      nvti_set_oid (nvti, iterator_string (&nvts, 0));
-      nvti_set_name (nvti, iterator_string (&nvts, 1));
-      nvti_set_family (nvti, iterator_string (&nvts, 2));
-      nvti_set_cvss_base (nvti, iterator_string (&nvts, 3));
-      nvti_set_tag (nvti, iterator_string (&nvts, 4));
-      nvti_set_solution (nvti, iterator_string (&nvts, 5));
-      nvti_set_solution_type (nvti, iterator_string (&nvts, 6));
-
-      init_iterator (&refs,
-                     "SELECT type, ref_id, ref_text"
-                     " FROM vt_refs"
-                     " WHERE vt_oid = '%s';",
-                     iterator_string (&nvts, 0));
-
-      while (next (&refs))
+      nvti = nvtis_lookup (nvti_cache, iterator_string (&nvts, 0));
+      if (nvti == NULL)
         {
-          nvti_add_vtref (nvti, vtref_new (iterator_string (&refs, 0),
-                                           iterator_string (&refs, 1),
-                                           iterator_string (&refs, 2)));
+          nvti = nvti_new ();
+          nvti_set_oid (nvti, iterator_string (&nvts, 0));
+          nvti_set_name (nvti, iterator_string (&nvts, 1));
+          nvti_set_family (nvti, iterator_string (&nvts, 2));
+          nvti_set_cvss_base (nvti, iterator_string (&nvts, 3));
+          nvti_set_tag (nvti, iterator_string (&nvts, 4));
+          nvti_set_solution (nvti, iterator_string (&nvts, 5));
+          nvti_set_solution_type (nvti, iterator_string (&nvts, 6));
+
+          nvtis_add (nvti_cache, nvti);
         }
 
-      cleanup_iterator (&refs);
-
-      nvtis_add (nvti_cache, nvti);
+      if (iterator_null (&nvts, 8))
+        /* No refs. */;
+      else
+        nvti_add_vtref (nvti,
+                        vtref_new (iterator_string (&nvts, 7),
+                                   iterator_string (&nvts, 8),
+                                   iterator_string (&nvts, 9)));
     }
+
   cleanup_iterator (&nvts);
 }
 
