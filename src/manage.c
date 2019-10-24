@@ -4937,7 +4937,16 @@ set_relay_migrate_sensors (int new_value)
   relay_migrate_sensors = new_value;
 }
 
-
+/**
+ * @brief Gets the info about a scanner relay as an XML entity_t.
+ *
+ * @param[in]  original_host    The original hostname or IP address.
+ * @param[in]  original_port    The original port number.
+ * @param[in]  protocol         The protocol to look for, e.g. "GMP" or "OSP".
+ * @param[out] ret_entity       Return location for the parsed XML.
+ *
+ * @return 0: success, -1 error.
+ */
 static int
 get_relay_info_entity (const char *original_host, int original_port,
                        const char *protocol, entity_t *ret_entity)
@@ -5019,6 +5028,15 @@ get_relay_info_entity (const char *original_host, int original_port,
   return ret;
 }
 
+/**
+ * @brief Gets whether there is a relay supporting the scanner type.
+ *
+ * @param[in]  original_host    The original hostname or IP address.
+ * @param[in]  original_port    The original port number.
+ * @param[in]  type             The scanner type to check.
+ *
+ * @return Whether there is a relay supporting the scanner type.
+ */
 gboolean
 relay_supports_scanner_type (const char *original_host, int original_port,
                              scanner_type_t type)
