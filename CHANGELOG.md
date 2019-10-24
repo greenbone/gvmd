@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Faster counting in GET_REPORTS when ignoring pagination [#795](https://github.com/greenbone/gvmd/pull/795)
 - Try to get NVT preferences by id in create_config [#821](https://github.com/greenbone/gvmd/pull/821)
 - Improve performance of GET_REPORTS [#797](https://github.com/greenbone/gvmd/pull/797)
+- Fix preference ID in "Host Discovery" config [#828](https://github.com/greenbone/gvmd/pull/828)
 - Consider results_trash when deleting users [#800](https://github.com/greenbone/gvmd/pull/800)
 - Update to gvm-portnames-update to use new nomenclature [#802](https://github.com/greenbone/gvmd/pull/802)
 - Escaping correctly the percent sign in sql statements  [#818](https://github.com/greenbone/gvmd/pull/818)
