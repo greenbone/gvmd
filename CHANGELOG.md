@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve performance of GET_REPORTS [#797](https://github.com/greenbone/gvmd/pull/797)
 - Consider results_trash when deleting users [#800](https://github.com/greenbone/gvmd/pull/800)
 - Escaping correctly the percent sign in sql statements  [#818](https://github.com/greenbone/gvmd/pull/818)
+- Remove incorrect duplicates from config preference migrator [#830](https://github.com/greenbone/gvmd/pull/830)
 
 ### Removed
 - Remove suport for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
