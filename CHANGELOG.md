@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Add setting "BPM Dashboard Configuration" [#764](https://github.com/greenbone/gvmd/pull/764)
+- Add option --optimize migrate-relay-sensors [#827](https://github.com/greenbone/gvmd/pull/827)
 - Faster SecInfo REF retrieval for GET_REPORTS [#793](https://github.com/greenbone/gvmd/pull/793)
 - Improve performance of GET_REPORTS [#801](https://github.com/greenbone/gvmd/pull/801) [#811](https://github.com/greenbone/gvmd/pull/811) [#817](https://github.com/greenbone/gvmd/pull/817)
 - Speed up the HELP 'brief' case [#807](https://github.com/greenbone/gvmd/pull/807)
