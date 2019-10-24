@@ -17,7 +17,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# This script migrates a GVM installation from SQLite to Postgres.
+# This script migrates the XML for a config to the new NVT preference format.
+#
+# USAGE: cat scanconfig-old.xml | gvm-migrate-config > scanconfig-new.xml
 
 VERSION=20191024
 
