@@ -28,5 +28,19 @@
 
 #include "manage.h"
 
+gpointer
+preference_new (char *, char *, char *, char *, char *,
+                char *, array_t *, char*,
+                char *, int);
+
+void
+preference_free (preference_t *);
+
+preference_t *
+get_nvt_preference_by_id (const char *,
+                          const char *,
+                          const char *,
+                          const char *,
+                          const char *);
 
 #endif /* not _GVMD_MANAGE_CONFIGS_H */
