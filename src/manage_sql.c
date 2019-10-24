@@ -15489,10 +15489,17 @@ update_nvti_cache ()
 
   nvti_cache = nvtis_new ();
 
+  /* Because there are many NVTs and many refs it's slow to query the refs
+   * for each NVT.  So this query gets the NVTs and their refs at the same
+   * time.
+   *
+   * The NVT data is duplicated in the result of the query when there are
+   * multiple refs for an NVT, but the loop below uses nvtis_lookup to
+   * check if we've already seen the NVT.  This also means we don't have
+   * to sort the data by NVT, which would make the query too slow. */
   init_iterator (&nvts,
                  "SELECT nvts.oid, nvts.name, nvts.family, nvts.cvss_base,"
                  "       nvts.tag, nvts.solution, nvts.solution_type,"
-                 /*      7 */
                  "       vt_refs.type, vt_refs.ref_id, vt_refs.ref_text"
                  " FROM nvts"
                  " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
