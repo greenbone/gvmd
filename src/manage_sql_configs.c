@@ -2013,7 +2013,6 @@ get_nvt_preference_by_id (const char *nvt_oid,
   char **full_name_split;
 
   full_name = name = type = nvt_name = default_value = hr_name = NULL;
-  alts = NULL;
 
   /* Check parameters */
   if (nvt_oid == NULL)
