@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [9.0.1] (unreleased)
 
 ### Added
+- Add option --optimize migrate-relay-sensors [#827](https://github.com/greenbone/gvmd/pull/827)
 
 ### Changed
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
