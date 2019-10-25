@@ -1425,11 +1425,11 @@ check_preference_names (int trash, time_t modification_time)
 
   init_iterator (&prefs,
                  "WITH new_pref_matches AS"
-                 " (SELECT substring(nvt_preferences.name,"
-                 "                   '^([^:]*:[^:]*)') || ':%%' AS match,"
+                 " (SELECT substring (nvt_preferences.name,"
+                 "                    '^([^:]*:[^:]*)') || ':%%' AS match,"
                  "          name AS new_name"
                  "     FROM nvt_preferences"
-                 "    WHERE substr (name, 0, position(':' IN name))"
+                 "    WHERE substr (name, 0, position (':' IN name))"
                  "          IN (SELECT oid FROM nvts"
                  "              WHERE modification_time > %ld))"
                  " SELECT c_prefs.id, c_prefs.name as old_name, new_name,"
