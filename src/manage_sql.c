@@ -17832,20 +17832,20 @@ manage_migrate_relay_sensors ()
                        SCANNER_TYPE_OSP_SENSOR,
                        scanner);
 
-                  gmp_successes ++;
+                  gmp_successes++;
                 }
               else
                 {
                   g_message ("%s: No relay found for GMP scanner %s (%s:%d).",
                             __FUNCTION__, scanner_id, host, port);
-                  gmp_failures ++;
+                  gmp_failures++;
                 }
             }
           else if (type == SCANNER_TYPE_OSP_SENSOR)
             {
               g_message ("%s: No relay found for OSP Sensor %s (%s:%d).",
                          __FUNCTION__, scanner_id, host, port);
-              osp_failures ++;
+              osp_failures++;
             }
           else
             g_warning ("%s: Unexpected type for scanner %s: %d",
