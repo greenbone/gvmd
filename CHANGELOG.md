@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
 - Removed tag_value() by using nvti_get_tag() [#825](https://github.com/greenbone/gvmd/pull/825)
+- Remove support for "MODIFY_REPORT" GMP command [#823](https://github.com/greenbone/gvmd/pull/823)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 
