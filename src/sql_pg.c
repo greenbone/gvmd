@@ -952,6 +952,11 @@ sql_column_array (sql_stmt_t *stmt, int position)
         }
       return array;
     }
+
+  /* This shouldn't happen. */
+  assert (0);
+  g_warning ("%s: array column not NULL and does not contain array",
+             __FUNCTION__);
   return NULL;
 }
 
