@@ -231,8 +231,8 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
          (get_tls_certificates_data.get.details || include_certificate_data)
             ? tls_certificate_iterator_certificate (&tls_certificates)
             : "",
-         tls_certificate_iterator_md5_fingerprint (&tls_certificates),
          tls_certificate_iterator_sha256_fingerprint (&tls_certificates),
+         tls_certificate_iterator_md5_fingerprint (&tls_certificates),
          tls_certificate_iterator_trust (&tls_certificates),
          tls_certificate_iterator_valid (&tls_certificates),
          tls_certificate_iterator_time_status (&tls_certificates),
