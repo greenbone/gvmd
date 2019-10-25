@@ -170,6 +170,11 @@ extern volatile int termination_signal;
 static gchar *relay_mapper_path = NULL;
 
 /**
+ * @brief Whether to migrate sensors if relays do not match.
+ */
+static int relay_migrate_sensors = 0;
+
+/**
  * @brief Number of minutes before overdue tasks timeout.
  */
 static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
@@ -4908,6 +4913,158 @@ set_relay_mapper_path (const char *new_path)
 }
 
 /**
+ * @brief Gets whether to migrate sensors if relays do not match.
+ *
+ * @return Whether to migrate sensors if relays do not match.
+ */
+int
+get_relay_migrate_sensors ()
+{
+  return relay_migrate_sensors;
+}
+
+/**
+ * @brief Sets whether to migrate sensors if relays do not match.
+ *
+ * @param[in]  new_value  The new value.
+ */
+void
+set_relay_migrate_sensors (int new_value)
+{
+  relay_migrate_sensors = new_value;
+}
+
+/**
+ * @brief Gets the info about a scanner relay as an XML entity_t.
+ *
+ * @param[in]  original_host    The original hostname or IP address.
+ * @param[in]  original_port    The original port number.
+ * @param[in]  protocol         The protocol to look for, e.g. "GMP" or "OSP".
+ * @param[out] ret_entity       Return location for the parsed XML.
+ *
+ * @return 0: success, -1 error.
+ */
+static int
+get_relay_info_entity (const char *original_host, int original_port,
+                       const char *protocol, entity_t *ret_entity)
+{
+  gchar **cmd, *stdout_str, *stderr_str;
+  int ret, exit_code;
+  GError *err;
+  entity_t relay_entity;
+
+  if (ret_entity == NULL)
+    return -1;
+
+  *ret_entity = NULL;
+  stdout_str = NULL;
+  stderr_str = NULL;
+  ret = -1;
+  exit_code = -1;
+  err = NULL;
+
+  cmd = (gchar **) g_malloc (8 * sizeof (gchar *));
+  cmd[0] = g_strdup (relay_mapper_path);
+  cmd[1] = g_strdup ("--host");
+  cmd[2] = g_strdup (original_host);
+  cmd[3] = g_strdup ("--port");
+  cmd[4] = g_strdup_printf ("%d", original_port);
+  cmd[5] = g_strdup ("--protocol");
+  cmd[6] = g_strdup (protocol);
+  cmd[7] = NULL;
+
+  if (g_spawn_sync (NULL,
+                    cmd,
+                    NULL,
+                    G_SPAWN_SEARCH_PATH,
+                    NULL,
+                    NULL,
+                    &stdout_str,
+                    &stderr_str,
+                    &exit_code,
+                    &err) == FALSE)
+    {
+      g_warning ("%s: g_spawn_sync failed: %s",
+                  __FUNCTION__, err ? err->message : "");
+      g_strfreev (cmd);
+      g_free (stdout_str);
+      g_free (stderr_str);
+      return -1;
+    }
+  else if (exit_code)
+    {
+      g_warning ("%s: mapper exited with code %d",
+                  __FUNCTION__, exit_code);
+      g_message ("%s: mapper stderr:\n%s", __FUNCTION__, stderr_str);
+      g_debug ("%s: mapper stdout:\n%s", __FUNCTION__, stdout_str);
+      g_strfreev (cmd);
+      g_free (stdout_str);
+      g_free (stderr_str);
+      return -1;
+    }
+
+  relay_entity = NULL;
+  if (parse_entity (stdout_str, &relay_entity))
+    {
+      g_warning ("%s: failed to parse mapper output",
+                  __FUNCTION__);
+      g_message ("%s: mapper stdout:\n%s", __FUNCTION__, stdout_str);
+      g_message ("%s: mapper stderr:\n%s", __FUNCTION__, stderr_str);
+    }
+  else
+    {
+      ret = 0;
+      *ret_entity = relay_entity;
+    }
+
+  g_strfreev (cmd);
+  g_free (stdout_str);
+  g_free (stderr_str);
+
+  return ret;
+}
+
+/**
+ * @brief Gets whether there is a relay supporting the scanner type.
+ *
+ * @param[in]  original_host    The original hostname or IP address.
+ * @param[in]  original_port    The original port number.
+ * @param[in]  type             The scanner type to check.
+ *
+ * @return Whether there is a relay supporting the scanner type.
+ */
+gboolean
+relay_supports_scanner_type (const char *original_host, int original_port,
+                             scanner_type_t type)
+{
+  entity_t relay_entity = NULL;
+  const char *protocol;
+  gboolean ret = FALSE;
+
+  if (type == SCANNER_TYPE_GMP)
+    protocol = "GMP";
+  else if (type == SCANNER_TYPE_OSP_SENSOR)
+    protocol = "OSP";
+  else
+    return FALSE;
+
+  if (get_relay_info_entity (original_host, original_port,
+                             protocol, &relay_entity) == 0)
+    {
+      entity_t host_entity;
+      host_entity = entity_child (relay_entity, "host");
+
+      if (host_entity
+          && strcmp (entity_text (host_entity), ""))
+        {
+          ret = TRUE;
+        }
+    }
+  free_entity (relay_entity);
+  return ret;
+}
+
+/**
  * @brief Gets a relay hostname and port for a sensor scanner.
  *
  * If no mapper is available, a copy of the original host, port and
@@ -4948,65 +5105,10 @@ slave_get_relay (const char *original_host,
     }
   else
     {
-      gchar **cmd, *stdout_str, *stderr_str;
-      int exit_code;
-      GError *err;
-      entity_t relay_entity;
+      entity_t relay_entity = NULL;
 
-      stdout_str = NULL;
-      stderr_str = NULL;
-      exit_code = -1;
-      err = NULL;
-
-      cmd = (gchar **) g_malloc (8 * sizeof (gchar *));
-      cmd[0] = g_strdup (relay_mapper_path);
-      cmd[1] = g_strdup ("--host");
-      cmd[2] = g_strdup (original_host);
-      cmd[3] = g_strdup ("--port");
-      cmd[4] = g_strdup_printf ("%d", original_port);
-      cmd[5] = g_strdup ("--protocol");
-      cmd[6] = g_strdup (protocol);
-      cmd[7] = NULL;
-
-      if (g_spawn_sync (NULL,
-                        cmd,
-                        NULL,
-                        G_SPAWN_SEARCH_PATH,
-                        NULL,
-                        NULL,
-                        &stdout_str,
-                        &stderr_str,
-                        &exit_code,
-                        &err) == FALSE)
-        {
-          g_warning ("%s: g_spawn_sync failed: %s",
-                     __FUNCTION__, err ? err->message : "");
-          g_strfreev (cmd);
-          g_free (stdout_str);
-          g_free (stderr_str);
-          return -1;
-        }
-      else if (exit_code)
-        {
-          g_warning ("%s: mapper exited with code %d",
-                     __FUNCTION__, exit_code);
-          g_message ("%s: mapper stderr:\n%s", __FUNCTION__, stderr_str);
-          g_debug ("%s: mapper stdout:\n%s", __FUNCTION__, stdout_str);
-          g_strfreev (cmd);
-          g_free (stdout_str);
-          g_free (stderr_str);
-          return -1;
-        }
-
-      relay_entity = NULL;
-      if (parse_entity (stdout_str, &relay_entity))
-        {
-          g_warning ("%s: failed to parse mapper output",
-                     __FUNCTION__);
-          g_message ("%s: mapper stdout:\n%s", __FUNCTION__, stdout_str);
-          g_message ("%s: mapper stderr:\n%s", __FUNCTION__, stderr_str);
-        }
-      else
+      if (get_relay_info_entity (original_host, original_port,
+                                 protocol, &relay_entity) == 0)
         {
           entity_t host_entity, port_entity, ca_cert_entity;
 
@@ -5049,9 +5151,6 @@ slave_get_relay (const char *original_host,
             }
           free_entity (relay_entity);
         }
-      g_strfreev (cmd);
-      g_free (stdout_str);
-      g_free (stderr_str);
     }
 
   return ret;

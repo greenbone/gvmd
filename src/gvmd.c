@@ -1779,7 +1779,8 @@ gvmd (int argc, char** argv)
           "Run an optimization: vacuum, analyze, cleanup-config-prefs,"
           " cleanup-port-names, cleanup-report-formats,"
           " cleanup-result-severities, cleanup-schedule-times,"
-          " rebuild-report-cache or update-report-cache.",
+          " migrate-relay-sensors, rebuild-report-cache or"
+          " update-report-cache.",
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
           &osp_vt_update,
