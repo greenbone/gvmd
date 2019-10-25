@@ -1408,7 +1408,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
  * @param[in]  table  Table name.
  */
 static void
-check_preference_names (const gchar *table)
+check_old_preference_names (const gchar *table)
 {
   /* 1.3.6.1.4.1.25623.1.0.14259:checkbox:Log nmap output
    * =>
@@ -1425,6 +1425,75 @@ check_preference_names (const gchar *table)
        table,
        table,
        table);
+}
+
+/**
+ * @brief Update config preferences where the name has changed in the NVTs.
+ *
+ * @param[in]  trash              Whether to update the trash table.
+ * @param[in]  modification_time  Time NVTs considered must be modified after.
+ */
+static void
+check_preference_names (int trash, time_t modification_time)
+{
+  iterator_t prefs;
+
+  sql_begin_immediate ();
+
+  init_iterator (&prefs,
+                 "WITH new_pref_matches AS"
+                 " (SELECT substring(nvt_preferences.name,"
+                 "                   '^([^:]*:[^:]*)') || ':%%' AS match,"
+                 "          name AS new_name"
+                 "     FROM nvt_preferences"
+                 "    WHERE substr (name, 0, position(':' IN name))"
+                 "          IN (SELECT oid FROM nvts"
+                 "              WHERE modification_time > %ld))"
+                 " SELECT c_prefs.id, c_prefs.name as old_name, new_name,"
+                 "        configs%s.uuid AS config_id"
+                 "  FROM config_preferences%s AS c_prefs"
+                 "  JOIN new_pref_matches"
+                 "    ON c_prefs.name LIKE new_pref_matches.match"
+                 "  JOIN configs%s ON configs%s.id = c_prefs.config"
+                 " WHERE c_prefs.name != new_name;",
+                 modification_time,
+                 trash ? "_trash" : "",
+                 trash ? "_trash" : "",
+                 trash ? "_trash" : "",
+                 trash ? "_trash" : "");
+
+  while (next (&prefs))
+    {
+      resource_t preference;
+      const char *old_name, *new_name, *config_id;
+      gchar *quoted_new_name;
+
+      preference = iterator_int64 (&prefs, 0);
+      old_name = iterator_string (&prefs, 1);
+      new_name = iterator_string (&prefs, 2);
+      config_id = iterator_string (&prefs, 3);
+
+      g_message ("Preference '%s' of %sconfig %s changed to '%s'",
+                 old_name,
+                 trash ? "trash " : "",
+                 config_id,
+                 new_name);
+
+      quoted_new_name = sql_quote (new_name);
+
+      sql ("UPDATE config_preferences%s"
+           " SET name = '%s'"
+           " WHERE id = %llu",
+           trash ? "_trash " : "",
+           quoted_new_name,
+           preference);
+
+      g_free (quoted_new_name);
+    }
+
+  sql_commit ();
+
+  cleanup_iterator (&prefs);
 }
 
 /**
@@ -1474,9 +1543,18 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       GSList *scanner_prefs;
       entity_t vts;
       osp_get_vts_opts_t get_vts_opts;
+      time_t old_nvts_last_modified;
 
       g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
+
+      if (db_feed_version == NULL
+          || strcmp (db_feed_version, "") == 0
+          || strcmp (db_feed_version, "0") == 0)
+        old_nvts_last_modified = 0;
+      else
+        old_nvts_last_modified
+          = (time_t) sql_int64_0 ("SELECT max(modification_time) FROM nvts");
 
       connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
       if (!connection)
@@ -1575,13 +1653,20 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
                    "                 0);")
           == 0)
         {
-          check_preference_names ("config_preferences");
-          check_preference_names ("config_preferences_trash");
+          check_old_preference_names ("config_preferences");
+          check_old_preference_names ("config_preferences_trash");
+
+          /* Force update of names in new format in case hard-coded names
+           *  in migrator are outdated */
+          old_nvts_last_modified = 0;
 
           sql ("INSERT INTO meta (name, value)"
                " VALUES ('checked_preferences', 1)"
                " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
         }
+
+      check_preference_names (0, old_nvts_last_modified);
+      check_preference_names (1, old_nvts_last_modified);
     }
 
   return 0;
