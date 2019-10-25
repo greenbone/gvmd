@@ -1640,7 +1640,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
           check_old_preference_names ("config_preferences_trash");
 
           /* Force update of names in new format in case hard-coded names
-           *  in migrator are outdated */
+           * used by migrators are outdated */
           old_nvts_last_modified = 0;
 
           sql ("INSERT INTO meta (name, value)"
