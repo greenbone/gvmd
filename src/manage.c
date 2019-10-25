@@ -4955,9 +4955,8 @@ get_relay_info_entity (const char *original_host, int original_port,
 
   if (ret_entity == NULL)
     return -1;
-  else
-    *ret_entity = NULL;
 
+  *ret_entity = NULL;
   stdout_str = NULL;
   stderr_str = NULL;
   ret = -1;
@@ -5056,7 +5055,6 @@ relay_supports_scanner_type (const char *original_host, int original_port,
       host_entity = entity_child (relay_entity, "host");
 
       if (host_entity
-          && entity_text (host_entity)
           && strcmp (entity_text (host_entity), ""))
         {
           ret = TRUE;
