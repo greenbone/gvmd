@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Faster SecInfo REF retrieval for GET_REPORTS [#793](https://github.com/greenbone/gvmd/pull/793)
 - Improve performance of GET_REPORTS [#801](https://github.com/greenbone/gvmd/pull/801) [#811](https://github.com/greenbone/gvmd/pull/811) [#817](https://github.com/greenbone/gvmd/pull/817)
 - Speed up the HELP 'brief' case [#807](https://github.com/greenbone/gvmd/pull/807)
+- Faster startup [#826](https://github.com/greenbone/gvmd/pull/826)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
@@ -21,7 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve performance of GET_REPORTS [#797](https://github.com/greenbone/gvmd/pull/797)
 - Consider results_trash when deleting users [#800](https://github.com/greenbone/gvmd/pull/800)
 - Update to gvm-portnames-update to use new nomenclature [#802](https://github.com/greenbone/gvmd/pull/802)
-- Escaping correctly the percent sign in sql statements [#818](https://github.com/greenbone/gvmd/pull/818)
+- Escaping correctly the percent sign in sql statements  [#818](https://github.com/greenbone/gvmd/pull/818)
+- Remove incorrect duplicates from config preference migrator [#830](https://github.com/greenbone/gvmd/pull/830)
 
 ### Removed
 - Remove suport for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
