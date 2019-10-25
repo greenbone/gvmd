@@ -432,7 +432,7 @@ supported values for `<name>` are:
 
   If relays are active, this can be used to make sure all sensor type
   scanners have a matching relay, i.e. OSP sensors have an OSP relay
-  and GMP scanners have an GMP relay.
+  and GMP scanners have a GMP relay.
   GMP scanners are migrated to OSP sensors if an OSP relay is available.
 
 - `rebuild-report-cache`
