@@ -9895,6 +9895,8 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
     {
       get_data_t get;
       iterator_t notes;
+      GString *temp_buffer;
+
       memset (&get, '\0', sizeof (get));
       /* Most recent first. */
       get.filter = "sort-reverse=created owner=any permission=any";
@@ -9908,15 +9910,20 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
                           result,
                           task);
 
-      if (lean == 0 || next (&notes))
-        g_string_append (buffer, "<notes>");
-      buffer_notes_xml (buffer,
+      temp_buffer = g_string_new ("");
+      buffer_notes_xml (temp_buffer,
                         &notes,
                         include_notes_details,
                         0,
                         NULL);
-      if (lean == 0 || next (&notes))
-        g_string_append (buffer, "</notes>");
+
+      if (lean == 0 || strlen (temp_buffer->str))
+        {
+          g_string_append (buffer, "<notes>");
+          g_string_append (buffer, temp_buffer->str);
+          g_string_append (buffer, "</notes>");
+        }
+      g_string_free (temp_buffer, TRUE);
 
       cleanup_iterator (&notes);
     }
