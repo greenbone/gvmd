@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update to gvm-portnames-update to use new nomenclature [#802](https://github.com/greenbone/gvmd/pull/802)
 - Escaping correctly the percent sign in sql statements  [#818](https://github.com/greenbone/gvmd/pull/818)
 - Remove incorrect duplicates from config preference migrator [#830](https://github.com/greenbone/gvmd/pull/830)
+- MODIFY_USER saves comment when COMMENT is empty [#838](https://github.com/greenbone/gvmd/pull/838)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
