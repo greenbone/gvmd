@@ -10028,24 +10028,26 @@ add_detail (GString *buffer, const gchar *name, const gchar *value)
  * @brief Append a REFS element to an XML buffer.
  *
  * @param[in]  buffer       Buffer.
+ * @param[in]  results      Result iterator.
  * @param[in]  oid          OID.
  * @param[in]  cert_loaded     Whether CERT db is loaded.
- * @param[in]  has_cert_bunds  Whether results has CERT-Bund advisories.
- * @param[in]  has_dfn_certs   Whether results has DFN-CERT advisories.
  * @param[in]  first           Marker for first element.
  */
 static void
-results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
-                         int has_cert_bunds, int has_dfn_certs, int *first)
+results_xml_append_cert (GString *buffer, iterator_t *results, const char *oid,
+                         int cert_loaded, int *first)
 {
-  iterator_t cert_refs_iterator;
-
   if (cert_loaded)
     {
-      if (has_cert_bunds)
+      gchar **cert_bunds, **dfn_certs;
+
+      cert_bunds = result_iterator_cert_bunds (results);
+      if (cert_bunds)
         {
-          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid);
-          while (next (&cert_refs_iterator))
+          gchar **point;
+
+          point = cert_bunds;
+          while (*point)
             {
               if (first && *first)
                 {
@@ -10053,27 +10055,32 @@ results_xml_append_cert (GString *buffer, const char *oid, int cert_loaded,
                   *first = 0;
                 }
               g_string_append_printf
-               (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>",
-                nvt_cert_bund_adv_iterator_name (&cert_refs_iterator));
+               (buffer, "<ref type=\"cert-bund\" id=\"%s\"/>", *point);
+
+              point++;
             }
-          cleanup_iterator (&cert_refs_iterator);
+          g_strfreev (cert_bunds);
         }
 
-      if (has_dfn_certs)
+      dfn_certs = result_iterator_dfn_certs (results);
+      if (dfn_certs)
         {
-          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid);
-          while (next (&cert_refs_iterator))
+          gchar **point;
+
+          point = dfn_certs;
+          while (*point)
             {
-              if (*first)
+              if (first && *first)
                 {
                   buffer_xml_append_printf (buffer, "<refs>");
                   *first = 0;
                 }
               g_string_append_printf
-               (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>",
-                nvt_dfn_cert_adv_iterator_name (&cert_refs_iterator));
+               (buffer, "<ref type=\"dfn-cert\" id=\"%s\"/>", *point);
+
+              point++;
             }
-          cleanup_iterator (&cert_refs_iterator);
+          g_strfreev (dfn_certs);
         }
     }
   else
@@ -10184,10 +10191,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
           g_strfreev (split);
           g_free (cves);
 
-          results_xml_append_cert (buffer, oid, cert_loaded,
-                                   result_iterator_has_cert_bunds (results),
-                                   result_iterator_has_dfn_certs (results),
-                                   &first);
+          results_xml_append_cert (buffer, results, oid, cert_loaded, &first);
 
           if (first == 0)
             buffer_xml_append_printf (buffer, "</refs>");
@@ -10284,10 +10288,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
           first = 1;
           result_iterator_nvt_refs_append (buffer, results, &first);
-          results_xml_append_cert (buffer, oid, cert_loaded,
-                                   result_iterator_has_cert_bunds (results),
-                                   result_iterator_has_dfn_certs (results),
-                                   &first);
+          results_xml_append_cert (buffer, results, oid, cert_loaded, &first);
           if (first == 0)
             buffer_xml_append_printf (buffer, "</refs>");
 

@@ -158,6 +158,9 @@ iterator_null (iterator_t *, int);
 const char *
 iterator_string (iterator_t *, int);
 
+gchar **
+iterator_array (iterator_t *, int);
+
 const char *
 iterator_column_name (iterator_t *, int);
 
@@ -201,6 +204,9 @@ sql_column_int (sql_stmt_t *, int);
 
 long long int
 sql_column_int64 (sql_stmt_t *, int);
+
+gchar **
+sql_column_array (sql_stmt_t *, int);
 
 int
 sql_cancel_internal ();

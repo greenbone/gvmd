@@ -36,6 +36,19 @@
  "                                     AND type = 'cve')))"
 
 /**
+ * @brief SQL to get a result's CERT Bunds.
+ */
+#define SECINFO_SQL_RESULT_CERT_BUNDS                                    \
+ "(ARRAY (SELECT name::text"                                             \
+ "        FROM cert_bund_advs"                                           \
+ "        WHERE id IN (SELECT adv_id FROM cert_bund_cves"                \
+ "                     WHERE cve_name IN (SELECT ref_id"                 \
+ "                                        FROM vt_refs"                  \
+ "                                        WHERE vt_oid = results.nvt"    \
+ "                                        AND type = 'cve'))"            \
+ "        ORDER BY name DESC))"
+
+/**
  * @brief SQL to check if a result has CERT Bunds.
  */
 #define SECINFO_SQL_RESULT_HAS_DFN_CERTS                           \
@@ -44,6 +57,19 @@
  "                                   FROM vt_refs"                 \
  "                                   WHERE vt_oid = results.nvt"   \
  "                                     AND type = 'cve')))"
+
+/**
+ * @brief SQL to check if a result has CERT Bunds.
+ */
+#define SECINFO_SQL_RESULT_DFN_CERTS                                     \
+ "(ARRAY (SELECT name::text"                                             \
+ "        FROM dfn_cert_advs"                                            \
+ "        WHERE id IN (SELECT adv_id FROM dfn_cert_cves"                 \
+ "                     WHERE cve_name IN (SELECT ref_id"                 \
+ "                                        FROM vt_refs"                  \
+ "                                        WHERE vt_oid = results.nvt"    \
+ "                                        AND type = 'cve'))"            \
+ "        ORDER BY name DESC))"
 
 /**
  * @brief Filter columns for CVE iterator.
