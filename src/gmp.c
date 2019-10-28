@@ -468,11 +468,18 @@ check_private_key (const char *key_str, const char *key_phrase)
                                      key_phrase, 0);
   if (ret)
     {
-      g_message ("%s: import failed: %s",
-                 __func__, gnutls_strerror (ret));
-      gnutls_x509_privkey_deinit (key);
-      g_free (data.data);
-      return 1;
+      gchar *public_key;
+      public_key = gvm_ssh_public_from_private (key_str, key_phrase);
+
+      if (public_key == NULL)
+        {
+          gnutls_x509_privkey_deinit (key);
+          g_free (data.data);
+          g_message ("%s: import failed: %s",
+                     __func__, gnutls_strerror (ret));
+          return 1;
+        }
+      g_free (public_key);
     }
   g_free (data.data);
   gnutls_x509_privkey_deinit (key);
