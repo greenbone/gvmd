@@ -7690,7 +7690,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_USER:
         if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_USER_COMMENT);
+          {
+            gvm_append_string (&modify_user_data->comment, "");
+            set_client_state (CLIENT_MODIFY_USER_COMMENT);
+          }
         else if (strcasecmp ("GROUPS", element_name) == 0)
           {
             if (modify_user_data->groups)
