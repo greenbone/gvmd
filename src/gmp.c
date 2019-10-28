@@ -28200,8 +28200,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                            "Service unavailable"));
                   break;
                 case 3:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("verify_scanner", "No CA certificate"));
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<verify_scanner_response status=\"%s\""
+                    " status_text=\"Failed to authenticate\">"
+                    "<version>%s</version>"
+                    "</verify_scanner_response>",
+                    STATUS_SERVICE_UNAVAILABLE,
+                    version);
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
