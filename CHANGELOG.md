@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Consider results_trash when deleting users [#800](https://github.com/greenbone/gvmd/pull/800)
 - Update config preferences after updating NVTs [#832](https://github.com/greenbone/gvmd/pull/832)
 - Fix order of fingerprints in get_tls_certificates [#833](https://github.com/greenbone/gvmd/pull/833)
+- Fix asset host details insertion SQL [#839](https://github.com/greenbone/gvmd/pull/839)
 - Update to gvm-portnames-update to use new nomenclature [#802](https://github.com/greenbone/gvmd/pull/802)
 - Escaping correctly the percent sign in sql statements  [#818](https://github.com/greenbone/gvmd/pull/818)
 - Remove incorrect duplicates from config preference migrator [#830](https://github.com/greenbone/gvmd/pull/830)
