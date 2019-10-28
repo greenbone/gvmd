@@ -57094,6 +57094,7 @@ hosts_set_details (report_t report)
        report,
        report,
        report,
+       report,
        report);
 }
 
