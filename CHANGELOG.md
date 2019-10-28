@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix preference ID in "Host Discovery" config [#828](https://github.com/greenbone/gvmd/pull/828)
 - Fix order of fingerprints in get_tls_certificates [#833](https://github.com/greenbone/gvmd/pull/833)
 - Update config preferences after updating NVTs [#832](https://github.com/greenbone/gvmd/pull/832)
+- Fix notes XML for lean reports [#836](https://github.com/greenbone/gvmd/pull/836)
 
 ### Removed
 
