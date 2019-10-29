@@ -205,7 +205,7 @@ tls_certificate_extra_where (const char *filter)
       quoted_id = sql_quote (host_id);
       g_string_append_printf
          (ret,
-          "AND (tls_certificates.id IN"
+          " AND (tls_certificates.id IN"
           " (WITH host_idents AS"
           "   (SELECT source_id AS ident_report_id, value AS ident_ip"
           "      FROM host_identifiers"
@@ -218,11 +218,10 @@ tls_certificate_extra_where (const char *filter)
           "      ON origins.id = sources.origin"
           "    JOIN tls_certificate_locations AS locations"
           "      ON locations.id = sources.location"
-          "    WHERE origins.origin_id"
-          "          IN (SELECT ident_report_id FROM host_idents)"
-          "      AND locations.host_ip"
-          "          IN (SELECT ident_ip FROM host_idents)"
-          " ))",
+          "    JOIN host_idents"
+          "      ON origins.origin_id = host_idents.ident_report_id"
+          "         AND locations.host_ip = host_idents.ident_ip)"
+          " )",
           quoted_id);
       g_free (quoted_id);
     }
