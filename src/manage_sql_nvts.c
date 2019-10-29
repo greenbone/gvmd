@@ -1183,7 +1183,7 @@ nvti_from_vt (entity_t vt)
   solution = entity_child (vt, "solution");
   if (solution)
     {
-      const gchar *type;
+      const gchar *type, *method;
 
       nvti_set_solution (nvti, entity_text (solution));
 
@@ -1192,6 +1192,10 @@ nvti_from_vt (entity_t vt)
         g_debug ("%s: SOLUTION missing type", __func__);
       else
         nvti_set_solution_type (nvti, type);
+
+      method = entity_attribute (solution, "method");
+      if (method)
+        nvti_set_solution_method (nvti, method);
     }
 
   refs = entity_child (vt, "refs");
