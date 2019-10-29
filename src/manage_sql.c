@@ -42660,6 +42660,10 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
       case 2:
         fprintf (stderr, "Failed to verify scanner.\n");
         break;
+      case 3:
+        fprintf (stderr, "Failed to authenticate. Scanner version: %s\n",
+                 version);
+        break;
       default:
         fprintf (stderr, "Internal Error.\n");
         break;
@@ -44263,7 +44267,7 @@ connection_open (gvm_connection_t *connection,
  * @param[out]  version     Version returned by the scanner.
  *
  * @return 0 success, 1 failed to find scanner, 2 failed to get version,
- *         3 no cert, 99 if permission denied, -1 error.
+ *         3 authentication failed, 99 if permission denied, -1 error.
  */
 int
 verify_scanner (const char *scanner_id, char **version)
@@ -44286,6 +44290,9 @@ verify_scanner (const char *scanner_id, char **version)
       gvm_connection_t connection;
       const char *host;
       int port;
+      credential_t credential;
+      char *gmp_user, *gmp_password;
+      int auth_ret;
 
       host = scanner_iterator_host (&scanner);
       port = scanner_iterator_port (&scanner);
@@ -44308,6 +44315,38 @@ verify_scanner (const char *scanner_id, char **version)
           return 2;
         }
       g_debug ("%s: *version: %s", __FUNCTION__, *version);
+
+      credential = scanner_iterator_credential (&scanner);
+      if (credential == 0)
+        {
+          g_warning ("%s: Missing credential for GMP scanner %s",
+                     __FUNCTION__, get_iterator_uuid (&scanner));
+          gvm_connection_close (&connection);
+          cleanup_iterator (&scanner);
+          return 3;
+        }
+
+      gmp_user = scanner_login (get_iterator_resource (&scanner));
+      gmp_password = scanner_password (get_iterator_resource (&scanner));
+
+      auth_ret = gmp_authenticate (&connection.session,
+                                   gmp_user, gmp_password);
+
+      if (auth_ret)
+        {
+          if (auth_ret == 1)
+            g_warning ("%s: GMP scanner %s closed connection"
+                       " during authentication.",
+                       __FUNCTION__, get_iterator_uuid (&scanner));
+          else if (auth_ret != 2)
+            g_warning ("%s: Internal error during authentication"
+                       " with GMP scanner %s.",
+                       __FUNCTION__, get_iterator_uuid (&scanner));
+          gvm_connection_close (&connection);
+          cleanup_iterator (&scanner);
+          return 3;
+        }
+
       gvm_connection_close (&connection);
       cleanup_iterator (&scanner);
       return 0;
