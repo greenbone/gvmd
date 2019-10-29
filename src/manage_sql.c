@@ -1152,44 +1152,6 @@ vector_find_filter (const gchar **vector, const gchar *string)
 }
 
 /**
- * @brief Extract a tag from a pipe separated tag list.
- *
- * @param[in]   tags  Tag list.
- * @param[out]  tag   Tag name.
- *
- * @return Newly allocated tag value.
- */
-gchar *
-tag_value (const gchar *tags, const gchar *tag)
-{
-  gchar **split, **point;
-
-  /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
-
-  if (tags == NULL)
-    return g_strdup ("");
-
-  split = g_strsplit (tags, "|", 0);
-  point = split;
-
-  while (*point)
-    {
-      if ((strlen (*point) > strlen (tag))
-          && (strncmp (*point, tag, strlen (tag)) == 0)
-          && ((*point)[strlen (tag)] == '='))
-        {
-          gchar *ret;
-          ret = g_strdup (*point + strlen (tag) + 1);
-          g_strfreev (split);
-          return ret;
-        }
-      point++;
-    }
-  g_strfreev (split);
-  return g_strdup ("");
-}
-
-/**
  * @brief Get last time NVT alerts were checked.
  *
  * @return Last check time.
@@ -21074,8 +21036,8 @@ make_result (task_t task, const char* host, const char *hostname,
       if (nvti)
         {
           gchar *qod_str, *qod_type;
-          qod_str = tag_value (nvti_tag (nvti), "qod");
-          qod_type = tag_value (nvti_tag (nvti), "qod_type");
+          qod_str = nvti_get_tag (nvti, "qod");
+          qod_type = nvti_get_tag (nvti, "qod_type");
 
           if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
             qod = qod_from_type (qod_type);
@@ -23453,12 +23415,6 @@ where_qod (int min_qod)
 #define RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                           \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                          \
-    { SECINFO_SQL_RESULT_HAS_CERT_BUNDS,                                      \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { SECINFO_SQL_RESULT_HAS_DFN_CERTS,                                       \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23615,10 +23571,10 @@ where_qod (int min_qod)
 #define RESULT_ITERATOR_COLUMNS                                               \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
-    { SECINFO_SQL_RESULT_HAS_CERT_BUNDS,                                      \
+    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-    { SECINFO_SQL_RESULT_HAS_DFN_CERTS,                                       \
+    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -24785,31 +24741,31 @@ result_iterator_may_have_tickets (iterator_t* iterator)
 }
 
 /**
- * @brief Get whether CERT-Bunds may exist from a result iterator.
+ * @brief Get CERT-BUNDs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return 1 if notes may exist, else 0.
+ * @return CERT-BUND names if any, else NULL.
  */
-int
-result_iterator_has_cert_bunds (iterator_t* iterator)
+gchar **
+result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 27);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 27);
 }
 
 /**
- * @brief Get whether DFN-CERTs may exist from a result iterator.
+ * @brief Get DFN-CERTs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return 1 if notes may exist, else 0.
+ * @return DFN-CERT names if any, else NULL.
  */
-int
-result_iterator_has_dfn_certs (iterator_t* iterator)
+gchar **
+result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
 }
 
 /**
@@ -48909,8 +48865,8 @@ buffer_insert (GString *buffer, task_t task, const char* host,
       if (nvti)
         {
           gchar *qod_str, *qod_type;
-          qod_str = tag_value (nvti_tag (nvti), "qod");
-          qod_type = tag_value (nvti_tag (nvti), "qod_type");
+          qod_str = nvti_get_tag (nvti, "qod");
+          qod_type = nvti_get_tag (nvti, "qod_type");
 
           if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
             qod = qod_from_type (qod_type);

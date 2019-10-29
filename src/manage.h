@@ -1504,11 +1504,11 @@ result_iterator_may_have_overrides (iterator_t*);
 int
 result_iterator_may_have_tickets (iterator_t*);
 
-int
-result_iterator_has_cert_bunds (iterator_t*);
+gchar **
+result_iterator_cert_bunds (iterator_t*);
 
-int
-result_iterator_has_dfn_certs (iterator_t*);
+gchar **
+result_iterator_dfn_certs (iterator_t*);
 
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);

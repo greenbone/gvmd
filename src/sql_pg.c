@@ -899,6 +899,68 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
 }
 
 /**
+ * @brief Return a column as text from a prepared statement.
+ *
+ * It's up to the caller to ensure that there is a row available.
+ *
+ * @param[in]  stmt      Statement.
+ * @param[in]  position  Column position.
+ *
+ * @return Column value.  NULL if column is NULL.
+ */
+gchar **
+sql_column_array (sql_stmt_t *stmt, int position)
+{
+  const char *text;
+
+  if (PQgetisnull (stmt->result, stmt->current_row, position))
+    return NULL;
+
+  /* {DFN-CERT-2017-1238,DFN-CERT-2014-1366,DFN-CERT-2014-1354} */
+
+  text = (const char*) PQgetvalue (stmt->result, stmt->current_row, position);
+  if (text && text[0] == '{')
+    {
+      gchar **array, **point, **last;
+
+      if (text[1] == '}')
+        return (gchar **) g_malloc0 (sizeof (gchar *));
+
+      array = g_strsplit (text + 1, ",", 0);
+      point = last = array;
+      while (*point)
+        {
+          last = point;
+          point++;
+        }
+      if (*last)
+        {
+          gchar *last_element;
+
+          last_element = *last;
+          if (*last_element == '\0')
+            /* Weird, last element should always have a }. */
+            g_warning ("%s: last element missing closing }", __FUNCTION__);
+          else
+            {
+              while (*last_element)
+                last_element++;
+              last_element--;
+              /* Clip the trailing }. */
+              *last_element = '\0';
+            }
+        }
+      return array;
+    }
+
+  /* This shouldn't happen. */
+  assert (0);
+  g_warning ("%s: array column not NULL and does not contain array",
+             __FUNCTION__);
+  return NULL;
+}
+
+/**
  * @brief Cancels the current SQL statement.
  *
  * @return 0 on success, -1 on error.

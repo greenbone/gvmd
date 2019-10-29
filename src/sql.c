@@ -654,6 +654,25 @@ iterator_string (iterator_t* iterator, int col)
 }
 
 /**
+ * @brief Get a string column from an iterator.
+ *
+ * Note that sql_column_array gets the array as text and parses that text
+ * into an array, but it does not consider escaping so it probably will
+ * not work with strings that can contain commas, '{'s or '}'s.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  col       Column offset.
+ *
+ * @return Value of given column.
+ */
+gchar **
+iterator_array (iterator_t* iterator, int col)
+{
+  if (iterator->done) abort ();
+  return sql_column_array (iterator->stmt, col);
+}
+
+/**
  * @brief Cleanup an iterator.
  *
  * @param[in]  iterator  Iterator.
