@@ -27159,18 +27159,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>Attribute "type" can not be "ALLINFO" anymore</summary>
     <description>
       <p>
-        The type "ALLINFO" is not supported aymore.
+        The type "ALLINFO" is not supported anymore.
       </p>
     </description>
     <version>20.04</version>
   </change>
-
   <change>
     <command>MODIFY_REPORT</command>
     <summary>The command MODIFY_REPORT is removed</summary>
     <description>
       <p>
-        The command "MODIFY_REPORT" is not supported aymore.
+        The command "MODIFY_REPORT" is not supported anymore.
       </p>
     </description>
     <version>20.04</version>
