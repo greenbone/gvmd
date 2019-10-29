@@ -1586,6 +1586,7 @@ migrate_221_to_222 ()
 
   /* Remove permissions on the remove command MODIFY_REPORT */
   sql ("DELETE FROM permissions WHERE name = 'modify_report';");
+  sql ("DELETE FROM permissions_trash WHERE name = 'modify_report';");
 
   /* Set the database version to 222. */
 
