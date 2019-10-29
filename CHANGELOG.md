@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update config preferences after updating NVTs [#832](https://github.com/greenbone/gvmd/pull/832)
 - Fix asset host details insertion SQL [#839](https://github.com/greenbone/gvmd/pull/839)
 - Fix notes XML for lean reports [#836](https://github.com/greenbone/gvmd/pull/836)
+- MODIFY_USER saves comment when COMMENT is empty [#842](https://github.com/greenbone/gvmd/pull/842)
 
 ### Removed
 
