@@ -22930,6 +22930,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Most recent time the TLS certificate was imported or found in a scan</summary>
           </column>
           <option>
+            <name>host_id</name>
+            <type>uuid</type>
+            <summary>UUID of the host asset where the certificate must be found</summary>
+          </option>
+          <option>
             <name>report_id</name>
             <type>uuid</type>
             <summary>UUID of the report the cerificate must appear in</summary>
