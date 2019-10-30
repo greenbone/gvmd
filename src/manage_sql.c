@@ -10433,6 +10433,8 @@ scp_to_host (const char *username, const char *password,
                            password, strlen (password),
                            report_dir,
                            &report_path, &error_path, &extra_path);
+  if (ret)
+    return -1;
 
   if (private_key)
     {
