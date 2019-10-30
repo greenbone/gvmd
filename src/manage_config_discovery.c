@@ -985,5 +985,12 @@ check_config_discovery (const char *uuid)
                             "yes",
                             TRUE);
 
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE family_or_nvt = '1.3.6.1.4.1.25623.1.0.90011'"
+       " AND type = %d"
+       " AND name = (SELECT nvt_selector FROM configs WHERE uuid = '%s')",
+       NVT_SELECTOR_TYPE_NVT,
+       uuid);
+
   return 0;
 }
