@@ -30,6 +30,8 @@ REPORT_FILE=$7
 KNOWN_HOSTS_FILE=`mktemp` || exit 1
 echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
 
+ERROR_FILE=`mktemp` || exit 1
+
 log_error() {
   logger "SCP alert: $1"
   echo "$1" >&2
@@ -44,33 +46,37 @@ else
 fi
 
 EXIT_CODE=$?
+
+ERROR_SHORT=`head -n 3 $ERROR_FILE`
+
 if [ $EXIT_CODE -eq 1 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid command line argument"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid command line argument: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 2 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Conflicting arguments given"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Conflicting arguments given: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 3 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: General runtime error"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: General runtime error: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 4 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Unrecognized response from ssh (parse error)"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Unrecognized response from ssh (parse error): $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 5 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid/incorrect password"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid/incorrect password: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 6 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Host public key is unknown."
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Host public key is unknown: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 127 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Command not found."
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Command not found: $ERROR_SHORT"
 elif [ $EXIT_CODE -ne 0 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: $ERROR_SHORT"
 fi
 
 rm $KNOWN_HOSTS_FILE
 rm $PASSWORD_FILE
+rm $ERROR_FILE
 
 exit $EXIT_CODE
