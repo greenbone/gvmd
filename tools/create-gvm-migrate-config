@@ -91,14 +91,10 @@ psql -q --pset pager=off gvmd -c "\copy (SELECT '    <preference><oid>' || split
 cat >> gvm-migrate-config << 'OUTER'
   </xsl:variable>
 
-  <func:function name="gvm:preference-id">
+  <func:function name="gvm:preference">
     <xsl:param name="oid"/>
     <xsl:param name="name"/>
-    <xsl:for-each select="exslt:node-set ($preferences)/preference">
-      <xsl:if test="oid = $oid and name = $name">
-        <func:result select="id"/>
-      </xsl:if>
-    </xsl:for-each>
+    <func:result select="exslt:node-set ($preferences)/preference[oid = $oid and name = $name]"/>
   </func:function>
 
   <xsl:template match="node()|@*">
@@ -109,8 +105,31 @@ cat >> gvm-migrate-config << 'OUTER'
 
   <xsl:template match="preference[not(id)]">
     <preference>
+      <xsl:variable name="oid"
+                    select="nvt/@oid"/>
+      <xsl:variable name="preference"
+                    select="gvm:preference ($oid, name)"/>
+      <xsl:variable name="id"
+                    select="$preference/id"/>
+
       <xsl:apply-templates select="node()|@*"/>
-      <id><xsl:value-of select="gvm:preference-id (nvt/@oid, name)"/></id>
+      <xsl:choose>
+        <xsl:when test="$id">
+          <id><xsl:value-of select="$id"/></id>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:message terminate="no">
+NVT <xsl:value-of select="$oid"/> '<xsl:value-of select="nvt/name"/>'
+ - has no id for '<xsl:value-of select="name"/>
+            <xsl:text>'</xsl:text>
+            <xsl:if test="not (exslt:node-set ($preferences)/preference[oid = $oid])">
+              <xsl:message terminate="no">
+                <xsl:text> - has no preferences, so possibly it was removed from the feed</xsl:text>
+              </xsl:message>
+            </xsl:if>
+          </xsl:message>
+        </xsl:otherwise>
+      </xsl:choose>
     </preference>
   </xsl:template>
 
