@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Command cleanup-report-formats for --optimize option [#651](https://github.com/greenbone/gvmd/pull/651)
 - Document container tasks in GMP doc [#690](https://github.com/greenbone/gvmd/pull/690)
 - New columns Ports, Apps, Distance, and Auth in the CSV Hosts report format [#734](https://github.com/greenbone/gvmd/pull/734)
+- Allow use of public key auth in SCP alert [#846](https://github.com/greenbone/gvmd/pull/846)
 
 ### Changes
 - Check and create default permissions individually [#672](https://github.com/greenbone/gvmd/pull/672)
