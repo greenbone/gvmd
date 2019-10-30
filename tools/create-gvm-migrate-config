@@ -107,29 +107,35 @@ cat >> gvm-migrate-config << 'OUTER'
     <preference>
       <xsl:variable name="oid"
                     select="nvt/@oid"/>
-      <xsl:variable name="preference"
-                    select="gvm:preference ($oid, name)"/>
-      <xsl:variable name="id"
-                    select="$preference/id"/>
 
       <xsl:apply-templates select="node()|@*"/>
-      <xsl:choose>
-        <xsl:when test="$id">
-          <id><xsl:value-of select="$id"/></id>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:message terminate="no">
+
+      <xsl:if test="$oid and string-length ($oid) &gt; 0">
+        <!-- It's an NVT preference. -->
+
+		<xsl:variable name="preference"
+					  select="gvm:preference ($oid, name)"/>
+		<xsl:variable name="id"
+					  select="$preference/id"/>
+
+		<xsl:choose>
+		  <xsl:when test="$id">
+			<id><xsl:value-of select="$id"/></id>
+		  </xsl:when>
+		  <xsl:otherwise>
+			<xsl:message terminate="no">
 NVT <xsl:value-of select="$oid"/> '<xsl:value-of select="nvt/name"/>'
  - has no id for '<xsl:value-of select="name"/>
-            <xsl:text>'</xsl:text>
-            <xsl:if test="not (exslt:node-set ($preferences)/preference[oid = $oid])">
-              <xsl:message terminate="no">
-                <xsl:text> - has no preferences, so possibly it was removed from the feed</xsl:text>
-              </xsl:message>
-            </xsl:if>
-          </xsl:message>
-        </xsl:otherwise>
-      </xsl:choose>
+			  <xsl:text>'</xsl:text>
+			  <xsl:if test="not (exslt:node-set ($preferences)/preference[oid = $oid])">
+				<xsl:message terminate="no">
+				  <xsl:text> - has no preferences, so possibly it was removed from the feed</xsl:text>
+				</xsl:message>
+			  </xsl:if>
+			</xsl:message>
+		  </xsl:otherwise>
+		</xsl:choose>
+      </xsl:if>
     </preference>
   </xsl:template>
 
