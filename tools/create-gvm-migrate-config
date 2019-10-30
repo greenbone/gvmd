@@ -17,11 +17,20 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#### This script generates a script that will migrate the XML for a config to
-#### the new NVT preference format.
+#### This script generates a script called gvm-migrate-config, based on the
+#### current NVT preferences in the gvmd db.
 ####
-#### We do it this way to keep the script as a single file, and to allow the
-#### script to be easily updated to the current NVTs of a gvmd db.
+#### gvm-migrate-config can be used to migrate the XML for a config to the
+#### new NVT preference name format.
+####
+#### We do it this way to keep gvm-migrate-config as a single file, and to
+#### allow gvm-migrate-config to be easily synced with the current state
+#### of the feed.
+####
+#### Note that the feed may introduce new NVT preferences at any time.
+#### We are still supporting old GVM installations that could produce
+#### configs using the old format that contain the newly introduced
+#### preferences.
 ####
 #### USAGE: create-gvm-migrate-config
 
