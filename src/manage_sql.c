@@ -10177,6 +10177,66 @@ alert_script_exec (const char *alert_id, const char *command_args,
 }
 
 /**
+ * @brief Write data to a file for use by an alert script.
+ *
+ * @param[in]  directory      Base directory to create the file in
+ * @param[in]  filename       Filename without directory
+ * @param[in]  content        The file content
+ * @param[in]  content_size   Size of the file content
+ * @param[in]  description    Short file description for error messages
+ * @param[out] file_path      Return location of combined file path
+ *
+ * @return 0 success, -1 error
+ */
+static int
+alert_write_data_file (const char *directory, const char *filename,
+                       const char *content, gsize content_size,
+                       const char *description, gchar **file_path)
+{
+  gchar *path;
+  GError *error;
+
+  if (file_path)
+    *file_path = NULL;
+
+  /* Setup certificate file */
+  path = g_build_filename (directory, filename, NULL);
+  error = NULL;
+  if (g_file_set_contents (path, content, content_size, &error) == FALSE)
+    {
+      g_warning ("%s: Failed to write %s to file: %s",
+                 __FUNCTION__,
+                 description ? description : "extra data",
+                 error->message);
+      g_free (path);
+      return -1;
+    }
+
+  if (geteuid () == 0)
+    {
+      struct passwd *nobody;
+
+      /* Run the command with lower privileges in a fork. */
+
+      nobody = getpwnam ("nobody");
+      if ((nobody == NULL)
+          || chown (path, nobody->pw_uid, nobody->pw_gid))
+        {
+          g_warning ("%s: Failed to set permissions for user nobody: %s",
+                      __FUNCTION__,
+                      strerror (errno));
+          g_free (path);
+          return -1;
+        }
+    }
+
+  if (file_path)
+    *file_path = path;
+
+  return 0;
+}
+
+/**
  * @brief Clean up common files and variables for running alert script.
  *
  * @param[in]  report_dir   The temporary directory.
@@ -10335,8 +10395,9 @@ send_to_host (const char *host, const char *port,
 /**
  * @brief Send a report to a host via TCP.
  *
- * @param[in]  password     Password.
  * @param[in]  username     Username.
+ * @param[in]  password     Password or passphrase of private key.
+ * @param[in]  private_key  Private key or NULL for password-only auth.
  * @param[in]  host         Address of host.
  * @param[in]  path         Destination filename with path.
  * @param[in]  known_hosts  Content for known_hosts file.
@@ -10347,11 +10408,15 @@ send_to_host (const char *host, const char *port,
  * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
-scp_to_host (const char *password, const char *username, const char *host,
-             const char *path, const char *known_hosts, const char *report,
-             int report_size, gchar **script_message)
+scp_to_host (const char *username, const char *password,
+             const char *private_key,
+             const char *host, const char *path, const char *known_hosts,
+             const char *report, int report_size, gchar **script_message)
 {
-  gchar *clean_username, *clean_host, *clean_path;
+  const char *alert_id = "2db07698-ec49-11e5-bcff-28d24461215b";
+  char report_dir[] = "/tmp/gvmd_alert_XXXXXX";
+  gchar *report_path, *error_path, *extra_path, *private_key_path;
+  gchar *clean_username, *clean_host, *clean_path, *clean_private_key_path;
   gchar *clean_known_hosts, *command_args;
   int ret;
 
@@ -10363,22 +10428,59 @@ scp_to_host (const char *password, const char *username, const char *host,
   if (known_hosts == NULL)
     known_hosts = "";
 
+  /* Setup files. */
+  ret = alert_script_init ("report", report, report_size,
+                           password, strlen (password),
+                           report_dir,
+                           &report_path, &error_path, &extra_path);
+
+  if (private_key)
+    {
+      if (alert_write_data_file (report_dir, "private_key",
+                                 private_key, strlen (private_key),
+                                 "private key", &private_key_path))
+        {
+          alert_script_cleanup (report_dir, report_path, error_path,
+                                extra_path);
+          g_free (private_key_path);
+          return -1;
+        }
+    }
+  else
+    private_key_path = g_strdup ("");
+
+  /* Create arguments */
   clean_username = g_shell_quote (username);
   clean_host = g_shell_quote (host);
   clean_path = g_shell_quote (path);
   clean_known_hosts = g_shell_quote (known_hosts);
-  command_args = g_strdup_printf ("%s %s %s %s", clean_username,
-                                  clean_host, clean_path, clean_known_hosts);
+  clean_private_key_path = g_shell_quote (private_key_path);
+  command_args = g_strdup_printf ("%s %s %s %s %s",
+                                  clean_username,
+                                  clean_host,
+                                  clean_path,
+                                  clean_known_hosts,
+                                  clean_private_key_path);
   g_free (clean_username);
   g_free (clean_host);
   g_free (clean_path);
   g_free (clean_known_hosts);
+  g_free (clean_private_key_path);
 
-  ret = run_alert_script ("2db07698-ec49-11e5-bcff-28d24461215b",
-                          command_args, "report", report, report_size,
-                          password, strlen (password), script_message);
-
+  /* Run script */
+  ret = alert_script_exec (alert_id, command_args, report_path, report_dir,
+                           error_path, extra_path, script_message);
   g_free (command_args);
+  if (ret)
+    {
+      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+      g_free (private_key_path);
+      return ret;
+    }
+
+  /* Remove the directory and free path strings. */
+  ret = alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+  g_free (private_key_path);
   return ret;
 }
 
@@ -13249,7 +13351,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         {
           credential_t credential;
           char *credential_id;
-          char *password, *username, *host, *path, *known_hosts;
+          char *private_key, *password, *username, *host, *path, *known_hosts;
           gchar *report_content, *alert_path;
           gsize content_length;
           report_format_t report_format;
@@ -13284,9 +13386,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 {
                   message = new_secinfo_message (event, event_data, alert);
 
+                  username = credential_value (credential, "username");
                   password = credential_encrypted_value (credential,
                                                          "password");
-                  username = credential_value (credential, "username");
+                  private_key = credential_encrypted_value (credential,
+                                                            "private_key");
 
                   host = alert_data (alert, "method", "scp_host");
                   path = alert_data (alert, "method", "scp_path");
@@ -13295,11 +13399,13 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   alert_path = scp_alert_path_print (path, task);
                   free (path);
 
-                  ret = scp_to_host (password, username, host, alert_path,
-                                     known_hosts, message, strlen (message),
+                  ret = scp_to_host (username, password, private_key,
+                                     host, alert_path, known_hosts,
+                                     message, strlen (message),
                                      script_message);
 
                   g_free (message);
+                  free (private_key);
                   free (password);
                   free (username);
                   free (host);
@@ -13340,8 +13446,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             }
           else
             {
-              password = credential_encrypted_value (credential, "password");
               username = credential_value (credential, "username");
+              password = credential_encrypted_value (credential, "password");
+              private_key = credential_encrypted_value (credential,
+                                                        "private_key");
+
 
               host = alert_data (alert, "method", "scp_host");
               path = alert_data (alert, "method", "scp_path");
@@ -13350,10 +13459,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               alert_path = scp_alert_path_print (path, task);
               free (path);
 
-              ret = scp_to_host (password, username, host, alert_path,
-                                 known_hosts, report_content, content_length,
+              ret = scp_to_host (username, password, private_key,
+                                 host, alert_path, known_hosts,
+                                 report_content, content_length,
                                  script_message);
 
+              free (private_key);
               free (password);
               free (username);
               free (host);
