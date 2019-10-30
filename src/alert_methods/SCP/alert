@@ -23,8 +23,9 @@ USERNAME=$1
 HOST=$2
 DEST=$3
 KNOWN_HOSTS=$4
-PASSWORD_FILE=$5
-REPORT_FILE=$6
+PRIVATE_KEY_FILE=$5
+PASSWORD_FILE=$6
+REPORT_FILE=$7
 
 KNOWN_HOSTS_FILE=`mktemp` || exit 1
 echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
@@ -35,7 +36,12 @@ log_error() {
 }
 
 # Escape destination twice because it is also expanded on the remote end.
-sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>/dev/null
+if [ -z "$PRIVATE_KEY_FILE" ]
+then
+  sshpass -f ${PASSWORD_FILE} scp -o BatchMode=yes -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
+else
+  sshpass -f ${PASSWORD_FILE} scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o BatchMode=yes -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
+fi
 
 EXIT_CODE=$?
 if [ $EXIT_CODE -eq 1 ]
