@@ -1,0 +1,131 @@
+#!/bin/sh
+# Copyright (C) 2019 Greenbone Networks GmbH
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+#### This script generates a script that will migrate the XML for a config to
+#### the new NVT preference format.
+####
+#### We do it this way to keep the script as a single file, and to allow the
+#### script to be easily updated to the current NVTs of a gvmd db.
+####
+#### USAGE: create-gvm-migrate-config
+
+VERSION=20191029
+
+#### Generate the start of the script.
+####
+####
+
+cat > gvm-migrate-config << 'OUTER'
+#!/bin/sh
+# Copyright (C) 2019 Greenbone Networks GmbH
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# This script migrates the XML for a config to the new NVT preference format.
+#
+# To refresh this script run create-gvm-migrate-config.
+#
+# USAGE: cat scanconfig-old.xml | gvm-migrate-config > scanconfig-new.xml
+
+# Make a temp dir.
+
+TMP=`mktemp -d` || exit 1
+
+# Output a temporary XSL file to do the config conversion.
+
+cat > ${TMP}/migrate.xsl << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet
+  version="1.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:exslt="http://exslt.org/common"
+  xmlns:str="http://exslt.org/strings"
+  xmlns:func="http://exslt.org/functions"
+  xmlns:gvm="http://greenbone.net"
+  extension-element-prefixes="str func gvm exslt">
+  <xsl:output method = "xml"/>
+
+  <xsl:variable name="preferences">
+OUTER
+
+#### Add the preferences to the script.
+####
+#### Format of nvt_preferences.name: 1.3.6.1.4.1.25623.1.0.109644:1:radio:Value
+
+psql -q --pset pager=off gvmd -c "\copy (SELECT '    <preference><oid>' || split_part (name, ':', 1) || '</oid><id>' || split_part (name, ':', 2) || '</id><name>' || regexp_replace (name, E'[^:]*:[^:]+:[^:]+:(.*)', '\1') || '</name></preference>' FROM nvt_preferences WHERE name LIKE '%:%:%:%') TO STDOUT;" >> gvm-migrate-config
+
+#### Add the rest of the script.
+####
+####
+
+cat >> gvm-migrate-config << 'OUTER'
+  </xsl:variable>
+
+  <func:function name="gvm:preference-id">
+    <xsl:param name="oid"/>
+    <xsl:param name="name"/>
+    <xsl:for-each select="exslt:node-set ($preferences)/preference">
+      <xsl:if test="oid = $oid and name = $name">
+        <func:result select="id"/>
+      </xsl:if>
+    </xsl:for-each>
+  </func:function>
+
+  <xsl:template match="node()|@*">
+    <xsl:copy>
+      <xsl:apply-templates  select="node()|@*"/>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="preference[not(id)]">
+    <preference>
+      <xsl:apply-templates select="node()|@*"/>
+      <id><xsl:value-of select="gvm:preference-id (nvt/@oid, name)"/></id>
+    </preference>
+  </xsl:template>
+
+</xsl:stylesheet>
+EOF
+
+# Run the temp XSL file over the XML from stdin.
+
+xsltproc ${TMP}/migrate.xsl -
+
+# Remove the temp dir.
+
+rm -rf ${TMP}
+OUTER
+
+#### End of generator.
+####
+####
