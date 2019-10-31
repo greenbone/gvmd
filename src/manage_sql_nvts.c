@@ -253,7 +253,7 @@ insert_nvt (const nvti_t *nvti)
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
-  gchar *quoted_solution, *quoted_solution_type;
+  gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
   int qod, i;
 
   cve = nvti_refs (nvti, "cve", "", 0);
@@ -272,6 +272,8 @@ insert_nvt (const nvti_t *nvti)
                                nvti_solution (nvti) : "");
   quoted_solution_type = sql_quote (nvti_solution_type (nvti) ?
                                     nvti_solution_type (nvti) : "");
+  quoted_solution_method = sql_quote (nvti_solution_method (nvti) ?
+                                      nvti_solution_method (nvti) : "");
   quoted_detection = sql_quote (nvti_detection (nvti) ?
                                 nvti_detection (nvti) : "");
 
@@ -298,14 +300,14 @@ insert_nvt (const nvti_t *nvti)
   sql ("INSERT into nvts (oid, name, summary, insight, affected,"
        " impact, cve, tag, category, family, cvss_base,"
        " creation_time, modification_time, uuid, solution_type,"
-       " solution, detection, qod, qod_type)"
+       " solution_method, solution, detection, qod, qod_type)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', '%s', %d, '%s');",
+       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s');",
        nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
        quoted_affected, quoted_impact, quoted_cve, quoted_tag,
        nvti_category (nvti), quoted_family, quoted_cvss_base,
        nvti_creation_time (nvti), nvti_modification_time (nvti),
-       nvti_oid (nvti), quoted_solution_type,
+       nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
        quoted_solution, quoted_detection, qod, quoted_qod_type);
 
   sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
@@ -338,6 +340,7 @@ insert_nvt (const nvti_t *nvti)
   g_free (quoted_family);
   g_free (quoted_solution);
   g_free (quoted_solution_type);
+  g_free (quoted_solution_method);
   g_free (quoted_detection);
   g_free (quoted_qod_type);
 }
