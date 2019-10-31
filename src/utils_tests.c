@@ -25,6 +25,40 @@ Describe (utils);
 BeforeEach (utils) {}
 AfterEach (utils) {}
 
+/* gvm_usleep */
+
+Ensure (utils, gvm_usleep_sleep_for_0)
+{
+  assert_that (gvm_usleep (0), is_equal_to (0));
+}
+
+Ensure (utils, gvm_usleep_sleep_for_1)
+{
+  assert_that (gvm_usleep (1), is_equal_to (0));
+}
+
+/* gvm_sleep */
+
+Ensure (utils, gvm_sleep_sleep_for_0)
+{
+  assert_that (gvm_usleep (0), is_equal_to (0));
+}
+
+Ensure (utils, gvm_sleep_sleep_for_1ms)
+{
+  assert_that (gvm_usleep (0.001), is_equal_to (0));
+}
+
+Ensure (utils, gvm_sleep_sleep_for_1us)
+{
+  assert_that (gvm_usleep (0.000001), is_equal_to (0));
+}
+
+Ensure (utils, gvm_sleep_sleep_for_1ns)
+{
+  assert_that (gvm_usleep (0.000000001), is_equal_to (0));
+}
+
 /* Test suite. */
 
 int
@@ -33,6 +67,14 @@ main (int argc, char **argv)
   TestSuite *suite;
 
   suite = create_test_suite ();
+
+  add_test_with_context (suite, utils, gvm_usleep_sleep_for_0);
+  add_test_with_context (suite, utils, gvm_usleep_sleep_for_1);
+
+  add_test_with_context (suite, utils, gvm_sleep_sleep_for_0);
+  add_test_with_context (suite, utils, gvm_sleep_sleep_for_1ms);
+  add_test_with_context (suite, utils, gvm_sleep_sleep_for_1us);
+  add_test_with_context (suite, utils, gvm_sleep_sleep_for_1ns);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());
