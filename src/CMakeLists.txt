@@ -144,8 +144,15 @@ add_executable (gmp-tickets-test
 
 add_test (gmp-tickets-test gmp-tickets-test)
 
+add_executable (utils-test
+                EXCLUDE_FROM_ALL
+                utils_tests.c)
+
+add_test (utils-test utils-test)
+
 add_custom_target (tests
-                   DEPENDS gmp-tickets-test manage-test manage-utils-test)
+                   DEPENDS
+                   gmp-tickets-test manage-test manage-utils-test utils-test)
 
 add_executable (gvmd
                 main.c gvmd.c gmpd.c
@@ -187,6 +194,10 @@ target_link_libraries (gmp-tickets-test cgreen m
                        ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+target_link_libraries (utils-test cgreen m
+                       ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                       ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${LINKER_HARDENING_FLAGS})
 target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 
 set_target_properties (gvmd PROPERTIES LINKER_LANGUAGE C)
