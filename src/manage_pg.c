@@ -2919,6 +2919,7 @@ create_tables ()
        "  modification_time integer,"
        "  solution text,"
        "  solution_type text,"
+       "  solution_method text,"
        "  detection text,"
        "  qod integer,"
        "  qod_type text);");
