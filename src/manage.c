@@ -563,6 +563,9 @@ certificate_time_status (time_t activates, time_t expires)
 static void
 truncate_text (gchar *string, size_t max_len, gboolean xml, const char *suffix)
 {
+  if (string == NULL)
+    return;
+
   if (strlen (string) <= max_len)
     return;
   else
