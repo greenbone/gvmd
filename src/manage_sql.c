@@ -10029,7 +10029,7 @@ alert_write_data_file (const char *directory, const char *filename,
   if (file_path)
     *file_path = NULL;
 
-  /* Setup certificate file */
+  /* Setup extra data file */
   path = g_build_filename (directory, filename, NULL);
   error = NULL;
   if (g_file_set_contents (path, content, content_size, &error) == FALSE)
@@ -10046,7 +10046,9 @@ alert_write_data_file (const char *directory, const char *filename,
     {
       struct passwd *nobody;
 
-      /* Run the command with lower privileges in a fork. */
+      /* Set the owner for the extra data file like the other
+       * files handled by alert_script_exec, to be able to
+       * run the command with lower privileges in a fork. */
 
       nobody = getpwnam ("nobody");
       if ((nobody == NULL)
@@ -10245,7 +10247,7 @@ scp_to_host (const char *username, const char *password,
 {
   const char *alert_id = "2db07698-ec49-11e5-bcff-28d24461215b";
   char report_dir[] = "/tmp/gvmd_alert_XXXXXX";
-  gchar *report_path, *error_path, *extra_path, *private_key_path;
+  gchar *report_path, *error_path, *password_path, *private_key_path;
   gchar *clean_username, *clean_host, *clean_path, *clean_private_key_path;
   gchar *clean_known_hosts, *command_args;
   int ret;
@@ -10258,22 +10260,24 @@ scp_to_host (const char *username, const char *password,
   if (known_hosts == NULL)
     known_hosts = "";
 
-  /* Setup files. */
+  /* Setup files, including password but not private key */
   ret = alert_script_init ("report", report, report_size,
                            password, strlen (password),
                            report_dir,
-                           &report_path, &error_path, &extra_path);
+                           &report_path, &error_path, &password_path);
   if (ret)
     return -1;
 
   if (private_key)
     {
+      /* Setup private key here because alert_script_init and alert_script_exec
+       *  only handle one extra file. */
       if (alert_write_data_file (report_dir, "private_key",
                                  private_key, strlen (private_key),
                                  "private key", &private_key_path))
         {
           alert_script_cleanup (report_dir, report_path, error_path,
-                                extra_path);
+                                password_path);
           g_free (private_key_path);
           return -1;
         }
@@ -10301,17 +10305,19 @@ scp_to_host (const char *username, const char *password,
 
   /* Run script */
   ret = alert_script_exec (alert_id, command_args, report_path, report_dir,
-                           error_path, extra_path, script_message);
+                           error_path, password_path, script_message);
   g_free (command_args);
   if (ret)
     {
-      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+      alert_script_cleanup (report_dir, report_path, error_path,
+                            password_path);
       g_free (private_key_path);
       return ret;
     }
 
   /* Remove the directory and free path strings. */
-  ret = alert_script_cleanup (report_dir, report_path, error_path, extra_path);
+  ret = alert_script_cleanup (report_dir, report_path, error_path,
+                              password_path);
   g_free (private_key_path);
   return ret;
 }
