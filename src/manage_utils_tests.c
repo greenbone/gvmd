@@ -52,6 +52,32 @@ Ensure (manage_utils, current_offset_returns_correct_values)
   assert_that (time_offset ("Africa/Johannesburg", 1559561396), is_equal_to (7200));
 }
 
+/* months_between */
+
+Ensure (manage_utils, months_between_both_0)
+{
+  assert_that (months_between (0, 0), is_equal_to (0));
+}
+
+Ensure (manage_utils, months_between_2_full_months)
+{
+  /* There are two full months between 0h00.00 1 February 2010 and 0h00.00 1
+   * April 2010. */
+  assert_that (months_between (1264982400, 1270080000), is_equal_to (2));
+}
+
+Ensure (manage_utils, months_between_1_full_month)
+{
+  /* There is one full month between 0h00.00 1 February 2010 and
+   * 23h59.59 31 March 2010. */
+  assert_that (months_between (1264982400, 1270079999), is_equal_to (1));
+}
+
+Ensure (manage_utils, months_between_less_than_a_month)
+{
+  assert_that (months_between (1572596056, 1573287256), is_equal_to (0));
+}
+
 /* next_time */
 
 time_t
@@ -83,6 +109,11 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_utils, current_offset_returns_correct_values);
 
   add_test_with_context (suite, manage_utils, next_time_returns_correct_value);
+
+  add_test_with_context (suite, manage_utils, months_between_both_0);
+  add_test_with_context (suite, manage_utils, months_between_2_full_months);
+  add_test_with_context (suite, manage_utils, months_between_1_full_month);
+  add_test_with_context (suite, manage_utils, months_between_less_than_a_month);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());
