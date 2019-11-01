@@ -78,6 +78,25 @@ Ensure (manage_utils, months_between_less_than_a_month)
   assert_that (months_between (1572596056, 1573287256), is_equal_to (0));
 }
 
+/* add_months */
+
+Ensure (manage_utils, add_months_0_months)
+{
+  assert_that (add_months (1572596056, 0), is_equal_to (1572596056));
+}
+
+Ensure (manage_utils, add_months_negative_months)
+{
+  assert_that (add_months (1554163199, -1), is_equal_to (1551484799));
+  assert_that (add_months (1556755199, -2), is_equal_to (1551484799));
+}
+
+Ensure (manage_utils, add_months_positive_months)
+{
+  assert_that (add_months (1551484799, 1), is_equal_to (1554163199));
+  assert_that (add_months (1551484799, 2), is_equal_to (1556755199));
+}
+
 /* next_time */
 
 time_t
@@ -114,6 +133,10 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_utils, months_between_2_full_months);
   add_test_with_context (suite, manage_utils, months_between_1_full_month);
   add_test_with_context (suite, manage_utils, months_between_less_than_a_month);
+
+  add_test_with_context (suite, manage_utils, add_months_0_months);
+  add_test_with_context (suite, manage_utils, add_months_negative_months);
+  add_test_with_context (suite, manage_utils, add_months_positive_months);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());
