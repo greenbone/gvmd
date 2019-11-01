@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Add option --optimize migrate-relay-sensors [#827](https://github.com/greenbone/gvmd/pull/827)
 - Add host_id filter for tls_certificates [#835](https://github.com/greenbone/gvmd/pull/835)
+- Allow use of public key auth in SCP alert [#845](https://github.com/greenbone/gvmd/pull/845)
 
 ### Changed
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
