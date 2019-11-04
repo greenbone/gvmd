@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve performance of GET_REPORTS [#801](https://github.com/greenbone/gvmd/pull/801) [#811](https://github.com/greenbone/gvmd/pull/811) [#817](https://github.com/greenbone/gvmd/pull/817)
 - Speed up the HELP 'brief' case [#807](https://github.com/greenbone/gvmd/pull/807)
 - Faster startup [#826](https://github.com/greenbone/gvmd/pull/826)
+- Refuse to import config with missing NVT preference ID [#853](https://github.com/greenbone/gvmd/pull/853)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
