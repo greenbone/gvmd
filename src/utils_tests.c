@@ -41,34 +41,22 @@ Ensure (utils, gvm_usleep_sleep_for_1)
 
 Ensure (utils, gvm_sleep_sleep_for_0)
 {
-  int (*prevent_inlining) (unsigned int);
-
-  prevent_inlining = gvm_sleep;
-  assert_that (prevent_inlining (0), is_equal_to (0));
+  assert_that (gvm_sleep (0), is_equal_to (0));
 }
 
 Ensure (utils, gvm_sleep_sleep_for_1ms)
 {
-  int (*prevent_inlining) (unsigned int);
-
-  prevent_inlining = gvm_sleep;
-  assert_that (prevent_inlining (0.001), is_equal_to (0));
+  assert_that (gvm_sleep (0.001), is_equal_to (0));
 }
 
 Ensure (utils, gvm_sleep_sleep_for_1us)
 {
-  int (*prevent_inlining) (unsigned int);
-
-  prevent_inlining = gvm_sleep;
-  assert_that (prevent_inlining (0.000001), is_equal_to (0));
+  assert_that (gvm_sleep (0.000001), is_equal_to (0));
 }
 
 Ensure (utils, gvm_sleep_sleep_for_1ns)
 {
-  int (*prevent_inlining) (unsigned int);
-
-  prevent_inlining = gvm_sleep;
-  assert_that (prevent_inlining (0.000000001), is_equal_to (0));
+  assert_that (gvm_sleep (0.000000001), is_equal_to (0));
 }
 
 /* Test suite. */
