@@ -1,0 +1,165 @@
+#!/bin/sh
+# Copyright (C) 2019 Greenbone Networks GmbH
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+#### This script generates a script called gvm-migrate-config, based on the
+#### current NVT preferences in the gvmd db.
+####
+#### gvm-migrate-config can be used to migrate the XML for a config to the
+#### new NVT preference name format.
+####
+#### We do it this way to keep gvm-migrate-config as a single file, and to
+#### allow gvm-migrate-config to be easily synced with the current state
+#### of the feed.
+####
+#### Note that the feed may introduce new NVT preferences at any time.
+#### We are still supporting old GVM installations that could produce
+#### configs using the old format that contain the newly introduced
+#### preferences.
+####
+#### USAGE: create-gvm-migrate-config
+
+VERSION=20191029
+
+#### Generate the start of the script.
+####
+####
+
+cat > gvm-migrate-config << 'OUTER'
+#!/bin/sh
+# Copyright (C) 2019 Greenbone Networks GmbH
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# This script migrates the XML for a config to the new NVT preference format.
+#
+# To refresh this script run create-gvm-migrate-config.
+#
+# USAGE: cat scanconfig-old.xml | gvm-migrate-config > scanconfig-new.xml
+
+# Make a temp dir.
+
+TMP=`mktemp -d` || exit 1
+
+# Output a temporary XSL file to do the config conversion.
+
+cat > ${TMP}/migrate.xsl << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet
+  version="1.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:exslt="http://exslt.org/common"
+  xmlns:str="http://exslt.org/strings"
+  xmlns:func="http://exslt.org/functions"
+  xmlns:gvm="http://greenbone.net"
+  extension-element-prefixes="str func gvm exslt">
+  <xsl:output method = "xml"/>
+
+  <xsl:variable name="preferences">
+OUTER
+
+#### Add the preferences to the script.
+####
+#### Format of nvt_preferences.name: 1.3.6.1.4.1.25623.1.0.109644:1:radio:Value
+
+psql -q --pset pager=off gvmd -c "\copy (SELECT '    <preference><oid>' || split_part (name, ':', 1) || '</oid><id>' || split_part (name, ':', 2) || '</id><name>' || regexp_replace (name, E'[^:]*:[^:]+:[^:]+:(.*)', '\1') || '</name></preference>' FROM nvt_preferences WHERE name LIKE '%:%:%:%') TO STDOUT;" >> gvm-migrate-config
+
+#### Add the rest of the script.
+####
+####
+
+cat >> gvm-migrate-config << 'OUTER'
+  </xsl:variable>
+
+  <func:function name="gvm:preference">
+    <xsl:param name="oid"/>
+    <xsl:param name="name"/>
+    <func:result select="exslt:node-set ($preferences)/preference[oid = $oid and name = $name]"/>
+  </func:function>
+
+  <xsl:template match="node()|@*">
+    <xsl:copy>
+      <xsl:apply-templates  select="node()|@*"/>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="preference[not(id)]">
+    <preference>
+      <xsl:variable name="oid"
+                    select="nvt/@oid"/>
+
+      <xsl:apply-templates select="node()|@*"/>
+
+      <xsl:if test="$oid and string-length ($oid) &gt; 0">
+        <!-- It's an NVT preference. -->
+
+        <xsl:variable name="preference"
+                      select="gvm:preference ($oid, name)"/>
+        <xsl:variable name="id"
+                      select="$preference/id"/>
+
+        <xsl:choose>
+          <xsl:when test="$id">
+            <id><xsl:value-of select="$id"/></id>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:message terminate="no">
+NVT <xsl:value-of select="$oid"/> '<xsl:value-of select="nvt/name"/>'
+ - has no id for '<xsl:value-of select="name"/>
+              <xsl:text>'</xsl:text>
+              <xsl:if test="not (exslt:node-set ($preferences)/preference[oid = $oid])">
+                <xsl:message terminate="no">
+                  <xsl:text> - has no preferences, so possibly it was removed from the feed</xsl:text>
+                </xsl:message>
+              </xsl:if>
+            </xsl:message>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:if>
+    </preference>
+  </xsl:template>
+
+</xsl:stylesheet>
+EOF
+
+# Run the temp XSL file over the XML from stdin.
+
+xsltproc ${TMP}/migrate.xsl -
+
+# Remove the temp dir.
+
+rm -rf ${TMP}
+OUTER
+
+#### End of generator.
+####
+####
