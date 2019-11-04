@@ -1430,6 +1430,9 @@ const char*
 result_iterator_nvt_solution_type (iterator_t *);
 
 const char*
+result_iterator_nvt_solution_method (iterator_t *);
+
+const char*
 result_iterator_nvt_detection (iterator_t *);
 
 const char*

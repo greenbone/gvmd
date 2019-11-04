@@ -10254,6 +10254,10 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                   buffer_xml_append_printf (buffer, " type='%s'",
                   result_iterator_nvt_solution_type (results));
 
+              if (result_iterator_nvt_solution_method (results))
+                  buffer_xml_append_printf (buffer, " method='%s'",
+                  result_iterator_nvt_solution_method (results));
+
               buffer_xml_append_printf (buffer, ">%s</solution>",
                                         result_iterator_nvt_solution (results));
             }
