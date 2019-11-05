@@ -27218,6 +27218,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <version>20.04</version>
   </change>
+
   <change>
     <command>CREATE_CONFIG</command>
     <summary>NVT preferences without IDs are no longer accepted</summary>
@@ -27227,9 +27228,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         NVT preferences is no longer allowed.
       </p>
     </description>
-    <version>20.04</version>
+    <version>9.0</version>
   </change>
-
   <change>
     <command>GET_REPORTS</command>
     <summary>Default of "details" attribute is now 0</summary>
