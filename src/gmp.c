@@ -10246,20 +10246,25 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     cvss_base ?: "",
                                     tags->str ?: "");
 
-          if (result_iterator_nvt_solution (results))
+          if (result_iterator_nvt_solution (results) ||
+              result_iterator_nvt_solution_type (results) ||
+              result_iterator_nvt_solution_method (results))
             {
               buffer_xml_append_printf (buffer, "<solution");
 
               if (result_iterator_nvt_solution_type (results))
-                  buffer_xml_append_printf (buffer, " type='%s'",
+                buffer_xml_append_printf (buffer, " type='%s'",
                   result_iterator_nvt_solution_type (results));
 
               if (result_iterator_nvt_solution_method (results))
-                  buffer_xml_append_printf (buffer, " method='%s'",
+                buffer_xml_append_printf (buffer, " method='%s'",
                   result_iterator_nvt_solution_method (results));
 
-              buffer_xml_append_printf (buffer, ">%s</solution>",
-                                        result_iterator_nvt_solution (results));
+              if (result_iterator_nvt_solution (results))
+                buffer_xml_append_printf (buffer, ">%s</solution>",
+                                          result_iterator_nvt_solution (results));
+              else
+                buffer_xml_append_printf (buffer, "/>");
             }
 
           first = 1;
