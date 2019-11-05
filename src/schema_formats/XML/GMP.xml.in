@@ -27192,6 +27192,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <version>9.0</version>
   </change>
   <change>
+    <command>CREATE_CONFIG</command>
+    <summary>NVT preferences without IDs are no longer accepted</summary>
+    <description>
+      <p>
+        Importing of old scan configs that do not specify an ID for their
+        NVT preferences is no longer allowed.
+      </p>
+    </description>
+    <version>9.0</version>
+  </change>
+  <change>
     <command>GET_REPORTS</command>
     <summary>Default of "details" attribute is now 0</summary>
     <description>
