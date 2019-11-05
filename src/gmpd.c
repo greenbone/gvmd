@@ -146,7 +146,7 @@ read_from_client_unix (int client_socket)
             /* Interrupted, try read again. */
             continue;
           g_warning ("%s: failed to read from client: %s",
-                     __FUNCTION__, strerror (errno));
+                     __func__, strerror (errno));
           return -1;
         }
       if (count == 0)
@@ -208,10 +208,10 @@ read_from_client_tls (gnutls_session_t* client_session)
               int alert = gnutls_alert_get (*client_session);
               const char* alert_name = gnutls_alert_get_name (alert);
               g_warning ("%s: TLS Alert %d: %s",
-                         __FUNCTION__, alert, alert_name);
+                         __func__, alert, alert_name);
             }
           g_warning ("%s: failed to read from client: %s",
-                     __FUNCTION__, gnutls_strerror ((int) count));
+                     __func__, gnutls_strerror ((int) count));
           return -1;
         }
       if (count == 0)
@@ -280,7 +280,7 @@ write_to_client_tls (gnutls_session_t* client_session)
             /** @todo Rehandshake. */
             continue;
           g_warning ("%s: failed to write to client: %s",
-                     __FUNCTION__,
+                     __func__,
                      gnutls_strerror ((int) count));
           return -1;
         }
@@ -319,7 +319,7 @@ write_to_client_unix (int client_socket)
             /* Interrupted, try write again. */
             continue;
           g_warning ("%s: failed to write to client: %s",
-                     __FUNCTION__,
+                     __func__,
                      strerror (errno));
           return -1;
         }
@@ -377,7 +377,7 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
             break;
           case -1:      /* Error. */
             g_debug ("   %s full (%i < %zu); client write failed",
-                    __FUNCTION__,
+                    __func__,
                     ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
                     strlen (msg));
             return TRUE;
@@ -500,7 +500,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
       if (termination_signal)
         {
           g_debug ("%s: Received %s signal.",
-                   __FUNCTION__,
+                   __func__,
                    sys_siglist[get_termination_signal()]);
 
           goto client_free;
@@ -546,7 +546,7 @@ serve_gmp (gvm_connection_t *client_connection, const gchar *database,
         continue;
       if (ret < 0)
         {
-          g_warning ("%s: child select failed: %s", __FUNCTION__,
+          g_warning ("%s: child select failed: %s", __func__,
                      strerror (errno));
           rc = -1;
           goto client_free;

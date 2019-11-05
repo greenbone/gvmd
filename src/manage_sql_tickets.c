@@ -1475,7 +1475,7 @@ check_tickets (task_t task)
     {
       g_warning ("%s: failed to get last report of task %llu,"
                  " skipping ticket check",
-                 __FUNCTION__,
+                 __func__,
                  task);
       return;
     }

@@ -127,7 +127,7 @@ parse_utc_time (const char *format, const char *text_time)
 
   if (setenv ("TZ", "UTC", 1) == -1)
     {
-      g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
+      g_warning ("%s: Failed to switch to UTC", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -137,7 +137,7 @@ parse_utc_time (const char *format, const char *text_time)
   memset (&tm, 0, sizeof (struct tm));
   if (strptime ((char*) text_time, format, &tm) == NULL)
     {
-      g_warning ("%s: Failed to parse time", __FUNCTION__);
+      g_warning ("%s: Failed to parse time", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -146,7 +146,7 @@ parse_utc_time (const char *format, const char *text_time)
   epoch_time = mktime (&tm);
   if (epoch_time == -1)
     {
-      g_warning ("%s: Failed to make time", __FUNCTION__);
+      g_warning ("%s: Failed to make time", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -158,7 +158,7 @@ parse_utc_time (const char *format, const char *text_time)
     {
       if (setenv ("TZ", tz, 1) == -1)
         {
-          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_warning ("%s: Failed to switch to original TZ", __func__);
           g_free (tz);
           return 0;
         }
@@ -216,13 +216,13 @@ parse_ctime (const char *text_time)
   memset (&tm, 0, sizeof (struct tm));
   if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
     {
-      g_warning ("%s: Failed to parse time '%s'", __FUNCTION__, text_time);
+      g_warning ("%s: Failed to parse time '%s'", __func__, text_time);
       return 0;
     }
   epoch_time = mktime (&tm);
   if (epoch_time == -1)
     {
-      g_warning ("%s: Failed to make time '%s'", __FUNCTION__, text_time);
+      g_warning ("%s: Failed to make time '%s'", __func__, text_time);
       return 0;
     }
 
@@ -338,7 +338,7 @@ iso_time_tz (time_t *epoch_time, const char *zone, const char **abbrev)
 
   if (setenv ("TZ", zone, 1) == -1)
     {
-      g_warning ("%s: Failed to switch to zone", __FUNCTION__);
+      g_warning ("%s: Failed to switch to zone", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -353,7 +353,7 @@ iso_time_tz (time_t *epoch_time, const char *zone, const char **abbrev)
     {
       if (setenv ("TZ", tz, 1) == -1)
         {
-          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_warning ("%s: Failed to switch to original TZ", __func__);
           g_free (tz);
           return ret;
         }
@@ -412,11 +412,11 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
       g_free (lockfile_name);
       if (close (fd))
         g_warning ("%s: failed to close lock file fd: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
       if (flock_errno == EWOULDBLOCK)
         return 1;
-      g_warning ("%s: flock: %s", __FUNCTION__, strerror (flock_errno));
+      g_warning ("%s: flock: %s", __func__, strerror (flock_errno));
       return -1;
     }
 
@@ -439,7 +439,7 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
 int
 lockfile_lock (lockfile_t *lockfile, const gchar *lockfile_basename)
 {
-  g_debug ("%s: lock '%s'", __FUNCTION__, lockfile_basename);
+  g_debug ("%s: lock '%s'", __func__, lockfile_basename);
   return lock_internal (lockfile, lockfile_basename, LOCK_EX);
 }
 
@@ -454,7 +454,7 @@ lockfile_lock (lockfile_t *lockfile, const gchar *lockfile_basename)
 int
 lockfile_lock_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
 {
-  g_debug ("%s: lock '%s'", __FUNCTION__, lockfile_basename);
+  g_debug ("%s: lock '%s'", __func__, lockfile_basename);
   return lock_internal (lockfile, lockfile_basename, LOCK_EX | LOCK_NB);
 }
 
@@ -469,7 +469,7 @@ lockfile_lock_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
 int
 lockfile_lock_shared_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
 {
-  g_debug ("%s: lock '%s'", __FUNCTION__, lockfile_basename);
+  g_debug ("%s: lock '%s'", __func__, lockfile_basename);
   return lock_internal (lockfile, lockfile_basename, LOCK_SH | LOCK_NB);
 }
 
@@ -488,7 +488,7 @@ lockfile_unlock (lockfile_t *lockfile)
 
   assert (lockfile->fd);
 
-  g_debug ("%s: unlock '%s'", __FUNCTION__, lockfile->name);
+  g_debug ("%s: unlock '%s'", __func__, lockfile->name);
 
   /* Close the lock file. */
 
@@ -521,7 +521,7 @@ lockfile_locked (const gchar *lockfile_basename)
   int ret;
   lockfile_t lockfile;
 
-  g_debug ("%s: check '%s'", __FUNCTION__, lockfile_basename);
+  g_debug ("%s: check '%s'", __func__, lockfile_basename);
 
   ret = lockfile_lock_nb (&lockfile, lockfile_basename);
   if ((ret == 0) && lockfile_unlock (&lockfile))

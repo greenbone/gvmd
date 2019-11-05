@@ -525,7 +525,7 @@ make_tls_certificate (const char *name,
 
   if (sha256_fingerprint == NULL || strcmp (sha256_fingerprint, "") == 0)
     {
-      g_warning ("%s: Missing/empty sha256_fingerprint", __FUNCTION__);
+      g_warning ("%s: Missing/empty sha256_fingerprint", __func__);
       return -1;
     }
 
@@ -1304,7 +1304,7 @@ get_or_make_tls_certificate_source (tls_certificate_t tls_certificate,
 
   if (tls_certificate == 0)
     {
-      g_warning ("%s: No TLS certificate given", __FUNCTION__);
+      g_warning ("%s: No TLS certificate given", __func__);
       return 0;
     }
 
@@ -1502,7 +1502,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
       source_name = iterator_string (&tls_certs, 2);
 
       g_debug ("%s: Handling certificate %s on %s in report %s",
-               __FUNCTION__, scanner_fpr, host_ip, report_id);
+               __func__, scanner_fpr, host_ip, report_id);
 
       tls_certificate = 0;
       activation_time = -1;
@@ -1545,7 +1545,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
                           &serial);
       else
         g_warning ("%s: No SSLDetails found for fingerprint %s",
-                   __FUNCTION__,
+                   __func__,
                    scanner_fpr);
 
       free (ssldetails);
@@ -1568,7 +1568,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
         {
           g_warning ("%s: Could not create TLS certificate"
                      " or get existing one for fingerprint '%s'.",
-                     __FUNCTION__, scanner_fpr);
+                     __func__, scanner_fpr);
 
           g_free (certificate);
           g_free (md5_fingerprint);
