@@ -18870,7 +18870,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        task_target_name_escaped ?: "",
                        target_in_trash,
                        target_available ? "" : "<permissions/>",
-                       task_iterator_hosts_ordering (&tasks),
+                       task_iterator_hosts_ordering (&tasks)
+                        ? task_iterator_hosts_ordering (&tasks)
+                        : "",
                        task_scanner_uuid,
                        task_scanner_name_escaped,
                        task_scanner_type,
