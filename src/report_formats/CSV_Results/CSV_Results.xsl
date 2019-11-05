@@ -186,8 +186,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>,</xsl:text>
   <xsl:value-of select="gvm:formula_quote (threat)"/>
   <xsl:text>,"</xsl:text>
-  <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'solution_type') != ''">
-    <xsl:value-of select="gvm:formula_quote (str:replace (gvm:get-nvt-tag (nvt/tags, 'solution_type'), $quote, $two-quotes))"/>
+  <xsl:if test="nvt/solution/@type">
+    <xsl:value-of select="gvm:formula_quote (str:replace (nvt/solution/@type, $quote, $two-quotes))"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
   <xsl:call-template name="nvt_name"/>
@@ -229,8 +229,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:value-of select="gvm:formula_quote (str:replace (gvm:get-nvt-tag (nvt/tags, 'impact'), $quote, $two-quotes))"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
-  <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
-    <xsl:value-of select="gvm:formula_quote (str:replace (gvm:get-nvt-tag (nvt/tags, 'solution'), $quote, $two-quotes))"/>
+  <xsl:if test="nvt/solution/text()">
+    <xsl:value-of select="gvm:formula_quote (str:replace (nvt/solution/text(), $quote, $two-quotes))"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
   <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
