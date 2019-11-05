@@ -67,7 +67,7 @@ Parameters:
                       and string-length (gvm:get-nvt-tag ($nvt/tags, 'insight'))
                       and string-length (gvm:get-nvt-tag ($nvt/tags, 'vuldetect'))
                       and string-length (gvm:get-nvt-tag ($nvt/tags, 'impact'))
-                      and string-length (gvm:get-nvt-tag ($nvt/tags, 'solution'))">
+		      and $nvt/solution">
         <func:result select="1"/>
       </xsl:when>
       <xsl:otherwise>
@@ -609,17 +609,24 @@ CIS</value>
               <xsl:call-template name="newline"/>
             </xsl:if>
 
-            <xsl:if test="(gvm:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (gvm:get-nvt-tag (nvt/tags, 'solution_type') != '')">
+	    <xsl:if test="nvt/solution/text() or nvt/solution/@type or nvt/solution/@method">
               <xsl:text>Solution:</xsl:text>
               <xsl:call-template name="newline"/>
-              <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+	      <xsl:if test="nvt/solution/@type">
                 <xsl:text>Solution type: </xsl:text>
-                <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'solution_type')"/>
+		<xsl:value-of select="nvt/solution/@type"/>
                 <xsl:call-template name="newline"/>
               </xsl:if>
-              <xsl:value-of name="string" select="gvm:get-nvt-tag (nvt/tags, 'solution')"/>
-              <xsl:call-template name="newline"/>
-              <xsl:call-template name="newline"/>
+	      <xsl:if test="nvt/solution/@method">
+                <xsl:text>Solution method: </xsl:text>
+		<xsl:value-of select="nvt/solution/@method"/>
+                <xsl:call-template name="newline"/>
+              </xsl:if>
+              <xsl:if test="nvt/solution/text()">
+	        <xsl:value-of name="string" select="nvt/solution/text()"/>
+                <xsl:call-template name="newline"/>
+                <xsl:call-template name="newline"/>
+              </xsl:if>
             </xsl:if>
 
             <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
