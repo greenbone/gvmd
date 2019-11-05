@@ -913,6 +913,16 @@ DEF_ACCESS (nvt_iterator_impact, GET_ITERATOR_COLUMN_COUNT + 18);
 DEF_ACCESS (nvt_iterator_detection, GET_ITERATOR_COLUMN_COUNT + 19);
 
 /**
+ * @brief Get the solution method from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Solution method, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_solution_method, GET_ITERATOR_COLUMN_COUNT + 20);
+
+/**
  * @brief Get the default timeout of an NVT.
  *
  * @param[in]  oid  The OID of the NVT to get the timeout of.

@@ -2026,6 +2026,9 @@ nvt_iterator_solution (iterator_t*);
 const char*
 nvt_iterator_solution_type (iterator_t*);
 
+const char*
+nvt_iterator_solution_method (iterator_t*);
+
 char*
 nvt_default_timeout (const char *);
 
