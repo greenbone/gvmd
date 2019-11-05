@@ -7908,6 +7908,28 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       g_string_free(refs_str, 1);
       g_string_free(tags_str, 1);
 
+      if (nvt_iterator_solution (nvts) ||
+          nvt_iterator_solution_type (nvts) ||
+          nvt_iterator_solution_method (nvts))
+        {
+          g_string_append_printf (buffer, "<solution");
+
+          if (nvt_iterator_solution_type (nvts))
+            g_string_append_printf (buffer, " type='%s'",
+              nvt_iterator_solution_type (nvts));
+
+          if (nvt_iterator_solution_method (nvts))
+            g_string_append_printf (buffer, " method='%s'",
+              nvt_iterator_solution_method (nvts));
+
+          if (nvt_iterator_solution (nvts))
+            g_string_append_printf (buffer, ">%s</solution>",
+                                      nvt_iterator_solution (nvts));
+          else
+            g_string_append_printf (buffer, "/>");
+        }
+
+
       if (preferences)
         {
           iterator_t prefs;
