@@ -313,13 +313,13 @@ option_lock (lockfile_t *lockfile_checking)
 
   if (lockfile_lock_shared_nb (&lockfile_helping, "gvm-helping"))
     {
-      g_critical ("%s: Error getting helping lock", __FUNCTION__);
+      g_critical ("%s: Error getting helping lock", __func__);
       return -1;
     }
 
   if (lockfile_unlock (lockfile_checking))
     {
-      g_critical ("%s: Error releasing checking lock", __FUNCTION__);
+      g_critical ("%s: Error releasing checking lock", __func__);
       return -1;
     }
 
@@ -405,7 +405,7 @@ watch_client_connection (void* data)
         {
           if (watcher_data->connection_closed == 0)
             {
-              g_debug ("%s: Client connection closed", __FUNCTION__);
+              g_debug ("%s: Client connection closed", __func__);
               sql_cancel ();
               active = 0;
               watcher_data->connection_closed = 1;
@@ -444,7 +444,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
                       &optval, sizeof (int)))
         {
           g_critical ("%s: failed to set SO_KEEPALIVE on scanner socket: %s",
-                      __FUNCTION__,
+                      __func__,
                       strerror (errno));
           exit (EXIT_FAILURE);
         }
@@ -465,7 +465,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
       && gvm_server_attach (client_connection->socket, &client_session))
     {
       g_debug ("%s: failed to attach client session to socket %i",
-               __FUNCTION__,
+               __func__,
               client_connection->socket);
       goto fail;
     }
@@ -475,7 +475,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
   if (fcntl (client_connection->socket, F_SETFL, O_NONBLOCK) == -1)
     {
       g_warning ("%s: failed to set real client socket flag: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       goto fail;
     }
@@ -550,7 +550,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
         /* The connection is gone, return to select. */
         return;
       g_critical ("%s: failed to accept client connection: %s",
-                  __FUNCTION__,
+                  __func__,
                   strerror (errno));
       exit (EXIT_FAILURE);
     }
@@ -580,7 +580,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
           if (sigaction (SIGCHLD, &action, NULL) == -1)
             {
               g_critical ("%s: failed to set client SIGCHLD handler: %s",
-                          __FUNCTION__,
+                          __func__,
                           strerror (errno));
               shutdown (client_socket, SHUT_RDWR);
               close (client_socket);
@@ -593,7 +593,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
           if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
             {
               g_critical ("%s: failed to set client socket flag: %s",
-                          __FUNCTION__,
+                          __func__,
                           strerror (errno));
               shutdown (client_socket, SHUT_RDWR);
               close (client_socket);
@@ -612,7 +612,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
       case -1:
         /* Parent when error, return to select. */
         g_warning ("%s: failed to fork child: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         close (client_socket);
         break;
@@ -656,13 +656,13 @@ fork_connection_internal (gvm_connection_t *client_connection,
 
       case -1:
         /* Parent when error. */
-        g_warning ("%s: fork: %s", __FUNCTION__, strerror (errno));
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
         return -1;
         break;
 
       default:
         /* Parent.  Return to caller. */
-        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
         return pid;
         break;
     }
@@ -679,7 +679,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
   /* Create a connected pair of sockets. */
   if (socketpair (AF_UNIX, SOCK_STREAM, 0, sockets))
     {
-      g_warning ("%s: socketpair: %s", __FUNCTION__, strerror (errno));
+      g_warning ("%s: socketpair: %s", __func__, strerror (errno));
       exit (EXIT_FAILURE);
     }
 
@@ -704,7 +704,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
         if (sigaction (SIGCHLD, &action, NULL) == -1)
           {
             g_critical ("%s: failed to set client SIGCHLD handler: %s",
-                        __FUNCTION__,
+                        __func__,
                         strerror (errno));
             shutdown (parent_client_socket, SHUT_RDWR);
             close (parent_client_socket);
@@ -717,7 +717,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
         if (fcntl (parent_client_socket, F_SETFL, O_NONBLOCK) == -1)
           {
             g_critical ("%s: failed to set client socket flag: %s",
-                        __FUNCTION__,
+                        __func__,
                         strerror (errno));
             shutdown (parent_client_socket, SHUT_RDWR);
             close (parent_client_socket);
@@ -751,7 +751,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
                                 &client_credentials))
               {
                 g_critical ("%s: client server initialisation failed",
-                            __FUNCTION__);
+                            __func__);
                 exit (EXIT_FAILURE);
               }
             set_gnutls_priority (&client_session, priorities_option);
@@ -763,7 +763,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
         /* Serve client. */
 
         g_debug ("%s: serving GMP to client on socket %i",
-                 __FUNCTION__, parent_client_socket);
+                 __func__, parent_client_socket);
 
         memset (client_connection, 0, sizeof (*client_connection));
         client_connection->tls = use_tls;
@@ -778,14 +778,14 @@ fork_connection_internal (gvm_connection_t *client_connection,
       case -1:
         /* Parent when error. */
 
-        g_warning ("%s: fork: %s", __FUNCTION__, strerror (errno));
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
         exit (EXIT_FAILURE);
         break;
 
       default:
         /* Parent.  */
 
-        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
 
         proctitle_set ("gvmd: Requesting GMP internally");
 
@@ -816,7 +816,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
           }
 
         g_debug ("%s: all set to request GMP on socket %i",
-                 __FUNCTION__, client_connection->socket);
+                 __func__, client_connection->socket);
 
         return 0;
         break;
@@ -888,7 +888,7 @@ cleanup ()
     {
       if (fclose (log_stream))
         g_critical ("%s: failed to close log stream: %s",
-                    __FUNCTION__,
+                    __func__,
                     strerror (errno));
     }
 #endif /* LOG */
@@ -922,7 +922,7 @@ setup_signal_handler (int signal, void (*handler) (int), int block)
   if (sigaction (signal, &action, NULL) == -1)
     {
       g_critical ("%s: failed to register %s handler",
-                  __FUNCTION__, sys_siglist[signal]);
+                  __func__, sys_siglist[signal]);
       exit (EXIT_FAILURE);
     }
 }
@@ -953,7 +953,7 @@ setup_signal_handler_info (int signal,
   if (sigaction (signal, &action, NULL) == -1)
     {
       g_critical ("%s: failed to register %s handler",
-                  __FUNCTION__, sys_siglist[signal]);
+                  __func__, sys_siglist[signal]);
       exit (EXIT_FAILURE);
     }
 }
@@ -1121,7 +1121,7 @@ update_nvt_cache_retry ()
             exit (update_nvt_cache_osp (osp_update_socket));
           else
             {
-              g_warning ("%s: No OSP VT update socket set", __FUNCTION__);
+              g_warning ("%s: No OSP VT update socket set", __func__);
               exit (EXIT_FAILURE);
             }
         }
@@ -1144,7 +1144,7 @@ fork_update_nvt_cache ()
   if (update_in_progress)
     {
       g_debug ("%s: Update skipped because an update is in progress",
-              __FUNCTION__);
+              __func__);
       return 1;
     }
 
@@ -1153,12 +1153,12 @@ fork_update_nvt_cache ()
   /* Block SIGCHLD until parent records the value of the child PID. */
   if (sigemptyset (&sigmask_all))
     {
-      g_critical ("%s: Error emptying signal set", __FUNCTION__);
+      g_critical ("%s: Error emptying signal set", __func__);
       return -1;
     }
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
-      g_critical ("%s: Error setting signal mask", __FUNCTION__);
+      g_critical ("%s: Error setting signal mask", __func__);
       return -1;
     }
 
@@ -1191,18 +1191,18 @@ fork_update_nvt_cache ()
 
       case -1:
         /* Parent when error. */
-        g_warning ("%s: fork: %s", __FUNCTION__, strerror (errno));
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
         update_in_progress = 0;
         if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
-          g_warning ("%s: Error resetting signal mask", __FUNCTION__);
+          g_warning ("%s: Error resetting signal mask", __func__);
         return -1;
 
       default:
         /* Parent.  Unblock signals and continue. */
-        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
         update_in_progress = pid;
         if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
-          g_warning ("%s: Error resetting signal mask", __FUNCTION__);
+          g_warning ("%s: Error resetting signal mask", __func__);
         return 0;
     }
 }
@@ -1227,12 +1227,12 @@ serve_and_schedule ()
 
   if (sigfillset (&sigmask_all))
     {
-      g_critical ("%s: Error filling signal set", __FUNCTION__);
+      g_critical ("%s: Error filling signal set", __func__);
       exit (EXIT_FAILURE);
     }
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
-      g_critical ("%s: Error setting signal mask", __FUNCTION__);
+      g_critical ("%s: Error setting signal mask", __func__);
       exit (EXIT_FAILURE);
     }
   sigmask_normal = &sigmask_current;
@@ -1274,7 +1274,7 @@ serve_and_schedule ()
             case 0:
               last_schedule_time = time (NULL);
               g_debug ("%s: last_schedule_time: %li",
-                       __FUNCTION__, last_schedule_time);
+                       __func__, last_schedule_time);
               break;
             case 1:
               break;
@@ -1299,7 +1299,7 @@ serve_and_schedule ()
           if (errno == EINTR)
             continue;
           g_critical ("%s: select failed: %s",
-                      __FUNCTION__,
+                      __func__,
                       strerror (errno));
           exit (EXIT_FAILURE);
         }
@@ -1309,12 +1309,12 @@ serve_and_schedule ()
           /* Have an incoming connection. */
           if (FD_ISSET (manager_socket, &exceptfds))
             {
-              g_critical ("%s: exception in select", __FUNCTION__);
+              g_critical ("%s: exception in select", __func__);
               exit (EXIT_FAILURE);
             }
           if ((manager_socket_2 > -1) && FD_ISSET (manager_socket_2, &exceptfds))
             {
-              g_critical ("%s: exception in select (2)", __FUNCTION__);
+              g_critical ("%s: exception in select (2)", __func__);
               exit (EXIT_FAILURE);
             }
           if (FD_ISSET (manager_socket, &readfds))
@@ -1330,7 +1330,7 @@ serve_and_schedule ()
             case 0:
               last_schedule_time = time (NULL);
               g_debug ("%s: last_schedule_time 2: %li",
-                       __FUNCTION__, last_schedule_time);
+                       __func__, last_schedule_time);
               break;
             case 1:
               break;
@@ -1383,7 +1383,7 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
   memset (&address_tls, 0, sizeof (struct sockaddr_storage));
   memset (&address_unix, 0, sizeof (struct sockaddr_un));
 
-  g_debug ("%s: address_str_unix: %s", __FUNCTION__, address_str_unix);
+  g_debug ("%s: address_str_unix: %s", __func__, address_str_unix);
   if (address_str_unix)
     {
       struct stat state;
@@ -1396,7 +1396,7 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
                sizeof (address_unix.sun_path) - 1);
 
       g_debug ("%s: address_unix.sun_path: %s",
-               __FUNCTION__,
+               __func__,
                address_unix.sun_path);
 
       *soc = socket (AF_UNIX, SOCK_STREAM, 0);
@@ -1512,12 +1512,12 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
           passwd = getpwnam (socket_owner);
           if (passwd == NULL)
             {
-              g_warning ("%s: User %s not found.", __FUNCTION__, socket_owner);
+              g_warning ("%s: User %s not found.", __func__, socket_owner);
               return -1;
             }
           if (chown (address_str_unix, passwd->pw_uid, -1) == -1)
             {
-              g_warning ("%s: chown: %s", __FUNCTION__, strerror (errno));
+              g_warning ("%s: chown: %s", __func__, strerror (errno));
               return -1;
             }
         }
@@ -1529,12 +1529,12 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
           group = getgrnam (socket_group);
           if (group == NULL)
             {
-              g_warning ("%s: Group %s not found.", __FUNCTION__, socket_group);
+              g_warning ("%s: Group %s not found.", __func__, socket_group);
               return -1;
             }
           if (chown (address_str_unix, -1, group->gr_gid) == -1)
             {
-              g_warning ("%s: chown: %s", __FUNCTION__, strerror (errno));
+              g_warning ("%s: chown: %s", __func__, strerror (errno));
               return -1;
             }
         }
@@ -1544,12 +1544,12 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
       omode = strtol (socket_mode, 0, 8);
       if (omode <= 0 || omode > 4095)
         {
-          g_warning ("%s: Erroneous --listen-mode value", __FUNCTION__);
+          g_warning ("%s: Erroneous --listen-mode value", __func__);
           return -1;
         }
       if (chmod (address_str_unix, omode) == -1)
         {
-          g_warning ("%s: chmod: %s", __FUNCTION__, strerror (errno));
+          g_warning ("%s: chmod: %s", __func__, strerror (errno));
           return -1;
         }
     }
@@ -1892,7 +1892,7 @@ gvmd (int argc, char** argv)
   if (!g_option_context_parse (option_context, &argc, &argv, &error))
     {
       g_option_context_free (option_context);
-      g_critical ("%s: g_option_context_parse: %s", __FUNCTION__,
+      g_critical ("%s: g_option_context_parse: %s", __func__,
                   error->message);
       exit (EXIT_FAILURE);
     }
@@ -1951,7 +1951,7 @@ gvmd (int argc, char** argv)
       if (manager_address_string || manager_address_string_2)
         {
           g_critical ("%s: --listen or --listen2 given with --unix-socket",
-                      __FUNCTION__);
+                      __func__);
           return EXIT_FAILURE;
         }
     }
@@ -1960,7 +1960,7 @@ gvmd (int argc, char** argv)
       && (manager_port_string || manager_port_string_2))
     {
       g_critical ("%s: --port or --port2 given when listening on UNIX socket",
-                  __FUNCTION__);
+                  __func__);
       return EXIT_FAILURE;
     }
 
@@ -1977,10 +1977,10 @@ gvmd (int argc, char** argv)
 
   if (migrate_database
       && manage_migrate_needs_timezone (log_config, database))
-    g_info ("%s: leaving TZ as is, for migrator", __FUNCTION__);
+    g_info ("%s: leaving TZ as is, for migrator", __func__);
   else if (setenv ("TZ", "utc 0", 1) == -1)
     {
-      g_critical ("%s: failed to set timezone", __FUNCTION__);
+      g_critical ("%s: failed to set timezone", __func__);
       exit (EXIT_FAILURE);
     }
   tzset ();
@@ -2071,11 +2071,11 @@ gvmd (int argc, char** argv)
       case 0:
         break;
       case 1:
-        g_warning ("%s: Another process is busy starting up", __FUNCTION__);
+        g_warning ("%s: Another process is busy starting up", __func__);
         return EXIT_FAILURE;
       case -1:
       default:
-        g_critical ("%s: Error trying to get checking lock", __FUNCTION__);
+        g_critical ("%s: Error trying to get checking lock", __func__);
         return EXIT_FAILURE;
     }
 
@@ -2089,11 +2089,11 @@ gvmd (int argc, char** argv)
         {
           case 1:
             g_warning ("%s: Main process is running, refusing to migrate",
-                       __FUNCTION__);
+                       __func__);
             return EXIT_FAILURE;
           case -1:
             g_warning ("%s: Error checking serving lock",
-                       __FUNCTION__);
+                       __func__);
             return EXIT_FAILURE;
         }
 
@@ -2101,27 +2101,27 @@ gvmd (int argc, char** argv)
         {
           case 1:
             g_warning ("%s: An option process is running, refusing to migrate",
-                       __FUNCTION__);
+                       __func__);
             return EXIT_FAILURE;
           case -1:
             g_warning ("%s: Error checking helping lock",
-                       __FUNCTION__);
+                       __func__);
             return EXIT_FAILURE;
         }
 
       switch (lockfile_lock_nb (&lockfile_migrating, "gvm-migrating"))
         {
           case 1:
-            g_warning ("%s: A migrate is already running", __FUNCTION__);
+            g_warning ("%s: A migrate is already running", __func__);
             return EXIT_FAILURE;
           case -1:
-            g_critical ("%s: Error getting migrating lock", __FUNCTION__);
+            g_critical ("%s: Error getting migrating lock", __func__);
             return EXIT_FAILURE;
         }
 
       if (lockfile_unlock (&lockfile_checking))
         {
-          g_critical ("%s: Error releasing checking lock", __FUNCTION__);
+          g_critical ("%s: Error releasing checking lock", __func__);
           return EXIT_FAILURE;
         }
 
@@ -2136,36 +2136,36 @@ gvmd (int argc, char** argv)
             return EXIT_SUCCESS;
           case 1:
             g_warning ("%s: databases are already at the supported version",
-                       __FUNCTION__);
+                       __func__);
             return EXIT_SUCCESS;
           case 2:
             g_warning ("%s: database migration too hard",
-                       __FUNCTION__);
+                       __func__);
             return EXIT_FAILURE;
           case 11:
             g_warning ("%s: cannot migrate SCAP database",
-                       __FUNCTION__);
+                       __func__);
             return EXIT_FAILURE;
           case 12:
             g_warning ("%s: cannot migrate CERT database",
-                       __FUNCTION__);
+                       __func__);
             return EXIT_FAILURE;
           case -1:
             g_critical ("%s: database migration failed",
-                        __FUNCTION__);
+                        __func__);
             return EXIT_FAILURE;
           case -11:
             g_critical ("%s: SCAP database migration failed",
-                        __FUNCTION__);
+                        __func__);
             return EXIT_FAILURE;
           case -12:
             g_critical ("%s: CERT database migration failed",
-                        __FUNCTION__);
+                        __func__);
             return EXIT_FAILURE;
           default:
             assert (0);
             g_critical ("%s: strange return from manage_migrate",
-                        __FUNCTION__);
+                        __func__);
             return EXIT_FAILURE;
         }
     }
@@ -2175,7 +2175,7 @@ gvmd (int argc, char** argv)
 
   if (lockfile_locked ("gvm-migrating"))
     {
-      g_warning ("%s: A migrate is in progress", __FUNCTION__);
+      g_warning ("%s: A migrate is in progress", __func__);
       return EXIT_FAILURE;
     }
 
@@ -2197,7 +2197,7 @@ gvmd (int argc, char** argv)
                                           NULL);
       if (g_file_test (password_policy, G_FILE_TEST_EXISTS) == FALSE)
         g_warning ("%s: password policy missing: %s",
-                   __FUNCTION__,
+                   __func__,
                    password_policy);
       g_free (password_policy);
     }
@@ -2489,7 +2489,7 @@ gvmd (int argc, char** argv)
 
   if (lockfile_locked ("gvm-helping"))
     {
-      g_warning ("%s: An option process is running", __FUNCTION__);
+      g_warning ("%s: An option process is running", __func__);
       return EXIT_FAILURE;
     }
 
@@ -2498,11 +2498,11 @@ gvmd (int argc, char** argv)
       case 0:
         break;
       case 1:
-        g_warning ("%s: Main process is already running", __FUNCTION__);
+        g_warning ("%s: Main process is already running", __func__);
         return EXIT_FAILURE;
       case -1:
       default:
-        g_critical ("%s: Error trying to get serving lock", __FUNCTION__);
+        g_critical ("%s: Error trying to get serving lock", __func__);
         return EXIT_FAILURE;
     }
 
@@ -2518,7 +2518,7 @@ gvmd (int argc, char** argv)
           case -1:
             /* Parent when error. */
             g_critical ("%s: failed to fork into background: %s",
-                        __FUNCTION__,
+                        __func__,
                         strerror (errno));
             log_config_free ();
             exit (EXIT_FAILURE);
@@ -2541,14 +2541,14 @@ gvmd (int argc, char** argv)
       case 0:
         break;
       case -2:
-        g_critical ("%s: database is wrong version", __FUNCTION__);
+        g_critical ("%s: database is wrong version", __func__);
         log_config_free ();
         exit (EXIT_FAILURE);
         break;
       case -4:
         g_critical ("%s: --max-ips-per-target out of range"
                     " (min=1, max=%i, requested=%i)",
-                    __FUNCTION__,
+                    __func__,
                     MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
                     max_ips_per_target);
         log_config_free ();
@@ -2556,7 +2556,7 @@ gvmd (int argc, char** argv)
         break;
       case -1:
       default:
-        g_critical ("%s: failed to initialise GMP daemon", __FUNCTION__);
+        g_critical ("%s: failed to initialise GMP daemon", __func__);
         log_config_free ();
         exit (EXIT_FAILURE);
     }
@@ -2565,7 +2565,7 @@ gvmd (int argc, char** argv)
 
   if (lockfile_unlock (&lockfile_checking))
     {
-      g_critical ("%s: Error releasing checking lock", __FUNCTION__);
+      g_critical ("%s: Error releasing checking lock", __func__);
       return EXIT_FAILURE;
     }
 
@@ -2574,7 +2574,7 @@ gvmd (int argc, char** argv)
   if (atexit (&cleanup))
     {
       g_critical ("%s: failed to register `atexit' cleanup function",
-                  __FUNCTION__);
+                  __func__);
       log_config_free ();
       exit (EXIT_FAILURE);
     }
@@ -2600,7 +2600,7 @@ gvmd (int argc, char** argv)
       == -1)
     {
       g_critical ("%s: failed to create log directory: %s",
-                  __FUNCTION__,
+                  __func__,
                   strerror (errno));
       exit (EXIT_FAILURE);
     }
@@ -2609,7 +2609,7 @@ gvmd (int argc, char** argv)
   if (log_stream == NULL)
     {
       g_critical ("%s: failed to open log file: %s",
-                  __FUNCTION__,
+                  __func__,
                   strerror (errno));
       exit (EXIT_FAILURE);
     }
@@ -2637,7 +2637,7 @@ gvmd (int argc, char** argv)
                           &client_credentials))
         {
           g_critical ("%s: client server initialisation failed",
-                      __FUNCTION__);
+                      __func__);
           exit (EXIT_FAILURE);
         }
       priorities_option = priorities;
@@ -2693,7 +2693,7 @@ gvmd (int argc, char** argv)
         {
           g_debug ("%s: Using OSP VT update socket from default OpenVAS"
                    " scanner: %s",
-                   __FUNCTION__,
+                   __func__,
                    default_socket);
           set_osp_vt_update_socket (default_socket);
         }
@@ -2702,7 +2702,7 @@ gvmd (int argc, char** argv)
           g_critical ("%s: No OSP VT update socket found."
                       " Use --osp-vt-update or change the 'OpenVAS Default'"
                       " scanner to use the main ospd-openvas socket.",
-                      __FUNCTION__);
+                      __func__);
           return EXIT_FAILURE;
         }
       free (default_socket);
