@@ -132,51 +132,6 @@ sql_hosts_contains (PG_FUNCTION_ARGS)
 /**
  * @brief Define function for Postgres.
  */
-PG_FUNCTION_INFO_V1 (sql_next_time);
-
-/**
- * @brief Get the next time given schedule times.
- *
- * This is a callback for a SQL function of four to six arguments.
- *
- * @return Postgres Datum.
- */
-Datum
-sql_next_time (PG_FUNCTION_ARGS)
-{
-  int32 first, period, period_months, byday, periods_offset;
-  char *zone;
-  int32 ret;
-
-  first = PG_GETARG_INT32 (0);
-  period = PG_GETARG_INT32 (1);
-  period_months = PG_GETARG_INT32 (2);
-  byday = PG_GETARG_INT32 (3);
-
-  if (PG_NARGS() < 5 || PG_ARGISNULL (4))
-    zone = NULL;
-  else
-    {
-      text* timezone_arg;
-      timezone_arg = PG_GETARG_TEXT_P (4);
-      zone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
-    }
-
-  if (PG_NARGS() < 6 || PG_ARGISNULL (5))
-    periods_offset = 0;
-  else
-    periods_offset = PG_GETARG_INT32 (5);
-
-  ret = next_time (first, period, period_months, byday, zone,
-                   periods_offset);
-  if (zone)
-    pfree (zone);
-  PG_RETURN_INT32 (ret);
-}
-
-/**
- * @brief Define function for Postgres.
- */
 PG_FUNCTION_INFO_V1 (sql_next_time_ical);
 
 /**
