@@ -919,7 +919,7 @@ parse_iso_time (const char *text_time)
               == -1)
             {
               g_warning ("%s: Failed to switch to timezone %s",
-                         __FUNCTION__, current_credentials.timezone);
+                         __func__, current_credentials.timezone);
               if (tz != NULL)
                 setenv ("TZ", tz, 1);
               g_free (tz);
@@ -935,7 +935,7 @@ parse_iso_time (const char *text_time)
               if (strptime ((char*) text_time, "%F %T", &tm) == NULL)
                 {
                   assert (0);
-                  g_warning ("%s: Failed to parse time", __FUNCTION__);
+                  g_warning ("%s: Failed to parse time", __func__);
                   if (tz != NULL)
                     setenv ("TZ", tz, 1);
                   g_free (tz);
@@ -952,7 +952,7 @@ parse_iso_time (const char *text_time)
 
           if (setenv ("TZ", "UTC", 1) == -1)
             {
-              g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
+              g_warning ("%s: Failed to switch to UTC", __func__);
               if (tz != NULL)
                 setenv ("TZ", tz, 1);
               g_free (tz);
@@ -964,7 +964,7 @@ parse_iso_time (const char *text_time)
           if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
             {
               assert (0);
-              g_warning ("%s: Failed to parse time", __FUNCTION__);
+              g_warning ("%s: Failed to parse time", __func__);
               if (tz != NULL)
                 setenv ("TZ", tz, 1);
               g_free (tz);
@@ -975,7 +975,7 @@ parse_iso_time (const char *text_time)
       epoch_time = mktime (&tm);
       if (epoch_time == -1)
         {
-          g_warning ("%s: Failed to make time", __FUNCTION__);
+          g_warning ("%s: Failed to make time", __func__);
           if (tz != NULL)
             setenv ("TZ", tz, 1);
           g_free (tz);
@@ -987,7 +987,7 @@ parse_iso_time (const char *text_time)
         {
           if (setenv ("TZ", tz, 1) == -1)
             {
-              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+              g_warning ("%s: Failed to switch to original TZ", __func__);
               g_free (tz);
               return 0;
             }
@@ -1014,7 +1014,7 @@ parse_iso_time (const char *text_time)
           epoch_time = mktime (&tm);
           if (epoch_time == -1)
             {
-              g_warning ("%s: Failed to make time", __FUNCTION__);
+              g_warning ("%s: Failed to make time", __func__);
               return 0;
             }
           return epoch_time;
@@ -1032,7 +1032,7 @@ parse_iso_time (const char *text_time)
                                 offset_minute);
       if (setenv ("TZ", new_tz, 1) == -1)
         {
-          g_warning ("%s: Failed to switch to %s", __FUNCTION__, new_tz);
+          g_warning ("%s: Failed to switch to %s", __func__, new_tz);
           g_free (new_tz);
           if (tz != NULL)
             setenv ("TZ", tz, 1);
@@ -1048,7 +1048,7 @@ parse_iso_time (const char *text_time)
       if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
         {
           assert (0);
-          g_warning ("%s: Failed to parse time", __FUNCTION__);
+          g_warning ("%s: Failed to parse time", __func__);
           if (tz != NULL)
             setenv ("TZ", tz, 1);
           g_free (tz);
@@ -1058,7 +1058,7 @@ parse_iso_time (const char *text_time)
       epoch_time = mktime (&tm);
       if (epoch_time == -1)
         {
-          g_warning ("%s: Failed to make time", __FUNCTION__);
+          g_warning ("%s: Failed to make time", __func__);
           if (tz != NULL)
             setenv ("TZ", tz, 1);
           g_free (tz);
@@ -1070,7 +1070,7 @@ parse_iso_time (const char *text_time)
         {
           if (setenv ("TZ", tz, 1) == -1)
             {
-              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+              g_warning ("%s: Failed to switch to original TZ", __func__);
               g_free (tz);
               return 0;
             }
@@ -1280,7 +1280,7 @@ column_array_copy (column_t *columns)
       count++;
     }
 
-  g_debug ("%s: %i", __FUNCTION__, count);
+  g_debug ("%s: %i", __func__, count);
   start = g_malloc0 (sizeof (column_t) * count);
   point = start;
 
@@ -5442,7 +5442,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   assert (get);
 
   if (get->id)
-    g_warning ("%s: Called with an id parameter", __FUNCTION__);
+    g_warning ("%s: Called with an id parameter", __func__);
 
   if ((manage_scap_loaded () == FALSE
        && (strcmp (type, "cve") == 0
@@ -9022,7 +9022,7 @@ email_write_content (FILE *content_file,
                body)
       < 0)
     {
-      g_warning ("%s: output error", __FUNCTION__);
+      g_warning ("%s: output error", __func__);
       return -1;
     }
 
@@ -9042,7 +9042,7 @@ email_write_content (FILE *content_file,
                    attachment_extension)
           < 0)
         {
-          g_warning ("%s: output error", __FUNCTION__);
+          g_warning ("%s: output error", __func__);
           return -1;
         }
 
@@ -9056,7 +9056,7 @@ email_write_content (FILE *content_file,
                          attachment)
                 < 0)
               {
-                g_warning ("%s: output error", __FUNCTION__);
+                g_warning ("%s: output error", __func__);
                 return -1;
               }
             attachment += 72;
@@ -9069,7 +9069,7 @@ email_write_content (FILE *content_file,
                          attachment)
                 < 0)
               {
-                g_warning ("%s: output error", __FUNCTION__);
+                g_warning ("%s: output error", __func__);
                 return -1;
               }
             break;
@@ -9079,7 +9079,7 @@ email_write_content (FILE *content_file,
                    "--=-=-=-=-=--\n")
           < 0)
         {
-          g_warning ("%s: output error", __FUNCTION__);
+          g_warning ("%s: output error", __func__);
           return -1;
         }
     }
@@ -9140,7 +9140,7 @@ email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
                             : "automated@openvas.org",
                subject) < 0)
     {
-      g_warning ("%s: output error at headers", __FUNCTION__);
+      g_warning ("%s: output error at headers", __func__);
       return -1;
     }
 
@@ -9156,7 +9156,7 @@ email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
                "\n"
                "--=-=-=-=-=--\n") < 0)
     {
-      g_warning ("%s: output error at end of message", __FUNCTION__);
+      g_warning ("%s: output error at end of message", __func__);
       return -1;
     }
 
@@ -9205,7 +9205,7 @@ email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
                             : "automated@openvas.org",
                subject) < 0)
     {
-      g_warning ("%s: output error at headers", __FUNCTION__);
+      g_warning ("%s: output error at headers", __func__);
       return -1;
     }
 
@@ -9213,7 +9213,7 @@ email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
   if (gvm_smime_encrypt_stream (plain_file, encrypted_file, to_address,
                                 certificate, -1))
     {
-      g_warning ("%s: encryption failed", __FUNCTION__);
+      g_warning ("%s: encryption failed", __func__);
       return -1;
     }
 
@@ -9221,7 +9221,7 @@ email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
   if (fprintf (encrypted_file, 
                "\n") < 0)
     {
-      g_warning ("%s: output error at end of message", __FUNCTION__);
+      g_warning ("%s: output error at end of message", __func__);
       return -1;
     }
 
@@ -9269,7 +9269,7 @@ email (const char *to_address, const char *from_address, const char *subject,
   content_fd = mkstemp (content_file_name);
   if (content_fd == -1)
     {
-      g_warning ("%s: mkstemp: %s", __FUNCTION__, strerror (errno));
+      g_warning ("%s: mkstemp: %s", __func__, strerror (errno));
       return -1;
     }
 
@@ -9280,7 +9280,7 @@ email (const char *to_address, const char *from_address, const char *subject,
   if (content_file == NULL)
     {
       g_warning ("%s: Could not open content file: %s",
-                 __FUNCTION__, strerror (errno));
+                 __func__, strerror (errno));
       close (content_fd);
       return -1;
     }
@@ -9305,7 +9305,7 @@ email (const char *to_address, const char *from_address, const char *subject,
           if (plain_fd == -1)
             {
               g_warning ("%s: mkstemp for plain text file: %s",
-                         __FUNCTION__, strerror (errno));
+                         __func__, strerror (errno));
               fclose (content_file);
               unlink (content_file_name);
               cleanup_iterator (&iterator);
@@ -9316,7 +9316,7 @@ email (const char *to_address, const char *from_address, const char *subject,
           if (plain_file == NULL)
             {
               g_warning ("%s: Could not open plain text file: %s",
-                         __FUNCTION__, strerror (errno));
+                         __func__, strerror (errno));
               fclose (content_file);
               unlink (content_file_name);
               close (plain_fd);
@@ -9353,7 +9353,7 @@ email (const char *to_address, const char *from_address, const char *subject,
 
               if (ret)
                 {
-                  g_warning ("%s: PGP encryption failed", __FUNCTION__);
+                  g_warning ("%s: PGP encryption failed", __func__);
                   fclose (content_file);
                   unlink (content_file_name);
                   cleanup_iterator (&iterator);
@@ -9371,7 +9371,7 @@ email (const char *to_address, const char *from_address, const char *subject,
 
               if (ret)
                 {
-                  g_warning ("%s: S/MIME encryption failed", __FUNCTION__);
+                  g_warning ("%s: S/MIME encryption failed", __func__);
                   fclose (content_file);
                   unlink (content_file_name);
                   cleanup_iterator (&iterator);
@@ -9381,7 +9381,7 @@ email (const char *to_address, const char *from_address, const char *subject,
           else
             {
               g_warning ("%s: Invalid recipient credential type",
-                        __FUNCTION__);
+                        __func__);
               fclose (content_file);
               unlink (content_file_name);
               fclose (plain_file);
@@ -9408,7 +9408,7 @@ email (const char *to_address, const char *from_address, const char *subject,
   args_fd = mkstemp (args_file_name);
   if (args_fd == -1)
     {
-      g_warning ("%s: mkstemp: %s", __FUNCTION__, strerror (errno));
+      g_warning ("%s: mkstemp: %s", __func__, strerror (errno));
       fclose (content_file);
       return -1;
     }
@@ -9443,7 +9443,7 @@ email (const char *to_address, const char *from_address, const char *subject,
   if ((ret == -1) || WEXITSTATUS (ret))
     {
       g_warning ("%s: system failed with ret %i, %i, %s",
-                 __FUNCTION__,
+                 __func__,
                  ret,
                  WEXITSTATUS (ret),
                  command);
@@ -9487,7 +9487,7 @@ http_get (const char *url)
   cmd[3] = g_strdup (url);
   cmd[4] = NULL;
   g_debug ("%s: Spawning in /tmp/: %s %s %s %s",
-           __FUNCTION__, cmd[0], cmd[1], cmd[2], cmd[3]);
+           __func__, cmd[0], cmd[1], cmd[2], cmd[3]);
   if ((g_spawn_sync ("/tmp/",
                      cmd,
                      NULL,                  /* Environment. */
@@ -9503,12 +9503,12 @@ http_get (const char *url)
       || WEXITSTATUS (exit_status))
     {
       g_debug ("%s: wget failed: %d (WIF %i, WEX %i)",
-               __FUNCTION__,
+               __func__,
                exit_status,
                WIFEXITED (exit_status),
                WEXITSTATUS (exit_status));
-      g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
-      g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
+      g_debug ("%s: stdout: %s", __func__, standard_out);
+      g_debug ("%s: stderr: %s", __func__, standard_err);
       ret = -1;
     }
   else
@@ -9562,7 +9562,7 @@ alert_script_init (const char *report_filename, const char* report,
 
   if (mkdtemp (report_dir) == NULL)
     {
-      g_warning ("%s: mkdtemp failed", __FUNCTION__);
+      g_warning ("%s: mkdtemp failed", __func__);
       return -1;
     }
 
@@ -9578,7 +9578,7 @@ alert_script_init (const char *report_filename, const char* report,
   if (error)
     {
       g_warning ("%s: could not write report: %s",
-                 __FUNCTION__, error->message);
+                 __func__, error->message);
       g_error_free (error);
       g_free (*report_path);
       gvm_file_remove_recurse (report_dir);
@@ -9591,7 +9591,7 @@ alert_script_init (const char *report_filename, const char* report,
 
   if (mkstemp (*error_path) == -1)
     {
-      g_warning ("%s: mkstemp for error output failed", __FUNCTION__);
+      g_warning ("%s: mkstemp for error output failed", __func__);
       gvm_file_remove_recurse (report_dir);
       g_free (*report_path);
       g_free (*error_path);
@@ -9605,7 +9605,7 @@ alert_script_init (const char *report_filename, const char* report,
       *extra_path = g_strdup_printf ("%s/extra_XXXXXX", report_dir);
       if (mkstemp (*extra_path) == -1)
         {
-          g_warning ("%s: mkstemp for extra data failed", __FUNCTION__);
+          g_warning ("%s: mkstemp for extra data failed", __func__);
           gvm_file_remove_recurse (report_dir);
           g_free (*report_path);
           g_free (*error_path);
@@ -9618,7 +9618,7 @@ alert_script_init (const char *report_filename, const char* report,
       if (error)
         {
           g_warning ("%s: could not write extra data: %s",
-                    __FUNCTION__, error->message);
+                    __func__, error->message);
           g_error_free (error);
           gvm_file_remove_recurse (report_dir);
           g_free (*report_path);
@@ -9665,7 +9665,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
   if (!g_file_test (script, G_FILE_TEST_EXISTS))
     {
       g_warning ("%s: Failed to find alert script: %s",
-           __FUNCTION__,
+           __func__,
            script);
       g_free (script);
       g_free (script_dir);
@@ -9684,7 +9684,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
     if (previous_dir == NULL)
       {
         g_warning ("%s: Failed to getcwd: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         g_free (previous_dir);
         g_free (script);
@@ -9695,7 +9695,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
     if (chdir (script_dir))
       {
         g_warning ("%s: Failed to chdir: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         g_free (previous_dir);
         g_free (script);
@@ -9741,7 +9741,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                                      nobody->pw_gid)))
           {
             g_warning ("%s: Failed to set permissions for user nobody: %s",
-                       __FUNCTION__,
+                       __func__,
                        strerror (errno));
             g_free (previous_dir);
             g_free (command);
@@ -9762,20 +9762,20 @@ alert_script_exec (const char *alert_id, const char *command_args,
                 if (setgroups (0,NULL))
                   {
                     g_warning ("%s (child): setgroups: %s",
-                               __FUNCTION__, strerror (errno));
+                               __func__, strerror (errno));
                     exit (EXIT_FAILURE);
                   }
                 if (setgid (nobody->pw_gid))
                   {
                     g_warning ("%s (child): setgid: %s",
-                               __FUNCTION__,
+                               __func__,
                                strerror (errno));
                     exit (EXIT_FAILURE);
                   }
                 if (setuid (nobody->pw_uid))
                   {
                     g_warning ("%s (child): setuid: %s",
-                               __FUNCTION__,
+                               __func__,
                                strerror (errno));
                     exit (EXIT_FAILURE);
                   }
@@ -9788,7 +9788,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                   {
                     g_warning ("%s (child):"
                                " system failed with ret %i, %i, %s",
-                               __FUNCTION__,
+                               __func__,
                                ret,
                                WEXITSTATUS (ret),
                                command);
@@ -9802,7 +9802,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                                              NULL, &error) == FALSE)
                       {
                         g_warning ("%s: failed to test error message: %s",
-                                    __FUNCTION__, error->message);
+                                    __func__, error->message);
                         g_error_free (error);
                         if (message)
                           g_free (*message);
@@ -9824,7 +9824,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                           {
                             g_warning ("%s: failed to write error message:"
                                         " %s",
-                                        __FUNCTION__, error->message);
+                                        __func__, error->message);
                             g_error_free (error);
                             g_free (*message);
                             exit (EXIT_FAILURE);
@@ -9842,11 +9842,11 @@ alert_script_exec (const char *alert_id, const char *command_args,
               /* Parent when error. */
 
               g_warning ("%s: Failed to fork: %s",
-                         __FUNCTION__,
+                         __func__,
                          strerror (errno));
               if (chdir (previous_dir))
                 g_warning ("%s: and chdir failed",
-                           __FUNCTION__);
+                           __func__);
               g_free (previous_dir);
               g_free (command);
               return -1;
@@ -9863,21 +9863,21 @@ alert_script_exec (const char *alert_id, const char *command_args,
                     if (errno == ECHILD)
                       {
                         g_warning ("%s: Failed to get child exit status",
-                                   __FUNCTION__);
+                                   __func__);
                         if (chdir (previous_dir))
                           g_warning ("%s: and chdir failed",
-                                     __FUNCTION__);
+                                     __func__);
                         g_free (previous_dir);
                         return -1;
                       }
                     if (errno == EINTR)
                       continue;
                     g_warning ("%s: wait: %s",
-                               __FUNCTION__,
+                               __func__,
                                strerror (errno));
                     if (chdir (previous_dir))
                       g_warning ("%s: and chdir failed",
-                                 __FUNCTION__);
+                                 __func__);
                     g_free (previous_dir);
                     return -1;
                   }
@@ -9894,7 +9894,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                                                    NULL, &error) == FALSE)
                             {
                               g_warning ("%s: failed to get error message: %s",
-                                         __FUNCTION__, error->message);
+                                         __func__, error->message);
                               g_error_free (error);
                             }
 
@@ -9906,27 +9906,27 @@ alert_script_exec (const char *alert_id, const char *command_args,
                         }
                       if (chdir (previous_dir))
                         g_warning ("%s: chdir failed",
-                                   __FUNCTION__);
+                                   __func__);
                       return -5;
                     case EXIT_FAILURE:
                     default:
                       g_warning ("%s: child failed, %s",
-                                 __FUNCTION__,
+                                 __func__,
                                  command);
                       if (chdir (previous_dir))
                         g_warning ("%s: and chdir failed",
-                                   __FUNCTION__);
+                                   __func__);
                       g_free (previous_dir);
                       return -1;
                     }
                 else
                   {
                     g_warning ("%s: child failed, %s",
-                               __FUNCTION__,
+                               __func__,
                                command);
                     if (chdir (previous_dir))
                       g_warning ("%s: and chdir failed",
-                                 __FUNCTION__);
+                                 __func__);
                     g_free (previous_dir);
                     return -1;
                   }
@@ -9947,13 +9947,13 @@ alert_script_exec (const char *alert_id, const char *command_args,
         if (ret == -1)
           {
             g_warning ("%s: system failed with ret %i, %i, %s",
-                       __FUNCTION__,
+                       __func__,
                        ret,
                        WEXITSTATUS (ret),
                        command);
             if (chdir (previous_dir))
               g_warning ("%s: and chdir failed",
-                         __FUNCTION__);
+                         __func__);
             g_free (previous_dir);
             g_free (command);
             return -1;
@@ -9967,7 +9967,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                       == FALSE)
                   {
                     g_warning ("%s: failed to get error message: %s",
-                               __FUNCTION__, error->message);
+                               __func__, error->message);
                     g_error_free (error);
                   }
 
@@ -9997,7 +9997,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
     if (chdir (previous_dir))
       {
         g_warning ("%s: Failed to chdir back: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         g_free (previous_dir);
         return -1;
@@ -10105,7 +10105,7 @@ snmp_to_host (const char *community, const char *agent, const char *message,
 
   if (community == NULL || agent == NULL || message == NULL)
     {
-      g_warning ("%s: parameter was NULL", __FUNCTION__);
+      g_warning ("%s: parameter was NULL", __func__);
       return -1;
     }
 
@@ -10295,7 +10295,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
   if (mkdtemp (report_dir) == NULL)
     {
-      g_warning ("%s: mkdtemp failed", __FUNCTION__);
+      g_warning ("%s: mkdtemp failed", __func__);
       return -1;
     }
 
@@ -10364,7 +10364,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
     if (previous_dir == NULL)
       {
         g_warning ("%s: Failed to getcwd: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         g_free (report_file);
         g_free (pkcs12_file);
@@ -10378,7 +10378,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
     if (chdir (script_dir))
       {
         g_warning ("%s: Failed to chdir: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         g_free (report_file);
         g_free (pkcs12_file);
@@ -10424,7 +10424,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
             || chown (pkcs12_file, nobody->pw_uid, nobody->pw_gid))
           {
             g_warning ("%s: Failed to set permissions for user nobody: %s",
-                       __FUNCTION__,
+                       __func__,
                        strerror (errno));
             g_free (report_file);
             g_free (pkcs12_file);
@@ -10447,20 +10447,20 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                 if (setgroups (0,NULL))
                   {
                     g_warning ("%s (child): setgroups: %s",
-                               __FUNCTION__, strerror (errno));
+                               __func__, strerror (errno));
                     exit (EXIT_FAILURE);
                   }
                 if (setgid (nobody->pw_gid))
                   {
                     g_warning ("%s (child): setgid: %s",
-                               __FUNCTION__,
+                               __func__,
                                strerror (errno));
                     exit (EXIT_FAILURE);
                   }
                 if (setuid (nobody->pw_uid))
                   {
                     g_warning ("%s (child): setuid: %s",
-                               __FUNCTION__,
+                               __func__,
                                strerror (errno));
                     exit (EXIT_FAILURE);
                   }
@@ -10472,7 +10472,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                   {
                     g_warning ("%s (child):"
                                " system failed with ret %i, %i, %s",
-                               __FUNCTION__,
+                               __func__,
                                ret,
                                WEXITSTATUS (ret),
                                command);
@@ -10486,11 +10486,11 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
             /* Parent when error. */
 
             g_warning ("%s: Failed to fork: %s",
-                       __FUNCTION__,
+                       __func__,
                        strerror (errno));
             if (chdir (previous_dir))
               g_warning ("%s: and chdir failed",
-                         __FUNCTION__);
+                         __func__);
             g_free (previous_dir);
             g_free (command);
             return -1;
@@ -10509,21 +10509,21 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                     if (errno == ECHILD)
                       {
                         g_warning ("%s: Failed to get child exit status",
-                                   __FUNCTION__);
+                                   __func__);
                         if (chdir (previous_dir))
                           g_warning ("%s: and chdir failed",
-                                     __FUNCTION__);
+                                     __func__);
                         g_free (previous_dir);
                         return -1;
                       }
                     if (errno == EINTR)
                       continue;
                     g_warning ("%s: wait: %s",
-                               __FUNCTION__,
+                               __func__,
                                strerror (errno));
                     if (chdir (previous_dir))
                       g_warning ("%s: and chdir failed",
-                                 __FUNCTION__);
+                                 __func__);
                     g_free (previous_dir);
                     return -1;
                   }
@@ -10535,22 +10535,22 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                     case EXIT_FAILURE:
                     default:
                       g_warning ("%s: child failed, %s",
-                                 __FUNCTION__,
+                                 __func__,
                                  command);
                       if (chdir (previous_dir))
                         g_warning ("%s: and chdir failed",
-                                   __FUNCTION__);
+                                   __func__);
                       g_free (previous_dir);
                       return -1;
                     }
                 else
                   {
                     g_warning ("%s: child failed, %s",
-                               __FUNCTION__,
+                               __func__,
                                command);
                     if (chdir (previous_dir))
                       g_warning ("%s: and chdir failed",
-                                 __FUNCTION__);
+                                 __func__);
                     g_free (previous_dir);
                     return -1;
                   }
@@ -10573,13 +10573,13 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
         if (ret == -1)
           {
             g_warning ("%s: system failed with ret %i, %i, %s",
-                       __FUNCTION__,
+                       __func__,
                        ret,
                        WEXITSTATUS (ret),
                        command);
             if (chdir (previous_dir))
               g_warning ("%s: and chdir failed",
-                         __FUNCTION__);
+                         __func__);
             g_free (previous_dir);
             g_free (command);
             return -1;
@@ -10593,7 +10593,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
     if (chdir (previous_dir))
       {
         g_warning ("%s: Failed to chdir back: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         g_free (previous_dir);
         return -1;
@@ -10639,7 +10639,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
   if (mkdtemp (archive_dir) == NULL)
     {
-      g_warning ("%s: mkdtemp failed", __FUNCTION__);
+      g_warning ("%s: mkdtemp failed", __func__);
       return -1;
     }
 
@@ -10666,7 +10666,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
   if (!g_file_test (script, G_FILE_TEST_EXISTS))
     {
       g_warning ("%s: Failed to find alert script: %s",
-           __FUNCTION__,
+           __func__,
            script);
       g_free (archive_file);
       g_free (script);
@@ -10686,7 +10686,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
     if (previous_dir == NULL)
       {
         g_warning ("%s: Failed to getcwd: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         g_free (archive_file);
         g_free (previous_dir);
@@ -10698,7 +10698,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
     if (chdir (script_dir))
       {
         g_warning ("%s: Failed to chdir: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         g_free (archive_file);
         g_free (previous_dir);
@@ -10747,7 +10747,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
             || chown (archive_file, nobody->pw_uid, nobody->pw_gid))
           {
             g_warning ("%s: Failed to set permissions for user nobody: %s",
-                       __FUNCTION__,
+                       __func__,
                        strerror (errno));
             g_free (previous_dir);
             g_free (archive_file);
@@ -10771,20 +10771,20 @@ send_to_verinice (const char *url, const char *username, const char *password,
                 if (setgroups (0,NULL))
                   {
                     g_warning ("%s (child): setgroups: %s",
-                               __FUNCTION__, strerror (errno));
+                               __func__, strerror (errno));
                     exit (EXIT_FAILURE);
                   }
                 if (setgid (nobody->pw_gid))
                   {
                     g_warning ("%s (child): setgid: %s",
-                               __FUNCTION__,
+                               __func__,
                                strerror (errno));
                     exit (EXIT_FAILURE);
                   }
                 if (setuid (nobody->pw_uid))
                   {
                     g_warning ("%s (child): setuid: %s",
-                               __FUNCTION__,
+                               __func__,
                                strerror (errno));
                     exit (EXIT_FAILURE);
                   }
@@ -10796,7 +10796,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
                   {
                     g_warning ("%s (child):"
                                " system failed with ret %i, %i, %s",
-                               __FUNCTION__,
+                               __func__,
                                ret,
                                WEXITSTATUS (ret),
                                log_command);
@@ -10810,11 +10810,11 @@ send_to_verinice (const char *url, const char *username, const char *password,
             /* Parent when error. */
 
             g_warning ("%s: Failed to fork: %s",
-                       __FUNCTION__,
+                       __func__,
                        strerror (errno));
             if (chdir (previous_dir))
               g_warning ("%s: and chdir failed",
-                         __FUNCTION__);
+                         __func__);
             g_free (previous_dir);
             g_free (command);
             g_free (log_command);
@@ -10832,21 +10832,21 @@ send_to_verinice (const char *url, const char *username, const char *password,
                     if (errno == ECHILD)
                       {
                         g_warning ("%s: Failed to get child exit status",
-                                   __FUNCTION__);
+                                   __func__);
                         if (chdir (previous_dir))
                           g_warning ("%s: and chdir failed",
-                                     __FUNCTION__);
+                                     __func__);
                         g_free (previous_dir);
                         return -1;
                       }
                     if (errno == EINTR)
                       continue;
                     g_warning ("%s: wait: %s",
-                               __FUNCTION__,
+                               __func__,
                                strerror (errno));
                     if (chdir (previous_dir))
                       g_warning ("%s: and chdir failed",
-                                 __FUNCTION__);
+                                 __func__);
                     g_free (previous_dir);
                     return -1;
                   }
@@ -10858,22 +10858,22 @@ send_to_verinice (const char *url, const char *username, const char *password,
                     case EXIT_FAILURE:
                     default:
                       g_warning ("%s: child failed, %s",
-                                 __FUNCTION__,
+                                 __func__,
                                  log_command);
                       if (chdir (previous_dir))
                         g_warning ("%s: and chdir failed",
-                                   __FUNCTION__);
+                                   __func__);
                       g_free (previous_dir);
                       return -1;
                     }
                 else
                   {
                     g_warning ("%s: child failed, %s",
-                               __FUNCTION__,
+                               __func__,
                                log_command);
                     if (chdir (previous_dir))
                       g_warning ("%s: and chdir failed",
-                                 __FUNCTION__);
+                                 __func__);
                     g_free (previous_dir);
                     return -1;
                   }
@@ -10895,13 +10895,13 @@ send_to_verinice (const char *url, const char *username, const char *password,
         if (ret == -1)
           {
             g_warning ("%s: system failed with ret %i, %i, %s",
-                       __FUNCTION__,
+                       __func__,
                        ret,
                        WEXITSTATUS (ret),
                        log_command);
             if (chdir (previous_dir))
               g_warning ("%s: and chdir failed",
-                         __FUNCTION__);
+                         __func__);
             g_free (previous_dir);
             g_free (command);
             return -1;
@@ -10917,7 +10917,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
     if (chdir (previous_dir))
       {
         g_warning ("%s: Failed to chdir back: %s",
-                   __FUNCTION__,
+                   __func__,
                    strerror (errno));
         g_free (previous_dir);
         return -1;
@@ -10963,7 +10963,7 @@ buffer_vfire_call_input (gchar *key, gchar *value, GString *buffer)
   else                                                                        \
     {                                                                         \
       *message = g_strdup ("Mandatory " G_STRINGIFY(param) " missing.");      \
-      g_warning ("%s: Missing " G_STRINGIFY(param) ".", __FUNCTION__);        \
+      g_warning ("%s: Missing " G_STRINGIFY(param) ".", __func__);        \
       g_string_free (config_xml, TRUE);                                       \
       return -1;                                                              \
     }
@@ -11049,7 +11049,7 @@ send_to_vfire (const char *base_url, const char *client_id,
   if (config_xml_fd == -1)
     {
       g_warning ("%s: Could not create alert script config file: %s",
-                 __FUNCTION__, strerror (errno));
+                 __func__, strerror (errno));
       g_string_free (config_xml, TRUE);
       return -1;
     }
@@ -11058,7 +11058,7 @@ send_to_vfire (const char *base_url, const char *client_id,
   if (config_xml_file == NULL)
     {
       g_warning ("%s: Could not open alert script config file: %s",
-                 __FUNCTION__, strerror (errno));
+                 __func__, strerror (errno));
       g_string_free (config_xml, TRUE);
       close (config_xml_fd);
       return -1;
@@ -11067,7 +11067,7 @@ send_to_vfire (const char *base_url, const char *client_id,
   if (fprintf (config_xml_file, "%s", config_xml->str) <= 0)
     {
       g_warning ("%s: Could not write alert script config file: %s",
-                 __FUNCTION__, strerror (errno));
+                 __func__, strerror (errno));
       g_string_free (config_xml, TRUE);
       fclose (config_xml_file);
       return -1;
@@ -11104,16 +11104,16 @@ send_to_vfire (const char *base_url, const char *client_id,
                     &err) == FALSE)
     {
       g_warning ("%s: Failed to run alert script: %s",
-                 __FUNCTION__, err->message);
+                 __func__, err->message);
       ret = -1;
     }
 
   if (exit_status)
     {
       g_warning ("%s: Alert script exited with status %d",
-                 __FUNCTION__, exit_status);
+                 __func__, exit_status);
       g_message ("%s: stderr: %s",
-                 __FUNCTION__, *message);
+                 __func__, *message);
       ret = -5;
     }
 
@@ -11177,7 +11177,7 @@ send_to_tippingpoint (const char *report, size_t report_size,
                            &error) == FALSE)
     {
       g_warning ("%s: Failed to write TLS certificate to file: %s",
-                 __FUNCTION__, error->message);
+                 __func__, error->message);
       alert_script_cleanup (report_dir, report_path, error_path, extra_path);
       g_free (cert_path);
       return -1;
@@ -11194,7 +11194,7 @@ send_to_tippingpoint (const char *report, size_t report_size,
           || chown (cert_path, nobody->pw_uid, nobody->pw_gid))
         {
           g_warning ("%s: Failed to set permissions for user nobody: %s",
-                      __FUNCTION__,
+                      __func__,
                       strerror (errno));
           g_free (cert_path);
           alert_script_cleanup (report_dir, report_path, error_path,
@@ -11320,7 +11320,7 @@ alert_subject_print (const gchar *subject, event_t event,
                   if (tm == NULL)
                     {
                       g_warning ("%s: localtime failed, aborting",
-                                 __FUNCTION__);
+                                 __func__);
                       abort ();
                     }
                   if (strftime (time_string, 98, "%F", tm) == 0)
@@ -11491,7 +11491,7 @@ alert_message_print (const gchar *message, event_t event,
                   if (tm == NULL)
                     {
                       g_warning ("%s: localtime failed, aborting",
-                                 __FUNCTION__);
+                                 __func__);
                       abort ();
                     }
                   if (strftime (time_string, 98, "%F", tm) == 0)
@@ -11935,7 +11935,7 @@ get_delta_report (alert_t alert, task_t task, report_t report)
   if (strcmp (delta_type, "Previous") == 0)
     {
       if (task_report_previous (task, report, &delta_report))
-        g_warning ("%s: failed to get previous report", __FUNCTION__);
+        g_warning ("%s: failed to get previous report", __func__);
     }
   else if (strcmp (delta_type, "Report") == 0)
     {
@@ -11949,7 +11949,7 @@ get_delta_report (alert_t alert, task_t task, report_t report)
           && find_report_with_permission (delta_report_id,
                                           &delta_report,
                                           "get_reports"))
-        g_warning ("%s: error while finding report", __FUNCTION__);
+        g_warning ("%s: error while finding report", __func__);
     }
   free (delta_type);
 
@@ -12155,7 +12155,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
               || (report_format == 0))
             {
               g_warning ("%s: Could not find report format '%s' for %s",
-                         __FUNCTION__, format_uuid,
+                         __func__, format_uuid,
                          alert_method_name (alert_method (alert)));
               g_free (format_uuid);
               return -2;
@@ -12170,7 +12170,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           || (report_format == 0))
         {
           g_warning ("%s: Could not find report format '%s' for %s",
-                     __FUNCTION__, report_format_lookup,
+                     __func__, report_format_lookup,
                      alert_method_name (alert_method (alert)));
           return -2;
         }
@@ -12181,7 +12181,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
       if (fallback_format_id == NULL)
         {
           g_warning ("%s: No fallback report format for %s",
-                     __FUNCTION__,
+                     __func__,
                      alert_method_name (alert_method (alert)));
           return -1;
         }
@@ -12193,7 +12193,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           || (report_format == 0))
         {
           g_warning ("%s: Could not find fallback RFP '%s' for %s",
-                      __FUNCTION__, fallback_format_id,
+                      __func__, fallback_format_id,
                      alert_method_name (alert_method (alert)));
           return -2;
         }
@@ -12360,7 +12360,7 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
     {
       g_warning ("%s: Ticket events with method"
                  " \"Alemba vFire\" not support",
-                 __FUNCTION__);
+                 __func__);
       return -1;
     }
 
@@ -12392,7 +12392,7 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
   // Generate reports
   if (mkdtemp (reports_dir) == NULL)
     {
-      g_warning ("%s: mkdtemp failed", __FUNCTION__);
+      g_warning ("%s: mkdtemp failed", __func__);
       get_data_reset (alert_filter_get);
       g_free (alert_filter_get);
       return -1;
@@ -12447,7 +12447,7 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
                                             : NULL);
           if (report_content == NULL)
             {
-              g_warning ("%s: Failed to generate report", __FUNCTION__);
+              g_warning ("%s: Failed to generate report", __func__);
 
               get_data_reset (alert_filter_get);
               g_free (alert_filter_get);
@@ -12479,7 +12479,7 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
           if (error)
             {
               g_warning ("%s: Failed to write report to %s: %s",
-                         __FUNCTION__,
+                         __func__,
                          alert_report_item->local_filename,
                          error->message);
 
@@ -13000,7 +13000,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Ticket events with method"
                          " \"HTTP Get\" not support",
-                         __FUNCTION__);
+                         __func__);
               return -1;
             }
 
@@ -13008,7 +13008,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Event \"%s NVTs arrived\" with method"
                          " \"HTTP Get\" not support",
-                         __FUNCTION__,
+                         __func__,
                          event == EVENT_NEW_SECINFO ? "New" : "Updated");
               return -1;
             }
@@ -13092,7 +13092,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Ticket events with method"
                          " \"SCP\" not support",
-                         __FUNCTION__);
+                         __func__);
               return -1;
             }
 
@@ -13153,7 +13153,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    &report_format, NULL);
           if (ret || report_content == NULL)
             {
-              g_warning ("%s: Empty Report", __FUNCTION__);
+              g_warning ("%s: Empty Report", __func__);
               return -1;
             }
 
@@ -13209,7 +13209,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Ticket events with method"
                          " \"Send\" not support",
-                         __FUNCTION__);
+                         __func__);
               return -1;
             }
 
@@ -13246,7 +13246,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    &report_format, NULL);
           if (ret || report_content == NULL)
             {
-              g_warning ("%s: Empty Report", __FUNCTION__);
+              g_warning ("%s: Empty Report", __func__);
               return -1;
             }
 
@@ -13282,7 +13282,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Ticket events with method"
                          " \"SMP\" not support",
-                         __FUNCTION__);
+                         __func__);
               return -1;
             }
 
@@ -13386,7 +13386,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               if (ret == 0)
                 {
                   g_warning ("%s: Could not find credential %s",
-                             __FUNCTION__, credential_id);
+                             __func__, credential_id);
                 }
               free (credential_id);
               free (share_path);
@@ -13424,7 +13424,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Ticket events with method"
                          " \"SNMP\" not support",
-                         __FUNCTION__);
+                         __func__);
               return -1;
             }
 
@@ -13491,7 +13491,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Ticket events with method"
                          " \"Sourcefire\" not support",
-                         __FUNCTION__);
+                         __func__);
               return -1;
             }
 
@@ -13499,7 +13499,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Event \"%s NVTs arrived\" with method"
                          " \"Sourcefire\" not support",
-                         __FUNCTION__,
+                         __func__,
                          event == EVENT_NEW_SECINFO ? "New" : "Updated");
               return -1;
             }
@@ -13514,7 +13514,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
           if (ret || report_content == NULL)
             {
-              g_warning ("%s: Empty Report", __FUNCTION__);
+              g_warning ("%s: Empty Report", __func__);
               return -1;
             }
 
@@ -13611,7 +13611,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Ticket events with method"
                          " \"TippingPoint SMS\" not support",
-                         __FUNCTION__);
+                         __func__);
               return -1;
             }
 
@@ -13706,7 +13706,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Ticket events with method"
                          " \"Verinice\" not support",
-                         __FUNCTION__);
+                         __func__);
               return -1;
             }
 
@@ -13714,7 +13714,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Event \"%s NVTs arrived\" with method"
                          " \"Verinice\" not support",
-                         __FUNCTION__,
+                         __func__,
                          event == EVENT_NEW_SECINFO ? "New" : "Updated");
               return -1;
             }
@@ -13729,7 +13729,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
           if (ret || report_content == NULL)
             {
-              g_warning ("%s: Empty Report", __FUNCTION__);
+              g_warning ("%s: Empty Report", __func__);
               return -1;
             }
 
@@ -13788,7 +13788,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               g_warning ("%s: Event \"%s NVTs arrived\" with method"
                          " \"Start Task\" not support",
-                         __FUNCTION__,
+                         __func__,
                          event == EVENT_NEW_SECINFO ? "New" : "Updated");
               return -1;
             }
@@ -13797,7 +13797,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           if (manage_fork_connection == NULL)
             {
-              g_warning ("%s: no connection fork available", __FUNCTION__);
+              g_warning ("%s: no connection fork available", __func__);
               return -1;
             }
 
@@ -13812,7 +13812,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               case -1:
                 /* Parent on error. */
                 g_free (task_id);
-                g_warning ("%s: fork failed", __FUNCTION__);
+                g_warning ("%s: fork failed", __func__);
                 return -1;
                 break;
 
@@ -14236,10 +14236,10 @@ condition_met (task_t task, report_t report, alert_t alert,
             {
               last_report = 0;
               if (task_last_report (task, &last_report))
-                g_warning ("%s: failed to get last report", __FUNCTION__);
+                g_warning ("%s: failed to get last report", __func__);
             }
 
-          g_debug ("%s: last_report: %llu", __FUNCTION__, last_report);
+          g_debug ("%s: last_report: %llu", __func__, last_report);
           if (last_report)
             {
               int db_count;
@@ -14254,7 +14254,7 @@ condition_met (task_t task, report_t report, alert_t alert,
               db_count = debugs + holes + infos + logs + warnings
                          + false_positives;
 
-              g_debug ("%s: count: %i vs %i", __FUNCTION__, db_count, count);
+              g_debug ("%s: count: %i vs %i", __func__, db_count, count);
               if (db_count >= count)
                 {
                   g_free (filter_id);
@@ -14293,7 +14293,7 @@ condition_met (task_t task, report_t report, alert_t alert,
             {
               last_report = 0;
               if (task_last_report (task, &last_report))
-                g_warning ("%s: failed to get last report", __FUNCTION__);
+                g_warning ("%s: failed to get last report", __func__);
             }
 
           if (last_report)
@@ -14312,7 +14312,7 @@ condition_met (task_t task, report_t report, alert_t alert,
 
               second_last_report = 0;
               if (task_second_last_report (task, &second_last_report))
-                g_warning ("%s: failed to get second last report", __FUNCTION__);
+                g_warning ("%s: failed to get second last report", __func__);
 
               if (second_last_report)
                 {
@@ -15301,7 +15301,7 @@ init_manage_process (const gchar *database)
   /* Open the database. */
   if (sql_open (database))
     {
-      g_warning ("%s: sql_open failed", __FUNCTION__);
+      g_warning ("%s: sql_open failed", __func__);
       abort ();
     }
 
@@ -15321,7 +15321,7 @@ init_manage_process (const gchar *database)
   if (manage_create_sql_functions ())
     {
       lockfile_unlock (&lockfile);
-      g_warning ("%s: failed to create functions", __FUNCTION__);
+      g_warning ("%s: failed to create functions", __func__);
       abort ();
     }
   lockfile_unlock (&lockfile);
@@ -16669,10 +16669,10 @@ check_db_versions ()
                   G_STRINGIFY (GVMD_DATABASE_VERSION)))
         {
           g_message ("%s: database version of database: %s",
-                     __FUNCTION__,
+                     __func__,
                      database_version);
           g_message ("%s: database version supported by manager: %s",
-                     __FUNCTION__,
+                     __func__,
                      G_STRINGIFY (GVMD_DATABASE_VERSION));
           g_free (database_version);
           return -2;
@@ -16705,10 +16705,10 @@ check_db_versions ()
   else if (scap_db_version != manage_scap_db_supported_version ())
     {
       g_message ("%s: database version of SCAP database: %i",
-                 __FUNCTION__,
+                 __func__,
                  scap_db_version);
       g_message ("%s: SCAP database version supported by manager: %s",
-                 __FUNCTION__,
+                 __func__,
                  G_STRINGIFY (GVMD_SCAP_DATABASE_VERSION));
       return -2;
     }
@@ -16721,10 +16721,10 @@ check_db_versions ()
   else if (cert_db_version != manage_cert_db_supported_version ())
     {
       g_message ("%s: database version of CERT database: %i",
-                 __FUNCTION__,
+                 __func__,
                  cert_db_version);
       g_message ("%s: CERT database version supported by manager: %s",
-                 __FUNCTION__,
+                 __func__,
                  G_STRINGIFY (GVMD_CERT_DATABASE_VERSION));
       return -2;
     }
@@ -17112,17 +17112,17 @@ make_report_format_uuids_unique ()
             {
               /* Presume dir missing, just log a warning. */
               g_warning ("%s: cp %s to %s failed",
-                         __FUNCTION__, dir, new_dir);
+                         __func__, dir, new_dir);
             }
           else
-            g_debug ("%s: copied %s to %s", __FUNCTION__, dir, new_dir);
+            g_debug ("%s: copied %s to %s", __func__, dir, new_dir);
         }
       else
         {
           if (rename (dir, new_dir))
             {
               g_warning ("%s: rename %s to %s: %s",
-                         __FUNCTION__, dir, new_dir, strerror (errno));
+                         __func__, dir, new_dir, strerror (errno));
               if (errno != ENOENT)
                 {
                   g_free (dir);
@@ -17132,7 +17132,7 @@ make_report_format_uuids_unique ()
                 }
             }
           else
-            g_debug ("%s: moved %s to %s", __FUNCTION__, dir, new_dir);
+            g_debug ("%s: moved %s to %s", __func__, dir, new_dir);
         }
       g_free (dir);
       g_free (new_dir);
@@ -17146,7 +17146,7 @@ make_report_format_uuids_unique ()
 
   if (sql_changes () > 0)
     g_debug ("%s: gave %d report format(s) new UUID(s) to keep UUIDs unique.",
-             __FUNCTION__, sql_changes ());
+             __func__, sql_changes ());
 
   sql ("DROP TABLE duplicates;");
 
@@ -17176,7 +17176,7 @@ check_db_trash_report_formats ()
       if (errno != ENOENT)
         {
           g_warning ("%s: g_lstat (%s) failed: %s",
-                     __FUNCTION__, dir, g_strerror (errno));
+                     __func__, dir, g_strerror (errno));
           g_free (dir);
           return -1;
         }
@@ -17258,7 +17258,7 @@ check_db_report_formats ()
   if (dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, path, error->message);
+                 __func__, path, error->message);
       g_error_free (error);
       g_free (path);
       return -1;
@@ -17416,7 +17416,7 @@ check_db_report_formats_trash ()
               if (ret)
                 {
                   g_warning ("%s: failed to remove %s from %s",
-                             __FUNCTION__, entry, dir);
+                             __func__, entry, dir);
                   g_dir_close (directory);
                   g_free (dir);
                   return -1;
@@ -17865,7 +17865,7 @@ check_generate_scripts ()
 
           if (chmod (path, 0755 /* rwxr-xr-x */))
             g_warning ("%s: chmod %s failed: %s",
-                       __FUNCTION__,
+                       __func__,
                        path,
                        strerror (errno));
 
@@ -18273,7 +18273,7 @@ manage_cleanup_process_error (int signal)
       if (current_scanner_task)
         {
           g_warning ("%s: Error exit, setting running task to Interrupted",
-                     __FUNCTION__);
+                     __func__);
           set_task_interrupted (current_scanner_task,
                                 "Error exit, setting running task to"
                                 " Interrupted.");
@@ -20471,7 +20471,7 @@ auto_delete_reports ()
 {
   iterator_t tasks;
 
-  g_debug ("%s", __FUNCTION__);
+  g_debug ("%s", __func__);
 
   sql_begin_immediate ();
 
@@ -20511,7 +20511,7 @@ auto_delete_reports ()
       if (keep < AUTO_DELETE_KEEP_MIN || keep > AUTO_DELETE_KEEP_MAX)
         continue;
 
-      g_debug ("%s: %s (%i)", __FUNCTION__,
+      g_debug ("%s: %s (%i)", __func__,
               iterator_string (&tasks, 1),
               keep);
 
@@ -20532,18 +20532,18 @@ auto_delete_reports ()
           report = iterator_int64 (&reports, 0);
           assert (report);
 
-          g_debug ("%s: delete %llu", __FUNCTION__, report);
+          g_debug ("%s: delete %llu", __func__, report);
           ret = delete_report_internal (report);
           if (ret == 2)
             {
               /* Report is in use. */
-              g_debug ("%s: %llu is in use", __FUNCTION__, report);
+              g_debug ("%s: %llu is in use", __func__, report);
               continue;
             }
           if (ret)
             {
               g_warning ("%s: failed to delete %llu (%i)",
-                         __FUNCTION__, report, ret);
+                         __func__, report, ret);
               sql_rollback ();
             }
         }
@@ -20586,7 +20586,7 @@ reschedule_task (const gchar *task_id)
                      task_id))
     {
       case 0:
-        g_warning ("%s: rescheduling task '%s'", __FUNCTION__, task_id);
+        g_warning ("%s: rescheduling task '%s'", __func__, task_id);
         set_task_schedule_next_time (task, time (NULL) - 1);
         break;
       case 1:        /* Too few rows in result of query. */
@@ -20714,7 +20714,7 @@ make_osp_result (task_t task, const char *host, const char *hostname,
                     = g_strdup_printf ("%0.1f",
                                        setting_default_severity_dbl ());
                   g_debug ("%s: OSP CVE result without severity for '%s'",
-                           __FUNCTION__, nvt);
+                           __func__, nvt);
                 }
             }
           else
@@ -20725,7 +20725,7 @@ make_osp_result (task_t task, const char *host, const char *hostname,
                                    setting_default_severity_dbl ());
               */
               g_warning ("%s: Non-CVE OSP result without severity for test %s",
-                         __FUNCTION__, nvt ? nvt : "(unknown)");
+                         __func__, nvt ? nvt : "(unknown)");
               return 0;
             }
         }
@@ -21931,7 +21931,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
   if (in_assets_int && acl_user_may ("create_asset") == 0)
     return -6;
 
-  g_debug ("%s", __FUNCTION__);
+  g_debug ("%s", __func__);
 
   if (acl_user_may ("create_report") == 0)
     return 99;
@@ -22014,12 +22014,12 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                 break;
               case -1:
                 /* Grandchild's parent when error. */
-                g_warning ("%s: fork: %s", __FUNCTION__, strerror (errno));
+                g_warning ("%s: fork: %s", __func__, strerror (errno));
                 exit (EXIT_FAILURE);
                 break;
               default:
                 /* Grandchild's parent.  Exit, to close parent's wait. */
-                g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+                g_debug ("%s: %i forked %i", __func__, getpid (), pid);
                 exit (EXIT_SUCCESS);
                 break;
             }
@@ -22027,7 +22027,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
         break;
       case -1:
         /* Parent when error. */
-        g_warning ("%s: fork: %s", __FUNCTION__, strerror (errno));
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
         global_current_report = report;
         set_task_interrupted (task,
                               "Failed to fork child to import report."
@@ -22040,19 +22040,19 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
           int status;
 
           /* Parent.  Wait to prevent zombie, then return to respond to client. */
-          g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+          g_debug ("%s: %i forked %i", __func__, getpid (), pid);
           while (waitpid (pid, &status, 0) < 0)
             {
               if (errno == ECHILD)
                 {
                   g_warning ("%s: Failed to get child exit status",
-                             __FUNCTION__);
+                             __func__);
                   return -1;
                 }
               if (errno == EINTR)
                 continue;
               g_warning ("%s: waitpid: %s",
-                         __FUNCTION__,
+                         __func__,
                          strerror (errno));
               return -1;
             }
@@ -22069,12 +22069,12 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                  "SELECT owner FROM tasks WHERE tasks.id = %llu",
                  task))
     {
-      g_warning ("%s: failed to get owner of task", __FUNCTION__);
+      g_warning ("%s: failed to get owner of task", __func__);
       return -1;
     }
 
   sql_begin_immediate ();
-  g_debug ("%s: add hosts", __FUNCTION__);
+  g_debug ("%s: add hosts", __func__);
   index = 0;
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
                                                                index++)))
@@ -22083,7 +22083,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                               parse_iso_time (start->description),
                               0);
 
-  g_debug ("%s: add results", __FUNCTION__);
+  g_debug ("%s: add results", __func__);
   insert = g_string_new ("");
   index = 0;
   first = 1;
@@ -22096,7 +22096,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
       gchar *quoted_qod, *quoted_qod_type;
 
-      g_debug ("%s: add results: index: %i", __FUNCTION__, index);
+      g_debug ("%s: add results: index: %i", __func__, index);
 
       quoted_host = sql_quote (result->host ? result->host : "");
       quoted_hostname = sql_quote (result->hostname ? result->hostname : "");
@@ -22196,7 +22196,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
        report,
        report);
 
-  g_debug ("%s: add host ends", __FUNCTION__);
+  g_debug ("%s: add host ends", __func__);
   index = 0;
   count = 0;
   while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
@@ -22231,7 +22231,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
           }
       }
 
-  g_debug ("%s: add host details", __FUNCTION__);
+  g_debug ("%s: add host details", __func__);
   index = 0;
   first = 1;
   count = 0;
@@ -25907,7 +25907,7 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
 
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
-    g_warning ("%s: called by NULL or dummy user", __FUNCTION__);
+    g_warning ("%s: called by NULL or dummy user", __func__);
 
   if (get->filt_id && strlen (get->filt_id)
       && strcmp (get->filt_id, FILT_ID_NONE))
@@ -26095,13 +26095,13 @@ report_severity (report_t report, int overrides, int min_qod)
   if (next (&iterator)
       && (iterator_null (&iterator, 0) == 0))
     {
-      g_debug ("%s: max(severity)=%s", __FUNCTION__,
+      g_debug ("%s: max(severity)=%s", __func__,
                iterator_string (&iterator, 0));
       severity = iterator_double (&iterator, 0);
     }
   else
     {
-      g_debug ("%s: could not get max from cache", __FUNCTION__);
+      g_debug ("%s: could not get max from cache", __func__);
       get_data_t *get = report_results_get_data (1, -1, overrides, 0, min_qod);
       report_counts_id (report, NULL, NULL, NULL, NULL, NULL,
                         NULL, &severity, get, NULL);
@@ -26151,7 +26151,7 @@ delete_report_internal (report_t report)
   /* Remove any associated slave task. */
 
   slave_task_uuid = report_slave_task_uuid (report);
-  g_debug ("%s: slave_task_uuid: %s", __FUNCTION__, slave_task_uuid);
+  g_debug ("%s: slave_task_uuid: %s", __func__, slave_task_uuid);
   if (slave_task_uuid)
     {
       scanner_t slave;
@@ -26733,8 +26733,8 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   if (sort_field == NULL)
     sort_field = "type";
 
-  g_debug ("   delta: %s: sort_order: %i", __FUNCTION__, sort_order);
-  g_debug ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
+  g_debug ("   delta: %s: sort_order: %i", __func__, sort_order);
+  g_debug ("   delta: %s: sort_field: %s", __func__, sort_field);
 
   host = result_iterator_host (results);
   delta_host = result_iterator_host (delta_results);
@@ -26777,7 +26777,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order == 0)
         ret = -ret;
       g_debug ("   delta: %s: host (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_order ? "desc" : "asc",
+               __func__, sort_order ? "desc" : "asc",
                host, delta_host, ret);
       if (ret)
         return ret;
@@ -26789,7 +26789,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order == 0)
         ret = -ret;
       g_debug ("   delta: %s: port (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_order ? "desc" : "asc",
+               __func__, sort_order ? "desc" : "asc",
                port, delta_port, ret);
       if (ret)
         return ret;
@@ -26803,7 +26803,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       else
         ret = 0;
       g_debug ("   delta: %s: severity (%s): %f VS %f (%i)",
-               __FUNCTION__, sort_order ? "desc" : "asc",
+               __func__, sort_order ? "desc" : "asc",
                severity, delta_severity, ret);
       if (ret)
         return ret;
@@ -26814,7 +26814,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order)
         ret = -ret;
       g_debug ("   delta: %s: nvt (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_order ? "desc" : "asc",
+               __func__, sort_order ? "desc" : "asc",
                nvt, delta_nvt, ret);
       if (ret)
         return ret;
@@ -26825,7 +26825,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order == 0)
         ret = -ret;
       g_debug ("   delta: %s: description (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_order ? "desc" : "asc",
+               __func__, sort_order ? "desc" : "asc",
                descr, delta_descr, ret);
       if (ret)
         return ret;
@@ -26841,7 +26841,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order == 0)
         ret = -ret;
       g_debug ("   delta: %s: type (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_order ? "desc" : "asc",
+               __func__, sort_order ? "desc" : "asc",
                descr, delta_descr, ret);
       if (ret)
         return ret;
@@ -26857,7 +26857,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (sort_order == 0)
         ret = -ret;
       g_debug ("   delta: %s: original_type (%s): %s VS %s (%i)",
-               __FUNCTION__, sort_order ? "desc" : "asc",
+               __func__, sort_order ? "desc" : "asc",
                descr, delta_descr, ret);
       if (ret)
         return ret;
@@ -26880,7 +26880,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       ret = collate_ip (NULL,
                         strlen (host), host, strlen (delta_host), delta_host);
       g_debug ("   delta: %s: host: %s VS %s (%i)",
-               __FUNCTION__, host, delta_host, ret);
+               __func__, host, delta_host, ret);
       if (ret)
         return ret;
     }
@@ -26889,7 +26889,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
     {
       ret = strcmp (port, delta_port);
       g_debug ("   delta: %s: port: %s VS %s (%i)",
-               __FUNCTION__, port, delta_port, ret);
+               __func__, port, delta_port, ret);
       if (ret)
         return ret;
     }
@@ -26902,7 +26902,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       else
         ret = 0;
       g_debug ("   delta: %s: severity: %f VS %f (%i)",
-               __FUNCTION__, severity, delta_severity, ret);
+               __func__, severity, delta_severity, ret);
       if (ret)
         return ret;
     }
@@ -26910,7 +26910,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
     {
       ret = strcmp (nvt, delta_nvt);
       g_debug ("   delta: %s: nvt: %s VS %s (%i)",
-               __FUNCTION__, nvt, delta_nvt, ret);
+               __func__, nvt, delta_nvt, ret);
       if (ret)
         return ret;
     }
@@ -26935,7 +26935,7 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
   int ret;
   const char *descr, *delta_descr;
 
-  g_debug ("   delta: %s", __FUNCTION__);
+  g_debug ("   delta: %s", __func__);
 
   ret = result_cmp (results, delta_results, sort_order, sort_field);
   if (ret > 0)
@@ -26949,7 +26949,7 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
   delta_descr = result_iterator_descr (delta_results);
 
   g_debug ("   delta: %s: descr: %s VS %s (%i)",
-          __FUNCTION__,
+          __func__,
           descr ? descr : "NULL",
           delta_descr ? delta_descr : "NULL",
           (descr && delta_descr) ? strcmp (descr, delta_descr) : 0);
@@ -27214,7 +27214,7 @@ add_port (GTree *ports, iterator_t *results)
   *severity = result_iterator_severity_double (results);
 
   old_severity = g_tree_lookup (host_ports, port);
-  g_debug ("   delta: %s: adding %s severity %1.1f on host %s", __FUNCTION__,
+  g_debug ("   delta: %s: adding %s severity %1.1f on host %s", __func__,
           port, *severity, host);
   if (old_severity == NULL)
     g_tree_insert (host_ports, g_strdup (port), severity);
@@ -27239,7 +27239,7 @@ print_host_port (gpointer key, gpointer value, gpointer data)
 {
   gpointer *host_and_stream;
   host_and_stream = (gpointer*) data;
-  g_debug ("   delta: %s: host %s port %s", __FUNCTION__,
+  g_debug ("   delta: %s: host %s port %s", __func__,
           (gchar*) host_and_stream[0], (gchar*) key);
   fprintf ((FILE*) host_and_stream[1],
            "<port>"
@@ -27270,7 +27270,7 @@ print_host_ports (gpointer key, gpointer value, gpointer stream)
   gpointer host_and_stream[2];
   host_and_stream[0] = key;
   host_and_stream[1] = stream;
-  g_debug ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
+  g_debug ("   delta: %s: host %s", __func__, (gchar*) key);
   g_tree_foreach ((GTree*) value, print_host_port, host_and_stream);
   return FALSE;
 }
@@ -27310,7 +27310,7 @@ print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
   guint index;
   array_t *ports;
 
-  g_debug ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
+  g_debug ("   delta: %s: host %s", __func__, (gchar*) key);
 
   /* Convert tree to array. */
 
@@ -27403,7 +27403,7 @@ print_host_ports_by_severity (gpointer key, gpointer value, gpointer stream,
   guint index, len;
   array_t *ports;
 
-  g_debug ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
+  g_debug ("   delta: %s: host %s", __func__, (gchar*) key);
 
   /* Convert tree to array. */
 
@@ -28291,7 +28291,7 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
         {
           if (setenv ("TZ", tz, 1) == -1)
             {
-              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+              g_warning ("%s: Failed to switch to original TZ", __func__);
               g_free (tz);
               g_free (zone);
               free (old_tz_override);
@@ -28336,13 +28336,13 @@ host_summary_append (GString *host_summary_buffer, const char *host,
           memset (&start_tm, 0, sizeof (struct tm));
           if (strptime (start_iso, "%FT%H:%M:%S", &start_tm) == NULL)
             {
-              g_warning ("%s: Failed to parse start", __FUNCTION__);
+              g_warning ("%s: Failed to parse start", __func__);
               return;
             }
 
           if (strftime (start, 200, "%b %d, %H:%M:%S", &start_tm) == 0)
             {
-              g_warning ("%s: Failed to format start", __FUNCTION__);
+              g_warning ("%s: Failed to format start", __func__);
               return;
             }
         }
@@ -28356,13 +28356,13 @@ host_summary_append (GString *host_summary_buffer, const char *host,
           memset (&end_tm, 0, sizeof (struct tm));
           if (strptime (end_iso, "%FT%H:%M:%S", &end_tm) == NULL)
             {
-              g_warning ("%s: Failed to parse end", __FUNCTION__);
+              g_warning ("%s: Failed to parse end", __func__);
               return;
             }
 
           if (strftime (end, 200, "%b %d, %H:%M:%S", &end_tm) == 0)
             {
-              g_warning ("%s: Failed to format end", __FUNCTION__);
+              g_warning ("%s: Failed to format end", __func__);
               return;
             }
         }
@@ -28434,29 +28434,29 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
   if (res)
     return -1;
 
-  g_debug ("   delta: %s: REPORT 1:", __FUNCTION__);
+  g_debug ("   delta: %s: REPORT 1:", __func__);
   while (next (results))
     g_debug ("   delta: %s: %s   %s   %s   %s   %.30s",
-            __FUNCTION__,
+            __func__,
             result_iterator_nvt_name (results),
             result_iterator_host (results),
             result_iterator_type (results),
             result_iterator_port (results),
             result_iterator_descr (results));
   cleanup_iterator (results);
-  g_debug ("   delta: %s: REPORT 1 END", __FUNCTION__);
+  g_debug ("   delta: %s: REPORT 1 END", __func__);
 
-  g_debug ("   delta: %s: REPORT 2:", __FUNCTION__);
+  g_debug ("   delta: %s: REPORT 2:", __func__);
   while (next (&results2))
     g_debug ("   delta: %s: %s   %s   %s   %s   %.30s",
-            __FUNCTION__,
+            __func__,
             result_iterator_nvt_name (&results2),
             result_iterator_host (&results2),
             result_iterator_type (&results2),
             result_iterator_port (&results2),
             result_iterator_descr (&results2));
   cleanup_iterator (&results2);
-  g_debug ("   delta: %s: REPORT 2 END", __FUNCTION__);
+  g_debug ("   delta: %s: REPORT 2 END", __func__);
 #endif
 
   res = init_result_get_iterator (results, &delta_get, report, NULL, order);
@@ -28561,10 +28561,10 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 
   /* Compare the results in the two iterators, which are sorted. */
 
-  g_debug ("   delta: %s: start", __FUNCTION__);
-  g_debug ("   delta: %s: sort_field: %s", __FUNCTION__, sort_field);
-  g_debug ("   delta: %s: sort_order: %i", __FUNCTION__, sort_order);
-  g_debug ("   delta: %s: max_results: %i", __FUNCTION__, max_results);
+  g_debug ("   delta: %s: start", __func__);
+  g_debug ("   delta: %s: sort_field: %s", __func__, sort_field);
+  g_debug ("   delta: %s: sort_order: %i", __func__, sort_order);
+  g_debug ("   delta: %s: max_results: %i", __func__, max_results);
   done = !next (results);
   delta_done = !next (delta_results);
   while (1)
@@ -28587,7 +28587,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                 const char *level;
 
                 g_debug ("   delta: %s: extra from report 2: %s",
-                        __FUNCTION__,
+                        __func__,
                         result_iterator_nvt_oid (results));
 
                 if (first_result)
@@ -28628,7 +28628,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                   }
 
                 g_debug ("   delta: %s: extra from report 2: %s",
-                        __FUNCTION__,
+                        __func__,
                         result_iterator_nvt_oid (delta_results));
                 buffer = g_string_new ("");
                 buffer_results_xml (buffer,
@@ -28669,7 +28669,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
             do
               {
                 g_debug ("   delta: %s: extra from report 1: %s",
-                        __FUNCTION__,
+                        __func__,
                         result_iterator_nvt_oid (results));
                 if (first_result)
                   {
@@ -28769,7 +28769,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
       if (state == COMPARE_RESULTS_ERROR)
         {
           g_warning ("%s: compare_and_buffer_results failed",
-                     __FUNCTION__);
+                     __func__);
           return -1;
         }
       if (fprintf (out, "%s", buffer->str) < 0)
@@ -28947,7 +28947,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 
   /* Compare remaining results, for the filtered report counts. */
 
-  g_debug ("   delta: %s: counting rest", __FUNCTION__);
+  g_debug ("   delta: %s: counting rest", __func__);
   while (1)
     {
       compare_results_t state;
@@ -28964,7 +28964,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                 const char *level;
 
                 g_debug ("   delta: %s: extra from report 2: %s",
-                        __FUNCTION__,
+                        __func__,
                         result_iterator_nvt_oid (delta_results));
 
                 /* Increase the result count. */
@@ -29002,7 +29002,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
             do
               {
                 g_debug ("   delta: %s: extra from report 1: %s",
-                        __FUNCTION__,
+                        __func__,
                         result_iterator_nvt_oid (results));
 
                 /* It's in the count already. */
@@ -29064,7 +29064,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
       if (state == COMPARE_RESULTS_ERROR)
         {
           g_warning ("%s: compare_and_buffer_results failed",
-                     __FUNCTION__);
+                     __func__);
           return -1;
         }
 
@@ -29295,7 +29295,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (out == NULL)
     {
       g_warning ("%s: fopen failed: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -29401,7 +29401,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       if (setenv ("TZ", zone, 1) == -1)
         {
-          g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+          g_warning ("%s: Failed to switch to timezone", __func__);
           if (tz != NULL)
             setenv ("TZ", tz, 1);
           g_free (tz);
@@ -30448,7 +30448,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (fclose (out))
     {
       g_warning ("%s: fclose failed: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -30474,7 +30474,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
 
   if (gvm_file_copy (xml_start, xml_full) == FALSE)
     {
-      g_warning ("%s: failed to copy xml_start file", __FUNCTION__);
+      g_warning ("%s: failed to copy xml_start file", __func__);
       return -1;
     }
 
@@ -30482,7 +30482,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
   if (out == NULL)
     {
       g_warning ("%s: fopen failed: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -30503,7 +30503,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
   if (fclose (out))
     {
       g_warning ("%s: fclose failed: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -30561,7 +30561,7 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
 
   if (mkdtemp (xml_dir) == NULL)
     {
-      g_warning ("%s: mkdtemp failed", __FUNCTION__);
+      g_warning ("%s: mkdtemp failed", __func__);
       return NULL;
     }
 
@@ -30590,7 +30590,7 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
 
   if (output_file == NULL)
     {
-      g_warning ("%s: No file returned for report format", __FUNCTION__);
+      g_warning ("%s: No file returned for report format", __func__);
     }
   g_free (xml_file);
   g_free (xml_start);
@@ -30613,7 +30613,7 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
     {
       g_free (report_format_id);
       g_warning ("%s: Failed to get output: %s",
-                  __FUNCTION__,
+                  __func__,
                   get_error->message);
       g_error_free (get_error);
       if (extension) g_free (*extension);
@@ -30731,7 +30731,7 @@ run_report_format_script (gchar *report_format_id,
                     G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))
     {
       g_warning ("%s: No generate script found at %s",
-                 __FUNCTION__, script);
+                 __func__, script);
       g_free (script);
       g_free (script_dir);
       return -1;
@@ -30740,7 +30740,7 @@ run_report_format_script (gchar *report_format_id,
                          G_FILE_TEST_IS_EXECUTABLE))
     {
       g_warning ("%s: script %s is not executable",
-                 __FUNCTION__, script);
+                 __func__, script);
       g_free (script);
       g_free (script_dir);
       return -1;
@@ -30752,7 +30752,7 @@ run_report_format_script (gchar *report_format_id,
   if (previous_dir == NULL)
     {
       g_warning ("%s: Failed to getcwd: %s",
-                  __FUNCTION__,
+                  __func__,
                   strerror (errno));
       g_free (previous_dir);
       g_free (script);
@@ -30763,7 +30763,7 @@ run_report_format_script (gchar *report_format_id,
   if (chdir (script_dir))
     {
       g_warning ("%s: Failed to chdir: %s",
-                  __FUNCTION__,
+                  __func__,
                   strerror (errno));
       g_free (previous_dir);
       g_free (script);
@@ -30798,7 +30798,7 @@ run_report_format_script (gchar *report_format_id,
           || chown (output_file, nobody->pw_uid, nobody->pw_gid))
         {
           g_warning ("%s: Failed to set dir permissions: %s",
-                      __FUNCTION__,
+                      __func__,
                       strerror (errno));
           g_free (previous_dir);
           return -1;
@@ -30818,20 +30818,20 @@ run_report_format_script (gchar *report_format_id,
               if (setgroups (0,NULL))
                 {
                   g_warning ("%s (child): setgroups: %s",
-                              __FUNCTION__, strerror (errno));
+                              __func__, strerror (errno));
                   exit (EXIT_FAILURE);
                 }
               if (setgid (nobody->pw_gid))
                 {
                   g_warning ("%s (child): setgid: %s",
-                              __FUNCTION__,
+                              __func__,
                               strerror (errno));
                   exit (EXIT_FAILURE);
                 }
               if (setuid (nobody->pw_uid))
                 {
                   g_warning ("%s (child): setuid: %s",
-                              __FUNCTION__,
+                              __func__,
                               strerror (errno));
                   exit (EXIT_FAILURE);
                 }
@@ -30843,7 +30843,7 @@ run_report_format_script (gchar *report_format_id,
                 {
                   g_warning ("%s (child):"
                               " system failed with ret %i, %i, %s",
-                              __FUNCTION__,
+                              __func__,
                               ret,
                               WEXITSTATUS (ret),
                               command);
@@ -30857,11 +30857,11 @@ run_report_format_script (gchar *report_format_id,
             /* Parent when error. */
 
             g_warning ("%s: Failed to fork: %s",
-                        __FUNCTION__,
+                        __func__,
                         strerror (errno));
             if (chdir (previous_dir))
               g_warning ("%s: and chdir failed",
-                          __FUNCTION__);
+                          __func__);
             g_free (previous_dir);
             g_free (command);
             return -1;
@@ -30880,21 +30880,21 @@ run_report_format_script (gchar *report_format_id,
                   if (errno == ECHILD)
                     {
                       g_warning ("%s: Failed to get child exit status",
-                                  __FUNCTION__);
+                                  __func__);
                       if (chdir (previous_dir))
                         g_warning ("%s: and chdir failed",
-                                    __FUNCTION__);
+                                    __func__);
                       g_free (previous_dir);
                       return -1;
                     }
                   if (errno == EINTR)
                     continue;
                   g_warning ("%s: wait: %s",
-                              __FUNCTION__,
+                              __func__,
                               strerror (errno));
                   if (chdir (previous_dir))
                     g_warning ("%s: and chdir failed",
-                                __FUNCTION__);
+                                __func__);
                   g_free (previous_dir);
                   return -1;
                 }
@@ -30906,22 +30906,22 @@ run_report_format_script (gchar *report_format_id,
                     case EXIT_FAILURE:
                     default:
                       g_warning ("%s: child failed, %s",
-                                  __FUNCTION__,
+                                  __func__,
                                   command);
                       if (chdir (previous_dir))
                         g_warning ("%s: and chdir failed",
-                                    __FUNCTION__);
+                                    __func__);
                       g_free (previous_dir);
                       return -1;
                   }
               else
                 {
                   g_warning ("%s: child failed, %s",
-                              __FUNCTION__,
+                              __func__,
                               command);
                   if (chdir (previous_dir))
                     g_warning ("%s: and chdir failed",
-                                __FUNCTION__);
+                                __func__);
                   g_free (previous_dir);
                   return -1;
                 }
@@ -30942,13 +30942,13 @@ run_report_format_script (gchar *report_format_id,
       if (ret == -1)
         {
           g_warning ("%s: system failed with ret %i, %i, %s",
-                      __FUNCTION__,
+                      __func__,
                       ret,
                       WEXITSTATUS (ret),
                       command);
           if (chdir (previous_dir))
             g_warning ("%s: and chdir failed",
-                        __FUNCTION__);
+                        __func__);
           g_free (previous_dir);
           g_free (command);
           return -1;
@@ -30962,7 +30962,7 @@ run_report_format_script (gchar *report_format_id,
   if (chdir (previous_dir))
     {
       g_warning ("%s: Failed to chdir back: %s",
-                  __FUNCTION__,
+                  __func__,
                   strerror (errno));
       g_free (previous_dir);
       return -1;
@@ -31009,7 +31009,7 @@ apply_report_format (gchar *report_format_id,
                              (GCompareFunc) strcmp))
     {
       g_message ("%s: Recursion loop for report_format '%s'",
-                 __FUNCTION__, report_format_id);
+                 __func__, report_format_id);
       return NULL;
     }
 
@@ -31019,7 +31019,7 @@ apply_report_format (gchar *report_format_id,
       || report_format == 0)
     {
       g_message ("%s: Report format '%s' not found",
-                 __FUNCTION__, report_format_id);
+                 __func__, report_format_id);
       return NULL;
     }
 
@@ -31027,7 +31027,7 @@ apply_report_format (gchar *report_format_id,
   if (report_format_active (report_format) == 0)
     {
       g_message ("%s: Report format '%s' is not active",
-                 __FUNCTION__, report_format_id);
+                 __func__, report_format_id);
       return NULL;
     }
 
@@ -31066,7 +31066,7 @@ apply_report_format (gchar *report_format_id,
 
           if (mkdtemp (subreport_dir) == NULL)
             {
-              g_warning ("%s: mkdtemp failed", __FUNCTION__);
+              g_warning ("%s: mkdtemp failed", __func__);
               g_free (subreport_dir);
               break;
             }
@@ -31160,7 +31160,7 @@ apply_report_format (gchar *report_format_id,
   output_fd = mkstemps (output_file, strlen (out_file_ext) + 1);
   if (output_fd == -1)
     {
-      g_warning ("%s: mkstemps failed: %s", __FUNCTION__, strerror (errno));
+      g_warning ("%s: mkstemps failed: %s", __func__, strerror (errno));
       g_free (output_file);
       output_file = NULL;
       goto cleanup;
@@ -31198,7 +31198,7 @@ apply_report_format (gchar *report_format_id,
   if (close (output_fd))
     {
       g_warning ("%s: close of output_fd failed: %s",
-                 __FUNCTION__, strerror (errno));
+                 __func__, strerror (errno));
       g_free (output_file);
       return NULL;
     }
@@ -31304,7 +31304,7 @@ manage_send_report (report_t report, report_t delta_report,
 
   if (mkdtemp (xml_dir) == NULL)
     {
-      g_warning ("%s: mkdtemp failed", __FUNCTION__);
+      g_warning ("%s: mkdtemp failed", __func__);
       return -1;
     }
 
@@ -31332,7 +31332,7 @@ manage_send_report (report_t report, report_t delta_report,
 
   if (output_file == NULL)
     {
-      g_warning ("%s: No file returned for report format", __FUNCTION__);
+      g_warning ("%s: No file returned for report format", __func__);
     }
   g_free (report_format_id);
 
@@ -31345,7 +31345,7 @@ manage_send_report (report_t report, report_t delta_report,
   if (stream == NULL)
     {
       g_warning ("%s: %s",
-                  __FUNCTION__,
+                  __func__,
                   strerror (errno));
       gvm_file_remove_recurse (xml_dir);
       return -1;
@@ -31354,7 +31354,7 @@ manage_send_report (report_t report, report_t delta_report,
   if (prefix && send (prefix, send_data_1, send_data_2))
     {
       fclose (stream);
-      g_warning ("%s: send prefix error", __FUNCTION__);
+      g_warning ("%s: send prefix error", __func__);
       gvm_file_remove_recurse (xml_dir);
       return -1;
     }
@@ -31374,7 +31374,7 @@ manage_send_report (report_t report, report_t delta_report,
           if (ferror (stream))
             {
               fclose (stream);
-              g_warning ("%s: error after fread", __FUNCTION__);
+              g_warning ("%s: error after fread", __func__);
               gvm_file_remove_recurse (xml_dir);
               return -1;
             }
@@ -31400,7 +31400,7 @@ manage_send_report (report_t report, report_t delta_report,
                 {
                   g_free (chunk64);
                   fclose (stream);
-                  g_warning ("%s: send error", __FUNCTION__);
+                  g_warning ("%s: send error", __func__);
                   gvm_file_remove_recurse (xml_dir);
                   return -1;
                 }
@@ -31412,7 +31412,7 @@ manage_send_report (report_t report, report_t delta_report,
               if (send (chunk, send_data_1, send_data_2))
                 {
                   fclose (stream);
-                  g_warning ("%s: send error", __FUNCTION__);
+                  g_warning ("%s: send error", __func__);
                   gvm_file_remove_recurse (xml_dir);
                   return -1;
                 }
@@ -31608,7 +31608,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
            */
           if (manage_report_host_detail (report, host, desc))
             g_warning ("%s: Failed to add report detail for host '%s': %s",
-                      __FUNCTION__,
+                      __func__,
                       host,
                       desc);
         }
@@ -35862,7 +35862,7 @@ static gchar *
 new_secinfo_list (event_t event, const void* event_data, alert_t alert,
                   int *count_return)
 {
-  g_debug ("%s: event_data: %s", __FUNCTION__, (gchar*) event_data);
+  g_debug ("%s: event_data: %s", __func__, (gchar*) event_data);
 
   if (strcasecmp (event_data, "nvt_example") == 0)
     return new_nvts_list (event, "nvt", alert, 1, count_return);
@@ -35896,7 +35896,7 @@ new_secinfo_list (event_t event, const void* event_data, alert_t alert,
 
   if (count_return)
     {
-      g_warning ("%s: Type error: %s", __FUNCTION__, (char *) event_data);
+      g_warning ("%s: Type error: %s", __func__, (char *) event_data);
       *count_return = 0;
     }
 
@@ -36349,7 +36349,7 @@ create_credential (const char* name, const char* comment, const char* login,
     quoted_type = g_strdup ("usk"); /* auto-generate */
   else
     {
-      g_warning ("%s: Cannot determine type of new credential", __FUNCTION__);
+      g_warning ("%s: Cannot determine type of new credential", __func__);
       return -1;
     }
 
@@ -37040,7 +37040,7 @@ modify_credential (const char *credential_id,
         }
       else
         {
-          g_warning ("%s: Unknown credential type: %s", __FUNCTION__, type);
+          g_warning ("%s: Unknown credential type: %s", __func__, type);
           sql_rollback ();
           cleanup_iterator (&iterator);
           g_free (key_private_truncated);
@@ -37051,7 +37051,7 @@ modify_credential (const char *credential_id,
     }
   else
     {
-      g_warning ("%s: credential iterator next() failed", __FUNCTION__);
+      g_warning ("%s: credential iterator next() failed", __func__);
       sql_rollback ();
       cleanup_iterator (&iterator);
       return -1;
@@ -37810,7 +37810,7 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
   secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
   if (type == NULL)
     {
-      g_warning ("%s: NULL data type given", __FUNCTION__);
+      g_warning ("%s: NULL data type given", __func__);
       return NULL;
     }
   else if (strcmp (type, "password") == 0)
@@ -37823,7 +37823,7 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
   else
     {
-      g_warning ("%s: unknown data type \"%s\"", __FUNCTION__, type);
+      g_warning ("%s: unknown data type \"%s\"", __func__, type);
       return NULL;
     }
   /* If we do not have a private key, there is no encrypted data.
@@ -38009,7 +38009,7 @@ credential_iterator_rpm (iterator_t *iterator)
     }
   else if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     {
-      g_warning ("%s: Failed to create RPM", __FUNCTION__);
+      g_warning ("%s: Failed to create RPM", __func__);
       g_free (public_key);
       return NULL;
     }
@@ -38058,7 +38058,7 @@ credential_iterator_deb (iterator_t *iterator)
                                   maintainer ? maintainer : "",
                                   &deb, &deb_size))
     {
-      g_warning ("%s: Failed to create DEB", __FUNCTION__);
+      g_warning ("%s: Failed to create DEB", __func__);
       g_free (public_key);
       free (maintainer);
       return NULL;
@@ -38097,7 +38097,7 @@ credential_iterator_exe (iterator_t *iterator)
     return NULL;
   else if (lsc_user_exe_recreate (login, password, &exe, &exe_size))
     {
-      g_warning ("%s: Failed to create EXE", __FUNCTION__);
+      g_warning ("%s: Failed to create EXE", __func__);
       return NULL;
     }
   exe64 = (exe && exe_size)
@@ -38547,7 +38547,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
             }
           else
             {
-              g_debug ("%s: failed to read %s: %s", __FUNCTION__,
+              g_debug ("%s: failed to read %s: %s", __func__,
                        signature_filename, error->message);
               g_free (signature_filename);
             }
@@ -38678,7 +38678,7 @@ verify_signature (const gchar *installer, gsize installer_size,
   cmd[8] = g_strdup (installer_file);
   cmd[9] = NULL;
   g_debug ("%s: Spawning in /tmp/: %s %s %s %s %s %s %s %s %s",
-           __FUNCTION__,
+           __func__,
            cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5],
            cmd[6], cmd[7], cmd[8]);
   if ((g_spawn_sync ("/tmp/",
@@ -38700,12 +38700,12 @@ verify_signature (const gchar *installer, gsize installer_size,
         {
 #if 0
           g_debug ("%s: failed to run gpgv(%s): %d (WIF %i, WEX %i)",
-                   __FUNCTION__, get_trustedkeys_name (),
+                   __func__, get_trustedkeys_name (),
                    exit_status,
                    WIFEXITED (exit_status),
                    WEXITSTATUS (exit_status));
-          g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
-          g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
+          g_debug ("%s: stdout: %s", __func__, standard_out);
+          g_debug ("%s: stderr: %s", __func__, standard_err);
           ret = -1;
 #endif
           /* This can be caused by the contents of the signature file, so
@@ -38870,7 +38870,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         g_free (quoted_filename);
         if (stmt == NULL)
           {
-            g_warning ("%s: sql_prepare failed", __FUNCTION__);
+            g_warning ("%s: sql_prepare failed", __func__);
             g_free (installer);
             g_free (installer_signature);
             sql_rollback ();
@@ -38881,7 +38881,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
         if (sql_bind_text (stmt, 1, installer, installer_size))
           {
-            g_warning ("%s: sql_bind_text failed", __FUNCTION__);
+            g_warning ("%s: sql_bind_text failed", __func__);
             sql_rollback ();
             g_free (installer);
             g_free (installer_signature);
@@ -38891,7 +38891,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
         if (sql_bind_text (stmt, 2, installer_64, strlen (installer_64)))
           {
-            g_warning ("%s: sql_bind_text failed", __FUNCTION__);
+            g_warning ("%s: sql_bind_text failed", __func__);
             sql_rollback ();
             g_free (installer_signature);
             return -1;
@@ -38901,21 +38901,21 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         if (sql_bind_text (stmt, 3, installer_signature_64,
                            strlen (installer_signature_64)))
           {
-            g_warning ("%s: sql_bind_text failed", __FUNCTION__);
+            g_warning ("%s: sql_bind_text failed", __func__);
             sql_rollback ();
             return -1;
           }
 
         if (sql_bind_text (stmt, 4, howto_install, strlen (howto_install)))
           {
-            g_warning ("%s: sql_bind_text failed", __FUNCTION__);
+            g_warning ("%s: sql_bind_text failed", __func__);
             sql_rollback ();
             return -1;
           }
 
         if (sql_bind_blob (stmt, 5, howto_use, strlen (howto_use)))
           {
-            g_warning ("%s: sql_bind_blob failed", __FUNCTION__);
+            g_warning ("%s: sql_bind_blob failed", __func__);
             sql_rollback ();
             return -1;
           }
@@ -38931,7 +38931,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
           }
         if (ret < 0)
           {
-            g_warning ("%s: sql_exec failed", __FUNCTION__);
+            g_warning ("%s: sql_exec failed", __func__);
             sql_rollback ();
             return -1;
           }
@@ -39554,7 +39554,7 @@ verify_agent (const char *agent_id)
 
       signature_64 = agent_iterator_installer_signature_64 (&agents);
 
-      g_debug ("%s: finding signature", __FUNCTION__);
+      g_debug ("%s: finding signature", __func__);
 
       find_signature ("agents",
                       agent_iterator_installer_filename (&agents),
@@ -39578,7 +39578,7 @@ verify_agent (const char *agent_id)
 
               /* Try the signature from the database. */
 
-              g_debug ("%s: trying database signature", __FUNCTION__);
+              g_debug ("%s: trying database signature", __func__);
 
               signature = (gchar*) g_base64_decode (signature_64,
                                                     &signature_length);
@@ -39586,7 +39586,7 @@ verify_agent (const char *agent_id)
               if (verify_signature (installer, installer_size, signature,
                                     signature_length, &agent_trust))
                 {
-                  g_warning ("%s: verify_signature error", __FUNCTION__);
+                  g_warning ("%s: verify_signature error", __func__);
                   cleanup_iterator (&agents);
                   g_free (agent_signature);
                   sql_rollback ();
@@ -39601,12 +39601,12 @@ verify_agent (const char *agent_id)
                || (agent_trust == TRUST_UNKNOWN))
               && agent_signature)
             {
-              g_debug ("%s: trying feed signature", __FUNCTION__);
+              g_debug ("%s: trying feed signature", __func__);
 
               if (verify_signature (installer, installer_size, agent_signature,
                                     strlen (agent_signature), &agent_trust))
                 {
-                  g_warning ("%s: verify_signature error", __FUNCTION__);
+                  g_warning ("%s: verify_signature error", __func__);
                   cleanup_iterator (&agents);
                   g_free (agent_signature);
                   sql_rollback ();
@@ -39634,7 +39634,7 @@ verify_agent (const char *agent_id)
     }
   else
     {
-      g_warning ("%s: agent iterator empty", __FUNCTION__);
+      g_warning ("%s: agent iterator empty", __func__);
       cleanup_iterator (&agents);
       sql_rollback ();
       return -1;
@@ -43809,7 +43809,7 @@ osp_scanner_relay_connect (const char *host, int port, const char *ca_pub,
         return NULL;
       default:
         g_warning ("%s: Error getting relay for Scanner at %s:%d",
-                   __FUNCTION__, host, port);
+                   __func__, host, port);
         return NULL;
     }
 
@@ -44123,7 +44123,7 @@ verify_scanner (const char *scanner_id, char **version)
           cleanup_iterator (&scanner);
           return 2;
         }
-      g_debug ("%s: *version: %s", __FUNCTION__, *version);
+      g_debug ("%s: *version: %s", __func__, *version);
       gvm_connection_close (&connection);
       cleanup_iterator (&scanner);
       return 0;
@@ -45927,7 +45927,7 @@ create_report_format (const char *uuid, const char *name,
                 {
                   g_free (real_old);
                   g_free (old);
-                  g_warning ("%s: readlink failed", __FUNCTION__);
+                  g_warning ("%s: readlink failed", __func__);
                   sql_rollback ();
                   return -1;
                 }
@@ -45946,7 +45946,7 @@ create_report_format (const char *uuid, const char *name,
       if (g_mkdir_with_parents (path, 0755 /* "rwxr-xr-x" */))
         {
           g_warning ("%s: failed to create dir %s: %s",
-                     __FUNCTION__, path, strerror (errno));
+                     __func__, path, strerror (errno));
           g_free (old);
           g_free (path);
           sql_rollback ();
@@ -45961,7 +45961,7 @@ create_report_format (const char *uuid, const char *name,
         {
           g_free (old);
           g_free (new);
-          g_warning ("%s: symlink failed: %s", __FUNCTION__, strerror (errno));
+          g_warning ("%s: symlink failed: %s", __func__, strerror (errno));
           sql_rollback ();
           return -1;
         }
@@ -46001,7 +46001,7 @@ create_report_format (const char *uuid, const char *name,
 
   if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
     {
-      g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
+      g_warning ("%s: failed to remove dir %s", __func__, dir);
       g_free (dir);
       g_free (quoted_name);
       g_free (new_uuid);
@@ -46012,7 +46012,7 @@ create_report_format (const char *uuid, const char *name,
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
     {
       g_warning ("%s: failed to create dir %s: %s",
-                 __FUNCTION__, dir, strerror (errno));
+                 __func__, dir, strerror (errno));
       g_free (dir);
       g_free (quoted_name);
       g_free (new_uuid);
@@ -46034,7 +46034,7 @@ create_report_format (const char *uuid, const char *name,
       if (chmod (report_dir, 0755 /* rwxr-xr-x */))
         {
           g_warning ("%s: chmod failed: %s",
-                     __FUNCTION__,
+                     __func__,
                      strerror (errno));
           g_free (dir);
           g_free (report_dir);
@@ -46051,7 +46051,7 @@ create_report_format (const char *uuid, const char *name,
   if (chmod (dir, 0755 /* rwxr-xr-x */))
     {
       g_warning ("%s: chmod failed: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       g_free (dir);
       g_free (quoted_name);
@@ -46094,7 +46094,7 @@ create_report_format (const char *uuid, const char *name,
       g_free (contents);
       if (error)
         {
-          g_warning ("%s: %s", __FUNCTION__, error->message);
+          g_warning ("%s: %s", __func__, error->message);
           g_error_free (error);
           gvm_file_remove_recurse (dir);
           g_free (full_file_name);
@@ -46112,7 +46112,7 @@ create_report_format (const char *uuid, const char *name,
       if (ret)
         {
           g_warning ("%s: chmod failed: %s",
-                     __FUNCTION__,
+                     __func__,
                      strerror (errno));
           gvm_file_remove_recurse (dir);
           g_free (full_file_name);
@@ -46290,7 +46290,7 @@ create_report_format (const char *uuid, const char *name,
         options = (array_t*) g_ptr_array_index (params_options, index - 1);
         if (options == NULL)
           {
-            g_warning ("%s: options was NULL", __FUNCTION__);
+            g_warning ("%s: options was NULL", __func__);
             gvm_file_remove_recurse (dir);
             g_free (dir);
             sql_rollback ();
@@ -46414,7 +46414,7 @@ copy_report_format (const char* name, const char* source_uuid,
   if (!g_file_test (source_dir, G_FILE_TEST_EXISTS))
     {
       g_warning ("%s: report format directory %s not found",
-                 __FUNCTION__, source_dir);
+                 __func__, source_dir);
       g_free (source_dir);
       sql_rollback ();
       return -1;
@@ -46438,7 +46438,7 @@ copy_report_format (const char* name, const char* source_uuid,
   if (g_file_test (copy_dir, G_FILE_TEST_EXISTS)
       && gvm_file_remove_recurse (copy_dir))
     {
-      g_warning ("%s: failed to remove dir %s", __FUNCTION__, copy_dir);
+      g_warning ("%s: failed to remove dir %s", __func__, copy_dir);
       g_free (source_dir);
       g_free (copy_dir);
       g_free (copy_uuid);
@@ -46448,7 +46448,7 @@ copy_report_format (const char* name, const char* source_uuid,
 
   if (g_mkdir_with_parents (copy_dir, 0755 /* "rwxr-xr-x" */))
     {
-      g_warning ("%s: failed to create dir %s", __FUNCTION__, copy_dir);
+      g_warning ("%s: failed to create dir %s", __func__, copy_dir);
       g_free (source_dir);
       g_free (copy_dir);
       g_free (copy_uuid);
@@ -46466,7 +46466,7 @@ copy_report_format (const char* name, const char* source_uuid,
   if (chmod (tmp_dir, 0755 /* rwxr-xr-x */))
     {
       g_warning ("%s: chmod %s failed: %s",
-                 __FUNCTION__,
+                 __func__,
                  tmp_dir,
                  strerror (errno));
       g_free (source_dir);
@@ -46487,7 +46487,7 @@ copy_report_format (const char* name, const char* source_uuid,
   if (chmod (tmp_dir, 0755 /* rwxr-xr-x */))
     {
       g_warning ("%s: chmod %s failed: %s",
-                 __FUNCTION__,
+                 __func__,
                  tmp_dir,
                  strerror (errno));
       g_free (source_dir);
@@ -46534,7 +46534,7 @@ copy_report_format (const char* name, const char* source_uuid,
             if (gvm_file_copy (source_file, copy_file) == FALSE)
               {
                 g_warning ("%s: copy of %s to %s failed",
-                           __FUNCTION__, source_file, copy_file);
+                           __func__, source_file, copy_file);
                 g_free (source_file);
                 g_free (copy_file);
                 g_free (source_dir);
@@ -46675,7 +46675,7 @@ move_report_format_dir (const char *dir, const char *new_dir)
 
               if (g_mkdir_with_parents (new_dir, 0755 /* "rwxr-xr-x" */))
                 {
-                  g_warning ("%s: failed to create dir %s", __FUNCTION__,
+                  g_warning ("%s: failed to create dir %s", __func__,
                              new_dir);
                   return -1;
                 }
@@ -46686,7 +46686,7 @@ move_report_format_dir (const char *dir, const char *new_dir)
               if (directory == NULL)
                 {
                   g_warning ("%s: failed to g_dir_open %s: %s",
-                             __FUNCTION__, dir, error->message);
+                             __func__, dir, error->message);
                   g_error_free (error);
                   return -1;
                 }
@@ -46700,7 +46700,7 @@ move_report_format_dir (const char *dir, const char *new_dir)
                   if (gvm_file_move (entry_path, new_path) == FALSE)
                     {
                       g_warning ("%s: failed to move %s to %s",
-                                 __FUNCTION__, entry_path, new_path);
+                                 __func__, entry_path, new_path);
                       g_free (entry_path);
                       g_free (new_path);
                       g_dir_close (directory);
@@ -46717,7 +46717,7 @@ move_report_format_dir (const char *dir, const char *new_dir)
           else
             {
               g_warning ("%s: rename %s to %s: %s",
-                         __FUNCTION__, dir, new_dir, strerror (errno));
+                         __func__, dir, new_dir, strerror (errno));
               return -1;
             }
         }
@@ -46725,7 +46725,7 @@ move_report_format_dir (const char *dir, const char *new_dir)
   else
     {
       g_warning ("%s: report dir missing: %s",
-                 __FUNCTION__, dir);
+                 __func__, dir);
       return -1;
     }
   return 0;
@@ -46939,7 +46939,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       trash_dir = report_format_trash_dir (NULL);
       if (g_mkdir_with_parents (trash_dir, 0755 /* "rwxr-xr-x" */))
         {
-          g_warning ("%s: failed to create dir %s", __FUNCTION__, trash_dir);
+          g_warning ("%s: failed to create dir %s", __func__, trash_dir);
           g_free (trash_dir);
           sql_rollback ();
           return -1;
@@ -48094,7 +48094,7 @@ check_report_format_create (const gchar *quoted_uuid, const gchar *name,
       case 1:        /* Too few rows in result of query. */
       case -1:
         g_warning ("%s: Report format missing: %s",
-                   __FUNCTION__, quoted_uuid);
+                   __func__, quoted_uuid);
         return -1;
     }
 
@@ -48123,7 +48123,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
   entities = entity->entities;
   while ((param = first_entity (entities)))
     {
-      g_debug ("%s: possible param: %s", __FUNCTION__, entity_name (param));
+      g_debug ("%s: possible param: %s", __func__, entity_name (param));
 
       if (strcmp (entity_name (param), "param") == 0)
         {
@@ -48140,7 +48140,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
           if (child == NULL)
             {
               g_warning ("%s: Param missing name in '%s'",
-                         __FUNCTION__, config_path);
+                         __func__, config_path);
               return -1;
             }
           name = entity_text (child);
@@ -48149,7 +48149,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
           if (child == NULL)
             {
               g_warning ("%s: Param missing default in '%s'",
-                         __FUNCTION__, config_path);
+                         __func__, config_path);
               return -1;
             }
           fallback = entity_text (child);
@@ -48158,7 +48158,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
           if (child == NULL)
             {
               g_warning ("%s: Param missing type in '%s'",
-                         __FUNCTION__, config_path);
+                         __func__, config_path);
               return -1;
             }
           type = g_strstrip (g_strdup (entity_text (child)));
@@ -48166,7 +48166,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
               == REPORT_FORMAT_PARAM_TYPE_ERROR)
             {
               g_warning ("%s: Error in param type in '%s'",
-                         __FUNCTION__, config_path);
+                         __func__, config_path);
               return -1;
             }
 
@@ -48187,7 +48187,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
                       || number == LLONG_MIN)
                     {
                       g_warning ("%s: Failed to parse min in '%s'",
-                                 __FUNCTION__, config_path);
+                                 __func__, config_path);
                       g_free (type);
                       return -1;
                     }
@@ -48206,7 +48206,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
                       || number == LLONG_MIN)
                     {
                       g_warning ("%s: Failed to parse max in '%s'",
-                                 __FUNCTION__, config_path);
+                                 __func__, config_path);
                       g_free (type);
                       return -1;
                     }
@@ -48221,7 +48221,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
                   if (options == NULL)
                     {
                       g_warning ("%s: Selection missing options in '%s'",
-                                 __FUNCTION__, config_path);
+                                 __func__, config_path);
                       g_free (type);
                       return -1;
                     }
@@ -48239,7 +48239,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
               if (child == NULL)
                 {
                   g_warning ("%s: Param missing value in '%s'",
-                             __FUNCTION__, config_path);
+                             __func__, config_path);
                   g_free (type);
                   return -1;
                 }
@@ -48254,7 +48254,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
               if (child == NULL)
                 {
                   g_warning ("%s: Param missing value in '%s'",
-                             __FUNCTION__, config_path);
+                             __func__, config_path);
                   g_free (type);
                   return -1;
                 }
@@ -48263,7 +48263,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
               if (report_format == NULL)
                 {
                   g_warning ("%s: Param missing report format in '%s'",
-                             __FUNCTION__, config_path);
+                             __func__, config_path);
                   g_free (type);
                   return -1;
                 }
@@ -48272,7 +48272,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
               if (value == NULL)
                 {
                   g_warning ("%s: Report format missing id in '%s'",
-                             __FUNCTION__, config_path);
+                             __func__, config_path);
                   g_free (type);
                   return -1;
                 }
@@ -48284,7 +48284,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
           quoted_value = g_strstrip (sql_quote (value));
           quoted_fallback = g_strstrip (sql_quote (fallback));
 
-          g_debug ("%s: param: %s", __FUNCTION__, name);
+          g_debug ("%s: param: %s", __func__, name);
 
           if (sql_int ("SELECT count (*) FROM report_format_params"
                        " WHERE name = '%s'"
@@ -48293,7 +48293,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
                        quoted_name,
                        quoted_uuid))
             {
-              g_debug ("%s: param: %s: updating", __FUNCTION__, name);
+              g_debug ("%s: param: %s: updating", __func__, name);
 
               sql ("UPDATE report_format_params"
                    " SET type = %u, value = '%s', type_min = %s,"
@@ -48353,7 +48353,7 @@ check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_pa
             }
           else
             {
-              g_debug ("%s: param: %s: creating", __FUNCTION__, name);
+              g_debug ("%s: param: %s: creating", __func__, name);
 
               sql ("INSERT INTO report_format_params"
                    " (report_format, name, type, value, type_min, type_max,"
@@ -48445,7 +48445,7 @@ check_report_format_parse (entity_t entity, const char *config_path,
   child = entity_child (entity, "name");
   if (child == NULL)
     {
-      g_warning ("%s: Missing name in '%s'", __FUNCTION__, config_path);
+      g_warning ("%s: Missing name in '%s'", __func__, config_path);
       return -1;
     }
   *name = entity_text (child);
@@ -48453,7 +48453,7 @@ check_report_format_parse (entity_t entity, const char *config_path,
   child = entity_child (entity, "summary");
   if (child == NULL)
     {
-      g_warning ("%s: Missing summary in '%s'", __FUNCTION__, config_path);
+      g_warning ("%s: Missing summary in '%s'", __func__, config_path);
       return -1;
     }
   *summary = entity_text (child);
@@ -48462,7 +48462,7 @@ check_report_format_parse (entity_t entity, const char *config_path,
   if (child == NULL)
     {
       g_warning ("%s: Missing description in '%s'",
-                 __FUNCTION__, config_path);
+                 __func__, config_path);
       return -1;
     }
   *description = entity_text (child);
@@ -48470,7 +48470,7 @@ check_report_format_parse (entity_t entity, const char *config_path,
   child = entity_child (entity, "extension");
   if (child == NULL)
     {
-      g_warning ("%s: Missing extension in '%s'", __FUNCTION__, config_path);
+      g_warning ("%s: Missing extension in '%s'", __func__, config_path);
       return -1;
     }
   *extension = entity_text (child);
@@ -48479,7 +48479,7 @@ check_report_format_parse (entity_t entity, const char *config_path,
   if (child == NULL)
     {
       g_warning ("%s: Missing content_type in '%s'",
-                 __FUNCTION__, config_path);
+                 __func__, config_path);
       return -1;
     }
   *content_type = entity_text (child);
@@ -48505,11 +48505,11 @@ check_report_format (const gchar *uuid)
   int update_mod_time;
   report_format_t report_format;
 
-  g_debug ("%s: uuid: %s", __FUNCTION__, uuid);
+  g_debug ("%s: uuid: %s", __func__, uuid);
 
   update_mod_time = 0;
   path = predefined_report_format_dir (uuid);
-  g_debug ("%s: path: %s", __FUNCTION__, path);
+  g_debug ("%s: path: %s", __func__, path);
   config_path = g_build_filename (path, "report_format.xml", NULL);
   g_free (path);
 
@@ -48520,7 +48520,7 @@ check_report_format (const gchar *uuid)
   if (error)
     {
       g_warning ("%s: Failed to read '%s': %s",
-                  __FUNCTION__,
+                  __func__,
                  config_path,
                  error->message);
       g_error_free (error);
@@ -48532,7 +48532,7 @@ check_report_format (const gchar *uuid)
 
   if (parse_entity (xml, &entity))
     {
-      g_warning ("%s: Failed to parse '%s'", __FUNCTION__, config_path);
+      g_warning ("%s: Failed to parse '%s'", __func__, config_path);
       g_free (config_path);
       return -1;
     }
@@ -50278,7 +50278,7 @@ subject_where_clause (const char* subject_type, resource_t subject)
         {
           subject_where = strdup ("t()");
           g_warning ("%s: unknown subject_type %s",
-                     __FUNCTION__, subject_type);
+                     __func__, subject_type);
         }
     }
   return subject_where;
@@ -54615,7 +54615,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
     if (mkdtemp (output_dir) == NULL)
       {
-        g_warning ("%s: mkdtemp failed", __FUNCTION__);
+        g_warning ("%s: mkdtemp failed", __func__);
         return -1;
       }
 
@@ -54683,7 +54683,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
       if (previous_dir == NULL)
         {
           g_warning ("%s: Failed to getcwd: %s",
-                     __FUNCTION__,
+                     __func__,
                      strerror (errno));
           g_free (previous_dir);
           g_free (script);
@@ -54696,7 +54696,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
       if (chdir (script_dir))
         {
           g_warning ("%s: Failed to chdir: %s",
-                     __FUNCTION__,
+                     __func__,
                      strerror (errno));
           g_free (previous_dir);
           g_free (script);
@@ -54728,13 +54728,13 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
           || WEXITSTATUS (ret))
         {
           g_warning ("%s: system failed with ret %i, %i, %s",
-                     __FUNCTION__,
+                     __func__,
                      ret,
                      WEXITSTATUS (ret),
                      command);
           if (chdir (previous_dir))
             g_warning ("%s: and chdir failed",
-                       __FUNCTION__);
+                       __func__);
           g_free (previous_dir);
           g_free (command);
           g_free (output_file);
@@ -54755,7 +54755,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
         if (chdir (previous_dir))
           {
             g_warning ("%s: Failed to chdir back: %s",
-                       __FUNCTION__,
+                       __func__,
                        strerror (errno));
             g_free (previous_dir);
             if (extension) g_free (*extension);
@@ -54775,7 +54775,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
         if (get_error)
           {
             g_warning ("%s: Failed to get output: %s",
-                       __FUNCTION__,
+                       __func__,
                        get_error->message);
             g_error_free (get_error);
             if (extension) g_free (*extension);
@@ -56169,7 +56169,7 @@ manage_empty_trashcan ()
 
       if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
         {
-          g_warning ("%s: failed to remove trash dir %s", __FUNCTION__, dir);
+          g_warning ("%s: failed to remove trash dir %s", __func__, dir);
           g_free (dir);
           sql_rollback ();
           return -1;
@@ -58369,7 +58369,7 @@ add_assets_from_host_in_report (report_t report, const char *host_ip)
   if (report_id == NULL)
     {
       g_warning ("%s: report %llu not found.",
-                 __FUNCTION__, report);
+                 __func__, report);
       return -1;
     }
 
@@ -58384,7 +58384,7 @@ add_assets_from_host_in_report (report_t report, const char *host_ip)
   if (report_host == 0)
     {
       g_warning ("%s: report_host for host '%s' and report '%s' not found.",
-                 __FUNCTION__, host_ip, report_id);
+                 __func__, host_ip, report_id);
       free (report_id);
       return -1;
     }
@@ -60325,7 +60325,7 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   uuid = user_uuid (user);
   if (uuid == NULL)
     {
-      g_warning ("%s: Failed to allocate UUID", __FUNCTION__);
+      g_warning ("%s: Failed to allocate UUID", __func__);
       sql_rollback ();
       return -1;
     }
@@ -60410,7 +60410,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   uuid = user_uuid (user);
   if (uuid == NULL)
     {
-      g_warning ("%s: Failed to allocate UUID", __FUNCTION__);
+      g_warning ("%s: Failed to allocate UUID", __func__);
       sql_rollback ();
       return -1;
     }
@@ -62584,7 +62584,7 @@ tag_add_resource (tag_t tag, const char *type, const char *uuid,
 
   if (already_added == 0)
     {
-      g_debug ("%s - adding %s %s", __FUNCTION__, type, uuid);
+      g_debug ("%s - adding %s %s", __func__, type, uuid);
       sql ("INSERT INTO tag_resources"
            " (tag, resource_type, resource, resource_uuid, resource_location)"
            " VALUES (%llu, '%s', %llu, %s, %d)",
@@ -62592,7 +62592,7 @@ tag_add_resource (tag_t tag, const char *type, const char *uuid,
     }
   else
     {
-      g_debug ("%s - skipping %s %s", __FUNCTION__, type, uuid);
+      g_debug ("%s - skipping %s %s", __func__, type, uuid);
     }
 
   g_free (quoted_resource_uuid);
@@ -62621,7 +62621,7 @@ tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
                                      &resource, permission, 0))
     {
       g_warning ("%s: Failed to find %s %s",
-                 __FUNCTION__, type, uuid);
+                 __func__, type, uuid);
       return -1;
     }
   else if (resource == 0
@@ -62632,7 +62632,7 @@ tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
                                          1))
         {
           g_warning ("%s: Failed to find trash %s %s",
-                     __FUNCTION__, type, uuid);
+                     __func__, type, uuid);
           return -1;
         }
       else if (resource != 0)
@@ -62720,7 +62720,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
        * to contain each per-resource implementation in its own file. */
       if (init_ticket_iterator (&resources, &resources_get))
         {
-          g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
+          g_warning ("%s: Failed to build filter SELECT", __func__);
           sql_rollback ();
           g_free (resources_get.filter);
           g_free (resources_get.type);
@@ -62747,7 +62747,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
         break;
       default:
         ignore_max_rows_per_page = 0;
-        g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
+        g_warning ("%s: Failed to build filter SELECT", __func__);
         sql_rollback ();
         g_free (resources_get.filter);
         g_free (resources_get.type);
@@ -62858,7 +62858,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
       if (init_ticket_iterator (&resources, &resources_get))
         {
           ignore_max_rows_per_page = 0;
-          g_warning ("%s: Failed to init ticket iterator", __FUNCTION__);
+          g_warning ("%s: Failed to init ticket iterator", __func__);
           sql_rollback ();
           g_free (resources_get.filter);
           g_free (resources_get.type);
@@ -62875,7 +62875,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
         break;
       default:
         ignore_max_rows_per_page = 0;
-        g_warning ("%s: Failed to build filter SELECT", __FUNCTION__);
+        g_warning ("%s: Failed to build filter SELECT", __func__);
         sql_rollback ();
         g_free (resources_get.filter);
         g_free (resources_get.type);
@@ -64455,7 +64455,7 @@ cache_permissions_for_resource (const char *type, resource_t resource,
 
   if (cache_users == NULL)
     {
-      g_debug ("%s: Getting all users", __FUNCTION__);
+      g_debug ("%s: Getting all users", __func__);
       free_users = 1;
       cache_users = all_users_array ();
     }
@@ -64472,7 +64472,7 @@ cache_permissions_for_resource (const char *type, resource_t resource,
       resource_id = resource_uuid (type, resource);
 
       g_debug ("%s: Caching permissions on %s \"%s\" for %d user(s)",
-               __FUNCTION__, type, resource_id, cache_users->len);
+               __func__, type, resource_id, cache_users->len);
 
       for (user_index = 0; user_index < cache_users->len; user_index++)
         {
@@ -64557,7 +64557,7 @@ cache_permissions_for_users (const char *type, GArray *cache_users)
 
   if (cache_users == NULL)
     {
-      g_debug ("%s: Getting all users", __FUNCTION__);
+      g_debug ("%s: Getting all users", __func__);
       free_users = 1;
       cache_users = all_users_array ();
     }
@@ -64596,7 +64596,7 @@ cache_all_permissions_for_users (GArray *cache_users)
 
   if (cache_users == NULL)
     {
-      g_debug ("%s: Getting all users", __FUNCTION__);
+      g_debug ("%s: Getting all users", __func__);
       free_users = 1;
       cache_users = all_users_array ();
     }
@@ -64689,7 +64689,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
               break;
             default:
               g_warning ("%s: failed to stat database: %s",
-                          __FUNCTION__,
+                          __func__,
                           strerror (errno));
           }
       else
@@ -64705,7 +64705,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
               break;
             default:
               g_warning ("%s: failed to stat database: %s",
-                          __FUNCTION__,
+                          __func__,
                           strerror (errno));
           }
       else
@@ -64948,6 +64948,6 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 int
 sql_cancel ()
 {
-  g_debug ("%s: cancelling current SQL statement", __FUNCTION__);
+  g_debug ("%s: cancelling current SQL statement", __func__);
   return sql_cancel_internal ();
 }

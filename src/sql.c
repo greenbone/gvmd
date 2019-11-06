@@ -171,7 +171,7 @@ sqlv (int retry, char* sql, va_list args)
       ret = sql_prepare_internal (retry, 1, sql, args_copy, &stmt);
       va_end (args_copy);
       if (ret == -1)
-        g_warning ("%s: sql_prepare_internal failed", __FUNCTION__);
+        g_warning ("%s: sql_prepare_internal failed", __func__);
       if (ret)
         return ret;
 
@@ -179,7 +179,7 @@ sqlv (int retry, char* sql, va_list args)
 
       while ((ret = sql_exec_internal (retry, stmt)) == 1);
       if ((ret == -1) && log_errors)
-        g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
+        g_warning ("%s: sql_exec_internal failed", __func__);
       sql_finalize (stmt);
       if (ret == 2)
         continue;
@@ -303,7 +303,7 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 
       if (ret)
         {
-          g_warning ("%s: sql_prepare failed", __FUNCTION__);
+          g_warning ("%s: sql_prepare failed", __func__);
           return -1;
         }
 
@@ -313,7 +313,7 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
       if (ret == -1 || ret == -4)
         {
           if (log_errors)
-            g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
+            g_warning ("%s: sql_exec_internal failed", __func__);
           return -1;
         }
       if (ret == 0)
@@ -545,7 +545,7 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
   va_end (args);
   if (ret)
     {
-      g_warning ("%s: sql_prepare failed", __FUNCTION__);
+      g_warning ("%s: sql_prepare failed", __func__);
       abort ();
     }
   iterator->stmt = stmt;
@@ -640,7 +640,7 @@ cleanup_iterator (iterator_t* iterator)
 {
   if (iterator == NULL)
     {
-      g_warning ("%s: null iterator pointer", __FUNCTION__);
+      g_warning ("%s: null iterator pointer", __func__);
       return;
     }
 
@@ -680,14 +680,14 @@ next (iterator_t* iterator)
       if (ret == -1 || ret == -4)
         {
           if (log_errors)
-            g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
+            g_warning ("%s: sql_exec_internal failed", __func__);
           abort ();
         }
       if (ret == -3 || ret == -2)
         {
           /* Busy or locked, with statement reset.  Just try step again like
            * we used to do in sql_exec_internal. */
-          g_warning ("%s: stepping after reset", __FUNCTION__);
+          g_warning ("%s: stepping after reset", __func__);
           continue;
         }
       break;

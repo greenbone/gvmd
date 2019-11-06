@@ -1157,14 +1157,14 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
   int transaction_size = 0;
 
   updated_dfn_cert = 0;
-  g_info ("%s: %s", __FUNCTION__, xml_path);
+  g_info ("%s: %s", __func__, xml_path);
 
   full_path = g_build_filename (GVM_CERT_DATA_DIR, xml_path, NULL);
 
   if (g_stat (full_path, &state))
     {
       g_warning ("%s: Failed to stat CERT file: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -1184,7 +1184,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
-                 __FUNCTION__,
+                 __func__,
                  error->message);
       g_error_free (error);
       g_free (full_path);
@@ -1194,7 +1194,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
   if (parse_entity (xml, &entity))
     {
       g_free (xml);
-      g_warning ("%s: Failed to parse entity", __FUNCTION__);
+      g_warning ("%s: Failed to parse entity", __func__);
       g_free (full_path);
       return -1;
     }
@@ -1211,7 +1211,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
           updated = entity_child (child, "updated");
           if (updated == NULL)
             {
-              g_warning ("%s: UPDATED missing", __FUNCTION__);
+              g_warning ("%s: UPDATED missing", __func__);
               free_entity (entity);
               goto fail;
             }
@@ -1229,7 +1229,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                   GString *string;
 
                   string = g_string_new ("");
-                  g_warning ("%s: REFNUM missing", __FUNCTION__);
+                  g_warning ("%s: REFNUM missing", __func__);
                   print_entity_to_string (child, string);
                   g_debug ("child:%s", string->str);
                   g_string_free (string, TRUE);
@@ -1240,7 +1240,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               published = entity_child (child, "published");
               if (published == NULL)
                 {
-                  g_warning ("%s: PUBLISHED missing", __FUNCTION__);
+                  g_warning ("%s: PUBLISHED missing", __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1248,7 +1248,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               title = entity_child (child, "title");
               if (title == NULL)
                 {
-                  g_warning ("%s: TITLE missing", __FUNCTION__);
+                  g_warning ("%s: TITLE missing", __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1256,7 +1256,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               summary = entity_child (child, "summary");
               if (summary == NULL)
                 {
-                  g_warning ("%s: SUMMARY missing", __FUNCTION__);
+                  g_warning ("%s: SUMMARY missing", __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1373,7 +1373,7 @@ update_dfn_cert_advisories (int last_cert_update)
   if (dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, GVM_CERT_DATA_DIR, error->message);
+                 __func__, GVM_CERT_DATA_DIR, error->message);
       g_error_free (error);
       return -1;
     }
@@ -1381,7 +1381,7 @@ update_dfn_cert_advisories (int last_cert_update)
   last_dfn_update = sql_int ("SELECT max (modification_time)"
                              " FROM cert.dfn_cert_advs;");
 
-  g_debug ("%s: VS: " GVM_CERT_DATA_DIR "/dfn-cert-*.xml", __FUNCTION__);
+  g_debug ("%s: VS: " GVM_CERT_DATA_DIR "/dfn-cert-*.xml", __func__);
   count = 0;
   updated_dfn_cert = 0;
   while ((xml_path = g_dir_read_name (dir)))
@@ -1439,7 +1439,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   if (g_stat (full_path, &state))
     {
       g_warning ("%s: Failed to stat CERT file: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -1459,7 +1459,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
-                 __FUNCTION__,
+                 __func__,
                  error->message);
       g_error_free (error);
       g_free (full_path);
@@ -1469,7 +1469,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   if (parse_entity (xml, &entity))
     {
       g_free (xml);
-      g_warning ("%s: Failed to parse entity", __FUNCTION__);
+      g_warning ("%s: Failed to parse entity", __func__);
       g_free (full_path);
       return -1;
     }
@@ -1486,7 +1486,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
           date = entity_child (child, "Date");
           if (date == NULL)
             {
-              g_warning ("%s: Date missing", __FUNCTION__);
+              g_warning ("%s: Date missing", __func__);
               free_entity (entity);
               goto fail;
             }
@@ -1504,7 +1504,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                   GString *string;
 
                   string = g_string_new ("");
-                  g_warning ("%s: Ref_Num missing", __FUNCTION__);
+                  g_warning ("%s: Ref_Num missing", __func__);
                   print_entity_to_string (child, string);
                   g_debug ("child:%s", string->str);
                   g_string_free (string, TRUE);
@@ -1515,7 +1515,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
               title = entity_child (child, "Title");
               if (title == NULL)
                 {
-                  g_warning ("%s: Title missing", __FUNCTION__);
+                  g_warning ("%s: Title missing", __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1643,7 +1643,7 @@ update_cert_bund_advisories (int last_cert_update)
   if (dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, GVM_CERT_DATA_DIR, error->message);
+                 __func__, GVM_CERT_DATA_DIR, error->message);
       g_error_free (error);
       return -1;
     }
@@ -1707,7 +1707,7 @@ update_scap_cpes (int last_scap_update)
   if (g_stat (full_path, &state))
     {
       g_warning ("%s: No CPE dictionary found at %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -1726,7 +1726,7 @@ update_scap_cpes (int last_scap_update)
   last_cve_update = sql_int ("SELECT max (modification_time)"
                              " FROM scap.cves;");
 
-  g_debug ("%s: parsing %s", __FUNCTION__, full_path);
+  g_debug ("%s: parsing %s", __func__, full_path);
 
   error = NULL;
   g_file_get_contents (full_path, &xml, &xml_len, &error);
@@ -1734,7 +1734,7 @@ update_scap_cpes (int last_scap_update)
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
-                 __FUNCTION__,
+                 __func__,
                  error->message);
       g_error_free (error);
       return -1;
@@ -1743,7 +1743,7 @@ update_scap_cpes (int last_scap_update)
   if (parse_entity (xml, &entity))
     {
       g_free (xml);
-      g_warning ("%s: Failed to parse entity", __FUNCTION__);
+      g_warning ("%s: Failed to parse entity", __func__);
       return -1;
     }
   g_free (xml);
@@ -1752,7 +1752,7 @@ update_scap_cpes (int last_scap_update)
   if (strcmp (entity_name (cpe_list), "cpe-list"))
     {
       free_entity (entity);
-      g_warning ("%s: CPE dictionary missing CPE-LIST", __FUNCTION__);
+      g_warning ("%s: CPE dictionary missing CPE-LIST", __func__);
       return -1;
     }
 
@@ -1769,7 +1769,7 @@ update_scap_cpes (int last_scap_update)
           item_metadata = entity_child (cpe_item, "meta:item-metadata");
           if (item_metadata == NULL)
             {
-              g_warning ("%s: item-metadata missing", __FUNCTION__);
+              g_warning ("%s: item-metadata missing", __func__);
 
               free_entity (entity);
               goto fail;
@@ -1779,7 +1779,7 @@ update_scap_cpes (int last_scap_update)
                                                 "modification-date");
           if (modification_date == NULL)
             {
-              g_warning ("%s: modification-date missing", __FUNCTION__);
+              g_warning ("%s: modification-date missing", __func__);
               free_entity (entity);
               goto fail;
             }
@@ -1795,7 +1795,7 @@ update_scap_cpes (int last_scap_update)
               name = entity_attribute (cpe_item, "name");
               if (name == NULL)
                 {
-                  g_warning ("%s: name missing", __FUNCTION__);
+                  g_warning ("%s: name missing", __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1803,7 +1803,7 @@ update_scap_cpes (int last_scap_update)
               status = entity_attribute (item_metadata, "status");
               if (status == NULL)
                 {
-                  g_warning ("%s: status missing", __FUNCTION__);
+                  g_warning ("%s: status missing", __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1815,7 +1815,7 @@ update_scap_cpes (int last_scap_update)
                       == 0))
                 {
                   g_warning ("%s: invalid deprecated-by-nvd-id: %s",
-                             __FUNCTION__,
+                             __func__,
                              deprecated);
                   free_entity (entity);
                   goto fail;
@@ -1824,7 +1824,7 @@ update_scap_cpes (int last_scap_update)
               nvd_id = entity_attribute (item_metadata, "nvd-id");
               if (nvd_id == NULL)
                 {
-                  g_warning ("%s: nvd_id missing", __FUNCTION__);
+                  g_warning ("%s: nvd_id missing", __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1914,7 +1914,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   if (g_stat (full_path, &state))
     {
       g_warning ("%s: Failed to stat SCAP file: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -1935,7 +1935,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
-                 __FUNCTION__,
+                 __func__,
                  error->message);
       g_error_free (error);
       g_free (full_path);
@@ -1945,7 +1945,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   if (parse_entity (xml, &entity))
     {
       g_free (xml);
-      g_warning ("%s: Failed to parse entity", __FUNCTION__);
+      g_warning ("%s: Failed to parse entity", __func__);
       g_free (full_path);
       return -1;
     }
@@ -1963,7 +1963,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
           if (last_modified == NULL)
             {
               g_warning ("%s: vuln:last-modified-datetime missing",
-                         __FUNCTION__);
+                         __func__);
               free_entity (entity);
               goto fail;
             }
@@ -1988,7 +1988,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               if (id == NULL)
                 {
                   g_warning ("%s: id missing",
-                             __FUNCTION__);
+                             __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1997,7 +1997,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               if (published == NULL)
                 {
                   g_warning ("%s: vuln:published-datetime missing",
-                             __FUNCTION__);
+                             __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -2022,7 +2022,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   score = entity_child (base_metrics, "cvss:score");
                   if (score == NULL)
                     {
-                      g_warning ("%s: cvss:score missing", __FUNCTION__);
+                      g_warning ("%s: cvss:score missing", __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2030,7 +2030,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   access_vector = entity_child (base_metrics, "cvss:access-vector");
                   if (access_vector == NULL)
                     {
-                      g_warning ("%s: cvss:access-vector missing", __FUNCTION__);
+                      g_warning ("%s: cvss:access-vector missing", __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2040,7 +2040,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   if (access_complexity == NULL)
                     {
                       g_warning ("%s: cvss:access-complexity missing",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2050,7 +2050,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   if (authentication == NULL)
                     {
                       g_warning ("%s: cvss:authentication missing",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2061,7 +2061,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   if (confidentiality_impact == NULL)
                     {
                       g_warning ("%s: cvss:confidentiality-impact missing",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2072,7 +2072,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   if (integrity_impact == NULL)
                     {
                       g_warning ("%s: cvss:integrity-impact missing",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2083,7 +2083,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   if (availability_impact == NULL)
                     {
                       g_warning ("%s: cvss:availability-impact missing",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2092,7 +2092,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               summary = entity_child (entry, "vuln:summary");
               if (summary == NULL)
                 {
-                  g_warning ("%s: vuln:summary missing", __FUNCTION__);
+                  g_warning ("%s: vuln:summary missing", __func__);
                   free_entity (entity);
                   goto fail;
                 }
@@ -2267,7 +2267,7 @@ update_scap_cves (int last_scap_update)
   if (dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
-                 __FUNCTION__, GVM_SCAP_DATA_DIR, error->message);
+                 __func__, GVM_SCAP_DATA_DIR, error->message);
       g_error_free (error);
       return -1;
     }
@@ -2330,7 +2330,7 @@ oval_definition_dates (entity_t definition, int *definition_date_newest,
   if (metadata == NULL)
     {
       g_warning ("%s: metadata missing",
-                 __FUNCTION__);
+                 __func__);
       return;
     }
 
@@ -2338,7 +2338,7 @@ oval_definition_dates (entity_t definition, int *definition_date_newest,
   if (oval_repository == NULL)
     {
       g_warning ("%s: oval_repository missing",
-                 __FUNCTION__);
+                 __func__);
       return;
     }
 
@@ -2346,7 +2346,7 @@ oval_definition_dates (entity_t definition, int *definition_date_newest,
   if (dates == NULL)
     {
       g_warning ("%s: dates missing",
-                 __FUNCTION__);
+                 __func__);
       return;
     }
 
@@ -2395,7 +2395,7 @@ oval_oval_definitions_date (entity_t entity, int *file_timestamp)
   if (generator == NULL)
     {
       g_warning ("%s: generator missing",
-                 __FUNCTION__);
+                 __func__);
       return;
     }
 
@@ -2403,7 +2403,7 @@ oval_oval_definitions_date (entity_t entity, int *file_timestamp)
   if (timestamp == NULL)
     {
       g_warning ("%s: oval:timestamp missing",
-                 __FUNCTION__);
+                 __func__);
       return;
     }
 
@@ -2430,7 +2430,7 @@ verify_oval_file (const gchar *full_path)
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
-                 __FUNCTION__,
+                 __func__,
                  error->message);
       g_error_free (error);
       return -1;
@@ -2439,7 +2439,7 @@ verify_oval_file (const gchar *full_path)
   if (parse_entity (xml, &entity))
     {
       g_free (xml);
-      g_warning ("%s: Failed to parse entity", __FUNCTION__);
+      g_warning ("%s: Failed to parse entity", __func__);
       return -1;
     }
   g_free (xml);
@@ -2475,7 +2475,7 @@ verify_oval_file (const gchar *full_path)
       free_entity (entity);
       if (definition_count == 0)
         {
-          g_warning ("%s: No OVAL definitions found", __FUNCTION__);
+          g_warning ("%s: No OVAL definitions found", __func__);
           return -1;
         }
       else
@@ -2513,7 +2513,7 @@ verify_oval_file (const gchar *full_path)
       free_entity (entity);
       if (variable_count == 0)
         {
-          g_warning ("%s: No OVAL variables found", __FUNCTION__);
+          g_warning ("%s: No OVAL variables found", __func__);
           return -1;
         }
       else
@@ -2523,19 +2523,19 @@ verify_oval_file (const gchar *full_path)
   if (strcmp (entity_name (entity), "oval_system_characteristics") == 0)
     {
       g_warning ("%s: File is an OVAL System Characteristics file",
-                 __FUNCTION__);
+                 __func__);
       return -1;
     }
 
   if (strcmp (entity_name (entity), "oval_results") == 0)
     {
       g_warning ("%s: File is an OVAL Results one",
-                 __FUNCTION__);
+                 __func__);
       return -1;
     }
 
   g_warning ("%s: Root tag neither oval_definitions nor oval_variables",
-             __FUNCTION__);
+             __func__);
   free_entity (entity);
   return -1;
 }
@@ -2569,7 +2569,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   xml_path = file_and_date[0];
   assert (xml_path);
 
-  g_debug ("%s: xml_path: %s", __FUNCTION__, xml_path);
+  g_debug ("%s: xml_path: %s", __func__, xml_path);
 
   /* The timestamp from the OVAL XML. */
   oval_timestamp = file_and_date[1];
@@ -2577,7 +2577,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   if (g_stat (xml_path, &state))
     {
       g_warning ("%s: Failed to stat OVAL file %s: %s",
-                 __FUNCTION__,
+                 __func__,
                  xml_path,
                  strerror (errno));
       return -1;
@@ -2595,7 +2595,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   if (xml_basename == NULL)
     {
       g_warning ("%s: xml_path missing GVM_SCAP_DATA_DIR: %s",
-                 __FUNCTION__,
+                 __func__,
                  xml_path);
       return -1;
     }
@@ -2641,7 +2641,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
-                 __FUNCTION__,
+                 __func__,
                  error->message);
       g_error_free (error);
       g_free (quoted_xml_basename);
@@ -2651,7 +2651,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   if (parse_entity (xml, &entity))
     {
       g_free (xml);
-      g_warning ("%s: Failed to parse entity", __FUNCTION__);
+      g_warning ("%s: Failed to parse entity", __func__);
       g_free (quoted_xml_basename);
       return -1;
     }
@@ -2706,7 +2706,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   id = entity_attribute (definition, "id");
                   quoted_oval_id = sql_quote (id ? id : "");
                   g_info ("%s: Filtered %s (%i)",
-                          __FUNCTION__,
+                          __func__,
                           quoted_oval_id,
                           definition_date_oldest);
                   g_free (quoted_oval_id);
@@ -2724,7 +2724,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   if (entity_attribute (definition, "id") == NULL)
                     {
                       g_warning ("%s: oval_definition missing id",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2733,7 +2733,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   if (metadata == NULL)
                     {
                       g_warning ("%s: metadata missing",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2742,7 +2742,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   if (title == NULL)
                     {
                       g_warning ("%s: title missing",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2751,7 +2751,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   if (description == NULL)
                     {
                       g_warning ("%s: description missing",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2760,7 +2760,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   if (repository == NULL)
                     {
                       g_warning ("%s: oval_repository missing",
-                                 __FUNCTION__);
+                                 __func__);
                       free_entity (entity);
                       goto fail;
                     }
@@ -2791,7 +2791,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   if (g_regex_match_simple ("^[0-9]+$", (gchar *) version, 0, 0) == 0)
                     {
                       g_warning ("%s: invalid version: %s",
-                                 __FUNCTION__,
+                                 __func__,
                                  version);
                       free_entity (entity);
                       goto fail;
@@ -2931,7 +2931,7 @@ oval_timestamp (const gchar *xml)
 
   if (parse_entity (xml, &entity))
     {
-      g_warning ("%s: Failed to parse entity: %s", __FUNCTION__, xml);
+      g_warning ("%s: Failed to parse entity: %s", __func__, xml);
       return NULL;
     }
 
@@ -2972,7 +2972,7 @@ oval_timestamp (const gchar *xml)
         }
     }
 
-  g_warning ("%s: No timestamp: %s", __FUNCTION__, xml);
+  g_warning ("%s: No timestamp: %s", __func__, xml);
   return NULL;
 }
 
@@ -3007,14 +3007,14 @@ oval_files_add (const char *path, const struct stat *stat, int flag,
   if ((dot == NULL) || strcasecmp (dot, ".xml"))
     return 0;
 
-  g_debug ("%s: path: %s", __FUNCTION__, path);
+  g_debug ("%s: path: %s", __func__, path);
 
   error = NULL;
   g_file_get_contents (path, &oval_xml, &len, &error);
   if (error)
     {
       g_warning ("%s: Failed get contents of %s: %s",
-                 __FUNCTION__,
+                 __func__,
                  path,
                  error->message);
       g_error_free (error);
@@ -3131,8 +3131,8 @@ update_scap_ovaldefs (int last_scap_update, int private)
   else
     oval_dir = g_build_filename (GVM_SCAP_DATA_DIR, "oval", NULL);
 
-  g_debug ("%s: private: %i", __FUNCTION__, private);
-  g_debug ("%s: oval_dir: %s", __FUNCTION__, oval_dir);
+  g_debug ("%s: private: %i", __func__, private);
+  g_debug ("%s: oval_dir: %s", __func__, oval_dir);
 
   /* Pairs of pointers, pair[0]: absolute pathname, pair[1]: oval timestamp. */
   oval_files = make_array ();
@@ -3143,18 +3143,18 @@ update_scap_ovaldefs (int last_scap_update, int private)
         {
           if (private)
             g_debug ("%s: no private OVAL dir (%s)",
-                     __FUNCTION__,
+                     __func__,
                      oval_dir);
           else
             g_warning ("%s: no OVAL dir (%s)",
-                       __FUNCTION__,
+                       __func__,
                        oval_dir);
           g_free (oval_dir);
           oval_files_free ();
           return 0;
         }
       g_warning ("%s: failed to lstat '%s': %s",
-                  __FUNCTION__,
+                  __func__,
                  oval_dir,
                  strerror (errno));
       g_free (oval_dir);
@@ -3169,12 +3169,12 @@ update_scap_ovaldefs (int last_scap_update, int private)
         {
           if (private)
             g_debug ("%s: nftw of private '%s': %s",
-                     __FUNCTION__,
+                     __func__,
                      oval_dir,
                      strerror (errno));
           else
             g_warning ("%s: nftw of '%s': %s",
-                      __FUNCTION__,
+                      __func__,
                       oval_dir,
                       strerror (errno));
           g_free (oval_dir);
@@ -3182,7 +3182,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
           return 0;
         }
       g_warning ("%s: failed to traverse '%s': %s",
-                  __FUNCTION__,
+                  __func__,
                  oval_dir,
                  strerror (errno));
       g_free (oval_dir);
@@ -3267,7 +3267,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
     }
 
   if (count == 0)
-    g_warning ("%s: No XML files found in %s", __FUNCTION__, oval_dir);
+    g_warning ("%s: No XML files found in %s", __func__, oval_dir);
 
   if (private)
     {
@@ -3279,7 +3279,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
 
       g_info ("Cleaning up user OVAL data");
 
-      g_debug ("%s: GVM_SCAP_DATA_DIR: %s", __FUNCTION__, GVM_SCAP_DATA_DIR);
+      g_debug ("%s: GVM_SCAP_DATA_DIR: %s", __func__, GVM_SCAP_DATA_DIR);
 
       oval_files_clause = g_string_new (" AND (xml_file NOT IN (");
       first = 1;
@@ -3289,12 +3289,12 @@ update_scap_ovaldefs (int last_scap_update, int private)
           char *suffix;
 
           pair = g_ptr_array_index (oval_files, index);
-          g_debug ("%s: pair[0]: %s", __FUNCTION__, pair[0]);
+          g_debug ("%s: pair[0]: %s", __func__, pair[0]);
           suffix = strstr (pair[0], GVM_SCAP_DATA_DIR);
           if (suffix == NULL)
             {
               g_warning ("%s: pair[0] missing GVM_SCAP_DATA_DIR: %s",
-                         __FUNCTION__,
+                         __func__,
                          pair[0]);
               g_free (oval_dir);
               oval_files_free ();
@@ -3367,7 +3367,7 @@ write_sync_start (int lockfile)
             /* Interrupted, try write again. */
             continue;
           g_warning ("%s: failed to write to lockfile: %s",
-                     __FUNCTION__,
+                     __func__,
                      strerror (errno));
           break;
         }
@@ -3437,7 +3437,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
                          S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
         if (lockfile == -1)
           {
-            g_warning ("%s: failed to open lock file '%s': %s", __FUNCTION__,
+            g_warning ("%s: failed to open lock file '%s': %s", __func__,
                        lockfile_name, strerror (errno));
             g_free (lockfile_name);
             exit (EXIT_FAILURE);
@@ -3446,9 +3446,9 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
         if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
           {
             if (errno == EWOULDBLOCK)
-              g_debug ("%s: skipping, sync in progress", __FUNCTION__);
+              g_debug ("%s: skipping, sync in progress", __func__);
             else
-              g_debug ("%s: flock: %s", __FUNCTION__, strerror (errno));
+              g_debug ("%s: flock: %s", __func__, strerror (errno));
             g_free (lockfile_name);
             exit (EXIT_SUCCESS);
           }
@@ -3462,7 +3462,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
 
       case -1:
         /* Parent on error.  Reschedule and continue to next task. */
-        g_warning ("%s: fork failed", __FUNCTION__);
+        g_warning ("%s: fork failed", __func__);
         return;
 
       default:
@@ -3483,7 +3483,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
   if (close (lockfile))
     {
       g_free (lockfile_name);
-      g_warning ("%s: failed to close lock file: %s", __FUNCTION__,
+      g_warning ("%s: failed to close lock file: %s", __func__,
                  strerror (errno));
       exit (EXIT_FAILURE);
     }
@@ -3522,7 +3522,7 @@ manage_feed_timestamp (const gchar *name)
       else
         {
           g_warning ("%s: Failed to get timestamp: %s",
-                     __FUNCTION__,
+                     __func__,
                      error->message);
           return -1;
         }
@@ -3532,7 +3532,7 @@ manage_feed_timestamp (const gchar *name)
       if (strlen (timestamp) < 8)
         {
           g_warning ("%s: Feed timestamp too short: %s",
-                     __FUNCTION__,
+                     __func__,
                      timestamp);
           g_free (timestamp);
           return -1;
@@ -3597,7 +3597,7 @@ update_cert_timestamp ()
       else
         {
           g_warning ("%s: Failed to get timestamp: %s",
-                     __FUNCTION__,
+                     __func__,
                      error->message);
           return -1;
         }
@@ -3607,21 +3607,21 @@ update_cert_timestamp ()
       if (strlen (timestamp) < 8)
         {
           g_warning ("%s: Feed timestamp too short: %s",
-                     __FUNCTION__,
+                     __func__,
                      timestamp);
           g_free (timestamp);
           return -1;
         }
 
       timestamp[8] = '\0';
-      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
+      g_debug ("%s: parsing: %s", __func__, timestamp);
       stamp = parse_feed_timestamp (timestamp);
       g_free (timestamp);
       if (stamp == 0)
         return -1;
     }
 
-  g_debug ("%s: setting last_update: %lld", __FUNCTION__, (long long) stamp);
+  g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
   sql ("UPDATE cert.meta SET value = '%lld' WHERE name = 'last_update';",
        (long long) stamp);
 
@@ -3715,7 +3715,7 @@ sync_cert (int lockfile)
       g_info ("Initializing CERT database");
       if (manage_db_init ("cert"))
         {
-          g_warning ("%s: Could not initialize CERT database", __FUNCTION__);
+          g_warning ("%s: Could not initialize CERT database", __func__);
           return -1;
         }
     }
@@ -3729,10 +3729,10 @@ sync_cert (int lockfile)
   if (last_cert_update == -1)
     {
       g_warning ("%s: Inconsistent data. Resetting CERT database.",
-                 __FUNCTION__);
+                 __func__);
       if (manage_db_reinit ("cert"))
         {
-          g_warning ("%s: could not reinitialize CERT database", __FUNCTION__);
+          g_warning ("%s: could not reinitialize CERT database", __func__);
           return -1;
         }
       last_cert_update = 0;
@@ -3745,7 +3745,7 @@ sync_cert (int lockfile)
   if (last_cert_update >= last_feed_update)
     return -1;
 
-  g_debug ("%s: sync", __FUNCTION__);
+  g_debug ("%s: sync", __func__);
 
   write_sync_start (lockfile);
 
@@ -3754,11 +3754,11 @@ sync_cert (int lockfile)
   if (manage_db_check ("cert"))
     {
       g_warning ("%s: Database broken, resetting CERT database",
-                 __FUNCTION__);
+                 __func__);
       if (manage_db_reinit ("cert"))
         {
           g_warning ("%s: could not reinitialize CERT database",
-                     __FUNCTION__);
+                     __func__);
           goto fail;
         }
     }
@@ -3766,9 +3766,9 @@ sync_cert (int lockfile)
   if (manage_update_cert_db_init ())
     goto fail;
 
-  g_info ("%s: Updating data from feed", __FUNCTION__);
+  g_info ("%s: Updating data from feed", __func__);
 
-  g_debug ("%s: update dfn", __FUNCTION__);
+  g_debug ("%s: update dfn", __func__);
 
   updated_dfn_cert = update_dfn_cert_advisories (last_cert_update);
   if (updated_dfn_cert == -1)
@@ -3777,7 +3777,7 @@ sync_cert (int lockfile)
       goto fail;
     }
 
-  g_debug ("%s: update bund", __FUNCTION__);
+  g_debug ("%s: update bund", __func__);
 
   updated_cert_bund = update_cert_bund_advisories (last_cert_update);
   if (updated_cert_bund == -1)
@@ -3786,19 +3786,19 @@ sync_cert (int lockfile)
       goto fail;
     }
 
-  g_debug ("%s: update cvss", __FUNCTION__);
+  g_debug ("%s: update cvss", __func__);
 
   last_scap_update = 0;
   if (manage_scap_loaded ())
     last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
                                 "                  WHERE name = 'last_update'),"
                                 "                 '0');");
-  g_debug ("%s: last_scap_update: %i", __FUNCTION__, last_scap_update);
+  g_debug ("%s: last_scap_update: %i", __func__, last_scap_update);
 
   update_cvss_dfn_cert (updated_dfn_cert, last_cert_update, last_scap_update);
   update_cvss_cert_bund (updated_cert_bund, last_cert_update, last_scap_update);
 
-  g_debug ("%s: update timestamp", __FUNCTION__);
+  g_debug ("%s: update timestamp", __func__);
 
   if (update_cert_timestamp ())
     {
@@ -3806,7 +3806,7 @@ sync_cert (int lockfile)
       goto fail;
     }
 
-  g_info ("%s: Updating CERT info succeeded.", __FUNCTION__);
+  g_info ("%s: Updating CERT info succeeded.", __func__);
 
   manage_update_cert_db_cleanup ();
 
@@ -3814,7 +3814,7 @@ sync_cert (int lockfile)
 
   if (ftruncate (lockfile, 0))
     g_warning ("%s: failed to ftruncate lockfile: %s",
-               __FUNCTION__,
+               __func__,
                strerror (errno));
 
   return 0;
@@ -3824,7 +3824,7 @@ sync_cert (int lockfile)
 
   if (ftruncate (lockfile, 0))
     g_warning ("%s: failed to ftruncate lockfile: %s",
-               __FUNCTION__,
+               __func__,
                strerror (errno));
 
   return -1;
@@ -3903,7 +3903,7 @@ update_scap_timestamp ()
       else
         {
           g_warning ("%s: Failed to get timestamp: %s",
-                     __FUNCTION__,
+                     __func__,
                      error->message);
           return -1;
         }
@@ -3913,21 +3913,21 @@ update_scap_timestamp ()
       if (strlen (timestamp) < 8)
         {
           g_warning ("%s: Feed timestamp too short: %s",
-                     __FUNCTION__,
+                     __func__,
                      timestamp);
           g_free (timestamp);
           return -1;
         }
 
       timestamp[8] = '\0';
-      g_debug ("%s: parsing: %s", __FUNCTION__, timestamp);
+      g_debug ("%s: parsing: %s", __func__, timestamp);
       stamp = parse_feed_timestamp (timestamp);
       g_free (timestamp);
       if (stamp == 0)
         return -1;
     }
 
-  g_debug ("%s: setting last_update: %lld", __FUNCTION__, (long long) stamp);
+  g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
   sql ("UPDATE scap.meta SET value = '%lld' WHERE name = 'last_update';",
        (long long) stamp);
 
@@ -4030,11 +4030,11 @@ sync_scap (int lockfile)
     }
   else
     {
-      g_info ("%s: Initializing SCAP database", __FUNCTION__);
+      g_info ("%s: Initializing SCAP database", __func__);
 
       if (manage_db_init ("scap"))
         {
-          g_warning ("%s: Could not initialize SCAP database", __FUNCTION__);
+          g_warning ("%s: Could not initialize SCAP database", __func__);
           return -1;
         }
     }
@@ -4048,10 +4048,10 @@ sync_scap (int lockfile)
   if (last_scap_update == -1)
     {
       g_warning ("%s: Inconsistent data, resetting SCAP database",
-                 __FUNCTION__);
+                 __func__);
       if (manage_db_reinit ("scap"))
         {
-          g_warning ("%s: could not reinitialize SCAP database", __FUNCTION__);
+          g_warning ("%s: could not reinitialize SCAP database", __func__);
           return -1;
         }
       last_scap_update = 0;
@@ -4064,7 +4064,7 @@ sync_scap (int lockfile)
   if (last_scap_update >= last_feed_update)
     return -1;
 
-  g_debug ("%s: sync", __FUNCTION__);
+  g_debug ("%s: sync", __func__);
 
   write_sync_start (lockfile);
 
@@ -4073,11 +4073,11 @@ sync_scap (int lockfile)
   if (manage_db_check ("scap"))
     {
       g_warning ("%s: Database broken, resetting SCAP database",
-                 __FUNCTION__);
+                 __func__);
       if (manage_db_reinit ("scap"))
         {
           g_warning ("%s: could not reinitialize SCAP database",
-                     __FUNCTION__);
+                     __func__);
           goto fail;
         }
     }
@@ -4085,9 +4085,9 @@ sync_scap (int lockfile)
   if (manage_update_scap_db_init ())
      goto fail;
 
-  g_info ("%s: Updating data from feed", __FUNCTION__);
+  g_info ("%s: Updating data from feed", __func__);
 
-  g_debug ("%s: update cpes", __FUNCTION__);
+  g_debug ("%s: update cpes", __func__);
 
   updated_scap_cpes = update_scap_cpes (last_scap_update);
   if (updated_scap_cpes == -1)
@@ -4096,7 +4096,7 @@ sync_scap (int lockfile)
       goto fail;
     }
 
-  g_debug ("%s: update cves", __FUNCTION__);
+  g_debug ("%s: update cves", __func__);
 
   updated_scap_cves = update_scap_cves (last_scap_update);
   if (updated_scap_cves == -1)
@@ -4105,7 +4105,7 @@ sync_scap (int lockfile)
       goto fail;
     }
 
-  g_debug ("%s: update ovaldefs", __FUNCTION__);
+  g_debug ("%s: update ovaldefs", __func__);
 
   updated_scap_ovaldefs = update_scap_ovaldefs (last_scap_update,
                                                 0 /* Feed data. */);
@@ -4115,7 +4115,7 @@ sync_scap (int lockfile)
       goto fail;
     }
 
-  g_debug ("%s: updating user defined data", __FUNCTION__);
+  g_debug ("%s: updating user defined data", __func__);
 
   switch (update_scap_ovaldefs (last_scap_update,
                                 1 /* Private data. */))
@@ -4134,7 +4134,7 @@ sync_scap (int lockfile)
                     updated_scap_ovaldefs);
   update_scap_placeholders (updated_scap_cves);
 
-  g_debug ("%s: update timestamp", __FUNCTION__);
+  g_debug ("%s: update timestamp", __func__);
 
   if (update_scap_timestamp ())
     {
@@ -4142,7 +4142,7 @@ sync_scap (int lockfile)
       goto fail;
     }
 
-  g_info ("%s: Updating SCAP info succeeded", __FUNCTION__);
+  g_info ("%s: Updating SCAP info succeeded", __func__);
 
   manage_update_scap_db_cleanup ();
 
@@ -4150,7 +4150,7 @@ sync_scap (int lockfile)
 
   if (ftruncate (lockfile, 0))
     g_warning ("%s: failed to ftruncate lockfile: %s",
-               __FUNCTION__,
+               __func__,
                strerror (errno));
 
   return 0;
@@ -4160,7 +4160,7 @@ sync_scap (int lockfile)
 
   if (ftruncate (lockfile, 0))
     g_warning ("%s: failed to ftruncate lockfile: %s",
-               __FUNCTION__,
+               __func__,
                strerror (errno));
 
   return -1;

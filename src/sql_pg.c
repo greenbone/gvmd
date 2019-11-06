@@ -124,7 +124,7 @@ sql_select_limit (int max)
     return "ALL";
   if (snprintf (string, 19, "%i", max) < 0)
     {
-      g_warning ("%s: snprintf failed", __FUNCTION__);
+      g_warning ("%s: snprintf failed", __func__);
       abort ();
     }
   string[19] = '\0';
@@ -267,13 +267,13 @@ sql_open (const char *database)
   if (conn == NULL)
     {
       g_warning ("%s: PQconnectStart failed to allocate conn",
-                 __FUNCTION__);
+                 __func__);
       return -1;
     }
   if (PQstatus (conn) == CONNECTION_BAD)
     {
       g_warning ("%s: PQconnectStart to '%s' failed: %s",
-                 __FUNCTION__,
+                 __func__,
                  database ? database : sql_default_database (),
                  PQerrorMessage (conn));
       goto fail;
@@ -282,13 +282,13 @@ sql_open (const char *database)
   socket = PQsocket (conn);
   if (socket == 0)
     {
-      g_warning ("%s: PQsocket 0", __FUNCTION__);
+      g_warning ("%s: PQsocket 0", __func__);
       goto fail;
     }
 
   poll_status = PGRES_POLLING_WRITING;
 
-  g_debug ("%s: polling", __FUNCTION__);
+  g_debug ("%s: polling", __func__);
 
   while (1)
     {
@@ -306,7 +306,7 @@ sql_open (const char *database)
           if (ret < 0)
             {
               g_warning ("%s: write select failed: %s",
-                         __FUNCTION__, strerror (errno));
+                         __func__, strerror (errno));
               goto fail;
             }
           /* Poll again. */
@@ -325,7 +325,7 @@ sql_open (const char *database)
           if (ret < 0)
             {
               g_warning ("%s: read select failed: %s",
-                         __FUNCTION__, strerror (errno));
+                         __func__, strerror (errno));
               goto fail;
             }
           /* Poll again. */
@@ -333,8 +333,8 @@ sql_open (const char *database)
       else if (poll_status == PGRES_POLLING_FAILED)
         {
           g_warning ("%s: PQconnectPoll failed",
-                     __FUNCTION__);
-          g_warning ("%s: PQerrorMessage (conn): %s", __FUNCTION__,
+                     __func__);
+          g_warning ("%s: PQerrorMessage (conn): %s", __func__,
                      PQerrorMessage (conn));
           goto fail;
         }
@@ -347,12 +347,12 @@ sql_open (const char *database)
 
   PQsetNoticeProcessor (conn, log_notice, NULL);
 
-  g_debug ("%s:   db: %s", __FUNCTION__, PQdb (conn));
-  g_debug ("%s: user: %s", __FUNCTION__, PQuser (conn));
-  g_debug ("%s: host: %s", __FUNCTION__, PQhost (conn));
-  g_debug ("%s: port: %s", __FUNCTION__, PQport (conn));
-  g_debug ("%s: socket: %i", __FUNCTION__, PQsocket (conn));
-  g_debug ("%s: postgres version: %i", __FUNCTION__, PQserverVersion (conn));
+  g_debug ("%s:   db: %s", __func__, PQdb (conn));
+  g_debug ("%s: user: %s", __func__, PQuser (conn));
+  g_debug ("%s: host: %s", __func__, PQhost (conn));
+  g_debug ("%s: port: %s", __func__, PQport (conn));
+  g_debug ("%s: socket: %i", __func__, PQsocket (conn));
+  g_debug ("%s: postgres version: %i", __func__, PQserverVersion (conn));
 
   return 0;
 
@@ -512,18 +512,18 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
           char *sqlstate;
 
           sqlstate = PQresultErrorField (result, PG_DIAG_SQLSTATE);
-          g_debug ("%s: sqlstate: %s", __FUNCTION__, sqlstate);
+          g_debug ("%s: sqlstate: %s", __func__, sqlstate);
           if (sqlstate && (strcmp (sqlstate, "57014") == 0))
             {
               /* query_canceled */
               log_errors = 0;
-              g_debug ("%s: canceled SQL: %s", __FUNCTION__, stmt->sql);
+              g_debug ("%s: canceled SQL: %s", __func__, stmt->sql);
             }
           else if (sqlstate && (strcmp (sqlstate, "55P03") == 0))
             {
               /* lock_not_available */
               g_debug ("%s: lock unavailable: %s",
-                       __FUNCTION__,
+                       __func__,
                        PQresultErrorMessage(result));
               return -3;
             }
@@ -531,19 +531,19 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
             {
               /* unique_violation */
               g_warning ("%s: constraint violation: %s",
-                         __FUNCTION__,
+                         __func__,
                          PQresultErrorMessage (result));
-              g_warning ("%s: SQL: %s", __FUNCTION__, stmt->sql);
+              g_warning ("%s: SQL: %s", __func__, stmt->sql);
               return -4;
             }
 
           if (log_errors)
             {
               g_warning ("%s: PQexec failed: %s (%i)",
-                         __FUNCTION__,
+                         __func__,
                          PQresultErrorMessage (result),
                          PQresultStatus (result));
-              g_warning ("%s: SQL: %s", __FUNCTION__, stmt->sql);
+              g_warning ("%s: SQL: %s", __func__, stmt->sql);
             }
 #if 0
           // FIX ?
@@ -664,7 +664,7 @@ bind_param (sql_stmt_t *stmt, int position, const void *param_value,
   if (position > stmt->param_values->len + 1)
     {
       g_critical ("%s: binding out of order: parameter %i after %i",
-                  __FUNCTION__,
+                  __func__,
                   position,
                   stmt->param_values->len);
       abort ();
@@ -891,7 +891,7 @@ sql_column_array (sql_stmt_t *stmt, int position)
           last_element = *last;
           if (*last_element == '\0')
             /* Weird, last element should always have a }. */
-            g_warning ("%s: last element missing closing }", __FUNCTION__);
+            g_warning ("%s: last element missing closing }", __func__);
           else
             {
               while (*last_element)
@@ -907,7 +907,7 @@ sql_column_array (sql_stmt_t *stmt, int position)
   /* This shouldn't happen. */
   assert (0);
   g_warning ("%s: array column not NULL and does not contain array",
-             __FUNCTION__);
+             __func__);
   return NULL;
 }
 
