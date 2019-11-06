@@ -2069,6 +2069,10 @@ config_insert_preferences (config_t config,
             if (config_type == NULL || strcmp (config_type, "0") == 0)
               {
                 /* NVT preference */
+
+                if (preference->id == NULL || *preference->id == '\0')
+                  return -4;
+
                 /* OID:PrefID:PrefType:PrefName value */
                 sql ("INSERT INTO config_preferences"
                      " (config, type, name, value)"
