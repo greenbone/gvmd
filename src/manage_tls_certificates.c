@@ -58,7 +58,7 @@ parse_ssldetails (const char *ssldetails,
 
   if (ssldetails == NULL)
     {
-      g_warning ("%s: ssldetails is NULL", __FUNCTION__);
+      g_warning ("%s: ssldetails is NULL", __func__);
       return;
     }
 

@@ -549,7 +549,7 @@ manage_create_sql_functions ()
                " WHERE name = 'uuid-ossp' AND installed_version IS NOT NULL;")
       == 0)
     {
-      g_warning ("%s: PostgreSQL extension uuid-ossp required", __FUNCTION__);
+      g_warning ("%s: PostgreSQL extension uuid-ossp required", __func__);
       return -1;
     }
 

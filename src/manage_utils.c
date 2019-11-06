@@ -73,7 +73,7 @@ current_offset (const char *zone)
 
   if (setenv ("TZ", zone, 1) == -1)
     {
-      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+      g_warning ("%s: Failed to switch to timezone", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -86,7 +86,7 @@ current_offset (const char *zone)
   now_broken = localtime (&now);
   if (now_broken == NULL)
     {
-      g_warning ("%s: localtime failed", __FUNCTION__);
+      g_warning ("%s: localtime failed", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -94,7 +94,7 @@ current_offset (const char *zone)
     }
   if (setenv ("TZ", "UTC", 1) == -1)
     {
-      g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
+      g_warning ("%s: Failed to switch to UTC", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -108,7 +108,7 @@ current_offset (const char *zone)
     {
       if (setenv ("TZ", tz, 1) == -1)
         {
-          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_warning ("%s: Failed to switch to original TZ", __func__);
           g_free (tz);
           return 0;
         }
@@ -134,7 +134,7 @@ add_months (time_t time, int months)
   struct tm *broken = localtime (&time);
   if (broken == NULL)
     {
-      g_warning ("%s: localtime failed", __FUNCTION__);
+      g_warning ("%s: localtime failed", __func__);
       return 0;
     }
   broken->tm_mon += months;
