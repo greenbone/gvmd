@@ -3963,14 +3963,16 @@ target_osp_snmp_credential (target_t target)
  *
  * @param[in]   task        The task.
  * @param[in]   target      The target.
- * @param[out]  scan_id     The new scan uuid.
+ * @param[in]   scan_id     The new scan uuid.
+ * @param[in]   from        0 start from beginning, 1 continue from stopped,
+ *                          2 continue if stopped else start from beginning.
  * @param[out]  error       Error return.
  *
  * @return 0 success, -1 if scanner is down.
  */
 static int
 launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
-                         char **error)
+                         int from, char **error)
 {
   osp_connection_t *connection;
   char *hosts_str, *ports_str, *exclude_hosts_str;
@@ -4116,6 +4118,16 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
     }
   cleanup_iterator (&prefs);
 
+  /* Clean up the report */
+  if (from)
+    {
+      // FIXME: Try to recover as much of the scan progress as possible.
+      connection = osp_scanner_connect (task_scanner (task));
+      osp_delete_scan (connection, scan_id);
+      osp_connection_close (connection);
+      trim_report (global_current_report);
+    }
+
   /* Start the scan */
   connection = osp_scanner_connect (task_scanner (task));
   if (!connection)
@@ -4148,17 +4160,89 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 }
 
 /**
+ * @brief Get the last stopped report or a new one for an OSP scan.
+ *
+ * @param[in]   task      The task.
+ * @param[in]   from      0 start from beginning, 1 continue from stopped,
+ *                        2 continue if stopped else start from beginning.
+ * @param[out]  report_id UUID of the report.
+ *
+ * @return 0 success, -1 error
+ */
+static int
+run_osp_scan_get_report (task_t task, int from, char **report_id)
+{
+  report_t resume_report;
+
+  resume_report = 0;
+  *report_id = NULL;
+
+  if (from == 1
+      && scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP)
+    {
+      g_warning ("%s: Scanner type does not support resuming scans",
+                 __FUNCTION__);
+      return -1;
+    }
+
+  if (from
+      && scanner_type (task_scanner (task)) != SCANNER_TYPE_OSP
+      && task_last_resumable_report (task, &resume_report))
+    {
+      g_warning ("%s: error getting report to resume", __func__);
+      return -1;
+    }
+
+  if (resume_report)
+    {
+      // Report to resume found
+      if (global_current_report)
+        {
+           g_warning ("%s: global_current_report already set", __func__);
+          return -1;
+        }
+      global_current_report = resume_report;
+      *report_id = report_uuid (resume_report);
+
+      /* Ensure the report is marked as requested. */
+      set_report_scan_run_status (resume_report, TASK_STATUS_REQUESTED);
+
+      /* Clear the end times of the task and partial report. */
+      set_task_start_time_epoch (task,
+                                 scan_start_time_epoch (resume_report));
+      set_task_end_time (task, NULL);
+      set_scan_end_time (resume_report, NULL);
+    }
+  else if (from == 1)
+    // No report to resume and starting a new one is not allowed
+    return -1;
+
+  // Try starting a new report
+  if (resume_report == 0
+      && create_current_report (task, report_id, TASK_STATUS_REQUESTED))
+    {
+      g_debug ("   %s: failed to create report", __func__);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Fork a child to handle an OSP scan's fetching and inserting.
  *
- * @param[in]   task               The task.
- * @param[in]   target             The target.
+ * @param[in]   task       The task.
+ * @param[in]   target     The target.
+ * @param[in]   from       0 start from beginning, 1 continue from stopped,
+ *                         2 continue if stopped else start from beginning.
  * @param[out]  report_id_return   UUID of the report.
  *
  * @return Parent returns with 0 if success, -1 if failure. Child process
  *         doesn't return and simply exits.
  */
 static int
-fork_osp_scan_handler (task_t task, target_t target, char **report_id_return)
+fork_osp_scan_handler (task_t task, target_t target, int from,
+                       char **report_id_return)
 {
   char *report_id, title[128], *error = NULL;
   int rc;
@@ -4169,11 +4253,8 @@ fork_osp_scan_handler (task_t task, target_t target, char **report_id_return)
   if (report_id_return)
     *report_id_return = NULL;
 
-  if (create_current_report (task, &report_id, TASK_STATUS_REQUESTED))
-    {
-      g_debug ("   %s: failed to create report", __func__);
-      return -1;
-    }
+  if (run_osp_scan_get_report (task, from, &report_id))
+    return -1;
 
   set_task_run_status (task, TASK_STATUS_REQUESTED);
 
@@ -4215,7 +4296,7 @@ fork_osp_scan_handler (task_t task, target_t target, char **report_id_return)
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
       || scanner_type (task_scanner (task) == SCANNER_TYPE_OSP_SENSOR))
     {
-      rc = launch_osp_openvas_task (task, target, report_id, &error);
+      rc = launch_osp_openvas_task (task, target, report_id, from, &error);
     }
   else
     {
@@ -4274,12 +4355,14 @@ fork_osp_scan_handler (task_t task, target_t target, char **report_id_return)
  * @brief Start a task on an OSP or OpenVAS via OSP scanner.
  *
  * @param[in]   task       The task.
+ * @param[in]   from       0 start from beginning, 1 continue from stopped,
+ *                         2 continue if stopped else start from beginning.
  * @param[out]  report_id  The report ID.
  *
  * @return 0 success, 99 permission denied, -1 error.
  */
 static int
-run_osp_task (task_t task, char **report_id)
+run_osp_task (task_t task, int from, char **report_id)
 {
   target_t target;
 
@@ -4300,7 +4383,7 @@ run_osp_task (task_t task, char **report_id)
         return 99;
     }
 
-  if (fork_osp_scan_handler (task, target, report_id))
+  if (fork_osp_scan_handler (task, target, from, report_id))
     {
       g_warning ("Couldn't fork OSP scan handler");
       return -1;
@@ -5357,7 +5440,7 @@ run_task (const char *task_id, char **report_id, int from)
   if (scanner_type (scanner) == SCANNER_TYPE_OPENVAS
       || scanner_type (scanner) == SCANNER_TYPE_OSP
       || scanner_type (scanner) == SCANNER_TYPE_OSP_SENSOR)
-    return run_osp_task (task, report_id);
+    return run_osp_task (task, from, report_id);
 
   return -1; // Unknown scanner type
 }
