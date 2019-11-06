@@ -178,6 +178,30 @@ attr_or_null (entity_t entity, const gchar *name)
 }
 
 /**
+ * @brief Cleanup preferences array.
+ *
+ * @param[in]  import_preferences  Import preferences.
+ */
+static void
+cleanup_import_preferences (array_t *import_preferences)
+{
+  if (import_preferences)
+    {
+      guint index;
+
+      for (index = 0; index < import_preferences->len; index++)
+        {
+          preference_t *pref;
+          pref = (preference_t*) g_ptr_array_index (import_preferences,
+                                                    index);
+          if (pref)
+            preference_free (pref);
+        }
+      g_ptr_array_free (import_preferences, TRUE);
+    }
+}
+
+/**
  * @brief Execute command.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -347,7 +371,19 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                                  __FUNCTION__,
                                  preference_nvt_oid,
                                  preference_name);
-                      new_preference = NULL;
+
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("create_config",
+                                          "Error in PREFERENCES element."));
+                      log_event_fail ("config", "Scan config", NULL, "created");
+
+                      /* Cleanup. */
+
+                      cleanup_import_preferences (import_preferences);
+                      array_free (import_nvt_selectors);
+
+                      create_config_reset ();
+                      return;
                     }
                 }
               else
@@ -448,21 +484,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Cleanup. */
 
-      if (import_preferences)
-        {
-          guint index;
-
-          for (index = 0; index < import_preferences->len; index++)
-            {
-              preference_t *pref;
-              pref = (preference_t*) g_ptr_array_index (import_preferences,
-                                                        index);
-              if (pref)
-                preference_free (pref);
-            }
-          g_ptr_array_free (import_preferences, TRUE);
-        }
-
+      cleanup_import_preferences (import_preferences);
       array_free (import_nvt_selectors);
 
       create_config_reset ();
