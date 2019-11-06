@@ -228,7 +228,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
           if (report_timestamp (ticket_iterator_report_id (&tickets),
                                 &timestamp))
             g_error ("%s: error getting timestamp of report, aborting",
-                     __FUNCTION__);
+                     __func__);
 
           SENDF_TO_CLIENT_OR_FAIL ("<report id=\"%s\">"
                                    "<timestamp>%s</timestamp>"
@@ -271,7 +271,7 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
                                     &timestamp))
                 g_error ("%s: error getting timestamp of verified report,"
                          " aborting",
-                         __FUNCTION__);
+                         __func__);
 
               SENDF_TO_CLIENT_OR_FAIL ("<fix_verified_report>"
                                        "<report id=\"%s\">"
