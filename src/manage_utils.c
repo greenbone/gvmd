@@ -74,7 +74,7 @@ time_offset (const char *zone, time_t time)
 
   if (setenv ("TZ", zone, 1) == -1)
     {
-      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+      g_warning ("%s: Failed to switch to timezone", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -86,7 +86,7 @@ time_offset (const char *zone, time_t time)
   time_broken = localtime (&time);
   if (time_broken == NULL)
     {
-      g_warning ("%s: localtime failed", __FUNCTION__);
+      g_warning ("%s: localtime failed", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -94,7 +94,7 @@ time_offset (const char *zone, time_t time)
     }
   if (strftime (buf, 100, "%z", time_broken) == 0)
     {
-      g_warning ("%s: Failed to format timezone", __FUNCTION__);
+      g_warning ("%s: Failed to format timezone", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -116,7 +116,7 @@ time_offset (const char *zone, time_t time)
     {
       if (setenv ("TZ", tz, 1) == -1)
         {
-          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_warning ("%s: Failed to switch to original TZ", __func__);
           g_free (tz);
           return mins * 60;
         }
@@ -151,7 +151,7 @@ current_offset (const char *zone)
 
   if (setenv ("TZ", zone, 1) == -1)
     {
-      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+      g_warning ("%s: Failed to switch to timezone", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -164,7 +164,7 @@ current_offset (const char *zone)
   now_broken = localtime (&now);
   if (now_broken == NULL)
     {
-      g_warning ("%s: localtime failed", __FUNCTION__);
+      g_warning ("%s: localtime failed", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -172,7 +172,7 @@ current_offset (const char *zone)
     }
   if (setenv ("TZ", "UTC", 1) == -1)
     {
-      g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
+      g_warning ("%s: Failed to switch to UTC", __func__);
       if (tz != NULL)
         setenv ("TZ", tz, 1);
       g_free (tz);
@@ -186,7 +186,7 @@ current_offset (const char *zone)
     {
       if (setenv ("TZ", tz, 1) == -1)
         {
-          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_warning ("%s: Failed to switch to original TZ", __func__);
           g_free (tz);
           return 0;
         }
@@ -242,7 +242,7 @@ months_between (time_t time1, time_t time2)
   if ((localtime_r (&time1, &broken1) == NULL)
       || (broken2 == NULL))
     {
-      g_warning ("%s: localtime failed", __FUNCTION__);
+      g_warning ("%s: localtime failed", __func__);
       return 0;
     }
 
@@ -304,7 +304,7 @@ add_months (time_t time, int months)
   struct tm *broken = localtime (&time);
   if (broken == NULL)
     {
-      g_warning ("%s: localtime failed", __FUNCTION__);
+      g_warning ("%s: localtime failed", __func__);
       return 0;
     }
   broken->tm_mon += months;
@@ -327,7 +327,7 @@ day_of_week (time_t time)
   tm = gmtime (&time);
   if (tm == NULL)
     {
-      g_warning ("%s: gmtime failed", __FUNCTION__);
+      g_warning ("%s: gmtime failed", __func__);
       return 0;
     }
 
@@ -413,7 +413,7 @@ next_time (time_t first, int period, int period_months, int byday,
 
       assert (now > first);
 
-      g_debug ("%s: byday: %i", __FUNCTION__, byday);
+      g_debug ("%s: byday: %i", __func__, byday);
 
       /* TODO does this need timezone offsetting? */
 
@@ -427,13 +427,13 @@ next_time (time_t first, int period, int period_months, int byday,
       next_day_multiple = now + (SECS_PER_DAY - ((now - first) % SECS_PER_DAY));
 
       g_debug ("%s: next_day_multiple: %lli",
-               __FUNCTION__,
+               __func__,
                (long long) next_day_multiple);
       g_debug ("%s: day_of_week (next_day_multiple): %i",
-               __FUNCTION__,
+               __func__,
                day_of_week (next_day_multiple));
       g_debug ("%s: next_day (^, byday): %i",
-               __FUNCTION__,
+               __func__,
                next_day (day_of_week (next_day_multiple), byday));
 
       /* Return the next possible daily time, offset according the next day of
@@ -460,7 +460,7 @@ next_time (time_t first, int period, int period_months, int byday,
 
       if (setenv ("TZ", zone ? zone : "UTC", 1) == -1)
         {
-          g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+          g_warning ("%s: Failed to switch to timezone", __func__);
           if (tz != NULL)
             setenv ("TZ", tz, 1);
           g_free (tz);
@@ -479,7 +479,7 @@ next_time (time_t first, int period, int period_months, int byday,
       if (tz)
         {
           if (setenv ("TZ", tz, 1) == -1)
-            g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+            g_warning ("%s: Failed to switch to original TZ", __func__);
 
           g_free (tz);
         }
