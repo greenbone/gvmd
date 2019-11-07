@@ -3956,11 +3956,90 @@ target_osp_snmp_credential (target_t target)
 }
 
 /**
+ * @brief Prepare a report for resuming an OSP scan
+ *
+ * @param[in]  task     The task of the scan.
+ * @param[in]  scan_id  The scan uuid.
+ * @param[out] error    Error return.
+ *
+ * @return 0 scan finished or still running,
+ *         1 scan must be started,
+ *         -1 error
+ */
+static int
+prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
+{
+  osp_connection_t *connection;
+  osp_get_scan_status_opts_t status_opts;
+  osp_scan_status_t status;
+
+  assert (task);
+  assert (scan_id);
+  assert (global_current_report);
+  assert (error);
+
+  status_opts.scan_id = scan_id;
+
+  connection = osp_scanner_connect (task_scanner (task));
+  if (!connection)
+    {
+      *error = g_strdup ("Could not connect to Scanner");
+      return -1;
+    }
+  status = osp_get_scan_status_ext (connection, status_opts, error);
+
+  if (status == OSP_SCAN_STATUS_ERROR)
+    {
+      if (g_str_has_prefix (*error, "Failed to find scan"))
+        {
+          g_debug ("%s: Scan %s not found", __func__, scan_id);
+          g_free (*error);
+          *error = NULL;
+          osp_connection_close (connection);
+          trim_report (global_current_report);
+          return 1;
+        }
+      else
+        {
+          g_warning ("%s: Error getting status of scan %s: %s",
+                     __func__, scan_id, *error);
+          osp_connection_close (connection);
+          return -1;
+        }
+    }
+  else if (status == OSP_SCAN_STATUS_RUNNING
+           || status == OSP_SCAN_STATUS_FINISHED)
+    {
+      g_debug ("%s: Scan %s running or finished", __func__, scan_id);
+      osp_connection_close (connection);
+      return 0;
+    }
+  else if (status == OSP_SCAN_STATUS_STOPPED)
+    {
+      g_debug ("%s: Scan %s stopped", __func__, scan_id);
+      if (osp_delete_scan (connection, scan_id))
+        {
+          *error = g_strdup ("Failed to delete old report");
+          osp_connection_close (connection);
+          return -1;
+        }
+      osp_connection_close (connection);
+      trim_report (global_current_report);
+      return 1;
+    }
+
+  g_warning ("%s: Unexpected scanner status %d", __func__, status);
+  *error = g_strdup_printf ("Unexpected scanner status %d", status);
+  osp_connection_close (connection);
+  return -1;
+}
+
+/**
  * @brief Launch an OpenVAS via OSP task.
  *
  * @param[in]   task        The task.
  * @param[in]   target      The target.
- * @param[in]   scan_id     The new scan uuid.
+ * @param[in]   scan_id     The scan uuid.
  * @param[in]   from        0 start from beginning, 1 continue from stopped,
  *                          2 continue if stopped else start from beginning.
  * @param[out]  error       Error return.
@@ -3987,6 +4066,16 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   config = task_config (task);
 
   connection = NULL;
+
+  /* Prepare the report */
+  if (from)
+    {
+      ret = prepare_osp_scan_for_resume (task, scan_id, error);
+      if (ret == 0)
+        return 0;
+      else if (ret == -1)
+        return -1;
+    }
 
   /* Set up target(s) */
   hosts_str = target_hosts (target);
@@ -4114,16 +4203,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       g_strfreev (split_name);
     }
   cleanup_iterator (&prefs);
-
-  /* Clean up the report */
-  if (from)
-    {
-      // FIXME: Try to recover as much of the scan progress as possible.
-      connection = osp_scanner_connect (task_scanner (task));
-      osp_delete_scan (connection, scan_id);
-      osp_connection_close (connection);
-      trim_report (global_current_report);
-    }
 
   /* Start the scan */
   connection = osp_scanner_connect (task_scanner (task));
