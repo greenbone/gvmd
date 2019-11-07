@@ -9810,7 +9810,7 @@ strdiff (const gchar *one, const gchar *two)
   cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
 
   cmd[0] = g_strdup ("diff");
-  cmd[1] = g_strdup ("--ignore-space");
+  cmd[1] = g_strdup ("--ignore-all-space");
   cmd[2] = g_strdup ("--ignore-blank-lines");
   cmd[3] = g_strdup ("-u");
   cmd[4] = g_strdup ("Report 1");
