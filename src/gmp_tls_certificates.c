@@ -883,7 +883,7 @@ tls_certificate_origin_extra_xml (const char *origin_type,
       report = 0;
       if (find_report_with_permission (origin_id, &report, "get_reports"))
         {
-          g_warning ("%s : error getting report", __FUNCTION__);
+          g_warning ("%s : error getting report", __func__);
         }
 
       if (report)
@@ -899,7 +899,7 @@ tls_certificate_origin_extra_xml (const char *origin_type,
           task = 0;
           if (report_task (report, &task))
             {
-              g_warning ("%s : error getting report task", __FUNCTION__);
+              g_warning ("%s : error getting report task", __func__);
             }
 
           if (task)

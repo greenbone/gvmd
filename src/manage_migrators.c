@@ -1058,7 +1058,7 @@ migrate_213_to_214 ()
                               &serial);
           else
             g_warning ("%s: No SSLDetails found for fingerprint %s",
-                       __FUNCTION__,
+                       __func__,
                        scanner_fpr);
 
           free (ssldetails);
@@ -1422,7 +1422,7 @@ replace_preference_names_219_to_220 (const char *table_name)
           g_free (quoted_new_name);
         }
       else
-        g_warning ("%s: No new name for '%s'", __FUNCTION__, old_name);
+        g_warning ("%s: No new name for '%s'", __func__, old_name);
     }
   cleanup_iterator (&preferences);
 }
@@ -1681,7 +1681,7 @@ manage_migrate (GSList *log_config, const gchar *database)
   if (old_version == -2)
     {
       g_warning ("%s: no task tables yet, so no need to migrate them",
-                 __FUNCTION__);
+                 __func__);
       version_current = 1;
     }
   else if (old_version == new_version)
