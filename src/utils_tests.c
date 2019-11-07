@@ -44,19 +44,24 @@ Ensure (utils, gvm_sleep_sleep_for_0)
   assert_that (gvm_sleep (0), is_equal_to (0));
 }
 
-Ensure (utils, gvm_sleep_sleep_for_1ms)
+/* Number of nanoseconds in a second. */
+#define NANOSECONDS 1000000000
+
+static long long
+timespec_subtract (struct timespec *end, struct timespec *start)
 {
-  assert_that (gvm_sleep (0.001), is_equal_to (0));
+  return (end->tv_sec * NANOSECONDS + start->tv_nsec)
+         - (start->tv_sec * NANOSECONDS + start->tv_nsec);
 }
 
-Ensure (utils, gvm_sleep_sleep_for_1us)
+Ensure (utils, gvm_sleep_sleep_for_1)
 {
-  assert_that (gvm_sleep (0.000001), is_equal_to (0));
-}
+  struct timespec start, end;
 
-Ensure (utils, gvm_sleep_sleep_for_1ns)
-{
-  assert_that (gvm_sleep (0.000000001), is_equal_to (0));
+  assert_that (clock_gettime (CLOCK_REALTIME, &start), is_equal_to (0));
+  assert_that (gvm_sleep (1), is_equal_to (0));
+  assert_that (clock_gettime (CLOCK_REALTIME, &end), is_equal_to (0));
+  assert_that (timespec_subtract (&end, &start), is_greater_than (NANOSECONDS - 1));
 }
 
 /* Test suite. */
@@ -72,9 +77,7 @@ main (int argc, char **argv)
   add_test_with_context (suite, utils, gvm_usleep_sleep_for_1);
 
   add_test_with_context (suite, utils, gvm_sleep_sleep_for_0);
-  add_test_with_context (suite, utils, gvm_sleep_sleep_for_1ms);
-  add_test_with_context (suite, utils, gvm_sleep_sleep_for_1us);
-  add_test_with_context (suite, utils, gvm_sleep_sleep_for_1ns);
+  add_test_with_context (suite, utils, gvm_sleep_sleep_for_1);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());
