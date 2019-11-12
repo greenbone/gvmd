@@ -2854,6 +2854,7 @@ delete_config (const char *config_id, int ultimate)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_FAST_ULTIMATE) == 0)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP) == 0)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE) == 0)
+      || (strcmp (config_id, CONFIG_UUID_BASE) == 0)
       || (strcmp (config_id, CONFIG_UUID_DISCOVERY) == 0)
       || (strcmp (config_id, CONFIG_UUID_HOST_DISCOVERY) == 0)
       || (strcmp (config_id, CONFIG_UUID_SYSTEM_DISCOVERY) == 0)
@@ -3406,6 +3407,7 @@ config_writable (config_t config)
                "      OR uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
                "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
                "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
+               "      OR uuid = '" CONFIG_UUID_BASE "'"
                "      OR uuid = '" CONFIG_UUID_EMPTY "'"
                "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
                "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
