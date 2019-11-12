@@ -104,17 +104,3 @@ make_config_base (char *const uuid, char *const selector_name)
        config);
 
 }
-
-/**
- * @brief Ensure the Base config is up to date.
- *
- * @param[in]  uuid  UUID of config.
- *
- * @return 0 success, -1 error.
- */
-int
-check_config_base (const char *uuid)
-{
-  // No changes necessary yet
-  return 0;
-}
