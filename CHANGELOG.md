@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add host_id filter for tls_certificates [#835](https://github.com/greenbone/gvmd/pull/835)
 - Allow use of public key auth in SCP alert [#845](https://github.com/greenbone/gvmd/pull/845)
 - Refuse to import config with missing NVT preference ID [#856](https://github.com/greenbone/gvmd/pull/856) [#860](https://github.com/greenbone/gvmd/pull/860)
+- Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
 
 ### Changed
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
