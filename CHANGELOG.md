@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix notes XML for lean reports [#836](https://github.com/greenbone/gvmd/pull/836)
 - MODIFY_USER saves comment when COMMENT is empty [#842](https://github.com/greenbone/gvmd/pull/842)
 - Fix result diff generation to ignore white space in delta reports [#861](https://github.com/greenbone/gvmd/pull/861)
+- Fix resource type checks for permissions [#863](https://github.com/greenbone/gvmd/pull/863)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
