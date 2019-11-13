@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add option --optimize migrate-relay-sensors [#827](https://github.com/greenbone/gvmd/pull/827)
 - Add host_id filter for tls_certificates [#835](https://github.com/greenbone/gvmd/pull/835)
 - Allow use of public key auth in SCP alert [#845](https://github.com/greenbone/gvmd/pull/845)
-- Refuse to import config with missing NVT preference ID [#856](https://github.com/greenbone/gvmd/pull/856)
+- Refuse to import config with missing NVT preference ID [#856](https://github.com/greenbone/gvmd/pull/856) [#860](https://github.com/greenbone/gvmd/pull/860)
 
 ### Changed
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix asset host details insertion SQL [#839](https://github.com/greenbone/gvmd/pull/839)
 - Fix notes XML for lean reports [#836](https://github.com/greenbone/gvmd/pull/836)
 - MODIFY_USER saves comment when COMMENT is empty [#842](https://github.com/greenbone/gvmd/pull/842)
+- Fix result diff generation to ignore white space in delta reports [#861](https://github.com/greenbone/gvmd/pull/861)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
