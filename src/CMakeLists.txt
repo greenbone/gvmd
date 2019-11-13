@@ -34,6 +34,7 @@ pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=20.4)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBICAL REQUIRED libical>=1.00)
+pkg_check_modules (LIBXML2 REQUIRED libxml-2.0>=2.0)
 
 message (STATUS "Looking for PostgreSQL...")
 find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
@@ -62,7 +63,8 @@ endif (NOT GPGME)
 
 include_directories (${LIBGVM_GMP_INCLUDE_DIRS}
                      ${LIBGVM_BASE_INCLUDE_DIRS} ${LIBGVM_UTIL_INCLUDE_DIRS}
-                     ${LIBGVM_OSP_INCLUDE_DIRS}  ${GLIB_INCLUDE_DIRS})
+                     ${LIBGVM_OSP_INCLUDE_DIRS}  ${GLIB_INCLUDE_DIRS}
+                     ${LIBXML2_INCLUDE_DIRS})
 
 add_library (gvm-pg-server SHARED
              manage_pg_server.c manage_utils.c)
