@@ -102,5 +102,4 @@ make_config_base (char *const uuid, char *const selector_name)
        "         'auto_enable_dependencies',"
        "         'yes');",
        config);
-
 }
