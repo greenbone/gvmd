@@ -34,6 +34,11 @@
 /* Internal types and preprocessor definitions. */
 
 /**
+ * @brief UUID of 'Base' config.
+ */
+#define CONFIG_UUID_BASE "d21f6c81-2b88-4ac1-b7b4-a2a9f2ad4663"
+
+/**
  * @brief UUID of 'Full and fast' config.
  */
 #define CONFIG_UUID_FULL_AND_FAST "daba56c8-73ec-11df-a475-002264764cea"
@@ -89,6 +94,11 @@
  * @brief UUID of 'All' NVT selector.
  */
 #define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
+
+/**
+ * @brief UUID of 'Base' NVT selector.
+ */
+#define MANAGE_NVT_SELECTOR_UUID_BASE "dd4a4170-0b5e-43fb-9bae-6ce93c19e893"
 
 /**
  * @brief UUID of 'Discovery' NVT selector.

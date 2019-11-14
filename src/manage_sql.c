@@ -190,6 +190,9 @@ void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
 void
+make_config_base (char *const, char *const);
+
+void
 make_config_discovery (char *const, char *const);
 
 void
@@ -17218,6 +17221,13 @@ check_db_configs ()
 
   if (sql_int ("SELECT count(*) FROM configs"
                " WHERE uuid = '%s';",
+               CONFIG_UUID_BASE)
+      == 0)
+    make_config_base (CONFIG_UUID_BASE,
+                      MANAGE_NVT_SELECTOR_UUID_BASE);
+
+  if (sql_int ("SELECT count(*) FROM configs"
+               " WHERE uuid = '%s';",
                CONFIG_UUID_DISCOVERY)
       == 0)
     make_config_discovery (CONFIG_UUID_DISCOVERY,
@@ -17742,6 +17752,8 @@ add_permissions_on_globals (const gchar *role_uuid)
                                 CONFIG_UUID_FULL_AND_VERY_DEEP);
   add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
                                 CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_BASE);
   add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
                                 CONFIG_UUID_EMPTY);
   add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
