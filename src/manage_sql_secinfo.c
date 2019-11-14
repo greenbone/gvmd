@@ -2808,7 +2808,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   else
                     quoted_status = sql_quote ("");
 
-                  sql ("SELECT merge_ovaldef ('%s', '%s', '', %i, %i, %i, %i,"
+                  sql ("SELECT merge_ovaldef ('%s', '%s', '', %i, %i, %s, %i,"
                        "                      '%s', '%s', '%s', '%s', '%s',"
                        "                      %i);",
                        quoted_id,
