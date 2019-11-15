@@ -24790,7 +24790,10 @@ cleanup_result_nvts ()
   affected = g_array_new (TRUE, TRUE, sizeof (report_t));
   init_iterator (&affected_iter,
                  "SELECT DISTINCT report FROM results"
-                 " WHERE result_nvt IS NULL"
+                 " WHERE (result_nvt IS NULL"
+                 "        OR report NOT IN"
+                 "           (SELECT report FROM result_nvt_reports"
+                 "             WHERE result_nvt IS NOT NULL))"
                  "   AND nvt IN (SELECT nvt FROM overrides);");
   while (next (&affected_iter))
     {
@@ -24806,6 +24809,16 @@ cleanup_result_nvts ()
        "       = (SELECT id FROM result_nvts"
        "           WHERE result_nvts.nvt = results.nvt)"
        " WHERE result_nvt IS NULL");
+
+  g_debug ("%s: Cleaning up NULL result_nvt_reports entries", __func__);
+  sql ("DELETE FROM result_nvt_reports WHERE result_nvt IS NULL;");
+
+  g_debug ("%s: Adding missing result_nvt_reports entries", __func__);
+  sql ("INSERT INTO result_nvt_reports (report, result_nvt)"
+       " SELECT DISTINCT report, result_nvts.id FROM results"
+       "   JOIN result_nvts ON result_nvts.nvt = results.nvt"
+       "  WHERE report NOT IN (SELECT report FROM result_nvt_reports"
+       "                       WHERE result_nvt IS NOT NULL)");
 
   // Re-cache affected reports with overrides
   for (index = 0; index < affected->len; index++)
