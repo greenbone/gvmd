@@ -1,0 +1,12 @@
+#!/bin/sh
+
+echo diffing $1 and $2
+
+diff $1.cpes $2.cpes > /tmp/db-cpes.diff
+diff $1.cves $2.cves > /tmp/db-cves.diff
+diff $1.ovaldefs $2.ovaldefs > /tmp/db-ovaldefs.diff
+diff $1.ovalfiles $2.ovalfiles > /tmp/db-ovalfiles.diff
+diff $1.affected_products $2.affected_products > /tmp/db-affected_products.diff
+diff $1.affected_ovaldefs $2.affected_ovaldefs > /tmp/db-affected_ovaldefs.diff
+
+echo done
