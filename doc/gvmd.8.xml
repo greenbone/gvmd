@@ -251,7 +251,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p><opt>--optimize=<arg>NAME</arg></opt></p>
       <optdesc>
         <p>Run an optimization: vacuum, analyze, cleanup-config-prefs,
-           cleanup-port-names, cleanup-report-formats,
+           cleanup-port-names, cleanup-report-formats, cleanup-result-nvts,
            cleanup-result-severities, cleanup-schedule-times,
            migrate-relay-sensors, rebuild-report-cache
            or update-report-cache.</p>

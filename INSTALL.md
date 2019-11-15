@@ -411,6 +411,11 @@ supported values for `<name>` are:
   using the DELETE_REPORT_FORMAT GMP command, for example after a built-in
   report format has been removed.
 
+- `cleanup-result-nvts`
+
+  This cleans up results with missing result_nvt entries which can result
+  in filters and overrides not working properly.
+
 - `cleanup-result-severities`
 
   This cleans up results with no severity by assigning the default
