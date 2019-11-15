@@ -28055,6 +28055,27 @@ report_error_count (report_t report)
 }
 
 /**
+ * @brief Get a list string of finished hosts in a report.
+ *
+ * @param[in]  report  The report to get the finished hosts from.
+ *
+ * @return Sting containing finished hosts as comma separated list.
+ */
+char *
+report_finished_hosts_str (report_t report)
+{
+  char *ret;
+
+  ret = sql_string ("SELECT string_agg (host, ',' ORDER BY host)"
+                    " FROM report_hosts"
+                    " WHERE report = %llu"
+                    "   AND end_time != 0;",
+                    report);
+
+  return ret;
+}
+
+/**
  * @brief Write report host detail to file stream.
  *
  * On error close stream.
