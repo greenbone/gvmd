@@ -186,6 +186,27 @@ sql_regexp_op ()
 }
 
 /**
+ * @brief Check whether "ON CONFLICT" is supported.
+ *
+ * Aborts if there is not database connection.
+ *
+ * @return 0 no, else yes.
+ */
+int
+sql_has_on_conflict ()
+{
+  static int ver = 0;
+
+  if (sql_is_open () == 0)
+    abort ();
+
+  if (ver == 0)
+    ver = sql_int ("SELECT current_setting ('server_version_num')::integer;");
+
+  return ver >= 90500;
+}
+
+/**
  * @brief Check whether the database is open.
  *
  * @return 1 if open, else 0.

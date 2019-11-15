@@ -2234,14 +2234,34 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                               quoted_product = sql_quote (product_tilde);
                               g_free (product_tilde);
 
-                              sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
-                                   quoted_product, quoted_product, time_published,
-                                   time_modified);
-                              sql ("SELECT merge_affected_product"
-                                   "        (%llu,"
-                                   "         (SELECT id FROM cpes"
-                                   "          WHERE name='%s'))",
-                                   cve_rowid, quoted_product);
+                              if (sql_has_on_conflict ())
+                                sql ("INSERT INTO scap.cpes"
+                                     " (uuid, name, creation_time,"
+                                     "  modification_time)"
+                                     " VALUES"
+                                     " ('%s', '%s', %i, %i)"
+                                     " ON CONFLICT DO NOTHING;",
+                                     quoted_product, quoted_product,
+                                     time_published, time_modified);
+                              else
+                                sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
+                                     quoted_product, quoted_product, time_published,
+                                     time_modified);
+
+                              if (sql_has_on_conflict ())
+                                sql ("INSERT INTO scap.affected_products"
+                                     " (cve, cpe)"
+                                     " VALUES (%llu,"
+                                     "         (SELECT id FROM cpes"
+                                     "          WHERE name='%s'))"
+                                     " ON CONFLICT DO NOTHING;",
+                                     cve_rowid, quoted_product);
+                              else
+                                sql ("SELECT merge_affected_product"
+                                     "        (%llu,"
+                                     "         (SELECT id FROM cpes"
+                                     "          WHERE name='%s'))",
+                                     cve_rowid, quoted_product);
                               transaction_size ++;
                               increment_transaction_size (&transaction_size);
                               g_free (quoted_product);

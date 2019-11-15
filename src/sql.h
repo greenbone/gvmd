@@ -46,6 +46,9 @@ sql_regexp_op ();
 const char *
 sql_ilike_op ();
 
+int
+sql_has_on_conflict ();
+
 const char *
 sql_database ();
 
