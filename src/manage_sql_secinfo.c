@@ -1271,7 +1271,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               cves = entity2_children (child);
               while ((cve = first_entity2 (cves)))
                 {
-                  if (strcmp (entity2_name (cve), "dfncert:cve") == 0)
+                  if (strcmp (entity2_name (cve), "cve") == 0)
                     cve_refs++;
                   cves = next_entities2 (cves);
                 }
@@ -1294,7 +1294,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               cves = entity2_children (child);
               while ((cve = first_entity2 (cves)))
                 {
-                  if (strcmp (entity2_name (cve), "dfncert:cve") == 0)
+                  if (strcmp (entity2_name (cve), "cve") == 0)
                     {
                       gchar **split, **point;
                       gchar *text, *start;
@@ -2133,7 +2133,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   products = entity2_children (list);
                   while ((product = first_entity2 (products)))
                     {
-                      if (strcmp (entity2_name (product), "vuln:product") == 0)
+                      if (strcmp (entity2_name (product), "product") == 0)
                         g_string_append_printf (software,
                                                 "%s ",
                                                 entity2_text (xml_doc, product));
@@ -2218,7 +2218,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
 
                       while ((product = first_entity2 (products)))
                         {
-                          if ((strcmp (entity2_name (product), "vuln:product")
+                          if ((strcmp (entity2_name (product), "product")
                                == 0)
                               && strlen (entity2_text (xml_doc, product)))
                             {
