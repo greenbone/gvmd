@@ -91,7 +91,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         '" OID_PING_HOST ":6:checkbox:Report about reachable Hosts',"
+       "         '" OID_PING_HOST ":9:checkbox:Report about reachable Hosts',"
        "         'yes');",
        config);
 
