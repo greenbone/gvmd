@@ -4011,8 +4011,23 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
            || status == OSP_SCAN_STATUS_FINISHED)
     {
       g_debug ("%s: Scan %s running or finished", __func__, scan_id);
+      /* It would be possible to simply continue getting the results
+       * from the scanner, but gvmd may have crashed while receiving
+       * or storing the results, so some may be missing. */
+      if (osp_stop_scan (connection, scan_id, error))
+        {
+          osp_connection_close (connection);
+          return -1;
+        }
+      if (osp_delete_scan (connection, scan_id))
+        {
+          *error = g_strdup ("Failed to delete old report");
+          osp_connection_close (connection);
+          return -1;
+        }
       osp_connection_close (connection);
-      return 0;
+      trim_partial_report (global_current_report);
+      return 1;
     }
   else if (status == OSP_SCAN_STATUS_STOPPED)
     {
