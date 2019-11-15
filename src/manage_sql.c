@@ -50480,9 +50480,16 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
     return 9;
 
   if (resource_type_arg
+      && strcasecmp (name_arg, "super") == 0
       && strcmp (resource_type_arg, "group")
       && strcmp (resource_type_arg, "role")
       && strcmp (resource_type_arg, "user"))
+    return 5;
+
+  if (resource_type_arg
+      && strcasecmp (name_arg, "super")
+      && (valid_db_resource_type (resource_type_arg) == 0
+          || gmp_command_takes_resource (name_arg) == 0))
     return 5;
 
   if (subject_type
