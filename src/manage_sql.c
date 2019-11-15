@@ -25087,6 +25087,57 @@ cleanup_result_nvts ()
 }
 
 /**
+ * @brief Check if the result_nvts are assigned to result
+ *
+ * @return 0 success, -1 error
+ */
+int
+cleanup_result_nvts ()
+{
+  iterator_t affected_iter;
+  GArray *affected;
+  int index;
+
+  g_debug ("%s: Creating missing result_nvts entries", __func__);
+  sql ("INSERT INTO result_nvts (nvt)"
+       " SELECT DISTINCT nvt FROM results ON CONFLICT (nvt) DO NOTHING;");
+
+  // Get affected reports with overrides
+  affected = g_array_new (TRUE, TRUE, sizeof (report_t));
+  init_iterator (&affected_iter,
+                 "SELECT DISTINCT report FROM results"
+                 " WHERE result_nvt IS NULL"
+                 "   AND nvt IN (SELECT nvt FROM overrides);");
+  while (next (&affected_iter))
+    {
+      report_t report;
+      report = iterator_int64 (&affected_iter, 0);
+      g_array_append_val (affected, report);
+    }
+  cleanup_iterator(&affected_iter);
+
+  g_debug ("%s: Adding missing result_nvt values to results", __func__);
+  sql ("UPDATE results"
+       " SET result_nvt"
+       "       = (SELECT id FROM result_nvts"
+       "           WHERE result_nvts.nvt = results.nvt)"
+       " WHERE result_nvt IS NULL");
+
+  // Re-cache affected reports with overrides
+  for (index = 0; index < affected->len; index++)
+    {
+      report_t report;
+      report = g_array_index (affected, report_t, index);
+      g_debug ("%s: Updating cache of affected report %llu",
+               __func__, report);
+      report_cache_counts (report, 0, 1, NULL);
+    }
+  g_array_free (affected, TRUE);
+
+  return 0;
+}
+
+/**
  * @brief Initialise a host iterator.
  *
  * @param[in]  iterator  Iterator.

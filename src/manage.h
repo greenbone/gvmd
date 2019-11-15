@@ -1513,6 +1513,9 @@ result_iterator_dfn_certs (iterator_t*);
 int
 cleanup_result_nvts ();
 
+int
+cleanup_result_nvts ();
+
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 
