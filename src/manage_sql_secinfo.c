@@ -1873,15 +1873,39 @@ update_scap_cpes (int last_scap_update)
               g_free (name_tilde);
               quoted_status = sql_quote (status);
               quoted_nvd_id = sql_quote (nvd_id);
-              sql ("SELECT merge_cpe"
-                   "        ('%s', '%s', %i, %i, '%s', %s, '%s');",
-                   quoted_name,
-                   quoted_title,
-                   parse_iso_time (modification_date),
-                   parse_iso_time (modification_date),
-                   quoted_status,
-                   deprecated ? deprecated : "NULL",
-                   quoted_nvd_id);
+              if (sql_has_on_conflict ())
+                sql ("INSERT INTO scap.cpes"
+                     " (uuid, name, title, creation_time,"
+                     "  modification_time, status, deprecated_by_id,"
+                     "  nvd_id)"
+                     " VALUES"
+                     " ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')"
+                     " ON CONFLICT (uuid) DO UPDATE"
+                     " SET name = EXCLUDED.name,"
+                     "     title = EXCLUDED.title,"
+                     "     creation_time = EXCLUDED.creation_time,"
+                     "     modification_time = EXCLUDED.modification_time,"
+                     "     status = EXCLUDED.status,"
+                     "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
+                     "     nvd_id = EXCLUDED.nvd_id;",
+                     quoted_name,
+                     quoted_name,
+                     quoted_title,
+                     parse_iso_time (modification_date),
+                     parse_iso_time (modification_date),
+                     quoted_status,
+                     deprecated ? deprecated : "NULL",
+                     quoted_nvd_id);
+              else
+                sql ("SELECT merge_cpe"
+                     "        ('%s', '%s', %i, %i, '%s', %s, '%s');",
+                     quoted_name,
+                     quoted_title,
+                     parse_iso_time (modification_date),
+                     parse_iso_time (modification_date),
+                     quoted_status,
+                     deprecated ? deprecated : "NULL",
+                     quoted_nvd_id);
               increment_transaction_size (&transaction_size);
               g_free (quoted_title);
               g_free (quoted_name);
