@@ -1703,8 +1703,8 @@ update_scap_cpes (int last_scap_update)
   gchar *xml, *full_path;
   gsize xml_len;
   GStatBuf state;
-  int updated_scap_cpes, last_cve_update;
-  int transaction_size = 0;
+  int updated_scap_cpes, last_cve_update, first;
+  GString *inserts;
 
   updated_scap_cpes = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
@@ -1775,7 +1775,17 @@ update_scap_cpes (int last_scap_update)
 
   g_debug ("%s: adding cpes", __func__);
 
+  if (sql_has_on_conflict ())
+    inserts = g_string_new ("INSERT INTO scap.cpes"
+                            " (uuid, name, title, creation_time,"
+                            "  modification_time, status, deprecated_by_id,"
+                            "  nvd_id)"
+                            " VALUES");
+  else
+    inserts = g_string_new ("SELECT");
+
   children = entity2_children (cpe_list);
+  first = 1;
   while ((cpe_item = first_entity2 (children)))
     {
       if (strcmp (entity2_name (cpe_item), "cpe-item") == 0)
@@ -1864,39 +1874,32 @@ update_scap_cpes (int last_scap_update)
               quoted_status = sql_quote (status);
               quoted_nvd_id = sql_quote (nvd_id);
               if (sql_has_on_conflict ())
-                sql ("INSERT INTO scap.cpes"
-                     " (uuid, name, title, creation_time,"
-                     "  modification_time, status, deprecated_by_id,"
-                     "  nvd_id)"
-                     " VALUES"
-                     " ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')"
-                     " ON CONFLICT (uuid) DO UPDATE"
-                     " SET name = EXCLUDED.name,"
-                     "     title = EXCLUDED.title,"
-                     "     creation_time = EXCLUDED.creation_time,"
-                     "     modification_time = EXCLUDED.modification_time,"
-                     "     status = EXCLUDED.status,"
-                     "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
-                     "     nvd_id = EXCLUDED.nvd_id;",
-                     quoted_name,
-                     quoted_name,
-                     quoted_title,
-                     parse_iso_time (modification_date),
-                     parse_iso_time (modification_date),
-                     quoted_status,
-                     deprecated ? deprecated : "NULL",
-                     quoted_nvd_id);
+                g_string_append_printf
+                 (inserts,
+                  "%s ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')",
+                  first ? "" : ",",
+                  quoted_name,
+                  quoted_name,
+                  quoted_title,
+                  parse_iso_time (modification_date),
+                  parse_iso_time (modification_date),
+                  quoted_status,
+                  deprecated ? deprecated : "NULL",
+                  quoted_nvd_id);
               else
-                sql ("SELECT merge_cpe"
-                     "        ('%s', '%s', %i, %i, '%s', %s, '%s');",
-                     quoted_name,
-                     quoted_title,
-                     parse_iso_time (modification_date),
-                     parse_iso_time (modification_date),
-                     quoted_status,
-                     deprecated ? deprecated : "NULL",
-                     quoted_nvd_id);
-              increment_transaction_size (&transaction_size);
+                g_string_append_printf
+                 (inserts,
+                  "%s merge_cpe"
+                  "    ('%s', '%s', %i, %i, '%s', %s, '%s');",
+                  first ? "" : ",",
+                  quoted_name,
+                  quoted_title,
+                  parse_iso_time (modification_date),
+                  parse_iso_time (modification_date),
+                  quoted_status,
+                  deprecated ? deprecated : "NULL",
+                  quoted_nvd_id);
+              first = 0;
               g_free (quoted_title);
               g_free (quoted_name);
               g_free (quoted_status);
@@ -1907,6 +1910,20 @@ update_scap_cpes (int last_scap_update)
         }
       children = next_entities2 (children);
     }
+
+  if (sql_has_on_conflict ())
+    g_string_append (inserts,
+                     " ON CONFLICT (uuid) DO UPDATE"
+                     " SET name = EXCLUDED.name,"
+                     "     title = EXCLUDED.title,"
+                     "     creation_time = EXCLUDED.creation_time,"
+                     "     modification_time = EXCLUDED.modification_time,"
+                     "     status = EXCLUDED.status,"
+                     "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
+                     "     nvd_id = EXCLUDED.nvd_id");
+
+  sql ("%s;", inserts->str);
+  g_string_free (inserts, TRUE);
 
   g_debug ("%s: done", __func__);
 
