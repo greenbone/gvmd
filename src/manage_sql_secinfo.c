@@ -1888,7 +1888,7 @@ update_scap_cpes (int last_scap_update)
               g_free (quoted_status);
               g_free (quoted_nvd_id);
 
-              updated_scap_cpes = 1;
+              updated_scap_cpes++;
             }
         }
       children = next_entities2 (children);
@@ -1898,7 +1898,8 @@ update_scap_cpes (int last_scap_update)
 
   xml_doc_free (xml_doc);
   sql_commit ();
-  return updated_scap_cpes;
+  g_info ("Updated %d CPEs", updated_scap_cpes);
+  return updated_scap_cpes > 0;
 
  fail:
   g_warning ("Update of CPEs failed");
@@ -2212,16 +2213,45 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
 
                   if (first_entity2 (products))
                     {
+                      int first_product, first_affected;
+                      GString *sql_cpes, *sql_affected;
+
                       sql_int64 (&cve_rowid,
                                  "SELECT id FROM cves WHERE uuid='%s';",
                                  quoted_id);
 
+                      sql_cpes = g_string_new ("");
+                      sql_affected = g_string_new ("");
+                      if (sql_has_on_conflict ())
+                        {
+                          g_string_append
+                           (sql_cpes,
+                            "INSERT INTO scap.cpes"
+                            " (uuid, name, creation_time,"
+                            "  modification_time)"
+                            " VALUES");
+
+                          g_string_append
+                           (sql_affected,
+                            "INSERT INTO scap.affected_products"
+                            " (cve, cpe)"
+                            " VALUES");
+                        }
+                      else
+                        {
+                          g_string_append (sql_cpes, "SELECT");
+                          g_string_append (sql_affected, "SELECT");
+                        }
+
+                      first_product = first_affected = 1;
                       while ((product = first_entity2 (products)))
                         {
                           if ((strcmp (entity2_name (product), "product")
                                == 0)
                               && strlen (entity2_text (xml_doc, product)))
                             {
+                              entities2_t products2;
+                              entity2_t product2;
                               gchar *quoted_product, *product_decoded;
                               gchar *product_tilde;
 
@@ -2234,41 +2264,109 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                               quoted_product = sql_quote (product_tilde);
                               g_free (product_tilde);
 
-                              if (sql_has_on_conflict ())
-                                sql ("INSERT INTO scap.cpes"
-                                     " (uuid, name, creation_time,"
-                                     "  modification_time)"
-                                     " VALUES"
-                                     " ('%s', '%s', %i, %i)"
-                                     " ON CONFLICT DO NOTHING;",
-                                     quoted_product, quoted_product,
-                                     time_published, time_modified);
-                              else
-                                sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
-                                     quoted_product, quoted_product, time_published,
-                                     time_modified);
+#if 1
+                              /* Only include the product if it does not
+                               * appear later in the list, to avoid errors
+                               * from Postgres ON CONFLICT DO UPDATE. */
+                              products2 = next_entities2 (products);
+                              int count = 0;
+                              while ((product2 = first_entity2 (products2)))
+                                {
+                                  char *product_text, *product2_text;
+                                  int cmp;
+
+                                  product_text = entity2_text (xml_doc, product);
+                                  product2_text = entity2_text (xml_doc, product2);
+
+                                  cmp = strcmp (product_text, product2_text);
+                                  entity2_text_free (product_text);
+                                  entity2_text_free (product2_text);
+                                  if (cmp == 0)
+                                    break;
+                                  else
+                                    {
+                                      count++;
+                                      if (count > 10000)
+                                        {
+                                          g_debug ("XXX");
+                                          sleep (6000);
+                                          abort();
+                                        }
+                                      products2 = next_entities2 (products2);
+                                    }
+                                }
+#else
+                              products2 = products;
+                              product2 = first_entity2 (products2);
+#endif
+                              if (product2 == NULL)
+                                {
+                                  if (sql_has_on_conflict ())
+                                    g_string_append_printf
+                                     (sql_cpes,
+                                      "%s ('%s', '%s', %i, %i)",
+                                      first_product ? "" : ",", quoted_product, quoted_product,
+                                      time_published, time_modified);
+                                  else
+                                    g_string_append_printf
+                                     (sql_cpes,
+                                      "%s merge_cpe_name ('%s', '%s', %i, %i)",
+                                      first_product ? "" : ",", quoted_product, quoted_product,
+                                      time_published, time_modified);
+
+                                  first_product = 0;
+                                }
 
                               if (sql_has_on_conflict ())
-                                sql ("INSERT INTO scap.affected_products"
-                                     " (cve, cpe)"
-                                     " VALUES (%llu,"
-                                     "         (SELECT id FROM cpes"
-                                     "          WHERE name='%s'))"
-                                     " ON CONFLICT DO NOTHING;",
-                                     cve_rowid, quoted_product);
+                                g_string_append_printf
+                                 (sql_affected,
+                                  "%s (%llu,"
+                                 // FIX inserted this above
+                                  "    (SELECT id FROM cpes"
+                                  "     WHERE name='%s'))",
+                                  first_affected ? "" : ",", cve_rowid, quoted_product);
                               else
-                                sql ("SELECT merge_affected_product"
-                                     "        (%llu,"
-                                     "         (SELECT id FROM cpes"
-                                     "          WHERE name='%s'))",
-                                     cve_rowid, quoted_product);
-                              transaction_size ++;
-                              increment_transaction_size (&transaction_size);
+                                g_string_append_printf
+                                 (sql_affected,
+                                  "%s merge_affected_product"
+                                  "    (%llu,"
+                                  "     (SELECT id FROM cpes"
+                                  "      WHERE name='%s'))",
+                                  first_affected ? "" : ",", cve_rowid, quoted_product);
+                              first_affected = 0;
                               g_free (quoted_product);
                             }
 
                           products = next_entities2 (products);
                         }
+
+                      if (first_product == 0)
+                        {
+                          if (sql_has_on_conflict ())
+                            g_string_append
+                             (sql_cpes,
+                              " ON CONFLICT (uuid)"
+                              " DO UPDATE SET name = EXCLUDED.name");
+                          g_string_append (sql_cpes, ";");
+                          sql ("%s", sql_cpes->str);
+
+                          increment_transaction_size (&transaction_size);
+                        }
+
+                      if (first_affected == 0)
+                        {
+                          if (sql_has_on_conflict ())
+                            g_string_append
+                             (sql_affected,
+                              " ON CONFLICT DO NOTHING");
+                          g_string_append (sql_affected, ";");
+                          sql ("%s", sql_affected->str);
+
+                          increment_transaction_size (&transaction_size);
+                        }
+
+                      g_string_free (sql_cpes, TRUE);
+                      g_string_free (sql_affected, TRUE);
                     }
                 }
 
@@ -2901,6 +2999,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                         {
                           gchar *quoted_ref_id;
 
+                          // FIX chunk
                           quoted_ref_id = sql_quote (entity2_attribute (reference,
                                                                        "ref_id"));
                           sql ("INSERT INTO affected_ovaldefs (cve, ovaldef)"
@@ -3700,6 +3799,7 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
 {
   /* TODO greenbone-certdata-sync did retries. */
 
+  // FIX what about when last_*_update both 0?
   if (updated_dfn_cert || (last_scap_update > last_cert_update))
     {
       g_info ("Updating Max CVSS for DFN-CERT");
