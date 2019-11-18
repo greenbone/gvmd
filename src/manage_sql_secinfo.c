@@ -1968,6 +1968,20 @@ cpe_insert_needed (GHashTable *cpes, const gchar *product_tilde)
 }
 
 /**
+ * @brief Check whether a cpe name needs inserting.
+ *
+ * @param[in]  cpes           CPEs.
+ * @param[in]  product_tilde  UUID/Name.
+ *
+ * @return 1 if name needs inserting, 0 otherwise.
+ */
+static int
+cpe_id (GHashTable *cpes, const gchar *product_tilde)
+{
+  return GPOINTER_TO_INT (g_hash_table_lookup (cpes, product_tilde));
+}
+
+/**
  * @brief Update CVE info from a single XML feed file.
  *
  * @param[in]  xml_path          XML path.
@@ -2354,43 +2368,69 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                               products2 = products;
                               product2 = first_entity2 (products2);
 #endif
-                              if (product2 == NULL
-                                  && cpe_insert_needed (hashed_cpes, product_tilde))
+                              if (cpe_insert_needed (hashed_cpes, product_tilde))
                                 {
+                                  /* CPE is not in hash. */
+
+                                  if (product2 == NULL)
+                                    {
+                                      /* CPE is not coming later on for this CVE. */
+                                      if (sql_has_on_conflict ())
+                                        g_string_append_printf
+                                         (sql_cpes,
+                                          "%s ('%s', '%s', %i, %i)",
+                                          first_product ? "" : ",", quoted_product, quoted_product,
+                                          time_published, time_modified);
+                                      else
+                                        g_string_append_printf
+                                         (sql_cpes,
+                                          "%s merge_cpe_name ('%s', '%s', %i, %i)",
+                                          first_product ? "" : ",", quoted_product, quoted_product,
+                                          time_published, time_modified);
+
+                                      first_product = 0;
+                                    }
+
                                   if (sql_has_on_conflict ())
                                     g_string_append_printf
-                                     (sql_cpes,
-                                      "%s ('%s', '%s', %i, %i)",
-                                      first_product ? "" : ",", quoted_product, quoted_product,
-                                      time_published, time_modified);
+                                     (sql_affected,
+                                      "%s (%llu,"
+                                      // FIX inserted this above
+                                      "    (SELECT id FROM cpes"
+                                      "     WHERE name='%s'))",
+                                      first_affected ? "" : ",", cve_rowid,
+                                      quoted_product);
                                   else
                                     g_string_append_printf
-                                     (sql_cpes,
-                                      "%s merge_cpe_name ('%s', '%s', %i, %i)",
-                                      first_product ? "" : ",", quoted_product, quoted_product,
-                                      time_published, time_modified);
-
-                                  first_product = 0;
+                                     (sql_affected,
+                                      "%s merge_affected_product"
+                                      "    (%llu, "
+                                      "     (SELECT id FROM cpes"
+                                      "      WHERE name='%s'))",
+                                      first_affected ? "" : ",", cve_rowid,
+                                      quoted_product);
                                 }
-                              g_free (product_tilde);
-
-                              if (sql_has_on_conflict ())
-                                g_string_append_printf
-                                 (sql_affected,
-                                  "%s (%llu,"
-                                 // FIX inserted this above
-                                  "    (SELECT id FROM cpes"
-                                  "     WHERE name='%s'))",
-                                  first_affected ? "" : ",", cve_rowid, quoted_product);
                               else
-                                g_string_append_printf
-                                 (sql_affected,
-                                  "%s merge_affected_product"
-                                  "    (%llu,"
-                                  "     (SELECT id FROM cpes"
-                                  "      WHERE name='%s'))",
-                                  first_affected ? "" : ",", cve_rowid, quoted_product);
+                                {
+                                  /* CPE is in hash. */
+
+                                  if (sql_has_on_conflict ())
+                                    g_string_append_printf
+                                     (sql_affected,
+                                      "%s (%llu, %i)",
+                                      first_affected ? "" : ",", cve_rowid,
+                                      cpe_id (hashed_cpes, product_tilde));
+                                  else
+                                    g_string_append_printf
+                                     (sql_affected,
+                                      "%s merge_affected_product"
+                                      "    (%llu, %i)",
+                                      first_affected ? "" : ",", cve_rowid,
+                                      cpe_id (hashed_cpes, product_tilde));
+                                }
+
                               first_affected = 0;
+                              g_free (product_tilde);
                               g_free (quoted_product);
                             }
 
@@ -2484,9 +2524,11 @@ update_scap_cves (int last_scap_update)
                              " FROM scap.cves;");
 
   hashed_cpes = g_hash_table_new (g_str_hash, g_str_equal);
-  init_iterator (&cpes, "SELECT uuid, name FROM scap.cpes;");
+  init_iterator (&cpes, "SELECT uuid, id FROM scap.cpes;");
   while (next (&cpes))
-    g_hash_table_insert (hashed_cpes, (gpointer*) iterator_string (&cpes, 0), NULL);
+    g_hash_table_insert (hashed_cpes,
+                         (gpointer*) iterator_string (&cpes, 0),
+                         GINT_TO_POINTER (iterator_int (&cpes, 1)));
 
   count = 0;
   updated_scap_cves = 0;
