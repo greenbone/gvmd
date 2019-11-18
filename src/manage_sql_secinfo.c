@@ -1954,17 +1954,32 @@ update_scap_cpes (int last_scap_update)
 /* SCAP update: CVEs. */
 
 /**
+ * @brief Check whether a cpe name needs inserting.
+ *
+ * @param[in]  cpes           CPEs.
+ * @param[in]  product_tilde  UUID/Name.
+ *
+ * @return 1 if name needs inserting, 0 otherwise.
+ */
+static int
+cpe_insert_needed (GHashTable *cpes, const gchar *product_tilde)
+{
+  return g_hash_table_contains (cpes, product_tilde) == 0;
+}
+
+/**
  * @brief Update CVE info from a single XML feed file.
  *
  * @param[in]  xml_path          XML path.
  * @param[in]  last_scap_update  Time of last SCAP update.
  * @param[in]  last_cve_update   Time of last update to a DFN.
+ * @param[in]  hashed_cpes       Hashed CPEs.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
 update_cve_xml (const gchar *xml_path, int last_scap_update,
-                int last_cve_update)
+                int last_cve_update, GHashTable *hashed_cpes)
 {
   xml_doc_t xml_doc;
   GError *error;
@@ -2303,7 +2318,6 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                                                               NULL);
                               g_free (product_decoded);
                               quoted_product = sql_quote (product_tilde);
-                              g_free (product_tilde);
 
 #if 1
                               /* Only include the product if it does not
@@ -2340,7 +2354,8 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                               products2 = products;
                               product2 = first_entity2 (products2);
 #endif
-                              if (product2 == NULL)
+                              if (product2 == NULL
+                                  && cpe_insert_needed (hashed_cpes, product_tilde))
                                 {
                                   if (sql_has_on_conflict ())
                                     g_string_append_printf
@@ -2357,6 +2372,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
 
                                   first_product = 0;
                                 }
+                              g_free (product_tilde);
 
                               if (sql_has_on_conflict ())
                                 g_string_append_printf
@@ -2451,6 +2467,8 @@ update_scap_cves (int last_scap_update)
   int count, last_cve_update, updated_scap_cves;
   GDir *dir;
   const gchar *xml_path;
+  GHashTable *hashed_cpes;
+  iterator_t cpes;
 
   error = NULL;
   dir = g_dir_open (GVM_SCAP_DATA_DIR, 0, &error);
@@ -2465,12 +2483,18 @@ update_scap_cves (int last_scap_update)
   last_cve_update = sql_int ("SELECT max (modification_time)"
                              " FROM scap.cves;");
 
+  hashed_cpes = g_hash_table_new (g_str_hash, g_str_equal);
+  init_iterator (&cpes, "SELECT uuid, name FROM scap.cpes;");
+  while (next (&cpes))
+    g_hash_table_insert (hashed_cpes, (gpointer*) iterator_string (&cpes, 0), NULL);
+
   count = 0;
   updated_scap_cves = 0;
   while ((xml_path = g_dir_read_name (dir)))
     if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
       {
-        switch (update_cve_xml (xml_path, last_scap_update, last_cve_update))
+        switch (update_cve_xml (xml_path, last_scap_update, last_cve_update,
+                                hashed_cpes))
           {
             case 0:
               break;
@@ -2479,6 +2503,8 @@ update_scap_cves (int last_scap_update)
               break;
             default:
               g_dir_close (dir);
+              cleanup_iterator (&cpes);
+              g_hash_table_destroy (hashed_cpes);
               return -1;
           }
         count++;
@@ -2488,6 +2514,8 @@ update_scap_cves (int last_scap_update)
     g_warning ("No CVEs found in %s", GVM_SCAP_DATA_DIR);
 
   g_dir_close (dir);
+  cleanup_iterator (&cpes);
+  g_hash_table_destroy (hashed_cpes);
   return updated_scap_cves;
 }
 
