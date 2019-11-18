@@ -1510,6 +1510,9 @@ result_iterator_has_cert_bunds (iterator_t*);
 int
 result_iterator_has_dfn_certs (iterator_t*);
 
+int
+cleanup_result_nvts ();
+
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 
