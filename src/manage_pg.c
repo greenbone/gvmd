@@ -3593,6 +3593,7 @@ manage_db_init (const gchar *name)
       sql ("CREATE TABLE scap.affected_products"
            " (cve INTEGER NOT NULL,"
            "  cpe INTEGER NOT NULL,"
+           "  UNIQUE (cve, cpe),"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
            "  FOREIGN KEY(cpe) REFERENCES cpes(id));");
       sql ("CREATE INDEX afp_cpe_idx"

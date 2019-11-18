@@ -2399,7 +2399,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                           if (sql_has_on_conflict ())
                             g_string_append
                              (sql_affected,
-                              " ON CONFLICT DO NOTHING");
+                              " ON CONFLICT (cve, cpe) DO NOTHING");
                           g_string_append (sql_affected, ";");
                           sql ("%s", sql_affected->str);
 
