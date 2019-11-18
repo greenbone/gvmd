@@ -6,7 +6,7 @@ psql -q --pset pager=off gvmd --command="\COPY (SELECT uuid, name, comment, crea
 psql -q --pset pager=off gvmd --command="\COPY (SELECT  uuid, name, comment, description, creation_time, modification_time, vector , complexity, authentication, confidentiality_impact, integrity_impact, availability_impact, products, cvss FROM ${1}.cves order by uuid) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.cves
 psql -q --pset pager=off gvmd --command="\COPY (SELECT uuid, name, comment, creation_time, modification_time, version, deprecated, def_class, title, description, xml_file, status, max_cvss, cve_refs FROM ${1}.ovaldefs order by uuid) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.ovaldefs
 psql -q --pset pager=off gvmd --command="\COPY (SELECT xml_file FROM ${1}.ovalfiles order by xml_file) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.ovalfiles
-psql -q --pset pager=off gvmd --command="\COPY (SELECT (SELECT uuid FROM ${1}.cves WHERE id = cve) AS cve_uuid, (SELECT uuid FROM ${1}.cpes WHERE id = cpe) AS cpe_uuid FROM ${1}.affected_products order by cve_uuid, cpe_uuid) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.affected_products
+psql -q --pset pager=off gvmd --command="\COPY (SELECT cves.uuid, cpes.uuid FROM ${1}.affected_products, ${1}.cves, ${1}.cpes WHERE ${1}.affected_products.cpe = ${1}.cpes.id AND ${1}.affected_products.cve = ${1}.cves.id order by cves.uuid, cpes.uuid) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.affected_products
 psql -q --pset pager=off gvmd --command="\COPY (SELECT cve, ovaldef FROM ${1}.affected_ovaldefs order by cve, ovaldef) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.affected_ovaldefs
 
 echo done $1
