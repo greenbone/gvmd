@@ -26,45 +26,23 @@ Describe (manage_utils);
 BeforeEach (manage_utils) {}
 AfterEach (manage_utils) {}
 
-/* time_offset */
+/* add_months */
 
-Ensure (manage_utils, time_offset_returns_0_when_zone_is_null)
+Ensure (manage_utils, add_months_0_months)
 {
-  assert_that (time_offset (NULL, 1559561396), is_equal_to (0));
+  assert_that (add_months (1572596056, 0), is_equal_to (1572596056));
 }
 
-Ensure (manage_utils, time_offset_returns_0_when_zone_is_utc)
+Ensure (manage_utils, add_months_negative_months)
 {
-  assert_that (time_offset ("UTC", 1559561396), is_equal_to (0));
+  assert_that (add_months (1554163199, -1), is_equal_to (1551484799));
+  assert_that (add_months (1556755199, -2), is_equal_to (1551484799));
 }
 
-Ensure (manage_utils, time_offset_returns_correct_value)
+Ensure (manage_utils, add_months_positive_months)
 {
-  assert_that (time_offset ("Africa/Johannesburg", 1559561396), is_equal_to (7200));
-}
-
-/* current_offset */
-
-Ensure (manage_utils, current_offset_returns_correct_values)
-{
-  assert_that (time_offset (NULL, 1559561396), is_equal_to (0));
-  assert_that (time_offset ("UTC", 1559561396), is_equal_to (0));
-  assert_that (time_offset ("Africa/Johannesburg", 1559561396), is_equal_to (7200));
-}
-
-/* next_time */
-
-time_t
-__wrap_time (time_t *tloc)
-{
-  return mock ();
-}
-
-Ensure (manage_utils, next_time_returns_correct_value)
-{
-  always_expect (__wrap_time, will_return (1560176823));
-  assert_that (next_time (1560176800, 40, 0, 0, "Africa/Johannesburg", 0),
-               is_equal_to (1560176840));
+  assert_that (add_months (1551484799, 1), is_equal_to (1554163199));
+  assert_that (add_months (1551484799, 2), is_equal_to (1556755199));
 }
 
 /* Test suite. */
@@ -76,13 +54,9 @@ main (int argc, char **argv)
 
   suite = create_test_suite ();
 
-  add_test_with_context (suite, manage_utils, time_offset_returns_0_when_zone_is_null);
-  add_test_with_context (suite, manage_utils, time_offset_returns_0_when_zone_is_utc);
-  add_test_with_context (suite, manage_utils, time_offset_returns_correct_value);
-
-  add_test_with_context (suite, manage_utils, current_offset_returns_correct_values);
-
-  add_test_with_context (suite, manage_utils, next_time_returns_correct_value);
+  add_test_with_context (suite, manage_utils, add_months_0_months);
+  add_test_with_context (suite, manage_utils, add_months_negative_months);
+  add_test_with_context (suite, manage_utils, add_months_positive_months);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());

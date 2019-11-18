@@ -1061,25 +1061,25 @@ update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
           if (type == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: PARAM missing type attribute", __FUNCTION__);
+              g_warning ("%s: PARAM missing type attribute", __func__);
               print_entity_to_string (param, debug);
-              g_warning ("%s: PARAM: %s", __FUNCTION__, debug->str);
+              g_warning ("%s: PARAM: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
           else if (id == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: PARAM missing id attribute", __FUNCTION__);
+              g_warning ("%s: PARAM missing id attribute", __func__);
               print_entity_to_string (param, debug);
-              g_warning ("%s: PARAM: %s", __FUNCTION__, debug->str);
+              g_warning ("%s: PARAM: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
           else if (name == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: PARAM missing NAME", __FUNCTION__);
+              g_warning ("%s: PARAM missing NAME", __func__);
               print_entity_to_string (param, debug);
-              g_warning ("%s: PARAM: %s", __FUNCTION__, debug->str);
+              g_warning ("%s: PARAM: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
           else
@@ -1132,7 +1132,7 @@ nvti_from_vt (entity_t vt)
   id = entity_attribute (vt, "id");
   if (id == NULL)
     {
-      g_warning ("%s: VT missing id attribute", __FUNCTION__);
+      g_warning ("%s: VT missing id attribute", __func__);
       nvti_free (nvti);
       return NULL;
     }
@@ -1141,7 +1141,7 @@ nvti_from_vt (entity_t vt)
   name = entity_child (vt, "name");
   if (name == NULL)
     {
-      g_warning ("%s: VT missing NAME", __FUNCTION__);
+      g_warning ("%s: VT missing NAME", __func__);
       nvti_free (nvti);
       return NULL;
     }
@@ -1189,7 +1189,7 @@ nvti_from_vt (entity_t vt)
 
       type = entity_attribute (solution, "type");
       if (type == NULL)
-        g_debug ("%s: SOLUTION missing type", __FUNCTION__);
+        g_debug ("%s: SOLUTION missing type", __func__);
       else
         nvti_set_solution_type (nvti, type);
     }
@@ -1197,7 +1197,7 @@ nvti_from_vt (entity_t vt)
   refs = entity_child (vt, "refs");
   if (refs == NULL)
     {
-      g_warning ("%s: VT missing REFS", __FUNCTION__);
+      g_warning ("%s: VT missing REFS", __func__);
       nvti_free (nvti);
       return NULL;
     }
@@ -1211,9 +1211,9 @@ nvti_from_vt (entity_t vt)
       if (ref_type == NULL)
         {
           GString *debug = g_string_new ("");
-          g_warning ("%s: REF missing type attribute", __FUNCTION__);
+          g_warning ("%s: REF missing type attribute", __func__);
           print_entity_to_string (ref, debug);
-          g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+          g_warning ("%s: ref: %s", __func__, debug->str);
           g_string_free (debug, TRUE);
         }
       else
@@ -1224,9 +1224,9 @@ nvti_from_vt (entity_t vt)
           if (ref_id == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: REF missing id attribute", __FUNCTION__);
+              g_warning ("%s: REF missing id attribute", __func__);
               print_entity_to_string (ref, debug);
-              g_warning ("%s: ref: %s", __FUNCTION__, debug->str);
+              g_warning ("%s: ref: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
           else
@@ -1260,15 +1260,15 @@ nvti_from_vt (entity_t vt)
           g_free (cvss_base);
         }
       else
-        g_warning ("%s: no severity", __FUNCTION__);
+        g_warning ("%s: no severity", __func__);
     }
   else
-    g_warning ("%s: no severities", __FUNCTION__);
+    g_warning ("%s: no severities", __func__);
 
   custom = entity_child (vt, "custom");
   if (custom == NULL)
     {
-      g_warning ("%s: VT missing CUSTOM", __FUNCTION__);
+      g_warning ("%s: VT missing CUSTOM", __func__);
       nvti_free (nvti);
       return NULL;
     }
@@ -1276,7 +1276,7 @@ nvti_from_vt (entity_t vt)
   family = entity_child (custom, "family");
   if (family == NULL)
     {
-      g_warning ("%s: VT/CUSTOM missing FAMILY", __FUNCTION__);
+      g_warning ("%s: VT/CUSTOM missing FAMILY", __func__);
       nvti_free (nvti);
       return NULL;
     }
@@ -1285,7 +1285,7 @@ nvti_from_vt (entity_t vt)
   category = entity_child (custom, "category");
   if (category == NULL)
     {
-      g_warning ("%s: VT/CUSTOM missing CATEGORY", __FUNCTION__);
+      g_warning ("%s: VT/CUSTOM missing CATEGORY", __func__);
       nvti_free (nvti);
       return NULL;
     }
@@ -1318,7 +1318,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   vts = entity_child (*get_vts_response, "vts");
   if (vts == NULL)
     {
-      g_warning ("%s: VTS missing", __FUNCTION__);
+      g_warning ("%s: VTS missing", __func__);
       return;
     }
 
@@ -1376,7 +1376,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   if (check_config_families ())
     g_warning ("%s: Error updating config families."
                "  One or more configs refer to an outdated family of an NVT.",
-               __FUNCTION__);
+               __func__);
   update_all_config_caches ();
 
   g_info ("Updating VTs in database ... %i new VTs, %i changed VTs",
@@ -1433,21 +1433,21 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
   /* Try update VTs. */
 
   db_feed_version = nvts_feed_version ();
-  g_debug ("%s: db_feed_version: %s", __FUNCTION__, db_feed_version);
+  g_debug ("%s: db_feed_version: %s", __func__, db_feed_version);
 
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
-      g_warning ("%s: failed to connect to %s", __FUNCTION__, update_socket);
+      g_warning ("%s: failed to connect to %s", __func__, update_socket);
       return -1;
     }
 
   if (osp_get_vts_version (connection, &scanner_feed_version))
     {
-      g_warning ("%s: failed to get scanner_version", __FUNCTION__);
+      g_warning ("%s: failed to get scanner_version", __func__);
       return -1;
     }
-  g_debug ("%s: scanner_feed_version: %s", __FUNCTION__, scanner_feed_version);
+  g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
 
   osp_connection_close (connection);
 
@@ -1464,7 +1464,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
       if (!connection)
         {
-          g_warning ("%s: failed to connect to %s (2)", __FUNCTION__,
+          g_warning ("%s: failed to connect to %s (2)", __func__,
                      update_socket);
           return -1;
         }
@@ -1475,7 +1475,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
         get_vts_opts.filter = NULL;
       if (osp_get_vts_ext (connection, get_vts_opts, &vts))
         {
-          g_warning ("%s: failed to get VTs", __FUNCTION__);
+          g_warning ("%s: failed to get VTs", __func__);
           g_free (get_vts_opts.filter);
           return -1;
         }
@@ -1491,14 +1491,14 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       if (!connection)
         {
           g_warning ("%s: failed to connect to %s (3)",
-                    __FUNCTION__, update_socket);
+                    __func__, update_socket);
           return -1;
         }
 
       scanner_prefs = NULL;
       if (osp_get_scanner_details (connection, NULL, &scanner_prefs))
         {
-          g_warning ("%s: failed to get scanner preferences", __FUNCTION__);
+          g_warning ("%s: failed to get scanner preferences", __func__);
           osp_connection_close (connection);
           return -1;
         }
