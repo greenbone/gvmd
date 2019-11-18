@@ -2,7 +2,7 @@
 
 echo dumping from $1 to $2
 
-psql -q --pset pager=off gvmd --command="\COPY (SELECT uuid, name, comment, creation_time, modification_time, title, status, deprecated_by_id, max_cvss, cve_refs, nvd_id FROM ${1}.cpes order by nvd_id) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.cpes
+psql -q --pset pager=off gvmd --command="\COPY (SELECT uuid, name, comment, creation_time, modification_time, title, status, deprecated_by_id, max_cvss, cve_refs, nvd_id FROM ${1}.cpes order by uuid) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.cpes
 psql -q --pset pager=off gvmd --command="\COPY (SELECT  uuid, name, comment, description, creation_time, modification_time, vector , complexity, authentication, confidentiality_impact, integrity_impact, availability_impact, products, cvss FROM ${1}.cves order by uuid) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.cves
 psql -q --pset pager=off gvmd --command="\COPY (SELECT uuid, name, comment, creation_time, modification_time, version, deprecated, def_class, title, description, xml_file, status, max_cvss, cve_refs FROM ${1}.ovaldefs order by uuid) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.ovaldefs
 psql -q --pset pager=off gvmd --command="\COPY (SELECT xml_file FROM ${1}.ovalfiles order by xml_file) TO stdout WITH CSV;" | sed '/^[[:space:]]*$/d' > $2.ovalfiles
