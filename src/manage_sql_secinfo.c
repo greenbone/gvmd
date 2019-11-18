@@ -1436,6 +1436,8 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   int updated_cert_bund;
   int transaction_size = 0;
 
+  g_debug ("XXXTIME: %s", __func__);
+
   updated_cert_bund = 0;
   full_path = g_build_filename (GVM_CERT_DATA_DIR, xml_path, NULL);
 
@@ -1615,6 +1617,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
   sql_commit ();
   xml_doc_free (xml_doc);
   g_free (xml);
+  g_debug ("XXXTIME: %s done", __func__);
   return updated_cert_bund;
 
  fail:
@@ -1643,6 +1646,8 @@ update_cert_bund_advisories (int last_cert_update)
   int count, last_bund_update, updated_cert_bund;
   GDir *dir;
   const gchar *xml_path;
+
+  g_debug ("XXXTIME: %s", __func__);
 
   error = NULL;
   dir = g_dir_open (GVM_CERT_DATA_DIR, 0, &error);
@@ -1680,6 +1685,7 @@ update_cert_bund_advisories (int last_cert_update)
     g_warning ("No CERT-Bund advisories found in %s", GVM_CERT_DATA_DIR);
 
   g_dir_close (dir);
+  g_debug ("XXXTIME: %s done", __func__);
   return updated_cert_bund;
 }
 
@@ -1705,6 +1711,8 @@ update_scap_cpes (int last_scap_update)
   GStatBuf state;
   int updated_scap_cpes, last_cve_update, first;
   GString *inserts;
+
+  g_debug ("XXXTIME: %s", __func__);
 
   updated_scap_cpes = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
@@ -1931,6 +1939,7 @@ update_scap_cpes (int last_scap_update)
   g_free (xml);
   sql_commit ();
   g_info ("Updated %d CPEs", updated_scap_cpes);
+  g_debug ("XXXTIME: %s done", __func__);
   return updated_scap_cpes > 0;
 
  fail:
@@ -1966,6 +1975,8 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   GStatBuf state;
   int updated_scap_bund;
   int transaction_size = 0;
+
+  g_debug ("XXXTIME: %s", __func__);
 
   updated_scap_bund = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR, xml_path, NULL);
@@ -2201,6 +2212,13 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               g_free (software_tilde);
               time_modified = parse_iso_time (entity2_text (xml_doc, last_modified));
               time_published = parse_iso_time (entity2_text (xml_doc, published));
+
+/// FIX
+/// buffer all cpes (in iter)  they were inserted in update_scap_cpes
+/// loop once, just inserting cves  (single statement, possibly chunked)
+/// loop again, just inserting cpes (single st; only cpes not same as buffered cpes; buffer the ids)
+/// loop again, affected_products   (single st; use ids from cpe_id_buffer; )
+
               sql ("SELECT merge_cve"
                    "        ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
                    "         '%s', '%s', '%s', '%s');",
@@ -2404,6 +2422,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   g_free (xml);
   g_free (full_path);
   sql_commit ();
+  g_debug ("XXXTIME: %s done", __func__);
   return updated_scap_bund;
 
  fail:
@@ -2747,6 +2766,8 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   int last_oval_update, file_timestamp;
   int transaction_size = 0;
 
+  g_debug ("XXXTIME: %s", __func__);
+
   /* Setup variables. */
 
   xml_path = file_and_date[0];
@@ -3058,6 +3079,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   xml_doc_free (xml_doc);
   g_free (xml);
   sql_commit ();
+  g_debug ("XXXTIME: %s done", __func__);
   return 1;
 
  fail:
@@ -3298,6 +3320,8 @@ update_scap_ovaldefs (int last_scap_update, int private)
   guint index;
   struct stat state;
 
+  g_debug ("XXXTIME: %s", __func__);
+
   assert (oval_files == NULL);
 
   if (private)
@@ -3526,6 +3550,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
 
   g_free (oval_dir);
   oval_files_free ();
+  g_debug ("XXXTIME: %s done", __func__);
   return updated_scap_ovaldefs;
 }
 
@@ -4029,10 +4054,12 @@ sync_cert (int lockfile)
 void
 manage_sync_cert (sigset_t *sigmask_current)
 {
+  g_debug ("XXXTIME: %s", __func__);
   sync_secinfo (sigmask_current,
                 sync_cert,
                 "gvmd: Syncing CERT",
                 "gvm-sync-cert");
+  g_debug ("XXXTIME: %s done", __func__);
 }
 
 
@@ -4366,10 +4393,12 @@ sync_scap (int lockfile)
 void
 manage_sync_scap (sigset_t *sigmask_current)
 {
+  g_debug ("XXXTIME: %s", __func__);
   sync_secinfo (sigmask_current,
                 sync_scap,
                 "gvmd: Syncing SCAP",
                 "gvm-sync-scap");
+  g_debug ("XXXTIME: %s done", __func__);
 }
 
 /**
