@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MODIFY_USER saves comment when COMMENT is empty [#838](https://github.com/greenbone/gvmd/pull/838)
 - Prevent HOSTS_ORDERING from being '(null)' [#859](https://github.com/greenbone/gvmd/pull/859)
 - Fix preference ID in "Host Discovery" config [#867](https://github.com/greenbone/gvmd/pull/867)
+- Fix SQL for tickets with overrides [#871](https://github.com/greenbone/gvmd/pull/871)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
