@@ -20885,16 +20885,8 @@ result_nvt_notice (const gchar *nvt)
 {
   if (nvt == NULL)
     return;
-  if (sql_int ("SELECT current_setting ('server_version_num')::integer;")
-          < 90500)
-    sql ("INSERT into result_nvts (nvt)"
-         " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts"
-         "                               WHERE nvt = '%s');",
-         nvt,
-         nvt);
-  else
-    sql ("INSERT INTO result_nvts (nvt) VALUES ('%s') ON CONFLICT DO NOTHING;",
-         nvt);
+  sql ("INSERT INTO result_nvts (nvt) VALUES ('%s') ON CONFLICT DO NOTHING;",
+       nvt);
 }
 
 /**
@@ -49289,16 +49281,12 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
                const char* type, const char* description,
                report_t report, user_t owner)
 {
-  static int db_server_version_num = 0;
   gchar *nvt_revision, *severity;
   gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
   int qod, first;
   nvt_t nvt_id = 0;
 
   assert (report);
-
-  if (db_server_version_num == 0)
-    db_server_version_num = sql_server_version ();
 
   if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
     {
@@ -49368,25 +49356,15 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
                        "  description, uuid, qod, qod_type, result_nvt,"
                        "  report)"
                        " VALUES");
-      if (db_server_version_num >= 90500)
-        g_string_append (result_nvts_buffer,
-                        "INSERT INTO result_nvts (nvt) VALUES ");
+      g_string_append (result_nvts_buffer,
+                       "INSERT INTO result_nvts (nvt) VALUES ");
     }
 
-  if (db_server_version_num < 90500)
-    g_string_append_printf
-        (result_nvts_buffer,
-         "INSERT into result_nvts (nvt)"
-         " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts"
-         "                               WHERE nvt = '%s');\n",
-         nvt,
-         nvt);
-  else
-    g_string_append_printf
-        (result_nvts_buffer,
-         "%s ('%s')",
-         first ? "" : ",",
-         nvt);
+  g_string_append_printf
+      (result_nvts_buffer,
+       "%s ('%s')",
+       first ? "" : ",",
+       nvt);
 
   g_string_append_printf (results_buffer,
                           "%s"
@@ -49423,9 +49401,8 @@ update_from_slave_insert (GString *results_buffer, GString *result_nvts_buffer,
 {
   if (result_nvts_buffer && strlen (result_nvts_buffer->str))
     {
-      if (sql_server_version () >= 90500)
-        g_string_append (result_nvts_buffer,
-                         " ON CONFLICT (nvt) DO NOTHING;");
+      g_string_append (result_nvts_buffer,
+                       " ON CONFLICT (nvt) DO NOTHING;");
 
       sql ("%s", result_nvts_buffer->str);
       g_string_truncate (result_nvts_buffer, 0);
