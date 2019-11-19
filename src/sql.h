@@ -31,9 +31,6 @@
 
 /* Helpers. */
 
-int
-sql_server_version ();
-
 const char *
 sql_schema ();
 
