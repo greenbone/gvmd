@@ -17,7 +17,7 @@ Prerequisites:
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
 * libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 11.0.0
-* PostgreSQL database
+* PostgreSQL database >= 9.6
 * pkg-config
 * libical >= 1.0.0
 
