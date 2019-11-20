@@ -4203,6 +4203,12 @@ check_scap_db_version ()
        g_info ("Reinitialization of the database necessary");
        return manage_db_reinit ("scap");
        break;
+      case 15:
+       sql ("ALTER TABLE scap.affected_products ADD UNIQUE (cve, cpe);");
+       sql ("UPDATE scap.meta"
+            " SET value = '16'"
+            " WHERE name = 'database_version';");
+       break;
     }
   return 0;
 }
