@@ -88,17 +88,6 @@ static PGconn *conn = NULL;
 /* Helpers. */
 
 /**
- * @brief Get the server version number.
- * 
- * @return The version as an integer.
- */
-int
-sql_server_version ()
-{
-  return sql_int ("SELECT current_setting ('server_version_num')::integer;");
-}
-
-/**
  * @brief Get main schema name.
  *
  * @return Schema name.
@@ -364,6 +353,15 @@ sql_open (const char *database)
   g_debug ("%s: port: %s", __FUNCTION__, PQport (conn));
   g_debug ("%s: socket: %i", __FUNCTION__, PQsocket (conn));
   g_debug ("%s: postgres version: %i", __FUNCTION__, PQserverVersion (conn));
+
+  if (PQserverVersion (conn) < 90600)
+    {
+      g_warning ("%s: PostgreSQL version 9.6 (90600) or higher is required",
+                 __FUNCTION__);
+      g_warning ("%s: Current version is %i", __FUNCTION__,
+                 PQserverVersion (conn));
+      goto fail;
+    }
 
   return 0;
 
