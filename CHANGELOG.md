@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update SCAP and CERT feed info in sync scripts [#809](https://github.com/greenbone/gvmd/pull/809)
 - Try authentication when verifying GMP scanners [#837](https://github.com/greenbone/gvmd/pull/837)
 - Try importing private keys with libssh if GnuTLS fails [#841](https://github.com/greenbone/gvmd/pull/841)
+- Require Postgres 9.6 as a minimum [#872](https://github.com/greenbone/gvmd/pull/872)
 
 ### Fixed
 - Consider results_trash when deleting users [#799](https://github.com/greenbone/gvmd/pull/799)
