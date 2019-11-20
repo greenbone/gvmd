@@ -1273,8 +1273,20 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               quoted_refnum = sql_quote (entity_text (refnum));
               quoted_title = sql_quote (entity_text (title));
               quoted_summary = sql_quote (entity_text (summary));
-              sql ("SELECT merge_dfn_cert_adv"
-                   "        ('%s', %i, %i, '%s', '%s', %i);",
+              sql ("INSERT INTO cert.dfn_cert_advs"
+                   " (uuid, name, comment, creation_time,"
+                   "  modification_time, title, summary, cve_refs)"
+                   " VALUES"
+                   " ('%s', '%s', '', %i, %i, '%s', '%s', %i)"
+                   " ON CONFLICT (uuid) DO UPDATE"
+                   " SET name = EXCLUDED.uuid,"
+                   "     comment = '',"
+                   "     creation_time = EXCLUDED.creation,"
+                   "     modification_time = EXCLUDED.modification,"
+                   "     title = EXCLUDED.title,"
+                   "     summary = EXCLUDED.summary,"
+                   "     cve_refs = EXCLUDED.cve_refs;",
+                   quoted_refnum,
                    quoted_refnum,
                    parse_iso_time (entity_text (published)),
                    parse_iso_time (entity_text (updated)),
@@ -1559,8 +1571,20 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
               quoted_title = sql_quote (entity_text (title));
               quoted_summary = sql_quote (summary->str);
               g_string_free (summary, TRUE);
-              sql ("SELECT merge_bund_adv"
-                   "        ('%s', %i, %i, '%s', '%s', %i);",
+              sql ("INSERT INTO cert.cert_bund_advs"
+                   " (uuid, name, comment, creation_time,"
+                   "  modification_time, title, summary, cve_refs)"
+                   " VALUES"
+                   " ('%s', '%s', '', %i, %i, '%s', '%s', %i)"
+                   " ON CONFLICT (uuid) DO UPDATE"
+                   " SET name = EXCLUDED.uuid,"
+                   "     comment = '',"
+                   "     creation_time = EXCLUDED.creation_time,"
+                   "     modification_time = EXCLUDED.modification_time,"
+                   "     title = EXCLUDED.title,"
+                   "     summary = EXCLUDED.summary,"
+                   "     cve_refs = EXCLUDED.cve_refs;",
+                   quoted_refnum,
                    quoted_refnum,
                    parse_iso_time (entity_text (date)),
                    parse_iso_time (entity_text (date)),
@@ -1852,8 +1876,21 @@ update_scap_cpes (int last_scap_update)
               g_free (name_tilde);
               quoted_status = sql_quote (status);
               quoted_nvd_id = sql_quote (nvd_id);
-              sql ("SELECT merge_cpe"
-                   "        ('%s', '%s', %i, %i, '%s', %s, '%s');",
+              sql ("INSERT INTO scap.cpes"
+                   " (uuid, name, title, creation_time,"
+                   "  modification_time, status, deprecated_by_id,"
+                   "  nvd_id)"
+                   " VALUES"
+                   " ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')"
+                   " ON CONFLICT (uuid) DO UPDATE"
+                   " SET name = EXCLUDED.name,"
+                   "     title = EXCLUDED.title,"
+                   "     creation_time = EXCLUDED.creation_time,"
+                   "     modification_time = EXCLUDED.modification_time,"
+                   "     status = EXCLUDED.status,"
+                   "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
+                   "     nvd_id = EXCLUDED.nvd_id;",
+                   quoted_name,
                    quoted_name,
                    quoted_title,
                    parse_iso_time (modification_date),
@@ -2150,9 +2187,28 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               g_free (software_tilde);
               time_modified = parse_iso_time (entity_text (last_modified));
               time_published = parse_iso_time (entity_text (published));
-              sql ("SELECT merge_cve"
-                   "        ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
-                   "         '%s', '%s', '%s', '%s');",
+              sql ("INSERT INTO scap.cves"
+                   " (uuid, name, creation_time, modification_time,"
+                   "  cvss, description, vector, complexity,"
+                   "  authentication, confidentiality_impact,"
+                   "  integrity_impact, availability_impact, products)"
+                   " VALUES"
+                   " ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
+                   "  '%s', '%s', '%s', '%s')"
+                   " ON CONFLICT (uuid) DO UPDATE"
+                   " SET name = EXCLUDED.name,"
+                   "     creation_time = EXCLUDED.creation_time,"
+                   "     modification_time = EXCLUDED.modification_time,"
+                   "     cvss = EXCLUDED.cvss,"
+                   "     description = EXCLUDED.description,"
+                   "     vector = EXCLUDED.vector,"
+                   "     complexity = EXCLUDED.complexity,"
+                   "     authentication = EXCLUDED.authentication,"
+                   "     confidentiality_impact"
+                   "     = EXCLUDED.confidentiality_impact,"
+                   "     integrity_impact = EXCLUDED.integrity_impact,"
+                   "     availability_impact = EXCLUDED.availability_impact,"
+                   "     products = EXCLUDED.products;",
                    quoted_id,
                    quoted_id,
                    time_published,
@@ -2207,13 +2263,22 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                               quoted_product = sql_quote (product_tilde);
                               g_free (product_tilde);
 
-                              sql ("SELECT merge_cpe_name ('%s', '%s', %i, %i)",
+                              sql ("INSERT INTO scap.cpes"
+                                   " (uuid, name, creation_time,"
+                                   "  modification_time)"
+                                   " VALUES"
+                                   " ('%s', '%s', %i, %i)"
+                                   " ON CONFLICT (uuid)"
+                                   " DO UPDATE SET name = EXCLUDED.name;",
                                    quoted_product, quoted_product, time_published,
                                    time_modified);
-                              sql ("SELECT merge_affected_product"
-                                   "        (%llu,"
-                                   "         (SELECT id FROM cpes"
-                                   "          WHERE name='%s'))",
+                              sql ("INSERT INTO scap.affected_products"
+                                   " (cve, cpe)"
+                                   " VALUES"
+                                   " (%llu,"
+                                   "  (SELECT id FROM cpes"
+                                   "   WHERE name='%s'))"
+                                   " ON CONFLICT (cve, cpe) DO NOTHING;",
                                    cve_rowid, quoted_product);
                               transaction_size ++;
                               increment_transaction_size (&transaction_size);
@@ -2808,9 +2873,27 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   else
                     quoted_status = sql_quote ("");
 
-                  sql ("SELECT merge_ovaldef ('%s', '%s', '', %i, %i, %i, %i,"
-                       "                      '%s', '%s', '%s', '%s', '%s',"
-                       "                      %i);",
+                  sql ("INSERT INTO scap.ovaldefs"
+                       " (uuid, name, comment, creation_time,"
+                       "  modification_time, version, deprecated, def_class,"
+                       "  title, description, xml_file, status,"
+                       "  max_cvss, cve_refs)"
+                       " VALUES ('%s', '%s', '', %i, %i, %i, %i, '%s', '%s',"
+                       "         '%s', '%s', '%s', 0.0, %i)"
+                       " ON CONFLICT (uuid) DO UPDATE"
+                       " SET name = EXCLUDED.name,"
+                       "     comment = EXCLUDED.comment,"
+                       "     creation_time = EXCLUDED.creation_time,"
+                       "     modification_time = EXCLUDED.modification_time,"
+                       "     version = EXCLUDED.version,"
+                       "     deprecated = EXCLUDED.deprecated,"
+                       "     def_class = EXCLUDED.def_class,"
+                       "     title = EXCLUDED.title,"
+                       "     description = EXCLUDED.description,"
+                       "     xml_file = EXCLUDED.xml_file,"
+                       "     status = EXCLUDED.status,"
+                       "     max_cvss = 0.0,"
+                       "     cve_refs = EXCLUDED.cve_refs;",
                        quoted_id,
                        quoted_oval_id,
                        definition_date_oldest == 0
