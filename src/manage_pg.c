@@ -3691,7 +3691,7 @@ manage_db_init (const gchar *name)
       /* Init tables. */
 
       sql ("INSERT INTO scap.meta (name, value)"
-           " VALUES ('database_version', '15');");
+           " VALUES ('database_version', '16');");
       sql ("INSERT INTO scap.meta (name, value)"
            " VALUES ('last_update', '0');");
     }
