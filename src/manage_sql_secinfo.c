@@ -77,6 +77,51 @@ manage_db_init (const gchar *);
 /* Helpers. */
 
 /**
+ * @brief Get SQL quoted version of element's text.
+ *
+ * @param[in]  element  Element.
+ *
+ * @return Freshly allocated quoted text.
+ */
+static gchar *
+sql_quote_element_text (element_t element)
+{
+  if (element)
+    {
+      gchar *quoted, *text;
+
+      text = element_text (element);
+      quoted = sql_quote (text);
+      g_free (text);
+      return quoted;
+    }
+  return g_strdup ("");
+}
+
+/**
+ * @brief Get ISO time from element's text.
+ *
+ * @param[in]  element  Element.
+ *
+ * @return Seconds since epoch.  0 on error.
+ */
+static int
+parse_iso_time_element_text (element_t element)
+{
+  if (element)
+    {
+      int ret;
+      gchar *text;
+
+      text = element_text (element);
+      ret = parse_iso_time (text);
+      g_free (text);
+      return ret;
+    }
+  return 0;
+}
+
+/**
  * @brief Replace text in a string.
  *
  * @param[in]  string  String to replace in.
@@ -1206,6 +1251,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
       if (strcmp (element_name (child), "entry") == 0)
         {
           element_t updated;
+          gchar *updated_text;
 
           updated = element_child (child, "updated");
           if (updated == NULL)
@@ -1215,7 +1261,8 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               goto fail;
             }
 
-          if (parse_iso_time (element_text (updated)) > last_dfn_update)
+          updated_text = element_text (updated);
+          if (parse_iso_time (updated_text) > last_dfn_update)
             {
               element_t refnum, published, summary, title, cve;
               gchar *quoted_refnum, *quoted_title, *quoted_summary;
@@ -1226,6 +1273,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                 {
                   g_warning ("%s: REFNUM missing", __func__);
                   element_free (element);
+                  g_free (updated_text);
                   goto fail;
                 }
 
@@ -1234,6 +1282,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                 {
                   g_warning ("%s: PUBLISHED missing", __func__);
                   element_free (element);
+                  g_free (updated_text);
                   goto fail;
                 }
 
@@ -1242,6 +1291,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                 {
                   g_warning ("%s: TITLE missing", __func__);
                   element_free (element);
+                  g_free (updated_text);
                   goto fail;
                 }
 
@@ -1250,6 +1300,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                 {
                   g_warning ("%s: SUMMARY missing", __func__);
                   element_free (element);
+                  g_free (updated_text);
                   goto fail;
                 }
 
@@ -1262,9 +1313,9 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                   cve = element_next (cve);
                 }
 
-              quoted_refnum = sql_quote (element_text (refnum));
-              quoted_title = sql_quote (element_text (title));
-              quoted_summary = sql_quote (element_text (summary));
+              quoted_refnum = sql_quote_element_text (refnum);
+              quoted_title = sql_quote_element_text (title);
+              quoted_summary = sql_quote_element_text (summary);
               sql ("INSERT INTO cert.dfn_cert_advs"
                    " (uuid, name, comment, creation_time,"
                    "  modification_time, title, summary, cve_refs)"
@@ -1280,8 +1331,8 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                    "     cve_refs = EXCLUDED.cve_refs;",
                    quoted_refnum,
                    quoted_refnum,
-                   parse_iso_time (element_text (published)),
-                   parse_iso_time (element_text (updated)),
+                   parse_iso_time_element_text (published),
+                   parse_iso_time (updated_text),
                    quoted_title,
                    quoted_summary,
                    cve_refs);
@@ -1297,7 +1348,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                       gchar **split, **point;
                       gchar *text, *start;
 
-                      text = g_strdup (element_text (cve));
+                      text = element_text (cve);
                       start = text;
                       while ((start = strstr (start, "CVE ")))
                         start[3] = '-';
@@ -1338,6 +1389,8 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               updated_dfn_cert = 1;
               g_free (quoted_refnum);
             }
+
+          g_free (updated_text);
         }
       child = element_next (child);
     }
@@ -1493,8 +1546,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
               element_free (element);
               goto fail;
             }
-
-          if (parse_iso_time (element_text (date)) > last_bund_update)
+          if (parse_iso_time_element_text (date) > last_bund_update)
             {
               element_t refnum, description, title, cve, cve_list;
               gchar *quoted_refnum, *quoted_title, *quoted_summary;
@@ -1531,7 +1583,13 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                           element_t text_block;
                           text_block = element_child (delement, "TextBlock");
                           if (text_block)
-                            g_string_append (summary, element_text (text_block));
+                            {
+                              gchar *text;
+
+                              text = element_text (text_block);
+                              g_string_append (summary, text);
+                              g_free (text);
+                            }
                         }
                       delement = element_next (delement);
                     }
@@ -1550,8 +1608,8 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                     }
                 }
 
-              quoted_refnum = sql_quote (element_text (refnum));
-              quoted_title = sql_quote (element_text (title));
+              quoted_refnum = sql_quote_element_text (refnum);
+              quoted_title = sql_quote_element_text (title);
               quoted_summary = sql_quote (summary->str);
               g_string_free (summary, TRUE);
               sql ("INSERT INTO cert.cert_bund_advs"
@@ -1569,8 +1627,8 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                    "     cve_refs = EXCLUDED.cve_refs;",
                    quoted_refnum,
                    quoted_refnum,
-                   parse_iso_time (element_text (date)),
-                   parse_iso_time (element_text (date)),
+                   parse_iso_time_element_text (date),
+                   parse_iso_time_element_text (date),
                    quoted_title,
                    quoted_summary,
                    cve_refs);
@@ -1584,26 +1642,33 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                   cve = element_first_child (cve_list);
                   while (cve)
                     {
-                      if ((strcmp (element_name (cve), "CVE") == 0)
-                          && strlen (element_text (cve)))
+                      if (strcmp (element_name (cve), "CVE") == 0)
                         {
-                          gchar *quoted_cve;
-                          quoted_cve = sql_quote (element_text (cve));
-                          /* There's no primary key, so just INSERT, even
-                           * for Postgres. */
-                          sql ("INSERT INTO cert_bund_cves"
-                               " (adv_id, cve_name)"
-                               " VALUES"
-                               " ((SELECT id FROM cert_bund_advs"
-                               "   WHERE name = '%s'),"
-                               "  '%s')",
-                               quoted_refnum,
-                               quoted_cve);
-                          increment_transaction_size (&transaction_size);
-                          g_free (quoted_cve);
-                        }
+                          gchar *cve_text;
 
-                      cve = element_next (cve);
+                          cve_text = element_text (cve);
+
+                          if (strlen (cve_text))
+                            {
+                              gchar *quoted_cve;
+                              quoted_cve = sql_quote (cve_text);
+                              /* There's no primary key, so just INSERT, even
+                               * for Postgres. */
+                              sql ("INSERT INTO cert_bund_cves"
+                                   " (adv_id, cve_name)"
+                                   " VALUES"
+                                   " ((SELECT id FROM cert_bund_advs"
+                                   "   WHERE name = '%s'),"
+                                   "  '%s')",
+                                   quoted_refnum,
+                                   quoted_cve);
+                              increment_transaction_size (&transaction_size);
+                              g_free (quoted_cve);
+                            }
+                          g_free (cve_text);
+
+                          cve = element_next (cve);
+                        }
                     }
                 }
 
@@ -1854,8 +1919,13 @@ update_scap_cpes (int last_scap_update)
                       lang = element_attribute (title, "xml:lang");
                       if (lang && strcmp (lang, "en-US") == 0)
                         {
+                          gchar *title_text;
+
+                          title_text = element_text (title);
                           g_free (quoted_title);
-                          quoted_title = sql_quote (element_text (title));
+                          quoted_title = sql_quote (title_text);
+                          g_free (title_text);
+
                           g_free (lang);
                           break;
                         }
@@ -2005,8 +2075,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               element_free (element);
               goto fail;
             }
-
-          if (parse_iso_time (element_text (last_modified)) > last_cve_update)
+          if (parse_iso_time_element_text (last_modified) > last_cve_update)
             {
               element_t published, summary, cvss, score, base_metrics;
               element_t access_vector, access_complexity, authentication;
@@ -2016,7 +2085,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               gchar *quoted_access_vector, *quoted_access_complexity;
               gchar *quoted_authentication, *quoted_confidentiality_impact;
               gchar *quoted_integrity_impact, *quoted_availability_impact;
-              gchar *quoted_software, *id;
+              gchar *quoted_software, *id, *score_text;
               GString *software;
               gchar *software_unescaped, *software_tilde;
               int time_modified, time_published;
@@ -2152,41 +2221,29 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   while (product)
                     {
                       if (strcmp (element_name (product), "vuln:product") == 0)
-                        g_string_append_printf (software,
-                                                "%s ",
-                                                element_text (product));
+                        {
+                          gchar *product_text;
+
+                          product_text = element_text (product);
+                          g_string_append_printf (software, "%s ", product_text);
+                          g_free (product_text);
+                        }
                       product = element_next (product);
                     }
                 }
 
               quoted_id = sql_quote (id);
               g_free (id);
-              quoted_summary = sql_quote (summary ? element_text (summary) : "");
-              quoted_access_vector = sql_quote (access_vector
-                                                 ? element_text (access_vector)
-                                                 : "");
-              quoted_access_complexity = sql_quote
-                                          (access_complexity
-                                            ? element_text (access_complexity)
-                                            : "");
-              quoted_authentication = sql_quote
-                                       (authentication
-                                         ? element_text (authentication)
-                                         : "");
-              quoted_confidentiality_impact = sql_quote
-                                               (confidentiality_impact
-                                                 ? element_text
-                                                    (confidentiality_impact)
-                                                 : "");
-              quoted_integrity_impact = sql_quote
-                                         (integrity_impact
-                                           ? element_text (integrity_impact)
-                                           : "");
-              quoted_availability_impact = sql_quote
-                                            (availability_impact
-                                              ? element_text
-                                                 (availability_impact)
-                                              : "");
+              quoted_summary = sql_quote_element_text (summary);
+              quoted_access_vector = sql_quote_element_text (access_vector);
+              quoted_access_complexity = sql_quote_element_text
+                                          (access_complexity);
+              quoted_authentication = sql_quote_element_text (authentication);
+              quoted_confidentiality_impact = sql_quote_element_text
+                                               (confidentiality_impact);
+              quoted_integrity_impact = sql_quote_element_text (integrity_impact);
+              quoted_availability_impact = sql_quote_element_text
+                                            (availability_impact);
               software_unescaped = g_uri_unescape_string (software->str, NULL);
               g_string_free (software, TRUE);
               software_tilde = string_replace (software_unescaped,
@@ -2194,8 +2251,9 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               g_free (software_unescaped);
               quoted_software = sql_quote (software_tilde);
               g_free (software_tilde);
-              time_modified = parse_iso_time (element_text (last_modified));
-              time_published = parse_iso_time (element_text (published));
+              time_modified = parse_iso_time_element_text (last_modified);
+              time_published = parse_iso_time_element_text (published);
+              score_text = score ? element_text (score) : g_strdup ("NULL");
               sql ("INSERT INTO scap.cves"
                    " (uuid, name, creation_time, modification_time,"
                    "  cvss, description, vector, complexity,"
@@ -2222,7 +2280,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                    quoted_id,
                    time_published,
                    time_modified,
-                   score ? element_text (score) : "NULL",
+                   score_text,
                    quoted_summary,
                    quoted_access_vector,
                    quoted_access_complexity,
@@ -2239,58 +2297,67 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               g_free (quoted_confidentiality_impact);
               g_free (quoted_integrity_impact);
               g_free (quoted_availability_impact);
+              g_free (score_text);
 
               if (list)
                 {
                   element_t product;
-                  resource_t cve_rowid;
 
                   product = element_first_child (list);
 
                   if (product)
                     {
+                      resource_t cve_rowid;
+
                       sql_int64 (&cve_rowid,
                                  "SELECT id FROM cves WHERE uuid='%s';",
                                  quoted_id);
 
                       while (product)
                         {
-                          if ((strcmp (element_name (product), "vuln:product")
-                               == 0)
-                              && strlen (element_text (product)))
+                          if (strcmp (element_name (product), "vuln:product")
+                              == 0)
                             {
-                              gchar *quoted_product, *product_decoded;
-                              gchar *product_tilde;
+                              gchar *product_text;
 
-                              product_decoded = g_uri_unescape_string
-                                                 (element_text (product), NULL);
-                              product_tilde = string_replace (product_decoded,
-                                                              "~", "%7E", "%7e",
-                                                              NULL);
-                              g_free (product_decoded);
-                              quoted_product = sql_quote (product_tilde);
-                              g_free (product_tilde);
+                              product_text = element_text (product);
+                              if (strlen (product_text))
+                                {
+                                  gchar *quoted_product, *product_decoded;
+                                  gchar *product_tilde;
 
-                              sql ("INSERT INTO scap.cpes"
-                                   " (uuid, name, creation_time,"
-                                   "  modification_time)"
-                                   " VALUES"
-                                   " ('%s', '%s', %i, %i)"
-                                   " ON CONFLICT (uuid)"
-                                   " DO UPDATE SET name = EXCLUDED.name;",
-                                   quoted_product, quoted_product, time_published,
-                                   time_modified);
-                              sql ("INSERT INTO scap.affected_products"
-                                   " (cve, cpe)"
-                                   " VALUES"
-                                   " (%llu,"
-                                   "  (SELECT id FROM cpes"
-                                   "   WHERE name='%s'))"
-                                   " ON CONFLICT (cve, cpe) DO NOTHING;",
-                                   cve_rowid, quoted_product);
-                              transaction_size ++;
-                              increment_transaction_size (&transaction_size);
-                              g_free (quoted_product);
+                                  product_decoded = g_uri_unescape_string
+                                                     (element_text (product), NULL);
+                                  product_tilde = string_replace (product_decoded,
+                                                                  "~", "%7E", "%7e",
+                                                                  NULL);
+                                  g_free (product_decoded);
+                                  quoted_product = sql_quote (product_tilde);
+                                  g_free (product_tilde);
+
+                                  sql ("INSERT INTO scap.cpes"
+                                       " (uuid, name, creation_time,"
+                                       "  modification_time)"
+                                       " VALUES"
+                                       " ('%s', '%s', %i, %i)"
+                                       " ON CONFLICT (uuid)"
+                                       " DO UPDATE SET name = EXCLUDED.name;",
+                                       quoted_product, quoted_product, time_published,
+                                       time_modified);
+                                  sql ("INSERT INTO scap.affected_products"
+                                       " (cve, cpe)"
+                                       " VALUES"
+                                       " (%llu,"
+                                       "  (SELECT id FROM cpes"
+                                       "   WHERE name='%s'))"
+                                       " ON CONFLICT (cve, cpe) DO NOTHING;",
+                                       cve_rowid, quoted_product);
+                                  transaction_size ++;
+                                  increment_transaction_size (&transaction_size);
+                                  g_free (quoted_product);
+                                }
+
+                              g_free (product_text);
                             }
 
                           product = element_next (product);
@@ -2487,7 +2554,7 @@ oval_oval_definitions_date (element_t element, int *file_timestamp)
       return;
     }
 
-  *file_timestamp = parse_iso_time (element_text (timestamp));
+  *file_timestamp = parse_iso_time_element_text (timestamp);
 }
 
 /**
@@ -2792,7 +2859,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   element_t status;
                   gchar *deprecated, *version, *id, *id_value, *class;
                   gchar *quoted_title, *quoted_class, *quoted_description;
-                  gchar *quoted_status;
+                  gchar *quoted_status, *status_text;
                   int cve_count;
 
                   id_value = element_attribute (definition, "id");
@@ -2880,16 +2947,20 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   class = element_attribute (definition, "class");
                   quoted_class = sql_quote (class);
                   g_free (class);
-                  quoted_title = sql_quote (element_text (title));
-                  quoted_description = sql_quote (element_text (description));
+                  quoted_title = sql_quote_element_text (title);
+                  quoted_description = sql_quote_element_text (description);
                   status = element_child (repository, "status");
                   deprecated = element_attribute (definition, "deprecated");
-                  if (status && strlen (element_text (status)))
-                    quoted_status = sql_quote (element_text (status));
+                  status_text = NULL;
+                  if (status)
+                    status_text = element_text (status);
+                  if (status_text && strlen (status_text))
+                    quoted_status = sql_quote (status_text);
                   else if (deprecated && strcasecmp (deprecated, "TRUE"))
                     quoted_status = sql_quote ("DEPRECATED");
                   else
                     quoted_status = sql_quote ("");
+                  g_free (status_text);
                   g_free (deprecated);
 
                   sql ("INSERT INTO scap.ovaldefs"
@@ -3016,11 +3087,7 @@ oval_generator_timestamp (element_t element)
       element_t timestamp;
       timestamp = element_child (generator, "oval:timestamp");
       if (timestamp)
-        {
-          gchar *ret;
-          ret = g_strdup (element_text (timestamp));
-          return ret;
-        }
+        return element_text (timestamp);
     }
 
   return NULL;
