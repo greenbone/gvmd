@@ -1470,13 +1470,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               refnum = entity_child (child, "dfncert:refnum");
               if (refnum == NULL)
                 {
-                  GString *string;
-
-                  string = g_string_new ("");
                   g_warning ("%s: REFNUM missing", __FUNCTION__);
-                  print_entity_to_string (child, string);
-                  g_debug ("child:%s", string->str);
-                  g_string_free (string, TRUE);
                   free_entity (entity);
                   goto fail;
                 }
@@ -1757,13 +1751,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
               refnum = entity_child (child, "Ref_Num");
               if (refnum == NULL)
                 {
-                  GString *string;
-
-                  string = g_string_new ("");
                   g_warning ("%s: Ref_Num missing", __FUNCTION__);
-                  print_entity_to_string (child, string);
-                  g_debug ("child:%s", string->str);
-                  g_string_free (string, TRUE);
                   free_entity (entity);
                   goto fail;
                 }
