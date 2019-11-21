@@ -20734,11 +20734,14 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   result_nvt_notice (quoted_nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, hostname, port, nvt,"
-       "  nvt_version, severity, type, qod, qod_type, description, uuid)"
+       "  nvt_version, severity, type, qod, qod_type, description, uuid,"
+       "  result_nvt)"
        " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s',"
-       "         '%s', '%s', '%s', %d, '', '%s', make_uuid ());",
+       "         '%s', '%s', '%s', %d, '', '%s', make_uuid (),"
+       "         (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
-       nvt_revision ?: "", result_severity ?: "0", type, qod, quoted_desc);
+       nvt_revision ?: "", result_severity ?: "0", type, qod, quoted_desc,
+       quoted_nvt);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
@@ -24765,6 +24768,70 @@ result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
+}
+
+/**
+ * @brief Check if the result_nvts are assigned to result
+ *
+ * @return 0 success, -1 error
+ */
+int
+cleanup_result_nvts ()
+{
+  iterator_t affected_iter;
+  GArray *affected;
+  int index;
+
+  g_debug ("%s: Creating missing result_nvts entries", __func__);
+  sql ("INSERT INTO result_nvts (nvt)"
+       " SELECT DISTINCT nvt FROM results ON CONFLICT (nvt) DO NOTHING;");
+
+  // Get affected reports with overrides
+  affected = g_array_new (TRUE, TRUE, sizeof (report_t));
+  init_iterator (&affected_iter,
+                 "SELECT DISTINCT report FROM results"
+                 " WHERE (result_nvt IS NULL"
+                 "        OR report NOT IN"
+                 "           (SELECT report FROM result_nvt_reports"
+                 "             WHERE result_nvt IS NOT NULL))"
+                 "   AND nvt IN (SELECT nvt FROM overrides);");
+  while (next (&affected_iter))
+    {
+      report_t report;
+      report = iterator_int64 (&affected_iter, 0);
+      g_array_append_val (affected, report);
+    }
+  cleanup_iterator(&affected_iter);
+
+  g_debug ("%s: Adding missing result_nvt values to results", __func__);
+  sql ("UPDATE results"
+       " SET result_nvt"
+       "       = (SELECT id FROM result_nvts"
+       "           WHERE result_nvts.nvt = results.nvt)"
+       " WHERE result_nvt IS NULL");
+
+  g_debug ("%s: Cleaning up NULL result_nvt_reports entries", __func__);
+  sql ("DELETE FROM result_nvt_reports WHERE result_nvt IS NULL;");
+
+  g_debug ("%s: Adding missing result_nvt_reports entries", __func__);
+  sql ("INSERT INTO result_nvt_reports (report, result_nvt)"
+       " SELECT DISTINCT report, result_nvts.id FROM results"
+       "   JOIN result_nvts ON result_nvts.nvt = results.nvt"
+       "  WHERE report NOT IN (SELECT report FROM result_nvt_reports"
+       "                       WHERE result_nvt IS NOT NULL)");
+
+  // Re-cache affected reports with overrides
+  for (index = 0; index < affected->len; index++)
+    {
+      report_t report;
+      report = g_array_index (affected, report_t, index);
+      g_debug ("%s: Updating cache of affected report %llu",
+               __func__, report);
+      report_cache_counts (report, 0, 1, NULL);
+    }
+  g_array_free (affected, TRUE);
+
+  return 0;
 }
 
 /**
@@ -48765,7 +48832,8 @@ set_slave_commit_size (int new_commit_size)
 /**
  * @brief Buffer a result to be inserted.
  *
- * @param[in]  buffer       Buffer to store SQL.
+ * @param[in]  results_buffer     Buffer to store results SQL.
+ * @param[in]  result_nvts_buffer Buffer to store result_nvts SQL.
  * @param[in]  task         The task associated with the result.
  * @param[in]  host         Host IP address.
  * @param[in]  hostname     Hostname.
@@ -48776,20 +48844,25 @@ set_slave_commit_size (int new_commit_size)
  * @param[in]  report       Report that result belongs to.
  * @param[in]  owner        Owner of report.
  *
- * @return A result descriptor for the new result, 0 if error.
+ * @return 0 success, -1 error.
  */
-static result_t
-buffer_insert (GString *buffer, task_t task, const char* host,
+static int
+buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
+               task_t task, const char* host,
                const char *hostname, const char* port, const char* nvt,
                const char* type, const char* description,
                report_t report, user_t owner)
 {
+  static int db_server_version_num = 0;
   gchar *nvt_revision, *severity;
   gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
   int qod, first;
   nvt_t nvt_id = 0;
 
   assert (report);
+
+  if (db_server_version_num == 0)
+    db_server_version_num = sql_server_version ();
 
   if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
     {
@@ -48848,17 +48921,38 @@ buffer_insert (GString *buffer, task_t task, const char* host,
   quoted_hostname = sql_quote (hostname ? hostname : "");
   quoted_descr = sql_quote (description ?: "");
   result_nvt_notice (nvt);
-  first = (strlen (buffer->str) == 0);
+  first = (strlen (results_buffer->str) == 0);
 
   if (first)
-    g_string_append (buffer,
-                     "INSERT into results"
-                     " (owner, date, task, host, hostname, port,"
-                     "  nvt, nvt_version, severity, type,"
-                     "  description, uuid, qod, qod_type, result_nvt,"
-                     "  report)"
-                     " VALUES");
-  g_string_append_printf (buffer,
+    {
+      g_string_append (results_buffer,
+                       "INSERT into results"
+                       " (owner, date, task, host, hostname, port,"
+                       "  nvt, nvt_version, severity, type,"
+                       "  description, uuid, qod, qod_type, result_nvt,"
+                       "  report)"
+                       " VALUES");
+      if (db_server_version_num >= 90500)
+        g_string_append (result_nvts_buffer,
+                        "INSERT INTO result_nvts (nvt) VALUES ");
+    }
+
+  if (db_server_version_num < 90500)
+    g_string_append_printf
+        (result_nvts_buffer,
+         "INSERT into result_nvts (nvt)"
+         " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts"
+         "                               WHERE nvt = '%s');\n",
+         nvt,
+         nvt);
+  else
+    g_string_append_printf
+        (result_nvts_buffer,
+         "%s ('%s')",
+         first ? "" : ",",
+         nvt);
+
+  g_string_append_printf (results_buffer,
                           "%s"
                           " (%llu, m_now (), %llu, '%s', '%s', '%s',"
                           "  '%s', '%s', '%s', '%s',"
@@ -48883,21 +48977,33 @@ buffer_insert (GString *buffer, task_t task, const char* host,
 /**
  * @brief Run INSERT for update_from_slave.
  *
- * @param[in]   buffer  Buffer.
- * @param[in]   report  Report.
+ * @param[in]  results_buffer     Buffer of results SQL.
+ * @param[in]  result_nvts_buffer Buffer of result_nvts SQL.
+ * @param[in]  report             Report.
  */
 static void
-update_from_slave_insert (GString *buffer, report_t report)
+update_from_slave_insert (GString *results_buffer, GString *result_nvts_buffer,
+                          report_t report)
 {
-  if (buffer && strlen (buffer->str))
+  if (result_nvts_buffer && strlen (result_nvts_buffer->str))
+    {
+      if (sql_server_version () >= 90500)
+        g_string_append (result_nvts_buffer,
+                         " ON CONFLICT (nvt) DO NOTHING;");
+
+      sql ("%s", result_nvts_buffer->str);
+      g_string_truncate (result_nvts_buffer, 0);
+    }
+
+  if (results_buffer && strlen (results_buffer->str))
     {
       if (report)
         {
           iterator_t ids;
 
-          g_string_append (buffer, " RETURNING id;");
+          g_string_append (results_buffer, " RETURNING id;");
 
-          init_iterator (&ids, "%s", buffer->str);
+          init_iterator (&ids, "%s", results_buffer->str);
           while (next (&ids))
             report_add_result_for_buffer (report, iterator_int64 (&ids, 0));
           cleanup_iterator (&ids);
@@ -48912,9 +49018,9 @@ update_from_slave_insert (GString *buffer, report_t report)
                report, report);
         }
       else
-        sql ("%s", buffer->str);
+        sql ("%s", results_buffer->str);
 
-      g_string_truncate (buffer, 0);
+      g_string_truncate (results_buffer, 0);
     }
 }
 
@@ -48935,7 +49041,7 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   entity_t entity, host, start;
   entities_t results, hosts, entities;
   int current_commit_size;
-  GString *buffer;
+  GString *results_buffer, *result_nvts_buffer;
   user_t owner;
 
   entity = entity_child (get_report, "report");
@@ -49008,7 +49114,8 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
   sql_begin_immediate ();
   results = entity->entities;
   current_commit_size = 0;
-  buffer = g_string_new ("");
+  results_buffer = g_string_new ("");
+  result_nvts_buffer = g_string_new ("");
   while ((entity = first_entity (results)))
     {
       if (strcmp (entity_name (entity), "result") == 0)
@@ -49041,7 +49148,8 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
           if (description == NULL)
             goto rollback_fail;
 
-          buffer_insert (buffer,
+          buffer_insert (results_buffer,
+                         result_nvts_buffer,
                          task,
                          entity_text (result_host),
                          hostname ? entity_text (hostname) : "",
@@ -49055,7 +49163,9 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
           current_commit_size++;
           if (slave_commit_size && current_commit_size >= slave_commit_size)
             {
-              update_from_slave_insert (buffer, global_current_report);
+              update_from_slave_insert (results_buffer,
+                                        result_nvts_buffer,
+                                        global_current_report);
               sql_commit ();
               sql_begin_immediate ();
               current_commit_size = 0;
@@ -49065,8 +49175,11 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
         }
       results = next_entities (results);
     }
-  update_from_slave_insert (buffer, global_current_report);
-  g_string_free (buffer, TRUE);
+  update_from_slave_insert (results_buffer,
+                            result_nvts_buffer,
+                            global_current_report);
+  g_string_free (results_buffer, TRUE);
+  g_string_free (result_nvts_buffer, TRUE);
   sql_commit ();
 
   sql_begin_immediate ();
@@ -64779,6 +64892,21 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " Cleaned up report format references in"
                                       " %d alert(s).",
                                       alert_changes);
+    }
+  else if (strcasecmp (name, "cleanup-result-nvts") == 0)
+    {
+      sql_begin_immediate ();
+
+      if (cleanup_result_nvts ())
+        {
+          sql_rollback();
+          fprintf (stderr, "Clean-up of result_nvts failed.\n");
+          return 1;
+        }
+
+      sql_commit ();
+
+      success_text = g_strdup_printf ("Optimized: Cleaned up result_nvts.");
     }
   else if (strcasecmp (name, "cleanup-result-severities") == 0)
     {

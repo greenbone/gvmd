@@ -88,6 +88,17 @@ static PGconn *conn = NULL;
 /* Helpers. */
 
 /**
+ * @brief Get the server version number.
+ * 
+ * @return The version as an integer.
+ */
+int
+sql_server_version ()
+{
+  return sql_int ("SELECT current_setting ('server_version_num')::integer;");
+}
+
+/**
  * @brief Get main schema name.
  *
  * @return Schema name.
