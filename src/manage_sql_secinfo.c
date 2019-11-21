@@ -3122,7 +3122,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                        "  modification_time, version, deprecated, def_class,"
                        "  title, description, xml_file, status,"
                        "  max_cvss, cve_refs)"
-                       " VALUES ('%s', '%s', '', %i, %i, %i, %i, '%s', '%s',"
+                       " VALUES ('%s', '%s', '', %i, %i, %s, %i, '%s', '%s',"
                        "         '%s', '%s', '%s', 0.0, %i)"
                        " ON CONFLICT (uuid) DO UPDATE"
                        " SET name = EXCLUDED.name,"
