@@ -1768,7 +1768,7 @@ update_scap_cpes (int last_scap_update)
     {
       if (strcmp (element_name (cpe_item), "cpe-item") == 0)
         {
-          const char *modification_date;
+          gchar *modification_date;
           element_t item_metadata;
 
           item_metadata = element_child (cpe_item, "meta:item-metadata");
@@ -1791,7 +1791,7 @@ update_scap_cpes (int last_scap_update)
 
           if (parse_iso_time (modification_date) > last_cve_update)
             {
-              const char *name, *status, *deprecated, *nvd_id;
+              gchar *name, *status, *deprecated, *nvd_id;
               gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
               gchar *name_decoded, *name_tilde;
               element_t title;
@@ -1801,6 +1801,7 @@ update_scap_cpes (int last_scap_update)
                 {
                   g_warning ("%s: name missing", __func__);
                   element_free (element);
+                  g_free (modification_date);
                   goto fail;
                 }
 
@@ -1809,6 +1810,8 @@ update_scap_cpes (int last_scap_update)
                 {
                   g_warning ("%s: status missing", __func__);
                   element_free (element);
+                  g_free (modification_date);
+                  g_free (name);
                   goto fail;
                 }
 
@@ -1822,6 +1825,9 @@ update_scap_cpes (int last_scap_update)
                              __func__,
                              deprecated);
                   element_free (element);
+                  g_free (modification_date);
+                  g_free (name);
+                  g_free (status);
                   goto fail;
                 }
 
@@ -1830,6 +1836,10 @@ update_scap_cpes (int last_scap_update)
                 {
                   g_warning ("%s: nvd_id missing", __func__);
                   element_free (element);
+                  g_free (modification_date);
+                  g_free (name);
+                  g_free (status);
+                  g_free (deprecated);
                   goto fail;
                 }
 
@@ -1837,25 +1847,34 @@ update_scap_cpes (int last_scap_update)
               quoted_title = g_strdup ("");
               while (title)
                 {
-                  if (strcmp (element_name (title), "title") == 0
-                      && element_attribute (title, "xml:lang")
-                      && strcmp (element_attribute (title, "xml:lang"), "en-US") == 0)
+                  if (strcmp (element_name (title), "title") == 0)
                     {
-                      g_free (quoted_title);
-                      quoted_title = sql_quote (element_text (title));
-                      break;
+                      gchar *lang;
+
+                      lang = element_attribute (title, "xml:lang");
+                      if (lang && strcmp (lang, "en-US") == 0)
+                        {
+                          g_free (quoted_title);
+                          quoted_title = sql_quote (element_text (title));
+                          g_free (lang);
+                          break;
+                        }
+                      g_free (lang);
                     }
                   title = element_next (title);
                 }
 
               name_decoded = g_uri_unescape_string (name, NULL);
+              g_free (name);
               name_tilde = string_replace (name_decoded,
                                            "~", "%7E", "%7e", NULL);
               g_free (name_decoded);
               quoted_name = sql_quote (name_tilde);
               g_free (name_tilde);
               quoted_status = sql_quote (status);
+              g_free (status);
               quoted_nvd_id = sql_quote (nvd_id);
+              g_free (nvd_id);
               sql ("INSERT INTO scap.cpes"
                    " (uuid, name, title, creation_time,"
                    "  modification_time, status, deprecated_by_id,"
@@ -1883,9 +1902,12 @@ update_scap_cpes (int last_scap_update)
               g_free (quoted_name);
               g_free (quoted_status);
               g_free (quoted_nvd_id);
+              g_free (deprecated);
 
               updated_scap_cpes = 1;
             }
+
+          g_free (modification_date);
         }
       cpe_item = element_next (cpe_item);
     }
@@ -1994,8 +2016,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               gchar *quoted_access_vector, *quoted_access_complexity;
               gchar *quoted_authentication, *quoted_confidentiality_impact;
               gchar *quoted_integrity_impact, *quoted_availability_impact;
-              gchar *quoted_software;
-              const char *id;
+              gchar *quoted_software, *id;
               GString *software;
               gchar *software_unescaped, *software_tilde;
               int time_modified, time_published;
@@ -2015,6 +2036,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   g_warning ("%s: vuln:published-datetime missing",
                              __func__);
                   element_free (element);
+                  g_free (id);
                   goto fail;
                 }
 
@@ -2040,6 +2062,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                     {
                       g_warning ("%s: cvss:score missing", __func__);
                       element_free (element);
+                      g_free (id);
                       goto fail;
                     }
 
@@ -2048,6 +2071,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                     {
                       g_warning ("%s: cvss:access-vector missing", __func__);
                       element_free (element);
+                      g_free (id);
                       goto fail;
                     }
 
@@ -2058,6 +2082,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                       g_warning ("%s: cvss:access-complexity missing",
                                  __func__);
                       element_free (element);
+                      g_free (id);
                       goto fail;
                     }
 
@@ -2068,6 +2093,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                       g_warning ("%s: cvss:authentication missing",
                                  __func__);
                       element_free (element);
+                      g_free (id);
                       goto fail;
                     }
 
@@ -2079,6 +2105,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                       g_warning ("%s: cvss:confidentiality-impact missing",
                                  __func__);
                       element_free (element);
+                      g_free (id);
                       goto fail;
                     }
 
@@ -2090,6 +2117,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                       g_warning ("%s: cvss:integrity-impact missing",
                                  __func__);
                       element_free (element);
+                      g_free (id);
                       goto fail;
                     }
 
@@ -2101,6 +2129,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                       g_warning ("%s: cvss:availability-impact missing",
                                  __func__);
                       element_free (element);
+                      g_free (id);
                       goto fail;
                     }
                 }
@@ -2110,6 +2139,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                 {
                   g_warning ("%s: vuln:summary missing", __func__);
                   element_free (element);
+                  g_free (id);
                   goto fail;
                 }
 
@@ -2130,6 +2160,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                 }
 
               quoted_id = sql_quote (id);
+              g_free (id);
               quoted_summary = sql_quote (summary ? element_text (summary) : "");
               quoted_access_vector = sql_quote (access_vector
                                                  ? element_text (access_vector)
@@ -2359,7 +2390,7 @@ oval_definition_dates (element_t definition, int *definition_date_newest,
 {
   element_t metadata, oval_repository, date, dates;
   int first;
-  const char *oldest, *newest;
+  gchar *oldest, *newest;
 
   assert (definition_date_newest);
   assert (definition_date_oldest);
@@ -2403,18 +2434,26 @@ oval_definition_dates (element_t definition, int *definition_date_newest,
         {
           if (first)
             {
+              g_free (newest);
               newest = element_attribute (date, "date");
               first = 0;
             }
+          g_free (oldest);
           oldest = element_attribute (date, "date");
         }
       date = element_next (date);
     }
 
   if (newest)
-    *definition_date_newest = parse_iso_time (newest);
+    {
+      *definition_date_newest = parse_iso_time (newest);
+      g_free (newest);
+    }
   if (oldest)
-    *definition_date_oldest = parse_iso_time (oldest);
+    {
+      *definition_date_oldest = parse_iso_time (oldest);
+      g_free (oldest);
+    }
 }
 
 /**
@@ -2736,10 +2775,11 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
               if (definition_date_oldest
                   && (definition_date_oldest <= last_oval_update))
                 {
-                  const char *id;
+                  gchar *id;
 
                   id = element_attribute (definition, "id");
                   quoted_oval_id = sql_quote (id ? id : "");
+                  g_free (id);
                   g_info ("%s: Filtered %s (%i)",
                           __func__,
                           quoted_oval_id,
@@ -2750,12 +2790,13 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                 {
                   element_t metadata, title, description, repository, reference;
                   element_t status;
-                  const char *deprecated, *version;
-                  gchar *id, *quoted_title, *quoted_class, *quoted_description;
+                  gchar *deprecated, *version, *id, *id_value, *class;
+                  gchar *quoted_title, *quoted_class, *quoted_description;
                   gchar *quoted_status;
                   int cve_count;
 
-                  if (element_attribute (definition, "id") == NULL)
+                  id_value = element_attribute (definition, "id");
+                  if (id_value == NULL)
                     {
                       g_warning ("%s: oval_definition missing id",
                                  __func__);
@@ -2769,6 +2810,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                       g_warning ("%s: metadata missing",
                                  __func__);
                       element_free (element);
+                      g_free (id_value);
                       goto fail;
                     }
 
@@ -2778,6 +2820,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                       g_warning ("%s: title missing",
                                  __func__);
                       element_free (element);
+                      g_free (id_value);
                       goto fail;
                     }
 
@@ -2787,6 +2830,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                       g_warning ("%s: description missing",
                                  __func__);
                       element_free (element);
+                      g_free (id_value);
                       goto fail;
                     }
 
@@ -2796,6 +2840,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                       g_warning ("%s: oval_repository missing",
                                  __func__);
                       element_free (element);
+                      g_free (id_value);
                       goto fail;
                     }
 
@@ -2803,23 +2848,23 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   reference = element_first_child (metadata);
                   while (reference)
                     {
-                      if ((strcmp (element_name (reference),
-                                   "reference")
-                           == 0)
-                          && element_attribute (reference, "source")
-                          && (strcasecmp (element_attribute (reference, "source"), "cve")
-                              == 0))
-                        cve_count++;
+                      if (strcmp (element_name (reference), "reference") == 0)
+                        {
+                          gchar *source;
+
+                          source = element_attribute (reference, "source");
+                          if (source && strcasecmp (source, "cve") == 0)
+                            cve_count++;
+                          g_free (source);
+                        }
                       reference = element_next (reference);
                     }
 
-                  deprecated = element_attribute (definition, "deprecated");
-
-                  id = g_strdup_printf ("%s_%s", element_attribute (definition, "id"),
-                                        xml_basename);
+                  id = g_strdup_printf ("%s_%s", id_value, xml_basename);
                   quoted_id = sql_quote (id);
                   g_free (id);
-                  quoted_oval_id = sql_quote (element_attribute (definition, "id"));
+                  quoted_oval_id = sql_quote (id_value);
+                  g_free (id_value);
 
                   version = element_attribute (definition, "version");
                   if (g_regex_match_simple ("^[0-9]+$", (gchar *) version, 0, 0) == 0)
@@ -2828,19 +2873,24 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                                  __func__,
                                  version);
                       element_free (element);
+                      g_free (version);
                       goto fail;
                     }
 
-                  quoted_class = sql_quote (element_attribute (definition, "class"));
+                  class = element_attribute (definition, "class");
+                  quoted_class = sql_quote (class);
+                  g_free (class);
                   quoted_title = sql_quote (element_text (title));
                   quoted_description = sql_quote (element_text (description));
                   status = element_child (repository, "status");
+                  deprecated = element_attribute (definition, "deprecated");
                   if (status && strlen (element_text (status)))
                     quoted_status = sql_quote (element_text (status));
                   else if (deprecated && strcasecmp (deprecated, "TRUE"))
                     quoted_status = sql_quote ("DEPRECATED");
                   else
                     quoted_status = sql_quote ("");
+                  g_free (deprecated);
 
                   sql ("INSERT INTO scap.ovaldefs"
                        " (uuid, name, comment, creation_time,"
@@ -2885,32 +2935,39 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   g_free (quoted_title);
                   g_free (quoted_description);
                   g_free (quoted_status);
+                  g_free (version);
 
                   reference = element_first_child (metadata);
                   while (reference)
                     {
-                      if ((strcmp (element_name (reference), "reference")
-                           == 0)
-                          && element_attribute (reference, "source")
-                          && (strcasecmp (element_attribute (reference, "source"), "cve")
-                              == 0)
-                          && element_attribute (reference, "ref_id"))
+                      if (strcmp (element_name (reference), "reference") == 0)
                         {
-                          gchar *quoted_ref_id;
+                          gchar *source;
 
-                          quoted_ref_id = sql_quote (element_attribute (reference,
-                                                                       "ref_id"));
-                          sql ("INSERT INTO affected_ovaldefs (cve, ovaldef)"
-                               " SELECT cves.id, ovaldefs.id"
-                               " FROM cves, ovaldefs"
-                               " WHERE cves.name='%s'"
-                               " AND ovaldefs.name = '%s'"
-                               " AND NOT EXISTS (SELECT * FROM affected_ovaldefs"
-                               "                 WHERE cve = cves.id"
-                               "                 AND ovaldef = ovaldefs.id);",
-                               quoted_ref_id,
-                               quoted_oval_id);
-                          increment_transaction_size (&transaction_size);
+                          source = element_attribute (reference, "source");
+                          if (source && strcasecmp (source, "cve") == 0)
+                            {
+                              gchar *ref_id, *quoted_ref_id;
+
+                              ref_id = element_attribute (reference, "ref_id");
+                              quoted_ref_id = sql_quote (ref_id);
+                              g_free (ref_id);
+
+                              sql ("INSERT INTO affected_ovaldefs (cve, ovaldef)"
+                                   " SELECT cves.id, ovaldefs.id"
+                                   " FROM cves, ovaldefs"
+                                   " WHERE cves.name='%s'"
+                                   " AND ovaldefs.name = '%s'"
+                                   " AND NOT EXISTS (SELECT * FROM affected_ovaldefs"
+                                   "                 WHERE cve = cves.id"
+                                   "                 AND ovaldef = ovaldefs.id);",
+                                   quoted_ref_id,
+                                   quoted_oval_id);
+
+                              g_free (quoted_ref_id);
+                              increment_transaction_size (&transaction_size);
+                            }
+                          g_free (source);
                         }
                       reference = element_next (reference);
                     }
