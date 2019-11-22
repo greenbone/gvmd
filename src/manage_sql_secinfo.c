@@ -2961,7 +2961,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   else
                     quoted_status = sql_quote ("");
                   g_free (status_text);
-                  g_free (deprecated);
 
                   sql ("INSERT INTO scap.ovaldefs"
                        " (uuid, name, comment, creation_time,"
@@ -3006,6 +3005,7 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                   g_free (quoted_title);
                   g_free (quoted_description);
                   g_free (quoted_status);
+                  g_free (deprecated);
                   g_free (version);
 
                   reference = element_first_child (metadata);
