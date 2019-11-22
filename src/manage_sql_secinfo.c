@@ -1552,7 +1552,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               cve = element_first_child (child);
               while (cve)
                 {
-                  if (strcmp (element_name (cve), "dfncert:cve") == 0)
+                  if (strcmp (element_name (cve), "cve") == 0)
                     cve_refs++;
                   cve = element_next (cve);
                 }
@@ -1587,7 +1587,7 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
               cve = element_first_child (child);
               while (cve)
                 {
-                  if (strcmp (element_name (cve), "dfncert:cve") == 0)
+                  if (strcmp (element_name (cve), "cve") == 0)
                     {
                       gchar **split, **point;
                       gchar *text, *start;
@@ -2464,7 +2464,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                   product = element_first_child (list);
                   while (product)
                     {
-                      if (strcmp (element_name (product), "vuln:product") == 0)
+                      if (strcmp (element_name (product), "product") == 0)
                         {
                           gchar *product_text;
 
@@ -2559,7 +2559,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
 
                       while (product)
                         {
-                          if (strcmp (element_name (product), "vuln:product")
+                          if (strcmp (element_name (product), "product")
                               == 0)
                             {
                               gchar *product_text;
