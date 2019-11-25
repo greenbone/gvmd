@@ -2240,6 +2240,37 @@ update_scap_cpes (int last_scap_update)
 /* SCAP update: CVEs. */
 
 /**
+ * @brief Check if this is the last appearance of a product in its siblings.
+ *
+ * @param[in]  product  Product.
+ *
+ * @return 1 if last appearance of product, else 0.
+ */
+static int
+last_appearance (element_t product)
+{
+  element_t product2;
+
+  product2 = element_next (product);
+  while (product2)
+    {
+      gchar *product_text, *product2_text;
+      int cmp;
+
+      product_text = element_text (product);
+      product2_text = element_text (product2);
+
+      cmp = strcmp (product_text, product2_text);
+      g_free (product_text);
+      g_free (product2_text);
+      if (cmp == 0)
+        break;
+      product2 = element_next (product2);
+    }
+  return product2 == NULL;
+}
+
+/**
  * @brief Insert products for a CVE.
  *
  * @param[in]  list              XML product list.
@@ -2255,6 +2286,8 @@ insert_cve_products (element_t list, const gchar *quoted_id,
 {
   element_t product;
   resource_t cve_rowid;
+  int first_product, first_affected;
+  GString *sql_cpes, *sql_affected;
 
   if (list == NULL)
     return;
@@ -2267,6 +2300,18 @@ insert_cve_products (element_t list, const gchar *quoted_id,
   sql_int64 (&cve_rowid,
              "SELECT id FROM cves WHERE uuid='%s';",
              quoted_id);
+
+  sql_cpes = g_string_new ("INSERT INTO scap.cpes"
+                           " (uuid, name, creation_time,"
+                           "  modification_time)"
+                           " VALUES");
+  sql_affected = g_string_new ("INSERT INTO scap.affected_products"
+                               " (cve, cpe)"
+                               " VALUES");
+
+  /* Buffer the SQL. */
+
+  first_product = first_affected = 1;
 
   while (product)
     {
@@ -2293,25 +2338,27 @@ insert_cve_products (element_t list, const gchar *quoted_id,
           quoted_product = sql_quote (product_tilde);
           g_free (product_tilde);
 
-          sql ("INSERT INTO scap.cpes"
-               " (uuid, name, creation_time,"
-               "  modification_time)"
-               " VALUES"
-               " ('%s', '%s', %i, %i)"
-               " ON CONFLICT (uuid)"
-               " DO UPDATE SET name = EXCLUDED.name;",
-               quoted_product, quoted_product, time_published,
-               time_modified);
-          sql ("INSERT INTO scap.affected_products"
-               " (cve, cpe)"
-               " VALUES"
-               " (%llu,"
-               "  (SELECT id FROM cpes"
-               "   WHERE name='%s'))"
-               " ON CONFLICT (cve, cpe) DO NOTHING;",
-               cve_rowid, quoted_product);
-          (*transaction_size)++;
-          increment_transaction_size (transaction_size);
+          /* Only include the product if this is its last
+           * appearance in the list, to avoid errors from
+           * Postgres ON CONFLICT DO UPDATE. */
+          if (last_appearance (product))
+            {
+              g_string_append_printf
+               (sql_cpes,
+                "%s ('%s', '%s', %i, %i)",
+                first_product ? "" : ",", quoted_product, quoted_product,
+                time_published, time_modified);
+              first_product = 0;
+            }
+
+          g_string_append_printf
+           (sql_affected,
+            "%s (%llu,"
+            "    (SELECT id FROM cpes"
+            "     WHERE name='%s'))",
+            first_affected ? "" : ",", cve_rowid, quoted_product);
+
+          first_affected = 0;
           g_free (quoted_product);
         }
 
@@ -2319,6 +2366,30 @@ insert_cve_products (element_t list, const gchar *quoted_id,
 
       product = element_next (product);
     }
+
+  /* Run the SQL. */
+
+  if (first_product == 0)
+     {
+       sql ("%s"
+            " ON CONFLICT (uuid)"
+            " DO UPDATE SET name = EXCLUDED.name;",
+            sql_cpes->str);
+
+       increment_transaction_size (transaction_size);
+     }
+
+   if (first_affected == 0)
+     {
+       sql ("%s"
+            " ON CONFLICT DO NOTHING;",
+            sql_affected->str);
+
+       increment_transaction_size (transaction_size);
+     }
+
+   g_string_free (sql_cpes, TRUE);
+   g_string_free (sql_affected, TRUE);
 }
 
 /**
