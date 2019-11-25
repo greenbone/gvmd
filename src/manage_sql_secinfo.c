@@ -2240,6 +2240,301 @@ update_scap_cpes (int last_scap_update)
 /* SCAP update: CVEs. */
 
 /**
+ * @brief Insert a CVE.
+ *
+ * @param[in]  entry             XML entry.
+ * @param[in]  last_modified     XML last_modified element.
+ * @param[in]  transaction_size  Statement counter for batching.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+insert_cve_from_entry (element_t entry, element_t last_modified,
+                       int *transaction_size)
+{
+  element_t published, summary, cvss, score, base_metrics;
+  element_t access_vector, access_complexity, authentication;
+  element_t confidentiality_impact, integrity_impact;
+  element_t availability_impact, list;
+  gchar *quoted_id, *quoted_summary;
+  gchar *quoted_access_vector, *quoted_access_complexity;
+  gchar *quoted_authentication, *quoted_confidentiality_impact;
+  gchar *quoted_integrity_impact, *quoted_availability_impact;
+  gchar *quoted_software, *id, *score_text;
+  GString *software;
+  gchar *software_unescaped, *software_tilde;
+  int time_modified, time_published;
+
+  id = element_attribute (entry, "id");
+  if (id == NULL)
+    {
+      g_warning ("%s: id missing",
+                 __FUNCTION__);
+      return -1;
+    }
+
+  published = element_child (entry, "vuln:published-datetime");
+  if (published == NULL)
+    {
+      g_warning ("%s: vuln:published-datetime missing",
+                 __FUNCTION__);
+      g_free (id);
+      return -1;
+    }
+
+  cvss = element_child (entry, "vuln:cvss");
+  if (cvss == NULL)
+    base_metrics = NULL;
+  else
+    base_metrics = element_child (cvss, "cvss:base_metrics");
+  if (base_metrics == NULL)
+    {
+      score = NULL;
+      access_vector = NULL;
+      access_complexity = NULL;
+      authentication = NULL;
+      confidentiality_impact = NULL;
+      integrity_impact = NULL;
+      availability_impact = NULL;
+    }
+  else
+    {
+      score = element_child (base_metrics, "cvss:score");
+      if (score == NULL)
+        {
+          g_warning ("%s: cvss:score missing", __FUNCTION__);
+          g_free (id);
+          return -1;
+        }
+
+      access_vector = element_child (base_metrics, "cvss:access-vector");
+      if (access_vector == NULL)
+        {
+          g_warning ("%s: cvss:access-vector missing", __FUNCTION__);
+          g_free (id);
+          return -1;
+        }
+
+      access_complexity = element_child (base_metrics,
+                                        "cvss:access-complexity");
+      if (access_complexity == NULL)
+        {
+          g_warning ("%s: cvss:access-complexity missing",
+                     __FUNCTION__);
+          g_free (id);
+          return -1;
+        }
+
+      authentication = element_child (base_metrics,
+                                     "cvss:authentication");
+      if (authentication == NULL)
+        {
+          g_warning ("%s: cvss:authentication missing",
+                     __FUNCTION__);
+          g_free (id);
+          return -1;
+        }
+
+      confidentiality_impact = element_child
+                                (base_metrics,
+                                 "cvss:confidentiality-impact");
+      if (confidentiality_impact == NULL)
+        {
+          g_warning ("%s: cvss:confidentiality-impact missing",
+                     __FUNCTION__);
+          g_free (id);
+          return -1;
+        }
+
+      integrity_impact = element_child
+                          (base_metrics,
+                           "cvss:integrity-impact");
+      if (integrity_impact == NULL)
+        {
+          g_warning ("%s: cvss:integrity-impact missing",
+                     __FUNCTION__);
+          g_free (id);
+          return -1;
+        }
+
+      availability_impact = element_child
+                             (base_metrics,
+                              "cvss:availability-impact");
+      if (availability_impact == NULL)
+        {
+          g_warning ("%s: cvss:availability-impact missing",
+                     __FUNCTION__);
+          g_free (id);
+          return -1;
+        }
+    }
+
+  summary = element_child (entry, "vuln:summary");
+  if (summary == NULL)
+    {
+      g_warning ("%s: vuln:summary missing", __FUNCTION__);
+      g_free (id);
+      return -1;
+    }
+
+  software = g_string_new ("");
+  list = element_child (entry, "vuln:vulnerable-software-list");
+  if (list)
+    {
+      element_t product;
+      product = element_first_child (list);
+      while (product)
+        {
+          if (strcmp (element_name (product), "product") == 0)
+            {
+              gchar *product_text;
+
+              product_text = element_text (product);
+              g_string_append_printf (software, "%s ", product_text);
+              g_free (product_text);
+            }
+          product = element_next (product);
+        }
+    }
+
+  quoted_id = sql_quote (id);
+  g_free (id);
+  quoted_summary = sql_quote_element_text (summary);
+  quoted_access_vector = sql_quote_element_text (access_vector);
+  quoted_access_complexity = sql_quote_element_text
+                              (access_complexity);
+  quoted_authentication = sql_quote_element_text (authentication);
+  quoted_confidentiality_impact = sql_quote_element_text
+                                   (confidentiality_impact);
+  quoted_integrity_impact = sql_quote_element_text (integrity_impact);
+  quoted_availability_impact = sql_quote_element_text
+                                (availability_impact);
+  software_unescaped = g_uri_unescape_string (software->str, NULL);
+  g_string_free (software, TRUE);
+  software_tilde = string_replace (software_unescaped,
+                                   "~", "%7E", "%7e", NULL);
+  g_free (software_unescaped);
+  quoted_software = sql_quote (software_tilde);
+  g_free (software_tilde);
+  time_modified = parse_iso_time_element_text (last_modified);
+  time_published = parse_iso_time_element_text (published);
+  score_text = score ? element_text (score) : g_strdup ("NULL");
+  sql ("INSERT INTO scap.cves"
+       " (uuid, name, creation_time, modification_time,"
+       "  cvss, description, vector, complexity,"
+       "  authentication, confidentiality_impact,"
+       "  integrity_impact, availability_impact, products)"
+       " VALUES"
+       " ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
+       "  '%s', '%s', '%s', '%s')"
+       " ON CONFLICT (uuid) DO UPDATE"
+       " SET name = EXCLUDED.name,"
+       "     creation_time = EXCLUDED.creation_time,"
+       "     modification_time = EXCLUDED.modification_time,"
+       "     cvss = EXCLUDED.cvss,"
+       "     description = EXCLUDED.description,"
+       "     vector = EXCLUDED.vector,"
+       "     complexity = EXCLUDED.complexity,"
+       "     authentication = EXCLUDED.authentication,"
+       "     confidentiality_impact"
+       "     = EXCLUDED.confidentiality_impact,"
+       "     integrity_impact = EXCLUDED.integrity_impact,"
+       "     availability_impact = EXCLUDED.availability_impact,"
+       "     products = EXCLUDED.products;",
+       quoted_id,
+       quoted_id,
+       time_published,
+       time_modified,
+       score_text,
+       quoted_summary,
+       quoted_access_vector,
+       quoted_access_complexity,
+       quoted_authentication,
+       quoted_confidentiality_impact,
+       quoted_integrity_impact,
+       quoted_availability_impact,
+       quoted_software);
+  increment_transaction_size (transaction_size);
+  g_free (quoted_summary);
+  g_free (quoted_access_vector);
+  g_free (quoted_access_complexity);
+  g_free (quoted_authentication);
+  g_free (quoted_confidentiality_impact);
+  g_free (quoted_integrity_impact);
+  g_free (quoted_availability_impact);
+  g_free (score_text);
+
+  if (list)
+    {
+      element_t product;
+
+      product = element_first_child (list);
+
+      if (product)
+        {
+          resource_t cve_rowid;
+
+          sql_int64 (&cve_rowid,
+                     "SELECT id FROM cves WHERE uuid='%s';",
+                     quoted_id);
+
+          while (product)
+            {
+              if (strcmp (element_name (product), "product")
+                  == 0)
+                {
+                  gchar *product_text;
+
+                  product_text = element_text (product);
+                  if (strlen (product_text))
+                    {
+                      gchar *quoted_product, *product_decoded;
+                      gchar *product_tilde;
+
+                      product_decoded = g_uri_unescape_string
+                                         (element_text (product), NULL);
+                      product_tilde = string_replace (product_decoded,
+                                                      "~", "%7E", "%7e",
+                                                      NULL);
+                      g_free (product_decoded);
+                      quoted_product = sql_quote (product_tilde);
+                      g_free (product_tilde);
+
+                      sql ("INSERT INTO scap.cpes"
+                           " (uuid, name, creation_time,"
+                           "  modification_time)"
+                           " VALUES"
+                           " ('%s', '%s', %i, %i)"
+                           " ON CONFLICT (uuid)"
+                           " DO UPDATE SET name = EXCLUDED.name;",
+                           quoted_product, quoted_product, time_published,
+                           time_modified);
+                      sql ("INSERT INTO scap.affected_products"
+                           " (cve, cpe)"
+                           " VALUES"
+                           " (%llu,"
+                           "  (SELECT id FROM cpes"
+                           "   WHERE name='%s'))"
+                           " ON CONFLICT (cve, cpe) DO NOTHING;",
+                           cve_rowid, quoted_product);
+                      (*transaction_size)++;
+                      increment_transaction_size (transaction_size);
+                      g_free (quoted_product);
+                    }
+
+                  g_free (product_text);
+                }
+
+              product = element_next (product);
+            }
+        }
+    }
+
+  g_free (quoted_id);
+  return 0;
+}
+
+/**
  * @brief Update CVE info from a single XML feed file.
  *
  * @param[in]  xml_path          XML path.
@@ -2316,301 +2611,13 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
             {
               g_warning ("%s: vuln:last-modified-datetime missing",
                          __FUNCTION__);
-              element_free (element);
               goto fail;
             }
           if (parse_iso_time_element_text (last_modified) > last_cve_update)
             {
-              element_t published, summary, cvss, score, base_metrics;
-              element_t access_vector, access_complexity, authentication;
-              element_t confidentiality_impact, integrity_impact;
-              element_t availability_impact, list;
-              gchar *quoted_id, *quoted_summary;
-              gchar *quoted_access_vector, *quoted_access_complexity;
-              gchar *quoted_authentication, *quoted_confidentiality_impact;
-              gchar *quoted_integrity_impact, *quoted_availability_impact;
-              gchar *quoted_software, *id, *score_text;
-              GString *software;
-              gchar *software_unescaped, *software_tilde;
-              int time_modified, time_published;
-
-              id = element_attribute (entry, "id");
-              if (id == NULL)
-                {
-                  g_warning ("%s: id missing",
-                             __FUNCTION__);
-                  element_free (element);
-                  goto fail;
-                }
-
-              published = element_child (entry, "vuln:published-datetime");
-              if (published == NULL)
-                {
-                  g_warning ("%s: vuln:published-datetime missing",
-                             __FUNCTION__);
-                  element_free (element);
-                  g_free (id);
-                  goto fail;
-                }
-
-              cvss = element_child (entry, "vuln:cvss");
-              if (cvss == NULL)
-                base_metrics = NULL;
-              else
-                base_metrics = element_child (cvss, "cvss:base_metrics");
-              if (base_metrics == NULL)
-                {
-                  score = NULL;
-                  access_vector = NULL;
-                  access_complexity = NULL;
-                  authentication = NULL;
-                  confidentiality_impact = NULL;
-                  integrity_impact = NULL;
-                  availability_impact = NULL;
-                }
-              else
-                {
-                  score = element_child (base_metrics, "cvss:score");
-                  if (score == NULL)
-                    {
-                      g_warning ("%s: cvss:score missing", __FUNCTION__);
-                      element_free (element);
-                      g_free (id);
-                      goto fail;
-                    }
-
-                  access_vector = element_child (base_metrics, "cvss:access-vector");
-                  if (access_vector == NULL)
-                    {
-                      g_warning ("%s: cvss:access-vector missing", __FUNCTION__);
-                      element_free (element);
-                      g_free (id);
-                      goto fail;
-                    }
-
-                  access_complexity = element_child (base_metrics,
-                                                    "cvss:access-complexity");
-                  if (access_complexity == NULL)
-                    {
-                      g_warning ("%s: cvss:access-complexity missing",
-                                 __FUNCTION__);
-                      element_free (element);
-                      g_free (id);
-                      goto fail;
-                    }
-
-                  authentication = element_child (base_metrics,
-                                                 "cvss:authentication");
-                  if (authentication == NULL)
-                    {
-                      g_warning ("%s: cvss:authentication missing",
-                                 __FUNCTION__);
-                      element_free (element);
-                      g_free (id);
-                      goto fail;
-                    }
-
-                  confidentiality_impact = element_child
-                                            (base_metrics,
-                                             "cvss:confidentiality-impact");
-                  if (confidentiality_impact == NULL)
-                    {
-                      g_warning ("%s: cvss:confidentiality-impact missing",
-                                 __FUNCTION__);
-                      element_free (element);
-                      g_free (id);
-                      goto fail;
-                    }
-
-                  integrity_impact = element_child
-                                      (base_metrics,
-                                       "cvss:integrity-impact");
-                  if (integrity_impact == NULL)
-                    {
-                      g_warning ("%s: cvss:integrity-impact missing",
-                                 __FUNCTION__);
-                      element_free (element);
-                      g_free (id);
-                      goto fail;
-                    }
-
-                  availability_impact = element_child
-                                         (base_metrics,
-                                          "cvss:availability-impact");
-                  if (availability_impact == NULL)
-                    {
-                      g_warning ("%s: cvss:availability-impact missing",
-                                 __FUNCTION__);
-                      element_free (element);
-                      g_free (id);
-                      goto fail;
-                    }
-                }
-
-              summary = element_child (entry, "vuln:summary");
-              if (summary == NULL)
-                {
-                  g_warning ("%s: vuln:summary missing", __FUNCTION__);
-                  element_free (element);
-                  g_free (id);
-                  goto fail;
-                }
-
-              software = g_string_new ("");
-              list = element_child (entry, "vuln:vulnerable-software-list");
-              if (list)
-                {
-                  element_t product;
-                  product = element_first_child (list);
-                  while (product)
-                    {
-                      if (strcmp (element_name (product), "product") == 0)
-                        {
-                          gchar *product_text;
-
-                          product_text = element_text (product);
-                          g_string_append_printf (software, "%s ", product_text);
-                          g_free (product_text);
-                        }
-                      product = element_next (product);
-                    }
-                }
-
-              quoted_id = sql_quote (id);
-              g_free (id);
-              quoted_summary = sql_quote_element_text (summary);
-              quoted_access_vector = sql_quote_element_text (access_vector);
-              quoted_access_complexity = sql_quote_element_text
-                                          (access_complexity);
-              quoted_authentication = sql_quote_element_text (authentication);
-              quoted_confidentiality_impact = sql_quote_element_text
-                                               (confidentiality_impact);
-              quoted_integrity_impact = sql_quote_element_text (integrity_impact);
-              quoted_availability_impact = sql_quote_element_text
-                                            (availability_impact);
-              software_unescaped = g_uri_unescape_string (software->str, NULL);
-              g_string_free (software, TRUE);
-              software_tilde = string_replace (software_unescaped,
-                                               "~", "%7E", "%7e", NULL);
-              g_free (software_unescaped);
-              quoted_software = sql_quote (software_tilde);
-              g_free (software_tilde);
-              time_modified = parse_iso_time_element_text (last_modified);
-              time_published = parse_iso_time_element_text (published);
-              score_text = score ? element_text (score) : g_strdup ("NULL");
-              sql ("INSERT INTO scap.cves"
-                   " (uuid, name, creation_time, modification_time,"
-                   "  cvss, description, vector, complexity,"
-                   "  authentication, confidentiality_impact,"
-                   "  integrity_impact, availability_impact, products)"
-                   " VALUES"
-                   " ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
-                   "  '%s', '%s', '%s', '%s')"
-                   " ON CONFLICT (uuid) DO UPDATE"
-                   " SET name = EXCLUDED.name,"
-                   "     creation_time = EXCLUDED.creation_time,"
-                   "     modification_time = EXCLUDED.modification_time,"
-                   "     cvss = EXCLUDED.cvss,"
-                   "     description = EXCLUDED.description,"
-                   "     vector = EXCLUDED.vector,"
-                   "     complexity = EXCLUDED.complexity,"
-                   "     authentication = EXCLUDED.authentication,"
-                   "     confidentiality_impact"
-                   "     = EXCLUDED.confidentiality_impact,"
-                   "     integrity_impact = EXCLUDED.integrity_impact,"
-                   "     availability_impact = EXCLUDED.availability_impact,"
-                   "     products = EXCLUDED.products;",
-                   quoted_id,
-                   quoted_id,
-                   time_published,
-                   time_modified,
-                   score_text,
-                   quoted_summary,
-                   quoted_access_vector,
-                   quoted_access_complexity,
-                   quoted_authentication,
-                   quoted_confidentiality_impact,
-                   quoted_integrity_impact,
-                   quoted_availability_impact,
-                   quoted_software);
-              increment_transaction_size (&transaction_size);
-              g_free (quoted_summary);
-              g_free (quoted_access_vector);
-              g_free (quoted_access_complexity);
-              g_free (quoted_authentication);
-              g_free (quoted_confidentiality_impact);
-              g_free (quoted_integrity_impact);
-              g_free (quoted_availability_impact);
-              g_free (score_text);
-
-              if (list)
-                {
-                  element_t product;
-
-                  product = element_first_child (list);
-
-                  if (product)
-                    {
-                      resource_t cve_rowid;
-
-                      sql_int64 (&cve_rowid,
-                                 "SELECT id FROM cves WHERE uuid='%s';",
-                                 quoted_id);
-
-                      while (product)
-                        {
-                          if (strcmp (element_name (product), "product")
-                              == 0)
-                            {
-                              gchar *product_text;
-
-                              product_text = element_text (product);
-                              if (strlen (product_text))
-                                {
-                                  gchar *quoted_product, *product_decoded;
-                                  gchar *product_tilde;
-
-                                  product_decoded = g_uri_unescape_string
-                                                     (element_text (product), NULL);
-                                  product_tilde = string_replace (product_decoded,
-                                                                  "~", "%7E", "%7e",
-                                                                  NULL);
-                                  g_free (product_decoded);
-                                  quoted_product = sql_quote (product_tilde);
-                                  g_free (product_tilde);
-
-                                  sql ("INSERT INTO scap.cpes"
-                                       " (uuid, name, creation_time,"
-                                       "  modification_time)"
-                                       " VALUES"
-                                       " ('%s', '%s', %i, %i)"
-                                       " ON CONFLICT (uuid)"
-                                       " DO UPDATE SET name = EXCLUDED.name;",
-                                       quoted_product, quoted_product, time_published,
-                                       time_modified);
-                                  sql ("INSERT INTO scap.affected_products"
-                                       " (cve, cpe)"
-                                       " VALUES"
-                                       " (%llu,"
-                                       "  (SELECT id FROM cpes"
-                                       "   WHERE name='%s'))"
-                                       " ON CONFLICT (cve, cpe) DO NOTHING;",
-                                       cve_rowid, quoted_product);
-                                  transaction_size ++;
-                                  increment_transaction_size (&transaction_size);
-                                  g_free (quoted_product);
-                                }
-
-                              g_free (product_text);
-                            }
-
-                          product = element_next (product);
-                        }
-                    }
-                }
-
+              if (insert_cve_from_entry (entry, last_modified, &transaction_size))
+                goto fail;
               updated_scap_bund = 1;
-              g_free (quoted_id);
             }
         }
       entry = element_next (entry);
@@ -2622,6 +2629,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   return updated_scap_bund;
 
  fail:
+  element_free (element);
   g_warning ("Update of CVEs failed at file '%s'",
              full_path);
   g_free (full_path);
