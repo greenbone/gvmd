@@ -1996,6 +1996,86 @@ update_scap_cpes (int last_scap_update)
 /* SCAP update: CVEs. */
 
 /**
+ * @brief Insert products for a CVE.
+ *
+ * @param[in]  list              XML product list.
+ * @param[in]  quoted_id         UUID of CVE.
+ * @param[in]  time_published    Time published.
+ * @param[in]  time_modified     Time modified.
+ * @param[in]  transaction_size  Statement counter for batching.
+ */
+static void
+insert_cve_products (element_t list, const gchar *quoted_id,
+                     int time_modified, int time_published,
+                     int *transaction_size)
+{
+  element_t product;
+  resource_t cve_rowid;
+
+  if (list == NULL)
+    return;
+
+  product = element_first_child (list);
+
+  if (product == NULL)
+    return;
+
+  sql_int64 (&cve_rowid,
+             "SELECT id FROM cves WHERE uuid='%s';",
+             quoted_id);
+
+  while (product)
+    {
+      if (strcmp (element_name (product), "product")
+          == 0)
+        {
+          gchar *product_text;
+
+          product_text = element_text (product);
+          if (strlen (product_text))
+            {
+              gchar *quoted_product, *product_decoded;
+              gchar *product_tilde;
+
+              product_decoded = g_uri_unescape_string
+                                 (element_text (product), NULL);
+              product_tilde = string_replace (product_decoded,
+                                              "~", "%7E", "%7e",
+                                              NULL);
+              g_free (product_decoded);
+              quoted_product = sql_quote (product_tilde);
+              g_free (product_tilde);
+
+              sql ("INSERT INTO scap.cpes"
+                   " (uuid, name, creation_time,"
+                   "  modification_time)"
+                   " VALUES"
+                   " ('%s', '%s', %i, %i)"
+                   " ON CONFLICT (uuid)"
+                   " DO UPDATE SET name = EXCLUDED.name;",
+                   quoted_product, quoted_product, time_published,
+                   time_modified);
+              sql ("INSERT INTO scap.affected_products"
+                   " (cve, cpe)"
+                   " VALUES"
+                   " (%llu,"
+                   "  (SELECT id FROM cpes"
+                   "   WHERE name='%s'))"
+                   " ON CONFLICT (cve, cpe) DO NOTHING;",
+                   cve_rowid, quoted_product);
+              (*transaction_size)++;
+              increment_transaction_size (transaction_size);
+              g_free (quoted_product);
+            }
+
+          g_free (product_text);
+        }
+
+      product = element_next (product);
+    }
+}
+
+/**
  * @brief Insert a CVE.
  *
  * @param[in]  entry             XML entry.
@@ -2220,71 +2300,8 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   g_free (quoted_availability_impact);
   g_free (score_text);
 
-  if (list)
-    {
-      element_t product;
-
-      product = element_first_child (list);
-
-      if (product)
-        {
-          resource_t cve_rowid;
-
-          sql_int64 (&cve_rowid,
-                     "SELECT id FROM cves WHERE uuid='%s';",
-                     quoted_id);
-
-          while (product)
-            {
-              if (strcmp (element_name (product), "product")
-                  == 0)
-                {
-                  gchar *product_text;
-
-                  product_text = element_text (product);
-                  if (strlen (product_text))
-                    {
-                      gchar *quoted_product, *product_decoded;
-                      gchar *product_tilde;
-
-                      product_decoded = g_uri_unescape_string
-                                         (element_text (product), NULL);
-                      product_tilde = string_replace (product_decoded,
-                                                      "~", "%7E", "%7e",
-                                                      NULL);
-                      g_free (product_decoded);
-                      quoted_product = sql_quote (product_tilde);
-                      g_free (product_tilde);
-
-                      sql ("INSERT INTO scap.cpes"
-                           " (uuid, name, creation_time,"
-                           "  modification_time)"
-                           " VALUES"
-                           " ('%s', '%s', %i, %i)"
-                           " ON CONFLICT (uuid)"
-                           " DO UPDATE SET name = EXCLUDED.name;",
-                           quoted_product, quoted_product, time_published,
-                           time_modified);
-                      sql ("INSERT INTO scap.affected_products"
-                           " (cve, cpe)"
-                           " VALUES"
-                           " (%llu,"
-                           "  (SELECT id FROM cpes"
-                           "   WHERE name='%s'))"
-                           " ON CONFLICT (cve, cpe) DO NOTHING;",
-                           cve_rowid, quoted_product);
-                      (*transaction_size)++;
-                      increment_transaction_size (transaction_size);
-                      g_free (quoted_product);
-                    }
-
-                  g_free (product_text);
-                }
-
-              product = element_next (product);
-            }
-        }
-    }
+  insert_cve_products (list, quoted_id, time_published, time_modified,
+                       transaction_size);
 
   g_free (quoted_id);
   return 0;
