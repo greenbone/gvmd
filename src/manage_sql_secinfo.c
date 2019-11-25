@@ -2026,50 +2026,52 @@ insert_cve_products (element_t list, const gchar *quoted_id,
 
   while (product)
     {
-      if (strcmp (element_name (product), "product")
-          == 0)
+      gchar *product_text;
+
+      if (strcmp (element_name (product), "product"))
         {
-          gchar *product_text;
-
-          product_text = element_text (product);
-          if (strlen (product_text))
-            {
-              gchar *quoted_product, *product_decoded;
-              gchar *product_tilde;
-
-              product_decoded = g_uri_unescape_string
-                                 (element_text (product), NULL);
-              product_tilde = string_replace (product_decoded,
-                                              "~", "%7E", "%7e",
-                                              NULL);
-              g_free (product_decoded);
-              quoted_product = sql_quote (product_tilde);
-              g_free (product_tilde);
-
-              sql ("INSERT INTO scap.cpes"
-                   " (uuid, name, creation_time,"
-                   "  modification_time)"
-                   " VALUES"
-                   " ('%s', '%s', %i, %i)"
-                   " ON CONFLICT (uuid)"
-                   " DO UPDATE SET name = EXCLUDED.name;",
-                   quoted_product, quoted_product, time_published,
-                   time_modified);
-              sql ("INSERT INTO scap.affected_products"
-                   " (cve, cpe)"
-                   " VALUES"
-                   " (%llu,"
-                   "  (SELECT id FROM cpes"
-                   "   WHERE name='%s'))"
-                   " ON CONFLICT (cve, cpe) DO NOTHING;",
-                   cve_rowid, quoted_product);
-              (*transaction_size)++;
-              increment_transaction_size (transaction_size);
-              g_free (quoted_product);
-            }
-
-          g_free (product_text);
+          product = element_next (product);
+          continue;
         }
+
+      product_text = element_text (product);
+      if (strlen (product_text))
+        {
+          gchar *quoted_product, *product_decoded;
+          gchar *product_tilde;
+
+          product_decoded = g_uri_unescape_string
+                             (element_text (product), NULL);
+          product_tilde = string_replace (product_decoded,
+                                          "~", "%7E", "%7e",
+                                          NULL);
+          g_free (product_decoded);
+          quoted_product = sql_quote (product_tilde);
+          g_free (product_tilde);
+
+          sql ("INSERT INTO scap.cpes"
+               " (uuid, name, creation_time,"
+               "  modification_time)"
+               " VALUES"
+               " ('%s', '%s', %i, %i)"
+               " ON CONFLICT (uuid)"
+               " DO UPDATE SET name = EXCLUDED.name;",
+               quoted_product, quoted_product, time_published,
+               time_modified);
+          sql ("INSERT INTO scap.affected_products"
+               " (cve, cpe)"
+               " VALUES"
+               " (%llu,"
+               "  (SELECT id FROM cpes"
+               "   WHERE name='%s'))"
+               " ON CONFLICT (cve, cpe) DO NOTHING;",
+               cve_rowid, quoted_product);
+          (*transaction_size)++;
+          increment_transaction_size (transaction_size);
+          g_free (quoted_product);
+        }
+
+      g_free (product_text);
 
       product = element_next (product);
     }
