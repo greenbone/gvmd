@@ -2011,7 +2011,6 @@ update_scap_cpes (int last_scap_update)
   gsize xml_len;
   GStatBuf state;
   int updated_scap_cpes, last_cve_update;
-  int transaction_size = 0;
 
   updated_scap_cpes = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
@@ -2211,7 +2210,6 @@ update_scap_cpes (int last_scap_update)
                    quoted_status,
                    deprecated ? deprecated : "NULL",
                    quoted_nvd_id);
-              increment_transaction_size (&transaction_size);
               g_free (quoted_title);
               g_free (quoted_name);
               g_free (quoted_status);
