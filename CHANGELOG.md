@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Refuse to import config with missing NVT preference ID [#856](https://github.com/greenbone/gvmd/pull/856) [#860](https://github.com/greenbone/gvmd/pull/860)
 - Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
 - Use single insert per CVE for CPEs and affected products [#877](https://github.com/greenbone/gvmd/pull/877)
+- Update all the CPEs in a single statement [#879](https://github.com/greenbone/gvmd/pull/879)
 
 ### Changed
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
