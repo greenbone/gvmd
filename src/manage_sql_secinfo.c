@@ -1996,6 +1996,131 @@ update_cert_bund_advisories (int last_cert_update)
 /* SCAP update: CPEs. */
 
 /**
+ * @brief Insert a SCAP CPE.
+ *
+ * @param[in]  cpe_item           CPE item XML element.
+ * @param[in]  item_metadata      Item's metadata element.
+ * @param[in]  modification_time  Modification time of item.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+insert_scap_cpe (element_t cpe_item, element_t item_metadata,
+                 int modification_time)
+{
+  gchar *name, *status, *deprecated, *nvd_id;
+  gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
+  gchar *name_decoded, *name_tilde;
+  element_t title;
+
+  name = element_attribute (cpe_item, "name");
+  if (name == NULL)
+    {
+      g_warning ("%s: name missing", __FUNCTION__);
+      return -1;
+    }
+
+  status = element_attribute (item_metadata, "status");
+  if (status == NULL)
+    {
+      g_warning ("%s: status missing", __FUNCTION__);
+      g_free (name);
+      return -1;
+    }
+
+  deprecated = element_attribute (item_metadata,
+                                 "deprecated-by-nvd-id");
+  if (deprecated
+      && (g_regex_match_simple ("^[0-9]+$", (gchar *) deprecated, 0, 0)
+          == 0))
+    {
+      g_warning ("%s: invalid deprecated-by-nvd-id: %s",
+                 __FUNCTION__,
+                 deprecated);
+      g_free (name);
+      g_free (status);
+      return -1;
+    }
+
+  nvd_id = element_attribute (item_metadata, "nvd-id");
+  if (nvd_id == NULL)
+    {
+      g_warning ("%s: nvd_id missing", __FUNCTION__);
+      g_free (name);
+      g_free (status);
+      g_free (deprecated);
+      return -1;
+    }
+
+  title = element_first_child (cpe_item);
+  quoted_title = g_strdup ("");
+  while (title)
+    {
+      if (strcmp (element_name (title), "title") == 0)
+        {
+          gchar *lang;
+
+          lang = element_attribute (title, "xml:lang");
+          if (lang && strcmp (lang, "en-US") == 0)
+            {
+              gchar *title_text;
+
+              title_text = element_text (title);
+              g_free (quoted_title);
+              quoted_title = sql_quote (title_text);
+              g_free (title_text);
+
+              g_free (lang);
+              break;
+            }
+          g_free (lang);
+        }
+      title = element_next (title);
+    }
+
+  name_decoded = g_uri_unescape_string (name, NULL);
+  g_free (name);
+  name_tilde = string_replace (name_decoded,
+                               "~", "%7E", "%7e", NULL);
+  g_free (name_decoded);
+  quoted_name = sql_quote (name_tilde);
+  g_free (name_tilde);
+  quoted_status = sql_quote (status);
+  g_free (status);
+  quoted_nvd_id = sql_quote (nvd_id);
+  g_free (nvd_id);
+  sql ("INSERT INTO scap.cpes"
+       " (uuid, name, title, creation_time,"
+       "  modification_time, status, deprecated_by_id,"
+       "  nvd_id)"
+       " VALUES"
+       " ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')"
+       " ON CONFLICT (uuid) DO UPDATE"
+       " SET name = EXCLUDED.name,"
+       "     title = EXCLUDED.title,"
+       "     creation_time = EXCLUDED.creation_time,"
+       "     modification_time = EXCLUDED.modification_time,"
+       "     status = EXCLUDED.status,"
+       "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
+       "     nvd_id = EXCLUDED.nvd_id;",
+       quoted_name,
+       quoted_name,
+       quoted_title,
+       modification_time,
+       modification_time,
+       quoted_status,
+       deprecated ? deprecated : "NULL",
+       quoted_nvd_id);
+  g_free (quoted_title);
+  g_free (quoted_name);
+  g_free (quoted_status);
+  g_free (quoted_nvd_id);
+  g_free (deprecated);
+
+  return 0;
+}
+
+/**
  * @brief Update SCAP CPEs.
  *
  * @param[in]  last_scap_update  Time of last SCAP update.
@@ -2022,7 +2147,7 @@ update_scap_cpes (int last_scap_update)
       g_warning ("%s: No CPE dictionary found at %s",
                  __FUNCTION__,
                  strerror (errno));
-      return -1;
+      goto fail;
     }
 
   if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
@@ -2030,7 +2155,7 @@ update_scap_cpes (int last_scap_update)
       g_info ("Skipping CPEs, file is older than last revision"
               " (this is not an error)");
       g_free (full_path);
-      return 0;
+      goto fail;
     }
 
   g_info ("Updating CPEs");
@@ -2075,6 +2200,7 @@ update_scap_cpes (int last_scap_update)
   while (cpe_item)
     {
       gchar *modification_date;
+      int modification_time;
       element_t item_metadata;
 
       if (strcmp (element_name (cpe_item), "cpe-item"))
@@ -2098,125 +2224,16 @@ update_scap_cpes (int last_scap_update)
           goto fail;
         }
 
-      if (parse_iso_time (modification_date) > last_cve_update)
+      modification_time = parse_iso_time (modification_date);
+      g_free (modification_date);
+
+      if (modification_time > last_cve_update)
         {
-          gchar *name, *status, *deprecated, *nvd_id;
-          gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
-          gchar *name_decoded, *name_tilde;
-          element_t title;
-
-          name = element_attribute (cpe_item, "name");
-          if (name == NULL)
-            {
-              g_warning ("%s: name missing", __FUNCTION__);
-              g_free (modification_date);
-              goto fail;
-            }
-
-          status = element_attribute (item_metadata, "status");
-          if (status == NULL)
-            {
-              g_warning ("%s: status missing", __FUNCTION__);
-              g_free (modification_date);
-              g_free (name);
-              goto fail;
-            }
-
-          deprecated = element_attribute (item_metadata,
-                                         "deprecated-by-nvd-id");
-          if (deprecated
-              && (g_regex_match_simple ("^[0-9]+$", (gchar *) deprecated, 0, 0)
-                  == 0))
-            {
-              g_warning ("%s: invalid deprecated-by-nvd-id: %s",
-                         __FUNCTION__,
-                         deprecated);
-              g_free (modification_date);
-              g_free (name);
-              g_free (status);
-              goto fail;
-            }
-
-          nvd_id = element_attribute (item_metadata, "nvd-id");
-          if (nvd_id == NULL)
-            {
-              g_warning ("%s: nvd_id missing", __FUNCTION__);
-              g_free (modification_date);
-              g_free (name);
-              g_free (status);
-              g_free (deprecated);
-              goto fail;
-            }
-
-          title = element_first_child (cpe_item);
-          quoted_title = g_strdup ("");
-          while (title)
-            {
-              if (strcmp (element_name (title), "title") == 0)
-                {
-                  gchar *lang;
-
-                  lang = element_attribute (title, "xml:lang");
-                  if (lang && strcmp (lang, "en-US") == 0)
-                    {
-                      gchar *title_text;
-
-                      title_text = element_text (title);
-                      g_free (quoted_title);
-                      quoted_title = sql_quote (title_text);
-                      g_free (title_text);
-
-                      g_free (lang);
-                      break;
-                    }
-                  g_free (lang);
-                }
-              title = element_next (title);
-            }
-
-          name_decoded = g_uri_unescape_string (name, NULL);
-          g_free (name);
-          name_tilde = string_replace (name_decoded,
-                                       "~", "%7E", "%7e", NULL);
-          g_free (name_decoded);
-          quoted_name = sql_quote (name_tilde);
-          g_free (name_tilde);
-          quoted_status = sql_quote (status);
-          g_free (status);
-          quoted_nvd_id = sql_quote (nvd_id);
-          g_free (nvd_id);
-          sql ("INSERT INTO scap.cpes"
-               " (uuid, name, title, creation_time,"
-               "  modification_time, status, deprecated_by_id,"
-               "  nvd_id)"
-               " VALUES"
-               " ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')"
-               " ON CONFLICT (uuid) DO UPDATE"
-               " SET name = EXCLUDED.name,"
-               "     title = EXCLUDED.title,"
-               "     creation_time = EXCLUDED.creation_time,"
-               "     modification_time = EXCLUDED.modification_time,"
-               "     status = EXCLUDED.status,"
-               "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
-               "     nvd_id = EXCLUDED.nvd_id;",
-               quoted_name,
-               quoted_name,
-               quoted_title,
-               parse_iso_time (modification_date),
-               parse_iso_time (modification_date),
-               quoted_status,
-               deprecated ? deprecated : "NULL",
-               quoted_nvd_id);
-          g_free (quoted_title);
-          g_free (quoted_name);
-          g_free (quoted_status);
-          g_free (quoted_nvd_id);
-          g_free (deprecated);
-
+          if (insert_scap_cpe (cpe_item, item_metadata, modification_time))
+            goto fail;
           updated_scap_cpes = 1;
         }
 
-      g_free (modification_date);
       cpe_item = element_next (cpe_item);
     }
 
