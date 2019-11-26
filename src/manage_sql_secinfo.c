@@ -1998,6 +1998,7 @@ update_cert_bund_advisories (int last_cert_update)
 /**
  * @brief Insert a SCAP CPE.
  *
+ * @param[in]  inserts            Pointer to SQL buffer.
  * @param[in]  cpe_item           CPE item XML element.
  * @param[in]  item_metadata      Item's metadata element.
  * @param[in]  modification_time  Modification time of item.
@@ -2005,13 +2006,16 @@ update_cert_bund_advisories (int last_cert_update)
  * @return 0 success, -1 error.
  */
 static int
-insert_scap_cpe (element_t cpe_item, element_t item_metadata,
+insert_scap_cpe (GString **inserts, element_t cpe_item, element_t item_metadata,
                  int modification_time)
 {
   gchar *name, *status, *deprecated, *nvd_id;
   gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
   gchar *name_decoded, *name_tilde;
   element_t title;
+  int first;
+
+  assert (inserts);
 
   name = element_attribute (cpe_item, "name");
   if (name == NULL)
@@ -2089,28 +2093,27 @@ insert_scap_cpe (element_t cpe_item, element_t item_metadata,
   g_free (status);
   quoted_nvd_id = sql_quote (nvd_id);
   g_free (nvd_id);
-  sql ("INSERT INTO scap.cpes"
-       " (uuid, name, title, creation_time,"
-       "  modification_time, status, deprecated_by_id,"
-       "  nvd_id)"
-       " VALUES"
-       " ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')"
-       " ON CONFLICT (uuid) DO UPDATE"
-       " SET name = EXCLUDED.name,"
-       "     title = EXCLUDED.title,"
-       "     creation_time = EXCLUDED.creation_time,"
-       "     modification_time = EXCLUDED.modification_time,"
-       "     status = EXCLUDED.status,"
-       "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
-       "     nvd_id = EXCLUDED.nvd_id;",
-       quoted_name,
-       quoted_name,
-       quoted_title,
-       modification_time,
-       modification_time,
-       quoted_status,
-       deprecated ? deprecated : "NULL",
-       quoted_nvd_id);
+
+  first = (*inserts == NULL);
+  if (first)
+    *inserts = g_string_new ("INSERT INTO scap.cpes"
+                             " (uuid, name, title, creation_time,"
+                             "  modification_time, status, deprecated_by_id,"
+                             "  nvd_id)"
+                             " VALUES");
+
+  g_string_append_printf (*inserts,
+                          "%s ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')",
+                          first ? "" : ",",
+                          quoted_name,
+                          quoted_name,
+                          quoted_title,
+                          modification_time,
+                          modification_time,
+                          quoted_status,
+                          deprecated ? deprecated : "NULL",
+                          quoted_nvd_id);
+
   g_free (quoted_title);
   g_free (quoted_name);
   g_free (quoted_status);
@@ -2136,6 +2139,7 @@ update_scap_cpes (int last_scap_update)
   gsize xml_len;
   GStatBuf state;
   int updated_scap_cpes, last_cve_update;
+  GString *inserts;
 
   updated_scap_cpes = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
@@ -2196,6 +2200,7 @@ update_scap_cpes (int last_scap_update)
 
   sql_begin_immediate ();
 
+  inserts = NULL;
   cpe_item = element_first_child (cpe_list);
   while (cpe_item)
     {
@@ -2229,7 +2234,8 @@ update_scap_cpes (int last_scap_update)
 
       if (modification_time > last_cve_update)
         {
-          if (insert_scap_cpe (cpe_item, item_metadata, modification_time))
+          if (insert_scap_cpe (&inserts, cpe_item, item_metadata,
+                               modification_time))
             goto fail;
           updated_scap_cpes = 1;
         }
@@ -2237,11 +2243,30 @@ update_scap_cpes (int last_scap_update)
       cpe_item = element_next (cpe_item);
     }
 
+  assert (updated_scap_cpes ? (inserts != NULL) : (inserts == NULL));
+
+  if (updated_scap_cpes)
+    {
+      sql ("%s"
+           " ON CONFLICT (uuid) DO UPDATE"
+           " SET name = EXCLUDED.name,"
+           "     title = EXCLUDED.title,"
+           "     creation_time = EXCLUDED.creation_time,"
+           "     modification_time = EXCLUDED.modification_time,"
+           "     status = EXCLUDED.status,"
+           "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
+           "     nvd_id = EXCLUDED.nvd_id",
+           inserts->str);
+      g_string_free (inserts, TRUE);
+    }
+
   element_free (element);
   sql_commit ();
   return updated_scap_cpes;
 
  fail:
+  if (inserts)
+    g_string_free (inserts, TRUE);
   element_free (element);
   g_warning ("Update of CPEs failed");
   sql_commit ();
