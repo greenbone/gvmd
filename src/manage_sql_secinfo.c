@@ -2083,8 +2083,6 @@ update_scap_cpes (int last_scap_update)
           if (item_metadata == NULL)
             {
               g_warning ("%s: item-metadata missing", __FUNCTION__);
-
-              element_free (element);
               goto fail;
             }
 
@@ -2093,7 +2091,6 @@ update_scap_cpes (int last_scap_update)
           if (modification_date == NULL)
             {
               g_warning ("%s: modification-date missing", __FUNCTION__);
-              element_free (element);
               goto fail;
             }
 
@@ -2108,7 +2105,6 @@ update_scap_cpes (int last_scap_update)
               if (name == NULL)
                 {
                   g_warning ("%s: name missing", __FUNCTION__);
-                  element_free (element);
                   g_free (modification_date);
                   goto fail;
                 }
@@ -2117,7 +2113,6 @@ update_scap_cpes (int last_scap_update)
               if (status == NULL)
                 {
                   g_warning ("%s: status missing", __FUNCTION__);
-                  element_free (element);
                   g_free (modification_date);
                   g_free (name);
                   goto fail;
@@ -2132,7 +2127,6 @@ update_scap_cpes (int last_scap_update)
                   g_warning ("%s: invalid deprecated-by-nvd-id: %s",
                              __FUNCTION__,
                              deprecated);
-                  element_free (element);
                   g_free (modification_date);
                   g_free (name);
                   g_free (status);
@@ -2143,7 +2137,6 @@ update_scap_cpes (int last_scap_update)
               if (nvd_id == NULL)
                 {
                   g_warning ("%s: nvd_id missing", __FUNCTION__);
-                  element_free (element);
                   g_free (modification_date);
                   g_free (name);
                   g_free (status);
@@ -2229,6 +2222,7 @@ update_scap_cpes (int last_scap_update)
   return updated_scap_cpes;
 
  fail:
+  element_free (element);
   g_warning ("Update of CPEs failed");
   sql_commit ();
   return -1;
