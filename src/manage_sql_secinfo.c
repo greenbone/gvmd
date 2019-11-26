@@ -1907,7 +1907,7 @@ update_scap_cpes (int last_scap_update)
       g_warning ("%s: No CPE dictionary found at %s",
                  __FUNCTION__,
                  strerror (errno));
-      goto fail;
+      return -1;
     }
 
   if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
@@ -1915,7 +1915,7 @@ update_scap_cpes (int last_scap_update)
       g_info ("Skipping CPEs, file is older than last revision"
               " (this is not an error)");
       g_free (full_path);
-      goto fail;
+      return -1;
     }
 
   g_info ("Updating CPEs");
