@@ -4325,14 +4325,13 @@ update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
       g_info ("Updating CVSS scores and CVE counts for CPEs");
       sql_recursive_triggers_off ();
       sql ("UPDATE scap.cpes"
-           " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap.cves"
-           "                 WHERE id IN (SELECT cve"
-           "                              FROM scap.affected_products"
-           "                              WHERE cpe=cpes.id)),"
-           "     cve_refs = (SELECT count (cve)"
-           "                 FROM scap.affected_products"
-           "                 WHERE cpe=cpes.id);");
+           " SET (max_cvss, cve_refs)"
+           "     = (WITH affected_cves"
+           "        AS (SELECT cve FROM scap.affected_products"
+           "            WHERE cpe=cpes.id)"
+           "        SELECT (SELECT max (cvss) FROM scap.cves"
+           "                WHERE id IN (SELECT cve FROM affected_cves)),"
+           "               (SELECT count (*) FROM affected_cves));");
     }
   else
     g_info ("No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs.");
