@@ -2325,19 +2325,18 @@ hashed_cpes_cpe_id (GHashTable *hashed_cpes, const gchar *product_tilde)
  * @brief Insert products for a CVE.
  *
  * @param[in]  list              XML product list.
- * @param[in]  quoted_id         UUID of CVE.
+ * @param[in]  cve               CVE.
  * @param[in]  time_published    Time published.
  * @param[in]  time_modified     Time modified.
  * @param[in]  hashed_cpes       Hashed CPEs.
  * @param[in]  transaction_size  Statement counter for batching.
  */
 static void
-insert_cve_products (element_t list, const gchar *quoted_id,
+insert_cve_products (element_t list, resource_t cve,
                      int time_modified, int time_published,
                      GHashTable *hashed_cpes, int *transaction_size)
 {
   element_t product;
-  resource_t cve_rowid;
   int first_product, first_affected;
   GString *sql_cpes, *sql_affected;
 
@@ -2348,10 +2347,6 @@ insert_cve_products (element_t list, const gchar *quoted_id,
 
   if (product == NULL)
     return;
-
-  sql_int64 (&cve_rowid,
-             "SELECT id FROM cves WHERE uuid='%s';",
-             quoted_id);
 
   sql_cpes = g_string_new ("INSERT INTO scap.cpes"
                            " (uuid, name, creation_time,"
@@ -2421,7 +2416,7 @@ insert_cve_products (element_t list, const gchar *quoted_id,
                 "%s (%llu,"
                 "    (SELECT id FROM cpes"
                 "     WHERE name='%s'))",
-                first_affected ? "" : ",", cve_rowid, quoted_product);
+                first_affected ? "" : ",", cve, quoted_product);
             }
           else
             {
@@ -2432,7 +2427,7 @@ insert_cve_products (element_t list, const gchar *quoted_id,
               g_string_append_printf
                (sql_affected,
                 "%s (%llu, %i)",
-                first_affected ? "" : ",", cve_rowid,
+                first_affected ? "" : ",", cve,
                 hashed_cpes_cpe_id (hashed_cpes, product_tilde));
             }
 
@@ -2497,6 +2492,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   GString *software;
   gchar *software_unescaped, *software_tilde;
   int time_modified, time_published;
+  resource_t cve;
 
   id = element_attribute (entry, "id");
   if (id == NULL)
@@ -2652,41 +2648,43 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   time_modified = parse_iso_time_element_text (last_modified);
   time_published = parse_iso_time_element_text (published);
   score_text = score ? element_text (score) : g_strdup ("NULL");
-  sql ("INSERT INTO scap.cves"
-       " (uuid, name, creation_time, modification_time,"
-       "  cvss, description, vector, complexity,"
-       "  authentication, confidentiality_impact,"
-       "  integrity_impact, availability_impact, products)"
-       " VALUES"
-       " ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
-       "  '%s', '%s', '%s', '%s')"
-       " ON CONFLICT (uuid) DO UPDATE"
-       " SET name = EXCLUDED.name,"
-       "     creation_time = EXCLUDED.creation_time,"
-       "     modification_time = EXCLUDED.modification_time,"
-       "     cvss = EXCLUDED.cvss,"
-       "     description = EXCLUDED.description,"
-       "     vector = EXCLUDED.vector,"
-       "     complexity = EXCLUDED.complexity,"
-       "     authentication = EXCLUDED.authentication,"
-       "     confidentiality_impact"
-       "     = EXCLUDED.confidentiality_impact,"
-       "     integrity_impact = EXCLUDED.integrity_impact,"
-       "     availability_impact = EXCLUDED.availability_impact,"
-       "     products = EXCLUDED.products;",
-       quoted_id,
-       quoted_id,
-       time_published,
-       time_modified,
-       score_text,
-       quoted_summary,
-       quoted_access_vector,
-       quoted_access_complexity,
-       quoted_authentication,
-       quoted_confidentiality_impact,
-       quoted_integrity_impact,
-       quoted_availability_impact,
-       quoted_software);
+  cve = sql_int64_0
+         ("INSERT INTO scap.cves"
+          " (uuid, name, creation_time, modification_time,"
+          "  cvss, description, vector, complexity,"
+          "  authentication, confidentiality_impact,"
+          "  integrity_impact, availability_impact, products)"
+          " VALUES"
+          " ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
+          "  '%s', '%s', '%s', '%s')"
+          " ON CONFLICT (uuid) DO UPDATE"
+          " SET name = EXCLUDED.name,"
+          "     creation_time = EXCLUDED.creation_time,"
+          "     modification_time = EXCLUDED.modification_time,"
+          "     cvss = EXCLUDED.cvss,"
+          "     description = EXCLUDED.description,"
+          "     vector = EXCLUDED.vector,"
+          "     complexity = EXCLUDED.complexity,"
+          "     authentication = EXCLUDED.authentication,"
+          "     confidentiality_impact"
+          "     = EXCLUDED.confidentiality_impact,"
+          "     integrity_impact = EXCLUDED.integrity_impact,"
+          "     availability_impact = EXCLUDED.availability_impact,"
+          "     products = EXCLUDED.products"
+          " RETURNING scap.cves.id;",
+          quoted_id,
+          quoted_id,
+          time_published,
+          time_modified,
+          score_text,
+          quoted_summary,
+          quoted_access_vector,
+          quoted_access_complexity,
+          quoted_authentication,
+          quoted_confidentiality_impact,
+          quoted_integrity_impact,
+          quoted_availability_impact,
+          quoted_software);
   increment_transaction_size (transaction_size);
   g_free (quoted_summary);
   g_free (quoted_access_vector);
@@ -2697,7 +2695,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   g_free (quoted_availability_impact);
   g_free (score_text);
 
-  insert_cve_products (list, quoted_id, time_published, time_modified,
+  insert_cve_products (list, cve, time_published, time_modified,
                        hashed_cpes, transaction_size);
 
   g_free (quoted_id);
@@ -4571,14 +4569,13 @@ update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
       g_info ("Updating CVSS scores and CVE counts for CPEs");
       sql_recursive_triggers_off ();
       sql ("UPDATE scap.cpes"
-           " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap.cves"
-           "                 WHERE id IN (SELECT cve"
-           "                              FROM scap.affected_products"
-           "                              WHERE cpe=cpes.id)),"
-           "     cve_refs = (SELECT count (cve)"
-           "                 FROM scap.affected_products"
-           "                 WHERE cpe=cpes.id);");
+           " SET (max_cvss, cve_refs)"
+           "     = (WITH affected_cves"
+           "        AS (SELECT cve FROM scap.affected_products"
+           "            WHERE cpe=cpes.id)"
+           "        SELECT (SELECT max (cvss) FROM scap.cves"
+           "                WHERE id IN (SELECT cve FROM affected_cves)),"
+           "               (SELECT count (*) FROM affected_cves));");
     }
   else
     g_info ("No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs.");
@@ -4750,8 +4747,13 @@ sync_scap (int lockfile)
         break;
     }
 
+  g_debug ("%s: update max cvss", __FUNCTION__);
+
   update_scap_cvss (updated_scap_cves, updated_scap_cpes,
                     updated_scap_ovaldefs);
+
+  g_debug ("%s: update placeholders", __FUNCTION__);
+
   update_scap_placeholders (updated_scap_cves);
 
   g_debug ("%s: update timestamp", __FUNCTION__);
