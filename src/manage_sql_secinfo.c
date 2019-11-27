@@ -2064,6 +2064,20 @@ last_appearance (element_t product)
 }
 
 /**
+ * @brief Get the ID of a CPE from a hashtable.
+ *
+ * @param[in]  hashed_cpes    CPEs.
+ * @param[in]  product_tilde  UUID/Name.
+ *
+ * @return ID of CPE from hashtable.
+ */
+static int
+hashed_cpes_cpe_id (GHashTable *hashed_cpes, const gchar *product_tilde)
+{
+  return GPOINTER_TO_INT (g_hash_table_lookup (hashed_cpes, product_tilde));
+}
+
+/**
  * @brief Insert products for a CVE.
  *
  * @param[in]  list              XML product list.
@@ -2131,34 +2145,55 @@ insert_cve_products (element_t list, const gchar *quoted_id,
           g_free (product_decoded);
           quoted_product = sql_quote (product_tilde);
 
-          /* Only include the product if this is its last
-           * appearance in the list, to avoid errors from
-           * Postgres ON CONFLICT DO UPDATE. */
-          if (last_appearance (product)
-              /* Only include the product if it was not in the db.
-               *
-               * We don't add product_tilde to the hash because then we would
-               * have to worry about memory management in the hashtable. */
-              && g_hash_table_contains (hashed_cpes, product_tilde) == 0)
+          if (g_hash_table_contains (hashed_cpes, product_tilde) == 0)
             {
+              /* The product was not in the db.
+               *
+               * Only insert the product if this is its last appearance
+               * in the current CVE's XML, to avoid errors from Postgres
+               * ON CONFLICT DO UPDATE. */
+
+              if (last_appearance (product))
+                {
+                  /* The CPE does not appear later in this CVE's XML. */
+
+                  g_string_append_printf
+                   (sql_cpes,
+                    "%s ('%s', '%s', %i, %i)",
+                    first_product ? "" : ",", quoted_product, quoted_product,
+                    time_published, time_modified);
+
+                  first_product = 0;
+
+                  /* We could add product_tilde to the hashtable but then we
+                   * would have to worry about memory management in the
+                   * hashtable. */
+                }
+
+              /* We don't know the db id of the CPE right now. */
+
               g_string_append_printf
-               (sql_cpes,
-                "%s ('%s', '%s', %i, %i)",
-                first_product ? "" : ",", quoted_product, quoted_product,
-                time_published, time_modified);
-              first_product = 0;
+               (sql_affected,
+                "%s (%llu,"
+                "    (SELECT id FROM cpes"
+                "     WHERE name='%s'))",
+                first_affected ? "" : ",", cve_rowid, quoted_product);
+            }
+          else
+            {
+              /* The product is in the db.
+               *
+               * So we don't need to insert it. */
+
+              g_string_append_printf
+               (sql_affected,
+                "%s (%llu, %i)",
+                first_affected ? "" : ",", cve_rowid,
+                hashed_cpes_cpe_id (hashed_cpes, product_tilde));
             }
 
-          g_free (product_tilde);
-
-          g_string_append_printf
-           (sql_affected,
-            "%s (%llu,"
-            "    (SELECT id FROM cpes"
-            "     WHERE name='%s'))",
-            first_affected ? "" : ",", cve_rowid, quoted_product);
-
           first_affected = 0;
+          g_free (product_tilde);
           g_free (quoted_product);
         }
 
@@ -2563,10 +2598,11 @@ update_scap_cves (int last_scap_update)
                              " FROM scap.cves;");
 
   hashed_cpes = g_hash_table_new (g_str_hash, g_str_equal);
-  init_iterator (&cpes, "SELECT uuid FROM scap.cpes;");
+  init_iterator (&cpes, "SELECT uuid, id FROM scap.cpes;");
   while (next (&cpes))
     g_hash_table_insert (hashed_cpes,
-                         (gpointer*) iterator_string (&cpes, 0), NULL);
+                         (gpointer*) iterator_string (&cpes, 0),
+                         GINT_TO_POINTER (iterator_int (&cpes, 1)));
 
   count = 0;
   updated_scap_cves = 0;
