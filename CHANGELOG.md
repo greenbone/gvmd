@@ -12,9 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Allow use of public key auth in SCP alert [#845](https://github.com/greenbone/gvmd/pull/845)
 - Refuse to import config with missing NVT preference ID [#856](https://github.com/greenbone/gvmd/pull/856) [#860](https://github.com/greenbone/gvmd/pull/860)
 - Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
-- Use single insert per CVE for CPEs and affected products [#877](https://github.com/greenbone/gvmd/pull/877)
-- Update all the CPEs in a single statement [#879](https://github.com/greenbone/gvmd/pull/879)
-- Avoid queries in update_scap_cves [#881](https://github.com/greenbone/gvmd/pull/881)
 
 ### Changed
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
@@ -22,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Try authentication when verifying GMP scanners [#837](https://github.com/greenbone/gvmd/pull/837)
 - Try importing private keys with libssh if GnuTLS fails [#841](https://github.com/greenbone/gvmd/pull/841)
 - Require Postgres 9.6 as a minimum [#872](https://github.com/greenbone/gvmd/pull/872)
-- Use faster XML parser for SecInfo sync [#875](https://github.com/greenbone/gvmd/pull/875)
+- Speed up the SCAP sync [#875](https://github.com/greenbone/gvmd/pull/875) [#877](https://github.com/greenbone/gvmd/pull/877) [#879](https://github.com/greenbone/gvmd/pull/879) [#881](https://github.com/greenbone/gvmd/pull/881) [#883](https://github.com/greenbone/gvmd/pull/883)
 
 ### Fixed
 - Consider results_trash when deleting users [#799](https://github.com/greenbone/gvmd/pull/799)
