@@ -4747,8 +4747,13 @@ sync_scap (int lockfile)
         break;
     }
 
+  g_debug ("%s: update max cvss", __FUNCTION__);
+
   update_scap_cvss (updated_scap_cves, updated_scap_cpes,
                     updated_scap_ovaldefs);
+
+  g_debug ("%s: update placeholders", __FUNCTION__);
+
   update_scap_placeholders (updated_scap_cves);
 
   g_debug ("%s: update timestamp", __FUNCTION__);
