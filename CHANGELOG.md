@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
 - Use single insert per CVE for CPEs and affected products [#877](https://github.com/greenbone/gvmd/pull/877)
 - Update all the CPEs in a single statement [#879](https://github.com/greenbone/gvmd/pull/879)
+- Avoid queries in update_scap_cves [#881](https://github.com/greenbone/gvmd/pull/881)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
