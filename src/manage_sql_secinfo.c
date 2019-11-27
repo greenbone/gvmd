@@ -2308,18 +2308,33 @@ last_appearance (element_t product)
 }
 
 /**
+ * @brief Get the ID of a CPE from a hashtable.
+ *
+ * @param[in]  hashed_cpes    CPEs.
+ * @param[in]  product_tilde  UUID/Name.
+ *
+ * @return ID of CPE from hashtable.
+ */
+static int
+hashed_cpes_cpe_id (GHashTable *hashed_cpes, const gchar *product_tilde)
+{
+  return GPOINTER_TO_INT (g_hash_table_lookup (hashed_cpes, product_tilde));
+}
+
+/**
  * @brief Insert products for a CVE.
  *
  * @param[in]  list              XML product list.
  * @param[in]  quoted_id         UUID of CVE.
  * @param[in]  time_published    Time published.
  * @param[in]  time_modified     Time modified.
+ * @param[in]  hashed_cpes       Hashed CPEs.
  * @param[in]  transaction_size  Statement counter for batching.
  */
 static void
 insert_cve_products (element_t list, const gchar *quoted_id,
                      int time_modified, int time_published,
-                     int *transaction_size)
+                     GHashTable *hashed_cpes, int *transaction_size)
 {
   element_t product;
   resource_t cve_rowid;
@@ -2373,29 +2388,56 @@ insert_cve_products (element_t list, const gchar *quoted_id,
                                           NULL);
           g_free (product_decoded);
           quoted_product = sql_quote (product_tilde);
-          g_free (product_tilde);
 
-          /* Only include the product if this is its last
-           * appearance in the list, to avoid errors from
-           * Postgres ON CONFLICT DO UPDATE. */
-          if (last_appearance (product))
+          if (g_hash_table_contains (hashed_cpes, product_tilde) == 0)
             {
+              /* The product was not in the db.
+               *
+               * Only insert the product if this is its last appearance
+               * in the current CVE's XML, to avoid errors from Postgres
+               * ON CONFLICT DO UPDATE. */
+
+              if (last_appearance (product))
+                {
+                  /* The CPE does not appear later in this CVE's XML. */
+
+                  g_string_append_printf
+                   (sql_cpes,
+                    "%s ('%s', '%s', %i, %i)",
+                    first_product ? "" : ",", quoted_product, quoted_product,
+                    time_published, time_modified);
+
+                  first_product = 0;
+
+                  /* We could add product_tilde to the hashtable but then we
+                   * would have to worry about memory management in the
+                   * hashtable. */
+                }
+
+              /* We don't know the db id of the CPE right now. */
+
               g_string_append_printf
-               (sql_cpes,
-                "%s ('%s', '%s', %i, %i)",
-                first_product ? "" : ",", quoted_product, quoted_product,
-                time_published, time_modified);
-              first_product = 0;
+               (sql_affected,
+                "%s (%llu,"
+                "    (SELECT id FROM cpes"
+                "     WHERE name='%s'))",
+                first_affected ? "" : ",", cve_rowid, quoted_product);
+            }
+          else
+            {
+              /* The product is in the db.
+               *
+               * So we don't need to insert it. */
+
+              g_string_append_printf
+               (sql_affected,
+                "%s (%llu, %i)",
+                first_affected ? "" : ",", cve_rowid,
+                hashed_cpes_cpe_id (hashed_cpes, product_tilde));
             }
 
-          g_string_append_printf
-           (sql_affected,
-            "%s (%llu,"
-            "    (SELECT id FROM cpes"
-            "     WHERE name='%s'))",
-            first_affected ? "" : ",", cve_rowid, quoted_product);
-
           first_affected = 0;
+          g_free (product_tilde);
           g_free (quoted_product);
         }
 
@@ -2435,12 +2477,13 @@ insert_cve_products (element_t list, const gchar *quoted_id,
  * @param[in]  entry             XML entry.
  * @param[in]  last_modified     XML last_modified element.
  * @param[in]  transaction_size  Statement counter for batching.
+ * @param[in]  hashed_cpes       Hashed CPEs.
  *
  * @return 0 success, -1 error.
  */
 static int
 insert_cve_from_entry (element_t entry, element_t last_modified,
-                       int *transaction_size)
+                       GHashTable *hashed_cpes, int *transaction_size)
 {
   element_t published, summary, cvss, score, base_metrics;
   element_t access_vector, access_complexity, authentication;
@@ -2655,7 +2698,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   g_free (score_text);
 
   insert_cve_products (list, quoted_id, time_published, time_modified,
-                       transaction_size);
+                       hashed_cpes, transaction_size);
 
   g_free (quoted_id);
   return 0;
@@ -2667,12 +2710,13 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
  * @param[in]  xml_path          XML path.
  * @param[in]  last_scap_update  Time of last SCAP update.
  * @param[in]  last_cve_update   Time of last update to a DFN.
+ * @param[in]  hashed_cpes       Hashed CPEs.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
 update_cve_xml (const gchar *xml_path, int last_scap_update,
-                int last_cve_update)
+                int last_cve_update, GHashTable *hashed_cpes)
 {
   GError *error;
   element_t element, entry;
@@ -2742,7 +2786,8 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
             }
           if (parse_iso_time_element_text (last_modified) > last_cve_update)
             {
-              if (insert_cve_from_entry (entry, last_modified, &transaction_size))
+              if (insert_cve_from_entry (entry, last_modified, hashed_cpes,
+                                         &transaction_size))
                 goto fail;
               updated_scap_bund = 1;
             }
@@ -2780,6 +2825,8 @@ update_scap_cves (int last_scap_update)
   int count, last_cve_update, updated_scap_cves;
   GDir *dir;
   const gchar *xml_path;
+  GHashTable *hashed_cpes;
+  iterator_t cpes;
 
   error = NULL;
   dir = g_dir_open (GVM_SCAP_DATA_DIR, 0, &error);
@@ -2794,12 +2841,20 @@ update_scap_cves (int last_scap_update)
   last_cve_update = sql_int ("SELECT max (modification_time)"
                              " FROM scap.cves;");
 
+  hashed_cpes = g_hash_table_new (g_str_hash, g_str_equal);
+  init_iterator (&cpes, "SELECT uuid, id FROM scap.cpes;");
+  while (next (&cpes))
+    g_hash_table_insert (hashed_cpes,
+                         (gpointer*) iterator_string (&cpes, 0),
+                         GINT_TO_POINTER (iterator_int (&cpes, 1)));
+
   count = 0;
   updated_scap_cves = 0;
   while ((xml_path = g_dir_read_name (dir)))
     if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
       {
-        switch (update_cve_xml (xml_path, last_scap_update, last_cve_update))
+        switch (update_cve_xml (xml_path, last_scap_update, last_cve_update,
+                                hashed_cpes))
           {
             case 0:
               break;
@@ -2808,6 +2863,8 @@ update_scap_cves (int last_scap_update)
               break;
             default:
               g_dir_close (dir);
+              g_hash_table_destroy (hashed_cpes);
+              cleanup_iterator (&cpes);
               return -1;
           }
         count++;
@@ -2817,6 +2874,8 @@ update_scap_cves (int last_scap_update)
     g_warning ("No CVEs found in %s", GVM_SCAP_DATA_DIR);
 
   g_dir_close (dir);
+  g_hash_table_destroy (hashed_cpes);
+  cleanup_iterator (&cpes);
   return updated_scap_cves;
 }
 
