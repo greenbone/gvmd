@@ -10260,6 +10260,22 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     cvss_base ?: "",
                                     tags->str ?: "");
 
+          if (result_iterator_nvt_summary (results))
+            buffer_xml_append_printf (buffer, "<summary>%s</summary>",
+                                      result_iterator_nvt_summary (results));
+
+          if (result_iterator_nvt_insight (results))
+            buffer_xml_append_printf (buffer, "<insight>%s</insight>",
+                                      result_iterator_nvt_insight (results));
+
+          if (result_iterator_nvt_affected (results))
+            buffer_xml_append_printf (buffer, "<affected>%s</affected>",
+                                      result_iterator_nvt_affected (results));
+
+          if (result_iterator_nvt_impact (results))
+            buffer_xml_append_printf (buffer, "<impact>%s</impact>",
+                                      result_iterator_nvt_impact (results));
+
           if (result_iterator_nvt_solution (results)
               || result_iterator_nvt_solution_type (results)
               || result_iterator_nvt_solution_method (results))
