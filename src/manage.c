@@ -8165,7 +8165,33 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<nvt oid=\"%s\">"
                               "<name>%s</name>"
                               "<creation_time>%s</creation_time>"
-                              "<modification_time>%s</modification_time>"
+                              "<modification_time>%s</modification_time>",
+                              oid,
+                              name_text,
+                              get_iterator_creation_time (nvts)
+                               ? get_iterator_creation_time (nvts)
+                               : "",
+                              get_iterator_modification_time (nvts)
+                               ? get_iterator_modification_time (nvts)
+                               : "");
+
+      if (nvt_iterator_summary (nvts) && nvt_iterator_summary (nvts)[0])
+          g_string_append_printf (buffer, "<summary>%s</summary>",
+                                  nvt_iterator_summary (nvts));
+
+      if (nvt_iterator_insight (nvts) && nvt_iterator_insight (nvts)[0])
+          g_string_append_printf (buffer, "<insight>%s</insight>",
+                                  nvt_iterator_insight (nvts));
+
+      if (nvt_iterator_affected (nvts) && nvt_iterator_affected (nvts)[0])
+          g_string_append_printf (buffer, "<affected>%s</affected>",
+                                  nvt_iterator_affected (nvts));
+
+      if (nvt_iterator_impact (nvts) && nvt_iterator_impact (nvts)[0])
+          g_string_append_printf (buffer, "<impact>%s</impact>",
+                                  nvt_iterator_impact (nvts));
+
+      g_string_append_printf (buffer,
                               "%s" // user_tags
                               "<category>%d</category>"
                               "<family>%s</family>"
@@ -8179,14 +8205,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               "<preference_count>%i</preference_count>"
                               "<timeout>%s</timeout>"
                               "<default_timeout>%s</default_timeout>",
-                              oid,
-                              name_text,
-                              get_iterator_creation_time (nvts)
-                               ? get_iterator_creation_time (nvts)
-                               : "",
-                              get_iterator_modification_time (nvts)
-                               ? get_iterator_modification_time (nvts)
-                               : "",
                               tags_str->str,
                               nvt_iterator_category (nvts),
                               family_text,
