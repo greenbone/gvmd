@@ -1575,6 +1575,7 @@ migrate_221_to_222 ()
   sql_begin_immediate ();
 
   /* Ensure that the database is currently version 221. */
+
   if (manage_db_version () != 221)
     {
       sql_rollback ();
@@ -1588,6 +1589,7 @@ migrate_221_to_222 ()
   sql ("DELETE FROM permissions_trash WHERE name = 'modify_report';");
 
   /* Set the database version to 222. */
+
   set_db_version (222);
 
   sql_commit ();
@@ -1596,7 +1598,7 @@ migrate_221_to_222 ()
 }
 
 /**
- * @brief Migrate the database from version 221 to version 222.
+ * @brief Migrate the database from version 222 to version 223.
  *
  * @return 0 success, -1 error.
  */
@@ -1606,6 +1608,7 @@ migrate_222_to_223 ()
   sql_begin_immediate ();
 
   /* Ensure that the database is currently version 222. */
+
   if (manage_db_version () != 222)
     {
       sql_rollback ();
@@ -1616,6 +1619,8 @@ migrate_222_to_223 ()
 
   /* Extend table "nvts" with additional column "solution_method" */
   sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN solution_method text;");
+
+  /* Set the database version to 223. */
 
   set_db_version (223);
 

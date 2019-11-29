@@ -7924,7 +7924,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
           if (nvt_iterator_solution (nvts))
             g_string_append_printf (buffer, ">%s</solution>",
-                                      nvt_iterator_solution (nvts));
+              nvt_iterator_solution (nvts));
           else
             g_string_append_printf (buffer, "/>");
         }

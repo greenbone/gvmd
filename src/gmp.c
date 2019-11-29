@@ -10246,9 +10246,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     cvss_base ?: "",
                                     tags->str ?: "");
 
-          if (result_iterator_nvt_solution (results) ||
-              result_iterator_nvt_solution_type (results) ||
-              result_iterator_nvt_solution_method (results))
+          if (result_iterator_nvt_solution (results)
+              || result_iterator_nvt_solution_type (results)
+              || result_iterator_nvt_solution_method (results))
             {
               buffer_xml_append_printf (buffer, "<solution");
 
