@@ -24295,6 +24295,25 @@ result_iterator_nvt_solution_type (iterator_t *iterator)
 }
 
 /**
+ * @brief Get the NVT solution_method from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution_method of the NVT that produced the result,
+ *         or NULL on error.
+ */
+const char*
+result_iterator_nvt_solution_method (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_solution_method (nvti);
+  return NULL;
+}
+
+/**
  * @brief Get the NVT detection from a result iterator.
  *
  * @param[in]  iterator  Iterator.

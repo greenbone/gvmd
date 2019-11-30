@@ -253,7 +253,7 @@ insert_nvt (const nvti_t *nvti)
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
-  gchar *quoted_solution, *quoted_solution_type;
+  gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
   int qod, i;
 
   cve = nvti_refs (nvti, "cve", "", 0);
@@ -272,6 +272,8 @@ insert_nvt (const nvti_t *nvti)
                                nvti_solution (nvti) : "");
   quoted_solution_type = sql_quote (nvti_solution_type (nvti) ?
                                     nvti_solution_type (nvti) : "");
+  quoted_solution_method = sql_quote (nvti_solution_method (nvti) ?
+                                      nvti_solution_method (nvti) : "");
   quoted_detection = sql_quote (nvti_detection (nvti) ?
                                 nvti_detection (nvti) : "");
 
@@ -298,14 +300,14 @@ insert_nvt (const nvti_t *nvti)
   sql ("INSERT into nvts (oid, name, summary, insight, affected,"
        " impact, cve, tag, category, family, cvss_base,"
        " creation_time, modification_time, uuid, solution_type,"
-       " solution, detection, qod, qod_type)"
+       " solution_method, solution, detection, qod, qod_type)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', '%s', %d, '%s');",
+       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s');",
        nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
        quoted_affected, quoted_impact, quoted_cve, quoted_tag,
        nvti_category (nvti), quoted_family, quoted_cvss_base,
        nvti_creation_time (nvti), nvti_modification_time (nvti),
-       nvti_oid (nvti), quoted_solution_type,
+       nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
        quoted_solution, quoted_detection, qod, quoted_qod_type);
 
   sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
@@ -338,6 +340,7 @@ insert_nvt (const nvti_t *nvti)
   g_free (quoted_family);
   g_free (quoted_solution);
   g_free (quoted_solution_type);
+  g_free (quoted_solution_method);
   g_free (quoted_detection);
   g_free (quoted_qod_type);
 }
@@ -910,6 +913,16 @@ DEF_ACCESS (nvt_iterator_impact, GET_ITERATOR_COLUMN_COUNT + 18);
 DEF_ACCESS (nvt_iterator_detection, GET_ITERATOR_COLUMN_COUNT + 19);
 
 /**
+ * @brief Get the solution method from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Solution method, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_solution_method, GET_ITERATOR_COLUMN_COUNT + 20);
+
+/**
  * @brief Get the default timeout of an NVT.
  *
  * @param[in]  oid  The OID of the NVT to get the timeout of.
@@ -1183,7 +1196,7 @@ nvti_from_vt (entity_t vt)
   solution = entity_child (vt, "solution");
   if (solution)
     {
-      const gchar *type;
+      const gchar *type, *method;
 
       nvti_set_solution (nvti, entity_text (solution));
 
@@ -1192,6 +1205,10 @@ nvti_from_vt (entity_t vt)
         g_debug ("%s: SOLUTION missing type", __func__);
       else
         nvti_set_solution_type (nvti, type);
+
+      method = entity_attribute (solution, "method");
+      if (method)
+        nvti_set_solution_method (nvti, method);
     }
 
   refs = entity_child (vt, "refs");

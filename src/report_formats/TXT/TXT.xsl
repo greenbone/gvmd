@@ -456,18 +456,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:call-template name="newline"/>
     </xsl:if>
 
-    <xsl:if test="(string-length (gvm:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+    <xsl:if test="nvt/solution/text() or nvt/solution/@type or nvt/solution/@method">
       <xsl:text>Solution:</xsl:text>
       <xsl:call-template name="newline"/>
-      <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+      <xsl:if test="nvt/solution/@type">
         <xsl:text>Solution type: </xsl:text>
-        <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'solution_type')"/>
+        <xsl:value-of select="nvt/solution/@type"/>
         <xsl:call-template name="newline"/>
       </xsl:if>
-      <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'solution')"/>
-      </xsl:call-template>
-      <xsl:call-template name="newline"/>
+      <xsl:if test="nvt/solution/@method">
+        <xsl:text>Solution method: </xsl:text>
+        <xsl:value-of select="nvt/solution/@method"/>
+        <xsl:call-template name="newline"/>
+      </xsl:if>
+      <xsl:if test="nvt/solution/text()">
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string" select="nvt/solution/text()"/>
+        </xsl:call-template>
+        <xsl:call-template name="newline"/>
+      </xsl:if>
     </xsl:if>
 
     <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
