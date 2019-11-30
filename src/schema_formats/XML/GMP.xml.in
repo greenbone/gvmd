@@ -27174,16 +27174,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <version>20.04</version>
   </change>
-  <change>
-    <command>GET_INFO</command>
-    <summary>Add element SOLUTION_METHOD for type "nvt" to element NVT</summary>
-    <description>
-      <p>
-        The new element SOLUTION_METHOD optionally accompanies the SOLUTION_TYPE for type "nvt" in the NVT element.
-      </p>
-    </description>
-    <version>20.04</version>
-  </change>
 
   <change>
     <command>CREATE_CONFIG</command>
