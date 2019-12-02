@@ -549,7 +549,7 @@ manage_create_sql_functions ()
                " WHERE name = 'uuid-ossp' AND installed_version IS NOT NULL;")
       == 0)
     {
-      g_warning ("%s: PostgreSQL extension uuid-ossp required", __FUNCTION__);
+      g_warning ("%s: PostgreSQL extension uuid-ossp required", __func__);
       return -1;
     }
 
@@ -579,24 +579,6 @@ manage_create_sql_functions ()
   sql ("CREATE OR REPLACE FUNCTION level_min_severity (text, text)"
        " RETURNS double precision"
        " AS '%s/libgvm-pg-server', 'sql_level_min_severity'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
-
-  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, integer)"
-       " RETURNS integer"
-       " AS '%s/libgvm-pg-server', 'sql_next_time'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
-
-  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, integer, text)"
-       " RETURNS integer"
-       " AS '%s/libgvm-pg-server', 'sql_next_time'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
-
-  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer, integer, text, integer)"
-       " RETURNS integer"
-       " AS '%s/libgvm-pg-server', 'sql_next_time'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
@@ -2937,6 +2919,7 @@ create_tables ()
        "  modification_time integer,"
        "  solution text,"
        "  solution_type text,"
+       "  solution_method text,"
        "  detection text,"
        "  qod integer,"
        "  qod_type text);");

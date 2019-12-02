@@ -1369,9 +1369,6 @@ int
 report_timestamp (const char*, gchar**);
 
 int
-modify_report (const char*, const char*);
-
-int
 delete_report (const char *, int);
 
 int
@@ -1431,6 +1428,9 @@ result_iterator_nvt_solution (iterator_t *);
 
 const char*
 result_iterator_nvt_solution_type (iterator_t *);
+
+const char*
+result_iterator_nvt_solution_method (iterator_t *);
 
 const char*
 result_iterator_nvt_detection (iterator_t *);
@@ -1509,6 +1509,9 @@ result_iterator_cert_bunds (iterator_t*);
 
 gchar **
 result_iterator_dfn_certs (iterator_t*);
+
+int
+cleanup_result_nvts ();
 
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
@@ -2022,6 +2025,9 @@ nvt_iterator_solution (iterator_t*);
 
 const char*
 nvt_iterator_solution_type (iterator_t*);
+
+const char*
+nvt_iterator_solution_method (iterator_t*);
 
 char*
 nvt_default_timeout (const char *);

@@ -121,7 +121,7 @@ ticket_status_integer (const char *status)
      "           = (SELECT users.id"                                          \
      "              FROM users"                                               \
      "              WHERE users.uuid"                                         \
-     "                    = SELECT current_setting ('gvmd.user.uuid'))"       \
+     "                    = (SELECT current_setting ('gvmd.user.uuid')))"     \
      "       AND result_new_severities.override = 1"                          \
      "       AND result_new_severities.dynamic = 0"                           \
      "       LIMIT 1)"                                                        \
@@ -1475,7 +1475,7 @@ check_tickets (task_t task)
     {
       g_warning ("%s: failed to get last report of task %llu,"
                  " skipping ticket check",
-                 __FUNCTION__,
+                 __func__,
                  task);
       return;
     }

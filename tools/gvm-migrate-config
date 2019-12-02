@@ -39,7 +39,8 @@ cat > ${TMP}/migrate.xsl << 'EOF'
   xmlns:func="http://exslt.org/functions"
   xmlns:gvm="http://greenbone.net"
   extension-element-prefixes="str func gvm exslt">
-  <xsl:output method = "xml"/>
+  <xsl:output method = "xml"
+              indent="yes"/>
 
   <xsl:variable name="preferences">
     <preference><oid>1.3.6.1.4.1.25623.1.0.109644</oid><id>1</id><name>Value</name></preference>

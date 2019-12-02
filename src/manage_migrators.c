@@ -1058,7 +1058,7 @@ migrate_213_to_214 ()
                               &serial);
           else
             g_warning ("%s: No SSLDetails found for fingerprint %s",
-                       __FUNCTION__,
+                       __func__,
                        scanner_fpr);
 
           free (ssldetails);
@@ -1422,7 +1422,7 @@ replace_preference_names_219_to_220 (const char *table_name)
           g_free (quoted_new_name);
         }
       else
-        g_warning ("%s: No new name for '%s'", __FUNCTION__, old_name);
+        g_warning ("%s: No new name for '%s'", __func__, old_name);
     }
   cleanup_iterator (&preferences);
 }
@@ -1564,6 +1564,71 @@ migrate_220_to_221 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 221 to version 222.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_221_to_222 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 221. */
+
+  if (manage_db_version () != 221)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove permissions on the remove command MODIFY_REPORT */
+  sql ("DELETE FROM permissions WHERE name = 'modify_report';");
+  sql ("DELETE FROM permissions_trash WHERE name = 'modify_report';");
+
+  /* Set the database version to 222. */
+
+  set_db_version (222);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 222 to version 223.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_222_to_223 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 222. */
+
+  if (manage_db_version () != 222)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Extend table "nvts" with additional column "solution_method" */
+  sql ("ALTER TABLE IF EXISTS nvts ADD COLUMN solution_method text;");
+
+  /* Set the database version to 223. */
+
+  set_db_version (223);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1591,6 +1656,8 @@ static migrator_t database_migrators[] = {
   {219, migrate_218_to_219},
   {220, migrate_219_to_220},
   {221, migrate_220_to_221},
+  {222, migrate_221_to_222},
+  {223, migrate_222_to_223},
   /* End marker. */
   {-1, NULL}};
 
@@ -1681,7 +1748,7 @@ manage_migrate (GSList *log_config, const gchar *database)
   if (old_version == -2)
     {
       g_warning ("%s: no task tables yet, so no need to migrate them",
-                 __FUNCTION__);
+                 __func__);
       version_current = 1;
     }
   else if (old_version == new_version)

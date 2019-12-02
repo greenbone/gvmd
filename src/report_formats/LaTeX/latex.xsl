@@ -1254,19 +1254,26 @@ advice given in each description, in order to rectify the issue.
           </xsl:call-template>
         </xsl:if>
 
-        <xsl:if test="(string-length (gvm:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0)">
+        <xsl:if test="nvt/solution/text() or nvt/solution/@type or nvt/solution/@method">
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Solution}</xsl:text>
           <xsl:call-template name="latex-newline"/>
-          <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+          <xsl:if test="nvt/solution/@type">
             \textbf{Solution type:}
-            <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'solution_type')"/>
+            <xsl:value-of select="nvt/solution/@type"/>
             <xsl:call-template name="latex-newline"/>
           </xsl:if>
-          <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'solution')"/>
-          </xsl:call-template>
+          <xsl:if test="nvt/solution/@method">
+            \textbf{Solution method:}
+            <xsl:value-of select="nvt/solution/@method"/>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:if>
+          <xsl:if test="nvt/solution/text()">
+            <xsl:call-template name="structured-text">
+              <xsl:with-param name="string" select="nvt/solution/text()"/>
+            </xsl:call-template>
+          </xsl:if>
         </xsl:if>
 
         <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">

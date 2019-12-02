@@ -387,7 +387,7 @@ try_gpgme_import (const char *key_str, GArray *key_types,
 
   if (mkdtemp (gpg_temp_dir) == NULL)
     {
-      g_warning ("%s: mkdtemp failed", __FUNCTION__);
+      g_warning ("%s: mkdtemp failed", __func__);
       return -1;
     }
 
@@ -469,7 +469,7 @@ check_private_key (const char *key_str, const char *key_phrase)
   if (ret)
     {
       g_message ("%s: import failed: %s",
-                 __FUNCTION__, gnutls_strerror (ret));
+                 __func__, gnutls_strerror (ret));
       gnutls_x509_privkey_deinit (key);
       g_free (data.data);
       return 1;
@@ -3192,29 +3192,6 @@ modify_port_list_data_reset (modify_port_list_data_t *data)
 }
 
 /**
- * @brief Command data for the modify_report command.
- */
-typedef struct
-{
-  char *comment;       ///< Comment.
-  char *report_id;     ///< ID of report to modify.
-} modify_report_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_report_data_reset (modify_report_data_t *data)
-{
-  free (data->comment);
-  free (data->report_id);
-
-  memset (data, 0, sizeof (modify_report_data_t));
-}
-
-/**
  * @brief Command data for the modify_report_format command.
  */
 typedef struct
@@ -4011,7 +3988,6 @@ typedef union
   modify_group_data_t modify_group;                   ///< modify_group
   modify_permission_data_t modify_permission;         ///< modify_permission
   modify_port_list_data_t modify_port_list;           ///< modify_port_list
-  modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_role_data_t modify_role;                     ///< modify_role
   modify_scanner_data_t modify_scanner;               ///< modify_scanner
@@ -4556,12 +4532,6 @@ static modify_permission_data_t *modify_permission_data
  */
 static modify_port_list_data_t *modify_port_list_data
  = &(command_data.modify_port_list);
-
-/**
- * @brief Parser callback data for MODIFY_REPORT.
- */
-static modify_report_data_t *modify_report_data
- = &(command_data.modify_report);
 
 /**
  * @brief Parser callback data for MODIFY_REPORT_FORMAT.
@@ -5213,8 +5183,6 @@ typedef enum
   CLIENT_MODIFY_PORT_LIST,
   CLIENT_MODIFY_PORT_LIST_COMMENT,
   CLIENT_MODIFY_PORT_LIST_NAME,
-  CLIENT_MODIFY_REPORT,
-  CLIENT_MODIFY_REPORT_COMMENT,
   CLIENT_MODIFY_REPORT_FORMAT,
   CLIENT_MODIFY_REPORT_FORMAT_ACTIVE,
   CLIENT_MODIFY_REPORT_FORMAT_NAME,
@@ -6645,12 +6613,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_permission_data->permission_id);
             set_client_state (CLIENT_MODIFY_PERMISSION);
           }
-        else if (strcasecmp ("MODIFY_REPORT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "report_id",
-                              &modify_report_data->report_id);
-            set_client_state (CLIENT_MODIFY_REPORT);
-          }
         else if (strcasecmp ("MODIFY_REPORT_FORMAT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
@@ -7290,11 +7252,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_port_list_data->comment, "");
             set_client_state (CLIENT_MODIFY_PORT_LIST_COMMENT);
           }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_REPORT:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_COMMENT);
         ELSE_READ_OVER;
 
       case CLIENT_MODIFY_REPORT_FORMAT:
@@ -9832,14 +9789,14 @@ strdiff (const gchar *one, const gchar *two)
   old_lc_all = getenv ("LC_ALL") ? g_strdup (getenv ("LC_ALL")) : NULL;
   if (setenv ("LC_ALL", "C", 1) == -1)
     {
-      g_warning ("%s: failed to set LC_ALL", __FUNCTION__);
+      g_warning ("%s: failed to set LC_ALL", __func__);
       return NULL;
     }
 
   old_language = getenv ("LANGUAGE") ? g_strdup (getenv ("LANGUAGE")) : NULL;
   if (setenv ("LANGUAGE", "C", 1) == -1)
     {
-      g_warning ("%s: failed to set LANGUAGE", __FUNCTION__);
+      g_warning ("%s: failed to set LANGUAGE", __func__);
       return NULL;
     }
 
@@ -9853,7 +9810,7 @@ strdiff (const gchar *one, const gchar *two)
   cmd[5] = g_strdup ("Report 2");
   cmd[6] = NULL;
   g_debug ("%s: Spawning in %s: %s \"%s\" \"%s\"",
-           __FUNCTION__, dir,
+           __func__, dir,
            cmd[0], cmd[1], cmd[2]);
   if ((g_spawn_sync (dir,
                      cmd,
@@ -9873,12 +9830,12 @@ strdiff (const gchar *one, const gchar *two)
       else
         {
           g_debug ("%s: failed to run diff: %d (WIF %i, WEX %i)",
-                   __FUNCTION__,
+                   __func__,
                    exit_status,
                    WIFEXITED (exit_status),
                    WEXITSTATUS (exit_status));
-          g_debug ("%s: stdout: %s", __FUNCTION__, standard_out);
-          g_debug ("%s: stderr: %s", __FUNCTION__, standard_err);
+          g_debug ("%s: stdout: %s", __func__, standard_out);
+          g_debug ("%s: stderr: %s", __func__, standard_err);
           ret = NULL;
           g_free (standard_out);
         }
@@ -9888,12 +9845,12 @@ strdiff (const gchar *one, const gchar *two)
 
   if (old_lc_all && (setenv ("LC_ALL", old_lc_all, 1) == -1))
     {
-      g_warning ("%s: failed to reset LC_ALL", __FUNCTION__);
+      g_warning ("%s: failed to reset LC_ALL", __func__);
       ret = NULL;
     }
   else if (old_language && (setenv ("LANGUAGE", old_language, 1) == -1))
     {
-      g_warning ("%s: failed to reset LANGUAGE", __FUNCTION__);
+      g_warning ("%s: failed to reset LANGUAGE", __func__);
       ret = NULL;
     }
 
@@ -10288,6 +10245,27 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
                                     tags->str ?: "");
+
+          if (result_iterator_nvt_solution (results)
+              || result_iterator_nvt_solution_type (results)
+              || result_iterator_nvt_solution_method (results))
+            {
+              buffer_xml_append_printf (buffer, "<solution");
+
+              if (result_iterator_nvt_solution_type (results))
+                buffer_xml_append_printf (buffer, " type='%s'",
+                  result_iterator_nvt_solution_type (results));
+
+              if (result_iterator_nvt_solution_method (results))
+                buffer_xml_append_printf (buffer, " method='%s'",
+                  result_iterator_nvt_solution_method (results));
+
+              if (result_iterator_nvt_solution (results))
+                buffer_xml_append_printf (buffer, ">%s</solution>",
+                                          result_iterator_nvt_solution (results));
+              else
+                buffer_xml_append_printf (buffer, "/>");
+            }
 
           first = 1;
           result_iterator_nvt_refs_append (buffer, results, &first);
@@ -13476,7 +13454,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           case CREDENTIAL_FORMAT_NONE:
             break;
           default:
-            g_warning ("%s: Unexpected credential format.", __FUNCTION__);
+            g_warning ("%s: Unexpected credential format.", __func__);
         }
 
       if (get_credentials_data->scanners)
@@ -13651,7 +13629,7 @@ get_feed_info_parse (entity_t entity, const gchar *config_path,
   child = entity_child (entity, "name");
   if (child == NULL)
     {
-      g_warning ("%s: Missing name in '%s'", __FUNCTION__, config_path);
+      g_warning ("%s: Missing name in '%s'", __func__, config_path);
       return -1;
     }
   *name = entity_text (child);
@@ -13660,7 +13638,7 @@ get_feed_info_parse (entity_t entity, const gchar *config_path,
   if (child == NULL)
     {
       g_warning ("%s: Missing description in '%s'",
-                 __FUNCTION__, config_path);
+                 __func__, config_path);
       return -1;
     }
   *description = entity_text (child);
@@ -13668,7 +13646,7 @@ get_feed_info_parse (entity_t entity, const gchar *config_path,
   child = entity_child (entity, "version");
   if (child == NULL)
     {
-      g_warning ("%s: Missing version in '%s'", __FUNCTION__, config_path);
+      g_warning ("%s: Missing version in '%s'", __func__, config_path);
       return -1;
     }
   *version = entity_text (child);
@@ -13702,7 +13680,7 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
                                    : GVM_CERT_DATA_DIR,
                                   "feed.xml",
                                   NULL);
-  g_debug ("%s: config_path: %s", __FUNCTION__, config_path);
+  g_debug ("%s: config_path: %s", __func__, config_path);
 
   /* Read the file in. */
 
@@ -13711,7 +13689,7 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
   if (error)
     {
       g_warning ("%s: Failed to read '%s': %s",
-                  __FUNCTION__,
+                  __func__,
                  config_path,
                  error->message);
       g_error_free (error);
@@ -13723,7 +13701,7 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
 
   if (parse_entity (xml, &entity))
     {
-      g_warning ("%s: Failed to parse '%s'", __FUNCTION__, config_path);
+      g_warning ("%s: Failed to parse '%s'", __func__, config_path);
       g_free (config_path);
       return -1;
     }
@@ -13794,7 +13772,7 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
                    /* "-rw-r--r--" */
                    S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
   if (lockfile == -1)
-    g_warning ("%s: failed to open lock file '%s': %s", __FUNCTION__,
+    g_warning ("%s: failed to open lock file '%s': %s", __func__,
                lockfile_name, strerror (errno));
   else
     {
@@ -13819,7 +13797,7 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
                     }
                   else
                     {
-                      g_warning ("%s: %s", __FUNCTION__, file_error->message);
+                      g_warning ("%s: %s", __func__, file_error->message);
                       g_error_free (file_error);
                     }
                 }
@@ -13838,7 +13816,7 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
                 }
             }
           else
-            g_warning ("%s: flock: %s", __FUNCTION__, strerror (errno));
+            g_warning ("%s: flock: %s", __func__, strerror (errno));
         }
       else
         /* Got the lock, so no sync is in progress. */
@@ -13846,7 +13824,7 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
     }
 
   if (close (lockfile))
-    g_warning ("%s: failed to close lock file '%s': %s", __FUNCTION__,
+    g_warning ("%s: failed to close lock file '%s': %s", __func__,
                lockfile_name, strerror (errno));
 
   g_free (lockfile_name);
@@ -18263,7 +18241,7 @@ get_task_schedule_xml (task_t task)
                                             "get_schedules"))
             g_error ("%s: GET_TASKS: error finding"
                       " task schedule, aborting",
-                      __FUNCTION__);
+                      __func__);
           schedule_available = (found > 0);
         }
     }
@@ -18537,7 +18515,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               if (report_timestamp (current_report_id, &timestamp))
                 g_error ("%s: GET_TASKS: error getting timestamp"
                          " of report, aborting",
-                         __FUNCTION__);
+                         __func__);
 
               scan_start = scan_start_time_uuid (current_report_id),
               scan_end = scan_end_time_uuid (current_report_id),
@@ -18578,7 +18556,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                  0, min_qod))
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " first report, aborting",
-                         __FUNCTION__);
+                         __func__);
             }
 
           second_last_report_id = task_second_last_report_id (index);
@@ -18596,7 +18574,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                     0, min_qod))
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " second report, aborting",
-                         __FUNCTION__);
+                         __func__);
             }
 
           last_report_id = task_iterator_last_report (&tasks);
@@ -18608,7 +18586,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               if (report_timestamp (last_report_id, &timestamp))
                 g_error ("%s: GET_TASKS: error getting timestamp for"
                          " last report, aborting",
-                         __FUNCTION__);
+                         __func__);
 
               scan_start = scan_start_time_uuid (last_report_id);
               scan_end = scan_end_time_uuid (last_report_id);
@@ -18650,7 +18628,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                         0, min_qod))
                     g_error ("%s: GET_TASKS: error getting counts for"
                              " last report, aborting",
-                             __FUNCTION__);
+                             __func__);
                 }
               else
                 {
@@ -18663,7 +18641,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               if (report_timestamp (last_report_id, &timestamp))
                 g_error ("%s: GET_TASKS: error getting timestamp for"
                          " last report, aborting",
-                         __FUNCTION__);
+                         __func__);
 
               scan_start = scan_start_time_uuid (last_report_id);
               scan_end = scan_end_time_uuid (last_report_id);
@@ -18761,7 +18739,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                                 "get_targets"))
                 g_error ("%s: GET_TASKS: error finding task target,"
                          " aborting",
-                         __FUNCTION__);
+                         __func__);
               target_available = (found > 0);
             }
           else
@@ -18780,7 +18758,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                               "get_configs"))
                 g_error ("%s: GET_TASKS: error finding task config,"
                          " aborting",
-                         __FUNCTION__);
+                         __func__);
               config_available = (found > 0);
             }
           scanner_available = 1;
@@ -18802,7 +18780,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                       (task_scanner_uuid, &found, "get_scanners"))
                     g_error ("%s: GET_TASKS: error finding"
                              " task scanner, aborting",
-                             __FUNCTION__);
+                             __func__);
                   scanner_available = (found > 0);
                 }
             }
@@ -18870,7 +18848,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        task_target_name_escaped ?: "",
                        target_in_trash,
                        target_available ? "" : "<permissions/>",
-                       task_iterator_hosts_ordering (&tasks),
+                       task_iterator_hosts_ordering (&tasks)
+                        ? task_iterator_hosts_ordering (&tasks)
+                        : "",
                        task_scanner_uuid,
                        task_scanner_name_escaped,
                        task_scanner_type,
@@ -26193,66 +26173,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_PORT_LIST, COMMENT);
       CLOSE (CLIENT_MODIFY_PORT_LIST, NAME);
 
-      case CLIENT_MODIFY_REPORT:
-        {
-          switch (modify_report
-                   (modify_report_data->report_id,
-                    modify_report_data->comment))
-            {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
-                log_event ("report", "Report", modify_report_data->report_id,
-                           "modified");
-                break;
-              case 1:
-                if (send_find_error_to_client ("modify_report", "report",
-                                               modify_report_data->report_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("report", "Report",
-                                modify_report_data->report_id,
-                                "modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_report",
-                                    "A report_id is required"));
-                log_event_fail ("report", "Report",
-                                modify_report_data->report_id,
-                                "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX
-                  ("modify_report",
-                   "A COMMENT element is required"));
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_report",
-                                    "Permission denied"));
-                log_event_fail ("report", "Report",
-                                modify_report_data->report_id,
-                                "modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
-                log_event_fail ("report", "Report",
-                                modify_report_data->report_id,
-                                "modified");
-                break;
-            }
-
-          modify_report_data_reset (modify_report_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_MODIFY_REPORT, COMMENT);
-
       case CLIENT_MODIFY_REPORT_FORMAT:
         {
           switch (modify_report_format
@@ -28313,10 +28233,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
               &modify_config_data->preference_value);
-
-
-      APPEND (CLIENT_MODIFY_REPORT_COMMENT,
-              &modify_report_data->comment);
 
 
       APPEND (CLIENT_MODIFY_REPORT_FORMAT_ACTIVE,

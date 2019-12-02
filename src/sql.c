@@ -50,9 +50,6 @@ sql_prepare_internal (int, int, const char*, va_list, sql_stmt_t **);
 int
 sql_exec_internal (int, sql_stmt_t *);
 
-int
-sql_explain_internal (const char*, va_list);
-
 
 /* Variables. */
 
@@ -174,7 +171,7 @@ sqlv (int retry, char* sql, va_list args)
       ret = sql_prepare_internal (retry, 1, sql, args_copy, &stmt);
       va_end (args_copy);
       if (ret == -1)
-        g_warning ("%s: sql_prepare_internal failed", __FUNCTION__);
+        g_warning ("%s: sql_prepare_internal failed", __func__);
       if (ret)
         return ret;
 
@@ -182,7 +179,7 @@ sqlv (int retry, char* sql, va_list args)
 
       while ((ret = sql_exec_internal (retry, stmt)) == 1);
       if ((ret == -1) && log_errors)
-        g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
+        g_warning ("%s: sql_exec_internal failed", __func__);
       sql_finalize (stmt);
       if (ret == 2)
         continue;
@@ -281,15 +278,14 @@ sql_giveup (char* sql, ...)
 /**
  * @brief Get a particular cell from a SQL query.
  *
- * @param[in]   log          Whether to do g_debug logging.
  * @param[in]   sql          Format string for SQL query.
  * @param[in]   args         Arguments for format string.
  * @param[out]  stmt_return  Return from statement.
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
-static int
-sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
+int
+sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 {
   int ret;
 
@@ -302,12 +298,12 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
        */
       va_list args_copy;
       va_copy (args_copy, args);
-      ret = sql_prepare_internal (1, log, sql, args_copy, stmt_return);
+      ret = sql_prepare_internal (1, 1, sql, args_copy, stmt_return);
       va_end (args_copy);
 
       if (ret)
         {
-          g_warning ("%s: sql_prepare failed", __FUNCTION__);
+          g_warning ("%s: sql_prepare failed", __func__);
           return -1;
         }
 
@@ -317,7 +313,7 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
       if (ret == -1 || ret == -4)
         {
           if (log_errors)
-            g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
+            g_warning ("%s: sql_exec_internal failed", __func__);
           return -1;
         }
       if (ret == 0)
@@ -332,26 +328,8 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
       break;
     }
   assert (ret == 1);
-  if (log)
-    g_debug ("   sql_x end (%s)", sql);
+  g_debug ("   sql_x end (%s)", sql);
   return 0;
-}
-
-/**
- * @brief Get a particular cell from a SQL query.
- *
- * Do logging as usual.
- *
- * @param[in]   sql          Format string for SQL query.
- * @param[in]   args         Arguments for format string.
- * @param[out]  stmt_return  Return from statement.
- *
- * @return 0 success, 1 too few rows, -1 error.
- */
-int
-sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
-{
-  return sql_x_internal (1, sql, args, stmt_return);
 }
 
 /**
@@ -526,26 +504,6 @@ sql_int64_0 (char* sql, ...)
   return ret;
 }
 
-/**
- * @brief Write debug messages with the query plan for an SQL query to the log.
- *
- * @param[in] sql   Format string for the SQL query.
- * @param[in] ...   Format string arguments.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_explain (const char *sql, ...)
-{
-  int ret;
-  va_list args;
-  va_start (args, sql);
-  ret = sql_explain_internal (sql, args);
-  va_end (args);
-
-  return ret;
-}
-
 
 /* Iterators. */
 
@@ -587,7 +545,7 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
   va_end (args);
   if (ret)
     {
-      g_warning ("%s: sql_prepare failed", __FUNCTION__);
+      g_warning ("%s: sql_prepare failed", __func__);
       abort ();
     }
   iterator->stmt = stmt;
@@ -682,7 +640,7 @@ cleanup_iterator (iterator_t* iterator)
 {
   if (iterator == NULL)
     {
-      g_warning ("%s: null iterator pointer", __FUNCTION__);
+      g_warning ("%s: null iterator pointer", __func__);
       return;
     }
 
@@ -722,14 +680,14 @@ next (iterator_t* iterator)
       if (ret == -1 || ret == -4)
         {
           if (log_errors)
-            g_warning ("%s: sql_exec_internal failed", __FUNCTION__);
+            g_warning ("%s: sql_exec_internal failed", __func__);
           abort ();
         }
       if (ret == -3 || ret == -2)
         {
           /* Busy or locked, with statement reset.  Just try step again like
            * we used to do in sql_exec_internal. */
-          g_warning ("%s: stepping after reset", __FUNCTION__);
+          g_warning ("%s: stepping after reset", __func__);
           continue;
         }
       break;
