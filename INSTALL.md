@@ -17,7 +17,7 @@ Prerequisites:
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
 * libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 11.0.0
-* PostgreSQL database
+* PostgreSQL database >= 9.6
 * pkg-config
 * libical >= 1.0.0
 
@@ -410,6 +410,11 @@ supported values for `<name>` are:
   This cleans up references to report formats that have been removed without
   using the DELETE_REPORT_FORMAT GMP command, for example after a built-in
   report format has been removed.
+
+- `cleanup-result-nvts`
+
+  This cleans up results with missing result_nvt entries which can result
+  in filters and overrides not working properly.
 
 - `cleanup-result-severities`
 

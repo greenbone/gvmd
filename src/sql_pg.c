@@ -354,6 +354,15 @@ sql_open (const char *database)
   g_debug ("%s: socket: %i", __FUNCTION__, PQsocket (conn));
   g_debug ("%s: postgres version: %i", __FUNCTION__, PQserverVersion (conn));
 
+  if (PQserverVersion (conn) < 90600)
+    {
+      g_warning ("%s: PostgreSQL version 9.6 (90600) or higher is required",
+                 __FUNCTION__);
+      g_warning ("%s: Current version is %i", __FUNCTION__,
+                 PQserverVersion (conn));
+      goto fail;
+    }
+
   return 0;
 
  fail:

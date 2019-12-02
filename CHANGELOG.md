@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Try authentication when verifying GMP scanners [#837](https://github.com/greenbone/gvmd/pull/837)
 - Try importing private keys with libssh if GnuTLS fails [#841](https://github.com/greenbone/gvmd/pull/841)
 - Allow resuming OSPd-based OpenVAS tasks [#869](https://github.com/greenbone/gvmd/pull/869)
+- Require Postgres 9.6 as a minimum [#872](https://github.com/greenbone/gvmd/pull/872)
+- Speed up the SCAP sync [#875](https://github.com/greenbone/gvmd/pull/875) [#877](https://github.com/greenbone/gvmd/pull/877) [#879](https://github.com/greenbone/gvmd/pull/879) [#881](https://github.com/greenbone/gvmd/pull/881) [#883](https://github.com/greenbone/gvmd/pull/883)
 
 ### Fixed
 - Consider results_trash when deleting users [#799](https://github.com/greenbone/gvmd/pull/799)
@@ -31,6 +33,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MODIFY_USER saves comment when COMMENT is empty [#842](https://github.com/greenbone/gvmd/pull/842)
 - Fix result diff generation to ignore white space in delta reports [#861](https://github.com/greenbone/gvmd/pull/861)
 - Fix resource type checks for permissions [#863](https://github.com/greenbone/gvmd/pull/863)
+- Fix result_nvt for new OSP and slave results [#865](https://github.com/greenbone/gvmd/pull/865)
+- Use right format specifier for merge_ovaldef version [#874](https://github.com/greenbone/gvmd/pull/874)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
