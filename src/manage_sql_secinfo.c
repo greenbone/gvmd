@@ -1568,8 +1568,8 @@ update_dfn_xml (const gchar *xml_path, int last_cert_update,
                    " ON CONFLICT (uuid) DO UPDATE"
                    " SET name = EXCLUDED.uuid,"
                    "     comment = '',"
-                   "     creation_time = EXCLUDED.creation,"
-                   "     modification_time = EXCLUDED.modification,"
+                   "     creation_time = EXCLUDED.creation_time,"
+                   "     modification_time = EXCLUDED.modification_time,"
                    "     title = EXCLUDED.title,"
                    "     summary = EXCLUDED.summary,"
                    "     cve_refs = EXCLUDED.cve_refs;",
