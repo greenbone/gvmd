@@ -1999,6 +1999,8 @@ update_scap_cpes (int last_scap_update)
       cpe_item = element_next (cpe_item);
     }
 
+  element_free (element);
+
   assert (updated_scap_cpes ? (inserts != NULL) : (inserts == NULL));
 
   if (updated_scap_cpes)
@@ -2016,7 +2018,6 @@ update_scap_cpes (int last_scap_update)
       g_string_free (inserts, TRUE);
     }
 
-  element_free (element);
   sql_commit ();
   return updated_scap_cpes;
 
