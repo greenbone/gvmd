@@ -1765,7 +1765,8 @@ typedef struct
   GString *statement;      ///< Current statemet.
   int current_chunk_size;  ///< Number of rows in current statement.
   int max_chunk_size;      ///< Max number of rows per INSERT.
-  gchar *close_sql;        ///< SQL to close the statement.
+  gchar *open_sql;         ///< SQL to open each statement.
+  gchar *close_sql;        ///< SQL to close each statement.
 } inserts_t;
 
 /**
@@ -1773,17 +1774,20 @@ typedef struct
  *
  * @param[in]  inserts         Insert buffer.
  * @param[in]  max_chunk_size  Max chunk size.
+ * @param[in]  open_sql        SQL to to start each statement.
  * @param[in]  close_sql       SQL to append to the end of each statement.
  *
  * @return Whether this is the first value in the statement.
  */
 static void
-inserts_init (inserts_t *inserts, int max_chunk_size, const gchar *close_sql)
+inserts_init (inserts_t *inserts, int max_chunk_size, const gchar *open_sql,
+              const gchar *close_sql)
 {
   inserts->statements = make_array ();
   inserts->statement = NULL;
   inserts->current_chunk_size = 0;
   inserts->max_chunk_size = max_chunk_size;
+  inserts->open_sql = open_sql ? g_strdup (open_sql) : NULL;
   inserts->close_sql = close_sql ? g_strdup (close_sql) : NULL;
 }
 
@@ -1829,11 +1833,7 @@ inserts_check_size (inserts_t *inserts)
   if (inserts->statement == NULL)
     {
       inserts->statement
-        = g_string_new ("INSERT INTO scap.cpes"
-                        " (uuid, name, title, creation_time,"
-                        "  modification_time, status, deprecated_by_id,"
-                        "  nvd_id)"
-                        " VALUES");
+        = g_string_new (inserts->open_sql ? inserts->open_sql : "");
       first = 1;
     }
 
@@ -1853,6 +1853,7 @@ inserts_free (inserts_t *inserts)
   for (index = 0; index < inserts->statements->len; index++)
     g_string_free (g_ptr_array_index (inserts->statements, index), TRUE);
   g_ptr_array_free (inserts->statements, TRUE);
+  g_free (inserts->open_sql);
   g_free (inserts->close_sql);
   bzero (inserts, sizeof (*inserts));
 }
@@ -2089,6 +2090,11 @@ update_scap_cpes (int last_scap_update)
 
   inserts_init (&inserts,
                 CPE_MAX_CHUNK_SIZE,
+                "INSERT INTO scap.cpes"
+                " (uuid, name, title, creation_time,"
+                "  modification_time, status, deprecated_by_id,"
+                "  nvd_id)"
+                " VALUES",
                 " ON CONFLICT (uuid) DO UPDATE"
                 " SET name = EXCLUDED.name,"
                 "     title = EXCLUDED.title,"
