@@ -2009,6 +2009,7 @@ typedef struct
   GString *statement;      ///< Current statemet.
   int current_chunk_size;  ///< Number of rows in current statement.
   int max_chunk_size;      ///< Max number of rows per INSERT.
+  gchar *close_sql;        ///< SQL to close the statement.
 } inserts_t;
 
 /**
@@ -2016,16 +2017,18 @@ typedef struct
  *
  * @param[in]  inserts         Insert buffer.
  * @param[in]  max_chunk_size  Max chunk size.
+ * @param[in]  close_sql       SQL to append to the end of each statement.
  *
  * @return Whether this is the first value in the statement.
  */
 static void
-inserts_init (inserts_t *inserts, int max_chunk_size)
+inserts_init (inserts_t *inserts, int max_chunk_size, const gchar *close_sql)
 {
   inserts->statements = make_array ();
   inserts->statement = NULL;
   inserts->current_chunk_size = 0;
   inserts->max_chunk_size = max_chunk_size;
+  inserts->close_sql = close_sql ? g_strdup (close_sql) : NULL;
 }
 
 /**
@@ -2037,16 +2040,11 @@ static void
 inserts_statement_close (inserts_t *inserts)
 {
   if (inserts->statement)
-    g_string_append
-     (inserts->statement,
-      " ON CONFLICT (uuid) DO UPDATE"
-      " SET name = EXCLUDED.name,"
-      "     title = EXCLUDED.title,"
-      "     creation_time = EXCLUDED.creation_time,"
-      "     modification_time = EXCLUDED.modification_time,"
-      "     status = EXCLUDED.status,"
-      "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
-      "     nvd_id = EXCLUDED.nvd_id");
+    {
+      if (inserts->close_sql)
+        g_string_append (inserts->statement, inserts->close_sql);
+      g_string_append (inserts->statement, ";");
+    }
 }
 
 /**
@@ -2099,6 +2097,7 @@ inserts_free (inserts_t *inserts)
   for (index = 0; index < inserts->statements->len; index++)
     g_string_free (g_ptr_array_index (inserts->statements, index), TRUE);
   g_ptr_array_free (inserts->statements, TRUE);
+  g_free (inserts->close_sql);
   bzero (inserts, sizeof (*inserts));
 }
 
@@ -2332,7 +2331,16 @@ update_scap_cpes (int last_scap_update)
 
   sql_begin_immediate ();
 
-  inserts_init (&inserts, CPE_MAX_CHUNK_SIZE);
+  inserts_init (&inserts,
+                CPE_MAX_CHUNK_SIZE,
+                " ON CONFLICT (uuid) DO UPDATE"
+                " SET name = EXCLUDED.name,"
+                "     title = EXCLUDED.title,"
+                "     creation_time = EXCLUDED.creation_time,"
+                "     modification_time = EXCLUDED.modification_time,"
+                "     status = EXCLUDED.status,"
+                "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
+                "     nvd_id = EXCLUDED.nvd_id");
   cpe_item = element_first_child (cpe_list);
   while (cpe_item)
     {
