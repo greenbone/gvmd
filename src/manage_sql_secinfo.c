@@ -60,6 +60,11 @@
 /* Static variables. */
 
 /**
+ * @brief Maximum number of rows in an INSERT.
+ */
+#define CPE_MAX_CHUNK_SIZE 10000
+
+/**
  * @brief Commit size for updates.
  */
 static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
@@ -1752,6 +1757,137 @@ update_cert_bund_advisories (int last_cert_update)
 /* SCAP update: CPEs. */
 
 /**
+ * @brief Buffer for INSERT statements.
+ */
+typedef struct
+{
+  array_t *statements;     ///< Buffered statements.
+  GString *statement;      ///< Current statemet.
+  int current_chunk_size;  ///< Number of rows in current statement.
+  int max_chunk_size;      ///< Max number of rows per INSERT.
+} inserts_t;
+
+/**
+ * @brief Check size of current statement.
+ *
+ * @param[in]  inserts         Insert buffer.
+ * @param[in]  max_chunk_size  Max chunk size.
+ *
+ * @return Whether this is the first value in the statement.
+ */
+static void
+inserts_init (inserts_t *inserts, int max_chunk_size)
+{
+  inserts->statements = make_array ();
+  inserts->statement = NULL;
+  inserts->current_chunk_size = 0;
+  inserts->max_chunk_size = max_chunk_size;
+}
+
+/**
+ * @brief Close the current statement.
+ *
+ * @param[in]  inserts  Insert buffer.
+ */
+static void
+inserts_statement_close (inserts_t *inserts)
+{
+  if (inserts->statement)
+    g_string_append
+     (inserts->statement,
+      " ON CONFLICT (uuid) DO UPDATE"
+      " SET name = EXCLUDED.name,"
+      "     title = EXCLUDED.title,"
+      "     creation_time = EXCLUDED.creation_time,"
+      "     modification_time = EXCLUDED.modification_time,"
+      "     status = EXCLUDED.status,"
+      "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
+      "     nvd_id = EXCLUDED.nvd_id");
+}
+
+/**
+ * @brief Check size of current statement.
+ *
+ * @param[in]  inserts  Insert buffer.
+ *
+ * @return Whether this is the first value in the statement.
+ */
+static int
+inserts_check_size (inserts_t *inserts)
+{
+  int first;
+
+  first = 0;
+
+  if (inserts->statement
+      && inserts->current_chunk_size >= inserts->max_chunk_size)
+    {
+      inserts_statement_close (inserts);
+      array_add (inserts->statements, inserts->statement);
+      inserts->statement = NULL;
+      inserts->current_chunk_size = 0;
+    }
+
+  if (inserts->statement == NULL)
+    {
+      inserts->statement
+        = g_string_new ("INSERT INTO scap.cpes"
+                        " (uuid, name, title, creation_time,"
+                        "  modification_time, status, deprecated_by_id,"
+                        "  nvd_id)"
+                        " VALUES");
+      first = 1;
+    }
+
+  return first;
+}
+
+/**
+ * @brief Free everything.
+ *
+ * @param[in]  inserts  Insert buffer.
+ */
+static void
+inserts_free (inserts_t *inserts)
+{
+  int index;
+
+  for (index = 0; index < inserts->statements->len; index++)
+    g_string_free (g_ptr_array_index (inserts->statements, index), TRUE);
+  g_ptr_array_free (inserts->statements, TRUE);
+  bzero (inserts, sizeof (*inserts));
+}
+
+/**
+ * @brief Run the INSERT SQL, freeing the buffers.
+ *
+ * @param[in]  inserts  Insert buffer.
+ */
+static void
+inserts_run (inserts_t *inserts)
+{
+  guint index;
+
+  if (inserts->statement)
+    {
+      inserts_statement_close (inserts);
+      array_add (inserts->statements, inserts->statement);
+      inserts->statement = NULL;
+      inserts->current_chunk_size = 0;
+    }
+
+  for (index = 0; index < inserts->statements->len; index++)
+    {
+      GString *statement;
+
+      statement = g_ptr_array_index (inserts->statements, index);
+      sql ("%s", statement->str);
+    }
+
+  inserts_free (inserts);
+}
+
+/**
  * @brief Insert a SCAP CPE.
  *
  * @param[in]  inserts            Pointer to SQL buffer.
@@ -1762,7 +1898,7 @@ update_cert_bund_advisories (int last_cert_update)
  * @return 0 success, -1 error.
  */
 static int
-insert_scap_cpe (GString **inserts, element_t cpe_item, element_t item_metadata,
+insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata,
                  int modification_time)
 {
   gchar *name, *status, *deprecated, *nvd_id;
@@ -1850,15 +1986,9 @@ insert_scap_cpe (GString **inserts, element_t cpe_item, element_t item_metadata,
   quoted_nvd_id = sql_quote (nvd_id);
   g_free (nvd_id);
 
-  first = (*inserts == NULL);
-  if (first)
-    *inserts = g_string_new ("INSERT INTO scap.cpes"
-                             " (uuid, name, title, creation_time,"
-                             "  modification_time, status, deprecated_by_id,"
-                             "  nvd_id)"
-                             " VALUES");
+  first = inserts_check_size (inserts);
 
-  g_string_append_printf (*inserts,
+  g_string_append_printf (inserts->statement,
                           "%s ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')",
                           first ? "" : ",",
                           quoted_name,
@@ -1869,6 +1999,8 @@ insert_scap_cpe (GString **inserts, element_t cpe_item, element_t item_metadata,
                           quoted_status,
                           deprecated ? deprecated : "NULL",
                           quoted_nvd_id);
+
+  inserts->current_chunk_size++;
 
   g_free (quoted_title);
   g_free (quoted_name);
@@ -1895,7 +2027,7 @@ update_scap_cpes (int last_scap_update)
   gsize xml_len;
   GStatBuf state;
   int updated_scap_cpes, last_cve_update;
-  GString *inserts;
+  inserts_t inserts;
 
   updated_scap_cpes = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
@@ -1956,7 +2088,7 @@ update_scap_cpes (int last_scap_update)
 
   sql_begin_immediate ();
 
-  inserts = NULL;
+  inserts_init (&inserts, CPE_MAX_CHUNK_SIZE);
   cpe_item = element_first_child (cpe_list);
   while (cpe_item)
     {
@@ -2001,29 +2133,13 @@ update_scap_cpes (int last_scap_update)
 
   element_free (element);
 
-  assert (updated_scap_cpes ? (inserts != NULL) : (inserts == NULL));
-
-  if (updated_scap_cpes)
-    {
-      sql ("%s"
-           " ON CONFLICT (uuid) DO UPDATE"
-           " SET name = EXCLUDED.name,"
-           "     title = EXCLUDED.title,"
-           "     creation_time = EXCLUDED.creation_time,"
-           "     modification_time = EXCLUDED.modification_time,"
-           "     status = EXCLUDED.status,"
-           "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
-           "     nvd_id = EXCLUDED.nvd_id",
-           inserts->str);
-      g_string_free (inserts, TRUE);
-    }
+  inserts_run (&inserts);
 
   sql_commit ();
   return updated_scap_cpes;
 
  fail:
-  if (inserts)
-    g_string_free (inserts, TRUE);
+  inserts_free (&inserts);
   element_free (element);
   g_warning ("Update of CPEs failed");
   sql_commit ();
