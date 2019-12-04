@@ -172,6 +172,140 @@ increment_transaction_size (int* current_size)
 }
 
 
+/* Helper: buffer structure for INSERTs. */
+
+/**
+ * @brief Buffer for INSERT statements.
+ */
+typedef struct
+{
+  array_t *statements;     ///< Buffered statements.
+  GString *statement;      ///< Current statemet.
+  int current_chunk_size;  ///< Number of rows in current statement.
+  int max_chunk_size;      ///< Max number of rows per INSERT.
+  gchar *open_sql;         ///< SQL to open each statement.
+  gchar *close_sql;        ///< SQL to close each statement.
+} inserts_t;
+
+/**
+ * @brief Check size of current statement.
+ *
+ * @param[in]  inserts         Insert buffer.
+ * @param[in]  max_chunk_size  Max chunk size.
+ * @param[in]  open_sql        SQL to to start each statement.
+ * @param[in]  close_sql       SQL to append to the end of each statement.
+ *
+ * @return Whether this is the first value in the statement.
+ */
+static void
+inserts_init (inserts_t *inserts, int max_chunk_size, const gchar *open_sql,
+              const gchar *close_sql)
+{
+  inserts->statements = make_array ();
+  inserts->statement = NULL;
+  inserts->current_chunk_size = 0;
+  inserts->max_chunk_size = max_chunk_size;
+  inserts->open_sql = open_sql ? g_strdup (open_sql) : NULL;
+  inserts->close_sql = close_sql ? g_strdup (close_sql) : NULL;
+}
+
+/**
+ * @brief Close the current statement.
+ *
+ * @param[in]  inserts  Insert buffer.
+ */
+static void
+inserts_statement_close (inserts_t *inserts)
+{
+  if (inserts->statement)
+    {
+      if (inserts->close_sql)
+        g_string_append (inserts->statement, inserts->close_sql);
+      g_string_append (inserts->statement, ";");
+    }
+}
+
+/**
+ * @brief Check size of current statement.
+ *
+ * @param[in]  inserts  Insert buffer.
+ *
+ * @return Whether this is the first value in the statement.
+ */
+static int
+inserts_check_size (inserts_t *inserts)
+{
+  int first;
+
+  first = 0;
+
+  if (inserts->statement
+      && inserts->current_chunk_size >= inserts->max_chunk_size)
+    {
+      inserts_statement_close (inserts);
+      array_add (inserts->statements, inserts->statement);
+      inserts->statement = NULL;
+      inserts->current_chunk_size = 0;
+    }
+
+  if (inserts->statement == NULL)
+    {
+      inserts->statement
+        = g_string_new (inserts->open_sql ? inserts->open_sql : "");
+      first = 1;
+    }
+
+  return first;
+}
+
+/**
+ * @brief Free everything.
+ *
+ * @param[in]  inserts  Insert buffer.
+ */
+static void
+inserts_free (inserts_t *inserts)
+{
+  int index;
+
+  for (index = 0; index < inserts->statements->len; index++)
+    g_string_free (g_ptr_array_index (inserts->statements, index), TRUE);
+  g_ptr_array_free (inserts->statements, TRUE);
+  g_free (inserts->open_sql);
+  g_free (inserts->close_sql);
+  bzero (inserts, sizeof (*inserts));
+}
+
+/**
+ * @brief Run the INSERT SQL, freeing the buffers.
+ *
+ * @param[in]  inserts  Insert buffer.
+ */
+static void
+inserts_run (inserts_t *inserts)
+{
+  guint index;
+
+  if (inserts->statement)
+    {
+      inserts_statement_close (inserts);
+      array_add (inserts->statements, inserts->statement);
+      inserts->statement = NULL;
+      inserts->current_chunk_size = 0;
+    }
+
+  for (index = 0; index < inserts->statements->len; index++)
+    {
+      GString *statement;
+
+      statement = g_ptr_array_index (inserts->statements, index);
+      sql ("%s", statement->str);
+    }
+
+  inserts_free (inserts);
+}
+
+
 /* CPE data. */
 
 /**
@@ -1755,137 +1889,6 @@ update_cert_bund_advisories (int last_cert_update)
 
 
 /* SCAP update: CPEs. */
-
-/**
- * @brief Buffer for INSERT statements.
- */
-typedef struct
-{
-  array_t *statements;     ///< Buffered statements.
-  GString *statement;      ///< Current statemet.
-  int current_chunk_size;  ///< Number of rows in current statement.
-  int max_chunk_size;      ///< Max number of rows per INSERT.
-  gchar *open_sql;         ///< SQL to open each statement.
-  gchar *close_sql;        ///< SQL to close each statement.
-} inserts_t;
-
-/**
- * @brief Check size of current statement.
- *
- * @param[in]  inserts         Insert buffer.
- * @param[in]  max_chunk_size  Max chunk size.
- * @param[in]  open_sql        SQL to to start each statement.
- * @param[in]  close_sql       SQL to append to the end of each statement.
- *
- * @return Whether this is the first value in the statement.
- */
-static void
-inserts_init (inserts_t *inserts, int max_chunk_size, const gchar *open_sql,
-              const gchar *close_sql)
-{
-  inserts->statements = make_array ();
-  inserts->statement = NULL;
-  inserts->current_chunk_size = 0;
-  inserts->max_chunk_size = max_chunk_size;
-  inserts->open_sql = open_sql ? g_strdup (open_sql) : NULL;
-  inserts->close_sql = close_sql ? g_strdup (close_sql) : NULL;
-}
-
-/**
- * @brief Close the current statement.
- *
- * @param[in]  inserts  Insert buffer.
- */
-static void
-inserts_statement_close (inserts_t *inserts)
-{
-  if (inserts->statement)
-    {
-      if (inserts->close_sql)
-        g_string_append (inserts->statement, inserts->close_sql);
-      g_string_append (inserts->statement, ";");
-    }
-}
-
-/**
- * @brief Check size of current statement.
- *
- * @param[in]  inserts  Insert buffer.
- *
- * @return Whether this is the first value in the statement.
- */
-static int
-inserts_check_size (inserts_t *inserts)
-{
-  int first;
-
-  first = 0;
-
-  if (inserts->statement
-      && inserts->current_chunk_size >= inserts->max_chunk_size)
-    {
-      inserts_statement_close (inserts);
-      array_add (inserts->statements, inserts->statement);
-      inserts->statement = NULL;
-      inserts->current_chunk_size = 0;
-    }
-
-  if (inserts->statement == NULL)
-    {
-      inserts->statement
-        = g_string_new (inserts->open_sql ? inserts->open_sql : "");
-      first = 1;
-    }
-
-  return first;
-}
-
-/**
- * @brief Free everything.
- *
- * @param[in]  inserts  Insert buffer.
- */
-static void
-inserts_free (inserts_t *inserts)
-{
-  int index;
-
-  for (index = 0; index < inserts->statements->len; index++)
-    g_string_free (g_ptr_array_index (inserts->statements, index), TRUE);
-  g_ptr_array_free (inserts->statements, TRUE);
-  g_free (inserts->open_sql);
-  g_free (inserts->close_sql);
-  bzero (inserts, sizeof (*inserts));
-}
-
-/**
- * @brief Run the INSERT SQL, freeing the buffers.
- *
- * @param[in]  inserts  Insert buffer.
- */
-static void
-inserts_run (inserts_t *inserts)
-{
-  guint index;
-
-  if (inserts->statement)
-    {
-      inserts_statement_close (inserts);
-      array_add (inserts->statements, inserts->statement);
-      inserts->statement = NULL;
-      inserts->current_chunk_size = 0;
-    }
-
-  for (index = 0; index < inserts->statements->len; index++)
-    {
-      GString *statement;
-
-      statement = g_ptr_array_index (inserts->statements, index);
-      sql ("%s", statement->str);
-    }
-
-  inserts_free (inserts);
-}
 
 /**
  * @brief Insert a SCAP CPE.
