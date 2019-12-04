@@ -23,11 +23,14 @@ USERNAME=$1
 HOST=$2
 DEST=$3
 KNOWN_HOSTS=$4
-PASSWORD_FILE=$5
-REPORT_FILE=$6
+PRIVATE_KEY_FILE=$5
+PASSWORD_FILE=$6
+REPORT_FILE=$7
 
 KNOWN_HOSTS_FILE=`mktemp` || exit 1
 echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
+
+ERROR_FILE=`mktemp` || exit 1
 
 log_error() {
   logger "SCP alert: $1"
@@ -35,36 +38,45 @@ log_error() {
 }
 
 # Escape destination twice because it is also expanded on the remote end.
-sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>/dev/null
+if [ -z "$PRIVATE_KEY_FILE" ]
+then
+  sshpass -f ${PASSWORD_FILE} scp -o BatchMode=yes -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
+else
+  sshpass -f ${PASSWORD_FILE} scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o BatchMode=yes -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
+fi
 
 EXIT_CODE=$?
+
+ERROR_SHORT=`head -n 3 $ERROR_FILE`
+
 if [ $EXIT_CODE -eq 1 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid command line argument"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid command line argument: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 2 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Conflicting arguments given"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Conflicting arguments given: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 3 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: General runtime error"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: General runtime error: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 4 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Unrecognized response from ssh (parse error)"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Unrecognized response from ssh (parse error): $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 5 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid/incorrect password"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid/incorrect password: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 6 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Host public key is unknown."
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Host public key is unknown: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 127 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}: Command not found."
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Command not found: $ERROR_SHORT"
 elif [ $EXIT_CODE -ne 0 ]
 then
-  log_error "sshpass failed with exit code ${EXIT_CODE}"
+  log_error "sshpass failed with exit code ${EXIT_CODE}: $ERROR_SHORT"
 fi
 
 rm $KNOWN_HOSTS_FILE
 rm $PASSWORD_FILE
+rm $ERROR_FILE
 
 exit $EXIT_CODE
