@@ -1910,9 +1910,9 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                               g_free (quoted_cve);
                             }
                           g_free (cve_text);
-
-                          cve = element_next (cve);
                         }
+
+                      cve = element_next (cve);
                     }
                 }
 
