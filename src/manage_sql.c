@@ -50879,7 +50879,7 @@ create_permission_internal (const char *name_arg, const char *comment,
     *permission = sql_last_insert_id ();
 
   /* Update Permissions cache */
-  if (strcasecmp (name, "super") == 0)
+  if (strcasecmp (quoted_name, "super") == 0)
     cache_all_permissions_for_users (NULL);
   else if (resource_type && resource)
     cache_permissions_for_resource (resource_type, resource, NULL);
