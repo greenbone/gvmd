@@ -50826,7 +50826,6 @@ create_permission_internal (const char *name_arg, const char *comment,
   assert ((resource_id == resource_id_arg) || (resource_id == NULL));
 
   quoted_name = sql_quote (name);
-  g_free (name);
   quoted_comment = sql_quote (comment ? comment : "");
 
   sql ("INSERT INTO permissions"
@@ -50899,6 +50898,7 @@ create_permission_internal (const char *name_arg, const char *comment,
   g_free (quoted_name);
   g_free (resource_type);
   g_free (subject_where);
+  g_free (name);
 
   return 0;
 }
