@@ -42,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Consider results_trash when deleting users [#804](https://github.com/greenbone/gvmd/pull/804)
 - Fix asset host details insertion SQL [#840](https://github.com/greenbone/gvmd/pull/840)
 - Fix creation of "Super" permissions [#893](https://github.com/greenbone/gvmd/pull/893)
+- Init comment for MODIFY_USER/COMMENT, in case it's empty [#894](https://github.com/greenbone/gvmd/pull/894)
 
 ### Removed
 
