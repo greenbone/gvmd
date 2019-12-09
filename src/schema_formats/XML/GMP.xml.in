@@ -28167,7 +28167,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The command COMMANDS was used to send multiple commands in one request.
-        This was meant to avoid multiple server-roundtrips. Since the rountripsget_agents, get_configs, get_aggregates, get_alerts, get_assets, get_credentials, get_filters, get_groups, get_info, get_notes, get_overrides, get_permissions, get_port_lists, get_reports, get_report_formats, get_results, get_roles, get_scanners, get_schedules, get_settings, get_system_reports, get_tags, get_targets, get_tasks, get_tickets, get_users, get_tls_certificates, get_vulns
+        This was meant to avoid multiple server-roundtrips. Since the rountrips
         are not expensive anymore, GMP clients should send each command in
         a separate request.
       </p>
