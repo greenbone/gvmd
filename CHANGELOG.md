@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Change get_tickets to use the status text for filtering. [#698](https://github.com/greenbone/gvmd/pull/698)
 - Also consider 0 of n NVTS as busy loading [#706](https://github.com/greenbone/gvmd/pull/706)
 - Check whether hosts are alive and have results when adding them in slave scans. [#718](https://github.com/greenbone/gvmd/pull/718) [#737](https://github.com/greenbone/gvmd/pull/737)
+- Change rows of built-in default filters to -2 (use "Rows Per Page" setting) [#897](https://github.com/greenbone/gvmd/pull/897)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#691](https://github.com/greenbone/gvmd/pull/691)
