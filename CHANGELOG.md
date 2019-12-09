@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Command cleanup-report-formats for --optimize option [#651](https://github.com/greenbone/gvmd/pull/651)
 - Document container tasks in GMP doc [#690](https://github.com/greenbone/gvmd/pull/690)
 - New columns Ports, Apps, Distance, and Auth in the CSV Hosts report format [#734](https://github.com/greenbone/gvmd/pull/734)
+- Allow use of public key auth in SCP alert [#846](https://github.com/greenbone/gvmd/pull/846)
 
 ### Changes
 - Check and create default permissions individually [#672](https://github.com/greenbone/gvmd/pull/672)
@@ -18,8 +19,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Also consider 0 of n NVTS as busy loading [#706](https://github.com/greenbone/gvmd/pull/706)
 - Check whether hosts are alive and have results when adding them in slave scans. [#718](https://github.com/greenbone/gvmd/pull/718) [#737](https://github.com/greenbone/gvmd/pull/737)
 - Change rows of built-in default filters to -2 (use "Rows Per Page" setting) [#897](https://github.com/greenbone/gvmd/pull/897)
+- Update SCAP and CERT feed info in sync scripts [#808](https://github.com/greenbone/gvmd/pull/808)
 
 ### Fixed
+- Allow to migrate gvmd 8 sqlite3 database to postgres with gvm-migrate-to-postgres script
+  [#820](https://github.com/greenbone/gvmd/pull/820)
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#691](https://github.com/greenbone/gvmd/pull/691)
 - Fix iCalendar recurrence and timezone handling [#653](https://github.com/greenbone/gvmd/pull/653)
 - Fix issues with some scheduled tasks by using iCalendar more instead of old period fields [#655](https://github.com/greenbone/gvmd/pull/655)
@@ -37,6 +41,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix array index error when modifying roles and groups [#763](https://github.com/greenbone/gvmd/pull/763)
 - Fix percent sign escaping in report_port_count [#781](https://github.com/greenbone/gvmd/pull/781)
 - Consider results_trash when deleting users [#804](https://github.com/greenbone/gvmd/pull/804)
+- Fix asset host details insertion SQL [#840](https://github.com/greenbone/gvmd/pull/840)
+- Fix creation of "Super" permissions [#893](https://github.com/greenbone/gvmd/pull/893)
+- Init comment for MODIFY_USER/COMMENT, in case it's empty [#894](https://github.com/greenbone/gvmd/pull/894)
 
 ### Removed
 
