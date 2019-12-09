@@ -1975,14 +1975,7 @@ split_filter_add_specials (array_t *parts, const gchar* given_filter)
     {
       keyword = g_malloc0 (sizeof (keyword_t));
       keyword->column = g_strdup ("rows");
-      /* If there was a filter, make max_return default to Rows Per
-       * Page.  This keeps the pre-filters GMP behaviour when the filter
-       * is empty, but is more convenenient for clients that set the
-       * filter. */
-      if (strlen (given_filter))
-        keyword->string = g_strdup ("-2");
-      else
-        keyword->string = g_strdup ("-1");
+      keyword->string = g_strdup ("-2");
       keyword->type = KEYWORD_TYPE_STRING;
       keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
       array_add (parts, keyword);
@@ -2203,7 +2196,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
       if (first)
         *first = 1;
       if (max)
-        *max = -1;
+        *max = -2;
       if (sort_field)
         *sort_field = g_strdup ("name");
       if (sort_order)
@@ -2235,7 +2228,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
   point = (keyword_t**) split->pdata;
   if (max)
     {
-      *max = -1;
+      *max = -2;
       while (*point)
         {
           keyword_t *keyword;
@@ -3335,7 +3328,7 @@ filter_clause (const char* type, const char* filter,
   /* Add SQL to the clause for each keyword or phrase. */
 
   if (max_return)
-    *max_return = -1;
+    *max_return = -2;
 
   clause = g_string_new ("");
   order = g_string_new ("");

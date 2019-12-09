@@ -27256,7 +27256,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
 
   <!-- Compatibility changes between versions. -->
-
+  <change>
+    <command>GET_... Commands using filters</command>
+    <summary>GET_... commands will default to "rows=-2" filter</summary>
+    <description>
+      <p>
+        If no filter or a filter without a rows keyword is given, the various
+        GET_... commands using filters will behave as if "rows=-2" was given
+        instead of "rows=-1".
+      </p>
+      <p>
+        This means they will only return the number of rows defined by the
+        "Rows Per Page" setting and the maximum amount of rows has to be
+        requested explicitly with a "rows=-1" filter keyword or 
+        (where available) the ignore_pagination option.
+      </p>
+    </description>
+    <version>9.0</version>
+  </change>
   <change>
     <command>CREATE_CONFIG</command>
     <summary>NVT preferences without IDs are no longer accepted</summary>
