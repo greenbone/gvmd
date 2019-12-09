@@ -27158,7 +27158,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
 
   <!-- Compatibility changes between versions. -->
-
+  <change>
+    <command>GET_... Commands using filters</command>
+    <summary>GET_... commands will default to "rows=-2" filter</summary>
+    <description>
+      <p>
+        If no filter or a filter without a rows keyword is given, the various
+        GET_... commands using filters will behave as if "rows=-2" was given
+        instead of "rows=-1".
+      </p>
+      <p>
+        This means they will only return the number of rows defined by the
+        "Rows Per Page" setting and the maximum amount of rows has to be
+        requested explicitly with a "rows=-1" filter keyword or 
+        (where available) the ignore_pagination option.
+      </p>
+    </description>
+    <version>9.0</version>
+  </change>
   <change>
     <command>GET_INFO</command>
     <summary>Attribute "type" can not be "ALLINFO" anymore</summary>
@@ -28084,7 +28101,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The command COMMANDS was used to send multiple commands in one request.
-        This was meant to avoid multiple server-roundtrips. Since the rountrips
+        This was meant to avoid multiple server-roundtrips. Since the rountripsget_agents, get_configs, get_aggregates, get_alerts, get_assets, get_credentials, get_filters, get_groups, get_info, get_notes, get_overrides, get_permissions, get_port_lists, get_reports, get_report_formats, get_results, get_roles, get_scanners, get_schedules, get_settings, get_system_reports, get_tags, get_targets, get_tasks, get_tickets, get_users, get_tls_certificates, get_vulns
         are not expensive anymore, GMP clients should send each command in
         a separate request.
       </p>
