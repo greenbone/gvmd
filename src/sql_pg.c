@@ -357,8 +357,8 @@ sql_open (const char *database)
   if (PQserverVersion (conn) < 90600)
     {
       g_warning ("%s: PostgreSQL version 9.6 (90600) or higher is required",
-                 __FUNCTION__);
-      g_warning ("%s: Current version is %i", __FUNCTION__,
+                 __func__);
+      g_warning ("%s: Current version is %i", __func__,
                  PQserverVersion (conn));
       goto fail;
     }

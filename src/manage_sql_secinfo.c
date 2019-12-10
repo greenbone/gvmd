@@ -2040,7 +2040,7 @@ update_scap_cpes (int last_scap_update)
   if (g_stat (full_path, &state))
     {
       g_warning ("%s: No CPE dictionary found at %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -2059,7 +2059,7 @@ update_scap_cpes (int last_scap_update)
   last_cve_update = sql_int ("SELECT max (modification_time)"
                              " FROM scap.cves;");
 
-  g_debug ("%s: parsing %s", __FUNCTION__, full_path);
+  g_debug ("%s: parsing %s", __func__, full_path);
 
   error = NULL;
   g_file_get_contents (full_path, &xml, &xml_len, &error);
@@ -2067,7 +2067,7 @@ update_scap_cpes (int last_scap_update)
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
-                 __FUNCTION__,
+                 __func__,
                  error->message);
       g_error_free (error);
       return -1;
@@ -2076,7 +2076,7 @@ update_scap_cpes (int last_scap_update)
   if (parse_element (xml, &element))
     {
       g_free (xml);
-      g_warning ("%s: Failed to parse element", __FUNCTION__);
+      g_warning ("%s: Failed to parse element", __func__);
       return -1;
     }
   g_free (xml);
@@ -2085,7 +2085,7 @@ update_scap_cpes (int last_scap_update)
   if (strcmp (element_name (cpe_list), "cpe-list"))
     {
       element_free (element);
-      g_warning ("%s: CPE dictionary missing CPE-LIST", __FUNCTION__);
+      g_warning ("%s: CPE dictionary missing CPE-LIST", __func__);
       return -1;
     }
 
@@ -2122,7 +2122,7 @@ update_scap_cpes (int last_scap_update)
       item_metadata = element_child (cpe_item, "meta:item-metadata");
       if (item_metadata == NULL)
         {
-          g_warning ("%s: item-metadata missing", __FUNCTION__);
+          g_warning ("%s: item-metadata missing", __func__);
           goto fail;
         }
 
@@ -2130,7 +2130,7 @@ update_scap_cpes (int last_scap_update)
                                             "modification-date");
       if (modification_date == NULL)
         {
-          g_warning ("%s: modification-date missing", __FUNCTION__);
+          g_warning ("%s: modification-date missing", __func__);
           goto fail;
         }
 
@@ -2620,7 +2620,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   if (g_stat (full_path, &state))
     {
       g_warning ("%s: Failed to stat SCAP file: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
@@ -2641,7 +2641,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
-                 __FUNCTION__,
+                 __func__,
                  error->message);
       g_error_free (error);
       g_free (full_path);
@@ -2651,7 +2651,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
   if (parse_element (xml, &element))
     {
       g_free (xml);
-      g_warning ("%s: Failed to parse element", __FUNCTION__);
+      g_warning ("%s: Failed to parse element", __func__);
       g_free (full_path);
       return -1;
     }
@@ -2669,7 +2669,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
           if (last_modified == NULL)
             {
               g_warning ("%s: vuln:last-modified-datetime missing",
-                         __FUNCTION__);
+                         __func__);
               goto fail;
             }
           if (parse_iso_time_element_text (last_modified) > last_cve_update)
@@ -4637,12 +4637,12 @@ sync_scap (int lockfile)
         break;
     }
 
-  g_debug ("%s: update max cvss", __FUNCTION__);
+  g_debug ("%s: update max cvss", __func__);
 
   update_scap_cvss (updated_scap_cves, updated_scap_cpes,
                     updated_scap_ovaldefs);
 
-  g_debug ("%s: update placeholders", __FUNCTION__);
+  g_debug ("%s: update placeholders", __func__);
 
   update_scap_placeholders (updated_scap_cves);
 
