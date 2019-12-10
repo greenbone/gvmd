@@ -1608,6 +1608,7 @@ gvmd (int argc, char** argv)
   static gchar *scanner_port = NULL;
   static gchar *scanner_type = NULL;
   static gchar *scanner_ca_pub = NULL;
+  static gchar *scanner_credential = NULL;
   static gchar *scanner_key_pub = NULL;
   static gchar *scanner_key_priv = NULL;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
@@ -1812,17 +1813,25 @@ gvmd (int argc, char** argv)
           &scanner_ca_pub,
           "Scanner CA Certificate path for --[create|modify]-scanner.",
           "<scanner-ca-pub>" },
+        { "scanner-credential", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_credential,
+          "Scanner credential for --create-scanner and --modify-scanner."
+          " Can be blank to unset or a credential UUID."
+          " If omitted, a new credential can be created instead.",
+          "<scanner-credential>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_host,
           "Scanner host for --create-scanner and --modify-scanner.",
           "<scanner-host>" },
         { "scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_key_priv,
-          "Scanner private key path for --[create|modify]-scanner.",
+          "Scanner private key path for --[create|modify]-scanner"
+          " if --scanner-credential is not given.",
           "<scanner-key-private>" },
         { "scanner-key-pub", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_key_pub,
-          "Scanner Certificate path for --[create|modify]-scanner.",
+          "Scanner Certificate path for --[create|modify]-scanner"
+          " if --scanner-credential is not given.",
           "<scanner-key-public>" },
         { "scanner-name", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_name,
@@ -1836,7 +1845,8 @@ gvmd (int argc, char** argv)
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
           "Scanner type for --create-scanner and --modify-scanner."
-          " Either 'OpenVAS' or 'OSP'.",
+          " Either 'OpenVAS', 'OSP', 'GMP', 'OSP-Sensor'"
+          " or a number as used in GMP.",
           "<scanner-type>" },
         { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT,
           &schedule_timeout,
@@ -2249,16 +2259,26 @@ gvmd (int argc, char** argv)
         type = SCANNER_TYPE_OPENVAS;
       else if (!strcasecmp (scanner_type, "OSP"))
         type = SCANNER_TYPE_OSP;
+      else if (!strcasecmp (scanner_type, "GMP"))
+        type = SCANNER_TYPE_GMP;
+      else if (!strcasecmp (scanner_type, "OSP-Sensor"))
+        type = SCANNER_TYPE_OSP_SENSOR;
       else
         {
-          printf ("Invalid scanner type value.\n");
-          return EXIT_FAILURE;
+          type = atoi (scanner_type);
+          if (type <= SCANNER_TYPE_NONE
+              || type >= SCANNER_TYPE_MAX
+              || type == SCANNER_TYPE_CVE)
+            {
+              fprintf (stderr, "Invalid scanner type value.\n");
+              return EXIT_FAILURE;
+            }
         }
       stype = g_strdup_printf ("%u", type);
       ret = manage_create_scanner (log_config, database, create_scanner,
                                    scanner_host, scanner_port, stype,
-                                   scanner_ca_pub, scanner_key_pub,
-                                   scanner_key_priv);
+                                   scanner_ca_pub, scanner_credential,
+                                   scanner_key_pub, scanner_key_priv);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -2286,10 +2306,20 @@ gvmd (int argc, char** argv)
             type = SCANNER_TYPE_OPENVAS;
           else if (strcasecmp (scanner_type, "OSP") == 0)
             type = SCANNER_TYPE_OSP;
+          else if (!strcasecmp (scanner_type, "GMP"))
+            type = SCANNER_TYPE_GMP;
+          else if (!strcasecmp (scanner_type, "OSP-Sensor"))
+            type = SCANNER_TYPE_OSP_SENSOR;
           else
             {
-              g_warning ("Invalid scanner type value");
-              return EXIT_FAILURE;
+              type = atoi (scanner_type);
+              if (type <= SCANNER_TYPE_NONE
+                  || type >= SCANNER_TYPE_MAX
+                  || type == SCANNER_TYPE_CVE)
+                {
+                  fprintf (stderr, "Invalid scanner type value.\n");
+                  return EXIT_FAILURE;
+                }
             }
 
           stype = g_strdup_printf ("%u", type);
@@ -2299,8 +2329,8 @@ gvmd (int argc, char** argv)
 
       ret = manage_modify_scanner (log_config, database, modify_scanner,
                                    scanner_name, scanner_host, scanner_port,
-                                   stype, scanner_ca_pub, scanner_key_pub,
-                                   scanner_key_priv);
+                                   stype, scanner_ca_pub, scanner_credential,
+                                   scanner_key_pub, scanner_key_priv);
       g_free (stype);
       log_config_free ();
       if (ret)
