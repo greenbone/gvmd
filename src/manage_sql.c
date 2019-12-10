@@ -10031,7 +10031,7 @@ alert_write_data_file (const char *directory, const char *filename,
   if (g_file_set_contents (path, content, content_size, &error) == FALSE)
     {
       g_warning ("%s: Failed to write %s to file: %s",
-                 __FUNCTION__,
+                 __func__,
                  description ? description : "extra data",
                  error->message);
       g_free (path);
@@ -10051,7 +10051,7 @@ alert_write_data_file (const char *directory, const char *filename,
           || chown (path, nobody->pw_uid, nobody->pw_gid))
         {
           g_warning ("%s: Failed to set permissions for user nobody: %s",
-                      __FUNCTION__,
+                      __func__,
                       strerror (errno));
           g_free (path);
           return -1;
@@ -17916,7 +17916,7 @@ manage_migrate_relay_sensors ()
 
   if (get_relay_mapper_path () == NULL)
     {
-      g_warning ("%s: No relay mapper set", __FUNCTION__);
+      g_warning ("%s: No relay mapper set", __func__);
       return NULL;
     }
 
@@ -17948,7 +17948,7 @@ manage_migrate_relay_sensors ()
                 {
                   g_message ("%s: No GMP relay found for scanner %s (%s:%d)."
                              " Changing into OSP Sensor",
-                             __FUNCTION__, scanner_id, host, port);
+                             __func__, scanner_id, host, port);
 
                   sql ("UPDATE scanners"
                        " SET credential = NULL, type = %d"
@@ -17961,19 +17961,19 @@ manage_migrate_relay_sensors ()
               else
                 {
                   g_message ("%s: No relay found for GMP scanner %s (%s:%d).",
-                            __FUNCTION__, scanner_id, host, port);
+                            __func__, scanner_id, host, port);
                   gmp_failures++;
                 }
             }
           else if (type == SCANNER_TYPE_OSP_SENSOR)
             {
               g_message ("%s: No relay found for OSP Sensor %s (%s:%d).",
-                         __FUNCTION__, scanner_id, host, port);
+                         __func__, scanner_id, host, port);
               osp_failures++;
             }
           else
             g_warning ("%s: Unexpected type for scanner %s: %d",
-                       __FUNCTION__, scanner_id, type);
+                       __func__, scanner_id, type);
         }
     }
   cleanup_iterator (&scanners);
@@ -44449,7 +44449,7 @@ verify_scanner (const char *scanner_id, char **version)
       if (credential == 0)
         {
           g_warning ("%s: Missing credential for GMP scanner %s",
-                     __FUNCTION__, get_iterator_uuid (&scanner));
+                     __func__, get_iterator_uuid (&scanner));
           gvm_connection_close (&connection);
           cleanup_iterator (&scanner);
           return 3;
@@ -44466,11 +44466,11 @@ verify_scanner (const char *scanner_id, char **version)
           if (auth_ret == 1)
             g_warning ("%s: GMP scanner %s closed connection"
                        " during authentication.",
-                       __FUNCTION__, get_iterator_uuid (&scanner));
+                       __func__, get_iterator_uuid (&scanner));
           else if (auth_ret != 2)
             g_warning ("%s: Internal error during authentication"
                        " with GMP scanner %s.",
-                       __FUNCTION__, get_iterator_uuid (&scanner));
+                       __func__, get_iterator_uuid (&scanner));
           gvm_connection_close (&connection);
           cleanup_iterator (&scanner);
           return 3;

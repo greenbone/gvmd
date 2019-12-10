@@ -2017,17 +2017,17 @@ get_nvt_preference_by_id (const char *nvt_oid,
   /* Check parameters */
   if (nvt_oid == NULL)
     {
-      g_warning ("%s: Missing nvt_oid", __FUNCTION__);
+      g_warning ("%s: Missing nvt_oid", __func__);
       return NULL;
     }
   if (find_id == NULL || strcmp (find_id, "") == 0)
     {
-      g_warning ("%s: Missing or empty find_id", __FUNCTION__);
+      g_warning ("%s: Missing or empty find_id", __func__);
       return NULL;
     }
   if (value == NULL)
     {
-      g_warning ("%s: Missing value", __FUNCTION__);
+      g_warning ("%s: Missing value", __func__);
       return NULL;
     }
 
@@ -2052,7 +2052,7 @@ get_nvt_preference_by_id (const char *nvt_oid,
   if (g_strv_length (full_name_split) != 4)
     {
       g_warning ("%s: Preference name %s does not have 4 parts",
-                 __FUNCTION__, full_name);
+                 __func__, full_name);
       g_strfreev (full_name_split);
       free (full_name);
       return NULL;
@@ -2066,11 +2066,11 @@ get_nvt_preference_by_id (const char *nvt_oid,
 
   if (check_type && strcmp (check_type, "") && strcmp (check_type, type))
     g_warning ("%s: type of preference %s:%s (%s) has changed from %s to %s.",
-               __FUNCTION__, nvt_oid, find_id, name, check_type, type);
+               __func__, nvt_oid, find_id, name, check_type, type);
 
   if (check_name && strcmp (check_name, "") && strcmp (check_name, name))
     g_message ("%s: name of preference %s:%s has changed from '%s' to '%s'.",
-               __FUNCTION__, nvt_oid, find_id, check_name, name);
+               __func__, nvt_oid, find_id, check_name, name);
 
   alts = make_array ();
   array_terminate (alts);

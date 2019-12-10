@@ -360,7 +360,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                                                     preference_value ?: "");
                       if (new_preference == NULL)
                         g_warning ("%s: Preference %s:%s not found",
-                                    __FUNCTION__,
+                                    __func__,
                                     preference_nvt_oid,
                                     preference_id);
                     }
@@ -368,7 +368,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                     {
                       g_warning ("%s: Config contains a preference for NVT %s"
                                  " without a preference id: %s",
-                                 __FUNCTION__,
+                                 __func__,
                                  preference_nvt_oid,
                                  preference_name);
 

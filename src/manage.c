@@ -4296,7 +4296,7 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
       && scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP)
     {
       g_warning ("%s: Scanner type does not support resuming scans",
-                 __FUNCTION__);
+                 __func__);
       return -1;
     }
 
