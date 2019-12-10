@@ -45,6 +45,14 @@ find_package (PostgreSQL REQUIRED)
 if (NOT PostgreSQL_FOUND)
   message (SEND_ERROR "The PostgreSQL library is required.")
 endif (NOT PostgreSQL_FOUND)
+string (REGEX MATCH "^[ \t]*\([0-9]+\)\\.\([0-9]+\)\(.*\)" TEMP ${PostgreSQL_VERSION_STRING})
+if (NOT CMAKE_MATCH_1)
+  message (SEND_ERROR "Error matching PostgreSQL version.")
+elseif ((CMAKE_MATCH_1 EQUAL 9 AND CMAKE_MATCH_2 LESS 6)
+        OR (CMAKE_MATCH_1 LESS 9))
+  message (SEND_ERROR "PostgreSQL version >= 9.6 is required")
+  message (STATUS "PostgreSQL version ${CMAKE_MATCH_1}.${CMAKE_MATCH_2}${CMAKE_MATCH_3}")
+endif (NOT CMAKE_MATCH_1)
 
 message (STATUS "Looking for gpgme...")
 find_library (GPGME gpgme)
@@ -82,8 +90,9 @@ add_executable (manage-utils-test
                 manage_ranges_all_tcp_nmap_5_51_top_1000.c
                 manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
                 manage_ranges_nmap_5_51_top_2000_top_100.c
-                manage_acl.c manage_config_discovery.c
+                manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -106,8 +115,9 @@ add_executable (manage-test
                 manage_ranges_all_tcp_nmap_5_51_top_1000.c
                 manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
                 manage_ranges_nmap_5_51_top_2000_top_100.c
-                manage_acl.c manage_config_discovery.c
+                manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -130,8 +140,9 @@ add_executable (gmp-tickets-test
                 manage_ranges_all_tcp_nmap_5_51_top_1000.c
                 manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
                 manage_ranges_nmap_5_51_top_2000_top_100.c
-                manage_acl.c manage_config_discovery.c
+                manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -161,8 +172,9 @@ add_executable (gvmd
                 manage_ranges_all_tcp_nmap_5_51_top_1000.c
                 manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
                 manage_ranges_nmap_5_51_top_2000_top_100.c
-                manage_acl.c manage_config_discovery.c
+                manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c

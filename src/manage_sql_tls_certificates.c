@@ -192,11 +192,39 @@ gchar *
 tls_certificate_extra_where (const char *filter)
 {
   GString *ret;
-  gchar *report_id;
+  gchar *host_id, *report_id;
 
   ret = g_string_new ("");
 
+  host_id = filter_term_value (filter, "host_id");
   report_id = filter_term_value (filter, "report_id");
+
+  if (host_id)
+    {
+      gchar *quoted_id;
+      quoted_id = sql_quote (host_id);
+      g_string_append_printf
+         (ret,
+          " AND (tls_certificates.id IN"
+          " (WITH host_idents AS"
+          "   (SELECT source_id AS ident_report_id, value AS ident_ip"
+          "      FROM host_identifiers"
+          "     WHERE host = (SELECT id FROM hosts"
+          "                   WHERE uuid='%s')"
+          "       AND name = 'ip')"
+          "  SELECT tls_certificate"
+          "    FROM tls_certificate_sources AS sources"
+          "    JOIN tls_certificate_origins AS origins"
+          "      ON origins.id = sources.origin"
+          "    JOIN tls_certificate_locations AS locations"
+          "      ON locations.id = sources.location"
+          "    JOIN host_idents"
+          "      ON origins.origin_id = host_idents.ident_report_id"
+          "         AND locations.host_ip = host_idents.ident_ip)"
+          " )",
+          quoted_id);
+      g_free (quoted_id);
+    }
 
   if (report_id)
     {
@@ -214,6 +242,7 @@ tls_certificate_extra_where (const char *filter)
       g_free (quoted_id);
     }
 
+  g_free (host_id);
   g_free (report_id);
 
   return g_string_free (ret, FALSE);

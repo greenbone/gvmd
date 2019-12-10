@@ -1472,6 +1472,10 @@ migrate_219_to_220 ()
   replace_preference_names_219_to_220 ("config_preferences");
   replace_preference_names_219_to_220 ("config_preferences_trash");
 
+  /* Force an NVT update to update newer NVTs not covered by the
+   *  hardcoded list in case the feed update was run just before migration. */
+  sql ("UPDATE meta SET value='0' WHERE name='nvts_feed_version';");
+
   /* Set the database version to 220. */
 
   set_db_version (220);

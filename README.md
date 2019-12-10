@@ -15,6 +15,13 @@ XML-based Greenbone Management Protocol (GMP). Controlling scanners like
 *[OpenVAS](https://github.com/greenbone/openvas)* is done via the Open Scanner
 Protocol (OSP).
 
+## Releases
+￼
+All [release files](https://github.com/greenbone/gvmd/releases) are signed with
+the [Greenbone Community Feed integrity key](https://community.greenbone.net/t/gcf-managing-the-digital-signatures/101).
+This gpg key can be downloaded at https://www.greenbone.net/GBCommunitySigningKey.asc
+and the fingerprint is `8AE4 BE42 9B60 A59B 311C  2E73 9823 FAA6 0ED1 E580`.
+
 ## Installation and Usage
 
 This module can be configured, built and installed with following commands:

@@ -190,6 +190,9 @@ void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
 void
+make_config_base (char *const, char *const);
+
+void
 make_config_discovery (char *const, char *const);
 
 void
@@ -1933,14 +1936,7 @@ split_filter_add_specials (array_t *parts, const gchar* given_filter)
     {
       keyword = g_malloc0 (sizeof (keyword_t));
       keyword->column = g_strdup ("rows");
-      /* If there was a filter, make max_return default to Rows Per
-       * Page.  This keeps the pre-filters GMP behaviour when the filter
-       * is empty, but is more convenenient for clients that set the
-       * filter. */
-      if (strlen (given_filter))
-        keyword->string = g_strdup ("-2");
-      else
-        keyword->string = g_strdup ("-1");
+      keyword->string = g_strdup ("-2");
       keyword->type = KEYWORD_TYPE_STRING;
       keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
       array_add (parts, keyword);
@@ -2161,7 +2157,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
       if (first)
         *first = 1;
       if (max)
-        *max = -1;
+        *max = -2;
       if (sort_field)
         *sort_field = g_strdup ("name");
       if (sort_order)
@@ -2193,7 +2189,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
   point = (keyword_t**) split->pdata;
   if (max)
     {
-      *max = -1;
+      *max = -2;
       while (*point)
         {
           keyword_t *keyword;
@@ -3166,7 +3162,7 @@ filter_clause (const char* type, const char* filter,
   /* Add SQL to the clause for each keyword or phrase. */
 
   if (max_return)
-    *max_return = -1;
+    *max_return = -2;
 
   clause = g_string_new ("");
   order = g_string_new ("");
@@ -10007,6 +10003,68 @@ alert_script_exec (const char *alert_id, const char *command_args,
 }
 
 /**
+ * @brief Write data to a file for use by an alert script.
+ *
+ * @param[in]  directory      Base directory to create the file in
+ * @param[in]  filename       Filename without directory
+ * @param[in]  content        The file content
+ * @param[in]  content_size   Size of the file content
+ * @param[in]  description    Short file description for error messages
+ * @param[out] file_path      Return location of combined file path
+ *
+ * @return 0 success, -1 error
+ */
+static int
+alert_write_data_file (const char *directory, const char *filename,
+                       const char *content, gsize content_size,
+                       const char *description, gchar **file_path)
+{
+  gchar *path;
+  GError *error;
+
+  if (file_path)
+    *file_path = NULL;
+
+  /* Setup extra data file */
+  path = g_build_filename (directory, filename, NULL);
+  error = NULL;
+  if (g_file_set_contents (path, content, content_size, &error) == FALSE)
+    {
+      g_warning ("%s: Failed to write %s to file: %s",
+                 __func__,
+                 description ? description : "extra data",
+                 error->message);
+      g_free (path);
+      return -1;
+    }
+
+  if (geteuid () == 0)
+    {
+      struct passwd *nobody;
+
+      /* Set the owner for the extra data file like the other
+       * files handled by alert_script_exec, to be able to
+       * run the command with lower privileges in a fork. */
+
+      nobody = getpwnam ("nobody");
+      if ((nobody == NULL)
+          || chown (path, nobody->pw_uid, nobody->pw_gid))
+        {
+          g_warning ("%s: Failed to set permissions for user nobody: %s",
+                      __func__,
+                      strerror (errno));
+          g_free (path);
+          return -1;
+        }
+    }
+
+  if (file_path)
+    *file_path = path;
+
+  return 0;
+}
+
+/**
  * @brief Clean up common files and variables for running alert script.
  *
  * @param[in]  report_dir   The temporary directory.
@@ -10165,8 +10223,9 @@ send_to_host (const char *host, const char *port,
 /**
  * @brief Send a report to a host via TCP.
  *
- * @param[in]  password     Password.
  * @param[in]  username     Username.
+ * @param[in]  password     Password or passphrase of private key.
+ * @param[in]  private_key  Private key or NULL for password-only auth.
  * @param[in]  host         Address of host.
  * @param[in]  path         Destination filename with path.
  * @param[in]  known_hosts  Content for known_hosts file.
@@ -10177,11 +10236,15 @@ send_to_host (const char *host, const char *port,
  * @return 0 success, -1 error, -5 alert script failed.
  */
 static int
-scp_to_host (const char *password, const char *username, const char *host,
-             const char *path, const char *known_hosts, const char *report,
-             int report_size, gchar **script_message)
+scp_to_host (const char *username, const char *password,
+             const char *private_key,
+             const char *host, const char *path, const char *known_hosts,
+             const char *report, int report_size, gchar **script_message)
 {
-  gchar *clean_username, *clean_host, *clean_path;
+  const char *alert_id = "2db07698-ec49-11e5-bcff-28d24461215b";
+  char report_dir[] = "/tmp/gvmd_alert_XXXXXX";
+  gchar *report_path, *error_path, *password_path, *private_key_path;
+  gchar *clean_username, *clean_host, *clean_path, *clean_private_key_path;
   gchar *clean_known_hosts, *command_args;
   int ret;
 
@@ -10193,22 +10256,65 @@ scp_to_host (const char *password, const char *username, const char *host,
   if (known_hosts == NULL)
     known_hosts = "";
 
+  /* Setup files, including password but not private key */
+  ret = alert_script_init ("report", report, report_size,
+                           password, strlen (password),
+                           report_dir,
+                           &report_path, &error_path, &password_path);
+  if (ret)
+    return -1;
+
+  if (private_key)
+    {
+      /* Setup private key here because alert_script_init and alert_script_exec
+       *  only handle one extra file. */
+      if (alert_write_data_file (report_dir, "private_key",
+                                 private_key, strlen (private_key),
+                                 "private key", &private_key_path))
+        {
+          alert_script_cleanup (report_dir, report_path, error_path,
+                                password_path);
+          g_free (private_key_path);
+          return -1;
+        }
+    }
+  else
+    private_key_path = g_strdup ("");
+
+  /* Create arguments */
   clean_username = g_shell_quote (username);
   clean_host = g_shell_quote (host);
   clean_path = g_shell_quote (path);
   clean_known_hosts = g_shell_quote (known_hosts);
-  command_args = g_strdup_printf ("%s %s %s %s", clean_username,
-                                  clean_host, clean_path, clean_known_hosts);
+  clean_private_key_path = g_shell_quote (private_key_path);
+  command_args = g_strdup_printf ("%s %s %s %s %s",
+                                  clean_username,
+                                  clean_host,
+                                  clean_path,
+                                  clean_known_hosts,
+                                  clean_private_key_path);
   g_free (clean_username);
   g_free (clean_host);
   g_free (clean_path);
   g_free (clean_known_hosts);
+  g_free (clean_private_key_path);
 
-  ret = run_alert_script ("2db07698-ec49-11e5-bcff-28d24461215b",
-                          command_args, "report", report, report_size,
-                          password, strlen (password), script_message);
-
+  /* Run script */
+  ret = alert_script_exec (alert_id, command_args, report_path, report_dir,
+                           error_path, password_path, script_message);
   g_free (command_args);
+  if (ret)
+    {
+      alert_script_cleanup (report_dir, report_path, error_path,
+                            password_path);
+      g_free (private_key_path);
+      return ret;
+    }
+
+  /* Remove the directory and free path strings. */
+  ret = alert_script_cleanup (report_dir, report_path, error_path,
+                              password_path);
+  g_free (private_key_path);
   return ret;
 }
 
@@ -13079,7 +13185,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         {
           credential_t credential;
           char *credential_id;
-          char *password, *username, *host, *path, *known_hosts;
+          char *private_key, *password, *username, *host, *path, *known_hosts;
           gchar *report_content, *alert_path;
           gsize content_length;
           report_format_t report_format;
@@ -13114,9 +13220,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 {
                   message = new_secinfo_message (event, event_data, alert);
 
+                  username = credential_value (credential, "username");
                   password = credential_encrypted_value (credential,
                                                          "password");
-                  username = credential_value (credential, "username");
+                  private_key = credential_encrypted_value (credential,
+                                                            "private_key");
 
                   host = alert_data (alert, "method", "scp_host");
                   path = alert_data (alert, "method", "scp_path");
@@ -13125,11 +13233,13 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   alert_path = scp_alert_path_print (path, task);
                   free (path);
 
-                  ret = scp_to_host (password, username, host, alert_path,
-                                     known_hosts, message, strlen (message),
+                  ret = scp_to_host (username, password, private_key,
+                                     host, alert_path, known_hosts,
+                                     message, strlen (message),
                                      script_message);
 
                   g_free (message);
+                  free (private_key);
                   free (password);
                   free (username);
                   free (host);
@@ -13170,8 +13280,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             }
           else
             {
-              password = credential_encrypted_value (credential, "password");
               username = credential_value (credential, "username");
+              password = credential_encrypted_value (credential, "password");
+              private_key = credential_encrypted_value (credential,
+                                                        "private_key");
+
 
               host = alert_data (alert, "method", "scp_host");
               path = alert_data (alert, "method", "scp_path");
@@ -13180,10 +13293,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               alert_path = scp_alert_path_print (path, task);
               free (path);
 
-              ret = scp_to_host (password, username, host, alert_path,
-                                 known_hosts, report_content, content_length,
+              ret = scp_to_host (username, password, private_key,
+                                 host, alert_path, known_hosts,
+                                 report_content, content_length,
                                  script_message);
 
+              free (private_key);
               free (password);
               free (username);
               free (host);
@@ -16944,6 +17059,13 @@ check_db_configs ()
 
   if (sql_int ("SELECT count(*) FROM configs"
                " WHERE uuid = '%s';",
+               CONFIG_UUID_BASE)
+      == 0)
+    make_config_base (CONFIG_UUID_BASE,
+                      MANAGE_NVT_SELECTOR_UUID_BASE);
+
+  if (sql_int ("SELECT count(*) FROM configs"
+               " WHERE uuid = '%s';",
                CONFIG_UUID_DISCOVERY)
       == 0)
     make_config_discovery (CONFIG_UUID_DISCOVERY,
@@ -17469,6 +17591,8 @@ add_permissions_on_globals (const gchar *role_uuid)
   add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
                                 CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE);
   add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
+                                CONFIG_UUID_BASE);
+  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
                                 CONFIG_UUID_EMPTY);
   add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
                                 CONFIG_UUID_DISCOVERY);
@@ -17775,6 +17899,108 @@ static void
 clean_auth_cache ()
 {
   sql ("DELETE FROM auth_cache;");
+}
+
+/**
+ * @brief Tries to migrate sensor type scanners to match the relays.
+ *
+ * @return A string describing the results or NULL on error.
+ */
+static gchar *
+manage_migrate_relay_sensors ()
+{
+  iterator_t scanners;
+  int gmp_successes, gmp_failures, osp_failures;
+
+  gmp_successes = gmp_failures = osp_failures = 0;
+
+  if (get_relay_mapper_path () == NULL)
+    {
+      g_warning ("%s: No relay mapper set", __func__);
+      return NULL;
+    }
+
+  init_iterator (&scanners,
+                 "SELECT id, uuid, type, host, port FROM scanners"
+                 " WHERE type in (%d, %d)",
+                 SCANNER_TYPE_GMP,
+                 SCANNER_TYPE_OSP_SENSOR);
+
+  while (next (&scanners))
+    {
+      scanner_t scanner;
+      scanner_type_t type;
+      const char *scanner_id, *host;
+      int port;
+
+      scanner = iterator_int64 (&scanners, 0);
+      scanner_id = iterator_string (&scanners, 1);
+      type = iterator_int (&scanners, 2);
+      host = iterator_string (&scanners, 3);
+      port = iterator_int (&scanners, 4);
+
+      if (relay_supports_scanner_type (host, port, type) == FALSE)
+        {
+          if (type == SCANNER_TYPE_GMP)
+            {
+              if (relay_supports_scanner_type (host, port,
+                                               SCANNER_TYPE_OSP_SENSOR))
+                {
+                  g_message ("%s: No GMP relay found for scanner %s (%s:%d)."
+                             " Changing into OSP Sensor",
+                             __func__, scanner_id, host, port);
+
+                  sql ("UPDATE scanners"
+                       " SET credential = NULL, type = %d"
+                       " WHERE id = %llu",
+                       SCANNER_TYPE_OSP_SENSOR,
+                       scanner);
+
+                  gmp_successes++;
+                }
+              else
+                {
+                  g_message ("%s: No relay found for GMP scanner %s (%s:%d).",
+                            __func__, scanner_id, host, port);
+                  gmp_failures++;
+                }
+            }
+          else if (type == SCANNER_TYPE_OSP_SENSOR)
+            {
+              g_message ("%s: No relay found for OSP Sensor %s (%s:%d).",
+                         __func__, scanner_id, host, port);
+              osp_failures++;
+            }
+          else
+            g_warning ("%s: Unexpected type for scanner %s: %d",
+                       __func__, scanner_id, type);
+        }
+    }
+  cleanup_iterator (&scanners);
+
+  if (gmp_successes == 0 && gmp_failures == 0 && osp_failures == 0)
+    return g_strdup ("All GMP or OSP sensors up to date.");
+  else
+    {
+      GString *message = g_string_new ("");
+      g_string_append_printf (message,
+                              "%d sensors(s) not matching:",
+                              gmp_successes + gmp_failures + osp_failures);
+      if (gmp_successes)
+        g_string_append_printf (message,
+                                " %d GMP scanner(s) migrated to OSP.",
+                                gmp_successes);
+      if (gmp_failures)
+        g_string_append_printf (message,
+                                " %d GMP scanner(s) not migrated.",
+                                gmp_failures);
+      if (osp_failures)
+        g_string_append_printf (message,
+                                " %d OSP sensor(s) not migrated.",
+                                osp_failures);
+
+      return g_string_free (message, FALSE);
+    }
 }
 
 /**
@@ -20652,16 +20878,8 @@ result_nvt_notice (const gchar *nvt)
 {
   if (nvt == NULL)
     return;
-  if (sql_int ("SELECT current_setting ('server_version_num')::integer;")
-          < 90500)
-    sql ("INSERT into result_nvts (nvt)"
-         " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts"
-         "                               WHERE nvt = '%s');",
-         nvt,
-         nvt);
-  else
-    sql ("INSERT INTO result_nvts (nvt) VALUES ('%s') ON CONFLICT DO NOTHING;",
-         nvt);
+  sql ("INSERT INTO result_nvts (nvt) VALUES ('%s') ON CONFLICT DO NOTHING;",
+       nvt);
 }
 
 /**
@@ -27738,6 +27956,27 @@ report_error_count (report_t report)
   return sql_int ("SELECT count (id) FROM results"
                   " WHERE report = %llu and type = 'Error Message';",
                   report);
+}
+
+/**
+ * @brief Get a list string of finished hosts in a report.
+ *
+ * @param[in]  report  The report to get the finished hosts from.
+ *
+ * @return Sting containing finished hosts as comma separated list.
+ */
+char *
+report_finished_hosts_str (report_t report)
+{
+  char *ret;
+
+  ret = sql_string ("SELECT string_agg (host, ',' ORDER BY host)"
+                    " FROM report_hosts"
+                    " WHERE report = %llu"
+                    "   AND end_time != 0;",
+                    report);
+
+  return ret;
 }
 
 /**
@@ -42550,6 +42789,10 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
       case 2:
         fprintf (stderr, "Failed to verify scanner.\n");
         break;
+      case 3:
+        fprintf (stderr, "Failed to authenticate. Scanner version: %s\n",
+                 version);
+        break;
       default:
         fprintf (stderr, "Internal Error.\n");
         break;
@@ -44153,7 +44396,7 @@ connection_open (gvm_connection_t *connection,
  * @param[out]  version     Version returned by the scanner.
  *
  * @return 0 success, 1 failed to find scanner, 2 failed to get version,
- *         3 no cert, 99 if permission denied, -1 error.
+ *         3 authentication failed, 99 if permission denied, -1 error.
  */
 int
 verify_scanner (const char *scanner_id, char **version)
@@ -44176,6 +44419,9 @@ verify_scanner (const char *scanner_id, char **version)
       gvm_connection_t connection;
       const char *host;
       int port;
+      credential_t credential;
+      char *gmp_user, *gmp_password;
+      int auth_ret;
 
       host = scanner_iterator_host (&scanner);
       port = scanner_iterator_port (&scanner);
@@ -44198,6 +44444,38 @@ verify_scanner (const char *scanner_id, char **version)
           return 2;
         }
       g_debug ("%s: *version: %s", __func__, *version);
+
+      credential = scanner_iterator_credential (&scanner);
+      if (credential == 0)
+        {
+          g_warning ("%s: Missing credential for GMP scanner %s",
+                     __func__, get_iterator_uuid (&scanner));
+          gvm_connection_close (&connection);
+          cleanup_iterator (&scanner);
+          return 3;
+        }
+
+      gmp_user = scanner_login (get_iterator_resource (&scanner));
+      gmp_password = scanner_password (get_iterator_resource (&scanner));
+
+      auth_ret = gmp_authenticate (&connection.session,
+                                   gmp_user, gmp_password);
+
+      if (auth_ret)
+        {
+          if (auth_ret == 1)
+            g_warning ("%s: GMP scanner %s closed connection"
+                       " during authentication.",
+                       __func__, get_iterator_uuid (&scanner));
+          else if (auth_ret != 2)
+            g_warning ("%s: Internal error during authentication"
+                       " with GMP scanner %s.",
+                       __func__, get_iterator_uuid (&scanner));
+          gvm_connection_close (&connection);
+          cleanup_iterator (&scanner);
+          return 3;
+        }
+
       gvm_connection_close (&connection);
       cleanup_iterator (&scanner);
       return 0;
@@ -48966,16 +49244,12 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
                const char* type, const char* description,
                report_t report, user_t owner)
 {
-  static int db_server_version_num = 0;
   gchar *nvt_revision, *severity;
   gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
   int qod, first;
   nvt_t nvt_id = 0;
 
   assert (report);
-
-  if (db_server_version_num == 0)
-    db_server_version_num = sql_server_version ();
 
   if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
     {
@@ -49045,25 +49319,15 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
                        "  description, uuid, qod, qod_type, result_nvt,"
                        "  report)"
                        " VALUES");
-      if (db_server_version_num >= 90500)
-        g_string_append (result_nvts_buffer,
-                        "INSERT INTO result_nvts (nvt) VALUES ");
+      g_string_append (result_nvts_buffer,
+                       "INSERT INTO result_nvts (nvt) VALUES ");
     }
 
-  if (db_server_version_num < 90500)
-    g_string_append_printf
-        (result_nvts_buffer,
-         "INSERT into result_nvts (nvt)"
-         " SELECT '%s' WHERE NOT EXISTS (SELECT * FROM result_nvts"
-         "                               WHERE nvt = '%s');\n",
-         nvt,
-         nvt);
-  else
-    g_string_append_printf
-        (result_nvts_buffer,
-         "%s ('%s')",
-         first ? "" : ",",
-         nvt);
+  g_string_append_printf
+      (result_nvts_buffer,
+       "%s ('%s')",
+       first ? "" : ",",
+       nvt);
 
   g_string_append_printf (results_buffer,
                           "%s"
@@ -49100,9 +49364,8 @@ update_from_slave_insert (GString *results_buffer, GString *result_nvts_buffer,
 {
   if (result_nvts_buffer && strlen (result_nvts_buffer->str))
     {
-      if (sql_server_version () >= 90500)
-        g_string_append (result_nvts_buffer,
-                         " ON CONFLICT (nvt) DO NOTHING;");
+      g_string_append (result_nvts_buffer,
+                       " ON CONFLICT (nvt) DO NOTHING;");
 
       sql ("%s", result_nvts_buffer->str);
       g_string_truncate (result_nvts_buffer, 0);
@@ -50225,9 +50488,16 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
     return 9;
 
   if (resource_type_arg
+      && strcasecmp (name_arg, "super") == 0
       && strcmp (resource_type_arg, "group")
       && strcmp (resource_type_arg, "role")
       && strcmp (resource_type_arg, "user"))
+    return 5;
+
+  if (resource_type_arg
+      && strcasecmp (name_arg, "super")
+      && (valid_db_resource_type (resource_type_arg) == 0
+          || gmp_command_takes_resource (name_arg) == 0))
     return 5;
 
   if (subject_type
@@ -50527,7 +50797,7 @@ create_permission_internal (const char *name_arg, const char *comment,
     *permission = sql_last_insert_id ();
 
   /* Update Permissions cache */
-  if (strcasecmp (name, "super") == 0)
+  if (strcasecmp (quoted_name, "super") == 0)
     cache_all_permissions_for_users (NULL);
   else if (resource_type && resource)
     cache_permissions_for_resource (resource_type, resource, NULL);
@@ -56989,6 +57259,7 @@ hosts_set_details (report_t report)
        "                      = (SELECT host FROM report_hosts"
        "                         WHERE id = report_host_details.report_host))"
        " AND (name IN ('best_os_cpe', 'best_os_txt', 'traceroute'));",
+       report,
        report,
        report,
        report,
@@ -65056,6 +65327,25 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       success_text = g_strdup_printf ("Optimized: cleanup-schedule-times."
                                       " Due date updated for %d tasks.",
                                       changes);
+    }
+  else if (strcasecmp (name, "migrate-relay-sensors") == 0)
+    {
+      if (get_relay_mapper_path ())
+        {
+          sql_begin_immediate ();
+
+          success_text = manage_migrate_relay_sensors ();
+
+          sql_commit ();
+        }
+      else
+        {
+          fprintf (stderr,
+                   "No relay mapper found."
+                   " Please check your $PATH or the --relay-mapper option.\n");
+          success_text = NULL;
+          ret = -1;
+        }
     }
   else if (strcasecmp (name, "rebuild-permissions-cache") == 0)
     {

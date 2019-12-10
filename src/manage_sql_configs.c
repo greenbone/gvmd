@@ -1986,6 +1986,110 @@ find_config_with_permission (const char* uuid, config_t* config,
 }
 
 /**
+ * @brief Gets an NVT preference by id or by name.
+ *
+ * Note: This currently only gets the fields needed by create_config.
+ *
+ * @param[in]  nvt_oid    OID of the NVT the preference belongs to.
+ * @param[in]  find_id    Preference id to find, or NULL.
+ * @param[in]  check_name Preference name to check.
+ * @param[in]  check_type Preference name to check.
+ * @param[in]  value      Value to assign to the preference.
+ *
+ * @return Newly allocated preference, freed with preference_free,
+ *          or NULL (on error or if not found).
+ */
+preference_t *
+get_nvt_preference_by_id (const char *nvt_oid,
+                          const char *find_id,
+                          const char *check_name,
+                          const char *check_type,
+                          const char *value)
+{
+  preference_t *new_pref;
+  char *full_name, *id, *name, *type, *nvt_name, *default_value, *hr_name;
+  array_t *alts;
+  gchar *quoted_oid, *quoted_id;
+  char **full_name_split;
+
+  full_name = name = type = nvt_name = default_value = hr_name = NULL;
+
+  /* Check parameters */
+  if (nvt_oid == NULL)
+    {
+      g_warning ("%s: Missing nvt_oid", __func__);
+      return NULL;
+    }
+  if (find_id == NULL || strcmp (find_id, "") == 0)
+    {
+      g_warning ("%s: Missing or empty find_id", __func__);
+      return NULL;
+    }
+  if (value == NULL)
+    {
+      g_warning ("%s: Missing value", __func__);
+      return NULL;
+    }
+
+  /* Try to get by id first */
+  quoted_oid = sql_quote (nvt_oid);
+  quoted_id = find_id ? sql_quote (find_id) : NULL;
+
+  full_name = sql_string ("SELECT name FROM nvt_preferences"
+                          " WHERE name LIKE '%s:%s:%%:%%'",
+                          quoted_oid,
+                          quoted_id);
+
+  g_free (quoted_oid);
+  g_free (quoted_id);
+
+  if (full_name == NULL)
+    return NULL;
+
+  /* Try to get components of the full name */
+  full_name_split = g_strsplit (full_name, ":", 4);
+
+  if (g_strv_length (full_name_split) != 4)
+    {
+      g_warning ("%s: Preference name %s does not have 4 parts",
+                 __func__, full_name);
+      g_strfreev (full_name_split);
+      free (full_name);
+      return NULL;
+    }
+  free (full_name);
+
+  id = strdup (full_name_split[1]);
+  type = strdup (full_name_split[2]);
+  name = strdup (full_name_split[3]);
+  g_strfreev (full_name_split);
+
+  if (check_type && strcmp (check_type, "") && strcmp (check_type, type))
+    g_warning ("%s: type of preference %s:%s (%s) has changed from %s to %s.",
+               __func__, nvt_oid, find_id, name, check_type, type);
+
+  if (check_name && strcmp (check_name, "") && strcmp (check_name, name))
+    g_message ("%s: name of preference %s:%s has changed from '%s' to '%s'.",
+               __func__, nvt_oid, find_id, check_name, name);
+
+  alts = make_array ();
+  array_terminate (alts);
+
+  new_pref = preference_new (id,
+                             name,
+                             type,
+                             strdup (value),
+                             nvt_name,
+                             strdup (nvt_oid),
+                             alts,
+                             default_value,
+                             hr_name,
+                             1);
+
+  return new_pref;
+}
+
+/**
  * @brief Insert preferences into a config.
  *
  * @param[in]  config       Config.
@@ -2039,6 +2143,7 @@ config_insert_preferences (config_t config,
           {
             gchar *quoted_type, *quoted_nvt_oid, *quoted_preference_name;
             gchar *quoted_default, *quoted_preference_hr_name;
+            gchar *quoted_preference_id;
 
             /* Presume NVT or OSP preference. */
 
@@ -2047,10 +2152,14 @@ config_insert_preferences (config_t config,
               return -4;
 
             value = g_string_new (preference->value);
-            while ((alt = (gchar*) g_ptr_array_index (preference->alts, alt_index++)))
-              g_string_append_printf (value, ";%s", alt);
+            while ((alt = (gchar*) g_ptr_array_index (preference->alts,
+                                                      alt_index++)))
+              {
+                g_string_append_printf (value, ";%s", alt);
+              }
 
             quoted_nvt_oid = sql_quote (preference->nvt_oid ?: "");
+            quoted_preference_id = sql_quote (preference->id ?: "");
             quoted_preference_name = sql_quote (preference->name);
             quoted_preference_hr_name
               = preference->hr_name
@@ -2069,17 +2178,13 @@ config_insert_preferences (config_t config,
             if (config_type == NULL || strcmp (config_type, "0") == 0)
               {
                 /* NVT preference */
-
-                if (preference->id == NULL || *preference->id == '\0')
-                  return -4;
-
                 /* OID:PrefID:PrefType:PrefName value */
                 sql ("INSERT INTO config_preferences"
                      " (config, type, name, value)"
                      " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s:%s', '%s');",
                      config,
                      quoted_nvt_oid,
-                     preference->id,
+                     quoted_preference_id,
                      quoted_type,
                      quoted_preference_name,
                      quoted_value);
@@ -2104,6 +2209,7 @@ config_insert_preferences (config_t config,
             g_free (quoted_value);
             g_free (quoted_default);
             g_free (quoted_preference_hr_name);
+            g_free (quoted_preference_id);
           }
         else
           {
@@ -2744,6 +2850,7 @@ delete_config (const char *config_id, int ultimate)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_FAST_ULTIMATE) == 0)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP) == 0)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE) == 0)
+      || (strcmp (config_id, CONFIG_UUID_BASE) == 0)
       || (strcmp (config_id, CONFIG_UUID_DISCOVERY) == 0)
       || (strcmp (config_id, CONFIG_UUID_HOST_DISCOVERY) == 0)
       || (strcmp (config_id, CONFIG_UUID_SYSTEM_DISCOVERY) == 0)
@@ -3296,6 +3403,7 @@ config_writable (config_t config)
                "      OR uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
                "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
                "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
+               "      OR uuid = '" CONFIG_UUID_BASE "'"
                "      OR uuid = '" CONFIG_UUID_EMPTY "'"
                "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
                "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"

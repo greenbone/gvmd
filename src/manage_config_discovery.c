@@ -797,7 +797,6 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80039", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10394", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10006", "Windows");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.90011", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900012", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100062", "Windows");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.10674", "Windows");
@@ -985,6 +984,13 @@ check_config_discovery (const char *uuid)
                             "Mark unrechable Hosts as dead (not scanning)",
                             "yes",
                             TRUE);
+
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE family_or_nvt = '1.3.6.1.4.1.25623.1.0.90011'"
+       " AND type = %d"
+       " AND name = (SELECT nvt_selector FROM configs WHERE uuid = '%s')",
+       NVT_SELECTOR_TYPE_NVT,
+       uuid);
 
   return 0;
 }

@@ -3594,6 +3594,7 @@ manage_db_init (const gchar *name)
       sql ("CREATE TABLE scap.affected_products"
            " (cve INTEGER NOT NULL,"
            "  cpe INTEGER NOT NULL,"
+           "  UNIQUE (cve, cpe),"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
            "  FOREIGN KEY(cpe) REFERENCES cpes(id));");
       sql ("CREATE INDEX afp_cpe_idx"
@@ -3690,7 +3691,7 @@ manage_db_init (const gchar *name)
       /* Init tables. */
 
       sql ("INSERT INTO scap.meta (name, value)"
-           " VALUES ('database_version', '15');");
+           " VALUES ('database_version', '16');");
       sql ("INSERT INTO scap.meta (name, value)"
            " VALUES ('last_update', '0');");
     }

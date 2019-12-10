@@ -12,12 +12,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve performance of GET_REPORTS [#801](https://github.com/greenbone/gvmd/pull/801) [#811](https://github.com/greenbone/gvmd/pull/811) [#817](https://github.com/greenbone/gvmd/pull/817)
 - Speed up the HELP 'brief' case [#807](https://github.com/greenbone/gvmd/pull/807)
 - Faster startup [#826](https://github.com/greenbone/gvmd/pull/826)
-- Refuse to import config with missing NVT preference ID [#853](https://github.com/greenbone/gvmd/pull/853)
+- Add option --optimize migrate-relay-sensors [#827](https://github.com/greenbone/gvmd/pull/827)
+- Add host_id filter for tls_certificates [#835](https://github.com/greenbone/gvmd/pull/835)
+- Allow use of public key auth in SCP alert [#845](https://github.com/greenbone/gvmd/pull/845)
+- Refuse to import config with missing NVT preference ID [#853](https://github.com/greenbone/gvmd/pull/853) [#860](https://github.com/greenbone/gvmd/pull/860)
+- Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
+- Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
+- Try authentication when verifying GMP scanners [#837](https://github.com/greenbone/gvmd/pull/837)
+- Try importing private keys with libssh if GnuTLS fails [#841](https://github.com/greenbone/gvmd/pull/841)
 - Extend GMP API for nvt object to carry a explicit solution element [#849](https://github.com/greenbone/gvmd/pull/849)
-- Extend command line options for managing scanners [#866](https://github.com/greenbone/gvmd/pull/866)
+- Allow resuming OSPd-based OpenVAS tasks [#869](https://github.com/greenbone/gvmd/pull/869)
+- Require Postgres 9.6 as a minimum [#872](https://github.com/greenbone/gvmd/pull/872)
+- Speed up the SCAP sync [#875](https://github.com/greenbone/gvmd/pull/875) [#877](https://github.com/greenbone/gvmd/pull/877) [#879](https://github.com/greenbone/gvmd/pull/879) [#881](https://github.com/greenbone/gvmd/pull/881) [#883](https://github.com/greenbone/gvmd/pull/883) [#887](https://github.com/greenbone/gvmd/pull/887) [#889](https://github.com/greenbone/gvmd/pull/889) [#890](https://github.com/greenbone/gvmd/pull/890) [#891](https://github.com/greenbone/gvmd/pull/891)
+- Change rows of built-in default filters to -2 (use "Rows Per Page" setting) [#896](https://github.com/greenbone/gvmd/pull/896)
+- Force NVT update in migrate_219_to_220 [#895](https://github.com/greenbone/gvmd/pull/895)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
@@ -26,17 +37,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Consider results_trash when deleting users [#800](https://github.com/greenbone/gvmd/pull/800)
 - Update to gvm-portnames-update to use new nomenclature [#802](https://github.com/greenbone/gvmd/pull/802)
 - Escaping correctly the percent sign in sql statements  [#818](https://github.com/greenbone/gvmd/pull/818)
+- Try to get NVT preferences by id in create_config [#821](https://github.com/greenbone/gvmd/pull/821)
 - Remove incorrect duplicates from config preference migrator [#830](https://github.com/greenbone/gvmd/pull/830)
+- Update config preferences after updating NVTs [#832](https://github.com/greenbone/gvmd/pull/832)
+- Fix order of fingerprints in get_tls_certificates [#833](https://github.com/greenbone/gvmd/pull/833)
+- Fix notes XML for lean reports [#836](https://github.com/greenbone/gvmd/pull/836)
+- Fix asset host details insertion SQL [#839](https://github.com/greenbone/gvmd/pull/839)
 - MODIFY_USER saves comment when COMMENT is empty [#838](https://github.com/greenbone/gvmd/pull/838)
 - Prevent HOSTS_ORDERING from being '(null)' [#859](https://github.com/greenbone/gvmd/pull/859)
+- Fix result diff generation to ignore white space in delta reports [#861](https://github.com/greenbone/gvmd/pull/861)
+- Fix resource type checks for permissions [#863](https://github.com/greenbone/gvmd/pull/863)
+- Fix result_nvt for new OSP and slave results [#865](https://github.com/greenbone/gvmd/pull/865)
 - Fix preference ID in "Host Discovery" config [#867](https://github.com/greenbone/gvmd/pull/867)
 - Fix SQL for tickets with overrides [#871](https://github.com/greenbone/gvmd/pull/871)
 - Fix result_nvt for new OSP and slave results [#873](https://github.com/greenbone/gvmd/pull/873)
+- Use right format specifier for merge_ovaldef version [#874](https://github.com/greenbone/gvmd/pull/874)
+- Fix creation of "Super" permissions [#892](https://github.com/greenbone/gvmd/pull/892)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
 - Removed tag_value() by using nvti_get_tag() [#825](https://github.com/greenbone/gvmd/pull/825)
 - Remove support for "MODIFY_REPORT" GMP command [#823](https://github.com/greenbone/gvmd/pull/823)
+- Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 

@@ -1186,6 +1186,9 @@ report_host_count (report_t);
 int
 report_result_host_count (report_t, int);
 
+char *
+report_finished_hosts_str (report_t);
+
 gboolean
 find_report_with_permission (const char *, report_t *, const char *);
 
@@ -1785,6 +1788,7 @@ typedef struct
   array_t *alts;   ///< Array of gchar's.  Alternate values for radio type.
   char *default_value; ///< Default value of preference.
   char *hr_name;   ///< Extended, more human-readable name used by OSP.
+  int free_strings;///< Whether string fields are freed by preference_free.
 } preference_t;
 
 /**
@@ -2860,6 +2864,15 @@ get_relay_mapper_path ();
 
 void
 set_relay_mapper_path (const char *);
+
+int
+get_relay_migrate_sensors ();
+
+void
+set_relay_migrate_sensors (int);
+
+gboolean
+relay_supports_scanner_type (const char *, int, scanner_type_t);
 
 int
 slave_get_relay (const char *,

@@ -22930,6 +22930,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Most recent time the TLS certificate was imported or found in a scan</summary>
           </column>
           <option>
+            <name>host_id</name>
+            <type>uuid</type>
+            <summary>UUID of the host asset where the certificate must be found</summary>
+          </option>
+          <option>
             <name>report_id</name>
             <type>uuid</type>
             <summary>UUID of the report the cerificate must appear in</summary>
@@ -27153,7 +27158,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
 
   <!-- Compatibility changes between versions. -->
-
+  <change>
+    <command>GET_... Commands using filters</command>
+    <summary>GET_... commands will default to "rows=-2" filter</summary>
+    <description>
+      <p>
+        If no filter or a filter without a rows keyword is given, the various
+        GET_... commands using filters will behave as if "rows=-2" was given
+        instead of "rows=-1".
+      </p>
+      <p>
+        This means they will only return the number of rows defined by the
+        "Rows Per Page" setting and the maximum amount of rows has to be
+        requested explicitly with a "rows=-1" filter keyword or 
+        (where available) the ignore_pagination option.
+      </p>
+    </description>
+    <version>9.0</version>
+  </change>
   <change>
     <command>GET_INFO</command>
     <summary>Attribute "type" can not be "ALLINFO" anymore</summary>
@@ -27175,6 +27197,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <version>20.04</version>
   </change>
 
+  <change>
+    <command>CREATE_CONFIG</command>
+    <summary>NVT preferences without IDs are no longer accepted</summary>
+    <description>
+      <p>
+        Importing of old scan configs that do not specify an ID for their
+        NVT preferences is no longer allowed.
+      </p>
+    </description>
+    <version>9.0</version>
+  </change>
   <change>
     <command>CREATE_CONFIG</command>
     <summary>NVT preferences without IDs are no longer accepted</summary>
