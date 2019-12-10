@@ -163,16 +163,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
-  <xsl:if test="(string-length (gvm:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')))">
+  <xsl:if test="nvt/solution/text() or nvt/solution/@type or nvt/solution/@method">
     <xsl:text>Solution:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+    <xsl:if test="nvt/solution/@type">
       <xsl:text>Solution type: </xsl:text>
-      <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'solution_type')"/>
+      <xsl:value-of select="nvt/solution/@type"/>
       <xsl:text>\n</xsl:text>
     </xsl:if>
-    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'solution'), '&#10;', '\n')"/>
-    <xsl:text>\n\n</xsl:text>
+    <xsl:if test="nvt/solution/@method">
+      <xsl:text>Solution method: </xsl:text>
+      <xsl:value-of select="nvt/solution/@method"/>
+      <xsl:text>\n</xsl:text>
+    </xsl:if>
+    <xsl:if test="nvt/solution/text()">
+      <xsl:value-of select="str:replace (nvt/solution/text(), '&#10;', '\n')"/>
+      <xsl:text>\n\n</xsl:text>
+    </xsl:if>
   </xsl:if>
 
   <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">

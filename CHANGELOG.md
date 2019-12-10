@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
+- Extend GMP API for nvt object to carry a explicit solution element [#849](https://github.com/greenbone/gvmd/pull/849)
 - Extend command line options for managing scanners [#866](https://github.com/greenbone/gvmd/pull/866)
 
 ### Fixed
@@ -28,10 +29,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove incorrect duplicates from config preference migrator [#830](https://github.com/greenbone/gvmd/pull/830)
 - MODIFY_USER saves comment when COMMENT is empty [#838](https://github.com/greenbone/gvmd/pull/838)
 - Prevent HOSTS_ORDERING from being '(null)' [#859](https://github.com/greenbone/gvmd/pull/859)
+- Fix preference ID in "Host Discovery" config [#867](https://github.com/greenbone/gvmd/pull/867)
+- Fix SQL for tickets with overrides [#871](https://github.com/greenbone/gvmd/pull/871)
+- Fix result_nvt for new OSP and slave results [#873](https://github.com/greenbone/gvmd/pull/873)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
 - Removed tag_value() by using nvti_get_tag() [#825](https://github.com/greenbone/gvmd/pull/825)
+- Remove support for "MODIFY_REPORT" GMP command [#823](https://github.com/greenbone/gvmd/pull/823)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 

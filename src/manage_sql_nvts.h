@@ -61,6 +61,7 @@
    { "affected", NULL, KEYWORD_TYPE_STRING },                               \
    { "impact", NULL, KEYWORD_TYPE_STRING },                                 \
    { "detection", NULL, KEYWORD_TYPE_STRING },                              \
+   { "solution_method", NULL, KEYWORD_TYPE_STRING },                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 

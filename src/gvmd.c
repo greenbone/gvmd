@@ -1777,7 +1777,7 @@ gvmd (int argc, char** argv)
         { "optimize", '\0', 0, G_OPTION_ARG_STRING,
           &optimize,
           "Run an optimization: vacuum, analyze, cleanup-config-prefs,"
-          " cleanup-port-names, cleanup-report-formats,"
+          " cleanup-port-names, cleanup-report-formats, cleanup-result-nvts"
           " cleanup-result-severities, cleanup-schedule-times,"
           " rebuild-report-cache or update-report-cache.",
           "<name>" },
