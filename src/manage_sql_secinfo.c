@@ -219,6 +219,35 @@ split_xml_file (gchar *path, const gchar *size, const gchar *tail)
       return NULL;
     }
 
+  /* xml_split will chop split.xml into files that are roughly 'size' big.
+   *
+   * The generated files are always put in the directory that holds
+   * split.xml, as follows:
+   *
+   * split.xml      Source XML.
+   * split-00.xml   Master generated XML.  No content, just includes other
+   *                files.  The include statements are wrapped in the
+   *                root element from split.xml.
+   * split-01.xml   Generated XML content.  Wrapped in an <xml_split:root>
+   *                element.
+   * split-02.xml   Second generated content file.
+   * ...
+   * split-112.xml  Last content, for example.
+   *
+   * Parsing the generated files independently will only work if the files
+   * contain the original root element (for example, because the parser
+   * requires the namespace definitions to be present).
+   *
+   * So the command below needs to mess around a little bit to replace the
+   * wrapper XML element in split-01.xml, split-02.xml, etc with the root
+   * element from split-00.xml.
+   *
+   * Using tail and head is not super robust, but it's simple and it will
+   * work as long as xml_split keeps the opening of the wrapper element
+   * in split-00.xml on a dedicated line.  (It doesn't do this for the
+   * closing element, so we use the tail argument instead.)
+   */
+
   command = g_strdup_printf
              ("xml_split -s%s split.xml"
               " && head -n 2 split-00.xml > head.xml"
