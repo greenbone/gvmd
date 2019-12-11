@@ -2123,6 +2123,8 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
 
   g_debug ("%s: parsing %s", __FUNCTION__, path);
 
+  updated_scap_cpes = 0;
+
   error = NULL;
   g_file_get_contents (path, &xml, &xml_len, &error);
   if (error)
