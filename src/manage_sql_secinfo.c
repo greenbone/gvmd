@@ -4743,6 +4743,7 @@ sync_scap (int lockfile)
   g_info ("%s: Updating data from feed", __func__);
 
   g_debug ("%s: update cpes", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating CPEs");
 
   updated_scap_cpes = update_scap_cpes (last_scap_update);
   if (updated_scap_cpes == -1)
@@ -4752,6 +4753,7 @@ sync_scap (int lockfile)
     }
 
   g_debug ("%s: update cves", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating CVEs");
 
   updated_scap_cves = update_scap_cves (last_scap_update);
   if (updated_scap_cves == -1)
@@ -4761,6 +4763,7 @@ sync_scap (int lockfile)
     }
 
   g_debug ("%s: update ovaldefs", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating OVALdefs");
 
   updated_scap_ovaldefs = update_scap_ovaldefs (last_scap_update,
                                                 0 /* Feed data. */);
@@ -4771,6 +4774,7 @@ sync_scap (int lockfile)
     }
 
   g_debug ("%s: updating user defined data", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating private OVALdefs");
 
   switch (update_scap_ovaldefs (last_scap_update,
                                 1 /* Private data. */))
@@ -4786,11 +4790,13 @@ sync_scap (int lockfile)
     }
 
   g_debug ("%s: update max cvss", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating max CVSS");
 
   update_scap_cvss (updated_scap_cves, updated_scap_cpes,
                     updated_scap_ovaldefs);
 
   g_debug ("%s: update placeholders", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating placeholders");
 
   update_scap_placeholders (updated_scap_cves);
 
@@ -4803,6 +4809,7 @@ sync_scap (int lockfile)
     }
 
   g_info ("%s: Updating SCAP info succeeded", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: done");
 
   manage_update_scap_db_cleanup ();
 
