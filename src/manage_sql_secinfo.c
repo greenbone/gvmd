@@ -175,7 +175,8 @@ increment_transaction_size (int* current_size)
  * @brief Split a file.
  *
  * @param[in]  path  Path to file.
- * @param[in]  size  Approx size of split files.
+ * @param[in]  size  Approx size of split files.  In same format that
+ *                   xml_split accepts, eg "200Kb".
  * @param[in]  tail  Text to replace last line of split files.
  *
  * @return Temp dir holding split files.
