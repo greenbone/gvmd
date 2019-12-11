@@ -176,11 +176,12 @@ increment_transaction_size (int* current_size)
  *
  * @param[in]  path  Path to file.
  * @param[in]  size  Approx size of split files.
+ * @param[in]  tail  Text to replace last line of split files.
  *
  * @return Temp dir holding split files.
  */
 static const gchar *
-split_xml_file (gchar *path, const gchar *size)
+split_xml_file (gchar *path, const gchar *size, const gchar *tail)
 {
   int ret;
   static gchar dir[] = "/tmp/gvmd-split-xml-file-XXXXXX";
@@ -221,7 +222,7 @@ split_xml_file (gchar *path, const gchar *size)
   command = g_strdup_printf
              ("xml_split -s%s split.xml"
               " && head -n 2 split-00.xml > head.xml"
-              " && echo '</cpe-list>' > tail.xml"
+              " && echo '%s' > tail.xml"
               " && for F in split-*.xml; do"
               "    tail -n +3 $F"
               "    | head -n -1"
@@ -229,7 +230,8 @@ split_xml_file (gchar *path, const gchar *size)
               "    > new.xml;"
               "    mv new.xml $F;"
               "    done",
-              size);
+              size,
+              tail);
 
   g_debug ("%s: command: %s", __func__, command);
   ret = system (command);
@@ -2268,7 +2270,7 @@ update_scap_cpes (int last_scap_update)
   last_cve_update = sql_int ("SELECT max (modification_time)"
                              " FROM scap.cves;");
 
-  split_dir = split_xml_file (full_path, "40Mb");
+  split_dir = split_xml_file (full_path, "40Mb", "</cpe-list>");
   if (split_dir == NULL)
     {
       g_warning ("%s: Failed to split CPEs, attempting with full file",
