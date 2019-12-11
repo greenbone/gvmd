@@ -198,7 +198,7 @@ split_xml_file (gchar *path, const gchar *size)
   if (previous_dir == NULL)
     {
       g_warning ("%s: Failed to getcwd: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return NULL;
     }
@@ -253,7 +253,7 @@ split_xml_file (gchar *path, const gchar *size)
 
   if (chdir (previous_dir))
     g_warning ("%s: Failed to chdir back (will continue anyway)",
-               __FUNCTION__);
+               __func__);
 
   g_free (previous_dir);
 
@@ -2121,7 +2121,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
   int updated_scap_cpes;
   inserts_t inserts;
 
-  g_debug ("%s: parsing %s", __FUNCTION__, path);
+  g_debug ("%s: parsing %s", __func__, path);
 
   updated_scap_cpes = 0;
 
@@ -2249,7 +2249,7 @@ update_scap_cpes (int last_scap_update)
   if (g_stat (full_path, &state))
     {
       g_warning ("%s: No CPE dictionary found at %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
