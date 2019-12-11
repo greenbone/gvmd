@@ -198,7 +198,7 @@ split_xml_file (gchar *path, const gchar *size)
   if (previous_dir == NULL)
     {
       g_warning ("%s: Failed to getcwd: %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return NULL;
     }
@@ -253,7 +253,7 @@ split_xml_file (gchar *path, const gchar *size)
 
   if (chdir (previous_dir))
     g_warning ("%s: Failed to chdir back (will continue anyway)",
-               __FUNCTION__);
+               __func__);
 
   g_free (previous_dir);
 
@@ -2365,7 +2365,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
   int updated_scap_cpes;
   inserts_t inserts;
 
-  g_debug ("%s: parsing %s", __FUNCTION__, path);
+  g_debug ("%s: parsing %s", __func__, path);
 
   updated_scap_cpes = 0;
 
@@ -2374,7 +2374,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
-                 __FUNCTION__,
+                 __func__,
                  error->message);
       g_error_free (error);
       return -1;
@@ -2383,7 +2383,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
   if (parse_element (xml, &element))
     {
       g_free (xml);
-      g_warning ("%s: Failed to parse element", __FUNCTION__);
+      g_warning ("%s: Failed to parse element", __func__);
       return -1;
     }
   g_free (xml);
@@ -2392,7 +2392,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
   if (strcmp (element_name (cpe_list), "cpe-list"))
     {
       element_free (element);
-      g_warning ("%s: CPE dictionary missing CPE-LIST", __FUNCTION__);
+      g_warning ("%s: CPE dictionary missing CPE-LIST", __func__);
       return -1;
     }
 
@@ -2429,7 +2429,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
       item_metadata = element_child (cpe_item, "meta:item-metadata");
       if (item_metadata == NULL)
         {
-          g_warning ("%s: item-metadata missing", __FUNCTION__);
+          g_warning ("%s: item-metadata missing", __func__);
           goto fail;
         }
 
@@ -2437,7 +2437,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
                                             "modification-date");
       if (modification_date == NULL)
         {
-          g_warning ("%s: modification-date missing", __FUNCTION__);
+          g_warning ("%s: modification-date missing", __func__);
           goto fail;
         }
 
@@ -2493,7 +2493,7 @@ update_scap_cpes (int last_scap_update)
   if (g_stat (full_path, &state))
     {
       g_warning ("%s: No CPE dictionary found at %s",
-                 __FUNCTION__,
+                 __func__,
                  strerror (errno));
       return -1;
     }
