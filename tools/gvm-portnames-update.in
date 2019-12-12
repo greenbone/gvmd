@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (C) 2013-2018 Greenbone Networks GmbH
+# Copyright (C) 2013-2019 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -18,11 +18,6 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 # Update Port Names data.
-
-POSTGRES=0
-if [ "@BACKEND@" = "POSTGRESQL" ]; then
-  POSTGRES=1
-fi
 
 do_help () {
   echo "Update port names data from a port names XML file.";
@@ -59,17 +54,7 @@ if [ -z "$DB_DIR" ]; then
   DB_DIR="$OV_DIR/gvmd"
 fi
 
-if [ $POSTGRES -eq 1 ]
-then
-  SQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d gvmd -t"
-else
-  TASKS_DB="$DB_DIR/gvmd.db"
-  if [ ! -f $TASKS_DB ]; then
-	echo "$TASKS_DB not found. Rebuild DB before updating port names.";
-	exit 1;
-  fi
-  SQL="sqlite3 $TASKS_DB"
-fi
+SQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d gvmd -t"
 
 DATA_DIR=@GVMD_DATA_DIR@
 XSL="$DATA_DIR/portnames_update.xsl"
