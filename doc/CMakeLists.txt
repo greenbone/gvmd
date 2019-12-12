@@ -108,7 +108,7 @@ endif (NOT XSLTPROC_EXECUTABLE)
 if (XMLTOMAN_EXECUTABLE)
   add_custom_target (man COMMENT "Building manual page..."
     DEPENDS gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
-            gvm-migrate-to-postgres.8 gvm-portnames-update.8)
+            gvm-portnames-update.8)
 
   add_custom_command (OUTPUT gvmd.8
 					  COMMAND sh
@@ -125,11 +125,6 @@ if (XMLTOMAN_EXECUTABLE)
 					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/greenbone-scapdata-sync.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/greenbone-scapdata-sync.8\;\"
 					  DEPENDS greenbone-scapdata-sync.8.xml)
 
-  add_custom_command (OUTPUT gvm-migrate-to-postgres.8
-					  COMMAND sh
-					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gvm-migrate-to-postgres.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/gvm-migrate-to-postgres.8\;\"
-					  DEPENDS gvm-migrate-to-postgres.8.xml)
-
   add_custom_command (OUTPUT gvm-portnames-update.8
 					  COMMAND sh
 					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gvm-portnames-update.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/gvm-portnames-update.8\;\"
@@ -145,9 +140,6 @@ else (XMLTOMAN_EXECUTABLE)
   add_custom_command (OUTPUT greenbone-scapdata-sync.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
 					          > greenbone-scapdata-sync.8)
-  add_custom_command (OUTPUT gvm-migrate-to-postgres.8
-                      COMMAND echo "[Error: xmltoman required to see manpage here]"
-					          > gvm-migrate-to-postgres.8)
   add_custom_command (OUTPUT gvm-portnames-update.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
 					          > gvm-portnames-update.8)
@@ -177,6 +169,6 @@ if (XSLTPROC_EXECUTABLE)
 endif (XSLTPROC_EXECUTABLE)
 
 install (FILES gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
-               gvm-migrate-to-postgres.8 gvm-portnames-update.8
+               gvm-portnames-update.8
   DESTINATION share/man/man8/
   COMPONENT doc)
