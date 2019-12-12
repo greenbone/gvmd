@@ -1,14 +1,8 @@
 # INSTALLATION INSTRUCTIONS FOR GREENBONE VULNERABILITY MANAGER
 
 Please note: The reference system used by most of the developers is Debian
-GNU/Linux 'Stretch' 9. The build might fail on any other system. Also, it is
+GNU/Linux 'Buster' 10. The build might fail on any other system. Also, it is
 necessary to install dependent development packages.
-
-IMPORTANT NOTICE: This version changes quite a number of locations
-and names compared to the previous version. It is highly recommended to
-consider the section "Migrating to Version 8.0", unless you do not have
-an old setup on your system.
-
 
 ## Prerequisites for Greenbone Vulnerability Manager
 
@@ -124,8 +118,6 @@ Certificates`.
 
 1.  Install Postgres.
 
-	  (Debian: postgresql, postgresql-contrib, postgresql-server-dev-9.6).
-
     ```sh
     apt install postgresql postgresql-contrib postgresql-server-dev-all
     ```
@@ -143,16 +135,16 @@ Certificates`.
 4.  Setup permissions.
 
     ```sh
-    sudo -u postgres bash  # if you logged out after step 4
+    sudo -u postgres bash  # if you logged out after step 3
     psql gvmd
     create role dba with superuser noinherit;
-    grant dba to mattm;    # mattm is the user created in step 4
+    grant dba to mattm;    # mattm is the user created in step 3
     ```
 
 5.  Create DB extension (also necessary when the database got dropped).
 
     ```sh
-    sudo -u postgres bash  # if you logged out after step 5
+    sudo -u postgres bash  # if you logged out after step 4
     psql gvmd
     create extension "uuid-ossp";
     ```
@@ -161,41 +153,13 @@ Certificates`.
     in a ld-aware directory. For example create file `/etc/ld.so.conf.d/gvm.conf`
     with appropriate path and then run `ldconfig`.
 
-7.  If you wish to migrate from SQLite, follow the next section before running
-    Manager.
+7.  Run Manager as usual.
 
-8.  Run Manager as usual.
-
-9. To run SQL on the database.
+8. To run SQL on the database.
 
     ```sh
     psql gvmd
     ```
-
-### Migrating from SQLite to PostgreSQL
-
-GVM-10 was last release where gvmd supports SQLite. GVM-11
-supports exclusively PostgreSQL. If you worked with SQLite before
-and want to keep your data, you need to migrate the data to
-PostgreSQL. 
-
-1.  Run `gvm-migrate-to-postgres` into a clean newly created PostgreSQL database
-    like described above.
-
-    If you accidentally already rebuilt the database or for other reasons
-    want to start from scratch, drop the database and repeat the process
-    described above.  It is essentially important that you do not start
-    Manager before the migration as it would create a fresh one and therefore
-    prevent migration.
-
-    Note that the migrate script will modify the SQLite database to clean
-    up errors. So it's a good idea to make a backup in case anything goes
-    wrong.
-
-2.  Run `greenbone-scapdata-sync`.
-
-3.  Run `greenbone-certdata-sync`.
-
 
 ### Switching between releases
 
@@ -219,10 +183,6 @@ releases:
     sudo -u postgres psql -q --command='ALTER DATABASE gvmd RENAME TO gvmd_10;'
     sudo -u postgres psql -q --command='ALTER DATABASE gvmd_master RENAME TO gvmd;'
     ```
-
-    Note that for OpenVAS-9 the database name is "tasks", so this step is not
-    necessary.
-
 
 ### Analyzing the size of the tables
 
