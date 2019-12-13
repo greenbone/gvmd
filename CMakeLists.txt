@@ -241,7 +241,6 @@ configure_file (src/schema_formats/XML/GMP.xml.in src/schema_formats/XML/GMP.xml
 configure_file (tools/greenbone-scapdata-sync.in tools/greenbone-scapdata-sync @ONLY)
 configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @ONLY)
 configure_file (tools/gvm-portnames-update.in tools/gvm-portnames-update @ONLY)
-configure_file (tools/gvm-migrate-to-postgres.in tools/gvm-migrate-to-postgres @ONLY)
 configure_file (tools/gvm-manage-certs.in tools/gvm-manage-certs @ONLY)
 
 ## Testing
@@ -581,11 +580,6 @@ install (FILES ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-deb-creator.sh
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE
                      WORLD_READ WORLD_EXECUTE)
-
-install (FILES ${CMAKE_BINARY_DIR}/tools/gvm-migrate-to-postgres
-         DESTINATION ${SBINDIR}
-         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
-                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES ${CMAKE_BINARY_DIR}/tools/gvm-manage-certs
          DESTINATION ${BINDIR}
