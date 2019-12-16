@@ -64669,11 +64669,36 @@ type_extra_where (const char *type, int trash, const char *filter,
   else if (strcasecmp (type, "RESULT") == 0)
     {
       int autofp, apply_overrides;
+      gchar *report_id;
+      report_t report;
+
+      /* Note: This keyword may be removed or renamed at any time once there
+       * is a better solution like an operator for conditions that must always
+       * apply or support for parentheses in filters. */
+      report_id = filter_term_value (filter,
+                                     "_and_report_id");
+      report = 0;
+
+      if (report_id)
+        {
+          if (find_report_with_permission (report_id,
+                                           &report,
+                                           NULL))
+            {
+              g_free (report_id);
+              g_warning ("Failed to get report");
+              return NULL;
+            }
+
+          if (report == 0)
+            report = -1;
+        }
+      g_free (report_id);
 
       autofp = filter_term_autofp (filter);
       apply_overrides = filter_term_apply_overrides (filter);
 
-      extra_where = results_extra_where (trash, 0, NULL,
+      extra_where = results_extra_where (trash, report, NULL,
                                          autofp, apply_overrides,
                                          setting_dynamic_severity_int (),
                                          filter);
