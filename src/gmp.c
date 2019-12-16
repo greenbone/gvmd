@@ -16737,6 +16737,8 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
       iterator_t results;
       int notes, overrides;
       int count, ret, first;
+      gchar *report_id;
+      report_t report;
 
       if (get_results_data->get.filt_id
           && strcmp (get_results_data->get.filt_id, FILT_ID_NONE))
@@ -16754,8 +16756,32 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
       // Do not allow ignore_pagination here
       get_results_data->get.ignore_pagination = 0;
 
+      /* Note: This keyword may be removed or renamed at any time once there
+       * is a better solution like an operator for conditions that must always
+       * apply or support for parentheses in filters. */
+      report_id = filter_term_value (filter,
+                                     "_and_report_id");
+      report = 0;
+
+      if (report_id)
+        {
+          if (find_report_with_permission (report_id,
+                                           &report,
+                                           NULL))
+            {
+              g_free (report_id);
+              g_warning ("Failed to get report");
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+              return;
+            }
+
+          if (report == 0)
+            report = -1;
+        }
+      g_free (report_id);
+
       init_result_get_iterator (&results, &get_results_data->get,
-                                0,  /* No report restriction */
+                                report,  /* report restriction */
                                 NULL, /* No host restriction */
                                 NULL);  /* No extra order SQL. */
 
@@ -16828,7 +16854,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
 
           filtered = get_results_data->get.id
                       ? 1 : result_count (&get_results_data->get,
-                                          0 /* No report */,
+                                          report /* No report */,
                                           NULL /* No host */);
 
           if (send_get_end ("result", &get_results_data->get, count, filtered,
