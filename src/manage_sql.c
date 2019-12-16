@@ -24244,6 +24244,12 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   gchar *extra_tables, *extra_where;
 
+  if (report == -1)
+    {
+      init_iterator (iterator, "SELECT NULL WHERE false;");
+      return 0;
+    }
+
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
@@ -24307,6 +24313,9 @@ result_count (const get_data_t *get, report_t report, const char* host)
   gchar *filter;
   int apply_overrides, autofp, dynamic_severity;
   gchar *extra_tables, *extra_where;
+
+  if (report == -1)
+    return 0;
 
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
