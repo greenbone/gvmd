@@ -180,7 +180,7 @@ increment_transaction_size (int* current_size)
 typedef struct
 {
   array_t *statements;     ///< Buffered statements.
-  GString *statement;      ///< Current statemet.
+  GString *statement;      ///< Current statement.
   int current_chunk_size;  ///< Number of rows in current statement.
   int max_chunk_size;      ///< Max number of rows per INSERT.
   gchar *open_sql;         ///< SQL to open each statement.
