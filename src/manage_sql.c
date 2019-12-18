@@ -64637,10 +64637,8 @@ type_extra_where (const char *type, int trash, const char *filter,
     }
   else if (strcasecmp (type, "TASK") == 0)
     {
-      if (trash)
-        extra_where = g_strdup (" AND hidden = 2");
-      else
-        extra_where = g_strdup (" AND hidden = 0");
+      gchar *usage_type = g_hash_table_lookup (extra_params, "usage_type");
+      extra_where = tasks_extra_where (trash, usage_type);
     }
   else if (strcasecmp (type, "TLS_CERTIFICATE") == 0)
     {
