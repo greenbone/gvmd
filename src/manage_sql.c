@@ -64630,14 +64630,24 @@ type_extra_where (const char *type, int trash, const char *filter,
 
   if (strcasecmp (type, "CONFIG") == 0 && extra_params)
     {
-      gchar *usage_type = g_hash_table_lookup (extra_params, "usage_type");
+      gchar *usage_type;
+      if (extra_params)
+        usage_type = g_hash_table_lookup (extra_params, "usage_type");
+      else
+        usage_type = NULL;
+
       extra_where = configs_extra_where (usage_type);
       if (extra_where == NULL)
         extra_where = g_strdup ("");
     }
   else if (strcasecmp (type, "TASK") == 0)
     {
-      gchar *usage_type = g_hash_table_lookup (extra_params, "usage_type");
+      gchar *usage_type;
+      if (extra_params)
+        usage_type = g_hash_table_lookup (extra_params, "usage_type");
+      else
+        usage_type = NULL;
+
       extra_where = tasks_extra_where (trash, usage_type);
     }
   else if (strcasecmp (type, "TLS_CERTIFICATE") == 0)
