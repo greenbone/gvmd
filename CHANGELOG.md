@@ -54,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix result_nvt for new OSP and slave results [#873](https://github.com/greenbone/gvmd/pull/873)
 - Use right format specifier for merge_ovaldef version [#874](https://github.com/greenbone/gvmd/pull/874)
 - Fix creation of "Super" permissions [#892](https://github.com/greenbone/gvmd/pull/892)
+- Add tags used for result NVTs to update_nvti_cache [#916](https://github.com/greenbone/gvmd/pull/916)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
