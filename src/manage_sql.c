@@ -59846,6 +59846,12 @@ modify_setting (const gchar *uuid, const gchar *name,
       /* Tickets */
       else if (strcmp (uuid, "70b0626f-a835-478e-8194-e09f97887a15") == 0)
         setting_name = g_strdup ("Tickets Top Dashboard Configuration");
+
+      /*
+       * Client data for business process maps
+       */
+      else if (strcmp (uuid, "3ce2d136-bb52-448a-93f0-20069566f877") == 0)
+        setting_name = g_strdup ("BPM Data");
     }
 
   if (setting_name)
