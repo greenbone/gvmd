@@ -81,6 +81,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add explicit columns for the NVT tags "summary", "insight", "detection", "impact" and "affected" [#719](https://github.com/greenbone/gvmd/pull/719) [#746](https://github.com/greenbone/gvmd/pull/746)
 - Add lean option to GET_REPORTS [#745](https://github.com/greenbone/gvmd/pull/745)
 - Add scanner relays and OSP sensor scanner type [#756](https://github.com/greenbone/gvmd/pull/756) [#759](https://github.com/greenbone/gvmd/pull/759)
+- Add setting "BPM Data" [#914](https://github.com/greenbone/gvmd/pull/914)
 
 ### Changed
 - Always convert iCalendar strings to use UTC. [#778](https://github.com/greenbone/gvmd/pull/778)
