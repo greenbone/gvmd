@@ -15732,7 +15732,10 @@ update_nvti_cache ()
   nvti_cache = nvtis_new ();
 
   init_iterator (&nvts,
-                 "SELECT oid, name, family, cvss_base, tag, solution, solution_type FROM nvts;");
+                 "SELECT oid, name, family, cvss_base, tag,"
+                 "       solution, solution_type, summary, insight, affected,"
+                 "       impact, detection"
+                 " FROM nvts;");
   while (next (&nvts))
     {
       iterator_t refs;
@@ -15745,6 +15748,11 @@ update_nvti_cache ()
       nvti_set_tag (nvti, iterator_string (&nvts, 4));
       nvti_set_solution (nvti, iterator_string (&nvts, 5));
       nvti_set_solution_type (nvti, iterator_string (&nvts, 6));
+      nvti_set_summary (nvti, iterator_string (&nvts, 7));
+      nvti_set_insight (nvti, iterator_string (&nvts, 8));
+      nvti_set_affected (nvti, iterator_string (&nvts, 9));
+      nvti_set_impact (nvti, iterator_string (&nvts, 10));
+      nvti_set_detection (nvti, iterator_string (&nvts, 11));
 
       init_iterator (&refs,
                      "SELECT type, ref_id, ref_text"
