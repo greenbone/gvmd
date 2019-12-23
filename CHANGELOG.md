@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Speed up the SCAP sync [#875](https://github.com/greenbone/gvmd/pull/875) [#877](https://github.com/greenbone/gvmd/pull/877) [#879](https://github.com/greenbone/gvmd/pull/879) [#881](https://github.com/greenbone/gvmd/pull/881) [#883](https://github.com/greenbone/gvmd/pull/883) [#887](https://github.com/greenbone/gvmd/pull/887) [#889](https://github.com/greenbone/gvmd/pull/889) [#890](https://github.com/greenbone/gvmd/pull/890) [#891](https://github.com/greenbone/gvmd/pull/891) [#901](https://github.com/greenbone/gvmd/pull/901)
 - Change rows of built-in default filters to -2 (use "Rows Per Page" setting) [#896](https://github.com/greenbone/gvmd/pull/896)
 - Force NVT update in migrate_219_to_220 [#895](https://github.com/greenbone/gvmd/pull/895)
+- Use temp tables to speed up migrate_213_to_214 [#911](https://github.com/greenbone/gvmd/pull/911)
 
 ### Fixed
 - Consider results_trash when deleting users [#799](https://github.com/greenbone/gvmd/pull/799)
@@ -40,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix creation of "Super" permissions [#892](https://github.com/greenbone/gvmd/pull/892)
 - Setup general task preferences to launch an osp openvas task. [#898](https://github.com/greenbone/gvmd/pull/898)
 - Add tags used for result NVTs to update_nvti_cache [#916](https://github.com/greenbone/gvmd/pull/916)
+- Apply usage_type of tasks in get_aggregates (9.0) [#912](https://github.com/greenbone/gvmd/pull/912)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
