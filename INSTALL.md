@@ -219,55 +219,6 @@ SELECT nspname || '.' || relname AS "relation",
 These queries were taken from https://wiki.postgresql.org/wiki/Disk_Usage
 
 
-## Migrating to Version 8.0
-
-Before starting gvmd 8.0 for the first time you need to move some files to the
-new locations where they are expected now.  If you do not do this, the files are
-freshly initialized and it gets more complicated to transfer the old data
-properly.
-
- - move `$prefix/etc/openvas/pwpolicy.conf` to
-   `$prefix/etc/gvm/`
-
- - move `$prefix/etc/openvas/openvasmd_log.conf` to
-   `$prefix/etc/gvm/gvmd_log.conf`
-
- - copy `$prefix/etc/openvas/gsf-access-key` to
-   `$prefix/etc/gvm/`
-   If the `gsf-access-key` file was already migrated for the `openvas-scanner`
-   module it can be removed from the `$prefix/etc/openvas/` directory.
-
- - move `$prefix/var/lib/openvas/scap-data/scap.db` to
-   `$prefix/var/lib/gvm/gvmd/scap/`
-
- - move `$prefix/var/lib/openvas/cert-data/cert.db` to
-   `$prefix/var/lib/gvm/gvmd/cert/`
-
- - move `$prefix/var/lib/openvas/scap-data` to
-   `$prefix/var/lib/gvm/scap-data`
-
- - move `$prefix/var/lib/openvas/cert-data` to
-   `$prefix/var/lib/gvm/cert-data`
-
- - move `$prefix/var/lib/openvas/openvasmd` to
-   `$prefix/var/lib/gvm/gvmd`
-
- - move `$prefix/var/lib/openvas/CA` to
-   `$prefix/var/lib/gvm/CA`
-
- - move `$prefix/var/lib/openvas/private` to
-   `$prefix/var/lib/gvm/private`
-
- - (SQLite backend only) move `$prefix/var/lib/openvas/mgr/tasks.db` to
-   `$prefix/var/lib/gvm/gvmd/gvmd.db`
-
- - (Postgres backend only) rename database to `gvmd`:
-    ```
-    sudo -u postgres sh
-    psql --command='ALTER DATABASE tasks RENAME TO gvmd;'
-    ```
-
-
 ## Migrating the Database
 
 If you have used Manager before, you might need to migrate the database to the
@@ -514,14 +465,6 @@ Create a new key:
     gvmd --create-credentials-encryption-key
 
 Finally, reset all credentials, by hand.
-
-
-## Migrating Encrypted Credentials from Manager prior version 6.0
-
-Please consult the INSTALL file of version 6.0 for detailed
-information about the migration of encrypted credentials.
-
-From version 6.0 on the migration is seamless.
 
 
 ## Updating Scanner Certificates
