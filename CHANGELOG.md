@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Allow use of public key auth in SCP alert [#845](https://github.com/greenbone/gvmd/pull/845)
 - Refuse to import config with missing NVT preference ID [#853](https://github.com/greenbone/gvmd/pull/853) [#860](https://github.com/greenbone/gvmd/pull/860)
 - Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
+- Add setting "BPM Data" [#915](https://github.com/greenbone/gvmd/pull/915)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
