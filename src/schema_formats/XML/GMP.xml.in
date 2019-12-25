@@ -534,6 +534,127 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
   </element>
   <element>
+    <name>nvt</name>
+    <summary>Meta information of a network vulnerability test</summary>
+    <pattern>
+      <attrib>
+        <name>id</name>
+        <type>oid</type>
+        <required>1</required>
+      </attrib>
+      <e>name</e>
+      <e>creation_time</e>
+      <e>modification_time</e>
+      <e>category</e>
+      <e>family</e>
+      <e>cvss_base</e>
+      <e>qod</e>
+      <e>refs</e>
+      <e>tags</e>
+      <e>preference_count</e>
+      <e>timeout</e>
+      <e>default_timeout</e>
+      <e>solution</e>
+      <e>preferences</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Name of the vulnerability test</summary>
+      <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>creation_time</name>
+      <summary>Date and time the vulnerability test was created</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>modification_time</name>
+      <summary>Date and time the vulnerability test was last modified</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>category</name>
+      <summary>Category of the vulnerability test</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>family</name>
+      <summary>Family of the vulnerability test</summary>
+      <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>cvss_base</name>
+      <summary>CVSS base score of the vulnerability test</summary>
+      <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>qod</name>
+      <summary>Quality of Detection</summary>
+      <pattern>
+        <e>value</e>
+        <e>type</e>
+      </pattern>
+        <ele>
+          <name>value</name>
+	  <summary>The value of the QoD</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The type of the QoD</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+    </ele>
+    <ele>
+      <name>refs</name>
+      <summary>List of references of the vulnerability test</summary>
+      <pattern><any><e>ref</e></any></pattern>
+    </ele>
+    <ele>
+      <name>tags</name>
+      <summary>Additional information about vulnerability test in pipe-separated syntax</summary>
+      <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>preference_count</name>
+      <summary>The number of preferences</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>timeout</name>
+      <summary>The timeout of the vulnerability test</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>default_timeout</name>
+      <summary>The default timeout of the vulnerability test</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>solution</name>
+      <summary>The solution information for the vulnerability test</summary>
+      <pattern>
+        <attrib>
+          <name>type</name>
+          <summary>The solution type, for example "VendorFix"</summary>
+          <type>name</type>
+          <required>0</required>
+        </attrib>
+        <attrib>
+          <name>method</name>
+          <summary>The solution method, for example "DebianAPTUpgrade"</summary>
+          <type>name</type>
+          <required>0</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>preferences</name>
+      <summary>The list of preferences</summary>
+      <pattern><t>text</t></pattern>
+    </ele>
+  </element>
+  <element>
     <name>note</name>
     <summary>A note</summary>
     <pattern>
