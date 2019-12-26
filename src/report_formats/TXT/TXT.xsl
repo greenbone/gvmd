@@ -415,12 +415,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:if>
 
     <!-- Summary -->
-    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
+    <xsl:if test="nvt/summary/text()">
       <xsl:text>Summary:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
         <xsl:with-param name="string"
-                        select="gvm:get-nvt-tag (nvt/tags, 'summary')"/>
+                        select="nvt/summary"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
@@ -447,11 +447,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:choose>
     <xsl:call-template name="newline"/>
 
-    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+    <xsl:if test="nvt/impact/text()">
       <xsl:text>Impact:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'impact')"/>
+        <xsl:with-param name="string" select="nvt/impact"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
@@ -477,20 +477,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:if>
     </xsl:if>
 
-    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+    <xsl:if test="nvt/affected/text()">
       <xsl:text>Affected Software/OS:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'affected')"/>
+        <xsl:with-param name="string" select="nvt/affected"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
 
-    <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+    <xsl:if test="nvt/insight/text()">
       <xsl:text>Vulnerability Insight:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'insight')"/>
+        <xsl:with-param name="string" select="nvt/insight"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
