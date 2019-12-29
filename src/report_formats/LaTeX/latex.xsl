@@ -1211,12 +1211,12 @@ advice given in each description, in order to rectify the issue.
         </xsl:if>
 
         <!-- Summary -->
-        <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
+	<xsl:if test="nvt/summary/text()">
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Summary}</xsl:text>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'summary')"/>
+            <xsl:with-param name="string" select="nvt/summary"/>
           </xsl:call-template>
         </xsl:if>
 
@@ -1244,13 +1244,13 @@ advice given in each description, in order to rectify the issue.
           </xsl:otherwise>
         </xsl:choose>
 
-        <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+	<xsl:if test="nvt/impact/text()">
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Impact}</xsl:text>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'impact')"/>
+            <xsl:with-param name="string" select="nvt/impact"/>
           </xsl:call-template>
         </xsl:if>
 
@@ -1276,23 +1276,23 @@ advice given in each description, in order to rectify the issue.
           </xsl:if>
         </xsl:if>
 
-        <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+	<xsl:if test="nvt/affected/text()">
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Affected Software/OS}</xsl:text>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'affected')"/>
+            <xsl:with-param name="string" select="nvt/affected"/>
           </xsl:call-template>
         </xsl:if>
 
-        <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+	<xsl:if test="nvt/insight/text()">
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Vulnerability Insight}</xsl:text>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="structured-text">
-            <xsl:with-param name="string" select="gvm:get-nvt-tag (nvt/tags, 'insight')"/>
+            <xsl:with-param name="string" select="nvt/insight"/>
           </xsl:call-template>
         </xsl:if>
 
