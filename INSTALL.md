@@ -22,6 +22,7 @@ Prerequisites:
 * sqlite3 library >= 3.8.3 or PostgreSQL database
 * pkg-config
 * libical >= 1.0.0
+* libgpgme
 
 Prerequisites for certificate generation:
 * GnuTLS certtool
