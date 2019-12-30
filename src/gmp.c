@@ -400,7 +400,7 @@ try_gpgme_import (const char *key_str, GArray *key_types,
   gpgme_release (ctx);
   gvm_file_remove_recurse (gpg_temp_dir);
 
-  return (ret != 0);
+  return ret != 0;
 }
 
 /**
@@ -10808,7 +10808,7 @@ strcasecmp_reverse (gchar *s1, gchar *s2)
 static int
 compare_count_data (gconstpointer c1, gconstpointer c2, gpointer dummy)
 {
-  return (((count_data_t*)c2)->count - ((count_data_t*)c1)->count);
+  return ((count_data_t*)c2)->count - ((count_data_t*)c1)->count;
 }
 
 /**
@@ -10823,7 +10823,7 @@ compare_count_data (gconstpointer c1, gconstpointer c2, gpointer dummy)
 static int
 compare_count_data_reverse (gconstpointer c1, gconstpointer c2, gpointer dummy)
 {
-  return (((count_data_t*)c1)->count - ((count_data_t*)c2)->count);
+  return ((count_data_t*)c1)->count - ((count_data_t*)c2)->count;
 }
 
 /**
@@ -10904,7 +10904,7 @@ buffer_word_counts_tree (gpointer key, gpointer value, gpointer data)
   if (count_data->limit > 0)
     count_data->limit--;
 
-  return (count_data->limit == 0);
+  return count_data->limit == 0;
 }
 
 /**

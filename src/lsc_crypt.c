@@ -667,9 +667,9 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
   for (nl = ctx->namelist; nl; nl = nl->next)
     if (!strcmp (nl->name, name))
       {
-        return (nl->value
+        return nl->value
                 ? nl->value
-                : (nl->valoff ? (ctx->plaintext + nl->valoff) : NULL));
+                : (nl->valoff ? (ctx->plaintext + nl->valoff) : NULL);
       }
 
   /* Cache miss: Parse the data, cache the result, and return it.  */

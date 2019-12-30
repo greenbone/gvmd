@@ -4281,8 +4281,9 @@ type_db_name (const char* type)
 static int
 type_is_asset_subtype (const char *type)
 {
-  return ((strcasecmp (type, "host")
-           && strcasecmp (type, "os")) == 0);
+  return (strcasecmp (type, "host")
+          && strcasecmp (type, "os"))
+         == 0;
 }
 
 /**
@@ -4295,12 +4296,13 @@ type_is_asset_subtype (const char *type)
 static int
 type_is_info_subtype (const char *type)
 {
-  return ((strcasecmp (type, "nvt")
-           && strcasecmp (type, "cve")
-           && strcasecmp (type, "cpe")
-           && strcasecmp (type, "ovaldef")
-           && strcasecmp (type, "cert_bund_adv")
-           && strcasecmp (type, "dfn_cert_adv")) == 0);
+  return (strcasecmp (type, "nvt")
+          && strcasecmp (type, "cve")
+          && strcasecmp (type, "cpe")
+          && strcasecmp (type, "ovaldef")
+          && strcasecmp (type, "cert_bund_adv")
+          && strcasecmp (type, "dfn_cert_adv"))
+         == 0;
 }
 
 /**
@@ -4356,13 +4358,13 @@ type_has_comment (const char *type)
 static int
 type_has_trash (const char *type)
 {
-  return (strcasecmp (type, "report")
-          && strcasecmp (type, "result")
-          && strcasecmp (type, "info")
-          && type_is_info_subtype (type) == 0
-          && strcasecmp (type, "vuln")
-          && strcasecmp (type, "user")
-          && strcasecmp (type, "tls_certificate"));
+  return strcasecmp (type, "report")
+         && strcasecmp (type, "result")
+         && strcasecmp (type, "info")
+         && type_is_info_subtype (type) == 0
+         && strcasecmp (type, "vuln")
+         && strcasecmp (type, "user")
+         && strcasecmp (type, "tls_certificate");
 }
 
 /**
@@ -4375,9 +4377,9 @@ type_has_trash (const char *type)
 static int
 type_owned (const char* type)
 {
-  return (strcasecmp (type, "info")
-          && type_is_info_subtype (type) == 0
-          && strcasecmp (type, "vuln"));
+  return strcasecmp (type, "info")
+         && type_is_info_subtype (type) == 0
+         && strcasecmp (type, "vuln");
 }
 
 /**
@@ -39439,7 +39441,7 @@ trash_agent_in_use (agent_t agent)
 int
 agent_writable (agent_t agent)
 {
-  return (agent_in_use (agent) == 0);
+  return agent_in_use (agent) == 0;
 }
 
 /**
@@ -39452,7 +39454,7 @@ agent_writable (agent_t agent)
 int
 trash_agent_writable (agent_t agent)
 {
-  return (trash_agent_in_use (agent) == 0);
+  return trash_agent_in_use (agent) == 0;
 }
 
 /**
@@ -43790,7 +43792,7 @@ scanner_writable (scanner_t scanner)
 int
 trash_scanner_writable (scanner_t scanner)
 {
-  return (trash_scanner_in_use (scanner) == 0);
+  return trash_scanner_in_use (scanner) == 0;
 }
 
 /**
@@ -45000,7 +45002,7 @@ schedule_writable (schedule_t schedule)
 int
 trash_schedule_writable (schedule_t schedule)
 {
-  return (trash_schedule_in_use (schedule) == 0);
+  return trash_schedule_in_use (schedule) == 0;
 }
 
 /**
@@ -47574,8 +47576,8 @@ trash_report_format_in_use (report_format_t report_format)
 int
 report_format_writable (report_format_t report_format)
 {
-  return (report_format_in_use (report_format) == 0
-          && report_format_predefined (report_format) == 0);
+  return report_format_in_use (report_format) == 0
+         && report_format_predefined (report_format) == 0;
 }
 
 /**
@@ -53279,7 +53281,7 @@ port_list_writable (port_list_t port_list)
 {
   if (port_list_is_predefined (port_list))
     return 0;
-  return (port_list_in_use (port_list) == 0);
+  return port_list_in_use (port_list) == 0;
 }
 
 /**
@@ -53292,7 +53294,7 @@ port_list_writable (port_list_t port_list)
 int
 trash_port_list_writable (port_list_t port_list)
 {
-  return (trash_port_list_in_use (port_list) == 0);
+  return trash_port_list_in_use (port_list) == 0;
 }
 
 /**
@@ -64249,12 +64251,12 @@ trash_tag_writable (tag_t tag)
 int
 column_is_timestamp (const char* column)
 {
-  return (column
-          && (strcmp (column, "created") == 0
-              || strcmp (column, "date") == 0
-              || strcmp (column, "modified") == 0
-              || strcmp (column, "published") == 0
-              || strcmp (column, "updated") == 0));
+  return column
+         && (strcmp (column, "created") == 0
+             || strcmp (column, "date") == 0
+             || strcmp (column, "modified") == 0
+             || strcmp (column, "published") == 0
+             || strcmp (column, "updated") == 0);
 }
 
 /**
