@@ -7223,7 +7223,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_PERMISSION:
         if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_PERMISSION_COMMENT);
+          {
+            gvm_append_string (&modify_permission_data->comment, "");
+            set_client_state (CLIENT_MODIFY_PERMISSION_COMMENT);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_PERMISSION_NAME);
         else if (strcasecmp ("RESOURCE", element_name) == 0)
