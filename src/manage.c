@@ -8879,10 +8879,11 @@ manage_update_nvts_osp (const gchar *update_socket)
  * @param[in]  read_only         Whether to only allow wizards marked as
  *                               read only.
  * @param[in]  mode              Name of the mode to run the wizard in.
- * @param[out] command_error     Address for error message from failed command
- *                               when return is 4, or NULL.
- * @param[out] command_error_code Address for status code from failed command
- *                                when return is 4, or NULL.
+ * @param[out] command_error     Either NULL or an address for an error message
+ *                               when return is 0, 4 or 6.
+ * @param[out] command_error_code  Either NULL or an address for a status code
+ *                                 from the failed command when return is 0
+ *                                 or 4.
  * @param[out] ret_response      Address for response string of last command.
  *
  * @return 0 success,
