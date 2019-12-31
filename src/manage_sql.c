@@ -4174,8 +4174,7 @@ filter_clause (const char* type, const char* filter,
 static int
 valid_type (const char* type)
 {
-  return (strcasecmp (type, "agent") == 0)
-         || (strcasecmp (type, "alert") == 0)
+  return (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "asset") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "credential") == 0)
@@ -4219,8 +4218,6 @@ type_db_name (const char* type)
   if (valid_type (type))
     return type;
 
-  if (strcasecmp (type, "Agent") == 0)
-    return "agent";
   if (strcasecmp (type, "Alert") == 0)
     return "alert";
   if (strcasecmp (type, "Asset") == 0)
@@ -54421,52 +54418,6 @@ manage_restore (const char *id)
   if (ret != 2)
     return ret;
 
-  /* Agent. */
-
-  if (find_trash ("agent", id, &resource))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (resource)
-    {
-      if (sql_int ("SELECT count(*) FROM agents"
-                   " WHERE name ="
-                   " (SELECT name FROM agents_trash WHERE id = %llu)"
-                   " AND " ACL_USER_OWNS () ";",
-                   resource,
-                   current_credentials.uuid))
-        {
-          sql_rollback ();
-          return 3;
-        }
-
-      sql ("INSERT INTO agents"
-           " (uuid, owner, name, comment, installer, installer_64,"
-           "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use, creation_time,"
-           "  modification_time)"
-           " SELECT"
-           "  uuid, owner, name, comment, installer, installer_64,"
-           "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use, creation_time,"
-           "  modification_time"
-           " FROM agents_trash WHERE id = %llu;",
-           resource);
-
-      permissions_set_locations ("agent", resource,
-                                 sql_last_insert_id (),
-                                 LOCATION_TABLE);
-      tags_set_locations ("agent", resource,
-                          sql_last_insert_id (),
-                          LOCATION_TABLE);
-
-      sql ("DELETE FROM agents_trash WHERE id = %llu;", resource);
-      sql_commit ();
-      return 0;
-    }
-
   /* Config. */
 
   if (find_trash ("config", id, &resource))
@@ -55609,7 +55560,6 @@ manage_empty_trashcan ()
       return 99;
     }
 
-  sql ("DELETE FROM agents_trash" WHERE_OWNER);
   sql ("DELETE FROM nvt_selectors WHERE name IN"
        " (SELECT nvt_selector FROM configs_trash"
        "  WHERE owner = (SELECT id FROM users"
@@ -60249,10 +60199,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       /* Transfer owned resources. */
 
-      sql ("UPDATE agents SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
-      sql ("UPDATE agents_trash SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
       sql ("UPDATE alerts SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE alerts_trash SET owner = %llu WHERE owner = %llu;",
@@ -60366,20 +60312,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     }
 
   /* Delete settings and miscellaneous resources not referenced directly. */
-
-  /* Agents. */
-#if 0
-  /* Skip the "in use" check because it always returns 0. */
-  if (user_resources_in_use (user,
-                             "agents", agent_in_use,
-                             "agents_trash", trash_agent_in_use))
-    {
-      sql_rollback ();
-      return 9;
-    }
-#endif
-  sql ("DELETE FROM agents WHERE owner = %llu;", user);
-  sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
 
   /* Settings. */
   sql ("DELETE FROM settings WHERE owner = %llu;", user);
@@ -63406,7 +63338,6 @@ column_is_timestamp (const char* column)
 static column_t *
 type_select_columns (const char *type)
 {
-  static column_t agent_columns[] = AGENT_ITERATOR_COLUMNS;
   static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
   static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
   static column_t config_columns[] = CONFIG_ITERATOR_COLUMNS;
@@ -63439,8 +63370,6 @@ type_select_columns (const char *type)
 
   if (type == NULL)
     return NULL;
-  if (strcasecmp (type, "AGENT") == 0)
-    return agent_columns;
   if (strcasecmp (type, "ALERT") == 0)
     return alert_columns;
   if (strcasecmp (type, "CERT_BUND_ADV") == 0)
@@ -63548,11 +63477,6 @@ type_filter_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
-  if (strcasecmp (type, "AGENT") == 0)
-    {
-      static const char *ret[] = AGENT_ITERATOR_FILTER_COLUMNS;
-      return ret;
-    }
   if (strcasecmp (type, "ALERT") == 0)
     {
       static const char *ret[] = ALERT_ITERATOR_FILTER_COLUMNS;
