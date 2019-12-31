@@ -38748,9 +38748,6 @@ find_signature (const gchar *location, const gchar *installer_filename,
               gchar *real_basename;
               gchar **split;
 
-              /* Note: this only happens if uuid is given, so it does not
-               * happen for agents. */
-
               g_error_free (error);
               error = NULL;
               signature_filename = g_build_filename (GVMD_STATE_DIR,
@@ -61836,11 +61833,11 @@ vuln_iterator_type (iterator_t* iterator)
 }
 
 /**
- * @brief Count number of agents.
+ * @brief Count number of vulns.
  *
  * @param[in]  get  GET params.
  *
- * @return Total number of agents in filtered set.
+ * @return Total number of vulns in filtered set.
  */
 int
 vuln_count (const get_data_t *get)
