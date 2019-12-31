@@ -576,41 +576,6 @@ command_disabled (gmp_parser_t *gmp_parser, const gchar *name)
 /* Command data passed between parser callbacks. */
 
 /**
- * @brief Command data for the create_agent command.
- */
-typedef struct
-{
-  char *comment;                  ///< Comment.
-  char *copy;                     ///< UUID of resource to copy.
-  char *howto_install;            ///< Install HOWTO.
-  char *howto_use;                ///< Usage HOWTO.
-  char *installer;                ///< Installer content.
-  char *installer_filename;       ///< Installer filename.
-  char *installer_signature;      ///< Installer signature.
-  char *name;                     ///< Agent name.
-} create_agent_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_agent_data_reset (create_agent_data_t *data)
-{
-  free (data->comment);
-  free (data->copy);
-  free (data->howto_install);
-  free (data->howto_use);
-  free (data->installer);
-  free (data->installer_filename);
-  free (data->installer_signature);
-  free (data->name);
-
-  memset (data, 0, sizeof (create_agent_data_t));
-}
-
-/**
  * @brief Command data for the create_asset command.
  */
 typedef struct
@@ -1528,28 +1493,6 @@ create_user_data_reset (create_user_data_t * data)
 }
 
 /**
- * @brief Command data for the delete_agent command.
- */
-typedef struct
-{
-  char *agent_id;   ///< ID of agent to delete.
-  int ultimate;     ///< Boolean.  Whether to remove entirely or to trashcan.
-} delete_agent_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-delete_agent_data_reset (delete_agent_data_t *data)
-{
-  free (data->agent_id);
-
-  memset (data, 0, sizeof (delete_agent_data_t));
-}
-
-/**
  * @brief Command data for the delete_asset command.
  */
 typedef struct
@@ -2086,29 +2029,6 @@ get_data_set_extra (get_data_t *data, const char *name, const char *value)
                          g_strdup (value));
   else
     g_hash_table_remove (data->extra_params, name);
-}
-
-/**
- * @brief Command data for the get_agents command.
- */
-typedef struct
-{
-  get_data_t get;        ///< Get args.
-  char *format;          ///< Format requested: "installer", "howto_use", ....
-} get_agents_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_agents_data_reset (get_agents_data_t *data)
-{
-  get_data_reset (&data->get);
-  free (data->format);
-
-  memset (data, 0, sizeof (get_agents_data_t));
 }
 
 /**
@@ -2843,31 +2763,6 @@ help_data_reset (help_data_t *data)
   free (data->type);
 
   memset (data, 0, sizeof (help_data_t));
-}
-
-/**
- * @brief Command data for the modify_agent command.
- */
-typedef struct
-{
-  char *comment;                 ///< Comment.
-  char *name;                    ///< Name of agent.
-  char *agent_id;                ///< agent UUID.
-} modify_agent_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_agent_data_reset (modify_agent_data_t *data)
-{
-  free (data->comment);
-  free (data->name);
-  free (data->agent_id);
-
-  memset (data, 0, sizeof (modify_agent_data_t));
 }
 
 /**
@@ -3804,27 +3699,6 @@ test_alert_data_reset (test_alert_data_t *data)
 }
 
 /**
- * @brief Command data for the verify_agent command.
- */
-typedef struct
-{
-  char *agent_id;   ///< ID of agent to verify.
-} verify_agent_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-verify_agent_data_reset (verify_agent_data_t *data)
-{
-  free (data->agent_id);
-
-  memset (data, 0, sizeof (verify_agent_data_t));
-}
-
-/**
  * @brief Command data for the verify_report_format command.
  */
 typedef struct
@@ -3913,7 +3787,6 @@ run_wizard_data_reset (run_wizard_data_t *data)
  */
 typedef union
 {
-  create_agent_data_t create_agent;                   ///< create_agent
   create_asset_data_t create_asset;                   ///< create_asset
   create_alert_data_t create_alert;                   ///< create_alert
   create_credential_data_t create_credential;         ///< create_credential
@@ -3933,7 +3806,6 @@ typedef union
   create_target_data_t create_target;                 ///< create_target
   create_task_data_t create_task;                     ///< create_task
   create_user_data_t create_user;                     ///< create_user
-  delete_agent_data_t delete_agent;                   ///< delete_agent
   delete_asset_data_t delete_asset;                   ///< delete_asset
   delete_credential_data_t delete_credential;         ///< delete_credential
   delete_config_data_t delete_config;                 ///< delete_config
@@ -3954,7 +3826,6 @@ typedef union
   delete_target_data_t delete_target;                 ///< delete_target
   delete_task_data_t delete_task;                     ///< delete_task
   delete_user_data_t delete_user;                     ///< delete_user
-  get_agents_data_t get_agents;                       ///< get_agents
   get_aggregates_data_t get_aggregates;               ///< get_aggregates
   get_configs_data_t get_configs;                     ///< get_configs
   get_alerts_data_t get_alerts;                       ///< get_alerts
@@ -3985,7 +3856,6 @@ typedef union
   get_users_data_t get_users;                         ///< get_users
   get_vulns_data_t get_vulns;                         ///< get_vulns
   help_data_t help;                                   ///< help
-  modify_agent_data_t modify_agent;                   ///< modify_agent
   modify_alert_data_t modify_alert;                   ///< modify_alert
   modify_asset_data_t modify_asset;                   ///< modify_asset
   modify_auth_data_t modify_auth;                     ///< modify_auth
@@ -4011,7 +3881,6 @@ typedef union
   stop_task_data_t stop_task;                         ///< stop_task
   sync_config_data_t sync_config;                     ///< sync_config
   test_alert_data_t test_alert;                       ///< test_alert
-  verify_agent_data_t verify_agent;                   ///< verify_agent
   verify_report_format_data_t verify_report_format;   ///< verify_report_format
   verify_scanner_data_t verify_scanner;               ///< verify_scanner
   run_wizard_data_t wizard;                           ///< run_wizard
@@ -4035,12 +3904,6 @@ command_data_init (command_data_t *data)
  * @brief Parser callback data.
  */
 static command_data_t command_data;
-
-/**
- * @brief Parser callback data for CREATE_AGENT.
- */
-static create_agent_data_t *create_agent_data
- = (create_agent_data_t*) &(command_data.create_agent);
 
 /**
  * @brief Parser callback data for CREATE_ASSET.
@@ -4155,12 +4018,6 @@ static create_task_data_t *create_task_data
  */
 static create_user_data_t *create_user_data
  = &(command_data.create_user);
-
-/**
- * @brief Parser callback data for DELETE_AGENT.
- */
-static delete_agent_data_t *delete_agent_data
- = (delete_agent_data_t*) &(command_data.delete_agent);
 
 /**
  * @brief Parser callback data for DELETE_ASSET.
@@ -4281,12 +4138,6 @@ static delete_task_data_t *delete_task_data
  */
 static delete_user_data_t *delete_user_data
  = (delete_user_data_t*) &(command_data.delete_user);
-
-/**
- * @brief Parser callback data for GET_AGENTS.
- */
-static get_agents_data_t *get_agents_data
- = &(command_data.get_agents);
 
 /**
  * @brief Parser callback data for GET_AGGREGATES.
@@ -4475,12 +4326,6 @@ static modify_config_data_t *modify_config_data
  = &(command_data.modify_config);
 
 /**
- * @brief Parser callback data for MODIFY_AGENT.
- */
-static modify_agent_data_t *modify_agent_data
- = &(command_data.modify_agent);
-
-/**
  * @brief Parser callback data for MODIFY_ALERT.
  */
 static modify_alert_data_t *modify_alert_data
@@ -4635,12 +4480,6 @@ static test_alert_data_t *test_alert_data
  = (test_alert_data_t*) &(command_data.test_alert);
 
 /**
- * @brief Parser callback data for VERIFY_AGENT.
- */
-static verify_agent_data_t *verify_agent_data
- = (verify_agent_data_t*) &(command_data.verify_agent);
-
-/**
  * @brief Parser callback data for VERIFY_REPORT_FORMAT.
  */
 static verify_report_format_data_t *verify_report_format_data
@@ -4705,15 +4544,6 @@ typedef enum
   CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME,
   CLIENT_AUTHENTIC_COMMANDS,
   CLIENT_COMMANDS,
-  CLIENT_CREATE_AGENT,
-  CLIENT_CREATE_AGENT_COMMENT,
-  CLIENT_CREATE_AGENT_COPY,
-  CLIENT_CREATE_AGENT_HOWTO_INSTALL,
-  CLIENT_CREATE_AGENT_HOWTO_USE,
-  CLIENT_CREATE_AGENT_INSTALLER,
-  CLIENT_CREATE_AGENT_INSTALLER_FILENAME,
-  CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE,
-  CLIENT_CREATE_AGENT_NAME,
   CLIENT_CREATE_ALERT,
   CLIENT_CREATE_ALERT_ACTIVE,
   CLIENT_CREATE_ALERT_COMMENT,
@@ -5028,7 +4858,6 @@ typedef enum
   CLIENT_CREATE_USER_ROLE,
   CLIENT_CREATE_USER_SOURCES,
   CLIENT_CREATE_USER_SOURCES_SOURCE,
-  CLIENT_DELETE_AGENT,
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
@@ -5053,7 +4882,6 @@ typedef enum
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
-  CLIENT_GET_AGENTS,
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_AGGREGATES_SORT,
@@ -5091,9 +4919,6 @@ typedef enum
   CLIENT_GET_VERSION_AUTHENTIC,
   CLIENT_GET_VULNS,
   CLIENT_HELP,
-  CLIENT_MODIFY_AGENT,
-  CLIENT_MODIFY_AGENT_COMMENT,
-  CLIENT_MODIFY_AGENT_NAME,
   CLIENT_MODIFY_ALERT,
   CLIENT_MODIFY_ALERT_ACTIVE,
   CLIENT_MODIFY_ALERT_COMMENT,
@@ -5300,7 +5125,6 @@ typedef enum
   CLIENT_STOP_TASK,
   CLIENT_SYNC_CONFIG,
   CLIENT_TEST_ALERT,
-  CLIENT_VERIFY_AGENT,
   CLIENT_VERIFY_REPORT_FORMAT,
   CLIENT_VERIFY_SCANNER,
 } client_state_t;
@@ -5502,16 +5326,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">");
             set_client_state (CLIENT_AUTHENTIC_COMMANDS);
           }
-        else if (strcasecmp ("CREATE_AGENT", element_name) == 0)
-          {
-            gvm_append_string (&create_agent_data->comment, "");
-            gvm_append_string (&create_agent_data->installer, "");
-            gvm_append_string (&create_agent_data->installer_filename, "");
-            gvm_append_string (&create_agent_data->installer_signature, "");
-            gvm_append_string (&create_agent_data->howto_install, "");
-            gvm_append_string (&create_agent_data->howto_use, "");
-            set_client_state (CLIENT_CREATE_AGENT);
-          }
         else if (strcasecmp ("CREATE_ASSET", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET);
         else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
@@ -5615,18 +5429,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 0;
             create_user_data->ifaces_allow = 0;
-          }
-        else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values,
-                              "agent_id", &delete_agent_data->agent_id);
-            if (find_attribute (attribute_names, attribute_values,
-                                "ultimate", &attribute))
-              delete_agent_data->ultimate = strcmp (attribute, "0");
-            else
-              delete_agent_data->ultimate = 0;
-            set_client_state (CLIENT_DELETE_AGENT);
           }
         else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
           {
@@ -5881,15 +5683,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_DESCRIBE_AUTH);
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
-        else if (strcasecmp ("GET_AGENTS", element_name) == 0)
-          {
-            get_data_parse_attributes (&get_agents_data->get, "agent",
-                                       attribute_names,
-                                       attribute_values);
-            append_attribute (attribute_names, attribute_values, "format",
-                              &get_agents_data->format);
-            set_client_state (CLIENT_GET_AGENTS);
-          }
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
             gchar *data_column = g_strdup ("");
@@ -6539,12 +6332,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &help_data->type);
             set_client_state (CLIENT_HELP);
           }
-        else if (strcasecmp ("MODIFY_AGENT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "agent_id",
-                              &modify_agent_data->agent_id);
-            set_client_state (CLIENT_MODIFY_AGENT);
-          }
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
           {
             modify_alert_data->event_data = make_array ();
@@ -6744,12 +6531,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &test_alert_data->alert_id);
             set_client_state (CLIENT_TEST_ALERT);
           }
-        else if (strcasecmp ("VERIFY_AGENT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "agent_id",
-                              &verify_agent_data->agent_id);
-            set_client_state (CLIENT_VERIFY_AGENT);
-          }
         else if (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "report_format_id",
@@ -6909,19 +6690,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               = g_list_append (get_aggregates_data->text_columns,
                                g_strdup (""));
             set_client_state (CLIENT_GET_AGGREGATES_TEXT_COLUMN);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_AGENT:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            gvm_append_string (&modify_agent_data->comment, "");
-            set_client_state (CLIENT_MODIFY_AGENT_COMMENT);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          {
-            gvm_append_string (&modify_agent_data->name, "");
-            set_client_state (CLIENT_MODIFY_AGENT_NAME);
           }
         ELSE_READ_OVER;
 
@@ -7737,30 +7505,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else
           set_read_over (gmp_parser);
         break;
-
-      case CLIENT_CREATE_AGENT:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_AGENT_COMMENT);
-        else if (strcasecmp ("COPY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_AGENT_COPY);
-        else if (strcasecmp ("HOWTO_INSTALL", element_name) == 0)
-          set_client_state (CLIENT_CREATE_AGENT_HOWTO_INSTALL);
-        else if (strcasecmp ("HOWTO_USE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_AGENT_HOWTO_USE);
-        else if (strcasecmp ("INSTALLER", element_name) == 0)
-          set_client_state (CLIENT_CREATE_AGENT_INSTALLER);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          {
-            gvm_append_string (&create_agent_data->name, "");
-            set_client_state (CLIENT_CREATE_AGENT_NAME);
-          }
-        ELSE_READ_OVER;
-      case CLIENT_CREATE_AGENT_INSTALLER:
-        if (strcasecmp ("FILENAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_AGENT_INSTALLER_FILENAME);
-        else if (strcasecmp ("SIGNATURE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE);
-        ELSE_READ_OVER;
 
       case CLIENT_CREATE_ASSET:
         if (strcasecmp ("ASSET", element_name) == 0)
@@ -11933,162 +11677,6 @@ get_ovaldi_files ()
     }
   cleanup_iterator (&iterator);
   return result;
-}
-
-/**
- * @brief Handle end of GET_AGENTS element.
- *
- * @param[in]  gmp_parser   GMP parser.
- * @param[in]  error        Error parameter.
- */
-static void
-handle_get_agents (gmp_parser_t *gmp_parser, GError **error)
-{
-  int format;
-
-  if (get_agents_data->format)
-    {
-      if (strlen (get_agents_data->format))
-        {
-          if (strcasecmp (get_agents_data->format, "installer") == 0)
-            format = 1;
-          else if (strcasecmp (get_agents_data->format, "howto_install") == 0)
-            format = 2;
-          else if (strcasecmp (get_agents_data->format, "howto_use") == 0)
-            format = 3;
-          else
-            format = -1;
-        }
-      else
-        format = 0;
-    }
-  else if (get_agents_data->get.details == 1) /* For exporting */
-    format = 1;
-  else
-    format = 0;
-
-  if (format == -1)
-    SEND_TO_CLIENT_OR_FAIL
-      (XML_ERROR_SYNTAX ("get_agents",
-                         "Format attribute should"
-                         " be 'installer', 'howto_install' or 'howto_use'."));
-  else
-    {
-      iterator_t agents;
-      int ret, count, filtered, first;
-
-      INIT_GET (agent, Agent);
-
-      ret = init_agent_iterator (&agents,
-                                  &get_agents_data->get);
-      if (ret)
-        {
-          switch (ret)
-            {
-              case 1:
-                if (send_find_error_to_client ("get_agents",
-                                               "agents",
-                                               get_agents_data->get.id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case 2:
-                if (send_find_error_to_client ("get_agents", "filter",
-                                               get_agents_data->get.filt_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                  (XML_INTERNAL_ERROR ("get_agents"));
-                break;
-            }
-          get_agents_data_reset (get_agents_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          return;
-        }
-
-      SEND_GET_START ("agent");
-      while (1)
-        {
-          ret = get_next (&agents, &get_agents_data->get, &first,
-                          &count, init_agent_iterator);
-          if (ret == 1)
-            break;
-          if (ret == -1)
-            {
-              internal_error_send_to_client (error);
-              return;
-            }
-
-          SEND_GET_COMMON (agent, &get_agents_data->get,
-                            &agents);
-          switch (format)
-            {
-              case 1: /* installer */
-                {
-                  time_t trust_time;
-                  trust_time = agent_iterator_trust_time (&agents);
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<package format=\"installer\">"
-                    "<filename>%s</filename>"
-                    "%s"
-                    "</package>"
-                    "<installer>"
-                    "<trust>%s<time>%s</time></trust>"
-                    "</installer>"
-                    "</agent>",
-                    agent_iterator_installer_filename (&agents),
-                    agent_iterator_installer_64 (&agents),
-                    agent_iterator_trust (&agents),
-                    iso_time (&trust_time));
-                }
-                break;
-              case 2: /* howto_install */
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("<package format=\"howto_install\">%s</package>"
-                  "</agent>",
-                  agent_iterator_howto_install (&agents));
-                break;
-              case 3: /* howto_use */
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("<package format=\"howto_use\">%s</package>"
-                  "</agent>",
-                  agent_iterator_howto_use (&agents));
-                break;
-              default:
-                {
-                  time_t trust_time;
-
-                  trust_time = agent_iterator_trust_time (&agents);
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<installer>"
-                    "<trust>%s<time>%s</time></trust>"
-                    "</installer>"
-                    "</agent>",
-                    agent_iterator_trust (&agents),
-                    iso_time (&trust_time));
-                }
-                break;
-            }
-          count++;
-        }
-      cleanup_iterator (&agents);
-      filtered = get_agents_data->get.id
-                  ? 1
-                  : agent_count (&get_agents_data->get);
-      SEND_GET_END ("agent", &get_agents_data->get, count, filtered);
-    }
-  get_agents_data_reset (get_agents_data);
-  set_client_state (CLIENT_AUTHENTIC);
 }
 
 /**
@@ -20090,7 +19678,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         SENDF_TO_CLIENT_OR_FAIL ("</commands_response>");
         break;
 
-      CASE_DELETE (AGENT, agent, "Agent");
       CASE_DELETE (ALERT, alert, "Alert");
 
       case CLIENT_DELETE_ASSET:
@@ -20494,10 +20081,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_GET_AGENTS:
-        handle_get_agents (gmp_parser, error);
-        break;
-
       case CLIENT_GET_AGGREGATES:
         handle_get_aggregates (gmp_parser, error);
         break;
@@ -20772,128 +20355,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         help_data_reset (help_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-
-      case CLIENT_CREATE_AGENT:
-        {
-          agent_t agent;
-
-          if (create_agent_data->copy)
-            switch (copy_agent (create_agent_data->name,
-                                create_agent_data->comment,
-                                create_agent_data->copy,
-                                &agent))
-              {
-                case 0:
-                  {
-                    char *uuid;
-                    uuid = agent_uuid (agent);
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_agent"),
-                                             uuid);
-                    log_event ("agent", "Agent", uuid, "created");
-                    free (uuid);
-                    break;
-                  }
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_agent",
-                                      "Agent exists already"));
-                  log_event_fail ("agent", "Agent", NULL, "created");
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("create_agent", "agent",
-                                                 create_agent_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  log_event_fail ("agent", "Agent", NULL, "created");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_agent",
-                                      "Permission denied"));
-                  log_event_fail ("agent", "Agent", NULL, "created");
-                  break;
-                case -1:
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("create_agent"));
-                  log_event_fail ("agent", "Agent", NULL, "created");
-                  break;
-              }
-          else if (create_agent_data->name == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_agent",
-                                "A NAME is required"));
-          else if (strlen (create_agent_data->name) == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_agent",
-                                  "Name must be at"
-                                  " least one character long"));
-            }
-          else if (strlen (create_agent_data->installer) == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_agent",
-                                  "Installer must be at"
-                                  " least one byte long"));
-            }
-          else switch (create_agent (create_agent_data->name,
-                                     create_agent_data->comment,
-                                     create_agent_data->installer,
-                                     create_agent_data->installer_filename,
-                                     create_agent_data->installer_signature,
-                                     create_agent_data->howto_install,
-                                     create_agent_data->howto_use,
-                                     &agent))
-            {
-              case 0:
-                {
-                  char *uuid;
-                  uuid = agent_uuid (agent);
-                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_agent"),
-                                           uuid);
-                  log_event ("agent", "Agent", uuid, "created");
-                  g_free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_agent",
-                                    "Agent exists already"));
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_agent",
-                                    "Name may only contain alphanumeric"
-                                    " characters"));
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_agent",
-                                    "Permission denied"));
-                break;
-              default:
-                assert (0);
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_agent"));
-                break;
-            }
-          create_agent_data_reset (create_agent_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_AGENT, COMMENT);
-      CLOSE (CLIENT_CREATE_AGENT, COPY);
-      CLOSE (CLIENT_CREATE_AGENT, HOWTO_INSTALL);
-      CLOSE (CLIENT_CREATE_AGENT, HOWTO_USE);
-      CLOSE (CLIENT_CREATE_AGENT, INSTALLER);
-      CLOSE (CLIENT_CREATE_AGENT_INSTALLER, FILENAME);
-      CLOSE (CLIENT_CREATE_AGENT_INSTALLER, SIGNATURE);
-      CLOSE (CLIENT_CREATE_AGENT, NAME);
 
       case CLIENT_CREATE_ASSET:
         {
@@ -24688,65 +24149,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_MODIFY_AGENT:
-        {
-          switch (modify_agent
-                   (modify_agent_data->agent_id,
-                    modify_agent_data->name,
-                    modify_agent_data->comment))
-            {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agent"));
-                log_event ("agent", "Agent", modify_agent_data->agent_id,
-                           "modified");
-                break;
-              case 1:
-                if (send_find_error_to_client ("modify_agent", "agent",
-                                               modify_agent_data->agent_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("agent", "Agent", modify_agent_data->agent_id,
-                                "modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_agent",
-                                    "agent with new name exists already"));
-                log_event_fail ("agent", "Agent", modify_agent_data->agent_id,
-                                "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_agent",
-                                    "An agent_id is required"));
-                log_event_fail ("agent", "Agent", modify_agent_data->agent_id,
-                                "modified");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_agent",
-                                    "Permission denied"));
-                log_event_fail ("agent", "Agent", modify_agent_data->agent_id,
-                                "modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
-                log_event_fail ("agent", "Agent", modify_agent_data->agent_id,
-                                "modified");
-                break;
-            }
-
-          modify_agent_data_reset (modify_agent_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_MODIFY_AGENT, COMMENT);
-      CLOSE (CLIENT_MODIFY_AGENT, NAME);
-
       case CLIENT_MODIFY_ALERT:
         {
           event_t event;
@@ -27999,43 +27401,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_sync_config (gmp_parser, error);
         break;
 
-      case CLIENT_VERIFY_AGENT:
-        if (verify_agent_data->agent_id)
-          {
-            switch (verify_agent (verify_agent_data->agent_id))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("verify_agent"));
-                  break;
-                case 1:
-                  if (send_find_error_to_client
-                       ("verify_agent", "agent", verify_agent_data->agent_id,
-                        gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("verify_agent",
-                                      "Permission denied"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("verify_agent"));
-                  break;
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("verify_agent",
-                              "An agent_id"
-                              " attribute is required"));
-        verify_agent_data_reset (verify_agent_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
       case CLIENT_VERIFY_REPORT_FORMAT:
         if (verify_report_format_data->report_format_id)
           {
@@ -28325,31 +27690,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_USER_SOURCES_SOURCE,
               &modify_user_data->current_source);
-
-
-      APPEND (CLIENT_CREATE_AGENT_COMMENT,
-              &create_agent_data->comment);
-
-      APPEND (CLIENT_CREATE_AGENT_COPY,
-              &create_agent_data->copy);
-
-      APPEND (CLIENT_CREATE_AGENT_HOWTO_INSTALL,
-              &create_agent_data->howto_install);
-
-      APPEND (CLIENT_CREATE_AGENT_HOWTO_USE,
-              &create_agent_data->howto_use);
-
-      APPEND (CLIENT_CREATE_AGENT_INSTALLER,
-              &create_agent_data->installer);
-
-      APPEND (CLIENT_CREATE_AGENT_INSTALLER_FILENAME,
-              &create_agent_data->installer_filename);
-
-      APPEND (CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE,
-              &create_agent_data->installer_signature);
-
-      APPEND (CLIENT_CREATE_AGENT_NAME,
-              &create_agent_data->name);
 
 
       APPEND (CLIENT_CREATE_ASSET_ASSET_COMMENT,
@@ -28950,12 +28290,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
           last->data = text_column;
           break;
         }
-
-      APPEND (CLIENT_MODIFY_AGENT_COMMENT,
-              &modify_agent_data->comment);
-
-      APPEND (CLIENT_MODIFY_AGENT_NAME,
-              &modify_agent_data->name);
 
 
       APPEND (CLIENT_MODIFY_ALERT_NAME,
