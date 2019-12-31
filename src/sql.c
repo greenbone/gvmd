@@ -695,42 +695,3 @@ next (iterator_t* iterator)
   assert (ret == 1);
   return TRUE;
 }
-
-
-/* Prepared statements. */
-
-/**
- * @brief Prepare a statement.
- *
- * @param[in]  sql  Format string for SQL.
- *
- * @return Statement on success, NULL on error.
- */
-sql_stmt_t *
-sql_prepare (const char* sql, ...)
-{
-  int ret;
-  sql_stmt_t* stmt;
-  va_list args;
-
-  va_start (args, sql);
-  ret = sql_prepare_internal (1, 1, sql, args, &stmt);
-  va_end (args);
-  if (ret)
-    return NULL;
-  return stmt;
-}
-
-/**
- * @brief Execute a prepared statement.
- *
- * @param[in]  stmt  Statement.
- *
- * @return 0 complete, 1 row available in results, 2 rerun prepare, -1 error,
- *         -2 gave up with statement reset.
- */
-int
-sql_exec (sql_stmt_t *stmt)
-{
-  return sql_exec_internal (1, stmt);
-}
