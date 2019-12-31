@@ -1633,6 +1633,74 @@ migrate_222_to_223 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 223 to version 224.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_223_to_224 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 223. */
+
+  if (manage_db_version () != 223)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Agents were removed entirely. */
+
+  sql ("DELETE FROM tags"
+       " WHERE id = (SELECT tag FROM tag_resources"
+       "             WHERE tag_resources.resource_type = 'agent');");
+
+  sql ("DELETE FROM tags_trash"
+       " WHERE id = (SELECT tag FROM tag_resources_trash"
+       "             WHERE tag_resources_trash.resource_type = 'agent');");
+
+  sql ("DELETE FROM tag_resources WHERE resource_type = 'agent';");
+  sql ("DELETE FROM tag_resources_trash WHERE resource_type = 'agent';");
+
+  sql ("DELETE FROM tags WHERE resource_type = 'agent';");
+  sql ("DELETE FROM tags_trash WHERE resource_type = 'agent';");
+
+  sql ("DELETE FROM permissions WHERE resource_type = 'agent';");
+  sql ("DELETE FROM permissions_trash WHERE resource_type = 'agent';");
+
+  sql ("UPDATE alerts SET filter = 0"
+       " WHERE filter IN (SELECT id FROM filters"
+       "                  WHERE type = 'agent');");
+  sql ("UPDATE alerts_trash SET filter = 0"
+       " WHERE filter IN (SELECT id FROM filters"
+       "                  WHERE type = 'agent')"
+       " AND filter_location = %i;",
+       LOCATION_TABLE);
+  sql ("UPDATE alerts_trash SET filter = 0"
+       " WHERE filter IN (SELECT id FROM filters_trash"
+       "                  WHERE type = 'agent')"
+       " AND filter_location = %i;",
+       LOCATION_TRASH);
+
+  sql ("DELETE FROM filters WHERE type = 'agent';");
+  sql ("DELETE FROM filters_trash WHERE type = 'agent';");
+
+  sql ("DROP TABLE IF EXISTS agents;");
+  sql ("DROP TABLE IF EXISTS agents_trash;");
+
+  /* Set the database version to 224. */
+
+  set_db_version (224);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1662,6 +1730,7 @@ static migrator_t database_migrators[] = {
   {221, migrate_220_to_221},
   {222, migrate_221_to_222},
   {223, migrate_222_to_223},
+  {224, migrate_223_to_224},
   /* End marker. */
   {-1, NULL}};
 
