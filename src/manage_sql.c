@@ -38698,7 +38698,7 @@ credential_scanner_iterator_readable (iterator_t* iterator)
 }
 
 
-/* Agents. */
+/* Signatures. */
 
 /**
  * @brief Find a signature in a feed.
@@ -38805,7 +38805,6 @@ find_signature (const gchar *location, const gchar *installer_filename,
   return -1;
 }
 
-
 /**
  * @brief Return the name of the sysconf GnuPG home directory
  *
@@ -38825,7 +38824,6 @@ get_sysconf_gpghome ()
 
   return name;
 }
-
 
 /**
  * @brief Return the name of the trusted keys file name.
@@ -38848,8 +38846,6 @@ get_trustedkeys_name ()
 
   return name;
 }
-
-
 
 /**
  * @brief Execute gpg to verify an installer signature.
@@ -38976,6 +38972,9 @@ verify_signature (const gchar *installer, gsize installer_size,
 
   return ret;
 }
+
+
+/* GET iterators. */
 
 /**
  * @brief Get the resource from a GET iterator.
