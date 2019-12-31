@@ -58658,9 +58658,7 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (uuid)
     {
       /* Filters */
-      if (strcmp (uuid, "4a1334c1-cb93-4a79-8634-103b0a50bdcd") == 0)
-        setting_name = g_strdup ("Agents Filter");
-      else if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
+      if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
         setting_name = g_strdup ("Alerts Filter");
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
         setting_name = g_strdup ("Assets Filter");

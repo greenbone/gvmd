@@ -1689,6 +1689,9 @@ migrate_223_to_224 ()
   sql ("DELETE FROM filters WHERE type = 'agent';");
   sql ("DELETE FROM filters_trash WHERE type = 'agent';");
 
+  /* Setting 'Agents Filter'. */
+  sql ("DELETE FROM settings WHERE uuid = '4a1334c1-cb93-4a79-8634-103b0a50bdcd';");
+
   sql ("DROP TABLE IF EXISTS agents;");
   sql ("DROP TABLE IF EXISTS agents_trash;");
 
