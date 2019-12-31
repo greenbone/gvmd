@@ -519,11 +519,11 @@ gchar *
 certificate_iso_time (time_t time)
 {
   if (time == 0)
-    return (g_strdup ("unlimited"));
+    return g_strdup ("unlimited");
   else if (time == -1)
-    return (g_strdup ("unknown"));
+    return g_strdup ("unknown");
   else
-    return (g_strdup (iso_time (&time)));
+    return g_strdup (iso_time (&time));
 }
 
 /**
@@ -890,21 +890,21 @@ severity_to_level (double severity, int mode)
   else if (severity > 0.0 && severity <= 10.0)
     {
       if (mode == 1)
-        return ("Alarm");
+        return "Alarm";
       else if (severity_in_level (severity, "high"))
-        return ("High");
+        return "High";
       else if (severity_in_level (severity, "medium"))
-        return ("Medium");
+        return "Medium";
       else if (severity_in_level (severity, "low"))
-        return ("Low");
+        return "Low";
       else
-        return ("Log");
+        return "Log";
     }
   else
     {
       g_warning ("%s: Invalid severity score given: %f",
                  __FUNCTION__, severity);
-      return (NULL);
+      return NULL;
     }
 }
 
@@ -932,7 +932,7 @@ severity_to_type (double severity)
     {
       g_warning ("%s: Invalid severity score given: %f",
                  __FUNCTION__, severity);
-      return (NULL);
+      return NULL;
     }
 }
 
