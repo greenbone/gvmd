@@ -3066,8 +3066,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
       <p>
         The client normally executes this command at the beginning of each
-        connection.  The only commands permitted before authentication are
-        get_version and commands.
+        connection.  The only command permitted before authentication is
+        get_version.
       </p>
     </description>
     <pattern>
@@ -3161,257 +3161,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                                status_text="Authentication failed"/>
       </response>
     </example>
-  </command>
-  <command>
-    <name>commands</name>
-    <summary>Run a list of commands</summary>
-    <description>
-      The client uses the commands command to run a list of commands.  The
-      elements are executed as GMP commands in the given sequence.  The reply
-      contains the result of each command, in the same order as the given
-      commands.
-    </description>
-    <pattern>
-      <any>
-        <or>
-          <c>authenticate</c>
-          <c>commands</c>
-          <c>create_alert</c>
-          <c>create_asset</c>
-          <c>create_config</c>
-          <c>create_credential</c>
-          <c>create_filter</c>
-          <c>create_group</c>
-          <c>create_note</c>
-          <c>create_override</c>
-          <c>create_permission</c>
-          <c>create_port_list</c>
-          <c>create_port_range</c>
-          <c>create_report_format</c>
-          <c>create_role</c>
-          <c>create_scanner</c>
-          <c>create_schedule</c>
-          <c>create_tag</c>
-          <c>create_target</c>
-          <c>create_task</c>
-          <c>create_ticket</c>
-          <c>create_tls_certificate</c>
-          <c>create_user</c>
-          <c>delete_alert</c>
-          <c>delete_asset</c>
-          <c>delete_config</c>
-          <c>delete_credential</c>
-          <c>delete_filter</c>
-          <c>delete_group</c>
-          <c>delete_note</c>
-          <c>delete_override</c>
-          <c>delete_permission</c>
-          <c>delete_report</c>
-          <c>delete_report_format</c>
-          <c>delete_role</c>
-          <c>delete_port_list</c>
-          <c>delete_port_range</c>
-          <c>delete_scanner</c>
-          <c>delete_schedule</c>
-          <c>delete_tag</c>
-          <c>delete_target</c>
-          <c>delete_task</c>
-          <c>delete_ticket</c>
-          <c>delete_user</c>
-          <c>describe_auth</c>
-          <c>empty_trashcan</c>
-          <c>get_alerts</c>
-          <c>get_assets</c>
-          <c>get_configs</c>
-          <c>get_credentials</c>
-          <c>get_feeds</c>
-          <c>get_filters</c>
-          <c>get_groups</c>
-          <c>get_info</c>
-          <c>get_notes</c>
-          <c>get_nvts</c>
-          <c>get_nvt_families</c>
-          <c>get_overrides</c>
-          <c>get_permissions</c>
-          <c>get_port_lists</c>
-          <c>get_preferences</c>
-          <c>get_reports</c>
-          <c>get_report_formats</c>
-          <c>get_results</c>
-          <c>get_roles</c>
-          <c>get_scanners</c>
-          <c>get_schedules</c>
-          <c>get_settings</c>
-          <c>get_system_reports</c>
-          <c>get_tags</c>
-          <c>get_targets</c>
-          <c>get_tasks</c>
-          <c>get_tickets</c>
-          <c>get_tls_certificates</c>
-          <c>get_users</c>
-          <c>get_version</c>
-          <c>get_vulns</c>
-          <c>help</c>
-          <c>modify_alert</c>
-          <c>modify_asset</c>
-          <c>modify_auth</c>
-          <c>modify_config</c>
-          <c>modify_credential</c>
-          <c>modify_filter</c>
-          <c>modify_group</c>
-          <c>modify_note</c>
-          <c>modify_override</c>
-          <c>modify_permission</c>
-          <c>modify_port_list</c>
-          <c>modify_report_format</c>
-          <c>modify_role</c>
-          <c>modify_scanner</c>
-          <c>modify_schedule</c>
-          <c>modify_setting</c>
-          <c>modify_tag</c>
-          <c>modify_target</c>
-          <c>modify_task</c>
-          <c>modify_ticket</c>
-          <c>modify_tls_certificate</c>
-          <c>modify_user</c>
-          <c>restore</c>
-          <c>resume_task</c>
-          <c>run_wizard</c>
-          <c>start_task</c>
-          <c>stop_task</c>
-          <c>sync_config</c>
-          <c>test_alert</c>
-          <c>verify_report_format</c>
-          <c>verify_scanner</c>
-        </or>
-      </any>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any>
-          <or>
-            <r>authenticate</r>
-            <r>commands</r>
-            <r>create_alert</r>
-            <r>create_asset</r>
-            <r>create_config</r>
-            <r>create_credential</r>
-            <r>create_filter</r>
-            <r>create_group</r>
-            <r>create_note</r>
-            <r>create_override</r>
-            <r>create_permission</r>
-            <r>create_port_list</r>
-            <r>create_port_range</r>
-            <r>create_role</r>
-            <r>create_scanner</r>
-            <r>create_schedule</r>
-            <r>create_tag</r>
-            <r>create_target</r>
-            <r>create_task</r>
-            <r>create_ticket</r>
-            <r>create_tls_certificate</r>
-            <r>create_user</r>
-            <r>delete_alert</r>
-            <r>delete_asset</r>
-            <r>delete_config</r>
-            <r>delete_credential</r>
-            <r>delete_filter</r>
-            <r>delete_group</r>
-            <r>delete_note</r>
-            <r>delete_override</r>
-            <r>delete_permission</r>
-            <r>delete_port_list</r>
-            <r>delete_port_range</r>
-            <r>delete_report</r>
-            <r>delete_report_format</r>
-            <r>delete_role</r>
-            <r>delete_scanner</r>
-            <r>delete_schedule</r>
-            <r>delete_tag</r>
-            <r>delete_target</r>
-            <r>delete_task</r>
-            <r>delete_ticket</r>
-            <r>delete_user</r>
-            <r>describe_auth</r>
-            <r>empty_trashcan</r>
-            <r>get_alerts</r>
-            <r>get_assets</r>
-            <r>get_configs</r>
-            <r>get_credentials</r>
-            <r>get_groups</r>
-            <r>get_info</r>
-            <r>get_feeds</r>
-            <r>get_filters</r>
-            <r>get_notes</r>
-            <r>get_nvts</r>
-            <r>get_nvt_families</r>
-            <r>get_overrides</r>
-            <r>get_permissions</r>
-            <r>get_port_lists</r>
-            <r>get_preferences</r>
-            <r>get_reports</r>
-            <r>get_report_formats</r>
-            <r>get_results</r>
-            <r>get_roles</r>
-            <r>get_scanners</r>
-            <r>get_schedules</r>
-            <r>get_settings</r>
-            <r>get_system_reports</r>
-            <r>get_tags</r>
-            <r>get_targets</r>
-            <r>get_tasks</r>
-            <r>get_tickets</r>
-            <r>get_tls_certificates</r>
-            <r>get_users</r>
-            <r>get_version</r>
-            <r>get_vulns</r>
-            <r>help</r>
-            <r>modify_alert</r>
-            <r>modify_asset</r>
-            <r>modify_auth</r>
-            <r>modify_config</r>
-            <r>modify_credential</r>
-            <r>modify_filter</r>
-            <r>modify_group</r>
-            <r>modify_note</r>
-            <r>modify_override</r>
-            <r>modify_permission</r>
-            <r>modify_port_list</r>
-            <r>modify_report_format</r>
-            <r>modify_role</r>
-            <r>modify_scanner</r>
-            <r>modify_schedule</r>
-            <r>modify_setting</r>
-            <r>modify_tag</r>
-            <r>modify_target</r>
-            <r>modify_ticket</r>
-            <r>modify_tls_certificate</r>
-            <r>modify_task</r>
-            <r>modify_user</r>
-            <r>restore</r>
-            <r>resume_task</r>
-            <r>run_wizard</r>
-            <r>start_task</r>
-            <r>stop_task</r>
-            <r>sync_config</r>
-            <r>test_alert</r>
-            <r>verify_report_format</r>
-            <r>verify_scanner</r>
-          </or>
-        </any>
-      </pattern>
-    </response>
   </command>
   <command>
     <name>create_alert</name>
@@ -23536,7 +23285,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <help_response status="200" status_text="OK">
     AUTHENTICATE           Authenticate with the manager.
-    COMMANDS               Run a list of commands.
     CREATE_ALERT           Create an alert.
     ...
     VERIFY_SCANNER         Verify a scanner.
@@ -26546,6 +26294,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>COMMANDS</command>
+    <summary>COMMANDS has been removed</summary>
+    <description>
+      <p>
+        The command COMMANDS has been removed.  It is no longer possible
+        to group multiple commands into a single command.  It is, however,
+        still possible to run multiple commands sequentially on the same
+        GMP connection.
+      </p>
+    </description>
+    <version>20.04</version>
+  </change>
   <change>
     <command>CREATE_AGENT, DELETE_AGENT, GET_AGENTS, MODIFY_AGENT, VERIFY_AGENT</command>
     <summary>The agents facility has been removed</summary>
