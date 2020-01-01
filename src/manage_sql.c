@@ -17706,7 +17706,6 @@ check_db_permissions ()
            "                WHERE uuid = '" ROLE_UUID_GUEST "');");
     }
   add_role_permission (ROLE_UUID_GUEST, "AUTHENTICATE");
-  add_role_permission (ROLE_UUID_GUEST, "COMMANDS");
   add_role_permission (ROLE_UUID_GUEST, "HELP");
   add_role_permission (ROLE_UUID_GUEST, "GET_AGGREGATES");
   add_role_permission (ROLE_UUID_GUEST, "GET_FILTERS");
@@ -17727,7 +17726,6 @@ check_db_permissions ()
            "                WHERE uuid = '" ROLE_UUID_INFO "');");
     }
   add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
-  add_role_permission (ROLE_UUID_INFO, "COMMANDS");
   add_role_permission (ROLE_UUID_INFO, "HELP");
   add_role_permission (ROLE_UUID_INFO, "GET_AGGREGATES");
   add_role_permission (ROLE_UUID_INFO, "GET_INFO");
@@ -17748,7 +17746,6 @@ check_db_permissions ()
            "                WHERE uuid = '" ROLE_UUID_MONITOR "');");
     }
   add_role_permission (ROLE_UUID_MONITOR, "AUTHENTICATE");
-  add_role_permission (ROLE_UUID_MONITOR, "COMMANDS");
   add_role_permission (ROLE_UUID_MONITOR, "GET_SETTINGS");
   add_role_permission (ROLE_UUID_MONITOR, "GET_SYSTEM_REPORTS");
   add_role_permission (ROLE_UUID_MONITOR, "HELP");
