@@ -538,7 +538,6 @@ static struct timeval last_msg;
  */
 command_t gmp_commands[]
  = {{"AUTHENTICATE", "Authenticate with the manager." },
-    {"COMMANDS",     "Run a list of commands."},
     {"CREATE_ALERT", "Create an alert."},
     {"CREATE_ASSET", "Create an asset."},
     {"CREATE_CONFIG", "Create a config."},
