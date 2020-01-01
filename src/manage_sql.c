@@ -711,7 +711,6 @@ gmp_command_takes_resource (const char* name)
 {
   assert (name);
   return strcasecmp (name, "AUTHENTICATE")
-         && strcasecmp (name, "COMMANDS")
          && strcasestr (name, "CREATE_") != name
          && strcasestr (name, "DESCRIBE_") != name
          && strcasecmp (name, "EMPTY_TRASHCAN")
