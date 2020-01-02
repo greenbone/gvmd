@@ -53,10 +53,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <commands>
-            <delete_task task_id="{/wizard/params/param[name='task_id']/value}" ultimate="{/wizard/params/param[name='ultimate']/value}" />
-            <get_targets target_id="{/wizard/previous/response/get_tasks_response/task/target/@id}" />
-          </commands>
+          <delete_task task_id="{/wizard/params/param[name='task_id']/value}" ultimate="{/wizard/params/param[name='ultimate']/value}" />
+          <get_targets target_id="{/wizard/previous/response/get_tasks_response/task/target/@id}" />
         </xsl:template>
       </xsl:stylesheet>
     </command>
@@ -70,14 +68,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <commands>
-            <xsl:if test="/wizard/previous/response/commands_response/get_targets_response/target/@id != ''">
-              <delete_target target_id="{/wizard/previous/response/commands_response/get_targets_response/target/@id}" ultimate="{/wizard/params/param[name='ultimate']/value}" />
-            </xsl:if>
-            <xsl:if test="/wizard/previous/response/commands_response/get_targets_response/target/ssh_lsc_credential/@id != ''">
-              <delete_credential credential_id="{/wizard/previous/response/commands_response/get_targets_response/target/ssh_lsc_credential/@id}" ultimate="{/wizard/params/param[name='ultimate']/value}"/>
-            </xsl:if>
-          </commands>
+          <xsl:if test="/wizard/previous/response/get_targets_response/target/@id != ''">
+            <delete_target target_id="{/wizard/previous/response/get_targets_response/target/@id}" ultimate="{/wizard/params/param[name='ultimate']/value}" />
+          </xsl:if>
+          <xsl:if test="/wizard/previous/response/get_targets_response/target/ssh_lsc_credential/@id != ''">
+            <delete_credential credential_id="{/wizard/previous/response/get_targets_response/target/ssh_lsc_credential/@id}" ultimate="{/wizard/params/param[name='ultimate']/value}"/>
+          </xsl:if>
         </xsl:template>
       </xsl:stylesheet>
     </command>

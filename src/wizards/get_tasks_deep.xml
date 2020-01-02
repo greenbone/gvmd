@@ -71,14 +71,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <commands>
-            <xsl:for-each select="/wizard/previous/response/get_tasks_response/task">
-              <commands>
-                <get_tasks task_id="{@id}" details="1"/>
-                <get_targets target_id="{target/@id}"/>
-              </commands>
-            </xsl:for-each>
-          </commands>
+          <xsl:for-each select="/wizard/previous/response/get_tasks_response/task">
+            <get_tasks task_id="{@id}" details="1"/>
+            <get_targets target_id="{target/@id}"/>
+          </xsl:for-each>
         </xsl:template>
       </xsl:stylesheet>
     </command>
@@ -92,47 +88,43 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <xsl:variable name="response" select="/wizard/previous/response/commands_response"/>
-          <commands>
-            <xsl:if test="/wizard/params/param[name='include_report_formats']/value">
-              <get_report_formats/>
+          <xsl:variable name="response" select="/wizard/previous/response"/>
+          <xsl:if test="/wizard/params/param[name='include_report_formats']/value">
+            <get_report_formats/>
+          </xsl:if>
+          <xsl:if test="/wizard/params/param[name='include_configs']/value">
+            <get_configs/>
+          </xsl:if>
+          <xsl:if test="/wizard/params/param[name='include_scanners']/value">
+            <get_scanners/>
+          </xsl:if>
+          <xsl:for-each select="$response">
+            <get_tasks task_id="{get_tasks_response/task/@id}" details="1"/>
+
+            <get_targets target_id="{get_targets_response/target/@id}" details="1"/>
+            <xsl:if test="get_targets_response/target/ssh_lsc_credential/@id != ''">
+              <get_credentials credential_id="{get_targets_response/target/ssh_lsc_credential/@id}"/>
             </xsl:if>
-            <xsl:if test="/wizard/params/param[name='include_configs']/value">
-              <get_configs/>
+            <xsl:if test="get_targets_response/target/smb_lsc_credential/@id != ''">
+              <get_credentials credential_id="{get_targets_response/target/smb_lsc_credential/@id}"/>
             </xsl:if>
-            <xsl:if test="/wizard/params/param[name='include_scanners']/value">
-              <get_scanners/>
+
+            <xsl:if test="get_tasks_response/slave/@id != ''">
+              <get_slaves slave_id="{get_tasks_response/slave/@id}"/>
             </xsl:if>
-            <xsl:for-each select="$response/commands_response">
-              <commands>
-                <get_tasks task_id="{get_tasks_response/task/@id}" details="1"/>
 
-                <get_targets target_id="{get_targets_response/target/@id}" details="1"/>
-                <xsl:if test="get_targets_response/target/ssh_lsc_credential/@id != ''">
-                  <get_credentials credential_id="{get_targets_response/target/ssh_lsc_credential/@id}"/>
-                </xsl:if>
-                <xsl:if test="get_targets_response/target/smb_lsc_credential/@id != ''">
-                  <get_credentials credential_id="{get_targets_response/target/smb_lsc_credential/@id}"/>
-                </xsl:if>
+            <xsl:if test="get_tasks_response/schedule/@id != ''">
+              <get_schedule lsc_credential_id="{get_tasks_response/schedule/@id}"/>
+            </xsl:if>
 
-                <xsl:if test="get_tasks_response/slave/@id != ''">
-                  <get_slaves slave_id="{get_tasks_response/slave/@id}"/>
-                </xsl:if>
+            <xsl:if test="get_tasks_response/schedule/@id != ''">
+              <get_schedule lsc_credential_id="{get_tasks_response/schedule/@id}"/>
+            </xsl:if>
 
-                <xsl:if test="get_tasks_response/schedule/@id != ''">
-                  <get_schedule lsc_credential_id="{get_tasks_response/schedule/@id}"/>
-                </xsl:if>
-
-                <xsl:if test="get_tasks_response/schedule/@id != ''">
-                  <get_schedule lsc_credential_id="{get_tasks_response/schedule/@id}"/>
-                </xsl:if>
-
-                <xsl:for-each select="get_tasks_response/task/reports/report">
-                  <get_reports report_id="{@id}" details="1" levels="hmlgf" />
-                </xsl:for-each>
-              </commands>
+            <xsl:for-each select="get_tasks_response/task/reports/report">
+              <get_reports report_id="{@id}" details="1" levels="hmlgf" />
             </xsl:for-each>
-          </commands>
+          </xsl:for-each>
         </xsl:template>
       </xsl:stylesheet>
     </command>
