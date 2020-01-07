@@ -3176,7 +3176,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <or>
           <c>authenticate</c>
           <c>commands</c>
-          <c>create_agent</c>
           <c>create_alert</c>
           <c>create_asset</c>
           <c>create_config</c>
@@ -3198,7 +3197,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_ticket</c>
           <c>create_tls_certificate</c>
           <c>create_user</c>
-          <c>delete_agent</c>
           <c>delete_alert</c>
           <c>delete_asset</c>
           <c>delete_config</c>
@@ -3222,7 +3220,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_user</c>
           <c>describe_auth</c>
           <c>empty_trashcan</c>
-          <c>get_agents</c>
           <c>get_alerts</c>
           <c>get_assets</c>
           <c>get_configs</c>
@@ -3255,7 +3252,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_version</c>
           <c>get_vulns</c>
           <c>help</c>
-          <c>modify_agent</c>
           <c>modify_alert</c>
           <c>modify_asset</c>
           <c>modify_auth</c>
@@ -3285,7 +3281,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>stop_task</c>
           <c>sync_config</c>
           <c>test_alert</c>
-          <c>verify_agent</c>
           <c>verify_report_format</c>
           <c>verify_scanner</c>
         </or>
@@ -3307,7 +3302,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <or>
             <r>authenticate</r>
             <r>commands</r>
-            <r>create_agent</r>
             <r>create_alert</r>
             <r>create_asset</r>
             <r>create_config</r>
@@ -3328,7 +3322,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_ticket</r>
             <r>create_tls_certificate</r>
             <r>create_user</r>
-            <r>delete_agent</r>
             <r>delete_alert</r>
             <r>delete_asset</r>
             <r>delete_config</r>
@@ -3352,7 +3345,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_user</r>
             <r>describe_auth</r>
             <r>empty_trashcan</r>
-            <r>get_agents</r>
             <r>get_alerts</r>
             <r>get_assets</r>
             <r>get_configs</r>
@@ -3385,7 +3377,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_version</r>
             <r>get_vulns</r>
             <r>help</r>
-            <r>modify_agent</r>
             <r>modify_alert</r>
             <r>modify_asset</r>
             <r>modify_auth</r>
@@ -3415,112 +3406,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>stop_task</r>
             <r>sync_config</r>
             <r>test_alert</r>
-            <r>verify_agent</r>
             <r>verify_report_format</r>
             <r>verify_scanner</r>
           </or>
         </any>
       </pattern>
     </response>
-  </command>
-  <command>
-    <name>create_agent</name>
-    <summary>Create an agent</summary>
-    <description>
-      <p>
-        The client uses the create_agent command to create a new agent.
-      </p>
-    </description>
-    <pattern>
-      <e>installer</e>
-      <e>name</e>
-      <o><e>comment</e></o>
-      <o><e>copy</e></o>
-      <o><e>howto_install</e></o>
-      <o><e>howto_use</e></o>
-    </pattern>
-    <ele>
-      <name>installer</name>
-      <summary>A file that installs the agent on a target machine</summary>
-      <pattern>
-        <t>base64</t>
-        <e>signature</e>
-      </pattern>
-      <ele>
-        <name>signature</name>
-        <summary>A detached OpenPGP signature of the installer</summary>
-        <pattern><t>base64</t></pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>name</name>
-      <summary>A name for the installer</summary>
-      <pattern><t>name</t></pattern>
-    </ele>
-    <ele>
-      <name>comment</name>
-      <summary>A comment on the agent</summary>
-      <pattern>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>copy</name>
-      <summary>The UUID of an existing agent</summary>
-      <pattern>
-        <t>uuid</t>
-      </pattern>
-    </ele>
-    <ele>
-      <name>howto_install</name>
-      <summary>A file that describes how to install the agent</summary>
-      <pattern>
-        <t>base64</t>
-      </pattern>
-    </ele>
-    <ele>
-      <name>howto_use</name>
-      <summary>A file that describes how to use the agent</summary>
-      <pattern>
-        <t>base64</t>
-      </pattern>
-    </ele>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>id</name>
-          <type>uuid</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Create an agent</summary>
-      <request>
-        <create_agent>
-          <installer>
-            asdf3235saf3kjBVF...
-            <signature>iEYEABECAAYFA...</signature>
-          </installer>
-          <name>SLAD</name>
-        </create_agent>
-      </request>
-      <response>
-        <create_agent_response status="201" status_text="OK, resource created"
-                               id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-        </create_agent_response>
-      </response>
-    </example>
   </command>
   <command>
     <name>create_alert</name>
@@ -6414,57 +6305,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>delete_agent</name>
-    <summary>Delete an agent</summary>
-    <description>
-      <p>
-        The client uses the delete_agent command to delete an existing agent.
-      </p>
-      <p>
-        Since this is a destructive command, the client is advised to ask
-        for confirmation from the user before sending this command to the
-        Manager.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>agent_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <attrib>
-        <name>ultimate</name>
-        <summary>Whether to remove entirely, or to the trashcan</summary>
-        <type>boolean</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Delete an agent</summary>
-      <request>
-        <delete_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </delete_agent>
-      </request>
-      <response>
-        <delete_agent_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>delete_asset</name>
     <summary>Delete an asset</summary>
     <description>
@@ -7674,478 +7514,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <empty_trashcan_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>get_agents</name>
-    <summary>Get one or many agents</summary>
-    <description>
-      <p>
-        The client uses the get_agents command to get agent information.
-        If the command sent by the client was valid, the manager will
-        reply with a list of agents to the client.
-      </p>
-      <p>
-        If the request includes a format then the agents in the response
-        include installer elements, otherwise they include trust state and
-        time. If the details attribute is set, the response will include
-        the installer.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>agent_id</name>
-        <summary>ID of single agent to get</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>filter</name>
-        <summary>Filter term to use to filter query</summary>
-        <type>text</type>
-        <filter_keywords>
-          <column>
-            <name>uuid</name>
-            <type>uuid</type>
-            <summary>Unique ID</summary>
-          </column>
-          <column>
-            <name>name</name>
-            <type>name</type>
-            <summary>Name</summary>
-          </column>
-          <column>
-            <name>comment</name>
-            <type>text</type>
-            <summary>Comment text</summary>
-          </column>
-          <column>
-            <name>created</name>
-            <type>iso_time</type>
-            <summary>Creation time</summary>
-          </column>
-          <column>
-            <name>modified</name>
-            <type>iso_time</type>
-            <summary>Modification time</summary>
-          </column>
-          <column>
-            <name>owner</name>
-            <type>name</type>
-            <summary>Name of the owner</summary>
-          </column>
-          <column>
-            <name>trust</name>
-            <type>boolean</type>
-            <summary>Whether the the agent is trusted</summary>
-          </column>
-        </filter_keywords>
-      </attrib>
-      <attrib>
-        <name>filt_id</name>
-        <summary>ID of filter to use to filter query</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>trash</name>
-        <summary>Whether to get the trashcan agents instead</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>details</name>
-        <summary>
-          Whether to include agents package information when no format
-          was provided
-        </summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>format</name>
-        <type>
-          <alts>
-            <alt>installer</alt>
-            <alt>howto_install</alt>
-            <alt>howto_use</alt>
-          </alts>
-        </type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>agent</e></any>
-        <e>filters</e>
-        <e>sort</e>
-        <e>agents</e>
-        <e>agent_count</e>
-      </pattern>
-      <ele>
-        <name>agent</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>owner</e>
-          <e>name</e>
-          <e>comment</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>in_use</e>
-          <e>writable</e>
-          <e>permissions</e>
-          <o><e>user_tags</e></o>
-          <or>
-            <e>installer</e>
-            <e>package</e>
-          </or>
-        </pattern>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the agent</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>The name of the agent</summary>
-          <pattern><t>name</t></pattern>
-        </ele>
-        <ele>
-          <name>comment</name>
-          <summary>The comment on the agent</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <summary>Date and time the agent was created</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <summary>Date and time the agent was last modified</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>in_use</name>
-          <summary>Whether the agent is in use</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>writable</name>
-          <summary>Whether the agent is writable</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>permissions</name>
-          <summary>Permissions that the current user has on the agent</summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>user_tags</name>
-          <summary>Info on tags attached to the agent</summary>
-          <pattern>
-            <e>count</e>
-            <any><e>tag</e></any>
-          </pattern>
-          <ele>
-            <name>count</name>
-            <summary>Number of attached tags</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>tag</name>
-            <summary>
-              Short info on an individual tag
-              (only if details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the tag</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>value</e>
-              <e>comment</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the tag (usually namespace:predicate)</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Value of the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>comment</name>
-              <summary>Comment for the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>installer</name>
-          <pattern>
-            <e>trust</e>
-          </pattern>
-          <ele>
-            <name>trust</name>
-            <summary>Whether signature verification succeeded</summary>
-            <pattern>
-              <t>
-                <alts>
-                  <alt>yes</alt>
-                  <alt>no</alt>
-                  <alt>unknown</alt>
-                </alts>
-              </t>
-              <e>time</e>
-            </pattern>
-            <ele>
-              <name>time</name>
-              <summary>When the signature was verified</summary>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>package</name>
-          <summary>Either the installer or one of the HOWTOs</summary>
-          <pattern>
-            <e>filename</e>
-            <t>base64</t>
-          </pattern>
-          <ele>
-            <name>filename</name>
-            <summary>The filename of the package</summary>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>filters</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <summary>UUID of filter if any, else 0</summary>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>term</e>
-          <o><e>name</e></o>
-          <e>keywords</e>
-        </pattern>
-        <ele>
-          <name>term</name>
-          <summary>Filter term</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>Filter name, if applicable</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>keywords</name>
-          <summary>Filter broken down into keywords</summary>
-          <pattern><any><e>keyword</e></any></pattern>
-          <ele>
-            <name>keyword</name>
-            <pattern>
-              <e>column</e>
-              <e>relation</e>
-              <e>value</e>
-            </pattern>
-            <ele>
-              <name>column</name>
-              <summary>Column prefix</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>relation</name>
-              <summary>Relation operator</summary>
-              <pattern>
-                <alts>
-                  <alt>=</alt>
-                  <alt>:</alt>
-                  <alt>~</alt>
-                  <alt>&gt;</alt>
-                  <alt>&lt;</alt>
-                </alts>
-              </pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>The filter text</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>sort</name>
-        <pattern>
-          text
-          <e>field</e>
-        </pattern>
-        <ele>
-          <name>field</name>
-          <pattern>
-            <e>order</e>
-          </pattern>
-          <ele>
-            <name>order</name>
-            <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
-            </pattern>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>agents</name>
-        <pattern>
-          <attrib>
-            <name>start</name>
-            <summary>First agent</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-          <attrib>
-            <name>max</name>
-            <summary>Maximum number of agents</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-        </pattern>
-      </ele>
-      <ele>
-        <name>agent_count</name>
-        <pattern>
-          <e>filtered</e>
-          <e>page</e>
-        </pattern>
-        <ele>
-          <name>filtered</name>
-          <summary>Number of agents after filtering</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>page</name>
-          <summary>Number of agents on current page</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Get one or many agents</summary>
-      <request>
-        <get_agents></get_agents>
-      </request>
-      <response>
-        <get_agents_response status="200" status_text="OK">
-          <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
-            <name>Custom Scan Agent</name>
-            <comment>Custom agent for use on the Web servers.</comment>
-            <creation_time>2012-01-23T10:44:00+01:00</creation_time>
-            <modification_time>2013-01-23T10:44:00+01:00</modification_time>
-            <writable>1</writable>
-            <in_use>0</in_use>
-            <installer>
-              <trust>
-                yes
-                <time>Wed Jun 30 21:49:08 2012</time>
-              </trust>
-            </installer>
-          </agent>
-          <truncated>...</truncated>
-        </get_agents_response>
-      </response>
-    </example>
-    <example>
-      <summary>Get one agent</summary>
-      <request>
-        <get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
-        </get_agents>
-      </request>
-      <response>
-        <get_agents_response status="200" status_text="OK">
-          <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
-            <name>Custom Scan Agent</name>
-            <comment>Custom agent for use on the Web servers.</comment>
-            <creation_time>2012-01-23T10:44:00+01:00</creation_time>
-            <modification_time>2013-01-23T10:44:00+01:00</modification_time>
-            <writable>1</writable>
-            <in_use>0</in_use>
-            <installer>
-              <trust>
-                yes
-                <time>Wed Jun 30 21:49:08 2012</time>
-              </trust>
-            </installer>
-          </agent>
-        </get_agents_response>
-      </response>
-    </example>
-    <example>
-      <summary>Get one agent, including the installer package</summary>
-      <request>
-        <get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"
-                    format="installer">
-        </get_agents>
-      </request>
-      <response>
-        <get_agents_response status="200" status_text="OK">
-          <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
-            <name>Custom Scan Agent</name>
-            <comment>Custom agent for use on the Web servers.</comment>
-            <creation_time>2012-01-23T10:44:00+01:00</creation_time>
-            <modification_time>2013-01-23T10:44:00+01:00</modification_time>
-            <writable>1</writable>
-            <in_use>0</in_use>
-            <package format="installer">
-              <filename>agent.deb</filename>
-              CgoKCgoKCgoKCgoKCSAgI...
-            </package>
-          </agent>
-        </get_agents_response>
       </response>
     </example>
   </command>
@@ -24093,7 +23461,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <help_response status="200" status_text="OK">
     AUTHENTICATE           Authenticate with the manager.
     COMMANDS               Run a list of commands.
-    CREATE_AGENT           Create an agent.
+    CREATE_ALERT           Create an alert.
     ...
     VERIFY_SCANNER         Verify a scanner.
         </help_response>
@@ -24128,61 +23496,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </protocol>
           </schema>
         </help_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>modify_agent</name>
-    <summary>Modify an existing agent</summary>
-    <description>
-      <p>
-        The client uses the modify_agent command to change an existing agent.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>agent_id</name>
-        <summary>ID of agent to modify</summary>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <o><e>name</e></o>
-      <o><e>comment</e></o>
-    </pattern>
-    <ele>
-      <name>comment</name>
-      <summary>Comment on agent</summary>
-      <pattern>text</pattern>
-    </ele>
-    <ele>
-      <name>name</name>
-      <summary>Name of agent</summary>
-      <pattern><t>name</t></pattern>
-    </ele>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Modify the comment on an agent</summary>
-      <request>
-        <modify_agent agent_id="c737f787-9473-410d-8956-9d7b57bdd11f">
-          <comment>Old Agent 1</comment>
-        </modify_agent>
-      </request>
-      <response>
-        <modify_agent_response status="200" status_text="OK">
-        </modify_agent_response>
       </response>
     </example>
   </command>
@@ -27065,53 +26378,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>verify_agent</name>
-    <summary>Verify an agent</summary>
-    <description>
-      <p>
-        The client uses the verify_agent command to verify the trust
-        level of an existing agent.
-      </p>
-      <p>
-        The Manager checks whether the signature of the agent currently
-        matches the agent.  This includes the agent installer file.
-        The Manager searches for the signature first in the feed, then
-        in the agent itself.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>agent_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Verify an agent</summary>
-      <request>
-        <verify_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </verify_agent>
-      </request>
-      <response>
-        <verify_agent_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>verify_report_format</name>
     <summary>Verify a report format</summary>
     <description>
@@ -27203,6 +26469,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
 
   <!-- Compatibility changes between versions. -->
+
+  <change>
+    <command>CREATE_AGENT, DELETE_AGENT, GET_AGENTS, MODIFY_AGENT, VERIFY_AGENT</command>
+    <summary>The agents facility has been removed</summary>
+    <description>
+      <p>
+        Agents have been removed entirely.  This includes all agents commands
+        and the filter setting 'Agents Filter' (UUID
+        4a1334c1-cb93-4a79-8634-103b0a50bdcd).
+      </p>
+    </description>
+    <version>20.04</version>
+  </change>
   <change>
     <command>GET_... Commands using filters</command>
     <summary>GET_... commands will default to "rows=-2" filter</summary>

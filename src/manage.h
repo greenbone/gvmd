@@ -306,7 +306,6 @@ typedef enum scanner_type
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 
-typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int credential_t;
 typedef long long int alert_t;
@@ -2323,64 +2322,6 @@ credential_value (credential_t, const char*);
 gchar*
 credential_encrypted_value (credential_t, const char*);
 
-
-
-/* Agents. */
-
-int
-create_agent (const char*, const char*, const char*, const char*, const char*,
-              const char*, const char*, agent_t*);
-
-int
-copy_agent (const char*, const char*, const char *, agent_t *);
-
-int
-modify_agent (const char*, const char*, const char*);
-
-int
-delete_agent (const char *, int);
-
-int
-agent_in_use (agent_t);
-
-int
-trash_agent_in_use (agent_t);
-
-int
-trash_agent_writable (agent_t);
-
-int
-agent_writable (agent_t);
-
-int
-verify_agent (const char *);
-
-char *
-agent_uuid (agent_t);
-
-int
-agent_count (const get_data_t *);
-
-int
-init_agent_iterator (iterator_t*, const get_data_t *);
-
-const char*
-agent_iterator_installer_64 (iterator_t*);
-
-const char*
-agent_iterator_installer_filename (iterator_t*);
-
-const char*
-agent_iterator_trust (iterator_t*);
-
-time_t
-agent_iterator_trust_time (iterator_t*);
-
-const char*
-agent_iterator_howto_install (iterator_t*);
-
-const char*
-agent_iterator_howto_use (iterator_t*);
 
 
 /* Assets. */

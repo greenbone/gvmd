@@ -169,9 +169,6 @@ iterator_column_count (iterator_t *);
 
 /* Prepared statements. */
 
-sql_stmt_t *
-sql_prepare (const char *sql, ...);
-
 int
 sql_bind_blob (sql_stmt_t *, int, const void *, int);
 
@@ -183,9 +180,6 @@ sql_bind_text (sql_stmt_t *, int, const gchar *, gsize);
 
 int
 sql_bind_double (sql_stmt_t *, int, double *);
-
-int
-sql_exec (sql_stmt_t *);
 
 void
 sql_finalize (sql_stmt_t *);

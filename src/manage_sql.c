@@ -539,7 +539,6 @@ static struct timeval last_msg;
 command_t gmp_commands[]
  = {{"AUTHENTICATE", "Authenticate with the manager." },
     {"COMMANDS",     "Run a list of commands."},
-    {"CREATE_AGENT", "Create an agent."},
     {"CREATE_ALERT", "Create an alert."},
     {"CREATE_ASSET", "Create an asset."},
     {"CREATE_CONFIG", "Create a config."},
@@ -562,7 +561,6 @@ command_t gmp_commands[]
     {"CREATE_TICKET", "Create a ticket."},
     {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
-    {"DELETE_AGENT", "Delete an agent."},
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},
     {"DELETE_CONFIG", "Delete a config."},
@@ -587,7 +585,6 @@ command_t gmp_commands[]
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
-    {"GET_AGENTS", "Get all agents."},
     {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_ASSETS", "Get all assets."},
@@ -621,7 +618,6 @@ command_t gmp_commands[]
     {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
     {"HELP", "Get this help text."},
-    {"MODIFY_AGENT", "Modify an existing agent."},
     {"MODIFY_ALERT", "Modify an existing alert."},
     {"MODIFY_ASSET", "Modify an existing asset."},
     {"MODIFY_AUTH", "Modify the authentication methods."},
@@ -652,7 +648,6 @@ command_t gmp_commands[]
     {"STOP_TASK", "Stop a running task."},
     {"SYNC_CONFIG", "Synchronize a config with a scanner."},
     {"TEST_ALERT", "Run an alert."},
-    {"VERIFY_AGENT", "Verify an agent."},
     {"VERIFY_REPORT_FORMAT", "Verify a report format."},
     {"VERIFY_SCANNER", "Verify a scanner."},
     {NULL, NULL}};
@@ -4179,8 +4174,7 @@ filter_clause (const char* type, const char* filter,
 static int
 valid_type (const char* type)
 {
-  return (strcasecmp (type, "agent") == 0)
-         || (strcasecmp (type, "alert") == 0)
+  return (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "asset") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "credential") == 0)
@@ -4224,8 +4218,6 @@ type_db_name (const char* type)
   if (valid_type (type))
     return type;
 
-  if (strcasecmp (type, "Agent") == 0)
-    return "agent";
   if (strcasecmp (type, "Alert") == 0)
     return "alert";
   if (strcasecmp (type, "Asset") == 0)
@@ -38722,23 +38714,7 @@ credential_scanner_iterator_readable (iterator_t* iterator)
 }
 
 
-/* Agents. */
-
-/**
- * @brief Find a agent for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of agent.
- * @param[out]  agent       Agent return, 0 if successfully failed to find agent.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find agent), TRUE on error.
- */
-static gboolean
-find_agent_with_permission (const char* uuid, agent_t* agent,
-                            const char *permission)
-{
-  return find_resource_with_permission ("agent", uuid, agent, permission, 0);
-}
+/* Signatures. */
 
 /**
  * @brief Find a signature in a feed.
@@ -38787,9 +38763,6 @@ find_signature (const gchar *location, const gchar *installer_filename,
               char *real;
               gchar *real_basename;
               gchar **split;
-
-              /* Note: this only happens if uuid is given, so it does not
-               * happen for agents. */
 
               g_error_free (error);
               error = NULL;
@@ -38845,7 +38818,6 @@ find_signature (const gchar *location, const gchar *installer_filename,
   return -1;
 }
 
-
 /**
  * @brief Return the name of the sysconf GnuPG home directory
  *
@@ -38865,7 +38837,6 @@ get_sysconf_gpghome ()
 
   return name;
 }
-
 
 /**
  * @brief Return the name of the trusted keys file name.
@@ -38888,8 +38859,6 @@ get_trustedkeys_name ()
 
   return name;
 }
-
-
 
 /**
  * @brief Execute gpg to verify an installer signature.
@@ -39017,521 +38986,8 @@ verify_signature (const gchar *installer, gsize installer_size,
   return ret;
 }
 
-/**
- * @brief Create an agent entry.
- *
- * @param[in]  name           Name of agent.  Must be at least one character long.
- * @param[in]  comment        Comment on agent.
- * @param[in]  installer_64   Installer, in base64.
- * @param[in]  installer_filename   Installer filename.
- * @param[in]  installer_signature_64   Installer signature, in base64.
- * @param[in]  howto_install  Install HOWTO, in base64.
- * @param[in]  howto_use      Usage HOWTO, in base64.
- * @param[out] agent          Created agent.
- *
- * @return 0 success, 1 agent exists already, 99 permission denied, -1 error.
- */
-int
-create_agent (const char* name, const char* comment, const char* installer_64,
-              const char* installer_filename, const char* installer_signature_64,
-              const char* howto_install, const char* howto_use, agent_t *agent)
-{
-  gchar *installer, *installer_signature;
-  int installer_trust;
-  gsize installer_size, installer_signature_size;
-
-  assert (strlen (name) > 0);
-  assert (installer_64);
-  assert (installer_filename);
-  assert (installer_signature_64);
-  assert (current_credentials.uuid);
-
-  installer_trust = TRUST_UNKNOWN;
-  installer_size = 0;
-  installer_signature_size = 0;
-
-  /* Translate the installer and signature. */
-
-  if (strlen (installer_64))
-    installer = (gchar*) g_base64_decode (installer_64, &installer_size);
-  else
-    installer = g_strdup ("");
-
-  if (strlen (installer_signature_64))
-    installer_signature = (gchar*) g_base64_decode (installer_signature_64,
-                                                    &installer_signature_size);
-  else
-    installer_signature = g_strdup ("");
-
-  /* Verify the installer signature. */
-
-  if (strlen (installer_signature))
-    {
-      if (verify_signature (installer, installer_size, installer_signature,
-                            installer_signature_size, &installer_trust))
-        {
-          g_free (installer);
-          g_free (installer_signature);
-          return -1;
-        }
-    }
-  else
-    {
-      g_free (installer_signature);
-
-      if (find_signature ("agents", installer_filename, &installer_signature,
-                          &installer_signature_size, NULL)
-          == 0)
-        {
-          if (verify_signature (installer, installer_size, installer_signature,
-                                installer_signature_size, &installer_trust))
-            {
-              g_free (installer);
-              g_free (installer_signature);
-              return -1;
-            }
-        }
-    }
-
-  /* Check that the name is unique. */
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_agent") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (resource_with_name_exists (name, "agent", 0))
-    {
-      g_free (installer);
-      g_free (installer_signature);
-      sql_rollback ();
-      return 1;
-    }
-
-  /* Insert the packages. */
-
-  {
-    int ret;
-    sql_stmt_t *stmt;
-    gchar *quoted_name, *quoted_comment, *quoted_filename;
-
-    while (1)
-      {
-        quoted_name = sql_quote (name);
-        quoted_comment = sql_quote (comment ?: "");
-        quoted_filename = sql_quote (installer_filename);
-
-        /* Prepare statement. */
-
-        stmt = sql_prepare ("INSERT INTO agents"
-                            " (uuid, name, owner, comment, installer,"
-                            "  installer_64, installer_filename,"
-                            "  installer_signature_64,"
-                            "  installer_trust, installer_trust_time,"
-                            "  howto_install, howto_use,"
-                            "  creation_time, modification_time)"
-                            " VALUES"
-                            " (make_uuid (), '%s',"
-                            "  (SELECT id FROM users"
-                            "   WHERE users.uuid = '%s'),"
-                            "  '%s',"
-                            "  $1, $2,"           /* installer, installer_64 */
-                            "  '%s',"
-                            "  $3,"               /* installer_signature_64 */
-                            "  %i, %i, $4,"       /* howto_install */
-                            "  $5, m_now (), m_now ());", /* howto_use */
-                            quoted_name, current_credentials.uuid,
-                            quoted_comment, quoted_filename,
-                            installer_trust, (int) time (NULL));
-        g_free (quoted_name);
-        g_free (quoted_comment);
-        g_free (quoted_filename);
-        if (stmt == NULL)
-          {
-            g_warning ("%s: sql_prepare failed", __func__);
-            g_free (installer);
-            g_free (installer_signature);
-            sql_rollback ();
-            return -1;
-          }
-
-        /* Bind the packages to the "$numbers" in the SQL statement. */
-
-        if (sql_bind_text (stmt, 1, installer, installer_size))
-          {
-            g_warning ("%s: sql_bind_text failed", __func__);
-            sql_rollback ();
-            g_free (installer);
-            g_free (installer_signature);
-            return -1;
-          }
-        g_free (installer);
-
-        if (sql_bind_text (stmt, 2, installer_64, strlen (installer_64)))
-          {
-            g_warning ("%s: sql_bind_text failed", __func__);
-            sql_rollback ();
-            g_free (installer_signature);
-            return -1;
-          }
-        g_free (installer_signature);
-
-        if (sql_bind_text (stmt, 3, installer_signature_64,
-                           strlen (installer_signature_64)))
-          {
-            g_warning ("%s: sql_bind_text failed", __func__);
-            sql_rollback ();
-            return -1;
-          }
-
-        if (sql_bind_text (stmt, 4, howto_install, strlen (howto_install)))
-          {
-            g_warning ("%s: sql_bind_text failed", __func__);
-            sql_rollback ();
-            return -1;
-          }
-
-        if (sql_bind_blob (stmt, 5, howto_use, strlen (howto_use)))
-          {
-            g_warning ("%s: sql_bind_blob failed", __func__);
-            sql_rollback ();
-            return -1;
-          }
-
-        /* Run the statement. */
-
-        while ((ret = sql_exec (stmt)) > 0);
-        if (ret == -2 || ret == 2)
-          {
-            /* Gave up with statement reset, or schema error.  Retry. */
-            sql_finalize (stmt);
-            continue;
-          }
-        if (ret < 0)
-          {
-            g_warning ("%s: sql_exec failed", __func__);
-            sql_rollback ();
-            return -1;
-          }
-        break;
-      }
-
-    sql_finalize (stmt);
-  }
-
-  if (agent)
-    *agent = sql_last_insert_id ();
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Create an agent from an existing agent.
- *
- * @param[in]  name          Name of new agent. NULL to copy from existing.
- * @param[in]  comment       Comment on new agent. NULL to copy from existing.
- * @param[in]  agent_id      UUID of existing schedule.
- * @param[out] new_agent     New agent.
- *
- * @return 0 success, 1 agent exists already, 2 failed to find existing
- *         agent, 99 permission denied, -1 error.
- */
-int
-copy_agent (const char* name, const char* comment, const char *agent_id,
-            agent_t* new_agent)
-{
-  return copy_resource ("agent", name, comment, agent_id,
-                        "installer, installer_64, installer_filename,"
-                        " installer_signature_64, installer_trust,"
-                        " installer_trust_time, howto_install, howto_use",
-                        1, new_agent, NULL);
-}
-
-/**
- * @brief Modify an agent.
- *
- * @param[in]   agent_id        UUID of agent.
- * @param[in]   name            Name of agent.
- * @param[in]   comment         Comment on agent.
- *
- * @return 0 success, 1 failed to find agent, 2 agent with new name exists,
- *         3 agent_id required, 99 permission denied, -1 internal error.
- */
-int
-modify_agent (const char *agent_id, const char *name, const char *comment)
-{
-  gchar *quoted_name, *quoted_comment;
-  agent_t agent;
-
-  if (agent_id == NULL)
-    return 3;
-
-  sql_begin_immediate ();
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_may ("modify_agent") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  agent = 0;
-  if (find_agent_with_permission (agent_id, &agent, "modify_agent"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (agent == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* Check whether a agent with the same name exists already. */
-  if (resource_with_name_exists (name, "agent", agent))
-    {
-      sql_rollback ();
-      return 2;
-    }
-  quoted_name = sql_quote (name ?: "");
-  quoted_comment = sql_quote (comment ?: "");
-
-  sql ("UPDATE agents SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name, quoted_comment, agent);
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Delete an agent.
- *
- * @param[in]  agent_id   UUID of agent.
- * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 2 failed to find agent, 99 permission denied, -1 error.
- */
-int
-delete_agent (const char *agent_id, int ultimate)
-{
-  agent_t agent = 0;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_agent") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_agent_with_permission (agent_id, &agent, "delete_agent"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (agent == 0)
-    {
-      if (find_trash ("agent", agent_id, &agent))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (agent == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      permissions_set_orphans ("agent", agent, LOCATION_TRASH);
-      tags_remove_resource ("agent", agent, LOCATION_TRASH);
-
-      sql ("DELETE FROM agents_trash WHERE id = %llu;", agent);
-      sql_commit ();
-      return 0;
-    }
-
-  if (ultimate == 0)
-    {
-      sql ("INSERT INTO agents_trash"
-           " (uuid, owner, name, comment, installer, installer_64,"
-           "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use, creation_time,"
-           "  modification_time)"
-           " SELECT"
-           "  uuid, owner, name, comment, installer, installer_64,"
-           "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use, creation_time,"
-           "  modification_time"
-           " FROM agents WHERE id = %llu;",
-           agent);
-
-      permissions_set_locations ("agent", agent,
-                                 sql_last_insert_id (),
-                                 LOCATION_TRASH);
-      tags_set_locations ("agent", agent,
-                          sql_last_insert_id (),
-                          LOCATION_TRASH);
-    }
-  else
-    {
-      permissions_set_orphans ("agent", agent, LOCATION_TABLE);
-      tags_remove_resource ("agent", agent, LOCATION_TABLE);
-    }
-
-  sql ("DELETE FROM agents WHERE id = %llu;", agent);
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Check whether an agent is in use.
- *
- * @param[in]  agent  Agent.
- *
- * @return 1 yes, 0 no.
- */
-int
-agent_in_use (agent_t agent)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a trashcan agent is writable.
- *
- * @param[in]  agent  Agent.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_agent_in_use (agent_t agent)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a agent is writable.
- *
- * @param[in]  agent  Agent.
- *
- * @return 1 yes, 0 no.
- */
-int
-agent_writable (agent_t agent)
-{
-  return agent_in_use (agent) == 0;
-}
-
-/**
- * @brief Check whether a trashcan agent is writable.
- *
- * @param[in]  agent  Agent.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_agent_writable (agent_t agent)
-{
-  return trash_agent_in_use (agent) == 0;
-}
-
-/**
- * @brief Return the UUID of an agent.
- *
- * @param[in]   agent  Agent.
- *
- * @return UUID of Agent.
- */
-char *
-agent_uuid (agent_t agent)
-{
-  return sql_string ("SELECT uuid FROM agents WHERE id = %llu;",
-                     agent);
-}
-
-/**
- * @brief Filter columns for agent iterator.
- */
-#define AGENT_ITERATOR_FILTER_COLUMNS                                 \
- { GET_ITERATOR_FILTER_COLUMNS, "trust", NULL }
-
-/**
- * @brief Agent iterator columns.
- */
-#define AGENT_ITERATOR_COLUMNS                                        \
- {                                                                    \
-   GET_ITERATOR_COLUMNS (agents),                                     \
-   { "installer", NULL, KEYWORD_TYPE_STRING },                        \
-   { "installer_64", NULL, KEYWORD_TYPE_STRING },                     \
-   { "installer_filename", NULL, KEYWORD_TYPE_STRING },               \
-   { "installer_signature_64", NULL, KEYWORD_TYPE_STRING },           \
-   { "installer_trust" , NULL, KEYWORD_TYPE_STRING },                 \
-   { "installer_trust_time", NULL, KEYWORD_TYPE_STRING },             \
-   { "howto_install", NULL, KEYWORD_TYPE_STRING },                    \
-   { "howto_use", NULL, KEYWORD_TYPE_STRING },                        \
-   {                                                                  \
-     "(CASE"                                                          \
-     "  WHEN installer_trust = 1 THEN 'yes'"                          \
-     "  WHEN installer_trust = 2 THEN 'no'"                           \
-     "  WHEN installer_trust = 3 THEN 'unknown'"                      \
-     "  ELSE ''"                                                      \
-     "  END)"                                                         \
-     " || ' (' || iso_time (installer_trust_time) || ')'",            \
-     "trust",                                                         \
-    KEYWORD_TYPE_STRING                                               \
-   },                                                                 \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
- }
-
-/**
- * @brief Agent iterator columns for trash case.
- */
-#define AGENT_ITERATOR_TRASH_COLUMNS                                  \
- {                                                                    \
-   GET_ITERATOR_COLUMNS (agents_trash),                               \
-   { "installer", NULL, KEYWORD_TYPE_STRING },                        \
-   { "installer_64", NULL, KEYWORD_TYPE_STRING },                     \
-   { "installer_filename", NULL, KEYWORD_TYPE_STRING },               \
-   { "installer_signature_64", NULL, KEYWORD_TYPE_STRING },           \
-   { "installer_trust" , NULL, KEYWORD_TYPE_STRING },                 \
-   { "installer_trust_time", NULL, KEYWORD_TYPE_STRING },             \
-   { "howto_install", NULL, KEYWORD_TYPE_STRING },                    \
-   { "howto_use", NULL, KEYWORD_TYPE_STRING },                        \
-   {                                                                  \
-     "(CASE"                                                          \
-     "  WHEN installer_trust = 1 THEN 'yes'"                          \
-     "  WHEN installer_trust = 2 THEN 'no'"                           \
-     "  WHEN installer_trust = 3 THEN 'unknown'"                      \
-     "  ELSE ''"                                                      \
-     "  END)"                                                         \
-     " || ' (' || iso_time (installer_trust_time) || ')'",            \
-     "trust",                                                         \
-    KEYWORD_TYPE_STRING                                               \
-   },                                                                 \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
- }
+
+/* GET iterators. */
 
 /**
  * @brief Get the resource from a GET iterator.
@@ -39620,316 +39076,6 @@ get_iterator_owner (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int64 (iterator, 9);
-}
-
-/**
- * @brief Initialise an agent iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find agent, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_agent_iterator (iterator_t* iterator, const get_data_t *get)
-{
-  static const char *filter_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = AGENT_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = AGENT_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "agent",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
-/**
- * @brief Get the installer from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Installer, or NULL if iteration is complete.  Freed
- *         by cleanup_iterator.
- */
-static
-DEF_ACCESS (agent_iterator_installer, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Get the installer_64 from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Base 64 encoded installer, or NULL if iteration is complete.  Freed
- *         by cleanup_iterator.
- */
-DEF_ACCESS (agent_iterator_installer_64, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
- * @brief Get the installer size from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Installer size, or NULL if iteration is complete.  Freed
- *         by cleanup_iterator.
- */
-static gsize
-agent_iterator_installer_size (iterator_t* iterator)
-{
-  const char *installer_64;
-  gsize installer_size;
-
-  installer_64 = agent_iterator_installer_64 (iterator);
-  if (installer_64 && strlen (installer_64))
-    {
-      gchar *installer;
-      installer = (gchar*) g_base64_decode ((gchar*) installer_64,
-                                            &installer_size);
-      g_free (installer);
-      return installer_size;
-    }
-  return 0;
-}
-
-/**
- * @brief Get the installer_filename from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Installer filename, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (agent_iterator_installer_filename, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the installer_signature_64 from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Installer signature in base64, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-static
-DEF_ACCESS (agent_iterator_installer_signature_64,
-            GET_ITERATOR_COLUMN_COUNT + 3);
-
-/**
- * @brief Get the trust value from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Trust value.
- */
-const char*
-agent_iterator_trust (iterator_t* iterator)
-{
-  if (iterator->done) return NULL;
-  switch (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4))
-    {
-      case 1:  return "yes";
-      case 2:  return "no";
-      case 3:  return "unknown";
-      default: return NULL;
-    }
-}
-
-/**
- * @brief Get the installer trust time from a agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Time agent installer was verified.
- */
-time_t
-agent_iterator_trust_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
-  return ret;
-}
-
-/**
- * @brief Get the install HOWTO from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Install HOWTO, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (agent_iterator_howto_install, GET_ITERATOR_COLUMN_COUNT + 6);
-
-/**
- * @brief Get the usage HOWTO from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Usage HOWTO, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (agent_iterator_howto_use, GET_ITERATOR_COLUMN_COUNT + 7);
-
-/**
- * @brief Count number of agents.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of agents in filtered set.
- */
-int
-agent_count (const get_data_t *get)
-{
-  static const char *filter_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = AGENT_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = AGENT_ITERATOR_TRASH_COLUMNS;
-
-  return count ("agent", get, columns, trash_columns, filter_columns,
-                0, 0, 0, TRUE);
-}
-
-/**
- * @brief Verify an agent.
- *
- * @param[in]  agent_id  Agent UUID.
- *
- * @return 0 success, 1 failed to find agent, 99 permission denied, -1 error.
- */
-int
-verify_agent (const char *agent_id)
-{
-  agent_t agent;
-  int agent_trust = TRUST_UNKNOWN;
-  iterator_t agents;
-  get_data_t get;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("verify_agent") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  agent = 0;
-  if (find_agent_with_permission (agent_id, &agent, "verify_agent"))
-    return -1;
-
-  if (agent == 0)
-    return 1;
-
-  memset (&get, 0, sizeof (get));
-  get.filter = g_strdup_printf ("uuid=%s owner=any permission=any", agent_id);
-  init_agent_iterator (&agents, &get);
-  g_free (get.filter);
-  if (next (&agents))
-    {
-      const char *signature_64;
-      gchar *agent_signature = NULL;
-      gsize agent_signature_size;
-
-      signature_64 = agent_iterator_installer_signature_64 (&agents);
-
-      g_debug ("%s: finding signature", __func__);
-
-      find_signature ("agents",
-                      agent_iterator_installer_filename (&agents),
-                      &agent_signature,
-                      &agent_signature_size,
-                      NULL);
-
-      if ((signature_64 && strlen (signature_64))
-          || agent_signature)
-        {
-          const char *installer;
-          gsize installer_size;
-
-          installer = agent_iterator_installer (&agents);
-          installer_size = agent_iterator_installer_size (&agents);
-
-          if (signature_64 && strlen (signature_64))
-            {
-              gchar *signature;
-              gsize signature_length;
-
-              /* Try the signature from the database. */
-
-              g_debug ("%s: trying database signature", __func__);
-
-              signature = (gchar*) g_base64_decode (signature_64,
-                                                    &signature_length);
-
-              if (verify_signature (installer, installer_size, signature,
-                                    signature_length, &agent_trust))
-                {
-                  g_warning ("%s: verify_signature error", __func__);
-                  cleanup_iterator (&agents);
-                  g_free (agent_signature);
-                  sql_rollback ();
-                  return -1;
-                }
-            }
-
-          /* If the database signature is empty or the database
-           * signature is bad, and there is a feed signature, then
-           * try the feed signature. */
-          if (((agent_trust == TRUST_NO)
-               || (agent_trust == TRUST_UNKNOWN))
-              && agent_signature)
-            {
-              g_debug ("%s: trying feed signature", __func__);
-
-              if (verify_signature (installer, installer_size, agent_signature,
-                                    strlen (agent_signature), &agent_trust))
-                {
-                  g_warning ("%s: verify_signature error", __func__);
-                  cleanup_iterator (&agents);
-                  g_free (agent_signature);
-                  sql_rollback ();
-                  return -1;
-                }
-
-              if (agent_trust == TRUST_YES)
-                {
-                  gchar *quoted_signature, *base64;
-                  base64 = (strlen (agent_signature)
-                            ? g_base64_encode ((guchar*) agent_signature,
-                                               agent_signature_size)
-                            : g_strdup (""));
-                  quoted_signature = sql_quote (base64);
-                  g_free (base64);
-                  sql ("UPDATE agents SET installer_signature_64 = '%s'"
-                       " WHERE id = %llu;",
-                       quoted_signature,
-                       agent);
-                  g_free (quoted_signature);
-                }
-            }
-          g_free (agent_signature);
-        }
-    }
-  else
-    {
-      g_warning ("%s: agent iterator empty", __func__);
-      cleanup_iterator (&agents);
-      sql_rollback ();
-      return -1;
-    }
-  cleanup_iterator (&agents);
-
-  sql ("UPDATE agents SET installer_trust = %i, installer_trust_time = %i"
-       " WHERE id = %llu;",
-       agent_trust,
-       time (NULL),
-       agent);
-  sql_commit ();
-
-  return 0;
 }
 
 
@@ -55284,52 +54430,6 @@ manage_restore (const char *id)
   if (ret != 2)
     return ret;
 
-  /* Agent. */
-
-  if (find_trash ("agent", id, &resource))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (resource)
-    {
-      if (sql_int ("SELECT count(*) FROM agents"
-                   " WHERE name ="
-                   " (SELECT name FROM agents_trash WHERE id = %llu)"
-                   " AND " ACL_USER_OWNS () ";",
-                   resource,
-                   current_credentials.uuid))
-        {
-          sql_rollback ();
-          return 3;
-        }
-
-      sql ("INSERT INTO agents"
-           " (uuid, owner, name, comment, installer, installer_64,"
-           "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use, creation_time,"
-           "  modification_time)"
-           " SELECT"
-           "  uuid, owner, name, comment, installer, installer_64,"
-           "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use, creation_time,"
-           "  modification_time"
-           " FROM agents_trash WHERE id = %llu;",
-           resource);
-
-      permissions_set_locations ("agent", resource,
-                                 sql_last_insert_id (),
-                                 LOCATION_TABLE);
-      tags_set_locations ("agent", resource,
-                          sql_last_insert_id (),
-                          LOCATION_TABLE);
-
-      sql ("DELETE FROM agents_trash WHERE id = %llu;", resource);
-      sql_commit ();
-      return 0;
-    }
-
   /* Config. */
 
   if (find_trash ("config", id, &resource))
@@ -56472,7 +55572,6 @@ manage_empty_trashcan ()
       return 99;
     }
 
-  sql ("DELETE FROM agents_trash" WHERE_OWNER);
   sql ("DELETE FROM nvt_selectors WHERE name IN"
        " (SELECT nvt_selector FROM configs_trash"
        "  WHERE owner = (SELECT id FROM users"
@@ -59571,9 +58670,7 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (uuid)
     {
       /* Filters */
-      if (strcmp (uuid, "4a1334c1-cb93-4a79-8634-103b0a50bdcd") == 0)
-        setting_name = g_strdup ("Agents Filter");
-      else if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
+      if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
         setting_name = g_strdup ("Alerts Filter");
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
         setting_name = g_strdup ("Assets Filter");
@@ -61112,10 +60209,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       /* Transfer owned resources. */
 
-      sql ("UPDATE agents SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
-      sql ("UPDATE agents_trash SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
       sql ("UPDATE alerts SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE alerts_trash SET owner = %llu WHERE owner = %llu;",
@@ -61229,20 +60322,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     }
 
   /* Delete settings and miscellaneous resources not referenced directly. */
-
-  /* Agents. */
-#if 0
-  /* Skip the "in use" check because it always returns 0. */
-  if (user_resources_in_use (user,
-                             "agents", agent_in_use,
-                             "agents_trash", trash_agent_in_use))
-    {
-      sql_rollback ();
-      return 9;
-    }
-#endif
-  sql ("DELETE FROM agents WHERE owner = %llu;", user);
-  sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
 
   /* Settings. */
   sql ("DELETE FROM settings WHERE owner = %llu;", user);
@@ -62770,11 +61849,11 @@ vuln_iterator_type (iterator_t* iterator)
 }
 
 /**
- * @brief Count number of agents.
+ * @brief Count number of vulns.
  *
  * @param[in]  get  GET params.
  *
- * @return Total number of agents in filtered set.
+ * @return Total number of vulns in filtered set.
  */
 int
 vuln_count (const get_data_t *get)
@@ -64269,7 +63348,6 @@ column_is_timestamp (const char* column)
 static column_t *
 type_select_columns (const char *type)
 {
-  static column_t agent_columns[] = AGENT_ITERATOR_COLUMNS;
   static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
   static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
   static column_t config_columns[] = CONFIG_ITERATOR_COLUMNS;
@@ -64302,8 +63380,6 @@ type_select_columns (const char *type)
 
   if (type == NULL)
     return NULL;
-  if (strcasecmp (type, "AGENT") == 0)
-    return agent_columns;
   if (strcasecmp (type, "ALERT") == 0)
     return alert_columns;
   if (strcasecmp (type, "CERT_BUND_ADV") == 0)
@@ -64411,11 +63487,6 @@ type_filter_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
-  if (strcasecmp (type, "AGENT") == 0)
-    {
-      static const char *ret[] = AGENT_ITERATOR_FILTER_COLUMNS;
-      return ret;
-    }
   if (strcasecmp (type, "ALERT") == 0)
     {
       static const char *ret[] = ALERT_ITERATOR_FILTER_COLUMNS;
