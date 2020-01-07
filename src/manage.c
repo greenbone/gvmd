@@ -519,11 +519,11 @@ gchar *
 certificate_iso_time (time_t time)
 {
   if (time == 0)
-    return (g_strdup ("unlimited"));
+    return g_strdup ("unlimited");
   else if (time == -1)
-    return (g_strdup ("unknown"));
+    return g_strdup ("unknown");
   else
-    return (g_strdup (iso_time (&time)));
+    return g_strdup (iso_time (&time));
 }
 
 /**
@@ -893,21 +893,21 @@ severity_to_level (double severity, int mode)
   else if (severity > 0.0 && severity <= 10.0)
     {
       if (mode == 1)
-        return ("Alarm");
+        return "Alarm";
       else if (severity_in_level (severity, "high"))
-        return ("High");
+        return "High";
       else if (severity_in_level (severity, "medium"))
-        return ("Medium");
+        return "Medium";
       else if (severity_in_level (severity, "low"))
-        return ("Low");
+        return "Low";
       else
-        return ("Log");
+        return "Log";
     }
   else
     {
       g_warning ("%s: Invalid severity score given: %f",
                  __func__, severity);
-      return (NULL);
+      return NULL;
     }
 }
 
@@ -935,7 +935,7 @@ severity_to_type (double severity)
     {
       g_warning ("%s: Invalid severity score given: %f",
                  __func__, severity);
-      return (NULL);
+      return NULL;
     }
 }
 
@@ -8879,10 +8879,11 @@ manage_update_nvts_osp (const gchar *update_socket)
  * @param[in]  read_only         Whether to only allow wizards marked as
  *                               read only.
  * @param[in]  mode              Name of the mode to run the wizard in.
- * @param[out] command_error     Address for error message from failed command
- *                               when return is 4, or NULL.
- * @param[out] command_error_code Address for status code from failed command
- *                                when return is 4, or NULL.
+ * @param[out] command_error     Either NULL or an address for an error message
+ *                               when return is 0, 4 or 6.
+ * @param[out] command_error_code  Either NULL or an address for a status code
+ *                                 from the failed command when return is 0
+ *                                 or 4.
  * @param[out] ret_response      Address for response string of last command.
  *
  * @return 0 success,

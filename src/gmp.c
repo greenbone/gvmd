@@ -400,7 +400,7 @@ try_gpgme_import (const char *key_str, GArray *key_types,
   gpgme_release (ctx);
   gvm_file_remove_recurse (gpg_temp_dir);
 
-  return (ret != 0);
+  return ret != 0;
 }
 
 /**
@@ -6963,7 +6963,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_PERMISSION:
         if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_PERMISSION_COMMENT);
+          {
+            gvm_append_string (&modify_permission_data->comment, "");
+            set_client_state (CLIENT_MODIFY_PERMISSION_COMMENT);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_PERMISSION_NAME);
         else if (strcasecmp ("RESOURCE", element_name) == 0)
@@ -10524,7 +10527,7 @@ strcasecmp_reverse (gchar *s1, gchar *s2)
 static int
 compare_count_data (gconstpointer c1, gconstpointer c2, gpointer dummy)
 {
-  return (((count_data_t*)c2)->count - ((count_data_t*)c1)->count);
+  return ((count_data_t*)c2)->count - ((count_data_t*)c1)->count;
 }
 
 /**
@@ -10539,7 +10542,7 @@ compare_count_data (gconstpointer c1, gconstpointer c2, gpointer dummy)
 static int
 compare_count_data_reverse (gconstpointer c1, gconstpointer c2, gpointer dummy)
 {
-  return (((count_data_t*)c1)->count - ((count_data_t*)c2)->count);
+  return ((count_data_t*)c1)->count - ((count_data_t*)c2)->count;
 }
 
 /**
@@ -10620,7 +10623,7 @@ buffer_word_counts_tree (gpointer key, gpointer value, gpointer data)
   if (count_data->limit > 0)
     count_data->limit--;
 
-  return (count_data->limit == 0);
+  return count_data->limit == 0;
 }
 
 /**
@@ -15911,6 +15914,8 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
       iterator_t results;
       int notes, overrides;
       int count, ret, first;
+      gchar *report_id;
+      report_t report;
 
       if (get_results_data->get.filt_id
           && strcmp (get_results_data->get.filt_id, FILT_ID_NONE))
@@ -15928,8 +15933,32 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
       // Do not allow ignore_pagination here
       get_results_data->get.ignore_pagination = 0;
 
+      /* Note: This keyword may be removed or renamed at any time once there
+       * is a better solution like an operator for conditions that must always
+       * apply or support for parentheses in filters. */
+      report_id = filter_term_value (filter,
+                                     "_and_report_id");
+      report = 0;
+
+      if (report_id)
+        {
+          if (find_report_with_permission (report_id,
+                                           &report,
+                                           NULL))
+            {
+              g_free (report_id);
+              g_warning ("Failed to get report");
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+              return;
+            }
+
+          if (report == 0)
+            report = -1;
+        }
+      g_free (report_id);
+
       init_result_get_iterator (&results, &get_results_data->get,
-                                0,  /* No report restriction */
+                                report,  /* report restriction */
                                 NULL, /* No host restriction */
                                 NULL);  /* No extra order SQL. */
 
@@ -16003,7 +16032,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
 
           filtered = get_results_data->get.id
                       ? 1 : result_count (&get_results_data->get,
-                                          0 /* No report */,
+                                          report /* No report */,
                                           NULL /* No host */);
 
           if (send_get_end ("result", &get_results_data->get, count, filtered,
