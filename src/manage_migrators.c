@@ -1655,14 +1655,6 @@ migrate_223_to_224 ()
 
   /* Agents were removed entirely. */
 
-  sql ("DELETE FROM tags"
-       " WHERE id = (SELECT tag FROM tag_resources"
-       "             WHERE tag_resources.resource_type = 'agent');");
-
-  sql ("DELETE FROM tags_trash"
-       " WHERE id = (SELECT tag FROM tag_resources_trash"
-       "             WHERE tag_resources_trash.resource_type = 'agent');");
-
   sql ("DELETE FROM tag_resources WHERE resource_type = 'agent';");
   sql ("DELETE FROM tag_resources_trash WHERE resource_type = 'agent';");
 
