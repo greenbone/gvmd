@@ -4273,8 +4273,9 @@ type_db_name (const char* type)
 static int
 type_is_asset_subtype (const char *type)
 {
-  return ((strcasecmp (type, "host")
-           && strcasecmp (type, "os")) == 0);
+  return (strcasecmp (type, "host")
+          && strcasecmp (type, "os"))
+         == 0;
 }
 
 /**
@@ -4287,12 +4288,13 @@ type_is_asset_subtype (const char *type)
 static int
 type_is_info_subtype (const char *type)
 {
-  return ((strcasecmp (type, "nvt")
-           && strcasecmp (type, "cve")
-           && strcasecmp (type, "cpe")
-           && strcasecmp (type, "ovaldef")
-           && strcasecmp (type, "cert_bund_adv")
-           && strcasecmp (type, "dfn_cert_adv")) == 0);
+  return (strcasecmp (type, "nvt")
+          && strcasecmp (type, "cve")
+          && strcasecmp (type, "cpe")
+          && strcasecmp (type, "ovaldef")
+          && strcasecmp (type, "cert_bund_adv")
+          && strcasecmp (type, "dfn_cert_adv"))
+         == 0;
 }
 
 /**
@@ -4348,13 +4350,13 @@ type_has_comment (const char *type)
 static int
 type_has_trash (const char *type)
 {
-  return (strcasecmp (type, "report")
-          && strcasecmp (type, "result")
-          && strcasecmp (type, "info")
-          && type_is_info_subtype (type) == 0
-          && strcasecmp (type, "vuln")
-          && strcasecmp (type, "user")
-          && strcasecmp (type, "tls_certificate"));
+  return strcasecmp (type, "report")
+         && strcasecmp (type, "result")
+         && strcasecmp (type, "info")
+         && type_is_info_subtype (type) == 0
+         && strcasecmp (type, "vuln")
+         && strcasecmp (type, "user")
+         && strcasecmp (type, "tls_certificate");
 }
 
 /**
@@ -4367,9 +4369,9 @@ type_has_trash (const char *type)
 static int
 type_owned (const char* type)
 {
-  return (strcasecmp (type, "info")
-          && type_is_info_subtype (type) == 0
-          && strcasecmp (type, "vuln"));
+  return strcasecmp (type, "info")
+         && type_is_info_subtype (type) == 0
+         && strcasecmp (type, "vuln");
 }
 
 /**
@@ -15587,6 +15589,11 @@ update_nvti_cache ()
           nvti_set_tag (nvti, iterator_string (&nvts, 4));
           nvti_set_solution (nvti, iterator_string (&nvts, 5));
           nvti_set_solution_type (nvti, iterator_string (&nvts, 6));
+      nvti_set_summary (nvti, iterator_string (&nvts, 7));
+      nvti_set_insight (nvti, iterator_string (&nvts, 8));
+      nvti_set_affected (nvti, iterator_string (&nvts, 9));
+      nvti_set_impact (nvti, iterator_string (&nvts, 10));
+      nvti_set_detection (nvti, iterator_string (&nvts, 11));
 
           nvtis_add (nvti_cache, nvti);
         }
@@ -24236,6 +24243,12 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   gchar *extra_tables, *extra_where;
 
+  if (report == -1)
+    {
+      init_iterator (iterator, "SELECT NULL WHERE false;");
+      return 0;
+    }
+
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
       filter = filter_term (get->filt_id);
@@ -24299,6 +24312,9 @@ result_count (const get_data_t *get, report_t report, const char* host)
   gchar *filter;
   int apply_overrides, autofp, dynamic_severity;
   gchar *extra_tables, *extra_where;
+
+  if (report == -1)
+    return 0;
 
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
@@ -42922,7 +42938,7 @@ scanner_writable (scanner_t scanner)
 int
 trash_scanner_writable (scanner_t scanner)
 {
-  return (trash_scanner_in_use (scanner) == 0);
+  return trash_scanner_in_use (scanner) == 0;
 }
 
 /**
@@ -44132,7 +44148,7 @@ schedule_writable (schedule_t schedule)
 int
 trash_schedule_writable (schedule_t schedule)
 {
-  return (trash_schedule_in_use (schedule) == 0);
+  return trash_schedule_in_use (schedule) == 0;
 }
 
 /**
@@ -46706,8 +46722,8 @@ trash_report_format_in_use (report_format_t report_format)
 int
 report_format_writable (report_format_t report_format)
 {
-  return (report_format_in_use (report_format) == 0
-          && report_format_predefined (report_format) == 0);
+  return report_format_in_use (report_format) == 0
+         && report_format_predefined (report_format) == 0;
 }
 
 /**
@@ -52411,7 +52427,7 @@ port_list_writable (port_list_t port_list)
 {
   if (port_list_is_predefined (port_list))
     return 0;
-  return (port_list_in_use (port_list) == 0);
+  return port_list_in_use (port_list) == 0;
 }
 
 /**
@@ -52424,7 +52440,7 @@ port_list_writable (port_list_t port_list)
 int
 trash_port_list_writable (port_list_t port_list)
 {
-  return (trash_port_list_in_use (port_list) == 0);
+  return trash_port_list_in_use (port_list) == 0;
 }
 
 /**
@@ -63314,12 +63330,12 @@ trash_tag_writable (tag_t tag)
 int
 column_is_timestamp (const char* column)
 {
-  return (column
-          && (strcmp (column, "created") == 0
-              || strcmp (column, "date") == 0
-              || strcmp (column, "modified") == 0
-              || strcmp (column, "published") == 0
-              || strcmp (column, "updated") == 0));
+  return column
+         && (strcmp (column, "created") == 0
+             || strcmp (column, "date") == 0
+             || strcmp (column, "modified") == 0
+             || strcmp (column, "published") == 0
+             || strcmp (column, "updated") == 0);
 }
 
 /**
@@ -63701,17 +63717,25 @@ type_extra_where (const char *type, int trash, const char *filter,
 
   if (strcasecmp (type, "CONFIG") == 0 && extra_params)
     {
-      gchar *usage_type = g_hash_table_lookup (extra_params, "usage_type");
+      gchar *usage_type;
+      if (extra_params)
+        usage_type = g_hash_table_lookup (extra_params, "usage_type");
+      else
+        usage_type = NULL;
+
       extra_where = configs_extra_where (usage_type);
       if (extra_where == NULL)
         extra_where = g_strdup ("");
     }
   else if (strcasecmp (type, "TASK") == 0)
     {
-      if (trash)
-        extra_where = g_strdup (" AND hidden = 2");
+      gchar *usage_type;
+      if (extra_params)
+        usage_type = g_hash_table_lookup (extra_params, "usage_type");
       else
-        extra_where = g_strdup (" AND hidden = 0");
+        usage_type = NULL;
+
+      extra_where = tasks_extra_where (trash, usage_type);
     }
   else if (strcasecmp (type, "TLS_CERTIFICATE") == 0)
     {
@@ -63731,11 +63755,36 @@ type_extra_where (const char *type, int trash, const char *filter,
   else if (strcasecmp (type, "RESULT") == 0)
     {
       int autofp, apply_overrides;
+      gchar *report_id;
+      report_t report;
+
+      /* Note: This keyword may be removed or renamed at any time once there
+       * is a better solution like an operator for conditions that must always
+       * apply or support for parentheses in filters. */
+      report_id = filter_term_value (filter,
+                                     "_and_report_id");
+      report = 0;
+
+      if (report_id)
+        {
+          if (find_report_with_permission (report_id,
+                                           &report,
+                                           NULL))
+            {
+              g_free (report_id);
+              g_warning ("Failed to get report");
+              return NULL;
+            }
+
+          if (report == 0)
+            report = -1;
+        }
+      g_free (report_id);
 
       autofp = filter_term_autofp (filter);
       apply_overrides = filter_term_apply_overrides (filter);
 
-      extra_where = results_extra_where (trash, 0, NULL,
+      extra_where = results_extra_where (trash, report, NULL,
                                          autofp, apply_overrides,
                                          setting_dynamic_severity_int (),
                                          filter);

@@ -900,6 +900,67 @@ make_tls_certificate_214 (user_t owner,
 }
 
 /**
+ * @brief Create temporary, indexed tables for TLS certificate host details.
+ *
+ * This makes it quicker to access host details that are slow to get repeatedly
+ * for every TLS certificate, presumably because of the "LIKE" conditions
+ * for the name or value field.
+ */
+static void
+create_temp_tables_213_to_214 ()
+{
+  // "SSLInfo", selected by a fingerprint in the value
+  sql ("CREATE TEMP TABLE report_host_details_sslinfo"
+        " (report_host integer,"
+        "  value text,"
+        "  fingerprint text,"
+        "  port text);");
+  sql ("INSERT INTO report_host_details_sslinfo"
+        "               (report_host, value, fingerprint, port)"
+        " SELECT report_host,"
+        "        value,"
+        "        (regexp_matches(value, '(.*):.*:(.*)'))[2] AS fingerprint,"
+        "        (regexp_matches(value, '(.*):.*:(.*)'))[1] AS port"
+        "  FROM report_host_details WHERE name = 'SSLInfo';");
+  sql ("CREATE INDEX"
+       " ON report_host_details_sslinfo (report_host, fingerprint)");
+
+  // "TLS/...", selected by a port number in the name
+  sql ("CREATE TEMP TABLE report_host_details_tls_ports"
+       "  (report_host integer,"
+       "   port text,"
+       "   value text)");
+  sql ("INSERT INTO report_host_details_tls_ports"
+       "              (report_host, port, value)"
+       " SELECT report_host,"
+       "        substring (name, 5) AS port,"
+       "        value"
+       "  FROM report_host_details"
+       "  WHERE name LIKE 'TLS/%%' AND name != 'TLS/port';");
+  sql ("CREATE INDEX"
+        " ON report_host_details_tls_ports (report_host)");
+
+  // "SSLDetails:...", selected by a fingerprint in the name
+  sql ("CREATE TEMP TABLE report_host_details_ssldetails"
+       "  (report_host integer,"
+       "   fingerprint text,"
+       "   value text,"
+       "   start_time integer)");
+  sql ("INSERT INTO report_host_details_ssldetails"
+       "              (report_host, fingerprint, value, start_time)"
+       " SELECT report_host,"
+       "        substring (name, 12) AS fingerprint,"
+       "        rhd.value,"
+       "        report_hosts.start_time"
+       "  FROM report_host_details AS rhd"
+       "  JOIN report_hosts"
+       "    ON report_hosts.id = rhd.report_host"
+       "  WHERE name LIKE 'SSLDetails:%%';");
+  sql ("CREATE INDEX"
+        " ON report_host_details_ssldetails (report_host, fingerprint)");
+}
+
+/**
  * @brief Migrate the database from version 213 to version 214.
  *
  * @return 0 success, -1 error.
@@ -955,6 +1016,8 @@ migrate_213_to_214 ()
    * - The report id is last so tls_certificate_sources are created in the
    *   same order as the reports.
    */
+  create_temp_tables_213_to_214 ();
+
   init_iterator (&tls_certs,
                  "SELECT rhd.value, rhd.name, reports.owner, rhd.report_host,"
                  "       report_hosts.host, reports.uuid, rhd.source_name,"
@@ -1041,12 +1104,10 @@ migrate_213_to_214 ()
           /* Also use SSLDetails in case get_certificate_info fails
            *  or to ensure consistency with the host details */
           ssldetails
-            = sql_string ("SELECT rhd.value"
-                          " FROM report_host_details AS rhd"
-                          " JOIN report_hosts"
-                          "   ON report_hosts.id = rhd.report_host"
-                          " WHERE name = 'SSLDetails:%s'"
-                          " ORDER BY report_hosts.start_time DESC"
+            = sql_string ("SELECT value"
+                          " FROM report_host_details_ssldetails"
+                          " WHERE fingerprint = '%s'"
+                          " ORDER BY start_time DESC"
                           " LIMIT 1;",
                           quoted_scanner_fpr);
 
@@ -1094,24 +1155,22 @@ migrate_213_to_214 ()
 
       /* Collect ports for each unique certificate and owner */
       init_iterator (&ports,
-                     "SELECT value FROM report_host_details"
+                     "SELECT port FROM report_host_details_sslinfo"
                      " WHERE report_host = %llu"
-                     "   AND name = 'SSLInfo'"
-                     "   AND value LIKE '%%:%%:%s'",
+                     "   AND fingerprint = '%s'",
                      report_host,
                      quoted_scanner_fpr);
 
       has_ports = FALSE;
       while (next (&ports))
         {
-          const char *value;
-          gchar *port, *quoted_port;
+          const char *port;
+          gchar *quoted_port;
           GString *versions;
           iterator_t versions_iter;
           resource_t cert_location, cert_origin;
 
-          value = iterator_string (&ports, 0);
-          port = g_strndup (value, g_strrstr (value, ":") - value - 1);
+          port = iterator_string (&ports, 0);
           quoted_port = sql_quote (port);
 
           has_ports = TRUE;
@@ -1119,9 +1178,9 @@ migrate_213_to_214 ()
           /* Collect TLS versions for each port */
           versions = g_string_new ("");
           init_iterator (&versions_iter,
-                         "SELECT value FROM report_host_details"
+                         "SELECT value FROM report_host_details_tls_ports"
                          " WHERE report_host = %llu"
-                         "   AND name = 'TLS/%s'",
+                         "   AND port = '%s'",
                          report_host,
                          quoted_port);
           while (next (&versions_iter))
@@ -1153,7 +1212,6 @@ migrate_213_to_214 ()
                timestamp,
                versions->str);
 
-          g_free (port);
           g_free (quoted_port);
           g_string_free (versions, TRUE);
         }
@@ -1171,6 +1229,10 @@ migrate_213_to_214 ()
       previous_owner = owner;
     }
   cleanup_iterator (&tls_certs);
+
+  sql ("DROP TABLE report_host_details_sslinfo;");
+  sql ("DROP TABLE report_host_details_tls_ports;");
+  sql ("DROP TABLE report_host_details_ssldetails;");
 
   /* Set the database version to 214 */
 
