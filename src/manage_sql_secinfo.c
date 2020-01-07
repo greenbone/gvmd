@@ -171,6 +171,127 @@ increment_transaction_size (int* current_size)
     }
 }
 
+/**
+ * @brief Split a file.
+ *
+ * @param[in]  path  Path to file.
+ * @param[in]  size  Approx size of split files.  In same format that
+ *                   xml_split accepts, eg "200Kb".
+ * @param[in]  tail  Text to replace last line of split files.
+ *
+ * @return Temp dir holding split files.
+ */
+static const gchar *
+split_xml_file (gchar *path, const gchar *size, const gchar *tail)
+{
+  int ret;
+  static gchar dir[] = "/tmp/gvmd-split-xml-file-XXXXXX";
+  gchar *previous_dir, *command;
+
+  if (mkdtemp (dir) == NULL)
+    {
+      g_warning ("%s: Failed to make temp dir: %s",
+                 __func__,
+                 strerror (errno));
+      return NULL;
+    }
+
+  previous_dir = getcwd (NULL, 0);
+  if (previous_dir == NULL)
+    {
+      g_warning ("%s: Failed to getcwd: %s",
+                 __func__,
+                 strerror (errno));
+      return NULL;
+    }
+
+  if (chdir (dir))
+    {
+      g_warning ("%s: Failed to chdir: %s",
+                 __func__,
+                 strerror (errno));
+      g_free (previous_dir);
+      return NULL;
+    }
+
+  if (gvm_file_copy (path, "split.xml") == FALSE)
+    {
+      g_free (previous_dir);
+      return NULL;
+    }
+
+  /* xml_split will chop split.xml into files that are roughly 'size' big.
+   *
+   * The generated files are always put in the directory that holds
+   * split.xml, as follows:
+   *
+   * split.xml      Source XML.
+   * split-00.xml   Master generated XML.  No content, just includes other
+   *                files.  The include statements are wrapped in the
+   *                root element from split.xml.
+   * split-01.xml   Generated XML content.  Wrapped in an <xml_split:root>
+   *                element.
+   * split-02.xml   Second generated content file.
+   * ...
+   * split-112.xml  Last content, for example.
+   *
+   * Parsing the generated files independently will only work if the files
+   * contain the original root element (for example, because the parser
+   * requires the namespace definitions to be present).
+   *
+   * So the command below needs to mess around a little bit to replace the
+   * wrapper XML element in split-01.xml, split-02.xml, etc with the root
+   * element from split-00.xml.
+   *
+   * Using tail and head is not super robust, but it's simple and it will
+   * work as long as xml_split keeps the opening of the wrapper element
+   * in split-00.xml on a dedicated line.  (It doesn't do this for the
+   * closing element, so we use the tail argument instead.)
+   */
+
+  command = g_strdup_printf
+             ("xml_split -s%s split.xml"
+              " && head -n 2 split-00.xml > head.xml"
+              " && echo '%s' > tail.xml"
+              " && for F in split-*.xml; do"
+              "    tail -n +3 $F"
+              "    | head -n -1"
+              "    | cat head.xml - tail.xml"
+              "    > new.xml;"
+              "    mv new.xml $F;"
+              "    done",
+              size,
+              tail);
+
+  g_debug ("%s: command: %s", __func__, command);
+  ret = system (command);
+  if ((ret == -1) || WEXITSTATUS (ret))
+    {
+      g_warning ("%s: system failed with ret %i, %i, %s",
+                 __func__,
+                 ret,
+                 WEXITSTATUS (ret),
+                 command);
+      g_free (command);
+      g_free (previous_dir);
+
+      if (chdir (previous_dir))
+        g_warning ("%s: and failed to chdir back", __func__);
+
+      return NULL;
+    }
+
+  g_free (command);
+
+  if (chdir (previous_dir))
+    g_warning ("%s: Failed to chdir back (will continue anyway)",
+               __func__);
+
+  g_free (previous_dir);
+
+  return dir;
+}
+
 
 /* Helper: buffer structure for INSERTs. */
 
@@ -2015,55 +2136,29 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
 }
 
 /**
- * @brief Update SCAP CPEs.
+ * @brief Update SCAP CPEs from a file.
  *
- * @param[in]  last_scap_update  Time of last SCAP update.
+ * @param[in]  path             Path to file.
+ * @param[in]  last_cve_update  Time of last CVE update.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_scap_cpes (int last_scap_update)
+update_scap_cpes_from_file (const gchar *path, int last_cve_update)
 {
   GError *error;
   element_t element, cpe_list, cpe_item;
-  gchar *xml, *full_path;
+  gchar *xml;
   gsize xml_len;
-  GStatBuf state;
-  int updated_scap_cpes, last_cve_update;
+  int updated_scap_cpes;
   inserts_t inserts;
 
+  g_debug ("%s: parsing %s", __func__, path);
+
   updated_scap_cpes = 0;
-  full_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                "official-cpe-dictionary_v2.2.xml",
-                                NULL);
-
-  if (g_stat (full_path, &state))
-    {
-      g_warning ("%s: No CPE dictionary found at %s",
-                 __func__,
-                 strerror (errno));
-      return -1;
-    }
-
-  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
-    {
-      g_info ("Skipping CPEs, file is older than last revision"
-              " (this is not an error)");
-      g_free (full_path);
-      return -1;
-    }
-
-  g_info ("Updating CPEs");
-
-  /* This will be zero for an empty db, so everything will be added. */
-  last_cve_update = sql_int ("SELECT max (modification_time)"
-                             " FROM scap.cves;");
-
-  g_debug ("%s: parsing %s", __func__, full_path);
 
   error = NULL;
-  g_file_get_contents (full_path, &xml, &xml_len, &error);
-  g_free (full_path);
+  g_file_get_contents (path, &xml, &xml_len, &error);
   if (error)
     {
       g_warning ("%s: Failed to get contents: %s",
@@ -2161,6 +2256,91 @@ update_scap_cpes (int last_scap_update)
   g_warning ("Update of CPEs failed");
   sql_commit ();
   return -1;
+}
+
+/**
+ * @brief Update SCAP CPEs.
+ *
+ * @param[in]  last_scap_update  Time of last SCAP update.
+ *
+ * @return 0 nothing to do, 1 updated, -1 error.
+ */
+static int
+update_scap_cpes (int last_scap_update)
+{
+  gchar *full_path;
+  const gchar *split_dir;
+  GStatBuf state;
+  int updated_scap_cpes, last_cve_update, index;
+
+  updated_scap_cpes = 0;
+  full_path = g_build_filename (GVM_SCAP_DATA_DIR,
+                                "official-cpe-dictionary_v2.2.xml",
+                                NULL);
+
+  if (g_stat (full_path, &state))
+    {
+      g_warning ("%s: No CPE dictionary found at %s",
+                 __func__,
+                 strerror (errno));
+      return -1;
+    }
+
+  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
+    {
+      g_info ("Skipping CPEs, file is older than last revision"
+              " (this is not an error)");
+      g_free (full_path);
+      return -1;
+    }
+
+  g_info ("Updating CPEs");
+
+  /* This will be zero for an empty db, so everything will be added. */
+  last_cve_update = sql_int ("SELECT max (modification_time)"
+                             " FROM scap.cves;");
+
+  split_dir = split_xml_file (full_path, "40Mb", "</cpe-list>");
+  if (split_dir == NULL)
+    {
+      g_warning ("%s: Failed to split CPEs, attempting with full file",
+                 __func__);
+      updated_scap_cpes = update_scap_cpes_from_file (full_path,
+                                                      last_cve_update);
+      g_free (full_path);
+      return updated_scap_cpes;
+    }
+  g_free (full_path);
+
+  for (index = 1; 1; index++)
+    {
+      int ret;
+      gchar *path, *name;
+
+      name = g_strdup_printf ("split-%02i.xml", index);
+      path = g_build_filename (split_dir, name, NULL);
+      g_free (name);
+
+      if (g_stat (path, &state))
+        {
+          g_free (path);
+          break;
+        }
+
+      ret = update_scap_cpes_from_file (path, last_cve_update);
+      g_free (path);
+      if (ret < 0)
+        {
+          gvm_file_remove_recurse (split_dir);
+          return -1;
+        }
+      if (ret)
+        updated_scap_cpes = 1;
+    }
+
+  gvm_file_remove_recurse (split_dir);
+
+  return updated_scap_cpes;
 }
 
 
@@ -4595,6 +4775,7 @@ sync_scap (int lockfile)
   g_info ("%s: Updating data from feed", __func__);
 
   g_debug ("%s: update cpes", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating CPEs");
 
   updated_scap_cpes = update_scap_cpes (last_scap_update);
   if (updated_scap_cpes == -1)
@@ -4604,6 +4785,7 @@ sync_scap (int lockfile)
     }
 
   g_debug ("%s: update cves", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating CVEs");
 
   updated_scap_cves = update_scap_cves (last_scap_update);
   if (updated_scap_cves == -1)
@@ -4613,6 +4795,7 @@ sync_scap (int lockfile)
     }
 
   g_debug ("%s: update ovaldefs", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating OVALdefs");
 
   updated_scap_ovaldefs = update_scap_ovaldefs (last_scap_update,
                                                 0 /* Feed data. */);
@@ -4623,6 +4806,7 @@ sync_scap (int lockfile)
     }
 
   g_debug ("%s: updating user defined data", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating private OVALdefs");
 
   switch (update_scap_ovaldefs (last_scap_update,
                                 1 /* Private data. */))
@@ -4638,11 +4822,13 @@ sync_scap (int lockfile)
     }
 
   g_debug ("%s: update max cvss", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating max CVSS");
 
   update_scap_cvss (updated_scap_cves, updated_scap_cpes,
                     updated_scap_ovaldefs);
 
   g_debug ("%s: update placeholders", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating placeholders");
 
   update_scap_placeholders (updated_scap_cves);
 
@@ -4655,6 +4841,7 @@ sync_scap (int lockfile)
     }
 
   g_info ("%s: Updating SCAP info succeeded", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: done");
 
   manage_update_scap_db_cleanup ();
 

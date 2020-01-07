@@ -14,6 +14,7 @@ Prerequisites:
 * PostgreSQL database >= 9.6
 * pkg-config
 * libical >= 1.0.0
+* xml_split (recommended, lowers sync RAM usage, Debian package: xml-twig-tools)
 
 Prerequisites for certificate generation:
 * GnuTLS certtool
