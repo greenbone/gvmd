@@ -4470,6 +4470,8 @@ update_config_cache_init (const char *uuid)
 
 /**
  * @brief Get path to configs in feed.
+ *
+ * @return Path to configs in feed.
  */
 static const gchar *
 feed_dir_configs ()

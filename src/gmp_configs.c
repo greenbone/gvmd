@@ -208,8 +208,8 @@ cleanup_import_preferences (array_t *import_preferences)
  * @param[out] name     Address for name.
  * @param[out] comment  Address for comment.
  * @param[out] type     Address for type.
- * @param[out] nvt_selectors  Address for selectors.
- * @param[out] preferences    Address for preferences.
+ * @param[out] import_nvt_selectors  Address for selectors.
+ * @param[out] import_preferences    Address for preferences.
  *
  * @return 0 success, -1 preference without ID.
  */
