@@ -4490,6 +4490,11 @@ feed_dir_configs ()
 static void
 sync_config_with_feed (const gchar *path)
 {
+  if (sql_int ("SELECT EXISTS (SELECT * FROM configs"
+               "               WHERE uuid = '%.36s');",
+               path))
+    return;
+
   g_debug ("%s: syncing %s", __func__, path);
 }
 
