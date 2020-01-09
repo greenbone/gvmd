@@ -189,21 +189,6 @@ make_port_ranges_all_tcp_nmap_5_51_top_1000 (port_list_t);
 void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
-void
-make_config_base (char *const, char *const);
-
-void
-make_config_discovery (char *const, char *const);
-
-void
-make_config_discovery_service_detection (char * const);
-
-void
-make_config_host_discovery (char *const, char *const);
-
-void
-make_config_system_discovery (char *const, char * const);
-
 int
 check_config_discovery (const char *);
 

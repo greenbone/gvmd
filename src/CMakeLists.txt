@@ -100,7 +100,6 @@ add_executable (manage-utils-test
                 manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -125,7 +124,6 @@ add_executable (manage-test
                 manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -150,7 +148,6 @@ add_executable (gmp-tickets-test
                 manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -182,7 +179,6 @@ add_executable (gvmd
                 manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
