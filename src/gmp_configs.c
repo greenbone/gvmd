@@ -202,6 +202,202 @@ cleanup_import_preferences (array_t *import_preferences)
 }
 
 /**
+ * @brief Get creation data from a config entity.
+ *
+ * @param[in]  config   Config entity.
+ * @param[out] name     Address for name.
+ * @param[out] comment  Address for comment.
+ * @param[out] type     Address for type.
+ * @param[out] nvt_selectors  Address for selectors.
+ * @param[out] preferences    Address for preferences.
+ *
+ * @return 0 success, -1 preference without ID.
+ */
+int
+parse_config_entity (entity_t config, char **name, char **comment,
+                     char **type, array_t **import_nvt_selectors,
+                     array_t **import_preferences)
+{
+  entity_t entity, preferences, nvt_selectors;
+
+  *name = *comment = *type = NULL;
+
+  entity = entity_child (config, "name");
+  if (entity)
+    *name = entity_text (entity);
+
+  entity = entity_child (config, "comment");
+  if (entity)
+    *comment = entity_text (entity);
+
+  entity = entity_child (config, "type");
+  if (entity)
+    *type = entity_text (entity);
+
+  /* Collect NVT selectors. */
+
+  *import_nvt_selectors = NULL;
+  nvt_selectors = entity_child (config, "nvt_selectors");
+  if (nvt_selectors)
+    {
+      entity_t nvt_selector;
+      entities_t children;
+
+      *import_nvt_selectors = make_array ();
+      children = nvt_selectors->entities;
+      while ((nvt_selector = first_entity (children)))
+        {
+          entity_t include, selector_name, selector_type, selector_fam;
+          int import_include;
+
+          include = entity_child (nvt_selector, "include");
+          if (include && strcmp (entity_text (include), "0") == 0)
+            import_include = 0;
+          else
+            import_include = 1;
+
+          selector_name = entity_child (nvt_selector, "name");
+          selector_type = entity_child (nvt_selector, "type");
+          selector_fam = entity_child (nvt_selector, "family_or_nvt");
+
+          array_add (*import_nvt_selectors,
+                     nvt_selector_new (text_or_null (selector_name),
+                                       text_or_null (selector_type),
+                                       import_include,
+                                       text_or_null (selector_fam)));
+
+          children = next_entities (children);
+        }
+
+      array_terminate (*import_nvt_selectors);
+    }
+
+  /* Collect NVT preferences. */
+
+  *import_preferences = NULL;
+  preferences = entity_child (config, "preferences");
+  if (preferences)
+    {
+      entity_t preference;
+      entities_t children;
+
+      *import_preferences = make_array ();
+      children = preferences->entities;
+      while ((preference = first_entity (children)))
+        {
+          entity_t pref_name, pref_nvt_name, hr_name, nvt, alt;
+          char *preference_hr_name, *preference_nvt_oid;
+          array_t *import_alts;
+          entities_t alts;
+          preference_t *new_preference;
+
+          pref_name = entity_child (preference, "name");
+
+          pref_nvt_name = NULL;
+          nvt = entity_child (preference, "nvt");
+          if (nvt)
+            pref_nvt_name = entity_child (nvt, "name");
+
+          hr_name = entity_child (preference, "hr_name");
+          if (type == NULL || strcmp (*type, "0") == 0)
+            /* Classic OpenVAS config preference. */
+            preference_hr_name = NULL;
+          else if (hr_name && strlen (entity_text (hr_name)))
+            /* OSP config preference with hr_name given. */
+            preference_hr_name = entity_text (hr_name);
+          else
+            /* Old OSP config without hr_name. */
+            preference_hr_name = text_or_null (pref_name);
+
+          import_alts = make_array ();
+          alts = preference->entities;
+          while ((alt = first_entity (alts)))
+            {
+              if (strcasecmp (entity_name (alt), "ALT") == 0)
+                array_add (import_alts, text_or_null (alt));
+              alts = next_entities (alts);
+            }
+          array_terminate (import_alts);
+
+          preference_nvt_oid = attr_or_null (nvt, "oid");
+
+          if ((type == NULL || strcmp (*type, "0") == 0)
+              && preference_nvt_oid
+              && strcmp (preference_nvt_oid, ""))
+            {
+              /* Preference in an OpenVAS config:
+               * Get the preference from nvt_preferences */
+              char *preference_id, *preference_name, *preference_type;
+              char *preference_value;
+
+              preference_id
+                = text_or_null (entity_child (preference, "id"));
+              preference_name
+                = text_or_null (entity_child (preference, "name"));
+              preference_type
+                = text_or_null (entity_child (preference, "type"));
+              preference_value
+                = text_or_null (entity_child (preference, "value"));
+
+              if (preference_id && strcmp (preference_id, ""))
+                {
+                  new_preference
+                    = get_nvt_preference_by_id (preference_nvt_oid,
+                                                preference_id,
+                                                preference_name,
+                                                preference_type,
+                                                preference_value ?: "");
+                  if (new_preference == NULL)
+                    g_warning ("%s: Preference %s:%s not found",
+                                __func__,
+                                preference_nvt_oid,
+                                preference_id);
+                }
+              else
+                {
+                  g_warning ("%s: Config contains a preference for NVT %s"
+                             " without a preference id: %s",
+                             __func__,
+                             preference_nvt_oid,
+                             preference_name);
+
+                  cleanup_import_preferences (*import_preferences);
+                  array_free (*import_nvt_selectors);
+
+                  return -1;
+                }
+            }
+          else
+            {
+              /* Scanner preference (for OpenVAS or OSP configs):
+               * Use directly from imported config.
+               */
+              new_preference
+                = preference_new
+                      (text_or_null (entity_child (preference, "id")),
+                       text_or_null (pref_name),
+                       text_or_null (entity_child (preference, "type")),
+                       text_or_null (entity_child (preference, "value")),
+                       text_or_null (pref_nvt_name),
+                       preference_nvt_oid,
+                       import_alts,
+                       text_or_null (entity_child (preference, "default")),
+                       preference_hr_name,
+                       0 /* do not free strings */);
+            }
+
+          array_add (*import_preferences, new_preference);
+
+          children = next_entities (children);
+        }
+
+      array_terminate (*import_preferences);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Execute command.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -223,9 +419,8 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
     {
       config_t new_config;
       const char *usage_type_text;
-      char *created_name;
-      entity_t comment, type, usage_type, import_name, nvt_selectors;
-      entity_t preferences;
+      char *created_name, *comment, *type, *import_name;
+      entity_t usage_type;
       array_t *import_nvt_selectors, *import_preferences;
 
       /* Allow user to overwrite usage type. */
@@ -241,185 +436,29 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
             usage_type_text = NULL;
         }
 
-      import_name = entity_child (config, "name");
-      comment = entity_child (config, "comment");
-      type = entity_child (config, "type");
+      /* Get the config data from the XML. */
 
-      /* Collect NVT selectors. */
-
-      import_nvt_selectors = NULL;
-      nvt_selectors = entity_child (config, "nvt_selectors");
-      if (nvt_selectors)
+      if (parse_config_entity (config, &import_name, &comment, &type,
+                               &import_nvt_selectors, &import_preferences))
         {
-          entity_t nvt_selector;
-          entities_t children;
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("create_config",
+                              "Error in PREFERENCES element."));
+          log_event_fail ("config", "Scan config", NULL, "created");
 
-          import_nvt_selectors = make_array ();
-          children = nvt_selectors->entities;
-          while ((nvt_selector = first_entity (children)))
-            {
-              entity_t include, selector_name, selector_type, selector_fam;
-              int import_include;
+          /* Cleanup. */
 
-              include = entity_child (nvt_selector, "include");
-              if (include && strcmp (entity_text (include), "0") == 0)
-                import_include = 0;
-              else
-                import_include = 1;
-
-              selector_name = entity_child (nvt_selector, "name");
-              selector_type = entity_child (nvt_selector, "type");
-              selector_fam = entity_child (nvt_selector, "family_or_nvt");
-
-              array_add (import_nvt_selectors,
-                         nvt_selector_new (text_or_null (selector_name),
-                                           text_or_null (selector_type),
-                                           import_include,
-                                           text_or_null (selector_fam)));
-
-              children = next_entities (children);
-            }
-
-          array_terminate (import_nvt_selectors);
-        }
-
-      /* Collect NVT preferences. */
-
-      import_preferences = NULL;
-      preferences = entity_child (config, "preferences");
-      if (preferences)
-        {
-          entity_t preference;
-          entities_t children;
-
-          import_preferences = make_array ();
-          children = preferences->entities;
-          while ((preference = first_entity (children)))
-            {
-              entity_t pref_name, pref_nvt_name, hr_name, nvt, alt;
-              char *preference_hr_name, *preference_nvt_oid;
-              array_t *import_alts;
-              entities_t alts;
-              preference_t *new_preference;
-
-              pref_name = entity_child (preference, "name");
-
-              pref_nvt_name = NULL;
-              nvt = entity_child (preference, "nvt");
-              if (nvt)
-                pref_nvt_name = entity_child (nvt, "name");
-
-              hr_name = entity_child (preference, "hr_name");
-              if (type == NULL || strcmp (entity_text (type), "0") == 0)
-                /* Classic OpenVAS config preference. */
-                preference_hr_name = NULL;
-              else if (hr_name && strlen (entity_text (hr_name)))
-                /* OSP config preference with hr_name given. */
-                preference_hr_name = entity_text (hr_name);
-              else
-                /* Old OSP config without hr_name. */
-                preference_hr_name = text_or_null (pref_name);
-
-              import_alts = make_array ();
-              alts = preference->entities;
-              while ((alt = first_entity (alts)))
-                {
-                  if (strcasecmp (entity_name (alt), "ALT") == 0)
-                    array_add (import_alts, text_or_null (alt));
-                  alts = next_entities (alts);
-                }
-              array_terminate (import_alts);
-
-              preference_nvt_oid = attr_or_null (nvt, "oid");
-
-              if ((type == NULL || strcmp (entity_text (type), "0") == 0)
-                  && preference_nvt_oid
-                  && strcmp (preference_nvt_oid, ""))
-                {
-                  /* Preference in an OpenVAS config:
-                   * Get the preference from nvt_preferences */
-                  char *preference_id, *preference_name, *preference_type;
-                  char *preference_value;
-
-                  preference_id
-                    = text_or_null (entity_child (preference, "id"));
-                  preference_name
-                    = text_or_null (entity_child (preference, "name"));
-                  preference_type
-                    = text_or_null (entity_child (preference, "type"));
-                  preference_value
-                    = text_or_null (entity_child (preference, "value"));
-
-                  if (preference_id && strcmp (preference_id, ""))
-                    {
-                      new_preference
-                        = get_nvt_preference_by_id (preference_nvt_oid,
-                                                    preference_id,
-                                                    preference_name,
-                                                    preference_type,
-                                                    preference_value ?: "");
-                      if (new_preference == NULL)
-                        g_warning ("%s: Preference %s:%s not found",
-                                    __func__,
-                                    preference_nvt_oid,
-                                    preference_id);
-                    }
-                  else
-                    {
-                      g_warning ("%s: Config contains a preference for NVT %s"
-                                 " without a preference id: %s",
-                                 __func__,
-                                 preference_nvt_oid,
-                                 preference_name);
-
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("create_config",
-                                          "Error in PREFERENCES element."));
-                      log_event_fail ("config", "Scan config", NULL, "created");
-
-                      /* Cleanup. */
-
-                      cleanup_import_preferences (import_preferences);
-                      array_free (import_nvt_selectors);
-
-                      create_config_reset ();
-                      return;
-                    }
-                }
-              else
-                {
-                  /* Scanner preference (for OpenVAS or OSP configs):
-                   * Use directly from imported config.
-                   */
-                  new_preference
-                    = preference_new
-                          (text_or_null (entity_child (preference, "id")),
-                           text_or_null (pref_name),
-                           text_or_null (entity_child (preference, "type")),
-                           text_or_null (entity_child (preference, "value")),
-                           text_or_null (pref_nvt_name),
-                           preference_nvt_oid,
-                           import_alts,
-                           text_or_null (entity_child (preference, "default")),
-                           preference_hr_name,
-                           0 /* do not free strings */);
-                }
-
-              array_add (import_preferences, new_preference);
-
-              children = next_entities (children);
-            }
-
-          array_terminate (import_preferences);
+          create_config_reset ();
+          return;
         }
 
       /* Create config. */
 
-      switch (create_config (import_name ? entity_text (import_name) : NULL,
-                             comment ? entity_text (comment) : NULL,
+      switch (create_config (import_name,
+                             comment,
                              import_nvt_selectors,
                              import_preferences,
-                             type ? entity_text (type) : NULL,
+                             type,
                              usage_type_text,
                              &new_config,
                              &created_name))
