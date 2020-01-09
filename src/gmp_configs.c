@@ -275,7 +275,7 @@ parse_config_entity (entity_t config, char **name, char **comment,
             pref_nvt_name = entity_child (nvt, "name");
 
           hr_name = entity_child (preference, "hr_name");
-          if (type == NULL || strcmp (*type, "0") == 0)
+          if (*type == NULL || strcmp (*type, "0") == 0)
             /* Classic OpenVAS config preference. */
             preference_hr_name = NULL;
           else if (hr_name && strlen (entity_text (hr_name)))
@@ -297,7 +297,7 @@ parse_config_entity (entity_t config, char **name, char **comment,
 
           preference_nvt_oid = attr_or_null (nvt, "oid");
 
-          if ((type == NULL || strcmp (*type, "0") == 0)
+          if ((*type == NULL || strcmp (*type, "0") == 0)
               && preference_nvt_oid
               && strcmp (preference_nvt_oid, ""))
             {
