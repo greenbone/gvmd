@@ -30,6 +30,7 @@
  * The Config SQL for the GVM management layer.
  */
 
+#include "gmp_configs.h"
 #include "manage_configs.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
@@ -4483,6 +4484,125 @@ feed_dir_configs ()
 }
 
 /**
+ * @brief Create a config from an XML file.
+ *
+ * @param[in]  path  Path to config XML.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+create_config_from_file (const gchar *path)
+{
+  entity_t config;
+  array_t *nvt_selectors, *preferences;
+  char *created_name, *comment, *name, *type, *xml;
+  gsize xml_len;
+  GError *error;
+  config_t new_config;
+
+  g_debug ("%s: creating %s", __func__, path);
+
+  /* Buffer the file. */
+
+  error = NULL;
+  g_file_get_contents (path,
+                       &xml,
+                       &xml_len,
+                       &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to read file: %s",
+                  __func__,
+                  error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  /* Parse the buffer into an entity. */
+
+  if (parse_entity (xml, &config))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse config XML", __func__);
+      return -1;
+    }
+  g_free (xml);
+
+  /* Parse the data out of the entity. */
+
+  if (parse_config_entity (config, &name, &comment, &type,
+                           &nvt_selectors, &preferences))
+    {
+      free_entity (config);
+      g_warning ("%s: Failed to parse entity", __func__);
+      return -1;
+    }
+
+  /* Create the config. */
+
+  // FIX fake the user for now
+  current_credentials.uuid = "025204fe-1934-4850-b35b-1544dce5e8f7";
+
+  switch (create_config (name,
+                         comment,
+                         nvt_selectors,
+                         preferences,
+                         type,
+                         NULL,            /* Usage type. */
+                         &new_config,
+                         &created_name))
+    {
+      case 0:
+        {
+          gchar *uuid;
+
+          uuid = config_uuid (new_config);
+          log_event ("config", "Scan config", uuid, "created");
+          g_free (uuid);
+          free (created_name);
+          break;
+        }
+      case 1:
+        g_warning ("%s: Config exists already", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case 99:
+        g_warning ("%s: Permission denied", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case -2:
+        g_warning ("%s: Import name must be at"
+                   " least one character long",
+                   __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case -3:
+        g_warning ("%s: Error in NVT_SELECTORS element.", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case -4:
+        g_warning ("%s: Error in PREFERENCES element.", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      default:
+      case -1:
+        g_warning ("%s: Internal error", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+    }
+
+  current_credentials.uuid = NULL;
+
+  /* Cleanup. */
+
+  free_entity (config);
+  cleanup_import_preferences (preferences);
+  array_free (nvt_selectors);
+
+  return 0;
+}
+
+/**
  * @brief Sync a single config with the feed.
  *
  * @param[in]  path  Path to config XML in feed.
@@ -4490,12 +4610,20 @@ feed_dir_configs ()
 static void
 sync_config_with_feed (const gchar *path)
 {
+  gchar *full_path;
+
   if (sql_int ("SELECT EXISTS (SELECT * FROM configs"
                "               WHERE uuid = '%.36s');",
                path))
     return;
 
   g_debug ("%s: syncing %s", __func__, path);
+
+  full_path = g_build_filename (feed_dir_configs (), path, NULL);
+
+  create_config_from_file (full_path);
+
+  g_free (full_path);
 }
 
 /**

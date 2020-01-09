@@ -178,30 +178,6 @@ attr_or_null (entity_t entity, const gchar *name)
 }
 
 /**
- * @brief Cleanup preferences array.
- *
- * @param[in]  import_preferences  Import preferences.
- */
-static void
-cleanup_import_preferences (array_t *import_preferences)
-{
-  if (import_preferences)
-    {
-      guint index;
-
-      for (index = 0; index < import_preferences->len; index++)
-        {
-          preference_t *pref;
-          pref = (preference_t*) g_ptr_array_index (import_preferences,
-                                                    index);
-          if (pref)
-            preference_free (pref);
-        }
-      g_ptr_array_free (import_preferences, TRUE);
-    }
-}
-
-/**
  * @brief Get creation data from a config entity.
  *
  * @param[in]  config   Config entity.

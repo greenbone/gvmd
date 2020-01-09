@@ -36,6 +36,9 @@ preference_new (char *, char *, char *, char *, char *,
 void
 preference_free (preference_t *);
 
+void
+cleanup_import_preferences (array_t *);
+
 preference_t *
 get_nvt_preference_by_id (const char *,
                           const char *,

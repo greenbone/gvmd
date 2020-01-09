@@ -17735,7 +17735,6 @@ check_db (int check_encryption_key)
   check_db_roles ();
   check_db_nvt_selectors ();
   check_db_nvts ();
-  check_db_configs ();
   check_db_port_lists ();
   clean_auth_cache ();
   if (check_db_scanners ())
@@ -18073,6 +18072,10 @@ init_manage_internal (GSList *log_config,
 
   if (nvti_cache == NULL)
     update_nvti_cache ();
+
+  if (skip_db_check == 0)
+    /* Requires NVT cache. */
+    check_db_configs ();
 
   sql_close ();
   gvmd_db_name = database ? g_strdup (database) : NULL;
