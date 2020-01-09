@@ -74,6 +74,18 @@ static int
 insert_nvt_selectors (const char *, const array_t*);
 
 
+/* Headers from config specific files. */
+
+int
+check_config_discovery (const char *);
+
+void
+check_config_host_discovery (const char *);
+
+int
+check_config_system_discovery (const char *);
+
+
 /* Helpers. */
 
 /**
@@ -4451,4 +4463,35 @@ update_config_cache_init (const char *uuid)
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
+}
+
+/**
+ * @brief Ensure the predefined configs exist.
+ */
+void
+check_db_configs ()
+{
+  /* In the Service Detection family, NVTs sometimes move to Product
+   * Detection, and once an NVT was removed.  So remove those NVTs
+   * from Service Detection in the NVT selector. */
+
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
+       " AND family = 'Service detection'"
+       " AND (SELECT family FROM nvts"
+       "      WHERE oid = nvt_selectors.family_or_nvt)"
+       "     = 'Product detection';");
+
+  if (sql_int ("SELECT EXISTS (SELECT * FROM nvts);"))
+    sql ("DELETE FROM nvt_selectors"
+         " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
+         " AND family = 'Service detection'"
+         " AND NOT EXISTS (SELECT * FROM nvts"
+         "                 WHERE oid = nvt_selectors.family_or_nvt);");
+
+  check_config_discovery (CONFIG_UUID_DISCOVERY);
+
+  check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
+
+  check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
 }

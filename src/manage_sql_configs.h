@@ -75,4 +75,7 @@
 gchar *
 configs_extra_where (const char *);
 
+void
+check_db_configs ();
+
 #endif /* not _GVMD_MANAGE_SQL_CONFIGS_H */

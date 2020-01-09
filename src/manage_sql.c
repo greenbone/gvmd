@@ -189,15 +189,6 @@ make_port_ranges_all_tcp_nmap_5_51_top_1000 (port_list_t);
 void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
-int
-check_config_discovery (const char *);
-
-void
-check_config_host_discovery (const char *);
-
-int
-check_config_system_discovery (const char *);
-
 
 /* Static headers. */
 
@@ -16840,37 +16831,6 @@ check_db_nvt_selectors ()
            /* OID of the "w3af (NASL wrapper)" NVT. */
            " '1.3.6.1.4.1.25623.1.0.80109', 'Web application abuses');");
     }
-}
-
-/**
- * @brief Ensure the predefined configs exist.
- */
-static void
-check_db_configs ()
-{
-  /* In the Service Detection family, NVTs sometimes move to Product
-   * Detection, and once an NVT was removed.  So remove those NVTs
-   * from Service Detection in the NVT selector. */
-
-  sql ("DELETE FROM nvt_selectors"
-       " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
-       " AND family = 'Service detection'"
-       " AND (SELECT family FROM nvts"
-       "      WHERE oid = nvt_selectors.family_or_nvt)"
-       "     = 'Product detection';");
-
-  if (sql_int ("SELECT EXISTS (SELECT * FROM nvts);"))
-    sql ("DELETE FROM nvt_selectors"
-         " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
-         " AND family = 'Service detection'"
-         " AND NOT EXISTS (SELECT * FROM nvts"
-         "                 WHERE oid = nvt_selectors.family_or_nvt);");
-
-  check_config_discovery (CONFIG_UUID_DISCOVERY);
-
-  check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
-
-  check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
 }
 
 /**
