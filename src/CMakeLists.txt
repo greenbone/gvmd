@@ -334,6 +334,8 @@ if (GVM_NVT_DIR)
         add_definitions (-DGVM_NVT_DIR="${GVM_NVT_DIR}")
 endif (GVM_NVT_DIR)
 
+add_definitions (-DGVMD_FEED_DIR="${GVMD_FEED_DIR}")
+
 if (BINDIR)
   add_definitions (-DBINDIR="${BINDIR}")
 endif (BINDIR)

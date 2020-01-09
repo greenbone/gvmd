@@ -4465,12 +4465,77 @@ update_config_cache_init (const char *uuid)
   cleanup_iterator (&configs);
 }
 
+
+/* Startup. */
+
+/**
+ * @brief Get path to configs in feed.
+ */
+static const gchar *
+feed_dir_configs ()
+{
+  static gchar *path = NULL;
+  if (path == NULL)
+    path = g_build_filename (GVMD_FEED_DIR, "configs", NULL);
+  return path;
+}
+
+/**
+ * @brief Sync a single config with the feed.
+ *
+ * @param[in]  path  Path to config XML in feed.
+ */
+static void
+sync_config_with_feed (const gchar *path)
+{
+  g_debug ("%s: syncing %s", __func__, path);
+}
+
+/**
+ * @brief Sync all configs with the feed.
+ *
+ * Create configs that exists in the feed but not in the db.
+ * Update configs in the db that have changed on the feed.
+ * Do nothing to configs in db that have been removed from the feed.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+sync_configs_with_feed ()
+{
+  GError *error;
+  GDir *dir;
+  const gchar *config_path;
+
+  error = NULL;
+  dir = g_dir_open (feed_dir_configs (), 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __func__, feed_dir_configs (), error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  while ((config_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (config_path, ".") == 0
+        && g_str_has_suffix (config_path, ".xml"))
+      sync_config_with_feed (config_path);
+
+  g_dir_close (dir);
+
+  return 0;
+}
+
 /**
  * @brief Ensure the predefined configs exist.
  */
 void
 check_db_configs ()
 {
+  if (sync_configs_with_feed ())
+    g_warning ("%s: Failed to sync configs with feed", __func__);
+
   /* In the Service Detection family, NVTs sometimes move to Product
    * Detection, and once an NVT was removed.  So remove those NVTs
    * from Service Detection in the NVT selector. */

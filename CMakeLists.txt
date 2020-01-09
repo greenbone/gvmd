@@ -207,6 +207,10 @@ if (NOT GVM_NVT_DIR)
 	set (GVM_NVT_DIR "${LOCALSTATEDIR}/lib/openvas/plugins/")
 endif (NOT GVM_NVT_DIR)
 
+if (NOT GVMD_FEED_DIR)
+  set (GVMD_FEED_DIR "${LOCALSTATEDIR}/lib/openvas/gvmd/${GMP_VERSION}")
+endif (NOT GVMD_FEED_DIR)
+
 if (NOT GVM_ACCESS_KEY_DIR)
   set (GVM_ACCESS_KEY_DIR "${GVM_SYSCONF_DIR}")
 endif (NOT GVM_ACCESS_KEY_DIR)
