@@ -4740,6 +4740,11 @@ sync_configs_with_feed ()
     }
 
   current_credentials.username = user_name (current_credentials.uuid);
+  if (current_credentials.username == NULL)
+    {
+      g_debug ("%s: unknown Feed Import Owner so not syncing from feed", __func__);
+      return 0;
+    }
 
   /* Open feed import directory. */
 
