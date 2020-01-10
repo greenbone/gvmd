@@ -4727,6 +4727,17 @@ sync_configs_with_feed ()
   GError *error;
   GDir *dir;
   const gchar *config_path;
+  gchar *nvt_feed_version;
+
+  /* Only sync if NVTs are up to date. */
+
+  nvt_feed_version = nvts_feed_version ();
+  if (nvt_feed_version == NULL)
+    {
+      g_debug ("%s: no NVTs so not syncing from feed", __func__);
+      return 0;
+    }
+  g_free (nvt_feed_version);
 
   /* Setup owner. */
 
