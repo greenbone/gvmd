@@ -4540,9 +4540,6 @@ create_config_from_file (const gchar *path)
 
   /* Create the config. */
 
-  // FIX fake the user for now
-  current_credentials.uuid = "025204fe-1934-4850-b35b-1544dce5e8f7";
-
   switch (create_config (name,
                          comment,
                          nvt_selectors,
@@ -4590,8 +4587,6 @@ create_config_from_file (const gchar *path)
         log_event_fail ("config", "Scan config", NULL, "created");
         break;
     }
-
-  current_credentials.uuid = NULL;
 
   /* Cleanup. */
 
@@ -4642,6 +4637,21 @@ sync_configs_with_feed ()
   GDir *dir;
   const gchar *config_path;
 
+  /* Setup owner. */
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
+
+  if (current_credentials.uuid == NULL)
+    {
+      /* Sync is disabled by having no "Feed Import Owner". */
+      g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
+      return 0;
+    }
+
+  current_credentials.username = user_name (current_credentials.uuid);
+
+  /* Open feed import directory. */
+
   error = NULL;
   dir = g_dir_open (feed_dir_configs (), 0, &error);
   if (dir == NULL)
@@ -4649,15 +4659,25 @@ sync_configs_with_feed ()
       g_warning ("%s: Failed to open directory '%s': %s",
                  __func__, feed_dir_configs (), error->message);
       g_error_free (error);
+      current_credentials.uuid = NULL;
+      g_free (current_credentials.username);
+      current_credentials.username = NULL;
       return -1;
     }
+
+  /* Sync each file in the directory. */
 
   while ((config_path = g_dir_read_name (dir)))
     if (g_str_has_prefix (config_path, ".") == 0
         && g_str_has_suffix (config_path, ".xml"))
       sync_config_with_feed (config_path);
 
+  /* Cleanup. */
+
   g_dir_close (dir);
+  current_credentials.uuid = NULL;
+  g_free (current_credentials.username);
+  current_credentials.username = NULL;
 
   return 0;
 }

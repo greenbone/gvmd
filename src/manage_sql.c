@@ -377,9 +377,6 @@ setting_dynamic_severity_int ();
 static char *
 setting_timezone ();
 
-static int
-setting_value (const char *, char **);
-
 static void
 set_report_format_name (report_format_t, const char *);
 
@@ -57942,7 +57939,7 @@ DEF_ACCESS (setting_iterator_value, 4);
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 setting_value (const char *uuid, char **value)
 {
   gchar *quoted_uuid;
