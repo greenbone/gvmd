@@ -4484,6 +4484,51 @@ feed_dir_configs ()
 }
 
 /**
+ * @brief Grant 'Feed Import Roles' access to a config.
+ *
+ * @param[in]  config_id  UUID of config.
+ */
+static void
+create_feed_config_permissions (const gchar *config_id)
+{
+  gchar *roles, **split, **point;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles);
+
+  if (roles == NULL || strlen (roles) == 0)
+    {
+      g_debug ("%s: no 'Feed Import Roles', so not creating permissions",
+               __func__);
+      return;
+    }
+
+  point = split = g_strsplit (roles, ",", 0);
+  while (*point)
+    {
+      permission_t permission;
+
+      if (create_permission_internal ("get_configs",
+                                      "Automatically created for config"
+                                      " from feed",
+                                      NULL,
+                                      config_id,
+                                      "role",
+                                      g_strstrip (*point),
+                                      &permission))
+        /* Keep going because we aren't strict about checking the value
+         * of the setting, and because we don't adjust the setting when
+         * roles are removed. */
+        g_warning ("%s: failed to create permission for role '%s'",
+                   __func__, g_strstrip (*point));
+
+      point++;
+    }
+  g_strfreev (split);
+
+  g_free (roles);
+}
+
+/**
  * @brief Create a config from an XML file.
  *
  * @param[in]  path  Path to config XML.
@@ -4555,6 +4600,10 @@ create_config_from_file (const gchar *path)
 
           uuid = config_uuid (new_config);
           log_event ("config", "Scan config", uuid, "created");
+
+          /* Create permissions. */
+          create_feed_config_permissions (uuid);
+
           g_free (uuid);
           free (created_name);
           break;
