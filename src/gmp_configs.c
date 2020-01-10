@@ -435,8 +435,9 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Create config. */
 
-      switch (create_config (NULL, /* Generate a UUID. */
+      switch (create_config (NULL,                  /* Generate a UUID. */
                              import_name,
+                             1,                     /* Make name unique. */
                              comment,
                              import_nvt_selectors,
                              import_preferences,

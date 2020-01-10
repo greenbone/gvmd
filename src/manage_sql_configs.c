@@ -2252,6 +2252,7 @@ config_insert_preferences (config_t config,
  *
  * @param[in]   config_id      ID if one is required, else NULL.
  * @param[in]   proposed_name  Proposed name of config.
+ * @param[in]   make_name_unique  Whether to make name unique.
  * @param[in]   comment        Comment on config.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
@@ -2266,7 +2267,7 @@ config_insert_preferences (config_t config,
  */
 int
 create_config (const char* config_id, const char* proposed_name,
-               const char* comment,
+               int make_name_unique, const char* comment,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */,
                const char* config_type, const char *usage_type,
@@ -2310,7 +2311,7 @@ create_config (const char* config_id, const char* proposed_name,
   else
     actual_usage_type = "scan";
 
-  while (1)
+  while (make_name_unique)
     {
       if (!resource_with_name_exists (quoted_candidate_name, "config", 0))
         break;
@@ -4603,6 +4604,7 @@ create_config_from_file (const gchar *path)
 
   switch (create_config (config_id,
                          name,
+                         0,               /* Use name exactly as given. */
                          comment,
                          nvt_selectors,
                          preferences,
