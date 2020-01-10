@@ -16562,6 +16562,17 @@ check_db_settings ()
          "  'Debian LSC Package Maintainer',"
          "  'Maintainer email address used in generated Debian LSC packages.',"
          "  '');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_FEED_IMPORT_ROLES "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_FEED_IMPORT_ROLES "', NULL,"
+         "  'Feed Import Roles',"
+         "  'Roles given access to new resources from feed.',"
+         "  '" ROLE_UUID_ADMIN "," ROLE_UUID_USER "');");
 }
 
 /**
@@ -58702,6 +58713,8 @@ setting_name (const gchar *uuid)
     return "Debian LSC Package Maintainer";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
     return "Feed Import Owner";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    return "Feed Import Roles";
   return NULL;
 }
 
@@ -58738,6 +58751,8 @@ setting_description (const gchar *uuid)
     return "Maintainer email address used in generated Debian LSC packages.";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
     return "User who is given ownership of new resources from feed.";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    return "Roles given access to new resources from feed.";
   return NULL;
 }
 
@@ -58812,6 +58827,25 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
       g_free (quoted_uuid);
     }
 
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    {
+      gchar **split, **point;
+
+      point = split = g_strsplit (value, ",", 0);
+      while (*point)
+        {
+          if (g_regex_match_simple ("^[-0123456789abcdefABCDEF]{36}$",
+                                    g_strstrip (*point), 0, 0)
+              == FALSE)
+            {
+              g_strfreev (split);
+              return 1;
+            }
+          point++;
+        }
+      g_strfreev (split);
+    }
+
   return 0;
 }
 
@@ -58843,6 +58877,30 @@ setting_normalise (const gchar *uuid, const gchar *value)
       return g_strstrip (g_strdup (value));
     }
 
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    {
+      GString *normalised;
+      gchar **split, **point;
+
+      normalised = g_string_new ("");
+      point = split = g_strsplit (value, ",", 0);
+
+      while (*point)
+        {
+          g_string_append_printf (normalised,
+                                  "%s%s",
+                                  point == split ? "" : ",",
+                                  g_strstrip (*point));
+          point++;
+        }
+
+      g_strfreev (split);
+
+      g_string_ascii_down (normalised);
+
+      return g_string_free (normalised, FALSE);
+    }
+
   return g_strdup (value);
 }
 
@@ -58872,7 +58930,8 @@ manage_modify_setting (GSList *log_config, const gchar *database,
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
       && strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD)
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
-      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER))
+      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
+      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
@@ -58898,6 +58957,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
           || (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0))
         {
           sql_rollback ();
