@@ -180,23 +180,28 @@ attr_or_null (entity_t entity, const gchar *name)
 /**
  * @brief Get creation data from a config entity.
  *
- * @param[in]  config   Config entity.
- * @param[out] name     Address for name.
- * @param[out] comment  Address for comment.
- * @param[out] type     Address for type.
+ * @param[in]  config     Config entity.
+ * @param[out] config_id  Address for config ID if required, else NULL.
+ * @param[out] name       Address for name.
+ * @param[out] comment    Address for comment.
+ * @param[out] type       Address for type.
  * @param[out] import_nvt_selectors  Address for selectors.
  * @param[out] import_preferences    Address for preferences.
  *
  * @return 0 success, -1 preference without ID.
  */
 int
-parse_config_entity (entity_t config, char **name, char **comment,
-                     char **type, array_t **import_nvt_selectors,
+parse_config_entity (entity_t config, const char **config_id, char **name,
+                     char **comment, char **type,
+                     array_t **import_nvt_selectors,
                      array_t **import_preferences)
 {
   entity_t entity, preferences, nvt_selectors;
 
   *name = *comment = *type = NULL;
+
+  if (config_id)
+    *config_id = entity_attribute (config, "id");
 
   entity = entity_child (config, "name");
   if (entity)
@@ -414,7 +419,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Get the config data from the XML. */
 
-      if (parse_config_entity (config, &import_name, &comment, &type,
+      if (parse_config_entity (config, NULL, &import_name, &comment, &type,
                                &import_nvt_selectors, &import_preferences))
         {
           SEND_TO_CLIENT_OR_FAIL
@@ -430,7 +435,8 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Create config. */
 
-      switch (create_config (import_name,
+      switch (create_config (NULL, /* Generate a UUID. */
+                             import_name,
                              comment,
                              import_nvt_selectors,
                              import_preferences,

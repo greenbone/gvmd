@@ -2250,6 +2250,7 @@ config_insert_preferences (config_t config,
  * If a config with the same name exists already then add a unique integer
  * suffix onto the name.
  *
+ * @param[in]   config_id      ID if one is required, else NULL.
  * @param[in]   proposed_name  Proposed name of config.
  * @param[in]   comment        Comment on config.
  * @param[in]   selectors      NVT selectors.
@@ -2261,10 +2262,11 @@ config_insert_preferences (config_t config,
  *
  * @return 0 success, 1 config exists already, 99 permission denied, -1 error,
  *         -2 name empty, -3 input error in selectors, -4 input error in
- *         preferences.
+ *         preferences, -5 error in config_id.
  */
 int
-create_config (const char* proposed_name, const char* comment,
+create_config (const char* config_id, const char* proposed_name,
+               const char* comment,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */,
                const char* config_type, const char *usage_type,
@@ -2278,6 +2280,12 @@ create_config (const char* proposed_name, const char* comment,
   unsigned int num = 1;
 
   assert (current_credentials.uuid);
+
+  if (config_id
+      && (g_regex_match_simple ("^[-0123456789abcdef]{36}$",
+                                config_id, 0, 0)
+          == FALSE))
+    return -5;
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
@@ -2317,9 +2325,12 @@ create_config (const char* proposed_name, const char* comment,
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
            " type, creation_time, modification_time, usage_type)"
-           " VALUES (make_uuid (), '%s',"
+           " VALUES (%s%s%s, '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s', '%s', m_now (), m_now (), '%s');",
+           config_id ? "'" : "",
+           config_id ? config_id : "make_uuid ()",
+           config_id ? "'" : "",
            quoted_candidate_name,
            current_credentials.uuid,
            selector_uuid,
@@ -2331,9 +2342,12 @@ create_config (const char* proposed_name, const char* comment,
   else
     sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
          " type, creation_time, modification_time, usage_type)"
-         " VALUES (make_uuid (), '%s',"
+         " VALUES (%s%s%s, '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
          " '%s', '', '%s', m_now (), m_now (), '%s');",
+         config_id ? "'" : "",
+         config_id ? config_id : "make_uuid ()",
+         config_id ? "'" : "",
          quoted_candidate_name,
          current_credentials.uuid,
          selector_uuid,
@@ -4542,6 +4556,7 @@ create_config_from_file (const gchar *path)
   entity_t config;
   array_t *nvt_selectors, *preferences;
   char *created_name, *comment, *name, *type, *xml;
+  const char *config_id;
   gsize xml_len;
   GError *error;
   config_t new_config;
@@ -4576,7 +4591,7 @@ create_config_from_file (const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  if (parse_config_entity (config, &name, &comment, &type,
+  if (parse_config_entity (config, &config_id, &name, &comment, &type,
                            &nvt_selectors, &preferences))
     {
       free_entity (config);
@@ -4586,7 +4601,8 @@ create_config_from_file (const gchar *path)
 
   /* Create the config. */
 
-  switch (create_config (name,
+  switch (create_config (config_id,
+                         name,
                          comment,
                          nvt_selectors,
                          preferences,
@@ -4629,6 +4645,10 @@ create_config_from_file (const gchar *path)
         break;
       case -4:
         g_warning ("%s: Error in PREFERENCES element.", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case -5:
+        g_warning ("%s: Error in CONFIG @id.", __func__);
         log_event_fail ("config", "Scan config", NULL, "created");
         break;
       default:
