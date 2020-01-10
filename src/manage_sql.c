@@ -59197,6 +59197,9 @@ manage_delete_user (GSList *log_config, const gchar *database,
         fprintf (stderr,
                  "Resources owned by the user are still in use by others.\n");
         break;
+      case 10:
+        fprintf (stderr, "User is Feed Import Owner.\n");
+        break;
       default:
         fprintf (stderr, "Internal Error.\n");
         break;
@@ -59812,7 +59815,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
  * @return 0 success, 2 failed to find user, 4 user has active tasks,
  *         5 attempted suicide, 6 inheritor not found, 7 inheritor same as
  *         deleted user, 8 invalid inheritor, 9 resources still in use,
- *         99 permission denied, -1 error.
+ *         10 user is 'Feed Import Owner' 99 permission denied, -1 error.
  */
 int
 delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
@@ -59822,7 +59825,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   iterator_t tasks;
   user_t user, inheritor;
   get_data_t get;
-  char *current_uuid;
+  char *current_uuid, *feed_owner_id;
 
   assert (user_id_arg || name_arg);
 
@@ -59870,6 +59873,23 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   if (user == 0)
     return 2;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_id);
+  if (feed_owner_id)
+    {
+      char *uuid;
+
+      uuid = user_uuid (user);
+      if (strcmp (uuid, feed_owner_id) == 0)
+        {
+          free (uuid);
+          free (feed_owner_id);
+          sql_rollback ();
+          return 10;
+        }
+      free (feed_owner_id);
+      free (uuid);
+    }
 
   if (forbid_super_admin)
     {

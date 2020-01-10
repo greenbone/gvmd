@@ -19912,6 +19912,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "Resources owned by the user are still"
                                     " in use by others."));
                 break;
+              case 10:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "User is Feed Import Owner"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_user",
