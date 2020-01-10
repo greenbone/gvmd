@@ -4677,14 +4677,33 @@ create_config_from_file (const gchar *path)
 static void
 sync_config_with_feed (const gchar *path)
 {
-  gchar *full_path;
+  gchar **split, *full_path;
+
+  g_debug ("%s: considering %s", __func__, path);
+
+  split = g_regex_split_simple
+           (/* Full-and-Fast--daba56c8-73ec-11df-a475-002264764cea.xml */
+            "^.*([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12}).xml$",
+            path, 0, 0);
+
+  if (split == NULL || g_strv_length (split) != 7)
+    {
+      g_strfreev (split);
+      g_warning ("%s: path not in required format: %s", __func__, path);
+      return;
+    }
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM configs"
-               "               WHERE uuid = '%.36s');",
-               path))
-    return;
+               "               WHERE uuid = '%s-%s-%s-%s-%s');",
+               split[1], split[2], split[3], split[4], split[5]))
+    {
+      g_strfreev (split);
+      return;
+    }
 
-  g_debug ("%s: syncing %s", __func__, path);
+  g_strfreev (split);
+
+  g_debug ("%s: adding %s", __func__, path);
 
   full_path = g_build_filename (feed_dir_configs (), path, NULL);
 
@@ -4742,6 +4761,7 @@ sync_configs_with_feed ()
 
   while ((config_path = g_dir_read_name (dir)))
     if (g_str_has_prefix (config_path, ".") == 0
+        && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (config_path, ".xml"))
       sync_config_with_feed (config_path);
 
