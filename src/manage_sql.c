@@ -57946,7 +57946,7 @@ DEF_ACCESS (setting_iterator_value, 4);
  * @brief Get the value of a setting as a string.
  *
  * @param[in]   uuid   UUID of setting.
- * @param[out]  value  Value.
+ * @param[out]  value  Freshly allocated value.
  *
  * @return 0 success, -1 error.
  */

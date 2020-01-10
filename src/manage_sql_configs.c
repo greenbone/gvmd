@@ -4499,6 +4499,7 @@ create_feed_config_permissions (const gchar *config_id)
     {
       g_debug ("%s: no 'Feed Import Roles', so not creating permissions",
                __func__);
+      g_free (roles);
       return;
     }
 
@@ -4708,8 +4709,9 @@ sync_configs_with_feed ()
       g_warning ("%s: Failed to open directory '%s': %s",
                  __func__, feed_dir_configs (), error->message);
       g_error_free (error);
-      current_credentials.uuid = NULL;
+      g_free (current_credentials.uuid);
       g_free (current_credentials.username);
+      current_credentials.uuid = NULL;
       current_credentials.username = NULL;
       return -1;
     }
@@ -4724,8 +4726,9 @@ sync_configs_with_feed ()
   /* Cleanup. */
 
   g_dir_close (dir);
-  current_credentials.uuid = NULL;
+  g_free (current_credentials.uuid);
   g_free (current_credentials.username);
+  current_credentials.uuid = NULL;
   current_credentials.username = NULL;
 
   return 0;
