@@ -58703,6 +58703,8 @@ setting_name (const gchar *uuid)
     return "GMP Slave Check Period";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Debian LSC Package Maintainer";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+    return "Feed Import Owner";
   return NULL;
 }
 
@@ -58737,6 +58739,8 @@ setting_description (const gchar *uuid)
     return "Period in seconds when polling a GMP slave";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Maintainer email address used in generated Debian LSC packages.";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+    return "User who is given ownership of new resources from feed.";
   return NULL;
 }
 
@@ -58785,6 +58789,30 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
             ("^([[:alnum:]-_]*@[[:alnum:]-_][[:alnum:]-_.]*)?$",
             value, 0, 0) == FALSE)
         return 1;
+    }
+
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+    {
+      user_t value_user;
+      gchar *quoted_uuid;
+
+      quoted_uuid = sql_quote (value);
+      switch (sql_int64 (&value_user,
+                         "SELECT id FROM users WHERE uuid = '%s';",
+                         quoted_uuid))
+        {
+          case 0:
+            break;
+          case 1:        /* Too few rows in result of query. */
+            g_free (quoted_uuid);
+            return 1;
+          default:       /* Programming error. */
+            assert (0);
+          case -1:
+            g_free (quoted_uuid);
+            return 1;
+        }
+      g_free (quoted_uuid);
     }
 
   return 0;
@@ -58846,16 +58874,11 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
       && strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD)
-      && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER))
+      && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
+      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
-    }
-
-  if (setting_verify (uuid, value, name))
-    {
-      fprintf (stderr, "Syntax error in setting value.\n");
-      return 5;
     }
 
   ret = manage_option_setup (log_config, database);
@@ -58864,11 +58887,20 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 
   sql_begin_immediate ();
 
+  if (setting_verify (uuid, value, name))
+    {
+      sql_rollback ();
+      fprintf (stderr, "Syntax error in setting value.\n");
+      manage_option_cleanup ();
+      return 5;
+    }
+
   if (name)
     {
       user_t user;
 
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
           || (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0))
         {
           sql_rollback ();

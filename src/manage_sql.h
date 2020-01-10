@@ -243,6 +243,11 @@
 #define SETTING_UUID_LSC_DEB_MAINTAINER "2fcbeac8-4237-438f-b52a-540a23e7af97"
 
 /**
+ * @brief UUID of 'Feed Import Owner' setting.
+ */
+#define SETTING_UUID_FEED_IMPORT_OWNER "78eceaec-3385-11ea-b237-28d24461215b"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0
