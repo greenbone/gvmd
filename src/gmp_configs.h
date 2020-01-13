@@ -42,4 +42,8 @@ create_config_element_end (gmp_parser_t *, GError **error, const gchar *);
 void
 create_config_element_text (const gchar *, gsize);
 
+int
+parse_config_entity (entity_t, const char **, char **, char **, char **, array_t **,
+                     array_t **);
+
 #endif /* not _GVMD_GMP_CONFIGS_H */

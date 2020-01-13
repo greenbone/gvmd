@@ -243,6 +243,16 @@
 #define SETTING_UUID_LSC_DEB_MAINTAINER "2fcbeac8-4237-438f-b52a-540a23e7af97"
 
 /**
+ * @brief UUID of 'Feed Import Owner' setting.
+ */
+#define SETTING_UUID_FEED_IMPORT_OWNER "78eceaec-3385-11ea-b237-28d24461215b"
+
+/**
+ * @brief UUID of 'Feed Import Roles' setting.
+ */
+#define SETTING_UUID_FEED_IMPORT_ROLES "ff000362-338f-11ea-9051-28d24461215b"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0
@@ -557,5 +567,8 @@ copy_resource_lock (const char *, const char *, const char *, const char *,
 
 nvti_t *
 lookup_nvti (const gchar *);
+
+int
+setting_value (const char *, char **);
 
 #endif /* not _GVMD_MANAGE_SQL_H */

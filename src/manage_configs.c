@@ -94,3 +94,27 @@ preference_free (preference_t *preference)
 
   g_free (preference);
 }
+
+/**
+ * @brief Cleanup preferences array.
+ *
+ * @param[in]  import_preferences  Import preferences.
+ */
+void
+cleanup_import_preferences (array_t *import_preferences)
+{
+  if (import_preferences)
+    {
+      guint index;
+
+      for (index = 0; index < import_preferences->len; index++)
+        {
+          preference_t *pref;
+          pref = (preference_t*) g_ptr_array_index (import_preferences,
+                                                    index);
+          if (pref)
+            preference_free (pref);
+        }
+      g_ptr_array_free (import_preferences, TRUE);
+    }
+}

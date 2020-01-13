@@ -100,7 +100,6 @@ add_executable (manage-utils-test
                 manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -125,7 +124,6 @@ add_executable (manage-test
                 manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -150,7 +148,6 @@ add_executable (gmp-tickets-test
                 manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -182,7 +179,6 @@ add_executable (gvmd
                 manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_config_base.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -337,6 +333,8 @@ endif (GVM_LIB_INSTALL_DIR)
 if (GVM_NVT_DIR)
         add_definitions (-DGVM_NVT_DIR="${GVM_NVT_DIR}")
 endif (GVM_NVT_DIR)
+
+add_definitions (-DGVMD_FEED_DIR="${GVMD_FEED_DIR}")
 
 if (BINDIR)
   add_definitions (-DBINDIR="${BINDIR}")

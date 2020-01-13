@@ -30,6 +30,7 @@
  * The Config SQL for the GVM management layer.
  */
 
+#include "gmp_configs.h"
 #include "manage_configs.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
@@ -72,6 +73,18 @@ nvt_selector_nvts_growing_2 (const char*, int);
 
 static int
 insert_nvt_selectors (const char *, const array_t*);
+
+
+/* Headers from config specific files. */
+
+int
+check_config_discovery (const char *);
+
+void
+check_config_host_discovery (const char *);
+
+int
+check_config_system_discovery (const char *);
 
 
 /* Helpers. */
@@ -2237,7 +2250,9 @@ config_insert_preferences (config_t config,
  * If a config with the same name exists already then add a unique integer
  * suffix onto the name.
  *
+ * @param[in]   config_id      ID if one is required, else NULL.
  * @param[in]   proposed_name  Proposed name of config.
+ * @param[in]   make_name_unique  Whether to make name unique.
  * @param[in]   comment        Comment on config.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
@@ -2248,10 +2263,11 @@ config_insert_preferences (config_t config,
  *
  * @return 0 success, 1 config exists already, 99 permission denied, -1 error,
  *         -2 name empty, -3 input error in selectors, -4 input error in
- *         preferences.
+ *         preferences, -5 error in config_id.
  */
 int
-create_config (const char* proposed_name, const char* comment,
+create_config (const char* config_id, const char* proposed_name,
+               int make_name_unique, const char* comment,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */,
                const char* config_type, const char *usage_type,
@@ -2265,6 +2281,12 @@ create_config (const char* proposed_name, const char* comment,
   unsigned int num = 1;
 
   assert (current_credentials.uuid);
+
+  if (config_id
+      && (g_regex_match_simple ("^[-0123456789abcdef]{36}$",
+                                config_id, 0, 0)
+          == FALSE))
+    return -5;
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
@@ -2289,7 +2311,7 @@ create_config (const char* proposed_name, const char* comment,
   else
     actual_usage_type = "scan";
 
-  while (1)
+  while (make_name_unique)
     {
       if (!resource_with_name_exists (quoted_candidate_name, "config", 0))
         break;
@@ -2304,9 +2326,12 @@ create_config (const char* proposed_name, const char* comment,
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
            " type, creation_time, modification_time, usage_type)"
-           " VALUES (make_uuid (), '%s',"
+           " VALUES (%s%s%s, '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s', '%s', m_now (), m_now (), '%s');",
+           config_id ? "'" : "",
+           config_id ? config_id : "make_uuid ()",
+           config_id ? "'" : "",
            quoted_candidate_name,
            current_credentials.uuid,
            selector_uuid,
@@ -2318,9 +2343,12 @@ create_config (const char* proposed_name, const char* comment,
   else
     sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
          " type, creation_time, modification_time, usage_type)"
-         " VALUES (make_uuid (), '%s',"
+         " VALUES (%s%s%s, '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
          " '%s', '', '%s', m_now (), m_now (), '%s');",
+         config_id ? "'" : "",
+         config_id ? config_id : "make_uuid ()",
+         config_id ? "'" : "",
          quoted_candidate_name,
          current_credentials.uuid,
          selector_uuid,
@@ -4451,4 +4479,349 @@ update_config_cache_init (const char *uuid)
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
+}
+
+
+/* Startup. */
+
+/**
+ * @brief Get path to configs in feed.
+ *
+ * @return Path to configs in feed.
+ */
+static const gchar *
+feed_dir_configs ()
+{
+  static gchar *path = NULL;
+  if (path == NULL)
+    path = g_build_filename (GVMD_FEED_DIR, "configs", NULL);
+  return path;
+}
+
+/**
+ * @brief Grant 'Feed Import Roles' access to a config.
+ *
+ * @param[in]  config_id  UUID of config.
+ */
+static void
+create_feed_config_permissions (const gchar *config_id)
+{
+  gchar *roles, **split, **point;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles);
+
+  if (roles == NULL || strlen (roles) == 0)
+    {
+      g_debug ("%s: no 'Feed Import Roles', so not creating permissions",
+               __func__);
+      g_free (roles);
+      return;
+    }
+
+  point = split = g_strsplit (roles, ",", 0);
+  while (*point)
+    {
+      permission_t permission;
+
+      if (create_permission_internal ("get_configs",
+                                      "Automatically created for config"
+                                      " from feed",
+                                      NULL,
+                                      config_id,
+                                      "role",
+                                      g_strstrip (*point),
+                                      &permission))
+        /* Keep going because we aren't strict about checking the value
+         * of the setting, and because we don't adjust the setting when
+         * roles are removed. */
+        g_warning ("%s: failed to create permission for role '%s'",
+                   __func__, g_strstrip (*point));
+
+      point++;
+    }
+  g_strfreev (split);
+
+  g_free (roles);
+}
+
+/**
+ * @brief Create a config from an XML file.
+ *
+ * @param[in]  path  Path to config XML.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+create_config_from_file (const gchar *path)
+{
+  entity_t config;
+  array_t *nvt_selectors, *preferences;
+  char *created_name, *comment, *name, *type, *xml;
+  const char *config_id;
+  gsize xml_len;
+  GError *error;
+  config_t new_config;
+
+  g_debug ("%s: creating %s", __func__, path);
+
+  /* Buffer the file. */
+
+  error = NULL;
+  g_file_get_contents (path,
+                       &xml,
+                       &xml_len,
+                       &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to read file: %s",
+                  __func__,
+                  error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  /* Parse the buffer into an entity. */
+
+  if (parse_entity (xml, &config))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse config XML", __func__);
+      return -1;
+    }
+  g_free (xml);
+
+  /* Parse the data out of the entity. */
+
+  if (parse_config_entity (config, &config_id, &name, &comment, &type,
+                           &nvt_selectors, &preferences))
+    {
+      free_entity (config);
+      g_warning ("%s: Failed to parse entity", __func__);
+      return -1;
+    }
+
+  /* Create the config. */
+
+  switch (create_config (config_id,
+                         name,
+                         0,               /* Use name exactly as given. */
+                         comment,
+                         nvt_selectors,
+                         preferences,
+                         type,
+                         NULL,            /* Usage type. */
+                         &new_config,
+                         &created_name))
+    {
+      case 0:
+        {
+          gchar *uuid;
+
+          uuid = config_uuid (new_config);
+          log_event ("config", "Scan config", uuid, "created");
+
+          /* Create permissions. */
+          create_feed_config_permissions (uuid);
+
+          g_free (uuid);
+          free (created_name);
+          break;
+        }
+      case 1:
+        g_warning ("%s: Config exists already", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case 99:
+        g_warning ("%s: Permission denied", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case -2:
+        g_warning ("%s: Import name must be at"
+                   " least one character long",
+                   __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case -3:
+        g_warning ("%s: Error in NVT_SELECTORS element.", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case -4:
+        g_warning ("%s: Error in PREFERENCES element.", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      case -5:
+        g_warning ("%s: Error in CONFIG @id.", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+      default:
+      case -1:
+        g_warning ("%s: Internal error", __func__);
+        log_event_fail ("config", "Scan config", NULL, "created");
+        break;
+    }
+
+  /* Cleanup. */
+
+  free_entity (config);
+  cleanup_import_preferences (preferences);
+  array_free (nvt_selectors);
+
+  return 0;
+}
+
+/**
+ * @brief Sync a single config with the feed.
+ *
+ * @param[in]  path  Path to config XML in feed.
+ */
+static void
+sync_config_with_feed (const gchar *path)
+{
+  gchar **split, *full_path;
+
+  g_debug ("%s: considering %s", __func__, path);
+
+  split = g_regex_split_simple
+           (/* Full-and-Fast--daba56c8-73ec-11df-a475-002264764cea.xml */
+            "^.*([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12}).xml$",
+            path, 0, 0);
+
+  if (split == NULL || g_strv_length (split) != 7)
+    {
+      g_strfreev (split);
+      g_warning ("%s: path not in required format: %s", __func__, path);
+      return;
+    }
+
+  if (sql_int ("SELECT EXISTS (SELECT * FROM configs"
+               "               WHERE uuid = '%s-%s-%s-%s-%s');",
+               split[1], split[2], split[3], split[4], split[5]))
+    {
+      g_strfreev (split);
+      return;
+    }
+
+  g_strfreev (split);
+
+  g_debug ("%s: adding %s", __func__, path);
+
+  full_path = g_build_filename (feed_dir_configs (), path, NULL);
+
+  create_config_from_file (full_path);
+
+  g_free (full_path);
+}
+
+/**
+ * @brief Sync all configs with the feed.
+ *
+ * Create configs that exists in the feed but not in the db.
+ * Update configs in the db that have changed on the feed.
+ * Do nothing to configs in db that have been removed from the feed.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+sync_configs_with_feed ()
+{
+  GError *error;
+  GDir *dir;
+  const gchar *config_path;
+  gchar *nvt_feed_version;
+
+  /* Only sync if NVTs are up to date. */
+
+  nvt_feed_version = nvts_feed_version ();
+  if (nvt_feed_version == NULL)
+    {
+      g_debug ("%s: no NVTs so not syncing from feed", __func__);
+      return 0;
+    }
+  g_free (nvt_feed_version);
+
+  /* Setup owner. */
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
+
+  if (current_credentials.uuid == NULL)
+    {
+      /* Sync is disabled by having no "Feed Import Owner". */
+      g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
+      return 0;
+    }
+
+  current_credentials.username = user_name (current_credentials.uuid);
+  if (current_credentials.username == NULL)
+    {
+      g_debug ("%s: unknown Feed Import Owner so not syncing from feed", __func__);
+      return 0;
+    }
+
+  /* Open feed import directory. */
+
+  error = NULL;
+  dir = g_dir_open (feed_dir_configs (), 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __func__, feed_dir_configs (), error->message);
+      g_error_free (error);
+      g_free (current_credentials.uuid);
+      g_free (current_credentials.username);
+      current_credentials.uuid = NULL;
+      current_credentials.username = NULL;
+      return -1;
+    }
+
+  /* Sync each file in the directory. */
+
+  while ((config_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (config_path, ".") == 0
+        && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
+        && g_str_has_suffix (config_path, ".xml"))
+      sync_config_with_feed (config_path);
+
+  /* Cleanup. */
+
+  g_dir_close (dir);
+  g_free (current_credentials.uuid);
+  g_free (current_credentials.username);
+  current_credentials.uuid = NULL;
+  current_credentials.username = NULL;
+
+  return 0;
+}
+
+/**
+ * @brief Ensure the predefined configs exist.
+ */
+void
+check_db_configs ()
+{
+  if (sync_configs_with_feed ())
+    g_warning ("%s: Failed to sync configs with feed", __func__);
+
+  /* In the Service Detection family, NVTs sometimes move to Product
+   * Detection, and once an NVT was removed.  So remove those NVTs
+   * from Service Detection in the NVT selector. */
+
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
+       " AND family = 'Service detection'"
+       " AND (SELECT family FROM nvts"
+       "      WHERE oid = nvt_selectors.family_or_nvt)"
+       "     = 'Product detection';");
+
+  if (sql_int ("SELECT EXISTS (SELECT * FROM nvts);"))
+    sql ("DELETE FROM nvt_selectors"
+         " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
+         " AND family = 'Service detection'"
+         " AND NOT EXISTS (SELECT * FROM nvts"
+         "                 WHERE oid = nvt_selectors.family_or_nvt);");
+
+  check_config_discovery (CONFIG_UUID_DISCOVERY);
+
+  check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
+
+  check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
 }

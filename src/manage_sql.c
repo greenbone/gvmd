@@ -189,30 +189,6 @@ make_port_ranges_all_tcp_nmap_5_51_top_1000 (port_list_t);
 void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
-void
-make_config_base (char *const, char *const);
-
-void
-make_config_discovery (char *const, char *const);
-
-void
-make_config_discovery_service_detection (char * const);
-
-void
-make_config_host_discovery (char *const, char *const);
-
-void
-make_config_system_discovery (char *const, char * const);
-
-int
-check_config_discovery (const char *);
-
-void
-check_config_host_discovery (const char *);
-
-int
-check_config_system_discovery (const char *);
-
 
 /* Static headers. */
 
@@ -400,9 +376,6 @@ setting_dynamic_severity_int ();
 
 static char *
 setting_timezone ();
-
-static int
-setting_value (const char *, char **);
 
 static void
 set_report_format_name (report_format_t, const char *);
@@ -15447,92 +15420,6 @@ reinit_manage_process ()
 }
 
 /**
- * @brief Setup config preferences for a config.
- *
- * @param[in]  config         The config.
- * @param[in]  safe_checks    safe_checks option: 1 for "yes", 0 for "no".
- * @param[in]  optimize_test  optimize_test option: 1 for "yes", 0 for "no".
- * @param[in]  port_range     port_range option: 1 for "yes", 0 for "no".
- */
-static void
-setup_full_config_prefs (config_t config, int safe_checks,
-                         int optimize_test, int port_range)
-{
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'max_hosts', '20');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'max_checks', '4');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'cgi_path', '/cgi-bin:/scripts');",
-       config);
-  if (port_range)
-    sql ("INSERT into config_preferences (config, type, name, value)"
-         " VALUES (%i, 'SERVER_PREFS', 'port_range', '1-65535');",
-         config);
-  else
-    sql ("INSERT into config_preferences (config, type, name, value)"
-         " VALUES (%i, 'SERVER_PREFS', 'port_range', 'default');",
-         config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'auto_enable_dependencies', 'yes');",
-       config);
-  if (optimize_test)
-    sql ("INSERT into config_preferences (config, type, name, value)"
-         " VALUES (%i, 'SERVER_PREFS', 'optimize_test', 'yes');",
-         config);
-  else
-    sql ("INSERT into config_preferences (config, type, name, value)"
-         " VALUES (%i, 'SERVER_PREFS', 'optimize_test', 'no');",
-         config);
-  if (safe_checks)
-    sql ("INSERT into config_preferences (config, type, name, value)"
-         " VALUES (%i, 'SERVER_PREFS', 'safe_checks', 'yes');",
-         config);
-  else
-    sql ("INSERT into config_preferences (config, type, name, value)"
-         " VALUES (%i, 'SERVER_PREFS', 'safe_checks', 'no');",
-         config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'use_mac_addr', 'no');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed', 'yes');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed_udp', 'yes');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'checks_read_timeout', '5');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'network_scan', 'no');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'non_simult_ports', '139, 445,"
-       " 3389, Services/irc');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'plugins_timeout', '320');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'nasl_no_signature_check', 'yes');",
-       config);
-
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'PLUGINS_PREFS',"
-       " '" OID_PING_HOST ":5:checkbox:Mark unrechable Hosts as dead (not scanning)',"
-       " 'yes');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'PLUGINS_PREFS',"
-       " '" OID_LOGINS ":1:checkbox:NTLMSSP',"
-       " 'yes');",
-       config);
-}
-
-/**
  * @brief Update the memory cache of NVTs.
  *
  * @param[in]  nvt  NVT.
@@ -16675,6 +16562,17 @@ check_db_settings ()
          "  'Debian LSC Package Maintainer',"
          "  'Maintainer email address used in generated Debian LSC packages.',"
          "  '');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_FEED_IMPORT_ROLES "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_FEED_IMPORT_ROLES "', NULL,"
+         "  'Feed Import Roles',"
+         "  'Roles given access to new resources from feed.',"
+         "  '" ROLE_UUID_ADMIN "," ROLE_UUID_USER "');");
 }
 
 /**
@@ -16941,180 +16839,6 @@ check_db_nvt_selectors ()
            /* OID of the "w3af (NASL wrapper)" NVT. */
            " '1.3.6.1.4.1.25623.1.0.80109', 'Web application abuses');");
     }
-}
-
-/**
- * @brief Ensure the predefined configs exist.
- */
-static void
-check_db_configs ()
-{
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE name = 'Full and fast';")
-      == 0)
-    {
-      config_t config;
-
-      sqli (&config,
-            "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
-            " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time, usage_type)"
-            " VALUES ('" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
-            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-            " 'Most NVT''s; optimized by using previously collected information.',"
-            " %i, %i, 1, 1, 0, m_now (), m_now (), 'scan')",
-            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
-            family_count ());
-
-      /* Setup preferences for the config. */
-      setup_full_config_prefs (config, 1, 1, 0);
-    }
-
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE name = 'Full and fast ultimate';")
-      == 0)
-    {
-      config_t config;
-
-      sqli (&config,
-            "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
-            " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time, usage_type)"
-            " VALUES ('" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
-            " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-            " 'Most NVT''s including those that can stop services/hosts;"
-            " optimized by using previously collected information.',"
-            " %i, %i, 1, 1, 0, m_now (), m_now (), 'scan')",
-            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
-            family_count ());
-
-      /* Setup preferences for the config. */
-      setup_full_config_prefs (config, 0, 1, 0);
-    }
-
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE name = 'Full and very deep';")
-      == 0)
-    {
-      config_t config;
-
-      sqli (&config,
-            "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
-            " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time, usage_type)"
-            " VALUES ('" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
-            " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-            " 'Most NVT''s; don''t trust previously collected information; slow.',"
-            " %i, %i, 1, 1, 0, m_now (), m_now (), 'scan')",
-            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
-            family_count ());
-
-      /* Setup preferences for the config. */
-      setup_full_config_prefs (config, 1, 0, 1);
-    }
-
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE name = 'Full and very deep ultimate';")
-      == 0)
-    {
-      config_t config;
-
-      sqli (&config,
-            "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
-            " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time, usage_type)"
-            " VALUES ('" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
-            " NULL, 'Full and very deep ultimate',"
-            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-            " 'Most NVT''s including those that can stop services/hosts;"
-            " don''t trust previously collected information; slow.',"
-            " %i, %i, 1, 1, 0, m_now (), m_now (), 'scan')",
-            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
-            family_count ());
-
-      /* Setup preferences for the config. */
-      setup_full_config_prefs (config, 0, 0, 1);
-    }
-
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE uuid = '" CONFIG_UUID_EMPTY "';")
-      == 0)
-    {
-      config_t config;
-
-      sqli (&config,
-            "INSERT into configs (uuid, name, owner, nvt_selector, comment,"
-            " family_count, nvt_count, nvts_growing, families_growing,"
-            " type, creation_time, modification_time, usage_type)"
-            " VALUES ('" CONFIG_UUID_EMPTY "', 'empty', NULL, 'empty',"
-            " 'Empty and static configuration template.',"
-            " 0, 0, 0, 0, 0, m_now (), m_now (), 'scan')");
-
-      /* Setup preferences for the config. */
-      setup_full_config_prefs (config, 1, 1, 0);
-    }
-
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE uuid = '%s';",
-               CONFIG_UUID_BASE)
-      == 0)
-    make_config_base (CONFIG_UUID_BASE,
-                      MANAGE_NVT_SELECTOR_UUID_BASE);
-
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE uuid = '%s';",
-               CONFIG_UUID_DISCOVERY)
-      == 0)
-    make_config_discovery (CONFIG_UUID_DISCOVERY,
-                           MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
-
-  /* Service Detection NVTs were all being accidentally removed by the
-   * checks below.  Recover them. */
-
-  if (sql_int ("SELECT count (*) FROM nvt_selectors"
-               " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
-               " AND family = 'Service detection'")
-      == 0)
-    make_config_discovery_service_detection
-     (MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
-
-  /* In the Service Detection family, NVTs sometimes move to Product
-   * Detection, and once an NVT was removed.  So remove those NVTs
-   * from Service Detection in the NVT selector. */
-
-  sql ("DELETE FROM nvt_selectors"
-       " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
-       " AND family = 'Service detection'"
-       " AND (SELECT family FROM nvts"
-       "      WHERE oid = nvt_selectors.family_or_nvt)"
-       "     = 'Product detection';");
-
-  if (sql_int ("SELECT EXISTS (SELECT * FROM nvts);"))
-    sql ("DELETE FROM nvt_selectors"
-         " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
-         " AND family = 'Service detection'"
-         " AND NOT EXISTS (SELECT * FROM nvts"
-         "                 WHERE oid = nvt_selectors.family_or_nvt);");
-
-  check_config_discovery (CONFIG_UUID_DISCOVERY);
-
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE uuid = '%s';",
-               CONFIG_UUID_HOST_DISCOVERY)
-      == 0)
-    make_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY,
-                                MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY);
-
-  check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
-
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE uuid = '%s';",
-               CONFIG_UUID_SYSTEM_DISCOVERY)
-      == 0)
-    make_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY,
-                                  MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY);
-
-  check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
 }
 
 /**
@@ -18019,7 +17743,6 @@ check_db (int check_encryption_key)
   check_db_roles ();
   check_db_nvt_selectors ();
   check_db_nvts ();
-  check_db_configs ();
   check_db_port_lists ();
   clean_auth_cache ();
   if (check_db_scanners ())
@@ -18357,6 +18080,10 @@ init_manage_internal (GSList *log_config,
 
   if (nvti_cache == NULL)
     update_nvti_cache ();
+
+  if (skip_db_check == 0)
+    /* Requires NVT cache. */
+    check_db_configs ();
 
   sql_close ();
   gvmd_db_name = database ? g_strdup (database) : NULL;
@@ -58219,11 +57946,11 @@ DEF_ACCESS (setting_iterator_value, 4);
  * @brief Get the value of a setting as a string.
  *
  * @param[in]   uuid   UUID of setting.
- * @param[out]  value  Value.
+ * @param[out]  value  Freshly allocated value.
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 setting_value (const char *uuid, char **value)
 {
   gchar *quoted_uuid;
@@ -58984,6 +58711,10 @@ setting_name (const gchar *uuid)
     return "GMP Slave Check Period";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Debian LSC Package Maintainer";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+    return "Feed Import Owner";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    return "Feed Import Roles";
   return NULL;
 }
 
@@ -59018,6 +58749,10 @@ setting_description (const gchar *uuid)
     return "Period in seconds when polling a GMP slave";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Maintainer email address used in generated Debian LSC packages.";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+    return "User who is given ownership of new resources from feed.";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    return "Roles given access to new resources from feed.";
   return NULL;
 }
 
@@ -59068,6 +58803,49 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+    {
+      user_t value_user;
+      gchar *quoted_uuid;
+
+      quoted_uuid = sql_quote (value);
+      switch (sql_int64 (&value_user,
+                         "SELECT id FROM users WHERE uuid = '%s';",
+                         quoted_uuid))
+        {
+          case 0:
+            break;
+          case 1:        /* Too few rows in result of query. */
+            g_free (quoted_uuid);
+            return 1;
+          default:       /* Programming error. */
+            assert (0);
+          case -1:
+            g_free (quoted_uuid);
+            return 1;
+        }
+      g_free (quoted_uuid);
+    }
+
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    {
+      gchar **split, **point;
+
+      point = split = g_strsplit (value, ",", 0);
+      while (*point)
+        {
+          if (g_regex_match_simple ("^[-0123456789abcdefABCDEF]{36}$",
+                                    g_strstrip (*point), 0, 0)
+              == FALSE)
+            {
+              g_strfreev (split);
+              return 1;
+            }
+          point++;
+        }
+      g_strfreev (split);
+    }
+
   return 0;
 }
 
@@ -59099,6 +58877,30 @@ setting_normalise (const gchar *uuid, const gchar *value)
       return g_strstrip (g_strdup (value));
     }
 
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    {
+      GString *normalised;
+      gchar **split, **point;
+
+      normalised = g_string_new ("");
+      point = split = g_strsplit (value, ",", 0);
+
+      while (*point)
+        {
+          g_string_append_printf (normalised,
+                                  "%s%s",
+                                  point == split ? "" : ",",
+                                  g_strstrip (*point));
+          point++;
+        }
+
+      g_strfreev (split);
+
+      g_string_ascii_down (normalised);
+
+      return g_string_free (normalised, FALSE);
+    }
+
   return g_strdup (value);
 }
 
@@ -59127,16 +58929,12 @@ manage_modify_setting (GSList *log_config, const gchar *database,
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
       && strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD)
-      && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER))
+      && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
+      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
+      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
-    }
-
-  if (setting_verify (uuid, value, name))
-    {
-      fprintf (stderr, "Syntax error in setting value.\n");
-      return 5;
     }
 
   ret = manage_option_setup (log_config, database);
@@ -59145,11 +58943,21 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 
   sql_begin_immediate ();
 
+  if (setting_verify (uuid, value, name))
+    {
+      sql_rollback ();
+      fprintf (stderr, "Syntax error in setting value.\n");
+      manage_option_cleanup ();
+      return 5;
+    }
+
   if (name)
     {
       user_t user;
 
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
           || (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0))
         {
           sql_rollback ();
@@ -59388,6 +59196,9 @@ manage_delete_user (GSList *log_config, const gchar *database,
       case 9:
         fprintf (stderr,
                  "Resources owned by the user are still in use by others.\n");
+        break;
+      case 10:
+        fprintf (stderr, "User is Feed Import Owner.\n");
         break;
       default:
         fprintf (stderr, "Internal Error.\n");
@@ -60004,7 +59815,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
  * @return 0 success, 2 failed to find user, 4 user has active tasks,
  *         5 attempted suicide, 6 inheritor not found, 7 inheritor same as
  *         deleted user, 8 invalid inheritor, 9 resources still in use,
- *         99 permission denied, -1 error.
+ *         10 user is 'Feed Import Owner' 99 permission denied, -1 error.
  */
 int
 delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
@@ -60014,7 +59825,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   iterator_t tasks;
   user_t user, inheritor;
   get_data_t get;
-  char *current_uuid;
+  char *current_uuid, *feed_owner_id;
 
   assert (user_id_arg || name_arg);
 
@@ -60062,6 +59873,23 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   if (user == 0)
     return 2;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_id);
+  if (feed_owner_id)
+    {
+      char *uuid;
+
+      uuid = user_uuid (user);
+      if (strcmp (uuid, feed_owner_id) == 0)
+        {
+          free (uuid);
+          free (feed_owner_id);
+          sql_rollback ();
+          return 10;
+        }
+      free (feed_owner_id);
+      free (uuid);
+    }
 
   if (forbid_super_admin)
     {
