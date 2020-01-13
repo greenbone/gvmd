@@ -57,11 +57,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <commands>
-            <xsl:for-each select="/wizard/previous/response/get_tasks_response/task/reports/report">
-              <delete_report report_id="{@id}" />
-            </xsl:for-each>
-          </commands>
+          <get_version/>
+          <xsl:for-each select="/wizard/previous/response/get_tasks_response/task/reports/report">
+            <delete_report report_id="{@id}" />
+          </xsl:for-each>
         </xsl:template>
       </xsl:stylesheet>
     </command>
@@ -80,7 +79,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <start_task task_id="{/wizard/params/param[name='task_id']/value}"/>
             </xsl:when>
             <xsl:otherwise>
-              <commands/>
+              <get_version/>
             </xsl:otherwise>
           </xsl:choose>
         </xsl:template>

@@ -65,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
 - Removed migration tool "gvm-migrate-to-postgres" including the man page [#905](https://github.com/greenbone/gvmd/pull/905)
 - Remove agents [#922](https://github.com/greenbone/gvmd/pull/922)
+- Remove GMP COMMANDS [#923](https://github.com/greenbone/gvmd/pull/923)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 

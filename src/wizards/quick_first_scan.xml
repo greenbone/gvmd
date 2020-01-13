@@ -220,9 +220,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <commands>
-            <start_task task_id="{/wizard/previous/response/create_task_response/@id}"/>
-          </commands>
+          <start_task task_id="{/wizard/previous/response/create_task_response/@id}"/>
         </xsl:template>
       </xsl:stylesheet>
     </command>
@@ -237,13 +235,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:template match="/">
           <xsl:copy-of select="/wizard/previous/extra_data/*"/>
           <xsl:choose>
-            <xsl:when test="/wizard/current/response/commands_response/start_task_response/@status = '200'">
+            <xsl:when test="/wizard/current/response/start_task_response/@status = '200'">
               <status_text>Task created and started successfully</status_text>
               <status>201</status>
             </xsl:when>
             <xsl:otherwise>
-              <status_text>Failed to start task: <xsl:value-of select="/wizard/current/response/commands_response/start_task_response/@status_text"/></status_text>
-              <status><xsl:value-of select="/wizard/current/response/commands_response/start_task_response/@status"/></status>
+              <status_text>Failed to start task: <xsl:value-of select="/wizard/current/response/start_task_response/@status_text"/></status_text>
+              <status><xsl:value-of select="/wizard/current/response/start_task_response/@status"/></status>
             </xsl:otherwise>
           </xsl:choose>
         </xsl:template>
@@ -259,23 +257,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <commands>
-            <xsl:choose>
-              <xsl:when test="starts-with (/wizard/previous/extra_data/status, '2')">
-                <get_tasks task_id="{/wizard/previous/response/create_task_response/@id}"/>
-              </xsl:when>
-              <xsl:otherwise>
-                <commands>
-                  <xsl:if test="/wizard/previous/extra_data/task/@id != ''">
-                    <delete_task task_id="{/wizard/previous/extra_data/task/@id}" ultimate="1"/>
-                  </xsl:if>
-                  <xsl:if test="/wizard/previous/extra_data/target/@id != ''">
-                    <delete_target target_id="{/wizard/previous/extra_data/target/@id}" ultimate="1"/>
-                  </xsl:if>
-                </commands>
-              </xsl:otherwise>
-            </xsl:choose>
-          </commands>
+          <xsl:choose>
+            <xsl:when test="starts-with (/wizard/previous/extra_data/status, '2')">
+              <get_tasks task_id="{/wizard/previous/response/create_task_response/@id}"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:if test="/wizard/previous/extra_data/task/@id != ''">
+                <delete_task task_id="{/wizard/previous/extra_data/task/@id}" ultimate="1"/>
+              </xsl:if>
+              <xsl:if test="/wizard/previous/extra_data/target/@id != ''">
+                <delete_target target_id="{/wizard/previous/extra_data/target/@id}" ultimate="1"/>
+              </xsl:if>
+            </xsl:otherwise>
+          </xsl:choose>
         </xsl:template>
       </xsl:stylesheet>
     </command>

@@ -1758,6 +1758,40 @@ migrate_223_to_224 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 224 to version 225.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_224_to_225 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 224. */
+
+  if (manage_db_version () != 224)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* GMP command COMMANDS was removed. */
+
+  sql ("DELETE FROM permissions WHERE name = 'commands';");
+  sql ("DELETE FROM permissions_trash WHERE name = 'commands';");
+
+  /* Set the database version to 225. */
+
+  set_db_version (225);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1788,6 +1822,7 @@ static migrator_t database_migrators[] = {
   {222, migrate_221_to_222},
   {223, migrate_222_to_223},
   {224, migrate_223_to_224},
+  {225, migrate_224_to_225},
   /* End marker. */
   {-1, NULL}};
 

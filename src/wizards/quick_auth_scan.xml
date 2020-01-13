@@ -57,26 +57,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <commands>
-            <xsl:if test="/wizard/params/param[name='username']/value != ''">
-              <create_credential>
-                <xsl:choose>
-                  <xsl:when test="/wizard/params/param[name='credential_name']/value">
-                    <name><xsl:value-of select="/wizard/params/param[name='credential_name']/value"/></name>
-                  </xsl:when>
-                  <xsl:when test="/wizard/params/param[name='hosts']/value != ''">
-                    <name>LSC Credential for immediate scan of <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
-                  </xsl:when>
-                  <xsl:otherwise>
-                    <name>LSC Credential for immediate scan of localhost</name>
-                  </xsl:otherwise>
-                </xsl:choose>
-                <comment><xsl:value-of select="/wizard/params/param[name='comment']/value"/></comment>
-                <login><xsl:value-of select="/wizard/params/param[name='username']/value"/></login>
-                <password><xsl:value-of select="/wizard/params/param[name='password']/value"/></password>
-              </create_credential>
-            </xsl:if>
-          </commands>
+          <xsl:if test="/wizard/params/param[name='username']/value != ''">
+            <create_credential>
+              <xsl:choose>
+                <xsl:when test="/wizard/params/param[name='credential_name']/value">
+                  <name><xsl:value-of select="/wizard/params/param[name='credential_name']/value"/></name>
+                </xsl:when>
+                <xsl:when test="/wizard/params/param[name='hosts']/value != ''">
+                  <name>LSC Credential for immediate scan of <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
+                </xsl:when>
+                <xsl:otherwise>
+                  <name>LSC Credential for immediate scan of localhost</name>
+                </xsl:otherwise>
+              </xsl:choose>
+              <comment><xsl:value-of select="/wizard/params/param[name='comment']/value"/></comment>
+              <login><xsl:value-of select="/wizard/params/param[name='username']/value"/></login>
+              <password><xsl:value-of select="/wizard/params/param[name='password']/value"/></password>
+            </create_credential>
+          </xsl:if>
         </xsl:template>
       </xsl:stylesheet>
     </command>
@@ -117,9 +115,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </name>
               </xsl:otherwise>
             </xsl:choose>
-            <xsl:if test="/wizard/previous/response/commands_response/create_credential_response/@id != ''">
-              <ssh_lsc_credential id="{/wizard/previous/response/commands_response/create_credential_response/@id}"><port>22</port></ssh_lsc_credential>
-              <smb_lsc_credential id="{/wizard/previous/response/commands_response/create_credential_response/@id}"></smb_lsc_credential>
+            <xsl:if test="/wizard/previous/response/create_credential_response/@id != ''">
+              <ssh_lsc_credential id="{/wizard/previous/response/create_credential_response/@id}"><port>22</port></ssh_lsc_credential>
+              <smb_lsc_credential id="{/wizard/previous/response/create_credential_response/@id}"></smb_lsc_credential>
             </xsl:if>
             <xsl:choose>
               <xsl:when test="/wizard/params/param[name='hosts']/value != ''">

@@ -4542,8 +4542,6 @@ typedef enum
   CLIENT_AUTHENTICATE_CREDENTIALS,
   CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD,
   CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME,
-  CLIENT_AUTHENTIC_COMMANDS,
-  CLIENT_COMMANDS,
   CLIENT_CREATE_ALERT,
   CLIENT_CREATE_ALERT_ACTIVE,
   CLIENT_CREATE_ALERT_COMMENT,
@@ -5263,29 +5261,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
     {
       case CLIENT_TOP:
         if (strcasecmp ("GET_VERSION", element_name) == 0)
-          {
-            set_client_state (CLIENT_GET_VERSION);
-            break;
-          }
-        /* fallthrough */
-      case CLIENT_COMMANDS:
-        if (strcasecmp ("AUTHENTICATE", element_name) == 0)
-          {
-            set_client_state (CLIENT_AUTHENTICATE);
-          }
-        else if (strcasecmp ("COMMANDS", element_name) == 0)
-          {
-            SENDF_TO_CLIENT_OR_FAIL
-             ("<commands_response"
-              " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">");
-            set_client_state (CLIENT_COMMANDS);
-          }
+          set_client_state (CLIENT_GET_VERSION);
+        else if (strcasecmp ("AUTHENTICATE", element_name) == 0)
+          set_client_state (CLIENT_AUTHENTICATE);
         else
           {
             /** @todo If a real GMP command, return STATUS_ERROR_MUST_AUTH. */
             if (send_to_client
                  (XML_ERROR_SYNTAX ("gmp",
-                                    "Only commands GET_VERSION and COMMANDS are"
+                                    "Only command GET_VERSION is"
                                     " allowed before AUTHENTICATE"),
                   write_to_client,
                   write_to_client_data))
@@ -5293,17 +5277,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                 error_send_to_client (error);
                 return;
               }
-            if (client_state == CLIENT_COMMANDS)
-              send_to_client ("</commands_response>",
-                              write_to_client,
-                              write_to_client_data);
             g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Must authenticate first.");
           }
         break;
 
       case CLIENT_AUTHENTIC:
-      case CLIENT_AUTHENTIC_COMMANDS:
         if (command_disabled (gmp_parser, element_name))
           {
             SEND_TO_CLIENT_OR_FAIL
@@ -5318,13 +5297,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
-          }
-        else if (strcasecmp ("COMMANDS", element_name) == 0)
-          {
-            SEND_TO_CLIENT_OR_FAIL
-             ("<commands_response"
-              " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">");
-            set_client_state (CLIENT_AUTHENTIC_COMMANDS);
           }
         else if (strcasecmp ("CREATE_ASSET", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET);
@@ -19699,12 +19671,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD:
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
-        break;
-
-      case CLIENT_AUTHENTIC:
-      case CLIENT_COMMANDS:
-      case CLIENT_AUTHENTIC_COMMANDS:
-        SENDF_TO_CLIENT_OR_FAIL ("</commands_response>");
         break;
 
       CASE_DELETE (ALERT, alert, "Alert");
