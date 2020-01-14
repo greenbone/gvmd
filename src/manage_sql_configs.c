@@ -4825,3 +4825,12 @@ check_db_configs ()
 
   check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
 }
+
+/**
+ * @brief Sync configs with the feed.
+ */
+void
+manage_sync_configs ()
+{
+  sync_configs_with_feed ();
+}
