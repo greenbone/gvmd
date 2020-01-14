@@ -4601,7 +4601,35 @@ parse_xml_file (const gchar *path, entity_t *config)
 static int
 update_config_from_file (config_t config, const gchar *path)
 {
+  entity_t entity;
+  array_t *nvt_selectors, *preferences;
+  char *comment, *name, *type;
+  const char *config_id;
+
   g_debug ("%s: updating %s", __func__, path);
+
+  /* Parse the file into an entity. */
+
+  if (parse_xml_file (path, &entity))
+    return 1;
+
+  /* Parse the data out of the entity. */
+
+  if (parse_config_entity (entity, &config_id, &name, &comment, &type,
+                           &nvt_selectors, &preferences))
+    {
+      free_entity (entity);
+      g_warning ("%s: Failed to parse entity", __func__);
+      return -1;
+    }
+
+  /* Update the config. */
+
+  /* Cleanup. */
+
+  free_entity (entity);
+  cleanup_import_preferences (preferences);
+  array_free (nvt_selectors);
 
   return 0;
 }
