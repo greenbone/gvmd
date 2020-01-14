@@ -78,4 +78,7 @@ configs_extra_where (const char *);
 void
 check_db_configs ();
 
+void
+manage_sync_configs ();
+
 #endif /* not _GVMD_MANAGE_SQL_CONFIGS_H */
