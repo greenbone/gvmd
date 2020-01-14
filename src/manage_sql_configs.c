@@ -39,6 +39,8 @@
 #include "sql.h"
 
 #include <assert.h>
+#include <errno.h>
+#include <glib/gstdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -4670,6 +4672,38 @@ create_config_from_file (const gchar *path)
 }
 
 /**
+ * @brief Check if a config has been updated in the feed.
+ *
+ * @param[in]  path    Full path to config XML in feed.
+ * @param[in]  config  Config.
+ *
+ * @return 1 if updated in feed, else 0.
+ */
+static int
+config_updated_in_feed (config_t config, const gchar *path)
+{
+  GStatBuf state;
+  int last_config_update;
+
+  last_config_update = sql_int ("SELECT modification_time FROM configs"
+                                " WHERE id = %llu;",
+                                config);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed config file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if ((state.st_mtime - (state.st_mtime % 60)) <= last_config_update)
+    return 0;
+
+  return 1;
+}
+
+/**
  * @brief Sync a single config with the feed.
  *
  * @param[in]  path  Path to config XML in feed.
@@ -4678,6 +4712,7 @@ static void
 sync_config_with_feed (const gchar *path)
 {
   gchar **split, *full_path;
+  config_t config;
 
   g_debug ("%s: considering %s", __func__, path);
 
@@ -4693,19 +4728,29 @@ sync_config_with_feed (const gchar *path)
       return;
     }
 
-  if (sql_int ("SELECT EXISTS (SELECT * FROM configs"
-               "               WHERE uuid = '%s-%s-%s-%s-%s');",
-               split[1], split[2], split[3], split[4], split[5]))
+  full_path = g_build_filename (feed_dir_configs (), path, NULL);
+
+  if (sql_int64 (&config,
+                 "SELECT id FROM configs"
+                 " WHERE uuid = '%s-%s-%s-%s-%s';",
+                 split[1], split[2], split[3], split[4], split[5])
+      == 0
+      && config)
     {
       g_strfreev (split);
+
+      g_debug ("%s: considering %s for update", __func__, path);
+
+      if (config_updated_in_feed (config, full_path))
+        g_debug ("%s: updating %s", __func__, path);
+
+      g_free (full_path);
       return;
     }
 
   g_strfreev (split);
 
   g_debug ("%s: adding %s", __func__, path);
-
-  full_path = g_build_filename (feed_dir_configs (), path, NULL);
 
   create_config_from_file (full_path);
 
