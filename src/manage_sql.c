@@ -15455,6 +15455,8 @@ update_nvti_cache ()
   init_iterator (&nvts,
                  "SELECT nvts.oid, nvts.name, nvts.family, nvts.cvss_base,"
                  "       nvts.tag, nvts.solution, nvts.solution_type,"
+                 "       nvts.summary, nvts.insight, nvts.affected,"
+                 "       nvts.impact, nvts.detection,"
                  "       vt_refs.type, vt_refs.ref_id, vt_refs.ref_text"
                  " FROM nvts"
                  " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
@@ -15483,13 +15485,13 @@ update_nvti_cache ()
           nvtis_add (nvti_cache, nvti);
         }
 
-      if (iterator_null (&nvts, 8))
+      if (iterator_null (&nvts, 13))
         /* No refs. */;
       else
         nvti_add_vtref (nvti,
-                        vtref_new (iterator_string (&nvts, 7),
-                                   iterator_string (&nvts, 8),
-                                   iterator_string (&nvts, 9)));
+                        vtref_new (iterator_string (&nvts, 12),
+                                   iterator_string (&nvts, 13),
+                                   iterator_string (&nvts, 14)));
     }
 
   cleanup_iterator (&nvts);
