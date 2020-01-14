@@ -4593,6 +4593,30 @@ parse_xml_file (const gchar *path, entity_t *config)
 /**
  * @brief Create a config from an XML file.
  *
+ * @param[in]  config   Existing config.
+ * @param[in]  name     New name.
+ * @param[in]  comment  New comment.
+ */
+static void
+update_config (config_t config, const gchar *name, const gchar *comment)
+{
+  gchar *quoted_name, *quoted_comment;
+
+  quoted_name = sql_quote (name);
+  quoted_comment = sql_quote (comment ? comment : "");
+  sql ("UPDATE configs"
+       " SET name = '%s', comment = '%s', modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_name,
+       quoted_comment,
+       config);
+  g_free (quoted_name);
+  g_free (quoted_comment);
+}
+
+/**
+ * @brief Create a config from an XML file.
+ *
  * @param[in]  config  Existing config.
  * @param[in]  path    Full path to config XML.
  *
@@ -4624,6 +4648,8 @@ update_config_from_file (config_t config, const gchar *path)
     }
 
   /* Update the config. */
+
+  update_config (config, name, comment);
 
   /* Cleanup. */
 
