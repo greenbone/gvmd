@@ -3653,6 +3653,128 @@ config_nvt_selector (config_t config)
 }
 
 /**
+ * @brief Update a preference of a config.
+ *
+ * @param[in]  config      Config.
+ * @param[in]  nvt         UUID of NVT.  NULL for scanner preference.
+ * @param[in]  name        Preference name, including NVT name and preference
+ *                         type.
+ * @param[in]  value_64    Preference value in base64.  NULL for an NVT
+ *                         preference removes the preference from the config.
+ *
+ * @return 0 success, 1 config in use, 2 empty radio value, 3 failed to find
+ *         config, -1 error.
+ */
+static int
+modify_config_preference (config_t config, const char* nvt,
+                          const char* name, const char* value_64)
+{
+  gchar *quoted_name, *quoted_value, *value, **splits;
+
+  quoted_name = sql_quote (name);
+
+  if (strlen (value_64))
+    {
+      gsize value_len;
+      value = (gchar*) g_base64_decode (value_64, &value_len);
+    }
+  else
+    value = g_strdup ("");
+
+  /* OID:PrefID:PrefType:PrefName value */
+  splits = g_strsplit (name, ":", 4);
+  if (splits && g_strv_length (splits) == 4)
+    {
+      if (strcmp (splits[2], "radio") == 0)
+        {
+          char *old_value;
+          gchar **split, **point;
+          GString *string;
+
+          if (strlen (value) == 0)
+            {
+              g_free (quoted_name);
+              g_free (value);
+              return 2;
+            }
+
+          /* A radio.  Put the new value on the front of the list of options. */
+
+          old_value = sql_string ("SELECT value FROM config_preferences"
+                                  " WHERE config = %llu"
+                                  " AND type %s"
+                                  " AND name = '%s'",
+                                  config,
+                                  nvt ? "= 'PLUGINS_PREFS'" : "is NULL",
+                                  quoted_name);
+          if (old_value == NULL)
+            old_value = sql_string ("SELECT value FROM nvt_preferences"
+                                    " WHERE name = '%s'",
+                                    quoted_name);
+          if (old_value)
+            {
+              string = g_string_new (value);
+              split = g_strsplit (old_value, ";", 0);
+              free (old_value);
+              point = split;
+              while (*point)
+                {
+                  if (strlen (*point) == 0)
+                    {
+                      g_free (quoted_name);
+                      g_strfreev (split);
+                      g_free (value);
+                      g_string_free (string, TRUE);
+                      return -1;
+                    }
+
+                  if (strcmp (*point, value))
+                    {
+                      g_string_append_c (string, ';');
+                      g_string_append (string, *point);
+                    }
+                  point++;
+                }
+              g_strfreev (split);
+              g_free (value);
+              value = g_string_free (string, FALSE);
+            }
+        }
+      else if (strcmp (splits[2], "scanner") == 0)
+        {
+          /* A scanner preference.  Remove type decoration from name. */
+
+          g_free (quoted_name);
+          quoted_name = sql_quote (splits[3]);
+        }
+    }
+  g_strfreev (splits);
+
+  quoted_value = sql_quote ((gchar*) value);
+  g_free (value);
+
+  if (config_type (config) > 0)
+    sql ("UPDATE config_preferences SET value = '%s'"
+         " WHERE config = %llu AND name = '%s';",
+         quoted_value, config, quoted_name);
+  else
+    {
+      /* nvt prefs are not present on first modification. */
+      sql ("DELETE FROM config_preferences"
+           " WHERE config = %llu AND type %s AND name = '%s'",
+           config,
+           nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
+           quoted_name);
+      sql ("INSERT INTO config_preferences"
+           " (config, type, name, value) VALUES (%llu, %s, '%s', '%s');",
+           config, nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'", quoted_name,
+           quoted_value);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Set a preference of a config.
  *
  * @param[in]  config_id  Config.
@@ -3669,11 +3791,13 @@ int
 manage_set_config_preference (const gchar *config_id, const char* nvt,
                               const char* name, const char* value_64)
 {
-  gchar *quoted_name, *quoted_value, *value, **splits;
+  int ret;
   config_t config;
 
   if (value_64 == NULL)
     {
+      gchar *quoted_name, **splits;
+
       sql_begin_immediate ();
 
       if (find_config_with_permission (config_id, &config, "modify_config"))
@@ -3741,112 +3865,14 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
       return 1;
     }
 
-  quoted_name = sql_quote (name);
-
-  if (strlen (value_64))
+  ret = modify_config_preference (config, nvt, name, value_64);
+  if (ret)
     {
-      gsize value_len;
-      value = (gchar*) g_base64_decode (value_64, &value_len);
-    }
-  else
-    value = g_strdup ("");
-
-  /* OID:PrefID:PrefType:PrefName value */
-  splits = g_strsplit (name, ":", 4);
-  if (splits && g_strv_length (splits) == 4)
-    {
-      if (strcmp (splits[2], "radio") == 0)
-        {
-          char *old_value;
-          gchar **split, **point;
-          GString *string;
-
-          if (strlen (value) == 0)
-            {
-              g_free (quoted_name);
-              g_free (value);
-              sql_rollback ();
-              return 2;
-            }
-
-          /* A radio.  Put the new value on the front of the list of options. */
-
-          old_value = sql_string ("SELECT value FROM config_preferences"
-                                  " WHERE config = %llu"
-                                  " AND type %s"
-                                  " AND name = '%s'",
-                                  config,
-                                  nvt ? "= 'PLUGINS_PREFS'" : "is NULL",
-                                  quoted_name);
-          if (old_value == NULL)
-            old_value = sql_string ("SELECT value FROM nvt_preferences"
-                                    " WHERE name = '%s'",
-                                    quoted_name);
-          if (old_value)
-            {
-              string = g_string_new (value);
-              split = g_strsplit (old_value, ";", 0);
-              free (old_value);
-              point = split;
-              while (*point)
-                {
-                  if (strlen (*point) == 0)
-                    {
-                      g_free (quoted_name);
-                      g_strfreev (split);
-                      g_free (value);
-                      g_string_free (string, TRUE);
-                      sql_rollback ();
-                      return -1;
-                    }
-
-                  if (strcmp (*point, value))
-                    {
-                      g_string_append_c (string, ';');
-                      g_string_append (string, *point);
-                    }
-                  point++;
-                }
-              g_strfreev (split);
-              g_free (value);
-              value = g_string_free (string, FALSE);
-            }
-        }
-      else if (strcmp (splits[2], "scanner") == 0)
-        {
-          /* A scanner preference.  Remove type decoration from name. */
-
-          g_free (quoted_name);
-          quoted_name = sql_quote (splits[3]);
-        }
-    }
-  g_strfreev (splits);
-
-  quoted_value = sql_quote ((gchar*) value);
-  g_free (value);
-
-  if (config_type (config) > 0)
-    sql ("UPDATE config_preferences SET value = '%s'"
-         " WHERE config = %llu AND name = '%s';",
-         quoted_value, config, quoted_name);
-  else
-    {
-      /* nvt prefs are not present on first modification. */
-      sql ("DELETE FROM config_preferences"
-           " WHERE config = %llu AND type %s AND name = '%s'",
-           config,
-           nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
-           quoted_name);
-      sql ("INSERT INTO config_preferences"
-           " (config, type, name, value) VALUES (%llu, %s, '%s', '%s');",
-           config, nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'", quoted_name,
-           quoted_value);
+      sql_rollback ();
+      return ret;
     }
 
   sql_commit ();
-
-  g_free (quoted_name);
-  g_free (quoted_value);
   return 0;
 }
 
