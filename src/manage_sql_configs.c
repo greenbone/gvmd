@@ -4549,6 +4549,22 @@ create_feed_config_permissions (const gchar *config_id)
 /**
  * @brief Create a config from an XML file.
  *
+ * @param[in]  config  Existing config.
+ * @param[in]  path    Full path to config XML.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_config_from_file (config_t config, const gchar *path)
+{
+  g_debug ("%s: updating %s", __func__, path);
+
+  return 0;
+}
+
+/**
+ * @brief Create a config from an XML file.
+ *
  * @param[in]  path  Path to config XML.
  *
  * @return 0 success, -1 error.
@@ -4742,7 +4758,10 @@ sync_config_with_feed (const gchar *path)
       g_debug ("%s: considering %s for update", __func__, path);
 
       if (config_updated_in_feed (config, full_path))
-        g_debug ("%s: updating %s", __func__, path);
+        {
+          g_debug ("%s: updating %s", __func__, path);
+          update_config_from_file (config, full_path);
+        }
 
       g_free (full_path);
       return;
