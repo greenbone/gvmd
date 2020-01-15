@@ -4623,11 +4623,13 @@ parse_xml_file (const gchar *path, entity_t *config)
  * @param[in]  type         New config type.
  * @param[in]  name         New name.
  * @param[in]  comment      New comment.
+ * @param[in]  selectors    New NVT selectors.
  * @param[in]  preferences  New preferences.
  */
 static void
 update_config (config_t config, const gchar *type, const gchar *name,
                const gchar *comment,
+               const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */)
 {
   gchar *quoted_name, *quoted_comment, *quoted_type;
@@ -4646,6 +4648,37 @@ update_config (config_t config, const gchar *type, const gchar *name,
   g_free (quoted_name);
   g_free (quoted_comment);
   g_free (quoted_type);
+
+  /* Replace the NVT selectors. */
+
+  if (type == NULL || strcmp (type, "0") == 0)
+    {
+      char *selector_uuid;
+
+      selector_uuid = gvm_uuid_make ();
+      if (selector_uuid == NULL)
+        {
+          g_warning ("%s: failed to allocate UUID", __func__);
+          return;
+        }
+
+      sql ("DELETE FROM nvt_selectors"
+           " WHERE name = (SELECT nvt_selector FROM configs"
+           "               WHERE id = %llu);",
+           config);
+
+      sql ("UPDATE configs SET nvt_selector = '%s' WHERE id = %llu;",
+           selector_uuid, config);
+
+      if (insert_nvt_selectors (selector_uuid, selectors))
+        {
+          g_warning ("%s: Error in feed config NVT selector", __func__);
+          free (selector_uuid);
+          return;
+        }
+
+      free (selector_uuid);
+    }
 
   /* Replace the preferences. */
 
@@ -4692,7 +4725,7 @@ update_config_from_file (config_t config, const gchar *path)
 
   /* Update the config. */
 
-  update_config (config, type, name, comment, preferences);
+  update_config (config, type, name, comment, nvt_selectors, preferences);
 
   /* Cleanup. */
 
