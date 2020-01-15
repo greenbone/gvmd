@@ -387,7 +387,7 @@ create_config_from_file (const gchar *path)
 static void
 sync_config_with_feed (const gchar *path)
 {
-  gchar **split, *full_path;
+  gchar **split, *full_path, *uuid;
   config_t config;
 
   g_debug ("%s: considering %s", __func__, path);
@@ -406,14 +406,13 @@ sync_config_with_feed (const gchar *path)
 
   full_path = g_build_filename (feed_dir_configs (), path, NULL);
 
-  if (sql_int64 (&config,
-                 "SELECT id FROM configs"
-                 " WHERE uuid = '%s-%s-%s-%s-%s';",
-                 split[1], split[2], split[3], split[4], split[5])
-      == 0
+  uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
+                          split[1], split[2], split[3], split[4], split[5]);
+  g_strfreev (split);
+  if (find_config_no_acl (uuid, &config) == 0
       && config)
     {
-      g_strfreev (split);
+      g_free (uuid);
 
       g_debug ("%s: considering %s for update", __func__, path);
 
@@ -426,8 +425,7 @@ sync_config_with_feed (const gchar *path)
       g_free (full_path);
       return;
     }
-
-  g_strfreev (split);
+  g_free (uuid);
 
   g_debug ("%s: adding %s", __func__, path);
 
@@ -445,7 +443,7 @@ sync_config_with_feed (const gchar *path)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 sync_configs_with_feed ()
 {
   GError *error;

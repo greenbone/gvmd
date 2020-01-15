@@ -38,6 +38,8 @@
 #include "sql.h"
 
 #include <assert.h>
+#include <errno.h>
+#include <glib/gstdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1995,6 +1997,43 @@ find_config_with_permission (const char* uuid, config_t* config,
                              const char *permission)
 {
   return find_resource_with_permission ("config", uuid, config, permission, 0);
+}
+
+/**
+ * @brief Find a config given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid     UUID of resource.
+ * @param[out]  config   Config return, 0 if no such config.
+ *
+ * @return FALSE on success (including if no such config), TRUE on error.
+ */
+gboolean
+find_config_no_acl (const char *uuid, config_t *config)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (config,
+                     "SELECT id FROM configs WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *config = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
 }
 
 /**

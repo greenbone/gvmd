@@ -75,15 +75,15 @@
 gchar *
 configs_extra_where (const char *);
 
+gboolean
+find_config_no_acl (const char *, config_t *);
+
 int
 config_updated_in_feed (config_t, const gchar *);
 
 void
 update_config (config_t, const gchar *, const gchar *, const gchar *,
                const array_t*, const array_t*);
-
-void
-sync_config_with_feed (const gchar *);
 
 void
 check_db_configs ();
