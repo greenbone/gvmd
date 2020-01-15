@@ -48755,7 +48755,7 @@ create_group (const char *group_name, const char *comment, const char *users,
           char *group_id;
 
           group_id = group_uuid (*group);
-          ret = create_permission_internal ("Super", NULL, "group", group_id,
+          ret = create_permission_internal (1, "Super", NULL, "group", group_id,
                                             "group", group_id, NULL);
           g_free (group_id);
           if (ret)
@@ -49611,6 +49611,7 @@ subject_where_clause (const char* subject_type, resource_t subject)
  *
  * Caller must organise the transaction.
  *
+ * @param[in]   check_access    Whether to check if user may CREATE_PERMISSION.
  * @param[in]   name_arg        Name of permission.
  * @param[in]   comment         Comment on permission.
  * @param[in]   resource_type_arg  Type of resource, for special permissions.
@@ -49625,8 +49626,8 @@ subject_where_clause (const char* subject_type, resource_t subject)
  *         99 permission denied, -1 internal error.
  */
 int
-create_permission_internal (const char *name_arg, const char *comment,
-                            const char *resource_type_arg,
+create_permission_internal (int check_access, const char *name_arg,
+                            const char *comment, const char *resource_type_arg,
                             const char *resource_id_arg,
                             const char *subject_type, const char *subject_id,
                             permission_t *permission)
@@ -49641,7 +49642,7 @@ create_permission_internal (const char *name_arg, const char *comment,
 
   assert (current_credentials.uuid);
 
-  if (acl_user_may ("create_permission") == 0)
+  if (check_access && (acl_user_may ("create_permission") == 0))
     return 99;
 
   ret = check_permission_args (name_arg, resource_type_arg, resource_id_arg,
@@ -49757,7 +49758,7 @@ create_permission (const char *name_arg, const char *comment,
 
   sql_begin_immediate ();
 
-  ret = create_permission_internal (name_arg, comment, resource_type_arg,
+  ret = create_permission_internal (1, name_arg, comment, resource_type_arg,
                                     resource_id_arg, subject_type, subject_id,
                                     permission);
   if (ret)
@@ -49766,6 +49767,36 @@ create_permission (const char *name_arg, const char *comment,
     sql_commit ();
 
   return ret;
+}
+
+/**
+ * @brief Create a permission.
+ *
+ * Does not require current user to have CREATE_PERMISSION access.
+ *
+ * @param[in]   name_arg        Name of permission.
+ * @param[in]   comment         Comment on permission.
+ * @param[in]   resource_type_arg  Type of resource, for special permissions.
+ * @param[in]   resource_id_arg    UUID of resource.
+ * @param[in]   subject_type    Type of subject.
+ * @param[in]   subject_id      UUID of subject.
+ * @param[out]  permission      Permission.
+ *
+ * @return 0 success, 2 failed to find subject, 3 failed to find resource,
+ *         5 error in resource, 6 error in subject, 7 error in name,
+ *         8 permission on permission, 9 permission does not accept resource,
+ *         99 permission denied, -1 internal error.
+ */
+int
+create_permission_no_acl (const char *name_arg, const char *comment,
+                          const char *resource_type_arg,
+                          const char *resource_id_arg,
+                          const char *subject_type, const char *subject_id,
+                          permission_t *permission)
+{
+  return create_permission_internal (0, name_arg, comment, resource_type_arg,
+                                     resource_id_arg, subject_type, subject_id,
+                                     permission);
 }
 
 /**
@@ -59694,7 +59725,8 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
       return -1;
     }
 
-  create_permission_internal ("GET_USERS",
+  create_permission_internal (1,
+                              "GET_USERS",
                               "Automatically created when adding user",
                               NULL,
                               uuid,
@@ -59779,7 +59811,8 @@ copy_user (const char* name, const char* comment, const char *user_id,
       return -1;
     }
 
-  create_permission_internal ("GET_USERS",
+  create_permission_internal (1,
+                              "GET_USERS",
                               "Automatically created when adding user",
                               NULL,
                               uuid,

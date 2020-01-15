@@ -1052,7 +1052,8 @@ create_ticket (const char *comment, const char *result_id,
 
   /* Give assigned user permission to access ticket and ticket's task. */
 
-  if (create_permission_internal ("modify_ticket",
+  if (create_permission_internal (1,
+                                  "modify_ticket",
                                   "Automatically created for ticket",
                                   NULL,
                                   new_ticket_id,
@@ -1065,7 +1066,8 @@ create_ticket (const char *comment, const char *result_id,
     }
 
   task_uuid (task, &task_id);
-  if (create_permission_internal ("get_tasks",
+  if (create_permission_internal (1,
+                                  "get_tasks",
                                   "Automatically created for ticket",
                                   NULL,
                                   task_id,
@@ -1365,7 +1367,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
 
           /* Ensure that the user can access the ticket and task. */
 
-          if (create_permission_internal ("modify_ticket",
+          if (create_permission_internal (1,
+                                          "modify_ticket",
                                           "Automatically created for ticket",
                                           NULL,
                                           ticket_id,
@@ -1383,7 +1386,8 @@ modify_ticket (const gchar *ticket_id, const gchar *comment,
               char *task_id;
 
               task_uuid (task, &task_id);
-              if (create_permission_internal ("get_tasks",
+              if (create_permission_internal (1,
+                                              "get_tasks",
                                               "Automatically created for"
                                               " ticket",
                                               NULL,
