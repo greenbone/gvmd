@@ -33,6 +33,7 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #undef G_LOG_DOMAIN
 /**
