@@ -4574,7 +4574,7 @@ config_updated_in_feed (config_t config, const gchar *path)
       return 0;
     }
 
-  if ((state.st_mtime - (state.st_mtime % 60)) <= last_config_update)
+  if (state.st_mtime <= last_config_update)
     return 0;
 
   return 1;
