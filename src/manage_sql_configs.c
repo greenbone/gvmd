@@ -4617,7 +4617,7 @@ parse_xml_file (const gchar *path, entity_t *config)
 }
 
 /**
- * @brief Create a config from an XML file.
+ * @brief Update a config from an XML file.
  *
  * @param[in]  config   Existing config.
  * @param[in]  name     New name.
