@@ -4078,6 +4078,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   config_t config;
   iterator_t scanner_prefs_iter, families, prefs;
   osp_start_scan_opts_t start_scan_opts;
+  alive_test_t alive_test;
+  osp_vt_single_t *alive_test_vt;
 
   config = task_config (task);
 
@@ -4258,6 +4260,52 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       g_strfreev (split_name);
     }
   cleanup_iterator (&prefs);
+
+  /* Setup alive tests */
+  alive_test = target_alive_tests (target);
+
+  /* If ping_host test was added manually, the alive test target setting
+     is skipped to avoid reset the its nvt preferences */
+  alive_test_vt = g_hash_table_lookup (vts_hash_table, OID_PING_HOST);
+
+  if (alive_test != 0 && alive_test_vt == NULL)
+    {
+      alive_test_vt = osp_vt_single_new (OID_PING_HOST);
+      vts = g_slist_prepend (vts, alive_test_vt);
+      g_hash_table_replace (vts_hash_table, g_strdup (OID_PING_HOST),
+                            alive_test_vt);
+
+      osp_vt_single_add_value (alive_test_vt, "1",
+                               (alive_test & ALIVE_TEST_TCP_ACK_SERVICE
+                                || alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
+                               ? "1" : "0");
+
+      osp_vt_single_add_value (alive_test_vt, "2",
+                               ((alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
+                                && (alive_test & ALIVE_TEST_TCP_ACK_SERVICE))
+                               ? "1" : "0");
+
+      osp_vt_single_add_value (alive_test_vt, "7",
+                               ((alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
+                                && !(alive_test & ALIVE_TEST_TCP_ACK_SERVICE))
+                               ? "1" : "0");
+
+      osp_vt_single_add_value (alive_test_vt, "3",
+                               (alive_test & ALIVE_TEST_ICMP) ? "1" : "0");
+
+      osp_vt_single_add_value (alive_test_vt, "4",
+                               (alive_test & ALIVE_TEST_ARP) ? "1" : "0");
+
+      osp_vt_single_add_value (alive_test_vt, "5",
+                               (alive_test & ALIVE_TEST_CONSIDER_ALIVE)
+                               ? "0" : "1");
+
+      if (alive_test == ALIVE_TEST_CONSIDER_ALIVE)
+        {
+          /* Also select a method, otherwise Ping Host logs a warning. */
+          osp_vt_single_add_value (alive_test_vt, "1", "1");
+        }
+    }
 
   /* Start the scan */
   connection = osp_scanner_connect (task_scanner (task));
