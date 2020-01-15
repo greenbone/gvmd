@@ -4619,25 +4619,42 @@ parse_xml_file (const gchar *path, entity_t *config)
 /**
  * @brief Update a config from an XML file.
  *
- * @param[in]  config   Existing config.
- * @param[in]  name     New name.
- * @param[in]  comment  New comment.
+ * @param[in]  config       Existing config.
+ * @param[in]  type         New config type.
+ * @param[in]  name         New name.
+ * @param[in]  comment      New comment.
+ * @param[in]  preferences  New preferences.
  */
 static void
-update_config (config_t config, const gchar *name, const gchar *comment)
+update_config (config_t config, const gchar *type, const gchar *name,
+               const gchar *comment,
+               const array_t* preferences /* preference_t. */)
 {
-  gchar *quoted_name, *quoted_comment;
+  gchar *quoted_name, *quoted_comment, *quoted_type;
 
   quoted_name = sql_quote (name);
   quoted_comment = sql_quote (comment ? comment : "");
+  quoted_type = sql_quote (type);
   sql ("UPDATE configs"
-       " SET name = '%s', comment = '%s', modification_time = m_now ()"
+       " SET name = '%s', comment = '%s', type = '%s',"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
+       quoted_type,
        config);
   g_free (quoted_name);
   g_free (quoted_comment);
+  g_free (quoted_type);
+
+  /* Replace the preferences. */
+
+  sql ("DELETE FROM config_preferences WHERE config = %llu;", config);
+  if (config_insert_preferences (config, preferences, type))
+    {
+      g_warning ("%s: Error in feed config preference", __func__);
+      return;
+    }
 }
 
 /**
@@ -4675,7 +4692,7 @@ update_config_from_file (config_t config, const gchar *path)
 
   /* Update the config. */
 
-  update_config (config, name, comment);
+  update_config (config, type, name, comment, preferences);
 
   /* Cleanup. */
 
