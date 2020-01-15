@@ -34,6 +34,12 @@
 #include <glib/gstdio.h>
 #include <stdlib.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Create a new preference.
  *
