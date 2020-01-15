@@ -472,7 +472,8 @@ sync_configs_with_feed ()
 
   setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
 
-  if (current_credentials.uuid == NULL)
+  if (current_credentials.uuid == NULL
+      || strlen (current_credentials.uuid) == 0)
     {
       /* Sync is disabled by having no "Feed Import Owner". */
       g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
