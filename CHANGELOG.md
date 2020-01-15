@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Refuse to import config with missing NVT preference ID [#853](https://github.com/greenbone/gvmd/pull/853) [#860](https://github.com/greenbone/gvmd/pull/860)
 - Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
 - Add setting "BPM Data" [#915](https://github.com/greenbone/gvmd/pull/915)
-- Automatically load predefined configs from the feed [#931](https://github.com/greenbone/gvmd/pull/931) [#933](https://github.com/greenbone/gvmd/pull/933)
+- Automatically load predefined configs from the feed [#931](https://github.com/greenbone/gvmd/pull/931) [#933](https://github.com/greenbone/gvmd/pull/933) [#934](https://github.com/greenbone/gvmd/pull/934)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
