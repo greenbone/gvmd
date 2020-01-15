@@ -319,16 +319,16 @@ create_config_from_file (const gchar *path)
 
   /* Create the config. */
 
-  switch (create_config (config_id,
-                         name,
-                         0,               /* Use name exactly as given. */
-                         comment,
-                         nvt_selectors,
-                         preferences,
-                         type,
-                         NULL,            /* Usage type. */
-                         &new_config,
-                         &created_name))
+  switch (create_config_no_acl (config_id,
+                                name,
+                                0,              /* Use name exactly as given. */
+                                comment,
+                                nvt_selectors,
+                                preferences,
+                                type,
+                                NULL,           /* Usage type. */
+                                &new_config,
+                                &created_name))
     {
       case 0:
         {

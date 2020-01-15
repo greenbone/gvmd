@@ -75,6 +75,11 @@
 gchar *
 configs_extra_where (const char *);
 
+int
+create_config_no_acl (const char *, const char *, int, const char *,
+                      const array_t *, const array_t *, const char *,
+                      const char *, config_t *, char **);
+
 gboolean
 find_config_no_acl (const char *, config_t *);
 
