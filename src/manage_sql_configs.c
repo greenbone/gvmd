@@ -4634,6 +4634,8 @@ update_config (config_t config, const gchar *type, const gchar *name,
 {
   gchar *quoted_name, *quoted_comment, *quoted_type;
 
+  sql_begin_immediate ();
+
   quoted_name = sql_quote (name);
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_type = sql_quote (type);
@@ -4659,6 +4661,7 @@ update_config (config_t config, const gchar *type, const gchar *name,
       if (selector_uuid == NULL)
         {
           g_warning ("%s: failed to allocate UUID", __func__);
+          sql_rollback ();
           return;
         }
 
@@ -4674,6 +4677,7 @@ update_config (config_t config, const gchar *type, const gchar *name,
         {
           g_warning ("%s: Error in feed config NVT selector", __func__);
           free (selector_uuid);
+          sql_rollback ();
           return;
         }
 
@@ -4686,8 +4690,11 @@ update_config (config_t config, const gchar *type, const gchar *name,
   if (config_insert_preferences (config, preferences, type))
     {
       g_warning ("%s: Error in feed config preference", __func__);
+      sql_rollback ();
       return;
     }
+
+  sql_commit ();
 }
 
 /**
