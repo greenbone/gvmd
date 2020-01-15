@@ -46,4 +46,7 @@ get_nvt_preference_by_id (const char *,
                           const char *,
                           const char *);
 
+void
+manage_sync_configs ();
+
 #endif /* not _GVMD_MANAGE_CONFIGS_H */

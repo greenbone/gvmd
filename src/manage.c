@@ -49,8 +49,8 @@
 
 #include "manage.h"
 #include "manage_acl.h"
+#include "manage_configs.h"
 #include "manage_sql.h"
-#include "manage_sql_configs.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"

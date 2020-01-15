@@ -30,7 +30,6 @@
  * The Config SQL for the GVM management layer.
  */
 
-#include "gmp_configs.h"
 #include "manage_configs.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
@@ -39,8 +38,6 @@
 #include "sql.h"
 
 #include <assert.h>
-#include <errno.h>
-#include <glib/gstdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -4513,107 +4510,35 @@ update_config_cache_init (const char *uuid)
 /* Startup. */
 
 /**
- * @brief Get path to configs in feed.
+ * @brief Check if a config has been updated in the feed.
  *
- * @return Path to configs in feed.
+ * @param[in]  path    Full path to config XML in feed.
+ * @param[in]  config  Config.
+ *
+ * @return 1 if updated in feed, else 0.
  */
-static const gchar *
-feed_dir_configs ()
+int
+config_updated_in_feed (config_t config, const gchar *path)
 {
-  static gchar *path = NULL;
-  if (path == NULL)
-    path = g_build_filename (GVMD_FEED_DIR, "configs", NULL);
-  return path;
-}
+  GStatBuf state;
+  int last_config_update;
 
-/**
- * @brief Grant 'Feed Import Roles' access to a config.
- *
- * @param[in]  config_id  UUID of config.
- */
-static void
-create_feed_config_permissions (const gchar *config_id)
-{
-  gchar *roles, **split, **point;
+  last_config_update = sql_int ("SELECT modification_time FROM configs"
+                                " WHERE id = %llu;",
+                                config);
 
-  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles);
-
-  if (roles == NULL || strlen (roles) == 0)
+  if (g_stat (path, &state))
     {
-      g_debug ("%s: no 'Feed Import Roles', so not creating permissions",
-               __func__);
-      g_free (roles);
-      return;
+      g_warning ("%s: Failed to stat feed config file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
     }
 
-  point = split = g_strsplit (roles, ",", 0);
-  while (*point)
-    {
-      permission_t permission;
+  if ((state.st_mtime - (state.st_mtime % 60)) <= last_config_update)
+    return 0;
 
-      if (create_permission_internal ("get_configs",
-                                      "Automatically created for config"
-                                      " from feed",
-                                      NULL,
-                                      config_id,
-                                      "role",
-                                      g_strstrip (*point),
-                                      &permission))
-        /* Keep going because we aren't strict about checking the value
-         * of the setting, and because we don't adjust the setting when
-         * roles are removed. */
-        g_warning ("%s: failed to create permission for role '%s'",
-                   __func__, g_strstrip (*point));
-
-      point++;
-    }
-  g_strfreev (split);
-
-  g_free (roles);
-}
-
-/**
- * @brief Create entity from XML file.
- *
- * @param[in]  path    Path to XML.
- * @param[out] config  Config tree.
- *
- * @return 0 success, -1 error.
- */
-static int
-parse_xml_file (const gchar *path, entity_t *config)
-{
-  gsize xml_len;
-  char *xml;
-  GError *error;
-
-  /* Buffer the file. */
-
-  error = NULL;
-  g_file_get_contents (path,
-                       &xml,
-                       &xml_len,
-                       &error);
-  if (error)
-    {
-      g_warning ("%s: Failed to read file: %s",
-                  __func__,
-                  error->message);
-      g_error_free (error);
-      return -1;
-    }
-
-  /* Parse the buffer into an entity. */
-
-  if (parse_entity (xml, config))
-    {
-      g_free (xml);
-      g_warning ("%s: Failed to parse XML", __func__);
-      return -1;
-    }
-  g_free (xml);
-
-  return 0;
+  return 1;
 }
 
 /**
@@ -4626,7 +4551,7 @@ parse_xml_file (const gchar *path, entity_t *config)
  * @param[in]  selectors    New NVT selectors.
  * @param[in]  preferences  New preferences.
  */
-static void
+void
 update_config (config_t config, const gchar *type, const gchar *name,
                const gchar *comment,
                const array_t* selectors /* nvt_selector_t. */,
@@ -4698,323 +4623,6 @@ update_config (config_t config, const gchar *type, const gchar *name,
 }
 
 /**
- * @brief Create a config from an XML file.
- *
- * @param[in]  config  Existing config.
- * @param[in]  path    Full path to config XML.
- *
- * @return 0 success, -1 error.
- */
-static int
-update_config_from_file (config_t config, const gchar *path)
-{
-  entity_t entity;
-  array_t *nvt_selectors, *preferences;
-  char *comment, *name, *type;
-  const char *config_id;
-
-  g_debug ("%s: updating %s", __func__, path);
-
-  /* Parse the file into an entity. */
-
-  if (parse_xml_file (path, &entity))
-    return 1;
-
-  /* Parse the data out of the entity. */
-
-  if (parse_config_entity (entity, &config_id, &name, &comment, &type,
-                           &nvt_selectors, &preferences))
-    {
-      free_entity (entity);
-      g_warning ("%s: Failed to parse entity", __func__);
-      return -1;
-    }
-
-  /* Update the config. */
-
-  update_config (config, type, name, comment, nvt_selectors, preferences);
-
-  /* Cleanup. */
-
-  free_entity (entity);
-  cleanup_import_preferences (preferences);
-  array_free (nvt_selectors);
-
-  return 0;
-}
-
-/**
- * @brief Create a config from an XML file.
- *
- * @param[in]  path  Path to config XML.
- *
- * @return 0 success, -1 error.
- */
-static int
-create_config_from_file (const gchar *path)
-{
-  entity_t config;
-  array_t *nvt_selectors, *preferences;
-  char *created_name, *comment, *name, *type;
-  const char *config_id;
-  config_t new_config;
-
-  g_debug ("%s: creating %s", __func__, path);
-
-  /* Parse the file into an entity. */
-
-  if (parse_xml_file (path, &config))
-    return 1;
-
-  /* Parse the data out of the entity. */
-
-  if (parse_config_entity (config, &config_id, &name, &comment, &type,
-                           &nvt_selectors, &preferences))
-    {
-      free_entity (config);
-      g_warning ("%s: Failed to parse entity", __func__);
-      return -1;
-    }
-
-  /* Create the config. */
-
-  switch (create_config (config_id,
-                         name,
-                         0,               /* Use name exactly as given. */
-                         comment,
-                         nvt_selectors,
-                         preferences,
-                         type,
-                         NULL,            /* Usage type. */
-                         &new_config,
-                         &created_name))
-    {
-      case 0:
-        {
-          gchar *uuid;
-
-          uuid = config_uuid (new_config);
-          log_event ("config", "Scan config", uuid, "created");
-
-          /* Create permissions. */
-          create_feed_config_permissions (uuid);
-
-          g_free (uuid);
-          free (created_name);
-          break;
-        }
-      case 1:
-        g_warning ("%s: Config exists already", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case 99:
-        g_warning ("%s: Permission denied", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case -2:
-        g_warning ("%s: Import name must be at"
-                   " least one character long",
-                   __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case -3:
-        g_warning ("%s: Error in NVT_SELECTORS element.", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case -4:
-        g_warning ("%s: Error in PREFERENCES element.", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case -5:
-        g_warning ("%s: Error in CONFIG @id.", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      default:
-      case -1:
-        g_warning ("%s: Internal error", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-    }
-
-  /* Cleanup. */
-
-  free_entity (config);
-  cleanup_import_preferences (preferences);
-  array_free (nvt_selectors);
-
-  return 0;
-}
-
-/**
- * @brief Check if a config has been updated in the feed.
- *
- * @param[in]  path    Full path to config XML in feed.
- * @param[in]  config  Config.
- *
- * @return 1 if updated in feed, else 0.
- */
-static int
-config_updated_in_feed (config_t config, const gchar *path)
-{
-  GStatBuf state;
-  int last_config_update;
-
-  last_config_update = sql_int ("SELECT modification_time FROM configs"
-                                " WHERE id = %llu;",
-                                config);
-
-  if (g_stat (path, &state))
-    {
-      g_warning ("%s: Failed to stat feed config file: %s",
-                 __func__,
-                 strerror (errno));
-      return 0;
-    }
-
-  if ((state.st_mtime - (state.st_mtime % 60)) <= last_config_update)
-    return 0;
-
-  return 1;
-}
-
-/**
- * @brief Sync a single config with the feed.
- *
- * @param[in]  path  Path to config XML in feed.
- */
-static void
-sync_config_with_feed (const gchar *path)
-{
-  gchar **split, *full_path;
-  config_t config;
-
-  g_debug ("%s: considering %s", __func__, path);
-
-  split = g_regex_split_simple
-           (/* Full-and-Fast--daba56c8-73ec-11df-a475-002264764cea.xml */
-            "^.*([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12}).xml$",
-            path, 0, 0);
-
-  if (split == NULL || g_strv_length (split) != 7)
-    {
-      g_strfreev (split);
-      g_warning ("%s: path not in required format: %s", __func__, path);
-      return;
-    }
-
-  full_path = g_build_filename (feed_dir_configs (), path, NULL);
-
-  if (sql_int64 (&config,
-                 "SELECT id FROM configs"
-                 " WHERE uuid = '%s-%s-%s-%s-%s';",
-                 split[1], split[2], split[3], split[4], split[5])
-      == 0
-      && config)
-    {
-      g_strfreev (split);
-
-      g_debug ("%s: considering %s for update", __func__, path);
-
-      if (config_updated_in_feed (config, full_path))
-        {
-          g_debug ("%s: updating %s", __func__, path);
-          update_config_from_file (config, full_path);
-        }
-
-      g_free (full_path);
-      return;
-    }
-
-  g_strfreev (split);
-
-  g_debug ("%s: adding %s", __func__, path);
-
-  create_config_from_file (full_path);
-
-  g_free (full_path);
-}
-
-/**
- * @brief Sync all configs with the feed.
- *
- * Create configs that exists in the feed but not in the db.
- * Update configs in the db that have changed on the feed.
- * Do nothing to configs in db that have been removed from the feed.
- *
- * @return 0 success, -1 error.
- */
-static int
-sync_configs_with_feed ()
-{
-  GError *error;
-  GDir *dir;
-  const gchar *config_path;
-  gchar *nvt_feed_version;
-
-  /* Only sync if NVTs are up to date. */
-
-  nvt_feed_version = nvts_feed_version ();
-  if (nvt_feed_version == NULL)
-    {
-      g_debug ("%s: no NVTs so not syncing from feed", __func__);
-      return 0;
-    }
-  g_free (nvt_feed_version);
-
-  /* Setup owner. */
-
-  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
-
-  if (current_credentials.uuid == NULL)
-    {
-      /* Sync is disabled by having no "Feed Import Owner". */
-      g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
-      return 0;
-    }
-
-  current_credentials.username = user_name (current_credentials.uuid);
-  if (current_credentials.username == NULL)
-    {
-      g_debug ("%s: unknown Feed Import Owner so not syncing from feed", __func__);
-      return 0;
-    }
-
-  /* Open feed import directory. */
-
-  error = NULL;
-  dir = g_dir_open (feed_dir_configs (), 0, &error);
-  if (dir == NULL)
-    {
-      g_warning ("%s: Failed to open directory '%s': %s",
-                 __func__, feed_dir_configs (), error->message);
-      g_error_free (error);
-      g_free (current_credentials.uuid);
-      g_free (current_credentials.username);
-      current_credentials.uuid = NULL;
-      current_credentials.username = NULL;
-      return -1;
-    }
-
-  /* Sync each file in the directory. */
-
-  while ((config_path = g_dir_read_name (dir)))
-    if (g_str_has_prefix (config_path, ".") == 0
-        && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
-        && g_str_has_suffix (config_path, ".xml"))
-      sync_config_with_feed (config_path);
-
-  /* Cleanup. */
-
-  g_dir_close (dir);
-  g_free (current_credentials.uuid);
-  g_free (current_credentials.username);
-  current_credentials.uuid = NULL;
-  current_credentials.username = NULL;
-
-  return 0;
-}
-
-/**
  * @brief Ensure the predefined configs exist.
  */
 void
@@ -5046,13 +4654,4 @@ check_db_configs ()
   check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
 
   check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
-}
-
-/**
- * @brief Sync configs with the feed.
- */
-void
-manage_sync_configs ()
-{
-  sync_configs_with_feed ();
 }
