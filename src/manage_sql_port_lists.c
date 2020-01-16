@@ -2228,6 +2228,82 @@ port_list_target_iterator_readable (iterator_t* iterator)
   return iterator_int (iterator, 2);
 }
 
+
+/**
+ * @brief Try restore a port list.
+ *
+ * If success, ends transaction for caller before exiting.
+ *
+ * @param[in]  port_list_id  UUID of resource.
+ *
+ * @return 0 success, 1 fail because port list is in use, 2 failed to find
+ *          port list, -1 error.
+ */
+int
+restore_port_list (const char *port_list_id)
+{
+  port_list_t port_list, table_port_list;
+
+  if (find_trash ("port_list", port_list_id, &port_list))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (port_list == 0)
+    return 2;
+
+  if (sql_int ("SELECT count(*) FROM port_lists"
+               " WHERE name ="
+               " (SELECT name FROM port_lists_trash WHERE id = %llu)"
+               " AND " ACL_USER_OWNS () ";",
+               port_list,
+               current_credentials.uuid))
+    {
+      sql_rollback ();
+      return 3;
+    }
+
+  sql ("INSERT INTO port_lists"
+       " (uuid, owner, name, comment, creation_time, modification_time)"
+       " SELECT uuid, owner, name, comment, creation_time, modification_time"
+       " FROM port_lists_trash WHERE id = %llu;",
+       port_list);
+
+  table_port_list = sql_last_insert_id ();
+
+  sql ("INSERT INTO port_ranges"
+       " (uuid, port_list, type, start, \"end\", comment, exclude)"
+       " SELECT uuid, %llu, type, start, \"end\", comment, exclude"
+       " FROM port_ranges_trash WHERE port_list = %llu;",
+       table_port_list,
+       port_list);
+
+  /* Update the port_list in any trashcan targets. */
+  sql ("UPDATE targets_trash"
+       " SET port_list = %llu,"
+       "     port_list_location = " G_STRINGIFY (LOCATION_TABLE)
+       " WHERE port_list = %llu"
+       " AND port_list_location = " G_STRINGIFY (LOCATION_TRASH),
+       table_port_list,
+       port_list);
+
+  permissions_set_locations ("port_list", port_list, table_port_list,
+                             LOCATION_TABLE);
+  tags_set_locations ("port_list", port_list,
+                      sql_last_insert_id (),
+                      LOCATION_TABLE);
+
+  sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", port_list);
+  sql ("DELETE FROM port_lists_trash WHERE id = %llu;", port_list);
+  sql_commit ();
+
+  return 0;
+}
+
+
+/* Startup. */
+
 /**
  * @brief Ensure that the predefined port lists exist.
  */

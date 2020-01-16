@@ -51867,6 +51867,11 @@ manage_restore (const char *id)
       return 99;
     }
 
+  /* Port List. */
+  ret = restore_port_list (id);
+  if (ret != 2)
+    return ret;
+
   /* Ticket. */
   ret = restore_ticket (id);
   if (ret != 2)
@@ -52397,65 +52402,6 @@ manage_restore (const char *id)
       free (resource_type);
 
       sql ("DELETE FROM permissions_trash WHERE id = %llu;", resource);
-      sql_commit ();
-      return 0;
-    }
-
-  /* Port list. */
-
-  if (find_trash ("port_list", id, &resource))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (resource)
-    {
-      port_list_t table_port_list;
-
-      if (sql_int ("SELECT count(*) FROM port_lists"
-                   " WHERE name ="
-                   " (SELECT name FROM port_lists_trash WHERE id = %llu)"
-                   " AND " ACL_USER_OWNS () ";",
-                   resource,
-                   current_credentials.uuid))
-        {
-          sql_rollback ();
-          return 3;
-        }
-
-      sql ("INSERT INTO port_lists"
-           " (uuid, owner, name, comment, creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, creation_time, modification_time"
-           " FROM port_lists_trash WHERE id = %llu;",
-           resource);
-
-      table_port_list = sql_last_insert_id ();
-
-      sql ("INSERT INTO port_ranges"
-           " (uuid, port_list, type, start, \"end\", comment, exclude)"
-           " SELECT uuid, %llu, type, start, \"end\", comment, exclude"
-           " FROM port_ranges_trash WHERE port_list = %llu;",
-           table_port_list,
-           resource);
-
-      /* Update the port_list in any trashcan targets. */
-      sql ("UPDATE targets_trash"
-           " SET port_list = %llu,"
-           "     port_list_location = " G_STRINGIFY (LOCATION_TABLE)
-           " WHERE port_list = %llu"
-           " AND port_list_location = " G_STRINGIFY (LOCATION_TRASH),
-           table_port_list,
-           resource);
-
-      permissions_set_locations ("port_list", resource, table_port_list,
-                                 LOCATION_TABLE);
-      tags_set_locations ("port_list", resource,
-                          sql_last_insert_id (),
-                          LOCATION_TABLE);
-
-      sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", resource);
-      sql ("DELETE FROM port_lists_trash WHERE id = %llu;", resource);
       sql_commit ();
       return 0;
     }

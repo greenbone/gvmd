@@ -39,6 +39,9 @@ port_list_is_predefined (port_list_t);
 port_protocol_t
 port_range_iterator_type_int (iterator_t *);
 
+int
+restore_port_list (const char *);
+
 void
 check_db_port_lists ();
 
