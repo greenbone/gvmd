@@ -4694,6 +4694,7 @@ config_updated_in_feed (config_t config, const gchar *path)
  * @param[in]  type         New config type.
  * @param[in]  name         New name.
  * @param[in]  comment      New comment.
+ * @param[in]  usage_type   New usage type.
  * @param[in]  selectors    New NVT selectors.
  * @param[in]  preferences  New preferences.
  */
