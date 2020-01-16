@@ -43,7 +43,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Setup general task preferences to launch an osp openvas task. [#898](https://github.com/greenbone/gvmd/pull/898)
 - Add tags used for result NVTs to update_nvti_cache [#916](https://github.com/greenbone/gvmd/pull/916)
 - Apply usage_type of tasks in get_aggregates (9.0) [#912](https://github.com/greenbone/gvmd/pull/912)
-- Setup target's alive test setting to launch an osp openvas task (9.0) [#936](https://github.com/greenbone/gvmd/pull/936)[#943](https://github.com/greenbone/gvmd/pull/943)
+- Setup target's alive test setting to launch an osp openvas task (9.0) [#936](https://github.com/greenbone/gvmd/pull/936)
+- Remove incorrect duplicates from config preference migrator [#940](https://github.com/greenbone/gvmd/pull/940)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
