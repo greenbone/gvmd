@@ -264,7 +264,7 @@ update_config_from_file (config_t config, const gchar *path)
   /* Parse the data out of the entity. */
 
   if (parse_config_entity (entity, &config_id, &name, &comment, &type,
-                           &nvt_selectors, &preferences))
+                           NULL, &nvt_selectors, &preferences))
     {
       free_entity (entity);
       g_warning ("%s: Failed to parse entity", __func__);
@@ -296,7 +296,7 @@ create_config_from_file (const gchar *path)
 {
   entity_t config;
   array_t *nvt_selectors, *preferences;
-  char *created_name, *comment, *name, *type;
+  char *created_name, *comment, *name, *type, *usage_type;
   const char *config_id;
   config_t new_config;
 
@@ -310,7 +310,7 @@ create_config_from_file (const gchar *path)
   /* Parse the data out of the entity. */
 
   if (parse_config_entity (config, &config_id, &name, &comment, &type,
-                           &nvt_selectors, &preferences))
+                           &usage_type, &nvt_selectors, &preferences))
     {
       free_entity (config);
       g_warning ("%s: Failed to parse entity", __func__);
@@ -326,7 +326,7 @@ create_config_from_file (const gchar *path)
                                 nvt_selectors,
                                 preferences,
                                 type,
-                                NULL,           /* Usage type. */
+                                usage_type,
                                 &new_config,
                                 &created_name))
     {
