@@ -57829,7 +57829,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
        " WHERE tag IN (SELECT id FROM tags_trash WHERE owner = %llu);",
        user);
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
+
   delete_tickets_user (user);
+
   delete_tls_certificates_user (user);
 
   /* Delete assets (not directly referenced). */
@@ -58012,15 +58014,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql_rollback ();
       return 9;
     }
-  sql ("DELETE FROM port_ranges"
-       " WHERE port_list IN (SELECT id FROM port_lists WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM port_ranges_trash"
-       " WHERE port_list IN (SELECT id FROM port_lists_trash"
-       "                     WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM port_lists WHERE owner = %llu;", user);
-  sql ("DELETE FROM port_lists_trash WHERE owner = %llu;", user);
+  delete_port_lists_user (user);
 
   /* Report formats (used by alerts). */
   if (user_resources_in_use (user,

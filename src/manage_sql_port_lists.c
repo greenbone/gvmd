@@ -2334,6 +2334,25 @@ inherit_port_lists (user_t user, user_t inheritor)
        inheritor, user);
 }
 
+/**
+ * @brief Delete all port lists owner by a user.
+ *
+ * @param[in]  user  The user.
+ */
+void
+delete_port_lists_user (user_t user)
+{
+  sql ("DELETE FROM port_ranges"
+       " WHERE port_list IN (SELECT id FROM port_lists WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM port_ranges_trash"
+       " WHERE port_list IN (SELECT id FROM port_lists_trash"
+       "                     WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM port_lists WHERE owner = %llu;", user);
+  sql ("DELETE FROM port_lists_trash WHERE owner = %llu;", user);
+}
+
 
 /* Startup. */
 
