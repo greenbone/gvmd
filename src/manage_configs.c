@@ -173,14 +173,14 @@ create_feed_config_permissions (const gchar *config_id)
     {
       permission_t permission;
 
-      if (create_permission_internal ("get_configs",
-                                      "Automatically created for config"
-                                      " from feed",
-                                      NULL,
-                                      config_id,
-                                      "role",
-                                      g_strstrip (*point),
-                                      &permission))
+      if (create_permission_no_acl ("get_configs",
+                                    "Automatically created for config"
+                                    " from feed",
+                                    NULL,
+                                    config_id,
+                                    "role",
+                                    g_strstrip (*point),
+                                    &permission))
         /* Keep going because we aren't strict about checking the value
          * of the setting, and because we don't adjust the setting when
          * roles are removed. */
@@ -319,16 +319,16 @@ create_config_from_file (const gchar *path)
 
   /* Create the config. */
 
-  switch (create_config (config_id,
-                         name,
-                         0,               /* Use name exactly as given. */
-                         comment,
-                         nvt_selectors,
-                         preferences,
-                         type,
-                         NULL,            /* Usage type. */
-                         &new_config,
-                         &created_name))
+  switch (create_config_no_acl (config_id,
+                                name,
+                                0,              /* Use name exactly as given. */
+                                comment,
+                                nvt_selectors,
+                                preferences,
+                                type,
+                                NULL,           /* Usage type. */
+                                &new_config,
+                                &created_name))
     {
       case 0:
         {
