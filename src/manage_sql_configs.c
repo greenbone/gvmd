@@ -2037,6 +2037,43 @@ find_config_no_acl (const char *uuid, config_t *config)
 }
 
 /**
+ * @brief Find a trash config given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid     UUID of resource.
+ * @param[out]  config   Config return, 0 if no such config.
+ *
+ * @return FALSE on success (including if no such config), TRUE on error.
+ */
+gboolean
+find_trash_config_no_acl (const char *uuid, config_t *config)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (config,
+                     "SELECT id FROM configs_trash WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *config = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Gets an NVT preference by id or by name.
  *
  * Note: This currently only gets the fields needed by create_config.
