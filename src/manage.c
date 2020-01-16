@@ -4261,19 +4261,19 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
     }
   cleanup_iterator (&prefs);
 
-  /* Setup alive tests */
+  /* Setup alive tests. This has priority over scan config settings */
   alive_test = target_alive_tests (target);
-
-  /* If ping_host test was added manually, the alive test target setting
-     is skipped to avoid reset the its nvt preferences */
-  alive_test_vt = g_hash_table_lookup (vts_hash_table, OID_PING_HOST);
-
-  if (alive_test != 0 && alive_test_vt == NULL)
+  if (alive_test != 0)
     {
-      alive_test_vt = osp_vt_single_new (OID_PING_HOST);
-      vts = g_slist_prepend (vts, alive_test_vt);
-      g_hash_table_replace (vts_hash_table, g_strdup (OID_PING_HOST),
-                            alive_test_vt);
+      alive_test_vt = g_hash_table_lookup (vts_hash_table, OID_PING_HOST);
+      if (alive_test_vt == NULL)
+        {
+          alive_test_vt = osp_vt_single_new (OID_PING_HOST);
+          vts = g_slist_prepend (vts, alive_test_vt);
+          g_hash_table_replace (vts_hash_table, g_strdup (OID_PING_HOST),
+                                alive_test_vt);
+
+        }
 
       osp_vt_single_add_value (alive_test_vt, "1",
                                (alive_test & ALIVE_TEST_TCP_ACK_SERVICE
