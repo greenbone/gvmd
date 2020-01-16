@@ -43,6 +43,9 @@ int
 restore_port_list (const char *);
 
 void
+empty_trashcan_port_lists ();
+
+void
 check_db_port_lists ();
 
 #endif /* not _GVMD_MANAGE_SQL_PORT_LISTS_H */

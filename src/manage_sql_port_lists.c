@@ -2301,6 +2301,23 @@ restore_port_list (const char *port_list_id)
   return 0;
 }
 
+/**
+ * @brief Empty trashcan.
+ */
+void
+empty_trashcan_port_lists ()
+{
+  sql ("DELETE FROM port_ranges_trash"
+       " WHERE port_list IN (SELECT id from port_lists_trash"
+       "                     WHERE owner = (SELECT id FROM users"
+       "                                    WHERE uuid = '%s'));",
+       current_credentials.uuid);
+
+  sql ("DELETE FROM port_lists_trash"
+       " WHERE owner = (SELECT id FROM users WHERE uuid = '%s');",
+       current_credentials.uuid);
+}
+
 
 /* Startup. */
 

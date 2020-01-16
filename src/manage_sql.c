@@ -53011,12 +53011,7 @@ manage_empty_trashcan ()
   sql ("DELETE FROM notes_trash" WHERE_OWNER);
   sql ("DELETE FROM overrides_trash" WHERE_OWNER);
   sql ("DELETE FROM permissions_trash" WHERE_OWNER);
-  sql ("DELETE FROM port_ranges_trash"
-       " WHERE port_list IN (SELECT id from port_lists_trash"
-       "                     WHERE owner = (SELECT id FROM users"
-       "                                    WHERE uuid = '%s'));",
-       current_credentials.uuid);
-  sql ("DELETE FROM port_lists_trash" WHERE_OWNER);
+  empty_trashcan_port_lists ();
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'role'"
        " AND subject IN (SELECT id from roles_trash"
