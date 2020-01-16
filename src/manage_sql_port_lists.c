@@ -30,6 +30,9 @@
 #include "sql.h"
 
 #include <glib.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 
 
 /* Port range headers. */
