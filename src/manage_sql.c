@@ -28,6 +28,7 @@
 #define _GNU_SOURCE
 
 #include "manage_sql.h"
+#include "manage_port_lists.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_tickets.h"
