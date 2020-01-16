@@ -558,8 +558,13 @@ gboolean
 resource_with_name_exists (const char *, const char *, resource_t);
 
 int
-create_permission_internal (const char *, const char *, const char *, const char *,
-                            const char *, const char *, permission_t *);
+create_permission_internal (int, const char *, const char *, const char *,
+                            const char *, const char *, const char *,
+                            permission_t *);
+
+int
+create_permission_no_acl (const char *, const char *, const char *, const char *,
+                          const char *, const char *, permission_t *);
 
 int
 copy_resource_lock (const char *, const char *, const char *, const char *,

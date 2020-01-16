@@ -2325,6 +2325,7 @@ config_insert_preferences (config_t config,
  * If a config with the same name exists already then add a unique integer
  * suffix onto the name.
  *
+ * @param[in]   check_access   Whether to check for create_config permission.
  * @param[in]   config_id      ID if one is required, else NULL.
  * @param[in]   proposed_name  Proposed name of config.
  * @param[in]   make_name_unique  Whether to make name unique.
@@ -2340,13 +2341,14 @@ config_insert_preferences (config_t config,
  *         -2 name empty, -3 input error in selectors, -4 input error in
  *         preferences, -5 error in config_id.
  */
-int
-create_config (const char* config_id, const char* proposed_name,
-               int make_name_unique, const char* comment,
-               const array_t* selectors /* nvt_selector_t. */,
-               const array_t* preferences /* preference_t. */,
-               const char* config_type, const char *usage_type,
-               config_t *config, char **name)
+static int
+create_config_internal (int check_access, const char *config_id,
+                        const char *proposed_name,
+                        int make_name_unique, const char *comment,
+                        const array_t *selectors /* nvt_selector_t. */,
+                        const array_t *preferences /* preference_t. */,
+                        const char *config_type, const char *usage_type,
+                        config_t *config, char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
@@ -2371,7 +2373,7 @@ create_config (const char* config_id, const char* proposed_name,
 
   sql_begin_immediate ();
 
-  if (acl_user_may ("create_config") == 0)
+  if (check_access && (acl_user_may ("create_config") == 0))
     {
       sql_rollback ();
       free (selector_uuid);
@@ -2462,6 +2464,74 @@ create_config (const char* config_id, const char* proposed_name,
   sql_commit ();
   *name = candidate_name;
   return 0;
+}
+
+/**
+ * @brief Create a config.
+ *
+ * If a config with the same name exists already then add a unique integer
+ * suffix onto the name.
+ *
+ * @param[in]   config_id      ID if one is required, else NULL.
+ * @param[in]   proposed_name  Proposed name of config.
+ * @param[in]   make_name_unique  Whether to make name unique.
+ * @param[in]   comment        Comment on config.
+ * @param[in]   selectors      NVT selectors.
+ * @param[in]   preferences    Preferences.
+ * @param[in]   config_type    Config type.
+ * @param[in]   usage_type     The usage type ("scan" or "policy")
+ * @param[out]  config         On success the config.
+ * @param[out]  name           On success the name of the config.
+ *
+ * @return 0 success, 1 config exists already, 99 permission denied, -1 error,
+ *         -2 name empty, -3 input error in selectors, -4 input error in
+ *         preferences, -5 error in config_id.
+ */
+int
+create_config (const char *config_id, const char *proposed_name,
+               int make_name_unique, const char *comment,
+               const array_t *selectors /* nvt_selector_t. */,
+               const array_t *preferences /* preference_t. */,
+               const char *config_type, const char *usage_type,
+               config_t *config, char **name)
+{
+  return create_config_internal (1, config_id, proposed_name, make_name_unique,
+                                 comment, selectors, preferences, config_type,
+                                 usage_type, config, name);
+}
+
+/**
+ * @brief Create a config.
+ *
+ * If a config with the same name exists already then add a unique integer
+ * suffix onto the name.
+ *
+ * @param[in]   config_id      ID if one is required, else NULL.
+ * @param[in]   proposed_name  Proposed name of config.
+ * @param[in]   make_name_unique  Whether to make name unique.
+ * @param[in]   comment        Comment on config.
+ * @param[in]   selectors      NVT selectors.
+ * @param[in]   preferences    Preferences.
+ * @param[in]   config_type    Config type.
+ * @param[in]   usage_type     The usage type ("scan" or "policy")
+ * @param[out]  config         On success the config.
+ * @param[out]  name           On success the name of the config.
+ *
+ * @return 0 success, 1 config exists already, 99 permission denied, -1 error,
+ *         -2 name empty, -3 input error in selectors, -4 input error in
+ *         preferences, -5 error in config_id.
+ */
+int
+create_config_no_acl (const char *config_id, const char *proposed_name,
+                      int make_name_unique, const char *comment,
+                      const array_t *selectors /* nvt_selector_t. */,
+                      const array_t *preferences /* preference_t. */,
+                      const char *config_type, const char *usage_type,
+                      config_t *config, char **name)
+{
+  return create_config_internal (0, config_id, proposed_name, make_name_unique,
+                                 comment, selectors, preferences, config_type,
+                                 usage_type, config, name);
 }
 
 /**
