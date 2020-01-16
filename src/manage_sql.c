@@ -58836,7 +58836,8 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
-  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0
+      && strlen (value))
     {
       user_t value_user;
       gchar *quoted_uuid;
