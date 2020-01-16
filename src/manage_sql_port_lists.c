@@ -2318,6 +2318,22 @@ empty_trashcan_port_lists ()
        current_credentials.uuid);
 }
 
+/**
+ * @brief Change ownership of port lists, for user deletion.
+ *
+ * @param[in]  user       Current owner.
+ * @param[in]  inheritor  New owner.
+ */
+void
+inherit_port_lists (user_t user, user_t inheritor)
+{
+  sql ("UPDATE port_lists SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
+
+  sql ("UPDATE port_lists_trash SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
+}
+
 
 /* Startup. */
 

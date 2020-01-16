@@ -46,6 +46,9 @@ void
 empty_trashcan_port_lists ();
 
 void
+inherit_port_lists (user_t, user_t);
+
+void
 check_db_port_lists ();
 
 #endif /* not _GVMD_MANAGE_SQL_PORT_LISTS_H */

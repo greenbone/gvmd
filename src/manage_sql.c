@@ -57727,10 +57727,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE permissions SET owner = %llu WHERE owner = %llu",
            inheritor, user);
 
-      sql ("UPDATE port_lists SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
-      sql ("UPDATE port_lists_trash SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
+      inherit_port_lists (user, inheritor);
 
       sql ("UPDATE report_formats SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
