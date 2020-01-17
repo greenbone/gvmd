@@ -4694,29 +4694,36 @@ config_updated_in_feed (config_t config, const gchar *path)
  * @param[in]  type         New config type.
  * @param[in]  name         New name.
  * @param[in]  comment      New comment.
+ * @param[in]  usage_type   New usage type.
  * @param[in]  selectors    New NVT selectors.
  * @param[in]  preferences  New preferences.
  */
 void
 update_config (config_t config, const gchar *type, const gchar *name,
-               const gchar *comment,
+               const gchar *comment, const gchar *usage_type,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_type;
+  gchar *quoted_name, *quoted_comment, *quoted_type, *actual_usage_type;
 
   sql_begin_immediate ();
+
+  if (usage_type && strcasecmp (usage_type, "policy") == 0)
+    actual_usage_type = "policy";
+  else
+    actual_usage_type = "scan";
 
   quoted_name = sql_quote (name);
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_type = sql_quote (type);
   sql ("UPDATE configs"
-       " SET name = '%s', comment = '%s', type = '%s',"
+       " SET name = '%s', comment = '%s', type = '%s', usage_type = '%s',"
        " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
        quoted_type,
+       actual_usage_type,
        config);
   g_free (quoted_name);
   g_free (quoted_comment);
