@@ -2338,7 +2338,7 @@ inherit_port_lists (user_t user, user_t inheritor)
 }
 
 /**
- * @brief Delete all port lists owner by a user.
+ * @brief Delete all port lists owned by a user.
  *
  * @param[in]  user  The user.
  */
