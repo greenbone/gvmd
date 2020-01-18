@@ -101,7 +101,7 @@ add_executable (manage-utils-test
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
-                manage_sql_configs.c
+                manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
                 manage_migrators.c
@@ -125,7 +125,7 @@ add_executable (manage-test
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
-                manage_sql_configs.c
+                manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
                 manage_migrators.c
@@ -149,7 +149,7 @@ add_executable (gmp-tickets-test
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
-                manage_sql_configs.c
+                manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
                 manage_migrators.c
@@ -180,7 +180,7 @@ add_executable (gvmd
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
-                manage_sql_configs.c
+                manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
                 manage_migrators.c
@@ -383,6 +383,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
