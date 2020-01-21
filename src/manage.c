@@ -3565,6 +3565,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   char *host, *ca_pub, *key_pub, *key_priv;
   int rc, port;
   scanner_t scanner;
+  gboolean started = FALSE;
 
   scanner = task_scanner (task);
   host = scanner_host (scanner);
@@ -3646,6 +3647,13 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                    key_priv);
                   rc = 0;
                   break;
+                }
+              else if (osp_scan_status == OSP_SCAN_STATUS_RUNNING
+                       && started == FALSE)
+                {
+                  set_task_run_status (task, TASK_STATUS_RUNNING);
+                  set_report_scan_run_status (global_current_report,
+                                              TASK_STATUS_RUNNING);
                 }
             }
         }
@@ -4455,9 +4463,6 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       g_free (report_id);
       exit (-1);
     }
-
-  set_task_run_status (task, TASK_STATUS_RUNNING);
-  set_report_scan_run_status (global_current_report, TASK_STATUS_RUNNING);
 
   snprintf (title, sizeof (title), "gvmd: OSP: Handling scan %s", report_id);
   proctitle_set (title);
