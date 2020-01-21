@@ -40,6 +40,7 @@
 #include "utils.h"
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -527,4 +528,21 @@ lockfile_locked (const gchar *lockfile_basename)
   if ((ret == 0) && lockfile_unlock (&lockfile))
     return -1;
   return ret;
+}
+
+
+/* UUIDs. */
+
+/**
+ * @brief Check whether a string is a UUID.
+ *
+ * @param[in]  uuid  Potential UUID.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+is_uuid (const char *uuid)
+{
+  while (*uuid) if (isxdigit (*uuid) || (*uuid == '-')) uuid++; else return 0;
+  return 1;
 }

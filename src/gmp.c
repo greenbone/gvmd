@@ -98,7 +98,6 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
-#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <glib/gstdio.h>
@@ -139,20 +138,6 @@ buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
 
 
 /* Helper functions. */
-
-/**
- * @brief Check whether a string is a UUID.
- *
- * @param[in]  uuid  Potential UUID.
- *
- * @return 1 yes, 0 no.
- */
-static int
-is_uuid (const char *uuid)
-{
-  while (*uuid) if (isxdigit (*uuid) || (*uuid == '-')) uuid++; else return 0;
-  return 1;
-}
 
 /**
  * @brief Return time defined by broken down time strings.
