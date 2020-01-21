@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2010-2019 Greenbone Networks GmbH
+Copyright (C) 2010-2020 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -545,6 +545,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>name</e>
       <e>creation_time</e>
       <e>modification_time</e>
+      <e>summary</e>
+      <e>insight</e>
+      <e>affected</e>
+      <e>impact</e>
       <e>category</e>
       <e>family</e>
       <e>cvss_base</e>
@@ -571,6 +575,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>modification_time</name>
       <summary>Date and time the vulnerability test was last modified</summary>
       <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>summary</name>
+      <summary>Summary about the vulnerability test</summary>
+      <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>insight</name>
+      <summary>Insights into details of the vulnerability test</summary>
+      <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>affected</name>
+      <summary>Describes the affected products covered by this vulnerability test</summary>
+      <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>impact</name>
+      <summary>Describes the impact that a successful exploitation could mean.</summary>
+      <pattern><t>text</t></pattern>
     </ele>
     <ele>
       <name>category</name>
