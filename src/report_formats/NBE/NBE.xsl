@@ -130,10 +130,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>|</xsl:text>
 
   <!-- Summary -->
-  <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
+  <xsl:if test="nvt/summary/text()">
     <xsl:text>Summary:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'summary'), '&#10;', '\n')"/>
+    <xsl:value-of select="str:replace (nvt/summary/text(), '&#10;', '\n')"/>
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
@@ -156,10 +156,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
   <xsl:text>\n</xsl:text>
 
-  <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+  <xsl:if test="nvt/impact/text()">
     <xsl:text>Impact:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'impact'), '&#10;', '\n')"/>
+    <xsl:value-of select="str:replace (nvt/impact/text(), '&#10;', '\n')"/>
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
@@ -182,17 +182,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:if>
   </xsl:if>
 
-  <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+  <xsl:if test="nvt/affected/text()">
     <xsl:text>Affected Software/OS:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'affected'), '&#10;', '\n')"/>
+    <xsl:value-of select="str:replace (nvt/affected/text(), '&#10;', '\n')"/>
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
-  <xsl:if test="string-length (gvm:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+  <xsl:if test="nvt/insight/text()">
     <xsl:text>Vulnerability Insight:</xsl:text>
     <xsl:text>\n</xsl:text>
-    <xsl:value-of select="str:replace (gvm:get-nvt-tag (nvt/tags, 'insight'), '&#10;', '\n')"/>
+    <xsl:value-of select="str:replace (nvt/insight/text(), '&#10;', '\n')"/>
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
