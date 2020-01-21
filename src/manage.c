@@ -3560,7 +3560,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   char *host, *ca_pub, *key_pub, *key_priv;
   int rc, port;
   scanner_t scanner;
-  gboolean started = FALSE;
+  gboolean started;
 
   scanner = task_scanner (task);
   host = scanner_host (scanner);
@@ -3568,6 +3568,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
+  started = FALSE;
 
   while (1)
     {
