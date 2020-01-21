@@ -46,7 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Setup target's alive test setting to launch an osp openvas task (9.0) [#936](https://github.com/greenbone/gvmd/pull/936)
 - Remove incorrect duplicates from config preference migrator [#940](https://github.com/greenbone/gvmd/pull/940)
 - Correct pref ID in migrate_219_to_220 [#941](https://github.com/greenbone/gvmd/pull/941)
-- Set run status only after getting OSP-OpenVAS scan [#948](https://github.com/greenbone/gvmd/pull/948)
+- Set run status only after getting OSP-OpenVAS scan [#948](https://github.com/greenbone/gvmd/pull/948) [#951](https://github.com/greenbone/gvmd/pull/951)
 - Fix get_system_reports for GMP scanners [#949](https://github.com/greenbone/gvmd/pull/949)
 
 ### Removed
