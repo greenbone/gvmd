@@ -47,6 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove incorrect duplicates from config preference migrator [#940](https://github.com/greenbone/gvmd/pull/940)
 - Correct pref ID in migrate_219_to_220 [#941](https://github.com/greenbone/gvmd/pull/941)
 - Set run status only after getting OSP-OpenVAS scan [#948](https://github.com/greenbone/gvmd/pull/948)
+- Fix get_system_reports for GMP scanners [#949](https://github.com/greenbone/gvmd/pull/949)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
