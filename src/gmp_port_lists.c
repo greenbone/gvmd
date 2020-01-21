@@ -30,6 +30,10 @@
 #include "manage_port_lists.h"
 #include "utils.h"
 
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+
 
 /* CREATE_PORT_LIST. */
 
