@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-Copyright (C) 2011-2019 Greenbone Networks GmbH
+Copyright (C) 2011-2020 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -62,11 +62,11 @@ Parameters:
   <func:function name="gvm:newstyle-nvt">
     <xsl:param name="nvt"/>
     <xsl:choose>
-      <xsl:when test="string-length (gvm:get-nvt-tag ($nvt/tags, 'summary'))
-                      and string-length (gvm:get-nvt-tag ($nvt/tags, 'affected'))
-                      and string-length (gvm:get-nvt-tag ($nvt/tags, 'insight'))
+	    <xsl:when test="$nvt/summary/text()
+                      and $nvt/tags/affected/text()
+                      and $nvt/insight/text()
+                      and $nvt/impact/text()
                       and string-length (gvm:get-nvt-tag ($nvt/tags, 'vuldetect'))
-                      and string-length (gvm:get-nvt-tag ($nvt/tags, 'impact'))
                       and $nvt/solution">
         <func:result select="1"/>
       </xsl:when>
@@ -552,7 +552,7 @@ CIS</value>
           <xsl:if test="gvm:newstyle-nvt (nvt)">
             <xsl:text>Summary:</xsl:text>
             <xsl:call-template name="newline"/>
-            <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'summary')"/>
+	    <xsl:value-of select="nvt/summary/text()"/>
             <xsl:call-template name="newline"/>
             <xsl:call-template name="newline"/>
           </xsl:if>
@@ -593,21 +593,17 @@ CIS</value>
           <xsl:call-template name="newline"/>
 
           <xsl:if test="gvm:newstyle-nvt (nvt)">
-            <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
-              <xsl:text>Impact:</xsl:text>
-              <xsl:call-template name="newline"/>
-              <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'impact')"/>
-              <xsl:call-template name="newline"/>
-              <xsl:call-template name="newline"/>
-            </xsl:if>
+            <xsl:text>Impact:</xsl:text>
+            <xsl:call-template name="newline"/>
+	    <xsl:value-of select="nvt/impact/text()"/>
+            <xsl:call-template name="newline"/>
+            <xsl:call-template name="newline"/>
 
-            <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
-              <xsl:text>Affected Software/OS:</xsl:text>
-              <xsl:call-template name="newline"/>
-              <xsl:value-of name="string" select="gvm:get-nvt-tag (nvt/tags, 'affected')"/>
-              <xsl:call-template name="newline"/>
-              <xsl:call-template name="newline"/>
-            </xsl:if>
+            <xsl:text>Affected Software/OS:</xsl:text>
+            <xsl:call-template name="newline"/>
+	    <xsl:value-of name="string" select="nvt/affected/text()"/>
+            <xsl:call-template name="newline"/>
+            <xsl:call-template name="newline"/>
 
             <xsl:if test="nvt/solution/text() or nvt/solution/@type or nvt/solution/@method">
               <xsl:text>Solution:</xsl:text>
@@ -629,13 +625,11 @@ CIS</value>
               </xsl:if>
             </xsl:if>
 
-            <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
-              <xsl:text>Vulnerability Insight:</xsl:text>
-              <xsl:call-template name="newline"/>
-              <xsl:value-of select="gvm:get-nvt-tag (nvt/tags, 'insight')"/>
-              <xsl:call-template name="newline"/>
-              <xsl:call-template name="newline"/>
-            </xsl:if>
+            <xsl:text>Vulnerability Insight:</xsl:text>
+            <xsl:call-template name="newline"/>
+	    <xsl:value-of select="nvt/insight/text()"/>
+            <xsl:call-template name="newline"/>
+            <xsl:call-template name="newline"/>
           </xsl:if>
 
           <xsl:choose>
