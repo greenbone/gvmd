@@ -3650,6 +3650,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   set_task_run_status (task, TASK_STATUS_RUNNING);
                   set_report_scan_run_status (global_current_report,
                                               TASK_STATUS_RUNNING);
+                  started = TRUE;
                 }
             }
         }
