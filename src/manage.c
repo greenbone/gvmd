@@ -6170,7 +6170,6 @@ get_system_report_types (const char *required_type, gchar ***start,
       scanner_type_t slave_type;
 
       slave = 0;
-      slave_type = SCANNER_TYPE_NONE;
 
       if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
         return -1;
