@@ -155,11 +155,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <!-- MATCH RESULT -->
 <xsl:template match="result">
   <xsl:variable name="ip" select="host/text()"/>
-  <xsl:variable name="summary-tag" select="gvm:get-nvt-tag (nvt/tags, 'summary')"/>
   <xsl:variable name="summary">
     <xsl:choose>
-      <xsl:when test="string-length ($summary-tag) &gt; 0">
-        <xsl:value-of select="$summary-tag"/>
+      <xsl:when test="nvt/summary/text()">
+        <xsl:value-of select="nvt/summary"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="description"/>
@@ -225,21 +224,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>,</xsl:text>
   <xsl:value-of select="gvm:formula_quote (@id)"/>
   <xsl:text>,"</xsl:text>
-  <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
-    <xsl:value-of select="gvm:formula_quote (str:replace (gvm:get-nvt-tag (nvt/tags, 'impact'), $quote, $two-quotes))"/>
-  </xsl:if>
+  <xsl:value-of select="gvm:formula_quote (str:replace (nvt/impact/text(), $quote, $two-quotes))"/>
   <xsl:text>","</xsl:text>
   <xsl:if test="nvt/solution/text()">
     <xsl:value-of select="gvm:formula_quote (str:replace (nvt/solution/text(), $quote, $two-quotes))"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
-  <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
-    <xsl:value-of select="gvm:formula_quote (str:replace (gvm:get-nvt-tag (nvt/tags, 'affected'), $quote, $two-quotes))"/>
-  </xsl:if>
+  <xsl:value-of select="gvm:formula_quote (str:replace (nvt/affected/text(), $quote, $two-quotes))"/>
   <xsl:text>","</xsl:text>
-  <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
-    <xsl:value-of select="gvm:formula_quote (str:replace (gvm:get-nvt-tag (nvt/tags, 'insight'), $quote, $two-quotes))"/>
-  </xsl:if>
+  <xsl:value-of select="gvm:formula_quote (str:replace (nvt/insight/text(), $quote, $two-quotes))"/>
   <xsl:text>","</xsl:text>
   <xsl:if test="gvm:get-nvt-tag (nvt/tags, 'vuldetect') != 'N/A'">
     <xsl:value-of select="gvm:formula_quote (str:replace (gvm:get-nvt-tag (nvt/tags, 'vuldetect'), $quote, $two-quotes))"/>
@@ -371,6 +364,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>IP,Hostname,Port,Port Protocol,CVSS,Severity,Solution Type,NVT Name,Summary,Specific Result,NVT OID,CVEs,Task ID,Task Name,Timestamp,Result ID,Impact,Solution,Affected Software/OS,Vulnerability Insight,Vulnerability Detection Method,Product Detection Result,BIDs,CERTs,Other References
 </xsl:text>
   <xsl:apply-templates select="results"/>
+  <xsl:apply-templates select="report/results"/>
 </xsl:template>
 
 </xsl:stylesheet>
