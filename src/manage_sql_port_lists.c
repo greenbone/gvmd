@@ -2511,13 +2511,10 @@ port_list_updated_in_feed (port_list_t port_list, const gchar *path)
 /**
  * @brief Update a port list from an XML file.
  *
- * @param[in]  port_list       Existing port list.
- * @param[in]  type         New port list type.
+ * @param[in]  port_list    Existing port list.
  * @param[in]  name         New name.
  * @param[in]  comment      New comment.
- * @param[in]  usage_type   New usage type.
- * @param[in]  selectors    New NVT selectors.
- * @param[in]  preferences  New preferences.
+ * @param[in]  ranges       New port ranges.
  */
 void
 update_port_list (port_list_t port_list, const gchar *name,
