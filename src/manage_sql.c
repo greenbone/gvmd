@@ -59961,11 +59961,11 @@ copy_tag (const char* name, const char* comment, const char *tag_id,
                        "value, resource_type, active",
                        1, &new_tag, &old_tag);
 
-  if (new_tag_return)
-    *new_tag_return = new_tag;
-
   if (ret)
     return ret;
+
+  if (new_tag_return)
+    *new_tag_return = new_tag;
 
   sql ("INSERT INTO tag_resources"
        " (tag, resource_type, resource, resource_uuid, resource_location)"
