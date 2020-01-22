@@ -2509,6 +2509,52 @@ port_list_updated_in_feed (port_list_t port_list, const gchar *path)
 }
 
 /**
+ * @brief Update a port list from an XML file.
+ *
+ * @param[in]  port_list       Existing port list.
+ * @param[in]  type         New port list type.
+ * @param[in]  name         New name.
+ * @param[in]  comment      New comment.
+ * @param[in]  usage_type   New usage type.
+ * @param[in]  selectors    New NVT selectors.
+ * @param[in]  preferences  New preferences.
+ */
+void
+update_port_list (port_list_t port_list, const gchar *name,
+                  const gchar *comment,
+                  array_t *ranges /* range_t */)
+{
+  gchar *quoted_name, *quoted_comment;
+  int index;
+  range_t *range;
+
+  sql_begin_immediate ();
+
+  quoted_name = sql_quote (name);
+  quoted_comment = sql_quote (comment ? comment : "");
+  sql ("UPDATE port_lists"
+       " SET name = '%s', comment = '%s',"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_name,
+       quoted_comment,
+       port_list);
+  g_free (quoted_name);
+  g_free (quoted_comment);
+
+  /* Replace the preferences. */
+
+  sql ("DELETE FROM port_ranges WHERE port_list = %llu;", port_list);
+  ranges_sort_merge (ranges);
+  array_terminate (ranges);
+  index = 0;
+  while ((range = (range_t*) g_ptr_array_index (ranges, index++)))
+    insert_port_range (port_list, range->type, range->start, range->end);
+
+  sql_commit ();
+}
+
+/**
  * @brief Ensure that the predefined port lists exist.
  */
 void

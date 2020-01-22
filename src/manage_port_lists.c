@@ -147,6 +147,45 @@ create_port_list_from_file (const gchar *path)
 }
 
 /**
+ * @brief Create a port list from an XML file.
+ *
+ * @param[in]  port_list  Existing port list.
+ * @param[in]  path       Full path to port list XML.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_port_list_from_file (port_list_t port_list, const gchar *path)
+{
+  entity_t entity;
+  array_t *ranges;
+  char *comment, *name;
+  const char *port_list_id;
+
+  g_debug ("%s: updating %s", __func__, path);
+
+  /* Parse the file into an entity. */
+
+  if (parse_xml_file (path, &entity))
+    return 1;
+
+  /* Parse the data out of the entity. */
+
+  parse_port_list_entity (entity, &port_list_id, &name, &comment, &ranges);
+
+  /* Update the port list. */
+
+  update_port_list (port_list, name, comment, ranges);
+
+  /* Cleanup. */
+
+  free_entity (entity);
+  array_free (ranges);
+
+  return 0;
+}
+
+/**
  * @brief Sync a single port_list with the feed.
  *
  * @param[in]  path  Path to port_list XML in feed.
@@ -186,8 +225,7 @@ sync_port_list_with_feed (const gchar *path)
       if (port_list_updated_in_feed (port_list, full_path))
         {
           g_debug ("%s: updating %s", __func__, path);
-          // TODO
-          //update_port_list_from_file (port_list, full_path);
+          update_port_list_from_file (port_list, full_path);
         }
 
       g_free (full_path);

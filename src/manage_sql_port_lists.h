@@ -65,6 +65,9 @@ int
 port_list_updated_in_feed (port_list_t, const gchar *);
 
 void
+update_port_list (port_list_t, const gchar *, const gchar *, array_t *);
+
+void
 check_db_port_lists ();
 
 #endif /* not _GVMD_MANAGE_SQL_PORT_LISTS_H */
