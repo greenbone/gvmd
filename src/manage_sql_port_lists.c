@@ -35,24 +35,6 @@
 #include <strings.h>
 
 
-/* Port range headers. */
-
-void
-make_port_ranges_iana_tcp_2012 (port_list_t);
-
-void
-make_port_ranges_iana_tcp_udp_2012 (port_list_t);
-
-void
-make_port_ranges_all_tcp_nmap_5_51_top_100 (port_list_t);
-
-void
-make_port_ranges_all_tcp_nmap_5_51_top_1000 (port_list_t);
-
-void
-make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
-
-
 /* Port list functions. */
 
 /**
@@ -2365,123 +2347,6 @@ delete_port_lists_user (user_t user)
 void
 check_db_port_lists ()
 {
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_DEFAULT "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_openvas_default (list);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_TCP "', NULL, 'All TCP',"
-           " '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      RANGE (PORT_PROTOCOL_TCP, 1, 65535);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "', NULL,"
-           " 'All TCP and Nmap 5.51 top 100 UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_all_tcp_nmap_5_51_top_100 (list);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "', NULL,"
-           " 'All TCP and Nmap 5.51 top 1000 UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_all_tcp_nmap_5_51_top_1000 (list);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP "', NULL,"
-           " 'All privileged TCP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      RANGE (PORT_PROTOCOL_TCP, 1, 1023);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "', NULL,"
-           " 'All privileged TCP and UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      RANGE (PORT_PROTOCOL_TCP, 1, 1023);
-      RANGE (PORT_PROTOCOL_UDP, 1, 1023);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_2012 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_2012 "', NULL,"
-           " 'All IANA assigned TCP 2012-02-10', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_iana_tcp_2012 (list);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "', NULL,"
-           " 'All IANA assigned TCP and UDP 2012-02-10', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_iana_tcp_udp_2012 (list);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "', NULL,"
-           " 'Nmap 5.51 top 2000 TCP and top 100 UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_nmap_5_51_top_2000_top_100 (list);
-    }
   /*
    * Ensure that the highest number in a port range is 65535.  At some point
    * ranges were initialised to 65536.
