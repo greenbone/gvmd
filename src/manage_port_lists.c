@@ -25,8 +25,10 @@
  */
 
 #include "manage_port_lists.h"
+#include "gmp_port_lists.h"
 #include "manage.h"
 #include "manage_sql_port_lists.h"
+#include "utils.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -49,6 +51,99 @@ feed_dir_port_lists ()
   if (path == NULL)
     path = g_build_filename (GVMD_FEED_DIR, "port_lists", NULL);
   return path;
+}
+
+/**
+ * @brief Create a port list from an XML file.
+ *
+ * @param[in]  path  Path to port list XML.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+create_port_list_from_file (const gchar *path)
+{
+  entity_t port_list;
+  array_t *ranges;
+  char *comment, *name;
+  const char *port_list_id;
+  port_list_t new_port_list;
+
+  g_debug ("%s: creating %s", __func__, path);
+
+  /* Parse the file into an entity. */
+
+  if (parse_xml_file (path, &port_list))
+    return 1;
+
+  /* Parse the data out of the entity. */
+
+  parse_port_list_entity (port_list, &port_list_id, &name, &comment,
+                          &ranges);
+
+  /* Create the port_list. */
+
+  switch (create_port_list_no_acl (port_list_id,
+                                   name,
+                                   comment,
+                                   NULL,       /* Optional ranges as string. */
+                                   ranges,
+                                   &new_port_list))
+    {
+      case 0:
+        {
+          gchar *uuid;
+
+          uuid = port_list_uuid (new_port_list);
+          log_event ("port_list", "Port list", uuid, "created");
+
+#if 0
+          /* Create permissions. */
+          create_feed_port_list_permissions (uuid);
+#endif
+
+          g_free (uuid);
+          break;
+        }
+      case 1:
+        g_warning ("%s: Port_List exists already", __func__);
+        log_event_fail ("port_list", "Port list", NULL, "created");
+        break;
+      case 99:
+        g_warning ("%s: Permission denied", __func__);
+        log_event_fail ("port_list", "Port list", NULL, "created");
+        break;
+      case -2:
+        g_warning ("%s: Import name must be at"
+                   " least one character long",
+                   __func__);
+        log_event_fail ("port_list", "Port list", NULL, "created");
+        break;
+      case -3:
+        g_warning ("%s: Error in NVT_SELECTORS element.", __func__);
+        log_event_fail ("port_list", "Port list", NULL, "created");
+        break;
+      case -4:
+        g_warning ("%s: Error in PREFERENCES element.", __func__);
+        log_event_fail ("port_list", "Port list", NULL, "created");
+        break;
+      case -5:
+        g_warning ("%s: Error in PORT_LIST @id.", __func__);
+        log_event_fail ("port_list", "Port list", NULL, "created");
+        break;
+      default:
+      case -1:
+        g_warning ("%s: Internal error", __func__);
+        log_event_fail ("port_list", "Port list", NULL, "created");
+        break;
+    }
+
+  /* Cleanup. */
+
+  free_entity (port_list);
+  array_free (ranges);
+
+  return 0;
 }
 
 /**
@@ -118,7 +213,7 @@ sync_port_list_with_feed (const gchar *path)
 
   g_debug ("%s: adding %s", __func__, path);
 
-  //create_port_list_from_file (full_path);
+  create_port_list_from_file (full_path);
 
   g_free (full_path);
 }

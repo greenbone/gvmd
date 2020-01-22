@@ -1053,8 +1053,9 @@ create_port_list_unique (const char *name, const char *comment,
 }
 
 /**
- * @brief Create a port_list.
+ * @brief Create a port list.
  *
+ * @param[in]   check_access      Whether to check for create_config permission.
  * @param[in]   id                ID of port list.  Only used with \p ranges.
  * @param[in]   name              Name of port list.
  * @param[in]   comment           Comment on port list.
@@ -1066,10 +1067,10 @@ create_port_list_unique (const char *name, const char *comment,
  * @return 0 success, 1 port list exists already, 4 error in port_ranges,
  *         99 permission denied, -1 error.
  */
-int
-create_port_list (const char* id, const char* name, const char* comment,
-                  const char* port_ranges, array_t *ranges,
-                  port_list_t* port_list_return)
+static int
+create_port_list_internal (int check_access, const char *id, const char *name,
+                           const char *comment, const char *port_ranges,
+                           array_t *ranges, port_list_t *port_list_return)
 {
   port_list_t port_list;
   int ret;
@@ -1086,7 +1087,7 @@ create_port_list (const char* id, const char* name, const char* comment,
 
       sql_begin_immediate ();
 
-      if (acl_user_may ("create_port_list") == 0)
+      if (check_access && acl_user_may ("create_port_list") == 0)
         {
           sql_rollback ();
           return 99;
@@ -1149,7 +1150,7 @@ create_port_list (const char* id, const char* name, const char* comment,
 
   sql_begin_immediate ();
 
-  if (acl_user_may ("create_port_list") == 0)
+  if (check_access && acl_user_may ("create_port_list") == 0)
     {
       sql_rollback ();
       return 99;
@@ -1209,6 +1210,52 @@ create_port_list (const char* id, const char* name, const char* comment,
   sql_commit ();
 
   return 0;
+}
+
+/**
+ * @brief Create a port list.
+ *
+ * @param[in]   id                ID of port list.  Only used with \p ranges.
+ * @param[in]   name              Name of port list.
+ * @param[in]   comment           Comment on port list.
+ * @param[in]   port_ranges       GMP port range string.
+ * @param[in]   ranges            Array of port ranges of type range_t.
+ *                                Overrides port_ranges.
+ * @param[out]  port_list_return  Created port list.
+ *
+ * @return 0 success, 1 port list exists already, 4 error in port_ranges,
+ *         99 permission denied, -1 error.
+ */
+int
+create_port_list (const char *id, const char *name, const char *comment,
+                  const char *port_ranges, array_t *ranges,
+                  port_list_t *port_list_return)
+{
+  return create_port_list_internal (1, id, name, comment, port_ranges, ranges,
+                                    port_list_return);
+}
+
+/**
+ * @brief Create a port list.
+ *
+ * @param[in]   id                ID of port list.  Only used with \p ranges.
+ * @param[in]   name              Name of port list.
+ * @param[in]   comment           Comment on port list.
+ * @param[in]   port_ranges       GMP port range string.
+ * @param[in]   ranges            Array of port ranges of type range_t.
+ *                                Overrides port_ranges.
+ * @param[out]  port_list_return  Created port list.
+ *
+ * @return 0 success, 1 port list exists already, 4 error in port_ranges,
+ *         99 permission denied, -1 error.
+ */
+int
+create_port_list_no_acl (const char *id, const char *name, const char *comment,
+                         const char *port_ranges, array_t *ranges,
+                         port_list_t *port_list_return)
+{
+  return create_port_list_internal (0, id, name, comment, port_ranges, ranges,
+                                    port_list_return);
 }
 
 /**
