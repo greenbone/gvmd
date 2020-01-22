@@ -25,9 +25,8 @@
 #ifndef _GVMD_UTILS_H
 #define _GVMD_UTILS_H
 
-#include <gvm/util/xmlutils.h>
-
 #include <glib.h>
+#include <gvm/util/xmlutils.h>
 #include <time.h>
 
 int
