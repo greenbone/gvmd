@@ -176,7 +176,6 @@ sync_port_list_with_feed (const gchar *path)
   uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
                           split[1], split[2], split[3], split[4], split[5]);
   g_strfreev (split);
-#if 0
   if (find_port_list_no_acl (uuid, &port_list) == 0
       && port_list)
     {
@@ -196,7 +195,6 @@ sync_port_list_with_feed (const gchar *path)
       g_free (full_path);
       return;
     }
-#endif
 
   if (find_trash_port_list_no_acl (uuid, &port_list) == 0
       && port_list)

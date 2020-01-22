@@ -753,6 +753,43 @@ find_port_list (const char* uuid, port_list_t* port_list)
 }
 
 /**
+ * @brief Find a port list given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid       UUID of resource.
+ * @param[out]  port_list  Port list return, 0 if no such port list.
+ *
+ * @return FALSE on success (including if no such port list), TRUE on error.
+ */
+gboolean
+find_port_list_no_acl (const char *uuid, port_list_t *port_list)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (port_list,
+                     "SELECT id FROM port_lists WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *port_list = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Find a port list for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of port list.

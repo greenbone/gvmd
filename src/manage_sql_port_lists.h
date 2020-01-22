@@ -38,6 +38,9 @@ create_port_list_unique (const char *, const char *, const char *,
                          port_list_t *);
 
 gboolean
+find_port_list_no_acl (const char *, port_list_t *);
+
+gboolean
 find_trash_port_list_no_acl (const char *, port_list_t *);
 
 int
