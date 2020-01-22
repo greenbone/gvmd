@@ -155,7 +155,7 @@ static void
 sync_port_list_with_feed (const gchar *path)
 {
   gchar **split, *full_path, *uuid;
-//  port_list_t port_list;
+  port_list_t port_list;
 
   g_debug ("%s: considering %s", __func__, path);
 
@@ -198,7 +198,6 @@ sync_port_list_with_feed (const gchar *path)
     }
 #endif
 
-#if 0
   if (find_trash_port_list_no_acl (uuid, &port_list) == 0
       && port_list)
     {
@@ -207,7 +206,6 @@ sync_port_list_with_feed (const gchar *path)
       g_free (uuid);
       return;
     }
-#endif
 
   g_free (uuid);
 

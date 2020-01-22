@@ -29,7 +29,9 @@
 #include "manage_port_lists.h"
 #include "sql.h"
 
+#include <errno.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -767,6 +769,43 @@ find_port_list_with_permission (const char* uuid, port_list_t* port_list,
 {
   return find_resource_with_permission ("port_list", uuid, port_list,
                                         permission, 0);
+}
+
+/**
+ * @brief Find a trash port list given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid        UUID of resource.
+ * @param[out]  port_list   Port list return, 0 if no such port list.
+ *
+ * @return FALSE on success (including if no such port list), TRUE on error.
+ */
+gboolean
+find_trash_port_list_no_acl (const char *uuid, port_list_t *port_list)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (port_list,
+                     "SELECT id FROM port_lists_trash WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *port_list = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
 }
 
 /**
@@ -2399,6 +2438,38 @@ delete_port_lists_user (user_t user)
 
 
 /* Startup. */
+
+/**
+ * @brief Check if a port list has been updated in the feed.
+ *
+ * @param[in]  path       Full path to port list XML in feed.
+ * @param[in]  port_list  Port List.
+ *
+ * @return 1 if updated in feed, else 0.
+ */
+int
+port_list_updated_in_feed (port_list_t port_list, const gchar *path)
+{
+  GStatBuf state;
+  int last_update;
+
+  last_update = sql_int ("SELECT modification_time FROM port_lists"
+                         " WHERE id = %llu;",
+                         port_list);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed port_list file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if (state.st_mtime <= last_update)
+    return 0;
+
+  return 1;
+}
 
 /**
  * @brief Ensure that the predefined port lists exist.
