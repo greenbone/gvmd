@@ -108,7 +108,7 @@ add_executable (manage-utils-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
-                gmp_tickets.c gmp_tls_certificates.c)
+                gmp_port_lists.c gmp_tickets.c gmp_tls_certificates.c)
 
 add_test (manage-utils-test manage-utils-test)
 
@@ -132,7 +132,7 @@ add_executable (manage-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
-                gmp_tickets.c gmp_tls_certificates.c)
+                gmp_port_lists.c gmp_tickets.c gmp_tls_certificates.c)
 
 add_test (manage-test manage-test)
 
@@ -156,7 +156,7 @@ add_executable (gmp-tickets-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
-                gmp_tls_certificates.c)
+                gmp_port_lists.c gmp_tls_certificates.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
 
@@ -187,7 +187,7 @@ add_executable (gvmd
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
-                gmp_tickets.c gmp_tls_certificates.c)
+                gmp_port_lists.c gmp_tickets.c gmp_tls_certificates.c)
 
 target_link_libraries (gvmd m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
@@ -367,6 +367,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_configs.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tls_certificates.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
