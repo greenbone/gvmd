@@ -1,12 +1,6 @@
-/* GVM
- * $Id$
- * Description: GVM GMP layer: Configs headers.
+/* Copyright (C) 2020 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
- *
- * Copyright:
- * Copyright (C) 2019 Greenbone Networks GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,27 +17,26 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef _GVMD_GMP_CONFIGS_H
-#define _GVMD_GMP_CONFIGS_H
+#ifndef _GVMD_GMP_PORT_LISTS_H
+#define _GVMD_GMP_PORT_LISTS_H
 
 #include "gmp_base.h"
 #include "manage.h"
 
 void
-create_config_start (gmp_parser_t *, const gchar **, const gchar **);
+create_port_list_start (gmp_parser_t *, const gchar **, const gchar **);
 
 void
-create_config_element_start (gmp_parser_t *, const gchar *, const gchar **,
-                             const gchar **);
+create_port_list_element_start (gmp_parser_t *, const gchar *, const gchar **,
+                                const gchar **);
 
 int
-create_config_element_end (gmp_parser_t *, GError **error, const gchar *);
+create_port_list_element_end (gmp_parser_t *, GError **error, const gchar *);
 
 void
-create_config_element_text (const gchar *, gsize);
+create_port_list_element_text (const gchar *, gsize);
 
-int
-parse_config_entity (entity_t, const char **, char **, char **, char **, char **,
-                     array_t **, array_t **);
+void
+parse_port_list_entity (entity_t, const char **, char **, char **, array_t **);
 
-#endif /* not _GVMD_GMP_CONFIGS_H */
+#endif /* not _GVMD_GMP_PORT_LISTS_H */

@@ -76,4 +76,7 @@ lockfile_unlock (lockfile_t *);
 int
 lockfile_locked (const gchar *);
 
+int
+is_uuid (const char *);
+
 #endif /* not _GVMD_UTILS_H */

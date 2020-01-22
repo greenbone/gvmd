@@ -185,6 +185,7 @@ attr_or_null (entity_t entity, const gchar *name)
  * @param[out] name       Address for name.
  * @param[out] comment    Address for comment.
  * @param[out] type       Address for type.
+ * @param[out] usage_type            Address for usage type.
  * @param[out] import_nvt_selectors  Address for selectors.
  * @param[out] import_preferences    Address for preferences.
  *
@@ -192,7 +193,7 @@ attr_or_null (entity_t entity, const gchar *name)
  */
 int
 parse_config_entity (entity_t config, const char **config_id, char **name,
-                     char **comment, char **type,
+                     char **comment, char **type, char **usage_type,
                      array_t **import_nvt_selectors,
                      array_t **import_preferences)
 {
@@ -214,6 +215,15 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
   entity = entity_child (config, "type");
   if (entity)
     *type = entity_text (entity);
+
+  if (usage_type)
+    {
+      entity = entity_child (config, "usage_type");
+      if (entity)
+        *usage_type = entity_text (entity);
+      else
+        *usage_type = NULL;
+    }
 
   /* Collect NVT selectors. */
 
@@ -420,7 +430,8 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
       /* Get the config data from the XML. */
 
       if (parse_config_entity (config, NULL, &import_name, &comment, &type,
-                               &import_nvt_selectors, &import_preferences))
+                               NULL, &import_nvt_selectors,
+                               &import_preferences))
         {
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("create_config",

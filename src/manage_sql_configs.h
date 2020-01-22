@@ -75,10 +75,25 @@
 gchar *
 configs_extra_where (const char *);
 
-void
-check_db_configs ();
+int
+create_config_no_acl (const char *, const char *, int, const char *,
+                      const array_t *, const array_t *, const char *,
+                      const char *, config_t *, char **);
+
+gboolean
+find_config_no_acl (const char *, config_t *);
+
+gboolean
+find_trash_config_no_acl (const char *, config_t *);
+
+int
+config_updated_in_feed (config_t, const gchar *);
 
 void
-manage_sync_configs ();
+update_config (config_t, const gchar *, const gchar *, const gchar *,
+               const gchar *, const array_t*, const array_t*);
+
+void
+check_db_configs ();
 
 #endif /* not _GVMD_MANAGE_SQL_CONFIGS_H */

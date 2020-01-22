@@ -30,7 +30,6 @@
  * The Config SQL for the GVM management layer.
  */
 
-#include "gmp_configs.h"
 #include "manage_configs.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
@@ -39,6 +38,8 @@
 #include "sql.h"
 
 #include <assert.h>
+#include <errno.h>
+#include <glib/gstdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1999,6 +2000,80 @@ find_config_with_permission (const char* uuid, config_t* config,
 }
 
 /**
+ * @brief Find a config given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid     UUID of resource.
+ * @param[out]  config   Config return, 0 if no such config.
+ *
+ * @return FALSE on success (including if no such config), TRUE on error.
+ */
+gboolean
+find_config_no_acl (const char *uuid, config_t *config)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (config,
+                     "SELECT id FROM configs WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *config = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Find a trash config given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid     UUID of resource.
+ * @param[out]  config   Config return, 0 if no such config.
+ *
+ * @return FALSE on success (including if no such config), TRUE on error.
+ */
+gboolean
+find_trash_config_no_acl (const char *uuid, config_t *config)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (config,
+                     "SELECT id FROM configs_trash WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *config = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Gets an NVT preference by id or by name.
  *
  * Note: This currently only gets the fields needed by create_config.
@@ -2250,6 +2325,7 @@ config_insert_preferences (config_t config,
  * If a config with the same name exists already then add a unique integer
  * suffix onto the name.
  *
+ * @param[in]   check_access   Whether to check for create_config permission.
  * @param[in]   config_id      ID if one is required, else NULL.
  * @param[in]   proposed_name  Proposed name of config.
  * @param[in]   make_name_unique  Whether to make name unique.
@@ -2265,13 +2341,14 @@ config_insert_preferences (config_t config,
  *         -2 name empty, -3 input error in selectors, -4 input error in
  *         preferences, -5 error in config_id.
  */
-int
-create_config (const char* config_id, const char* proposed_name,
-               int make_name_unique, const char* comment,
-               const array_t* selectors /* nvt_selector_t. */,
-               const array_t* preferences /* preference_t. */,
-               const char* config_type, const char *usage_type,
-               config_t *config, char **name)
+static int
+create_config_internal (int check_access, const char *config_id,
+                        const char *proposed_name,
+                        int make_name_unique, const char *comment,
+                        const array_t *selectors /* nvt_selector_t. */,
+                        const array_t *preferences /* preference_t. */,
+                        const char *config_type, const char *usage_type,
+                        config_t *config, char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
@@ -2296,7 +2373,7 @@ create_config (const char* config_id, const char* proposed_name,
 
   sql_begin_immediate ();
 
-  if (acl_user_may ("create_config") == 0)
+  if (check_access && (acl_user_may ("create_config") == 0))
     {
       sql_rollback ();
       free (selector_uuid);
@@ -2387,6 +2464,74 @@ create_config (const char* config_id, const char* proposed_name,
   sql_commit ();
   *name = candidate_name;
   return 0;
+}
+
+/**
+ * @brief Create a config.
+ *
+ * If a config with the same name exists already then add a unique integer
+ * suffix onto the name.
+ *
+ * @param[in]   config_id      ID if one is required, else NULL.
+ * @param[in]   proposed_name  Proposed name of config.
+ * @param[in]   make_name_unique  Whether to make name unique.
+ * @param[in]   comment        Comment on config.
+ * @param[in]   selectors      NVT selectors.
+ * @param[in]   preferences    Preferences.
+ * @param[in]   config_type    Config type.
+ * @param[in]   usage_type     The usage type ("scan" or "policy")
+ * @param[out]  config         On success the config.
+ * @param[out]  name           On success the name of the config.
+ *
+ * @return 0 success, 1 config exists already, 99 permission denied, -1 error,
+ *         -2 name empty, -3 input error in selectors, -4 input error in
+ *         preferences, -5 error in config_id.
+ */
+int
+create_config (const char *config_id, const char *proposed_name,
+               int make_name_unique, const char *comment,
+               const array_t *selectors /* nvt_selector_t. */,
+               const array_t *preferences /* preference_t. */,
+               const char *config_type, const char *usage_type,
+               config_t *config, char **name)
+{
+  return create_config_internal (1, config_id, proposed_name, make_name_unique,
+                                 comment, selectors, preferences, config_type,
+                                 usage_type, config, name);
+}
+
+/**
+ * @brief Create a config.
+ *
+ * If a config with the same name exists already then add a unique integer
+ * suffix onto the name.
+ *
+ * @param[in]   config_id      ID if one is required, else NULL.
+ * @param[in]   proposed_name  Proposed name of config.
+ * @param[in]   make_name_unique  Whether to make name unique.
+ * @param[in]   comment        Comment on config.
+ * @param[in]   selectors      NVT selectors.
+ * @param[in]   preferences    Preferences.
+ * @param[in]   config_type    Config type.
+ * @param[in]   usage_type     The usage type ("scan" or "policy")
+ * @param[out]  config         On success the config.
+ * @param[out]  name           On success the name of the config.
+ *
+ * @return 0 success, 1 config exists already, 99 permission denied, -1 error,
+ *         -2 name empty, -3 input error in selectors, -4 input error in
+ *         preferences, -5 error in config_id.
+ */
+int
+create_config_no_acl (const char *config_id, const char *proposed_name,
+                      int make_name_unique, const char *comment,
+                      const array_t *selectors /* nvt_selector_t. */,
+                      const array_t *preferences /* preference_t. */,
+                      const char *config_type, const char *usage_type,
+                      config_t *config, char **name)
+{
+  return create_config_internal (0, config_id, proposed_name, make_name_unique,
+                                 comment, selectors, preferences, config_type,
+                                 usage_type, config, name);
 }
 
 /**
@@ -3651,6 +3796,128 @@ config_nvt_selector (config_t config)
 }
 
 /**
+ * @brief Update a preference of a config.
+ *
+ * @param[in]  config      Config.
+ * @param[in]  nvt         UUID of NVT.  NULL for scanner preference.
+ * @param[in]  name        Preference name, including NVT name and preference
+ *                         type.
+ * @param[in]  value_64    Preference value in base64.  NULL for an NVT
+ *                         preference removes the preference from the config.
+ *
+ * @return 0 success, 1 config in use, 2 empty radio value, 3 failed to find
+ *         config, -1 error.
+ */
+static int
+modify_config_preference (config_t config, const char* nvt,
+                          const char* name, const char* value_64)
+{
+  gchar *quoted_name, *quoted_value, *value, **splits;
+
+  quoted_name = sql_quote (name);
+
+  if (strlen (value_64))
+    {
+      gsize value_len;
+      value = (gchar*) g_base64_decode (value_64, &value_len);
+    }
+  else
+    value = g_strdup ("");
+
+  /* OID:PrefID:PrefType:PrefName value */
+  splits = g_strsplit (name, ":", 4);
+  if (splits && g_strv_length (splits) == 4)
+    {
+      if (strcmp (splits[2], "radio") == 0)
+        {
+          char *old_value;
+          gchar **split, **point;
+          GString *string;
+
+          if (strlen (value) == 0)
+            {
+              g_free (quoted_name);
+              g_free (value);
+              return 2;
+            }
+
+          /* A radio.  Put the new value on the front of the list of options. */
+
+          old_value = sql_string ("SELECT value FROM config_preferences"
+                                  " WHERE config = %llu"
+                                  " AND type %s"
+                                  " AND name = '%s'",
+                                  config,
+                                  nvt ? "= 'PLUGINS_PREFS'" : "is NULL",
+                                  quoted_name);
+          if (old_value == NULL)
+            old_value = sql_string ("SELECT value FROM nvt_preferences"
+                                    " WHERE name = '%s'",
+                                    quoted_name);
+          if (old_value)
+            {
+              string = g_string_new (value);
+              split = g_strsplit (old_value, ";", 0);
+              free (old_value);
+              point = split;
+              while (*point)
+                {
+                  if (strlen (*point) == 0)
+                    {
+                      g_free (quoted_name);
+                      g_strfreev (split);
+                      g_free (value);
+                      g_string_free (string, TRUE);
+                      return -1;
+                    }
+
+                  if (strcmp (*point, value))
+                    {
+                      g_string_append_c (string, ';');
+                      g_string_append (string, *point);
+                    }
+                  point++;
+                }
+              g_strfreev (split);
+              g_free (value);
+              value = g_string_free (string, FALSE);
+            }
+        }
+      else if (strcmp (splits[2], "scanner") == 0)
+        {
+          /* A scanner preference.  Remove type decoration from name. */
+
+          g_free (quoted_name);
+          quoted_name = sql_quote (splits[3]);
+        }
+    }
+  g_strfreev (splits);
+
+  quoted_value = sql_quote ((gchar*) value);
+  g_free (value);
+
+  if (config_type (config) > 0)
+    sql ("UPDATE config_preferences SET value = '%s'"
+         " WHERE config = %llu AND name = '%s';",
+         quoted_value, config, quoted_name);
+  else
+    {
+      /* nvt prefs are not present on first modification. */
+      sql ("DELETE FROM config_preferences"
+           " WHERE config = %llu AND type %s AND name = '%s'",
+           config,
+           nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
+           quoted_name);
+      sql ("INSERT INTO config_preferences"
+           " (config, type, name, value) VALUES (%llu, %s, '%s', '%s');",
+           config, nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'", quoted_name,
+           quoted_value);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Set a preference of a config.
  *
  * @param[in]  config_id  Config.
@@ -3667,11 +3934,13 @@ int
 manage_set_config_preference (const gchar *config_id, const char* nvt,
                               const char* name, const char* value_64)
 {
-  gchar *quoted_name, *quoted_value, *value, **splits;
+  int ret;
   config_t config;
 
   if (value_64 == NULL)
     {
+      gchar *quoted_name, **splits;
+
       sql_begin_immediate ();
 
       if (find_config_with_permission (config_id, &config, "modify_config"))
@@ -3739,112 +4008,14 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
       return 1;
     }
 
-  quoted_name = sql_quote (name);
-
-  if (strlen (value_64))
+  ret = modify_config_preference (config, nvt, name, value_64);
+  if (ret)
     {
-      gsize value_len;
-      value = (gchar*) g_base64_decode (value_64, &value_len);
-    }
-  else
-    value = g_strdup ("");
-
-  /* OID:PrefID:PrefType:PrefName value */
-  splits = g_strsplit (name, ":", 4);
-  if (splits && g_strv_length (splits) == 4)
-    {
-      if (strcmp (splits[2], "radio") == 0)
-        {
-          char *old_value;
-          gchar **split, **point;
-          GString *string;
-
-          if (strlen (value) == 0)
-            {
-              g_free (quoted_name);
-              g_free (value);
-              sql_rollback ();
-              return 2;
-            }
-
-          /* A radio.  Put the new value on the front of the list of options. */
-
-          old_value = sql_string ("SELECT value FROM config_preferences"
-                                  " WHERE config = %llu"
-                                  " AND type %s"
-                                  " AND name = '%s'",
-                                  config,
-                                  nvt ? "= 'PLUGINS_PREFS'" : "is NULL",
-                                  quoted_name);
-          if (old_value == NULL)
-            old_value = sql_string ("SELECT value FROM nvt_preferences"
-                                    " WHERE name = '%s'",
-                                    quoted_name);
-          if (old_value)
-            {
-              string = g_string_new (value);
-              split = g_strsplit (old_value, ";", 0);
-              free (old_value);
-              point = split;
-              while (*point)
-                {
-                  if (strlen (*point) == 0)
-                    {
-                      g_free (quoted_name);
-                      g_strfreev (split);
-                      g_free (value);
-                      g_string_free (string, TRUE);
-                      sql_rollback ();
-                      return -1;
-                    }
-
-                  if (strcmp (*point, value))
-                    {
-                      g_string_append_c (string, ';');
-                      g_string_append (string, *point);
-                    }
-                  point++;
-                }
-              g_strfreev (split);
-              g_free (value);
-              value = g_string_free (string, FALSE);
-            }
-        }
-      else if (strcmp (splits[2], "scanner") == 0)
-        {
-          /* A scanner preference.  Remove type decoration from name. */
-
-          g_free (quoted_name);
-          quoted_name = sql_quote (splits[3]);
-        }
-    }
-  g_strfreev (splits);
-
-  quoted_value = sql_quote ((gchar*) value);
-  g_free (value);
-
-  if (config_type (config) > 0)
-    sql ("UPDATE config_preferences SET value = '%s'"
-         " WHERE config = %llu AND name = '%s';",
-         quoted_value, config, quoted_name);
-  else
-    {
-      /* nvt prefs are not present on first modification. */
-      sql ("DELETE FROM config_preferences"
-           " WHERE config = %llu AND type %s AND name = '%s'",
-           config,
-           nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
-           quoted_name);
-      sql ("INSERT INTO config_preferences"
-           " (config, type, name, value) VALUES (%llu, %s, '%s', '%s');",
-           config, nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'", quoted_name,
-           quoted_value);
+      sql_rollback ();
+      return ret;
     }
 
   sql_commit ();
-
-  g_free (quoted_name);
-  g_free (quoted_value);
   return 0;
 }
 
@@ -4485,311 +4656,123 @@ update_config_cache_init (const char *uuid)
 /* Startup. */
 
 /**
- * @brief Get path to configs in feed.
+ * @brief Check if a config has been updated in the feed.
  *
- * @return Path to configs in feed.
+ * @param[in]  path    Full path to config XML in feed.
+ * @param[in]  config  Config.
+ *
+ * @return 1 if updated in feed, else 0.
  */
-static const gchar *
-feed_dir_configs ()
+int
+config_updated_in_feed (config_t config, const gchar *path)
 {
-  static gchar *path = NULL;
-  if (path == NULL)
-    path = g_build_filename (GVMD_FEED_DIR, "configs", NULL);
-  return path;
+  GStatBuf state;
+  int last_config_update;
+
+  last_config_update = sql_int ("SELECT modification_time FROM configs"
+                                " WHERE id = %llu;",
+                                config);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed config file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if (state.st_mtime <= last_config_update)
+    return 0;
+
+  return 1;
 }
 
 /**
- * @brief Grant 'Feed Import Roles' access to a config.
+ * @brief Update a config from an XML file.
  *
- * @param[in]  config_id  UUID of config.
+ * @param[in]  config       Existing config.
+ * @param[in]  type         New config type.
+ * @param[in]  name         New name.
+ * @param[in]  comment      New comment.
+ * @param[in]  usage_type   New usage type.
+ * @param[in]  selectors    New NVT selectors.
+ * @param[in]  preferences  New preferences.
  */
-static void
-create_feed_config_permissions (const gchar *config_id)
+void
+update_config (config_t config, const gchar *type, const gchar *name,
+               const gchar *comment, const gchar *usage_type,
+               const array_t* selectors /* nvt_selector_t. */,
+               const array_t* preferences /* preference_t. */)
 {
-  gchar *roles, **split, **point;
+  gchar *quoted_name, *quoted_comment, *quoted_type, *actual_usage_type;
 
-  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles);
+  sql_begin_immediate ();
 
-  if (roles == NULL || strlen (roles) == 0)
+  if (usage_type && strcasecmp (usage_type, "policy") == 0)
+    actual_usage_type = "policy";
+  else
+    actual_usage_type = "scan";
+
+  quoted_name = sql_quote (name);
+  quoted_comment = sql_quote (comment ? comment : "");
+  quoted_type = sql_quote (type);
+  sql ("UPDATE configs"
+       " SET name = '%s', comment = '%s', type = '%s', usage_type = '%s',"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_name,
+       quoted_comment,
+       quoted_type,
+       actual_usage_type,
+       config);
+  g_free (quoted_name);
+  g_free (quoted_comment);
+  g_free (quoted_type);
+
+  /* Replace the NVT selectors. */
+
+  if (type == NULL || strcmp (type, "0") == 0)
     {
-      g_debug ("%s: no 'Feed Import Roles', so not creating permissions",
-               __func__);
-      g_free (roles);
-      return;
-    }
+      char *selector_uuid;
 
-  point = split = g_strsplit (roles, ",", 0);
-  while (*point)
-    {
-      permission_t permission;
-
-      if (create_permission_internal ("get_configs",
-                                      "Automatically created for config"
-                                      " from feed",
-                                      NULL,
-                                      config_id,
-                                      "role",
-                                      g_strstrip (*point),
-                                      &permission))
-        /* Keep going because we aren't strict about checking the value
-         * of the setting, and because we don't adjust the setting when
-         * roles are removed. */
-        g_warning ("%s: failed to create permission for role '%s'",
-                   __func__, g_strstrip (*point));
-
-      point++;
-    }
-  g_strfreev (split);
-
-  g_free (roles);
-}
-
-/**
- * @brief Create a config from an XML file.
- *
- * @param[in]  path  Path to config XML.
- *
- * @return 0 success, -1 error.
- */
-static int
-create_config_from_file (const gchar *path)
-{
-  entity_t config;
-  array_t *nvt_selectors, *preferences;
-  char *created_name, *comment, *name, *type, *xml;
-  const char *config_id;
-  gsize xml_len;
-  GError *error;
-  config_t new_config;
-
-  g_debug ("%s: creating %s", __func__, path);
-
-  /* Buffer the file. */
-
-  error = NULL;
-  g_file_get_contents (path,
-                       &xml,
-                       &xml_len,
-                       &error);
-  if (error)
-    {
-      g_warning ("%s: Failed to read file: %s",
-                  __func__,
-                  error->message);
-      g_error_free (error);
-      return -1;
-    }
-
-  /* Parse the buffer into an entity. */
-
-  if (parse_entity (xml, &config))
-    {
-      g_free (xml);
-      g_warning ("%s: Failed to parse config XML", __func__);
-      return -1;
-    }
-  g_free (xml);
-
-  /* Parse the data out of the entity. */
-
-  if (parse_config_entity (config, &config_id, &name, &comment, &type,
-                           &nvt_selectors, &preferences))
-    {
-      free_entity (config);
-      g_warning ("%s: Failed to parse entity", __func__);
-      return -1;
-    }
-
-  /* Create the config. */
-
-  switch (create_config (config_id,
-                         name,
-                         0,               /* Use name exactly as given. */
-                         comment,
-                         nvt_selectors,
-                         preferences,
-                         type,
-                         NULL,            /* Usage type. */
-                         &new_config,
-                         &created_name))
-    {
-      case 0:
+      selector_uuid = gvm_uuid_make ();
+      if (selector_uuid == NULL)
         {
-          gchar *uuid;
-
-          uuid = config_uuid (new_config);
-          log_event ("config", "Scan config", uuid, "created");
-
-          /* Create permissions. */
-          create_feed_config_permissions (uuid);
-
-          g_free (uuid);
-          free (created_name);
-          break;
+          g_warning ("%s: failed to allocate UUID", __func__);
+          sql_rollback ();
+          return;
         }
-      case 1:
-        g_warning ("%s: Config exists already", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case 99:
-        g_warning ("%s: Permission denied", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case -2:
-        g_warning ("%s: Import name must be at"
-                   " least one character long",
-                   __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case -3:
-        g_warning ("%s: Error in NVT_SELECTORS element.", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case -4:
-        g_warning ("%s: Error in PREFERENCES element.", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      case -5:
-        g_warning ("%s: Error in CONFIG @id.", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
-      default:
-      case -1:
-        g_warning ("%s: Internal error", __func__);
-        log_event_fail ("config", "Scan config", NULL, "created");
-        break;
+
+      sql ("DELETE FROM nvt_selectors"
+           " WHERE name = (SELECT nvt_selector FROM configs"
+           "               WHERE id = %llu);",
+           config);
+
+      sql ("UPDATE configs SET nvt_selector = '%s' WHERE id = %llu;",
+           selector_uuid, config);
+
+      if (insert_nvt_selectors (selector_uuid, selectors))
+        {
+          g_warning ("%s: Error in feed config NVT selector", __func__);
+          free (selector_uuid);
+          sql_rollback ();
+          return;
+        }
+
+      free (selector_uuid);
     }
 
-  /* Cleanup. */
+  /* Replace the preferences. */
 
-  free_entity (config);
-  cleanup_import_preferences (preferences);
-  array_free (nvt_selectors);
-
-  return 0;
-}
-
-/**
- * @brief Sync a single config with the feed.
- *
- * @param[in]  path  Path to config XML in feed.
- */
-static void
-sync_config_with_feed (const gchar *path)
-{
-  gchar **split, *full_path;
-
-  g_debug ("%s: considering %s", __func__, path);
-
-  split = g_regex_split_simple
-           (/* Full-and-Fast--daba56c8-73ec-11df-a475-002264764cea.xml */
-            "^.*([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12}).xml$",
-            path, 0, 0);
-
-  if (split == NULL || g_strv_length (split) != 7)
+  sql ("DELETE FROM config_preferences WHERE config = %llu;", config);
+  if (config_insert_preferences (config, preferences, type))
     {
-      g_strfreev (split);
-      g_warning ("%s: path not in required format: %s", __func__, path);
+      g_warning ("%s: Error in feed config preference", __func__);
+      sql_rollback ();
       return;
     }
 
-  if (sql_int ("SELECT EXISTS (SELECT * FROM configs"
-               "               WHERE uuid = '%s-%s-%s-%s-%s');",
-               split[1], split[2], split[3], split[4], split[5]))
-    {
-      g_strfreev (split);
-      return;
-    }
-
-  g_strfreev (split);
-
-  g_debug ("%s: adding %s", __func__, path);
-
-  full_path = g_build_filename (feed_dir_configs (), path, NULL);
-
-  create_config_from_file (full_path);
-
-  g_free (full_path);
-}
-
-/**
- * @brief Sync all configs with the feed.
- *
- * Create configs that exists in the feed but not in the db.
- * Update configs in the db that have changed on the feed.
- * Do nothing to configs in db that have been removed from the feed.
- *
- * @return 0 success, -1 error.
- */
-static int
-sync_configs_with_feed ()
-{
-  GError *error;
-  GDir *dir;
-  const gchar *config_path;
-  gchar *nvt_feed_version;
-
-  /* Only sync if NVTs are up to date. */
-
-  nvt_feed_version = nvts_feed_version ();
-  if (nvt_feed_version == NULL)
-    {
-      g_debug ("%s: no NVTs so not syncing from feed", __func__);
-      return 0;
-    }
-  g_free (nvt_feed_version);
-
-  /* Setup owner. */
-
-  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
-
-  if (current_credentials.uuid == NULL)
-    {
-      /* Sync is disabled by having no "Feed Import Owner". */
-      g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
-      return 0;
-    }
-
-  current_credentials.username = user_name (current_credentials.uuid);
-  if (current_credentials.username == NULL)
-    {
-      g_debug ("%s: unknown Feed Import Owner so not syncing from feed", __func__);
-      return 0;
-    }
-
-  /* Open feed import directory. */
-
-  error = NULL;
-  dir = g_dir_open (feed_dir_configs (), 0, &error);
-  if (dir == NULL)
-    {
-      g_warning ("%s: Failed to open directory '%s': %s",
-                 __func__, feed_dir_configs (), error->message);
-      g_error_free (error);
-      g_free (current_credentials.uuid);
-      g_free (current_credentials.username);
-      current_credentials.uuid = NULL;
-      current_credentials.username = NULL;
-      return -1;
-    }
-
-  /* Sync each file in the directory. */
-
-  while ((config_path = g_dir_read_name (dir)))
-    if (g_str_has_prefix (config_path, ".") == 0
-        && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
-        && g_str_has_suffix (config_path, ".xml"))
-      sync_config_with_feed (config_path);
-
-  /* Cleanup. */
-
-  g_dir_close (dir);
-  g_free (current_credentials.uuid);
-  g_free (current_credentials.username);
-  current_credentials.uuid = NULL;
-  current_credentials.username = NULL;
-
-  return 0;
+  sql_commit ();
 }
 
 /**
@@ -4824,13 +4807,4 @@ check_db_configs ()
   check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
 
   check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
-}
-
-/**
- * @brief Sync configs with the feed.
- */
-void
-manage_sync_configs ()
-{
-  sync_configs_with_feed ();
 }

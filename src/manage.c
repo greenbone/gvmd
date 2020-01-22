@@ -49,8 +49,8 @@
 
 #include "manage.h"
 #include "manage_acl.h"
+#include "manage_configs.h"
 #include "manage_sql.h"
-#include "manage_sql_configs.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
@@ -4071,6 +4071,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 {
   osp_connection_t *connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
+  int alive_test;
   osp_target_t *osp_target;
   GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
@@ -4085,6 +4086,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   config = task_config (task);
 
   connection = NULL;
+
+  alive_test = 0;
 
   /* Prepare the report */
   if (from)
@@ -4103,6 +4106,10 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   hosts_str = target_hosts (target);
   ports_str = target_port_range (target);
   exclude_hosts_str = target_exclude_hosts (target);
+
+  if (target_alive_tests (target) > 0)
+   alive_test = target_alive_tests (target);
+
   if (finished_hosts_str)
     {
       gchar *new_exclude_hosts;
@@ -4114,7 +4121,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       exclude_hosts_str = new_exclude_hosts;
     }
 
-  osp_target = osp_target_new (hosts_str, ports_str, exclude_hosts_str);
+  osp_target = osp_target_new (hosts_str, ports_str, exclude_hosts_str,
+                               alive_test);
   if (finished_hosts_str)
     osp_target_set_finished_hosts (osp_target, finished_hosts_str);
 
