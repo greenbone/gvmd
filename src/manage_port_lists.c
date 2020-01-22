@@ -183,14 +183,12 @@ sync_port_list_with_feed (const gchar *path)
 
       g_debug ("%s: considering %s for update", __func__, path);
 
-// TODO
-#if 0
       if (port_list_updated_in_feed (port_list, full_path))
         {
           g_debug ("%s: updating %s", __func__, path);
-          update_port_list_from_file (port_list, full_path);
+          // TODO
+          //update_port_list_from_file (port_list, full_path);
         }
-#endif
 
       g_free (full_path);
       return;
