@@ -30,6 +30,8 @@
 #include "manage_sql_port_lists.h"
 #include "utils.h"
 
+#include <string.h>
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
