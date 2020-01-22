@@ -20,6 +20,10 @@
 #ifndef _GVMD_MANAGE_PORT_LISTS_H
 #define _GVMD_MANAGE_PORT_LISTS_H
 
+#include "manage.h"
+
+#include <glib.h>
+
 gboolean
 find_port_list (const char*, port_list_t*);
 

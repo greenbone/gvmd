@@ -96,6 +96,7 @@ add_executable (manage-utils-test
                 manage.c sql.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_port_lists.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -116,6 +117,7 @@ add_executable (manage-test
                 manage_utils.c sql.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_port_lists.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -136,6 +138,7 @@ add_executable (gmp-tickets-test
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_port_lists.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -163,6 +166,7 @@ add_executable (gvmd
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_port_lists.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c

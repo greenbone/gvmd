@@ -34,6 +34,18 @@
 #include <string.h>
 #include <strings.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
+/* Static headers for internal non-SQL functions. */
+
+int
+sync_port_lists_with_feed ();
+
 
 /* Port list functions. */
 
@@ -2347,6 +2359,9 @@ delete_port_lists_user (user_t user)
 void
 check_db_port_lists ()
 {
+  if (sync_port_lists_with_feed ())
+    g_warning ("%s: Failed to sync port lists with feed", __func__);
+
   /*
    * Ensure that the highest number in a port range is 65535.  At some point
    * ranges were initialised to 65536.
