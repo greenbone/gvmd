@@ -177,8 +177,6 @@ parse_port_list_entity (entity_t port_list, const char **port_list_id,
 
           children = next_entities (children);
         }
-
-      array_terminate (*ranges);
     }
 }
 
