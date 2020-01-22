@@ -363,3 +363,12 @@ sync_port_lists_with_feed ()
 
   return 0;
 }
+
+/**
+ * @brief Sync port lists with the feed.
+ */
+void
+manage_sync_port_lists ()
+{
+  sync_port_lists_with_feed ();
+}

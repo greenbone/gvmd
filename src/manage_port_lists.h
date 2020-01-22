@@ -124,4 +124,7 @@ port_list_target_iterator_name (iterator_t *);
 int
 port_list_target_iterator_readable (iterator_t *);
 
+void
+manage_sync_port_lists ();
+
 #endif /* not _GVMD_MANAGE_PORT_LISTS_H */
