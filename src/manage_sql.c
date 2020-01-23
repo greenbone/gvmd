@@ -57511,7 +57511,6 @@ type_select_columns (const char *type)
   static column_t override_columns[] = OVERRIDE_ITERATOR_COLUMNS;
   static column_t permission_columns[] = PERMISSION_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
-  static column_t report_format_columns[] = REPORT_FORMAT_ITERATOR_COLUMNS;
   static column_t result_columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t result_columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   static column_t role_columns[] = ROLE_ITERATOR_COLUMNS;
@@ -57562,7 +57561,7 @@ type_select_columns (const char *type)
   if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
   if (strcasecmp (type, "REPORT_FORMAT") == 0)
-    return report_format_columns;
+    return report_format_select_columns ();
   if (strcasecmp (type, "RESULT") == 0)
     {
       if (manage_cert_loaded ())
@@ -57720,10 +57719,7 @@ type_filter_columns (const char *type)
       return ret;
     }
   if (strcasecmp (type, "REPORT_FORMAT") == 0)
-    {
-      static const char *ret[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
-      return ret;
-    }
+    return report_format_filter_columns ();
   if (strcasecmp (type, "RESULT") == 0)
     {
       static const char *ret[] = RESULT_ITERATOR_FILTER_COLUMNS;

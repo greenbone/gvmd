@@ -2152,6 +2152,30 @@ report_format_trust (report_format_t report_format)
  }
 
 /**
+ * @brief Get filter columns.
+ *
+ * @return Constant array of filter columns.
+ */
+const char**
+report_format_filter_columns ()
+{
+  static const char *columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Get select columns.
+ *
+ * @return Constant array of select columns.
+ */
+column_t*
+report_format_select_columns ()
+{
+  static column_t columns[] = REPORT_FORMAT_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
  * @brief Count the number of Report Formats.
  *
  * @param[in]  get  GET params.
