@@ -546,3 +546,50 @@ is_uuid (const char *uuid)
   while (*uuid) if (isxdigit (*uuid) || (*uuid == '-')) uuid++; else return 0;
   return 1;
 }
+
+
+/* XML. */
+
+/**
+ * @brief Create entity from XML file.
+ *
+ * @param[in]  path    Path to XML.
+ * @param[out] config  Config tree.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+parse_xml_file (const gchar *path, entity_t *config)
+{
+  gsize xml_len;
+  char *xml;
+  GError *error;
+
+  /* Buffer the file. */
+
+  error = NULL;
+  g_file_get_contents (path,
+                       &xml,
+                       &xml_len,
+                       &error);
+  if (error)
+    {
+      g_warning ("%s: Failed to read file: %s",
+                  __func__,
+                  error->message);
+      g_error_free (error);
+      return -1;
+    }
+
+  /* Parse the buffer into an entity. */
+
+  if (parse_entity (xml, config))
+    {
+      g_free (xml);
+      g_warning ("%s: Failed to parse XML", __func__);
+      return -1;
+    }
+  g_free (xml);
+
+  return 0;
+}

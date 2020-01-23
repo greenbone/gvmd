@@ -29,28 +29,24 @@
 #include "manage_port_lists.h"
 #include "sql.h"
 
+#include <errno.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 
-/* Port range headers. */
+/* Static headers for internal non-SQL functions. */
 
-void
-make_port_ranges_iana_tcp_2012 (port_list_t);
-
-void
-make_port_ranges_iana_tcp_udp_2012 (port_list_t);
-
-void
-make_port_ranges_all_tcp_nmap_5_51_top_100 (port_list_t);
-
-void
-make_port_ranges_all_tcp_nmap_5_51_top_1000 (port_list_t);
-
-void
-make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
+int
+sync_port_lists_with_feed ();
 
 
 /* Port list functions. */
@@ -757,6 +753,43 @@ find_port_list (const char* uuid, port_list_t* port_list)
 }
 
 /**
+ * @brief Find a port list given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid       UUID of resource.
+ * @param[out]  port_list  Port list return, 0 if no such port list.
+ *
+ * @return FALSE on success (including if no such port list), TRUE on error.
+ */
+gboolean
+find_port_list_no_acl (const char *uuid, port_list_t *port_list)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (port_list,
+                     "SELECT id FROM port_lists WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *port_list = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Find a port list for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of port list.
@@ -773,6 +806,43 @@ find_port_list_with_permission (const char* uuid, port_list_t* port_list,
 {
   return find_resource_with_permission ("port_list", uuid, port_list,
                                         permission, 0);
+}
+
+/**
+ * @brief Find a trash port list given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid        UUID of resource.
+ * @param[out]  port_list   Port list return, 0 if no such port list.
+ *
+ * @return FALSE on success (including if no such port list), TRUE on error.
+ */
+gboolean
+find_trash_port_list_no_acl (const char *uuid, port_list_t *port_list)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (port_list,
+                     "SELECT id FROM port_lists_trash WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *port_list = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
 }
 
 /**
@@ -1059,8 +1129,9 @@ create_port_list_unique (const char *name, const char *comment,
 }
 
 /**
- * @brief Create a port_list.
+ * @brief Create a port list.
  *
+ * @param[in]   check_access      Whether to check for create_config permission.
  * @param[in]   id                ID of port list.  Only used with \p ranges.
  * @param[in]   name              Name of port list.
  * @param[in]   comment           Comment on port list.
@@ -1072,10 +1143,10 @@ create_port_list_unique (const char *name, const char *comment,
  * @return 0 success, 1 port list exists already, 4 error in port_ranges,
  *         99 permission denied, -1 error.
  */
-int
-create_port_list (const char* id, const char* name, const char* comment,
-                  const char* port_ranges, array_t *ranges,
-                  port_list_t* port_list_return)
+static int
+create_port_list_internal (int check_access, const char *id, const char *name,
+                           const char *comment, const char *port_ranges,
+                           array_t *ranges, port_list_t *port_list_return)
 {
   port_list_t port_list;
   int ret;
@@ -1092,7 +1163,7 @@ create_port_list (const char* id, const char* name, const char* comment,
 
       sql_begin_immediate ();
 
-      if (acl_user_may ("create_port_list") == 0)
+      if (check_access && acl_user_may ("create_port_list") == 0)
         {
           sql_rollback ();
           return 99;
@@ -1155,7 +1226,7 @@ create_port_list (const char* id, const char* name, const char* comment,
 
   sql_begin_immediate ();
 
-  if (acl_user_may ("create_port_list") == 0)
+  if (check_access && acl_user_may ("create_port_list") == 0)
     {
       sql_rollback ();
       return 99;
@@ -1215,6 +1286,52 @@ create_port_list (const char* id, const char* name, const char* comment,
   sql_commit ();
 
   return 0;
+}
+
+/**
+ * @brief Create a port list.
+ *
+ * @param[in]   id                ID of port list.  Only used with \p ranges.
+ * @param[in]   name              Name of port list.
+ * @param[in]   comment           Comment on port list.
+ * @param[in]   port_ranges       GMP port range string.
+ * @param[in]   ranges            Array of port ranges of type range_t.
+ *                                Overrides port_ranges.
+ * @param[out]  port_list_return  Created port list.
+ *
+ * @return 0 success, 1 port list exists already, 4 error in port_ranges,
+ *         99 permission denied, -1 error.
+ */
+int
+create_port_list (const char *id, const char *name, const char *comment,
+                  const char *port_ranges, array_t *ranges,
+                  port_list_t *port_list_return)
+{
+  return create_port_list_internal (1, id, name, comment, port_ranges, ranges,
+                                    port_list_return);
+}
+
+/**
+ * @brief Create a port list.
+ *
+ * @param[in]   id                ID of port list.  Only used with \p ranges.
+ * @param[in]   name              Name of port list.
+ * @param[in]   comment           Comment on port list.
+ * @param[in]   port_ranges       GMP port range string.
+ * @param[in]   ranges            Array of port ranges of type range_t.
+ *                                Overrides port_ranges.
+ * @param[out]  port_list_return  Created port list.
+ *
+ * @return 0 success, 1 port list exists already, 4 error in port_ranges,
+ *         99 permission denied, -1 error.
+ */
+int
+create_port_list_no_acl (const char *id, const char *name, const char *comment,
+                         const char *port_ranges, array_t *ranges,
+                         port_list_t *port_list_return)
+{
+  return create_port_list_internal (0, id, name, comment, port_ranges, ranges,
+                                    port_list_return);
 }
 
 /**
@@ -2360,128 +2477,89 @@ delete_port_lists_user (user_t user)
 /* Startup. */
 
 /**
+ * @brief Check if a port list has been updated in the feed.
+ *
+ * @param[in]  path       Full path to port list XML in feed.
+ * @param[in]  port_list  Port List.
+ *
+ * @return 1 if updated in feed, else 0.
+ */
+int
+port_list_updated_in_feed (port_list_t port_list, const gchar *path)
+{
+  GStatBuf state;
+  int last_update;
+
+  last_update = sql_int ("SELECT modification_time FROM port_lists"
+                         " WHERE id = %llu;",
+                         port_list);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed port_list file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if (state.st_mtime <= last_update)
+    return 0;
+
+  return 1;
+}
+
+/**
+ * @brief Update a port list from an XML file.
+ *
+ * @param[in]  port_list    Existing port list.
+ * @param[in]  name         New name.
+ * @param[in]  comment      New comment.
+ * @param[in]  ranges       New port ranges.
+ */
+void
+update_port_list (port_list_t port_list, const gchar *name,
+                  const gchar *comment,
+                  array_t *ranges /* range_t */)
+{
+  gchar *quoted_name, *quoted_comment;
+  int index;
+  range_t *range;
+
+  sql_begin_immediate ();
+
+  quoted_name = sql_quote (name);
+  quoted_comment = sql_quote (comment ? comment : "");
+  sql ("UPDATE port_lists"
+       " SET name = '%s', comment = '%s',"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_name,
+       quoted_comment,
+       port_list);
+  g_free (quoted_name);
+  g_free (quoted_comment);
+
+  /* Replace the preferences. */
+
+  sql ("DELETE FROM port_ranges WHERE port_list = %llu;", port_list);
+  ranges_sort_merge (ranges);
+  array_terminate (ranges);
+  index = 0;
+  while ((range = (range_t*) g_ptr_array_index (ranges, index++)))
+    insert_port_range (port_list, range->type, range->start, range->end);
+
+  sql_commit ();
+}
+
+/**
  * @brief Ensure that the predefined port lists exist.
  */
 void
 check_db_port_lists ()
 {
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_DEFAULT "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_openvas_default (list);
-    }
+  if (sync_port_lists_with_feed ())
+    g_warning ("%s: Failed to sync port lists with feed", __func__);
 
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_TCP "', NULL, 'All TCP',"
-           " '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      RANGE (PORT_PROTOCOL_TCP, 1, 65535);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "', NULL,"
-           " 'All TCP and Nmap 5.51 top 100 UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_all_tcp_nmap_5_51_top_100 (list);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "', NULL,"
-           " 'All TCP and Nmap 5.51 top 1000 UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_all_tcp_nmap_5_51_top_1000 (list);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP "', NULL,"
-           " 'All privileged TCP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      RANGE (PORT_PROTOCOL_TCP, 1, 1023);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "', NULL,"
-           " 'All privileged TCP and UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      RANGE (PORT_PROTOCOL_TCP, 1, 1023);
-      RANGE (PORT_PROTOCOL_UDP, 1, 1023);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_2012 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_2012 "', NULL,"
-           " 'All IANA assigned TCP 2012-02-10', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_iana_tcp_2012 (list);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "', NULL,"
-           " 'All IANA assigned TCP and UDP 2012-02-10', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_iana_tcp_udp_2012 (list);
-    }
-
-  if (sql_int ("SELECT count(*) FROM port_lists"
-               " WHERE uuid = '" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "';")
-      == 0)
-    {
-      port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
-           "                        modification_time)"
-           " VALUES ('" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "', NULL,"
-           " 'Nmap 5.51 top 2000 TCP and top 100 UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_id ();
-      make_port_ranges_nmap_5_51_top_2000_top_100 (list);
-    }
   /*
    * Ensure that the highest number in a port range is 65535.  At some point
    * ranges were initialised to 65536.
