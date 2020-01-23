@@ -95,6 +95,7 @@
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_port_lists.h"
+#include "manage_report_formats.h"
 #include "utils.h"
 
 #include <arpa/inet.h>

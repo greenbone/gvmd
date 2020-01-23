@@ -26,6 +26,7 @@
 
 #include "manage_sql_report_formats.h"
 #include "manage_acl.h"
+#include "manage_report_formats.h"
 #include "sql.h"
 
 #include <errno.h>
