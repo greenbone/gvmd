@@ -50,4 +50,7 @@ apply_report_format (gchar *, gchar *, gchar *, gchar *,
 int
 check_db_report_formats ();
 
+int
+check_db_report_formats_trash ();
+
 #endif /* not _GVMD_MANAGE_SQL_REPORT_FORMATS_H */

@@ -4809,3 +4809,74 @@ check_db_report_formats ()
 
   return 0;
 }
+
+/**
+ * @brief Ensure that the report formats trash directory matches the database.
+ *
+ * @return -1 if error, 0 if success.
+ */
+int
+check_db_report_formats_trash ()
+{
+  gchar *dir;
+  GError *error;
+  GDir *directory;
+  const gchar *entry;
+
+  dir = report_format_trash_dir (NULL);
+  error = NULL;
+  directory = g_dir_open (dir, 0, &error);
+
+  if (directory == NULL)
+    {
+      assert (error);
+      if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+        {
+          g_warning ("g_dir_open (%s) failed - %s", dir, error->message);
+          g_error_free (error);
+          g_free (dir);
+          return -1;
+        }
+    }
+  else
+    {
+      entry = NULL;
+      while ((entry = g_dir_read_name (directory)) != NULL)
+        {
+          gchar *end;
+          if (strtol (entry, &end, 10) < 0)
+            /* Only interested in positive numbers. */
+            continue;
+          if (*end != '\0')
+            /* Only interested in numbers. */
+            continue;
+
+          /* Check whether the db has a report format with this ID. */
+          if (sql_int ("SELECT count(*) FROM report_formats_trash"
+                       " WHERE id = %s;",
+                       entry)
+              == 0)
+            {
+              int ret;
+              gchar *entry_path;
+
+              /* Remove the directory. */
+
+              entry_path = g_build_filename (dir, entry, NULL);
+              ret = gvm_file_remove_recurse (entry_path);
+              g_free (entry_path);
+              if (ret)
+                {
+                  g_warning ("%s: failed to remove %s from %s",
+                             __func__, entry, dir);
+                  g_dir_close (directory);
+                  g_free (dir);
+                  return -1;
+                }
+            }
+        }
+      g_dir_close (directory);
+    }
+  g_free (dir);
+  return 0;
+}
