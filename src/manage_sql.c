@@ -34,6 +34,7 @@
 #include "manage_tickets.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_port_lists.h"
+#include "manage_sql_report_formats.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
@@ -48667,6 +48668,11 @@ manage_restore (const char *id)
   if (ret != 2)
     return ret;
 
+  /* Report Format. */
+  ret = restore_report_format (id);
+  if (ret != 2)
+    return ret;
+
   /* Ticket. */
   ret = restore_ticket (id);
   if (ret != 2)
@@ -49197,139 +49203,6 @@ manage_restore (const char *id)
       free (resource_type);
 
       sql ("DELETE FROM permissions_trash WHERE id = %llu;", resource);
-      sql_commit ();
-      return 0;
-    }
-
-  /* Report format. */
-
-  if (find_trash ("report_format", id, &resource))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (resource)
-    {
-      iterator_t params;
-      report_format_t report_format;
-      gchar *dir, *trash_dir, *resource_string;
-      char *trash_uuid, *owner_uuid;
-
-      if (sql_int ("SELECT count(*) FROM report_formats"
-                   " WHERE name ="
-                   " (SELECT name FROM report_formats_trash WHERE id = %llu)"
-                   " AND " ACL_USER_OWNS () ";",
-                   resource,
-                   current_credentials.uuid))
-        {
-          sql_rollback ();
-          return 3;
-        }
-
-      if (sql_int ("SELECT count(*) FROM report_formats"
-                   " WHERE uuid = (SELECT original_uuid"
-                   "               FROM report_formats_trash"
-                   "               WHERE id = %llu);",
-                   resource))
-        {
-          sql_rollback ();
-          return 4;
-        }
-
-      /* Move to "real" tables. */
-
-      sql ("INSERT INTO report_formats"
-           " (uuid, owner, name, extension, content_type, summary,"
-           "  description, signature, trust, trust_time, flags,"
-           "  creation_time, modification_time)"
-           " SELECT"
-           "  original_uuid, owner, name, extension, content_type, summary,"
-           "  description, signature, trust, trust_time, flags,"
-           "  creation_time, modification_time"
-           " FROM report_formats_trash"
-           " WHERE id = %llu;",
-           resource);
-
-      report_format = sql_last_insert_id ();
-
-      init_report_format_param_iterator (&params, resource, 1, 1, NULL);
-      while (next (&params))
-        {
-          report_format_param_t param, trash_param;
-
-          trash_param = report_format_param_iterator_param (&params);
-
-          sql ("INSERT INTO report_format_params"
-               " (report_format, name, type, value, type_min, type_max,"
-               "  type_regex, fallback)"
-               " SELECT"
-               "  %llu, name, type, value, type_min, type_max,"
-               "  type_regex, fallback"
-               " FROM report_format_params_trash"
-               " WHERE id = %llu;",
-               report_format,
-               trash_param);
-
-          param = sql_last_insert_id ();
-
-          sql ("INSERT INTO report_format_param_options"
-               " (report_format_param, value)"
-               " SELECT %llu, value"
-               " FROM report_format_param_options_trash"
-               " WHERE report_format_param = %llu;",
-               param,
-               trash_param);
-        }
-      cleanup_iterator (&params);
-
-      trash_uuid = sql_string ("SELECT original_uuid FROM report_formats_trash"
-                               " WHERE id = %llu;",
-                               resource);
-      if (trash_uuid == NULL)
-        abort ();
-
-      permissions_set_locations ("report_format", resource, report_format,
-                                 LOCATION_TABLE);
-      tags_set_locations ("report_format", resource, report_format,
-                          LOCATION_TABLE);
-
-      /* Remove from trash tables. */
-
-      sql ("DELETE FROM report_format_param_options_trash"
-           " WHERE report_format_param"
-           " IN (SELECT id from report_format_params_trash"
-           "     WHERE report_format = %llu);",
-           resource);
-      sql ("DELETE FROM report_format_params_trash WHERE report_format = %llu;",
-           resource);
-      sql ("DELETE FROM report_formats_trash WHERE id = %llu;",
-           resource);
-
-      /* Move the dir last, in case any SQL rolls back. */
-
-      owner_uuid = report_format_owner_uuid (report_format);
-      dir = g_build_filename (GVMD_STATE_DIR,
-                              "report_formats",
-                              owner_uuid,
-                              trash_uuid,
-                              NULL);
-      free (trash_uuid);
-      free (owner_uuid);
-
-      resource_string = g_strdup_printf ("%llu", resource);
-      trash_dir = report_format_trash_dir (resource_string);
-      g_free (resource_string);
-      if (move_report_format_dir (trash_dir, dir))
-        {
-          g_free (dir);
-          g_free (trash_dir);
-          sql_rollback ();
-          return -1;
-        }
-      g_free (dir);
-      g_free (trash_dir);
-
       sql_commit ();
       return 0;
     }
