@@ -50,6 +50,7 @@
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_configs.h"
+#include "manage_port_lists.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
@@ -7144,6 +7145,7 @@ manage_sync (sigset_t *sigmask_current,
   manage_sync_scap (sigmask_current);
   manage_sync_cert (sigmask_current);
   manage_sync_configs ();
+  manage_sync_port_lists ();
 }
 
 /**

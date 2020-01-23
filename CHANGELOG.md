@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
 - Add setting "BPM Data" [#915](https://github.com/greenbone/gvmd/pull/915)
 - Automatically load predefined configs from the feed [#931](https://github.com/greenbone/gvmd/pull/931) [#933](https://github.com/greenbone/gvmd/pull/933) [#934](https://github.com/greenbone/gvmd/pull/934)
-- Automatically load predefined port lists from the feed [#950](https://github.com/greenbone/gvmd/pull/950)
+- Automatically load predefined port lists from the feed [#950](https://github.com/greenbone/gvmd/pull/950) [#952](https://github.com/greenbone/gvmd/pull/952)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
