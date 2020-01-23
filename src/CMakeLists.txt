@@ -198,9 +198,10 @@ target_link_libraries (gmp-tickets-test cgreen m
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 target_link_libraries (utils-test cgreen m
-                       ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
-                       ${LINKER_HARDENING_FLAGS})
+                       ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                       ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 
 set_target_properties (gvmd PROPERTIES LINKER_LANGUAGE C)
