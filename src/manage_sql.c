@@ -15430,7 +15430,7 @@ update_nvti_cache ()
                  "SELECT nvts.oid, nvts.name, nvts.family, nvts.cvss_base,"
                  "       nvts.tag, nvts.solution, nvts.solution_type,"
                  "       nvts.summary, nvts.insight, nvts.affected,"
-                 "       nvts.impact, nvts.detection,"
+                 "       nvts.impact, nvts.detection, nvts.qod_type,"
                  "       vt_refs.type, vt_refs.ref_id, vt_refs.ref_text"
                  " FROM nvts"
                  " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
@@ -15455,17 +15455,18 @@ update_nvti_cache ()
           nvti_set_affected (nvti, iterator_string (&nvts, 9));
           nvti_set_impact (nvti, iterator_string (&nvts, 10));
           nvti_set_detection (nvti, iterator_string (&nvts, 11));
+          nvti_set_qod_type (nvti, iterator_string (&nvts, 12));
 
           nvtis_add (nvti_cache, nvti);
         }
 
-      if (iterator_null (&nvts, 13))
+      if (iterator_null (&nvts, 14))
         /* No refs. */;
       else
         nvti_add_vtref (nvti,
-                        vtref_new (iterator_string (&nvts, 12),
-                                   iterator_string (&nvts, 13),
-                                   iterator_string (&nvts, 14)));
+                        vtref_new (iterator_string (&nvts, 13),
+                                   iterator_string (&nvts, 14),
+                                   iterator_string (&nvts, 15)));
     }
 
   cleanup_iterator (&nvts);
@@ -20159,16 +20160,12 @@ make_result (task_t task, const char* host, const char *hostname,
       nvti = lookup_nvti (nvt);
       if (nvti)
         {
-          gchar *qod_str, *qod_type;
-          qod_str = nvti_get_tag (nvti, "qod");
-          qod_type = nvti_get_tag (nvti, "qod_type");
+          gchar *qod_type;
 
-          if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
-            qod = qod_from_type (qod_type);
-
+          qod_type = nvti_qod_type (nvti);
+          qod = qod_from_type (qod_type);
           quoted_qod_type = sql_quote (qod_type);
 
-          g_free (qod_str);
           g_free (qod_type);
         }
       else
