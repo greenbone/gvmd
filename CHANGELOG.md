@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Correct pref ID in migrate_219_to_220 [#941](https://github.com/greenbone/gvmd/pull/941)
 - Set run status only after getting OSP-OpenVAS scan [#948](https://github.com/greenbone/gvmd/pull/948) [#951](https://github.com/greenbone/gvmd/pull/951)
 - Fix get_system_reports for GMP scanners [#949](https://github.com/greenbone/gvmd/pull/949)
+- Use stop_osp_task for SCANNER_TYPE_OSP_SENSOR [#955](https://github.com/greenbone/gvmd/pull/955)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
