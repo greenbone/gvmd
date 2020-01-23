@@ -5777,7 +5777,8 @@ stop_task (const char *task_id)
     return 3;
 
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
-      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP)
+      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP
+      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
     return stop_osp_task (task);
 
   return stop_task_internal (task);
