@@ -31,6 +31,12 @@
 #include <errno.h>
 #include <locale.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Get the name of a report format param type.
  *

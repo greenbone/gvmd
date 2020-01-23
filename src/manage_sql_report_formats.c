@@ -43,6 +43,15 @@
 #include <gvm/util/uuidutils.h>
 #include <gvm/util/fileutils.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
+/* Non-SQL internals defined in manage_report_formats.c. */
+
 gchar *
 predefined_report_format_dir (const gchar *);
 
