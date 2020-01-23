@@ -300,6 +300,28 @@ name (iterator_t* iterator)                                       \
   return ret;                                                     \
 }
 
+/**
+ * @brief Write to a file or close stream and exit.
+ *
+ * @param[in]   stream    Stream to write to.
+ * @param[in]   format    Format specification.
+ * @param[in]   args      Arguments.
+ */
+#define PRINT(stream, format, args...)                                       \
+  do                                                                         \
+    {                                                                        \
+      gchar *msg;                                                            \
+      msg = g_markup_printf_escaped (format, ## args);                       \
+      if (fprintf (stream, "%s", msg) < 0)                                   \
+        {                                                                    \
+          g_free (msg);                                                      \
+          fclose (stream);                                                   \
+          return -1;                                                         \
+        }                                                                    \
+      g_free (msg);                                                          \
+    }                                                                        \
+  while (0)
+
 
 /* Iterator definitions. */
 
