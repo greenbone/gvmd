@@ -43,4 +43,7 @@ report_format_select_columns ();
 int
 restore_report_format (const char *);
 
+int
+check_db_report_formats ();
+
 #endif /* not _GVMD_MANAGE_SQL_REPORT_FORMATS_H */
