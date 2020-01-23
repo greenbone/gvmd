@@ -576,4 +576,11 @@ lookup_nvti (const gchar *);
 int
 setting_value (const char *, char **);
 
+int
+valid_type (const char *);
+
+void
+add_role_permission_resource (const gchar *, const gchar *, const gchar *,
+                              const gchar *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */

@@ -51,7 +51,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <glib/gstdio.h>
-#include <locale.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -191,15 +190,8 @@ static int cache_report_counts (report_t, int, int, severity_data_t*);
 static char*
 task_owner_uuid (task_t);
 
-static int
-validate_param_value (report_format_t, report_format_param_t param, const char *,
-                      const char *);
-
 gchar*
 clean_hosts (const char *, int*);
-
-static int
-valid_type (const char*);
 
 static gboolean
 find_user_by_name (const char *, user_t *user);
@@ -209,9 +201,6 @@ find_role_with_permission (const char *, role_t *, const char *);
 
 static int
 user_ensure_in_db (const gchar *, const gchar *);
-
-static int
-verify_report_format_internal (report_format_t);
 
 static int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
@@ -264,17 +253,11 @@ report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
                        int *, int *, int *, int *, int *, int *, double *);
 
-static int
-check_report_format (const gchar *);
-
 static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
 
 static gchar*
 vulns_extra_where ();
-
-static gboolean
-lookup_report_format (const char*, report_format_t*);
 
 static int
 task_last_report_any_status (task_t, report_t *);
@@ -351,18 +334,6 @@ setting_dynamic_severity_int ();
 
 static char *
 setting_timezone ();
-
-static void
-set_report_format_name (report_format_t, const char *);
-
-static void
-set_report_format_summary (report_format_t, const char *);
-
-static void
-set_report_format_active (report_format_t, int);
-
-static int
-set_report_format_param (report_format_t, const char *, const char *);
 
 static double
 task_severity_double (task_t, int, int, int);
@@ -4117,7 +4088,7 @@ filter_clause (const char* type, const char* filter,
  *
  * @return 1 yes, 0 no.
  */
-static int
+int
 valid_type (const char* type)
 {
   return (strcasecmp (type, "alert") == 0)
@@ -6029,52 +6000,6 @@ info_name_count (const char *type, const char *name)
   g_free (quoted_name);
 
   return count;
-}
-
-/**
- * @brief Return whether a resource is predefined.
- *
- * @param[in]  type      Type of resource.
- * @param[in]  resource  Resource.
- *
- * @return 1 if predefined, else 0.
- */
-static int
-resource_predefined (const gchar *type, resource_t resource)
-{
-  assert (valid_type (type));
-  return sql_int ("SELECT EXISTS (SELECT * FROM resources_predefined"
-                  "               WHERE resource_type = '%s'"
-                  "               AND resource = %llu);",
-                  type,
-                  resource);
-}
-
-/**
- * @brief Mark a resource as predefined.
- *
- * Currently only report formats use this.
- *
- * @param[in]  type      Resource type.
- * @param[in]  resource  Resource.
- * @param[in]  enable    If true mark as predefined, else remove mark.
- */
-static void
-resource_set_predefined (const gchar *type, resource_t resource, int enable)
-{
-  assert (valid_type (type));
-
-  sql ("DELETE FROM resources_predefined"
-       " WHERE resource_type = '%s'"
-       " AND resource = %llu;",
-       type,
-       resource);
-
-  if (enable)
-    sql ("INSERT into resources_predefined (resource_type, resource)"
-         " VALUES ('%s', %llu);",
-         type,
-         resource);
 }
 
 
@@ -15803,7 +15728,7 @@ add_role_permission (const gchar *role_id, const gchar *permission)
  * @param[in]  type         Resource type.
  * @param[in]  resource_id  Resource ID.
  */
-static void
+void
 add_role_permission_resource (const gchar *role_id, const gchar *permission,
                               const gchar *type, const gchar *resource_id)
 {
@@ -16360,28 +16285,6 @@ check_db_report_formats ()
   sql ("DROP TABLE report_formats_check;");
 
   return 0;
-}
-
-/**
- * @brief Get trash directory of a report format.
- *
- * @param[in]  report_format_id  UUID of report format.  NULL for the
- *             base dir that holds the report format trash.
- *
- * @return Freshly allocated trash dir.
- */
-static gchar *
-report_format_trash_dir (const gchar *report_format_id)
-{
-  if (report_format_id)
-    return g_build_filename (GVMD_STATE_DIR,
-                             "report_formats_trash",
-                             report_format_id,
-                             NULL);
-
-  return g_build_filename (GVMD_STATE_DIR,
-                           "report_formats_trash",
-                           NULL);
 }
 
 /**
@@ -37617,279 +37520,6 @@ credential_scanner_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
-}
-
-
-/* Signatures. */
-
-/**
- * @brief Find a signature in a feed.
- *
- * @param[in]   location            Feed directory to search for signature.
- * @param[in]   installer_filename  Installer filename.
- * @param[out]  signature           Freshly allocated installer signature.
- * @param[out]  signature_size      Size of installer signature.
- * @param[out]  uuid                Address for basename of linked signature
- *                                  when the signature was found in the private
- *                                  directory, if desired, else NULL.  Private
- *                                  directory is only checked if this is given.
- *
- * @return 0 success, -1 error.
- */
-static int
-find_signature (const gchar *location, const gchar *installer_filename,
-                gchar **signature, gsize *signature_size, gchar **uuid)
-{
-  gchar *installer_basename;
-
-  installer_basename = g_path_get_basename (installer_filename);
-
-  if (uuid)
-    *uuid = NULL;
-
-  if (strlen (installer_basename))
-    {
-      gchar *signature_filename, *signature_basename;
-      GError *error = NULL;
-
-      signature_basename  = g_strdup_printf ("%s.asc", installer_basename);
-      g_free (installer_basename);
-      signature_filename = g_build_filename (GVM_NVT_DIR,
-                                             location,
-                                             signature_basename,
-                                             NULL);
-      g_debug ("signature_filename: %s", signature_filename);
-
-      g_file_get_contents (signature_filename, signature, signature_size,
-                           &error);
-      if (error)
-        {
-          if (uuid && (error->code == G_FILE_ERROR_NOENT))
-            {
-              char *real;
-              gchar *real_basename;
-              gchar **split;
-
-              g_error_free (error);
-              error = NULL;
-              signature_filename = g_build_filename (GVMD_STATE_DIR,
-                                                     "signatures",
-                                                     location,
-                                                     signature_basename,
-                                                     NULL);
-              g_debug ("signature_filename (private): %s", signature_filename);
-              g_free (signature_basename);
-              g_file_get_contents (signature_filename, signature, signature_size,
-                                   &error);
-              if (error)
-                {
-                  g_free (signature_filename);
-                  g_error_free (error);
-                  return -1;
-                }
-
-              real = realpath (signature_filename, NULL);
-              g_free (signature_filename);
-              g_debug ("real pathname: %s", real);
-              if (real == NULL)
-                return -1;
-              real_basename = g_path_get_basename (real);
-              split = g_strsplit (real_basename, ".", 2);
-              if (*split)
-                *uuid = g_strdup (*split);
-              else
-                *uuid = g_strdup (real_basename);
-              g_debug ("*uuid: %s", *uuid);
-              g_free (real_basename);
-              g_strfreev (split);
-              free (real);
-              return 0;
-            }
-          else
-            {
-              g_debug ("%s: failed to read %s: %s", __func__,
-                       signature_filename, error->message);
-              g_free (signature_filename);
-            }
-
-          g_free (signature_basename);
-          g_error_free (error);
-          return -1;
-        }
-      g_free (signature_basename);
-      return 0;
-    }
-
-  g_free (installer_basename);
-  return -1;
-}
-
-/**
- * @brief Return the name of the sysconf GnuPG home directory
- *
- * Returns the name of the GnuPG home directory to use when checking
- * signatures.  It is the directory openvas/gnupg under the sysconfdir
- * that was set by configure (usually $prefix/etc).
- *
- * @return Static name of the Sysconf GnuPG home directory.
- */
-static const char *
-get_sysconf_gpghome ()
-{
-  static char *name;
-
-  if (!name)
-    name = g_build_filename (GVM_SYSCONF_DIR, "gnupg", NULL);
-
-  return name;
-}
-
-/**
- * @brief Return the name of the trusted keys file name.
- *
- * We currently use the name pubring.gpg to be compatible with
- * previous installations.  That file should best be installed
- * read-only so that it is not accidentally accessed while we are
- * running a verification.  All files in that keyring are assumed to
- * be fully trustworthy.
- *
- * @return Static file name.
- */
-static const char *
-get_trustedkeys_name ()
-{
-  static char *name;
-
-  if (!name)
-    name = g_build_filename (get_sysconf_gpghome (), "pubring.gpg", NULL);
-
-  return name;
-}
-
-/**
- * @brief Execute gpg to verify an installer signature.
- *
- * @param[in]  installer       Installer.
- * @param[in]  installer_size  Size of installer.
- * @param[in]  signature       Installer signature.
- * @param[in]  signature_size  Size of installer signature.
- * @param[out] trust           Trust value.
- *
- * @return 0 success, -1 error.
- */
-static int
-verify_signature (const gchar *installer, gsize installer_size,
-                  const gchar *signature, gsize signature_size,
-                  int *trust)
-{
-  gchar **cmd;
-  gint exit_status;
-  int ret = 0, installer_fd, signature_fd;
-  gchar *standard_out = NULL;
-  gchar *standard_err = NULL;
-  char installer_file[] = "/tmp/gvmd-installer-XXXXXX";
-  char signature_file[] = "/tmp/gvmd-signature-XXXXXX";
-  GError *error = NULL;
-
-  installer_fd = mkstemp (installer_file);
-  if (installer_fd == -1)
-    return -1;
-
-  g_file_set_contents (installer_file, installer, installer_size, &error);
-  if (error)
-    {
-      g_warning ("%s", error->message);
-      g_error_free (error);
-      close (installer_fd);
-      return -1;
-    }
-
-  signature_fd = mkstemp (signature_file);
-  if (signature_fd == -1)
-    {
-      close (installer_fd);
-      return -1;
-    }
-
-  g_file_set_contents (signature_file, signature, signature_size, &error);
-  if (error)
-    {
-      g_warning ("%s", error->message);
-      g_error_free (error);
-      close (installer_fd);
-      close (signature_fd);
-      return -1;
-    }
-
-  cmd = (gchar **) g_malloc (10 * sizeof (gchar *));
-
-  cmd[0] = g_strdup ("gpgv");
-  cmd[1] = g_strdup ("--homedir");
-  cmd[2] = g_strdup (get_sysconf_gpghome ());
-  cmd[3] = g_strdup ("--quiet");
-  cmd[4] = g_strdup ("--keyring");
-  cmd[5] = g_strdup (get_trustedkeys_name ());
-  cmd[6] = g_strdup ("--");
-  cmd[7] = g_strdup (signature_file);
-  cmd[8] = g_strdup (installer_file);
-  cmd[9] = NULL;
-  g_debug ("%s: Spawning in /tmp/: %s %s %s %s %s %s %s %s %s",
-           __func__,
-           cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5],
-           cmd[6], cmd[7], cmd[8]);
-  if ((g_spawn_sync ("/tmp/",
-                     cmd,
-                     NULL,                 /* Environment. */
-                     G_SPAWN_SEARCH_PATH,
-                     NULL,                 /* Setup func. */
-                     NULL,
-                     &standard_out,
-                     &standard_err,
-                     &exit_status,
-                     NULL) == FALSE)
-      || (WIFEXITED (exit_status) == 0)
-      || WEXITSTATUS (exit_status))
-    {
-      if (WEXITSTATUS (exit_status) == 1)
-        *trust = TRUST_NO;
-      else
-        {
-#if 0
-          g_debug ("%s: failed to run gpgv(%s): %d (WIF %i, WEX %i)",
-                   __func__, get_trustedkeys_name (),
-                   exit_status,
-                   WIFEXITED (exit_status),
-                   WEXITSTATUS (exit_status));
-          g_debug ("%s: stdout: %s", __func__, standard_out);
-          g_debug ("%s: stderr: %s", __func__, standard_err);
-          ret = -1;
-#endif
-          /* This can be caused by the contents of the signature file, so
-           * always return success. */
-          *trust = TRUST_UNKNOWN;
-        }
-    }
-  else
-    *trust = TRUST_YES;
-
-  g_free (cmd[0]);
-  g_free (cmd[1]);
-  g_free (cmd[2]);
-  g_free (cmd[3]);
-  g_free (cmd[4]);
-  g_free (cmd[5]);
-  g_free (cmd[6]);
-  g_free (cmd[7]);
-  g_free (cmd[8]);
-  g_free (cmd);
-  g_free (standard_out);
-  g_free (standard_err);
-  close (installer_fd);
-  close (signature_fd);
-  g_remove (installer_file);
-  g_remove (signature_file);
-
-  return ret;
 }
 
 

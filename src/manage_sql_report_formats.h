@@ -20,6 +20,20 @@
 #ifndef _GVMD_MANAGE_SQL_REPORT_FORMATS_H
 #define _GVMD_MANAGE_SQL_REPORT_FORMATS_H
 
+#include "manage.h"
+#include "manage_sql.h"
+
+#include <glib.h>
+
+gchar *
+report_format_trash_dir (const gchar *);
+
+int
+check_report_format (const gchar *);
+
+gboolean
+lookup_report_format (const char*, report_format_t*);
+
 const char**
 report_format_filter_columns ();
 
