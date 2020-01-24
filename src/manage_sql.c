@@ -48085,10 +48085,6 @@ manage_restore (const char *id)
 int
 manage_empty_trashcan ()
 {
-  iterator_t rows;
-  GArray *report_formats;
-  int index, length;
-
   sql_begin_immediate ();
 
   if (acl_user_may ("empty_trashcan") == 0)
@@ -48197,59 +48193,9 @@ manage_empty_trashcan ()
        "   AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
        current_credentials.uuid);
 
-  sql ("DELETE FROM report_format_param_options_trash"
-       " WHERE report_format_param"
-       "       IN (SELECT id from report_format_params_trash"
-       "           WHERE report_format"
-       "                 IN (SELECT id FROM report_formats_trash"
-       "                     WHERE owner = (SELECT id FROM users"
-       "                                    WHERE uuid = '%s')));",
-       current_credentials.uuid);
-  sql ("DELETE FROM report_format_params_trash"
-       " WHERE report_format IN (SELECT id from report_formats_trash"
-       "                         WHERE owner = (SELECT id FROM users"
-       "                                        WHERE uuid = '%s'));",
-       current_credentials.uuid);
-
-  init_iterator (&rows, "SELECT id FROM report_formats_trash" WHERE_OWNER);
-  report_formats = g_array_new (FALSE, FALSE, sizeof (report_format_t));
-  length = 0;
-  while (next (&rows))
-    {
-      report_format_t id;
-      id = iterator_int64 (&rows, 0);
-      g_array_append_val (report_formats, id);
-      length++;
-    }
-  cleanup_iterator (&rows);
-
-  sql ("DELETE FROM report_formats_trash" WHERE_OWNER);
-
-  /* Remove the report formats dirs last, in case any SQL rolls back. */
-
-  for (index = 0; index < length; index++)
-    {
-      gchar *dir, *name;
-
-      name = g_strdup_printf ("%llu",
-                              g_array_index (report_formats,
-                                             report_format_t,
-                                             index));
-      dir = report_format_trash_dir (name);
-      g_free (name);
-
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
-        {
-          g_warning ("%s: failed to remove trash dir %s", __func__, dir);
-          g_free (dir);
-          sql_rollback ();
-          return -1;
-        }
-
-      g_free (dir);
-    }
-
-  g_array_free (report_formats, TRUE);
+  /* Remove report formats last, because dir deletion can't be rolled back. */
+  if (empty_trashcan_report_formats ())
+    return -1;
 
   sql_commit ();
   return 0;

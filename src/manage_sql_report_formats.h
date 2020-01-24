@@ -50,6 +50,9 @@ apply_report_format (gchar *, gchar *, gchar *, gchar *,
 void
 delete_report_formats_user (user_t);
 
+int
+empty_trashcan_report_formats ();
+
 void
 inherit_report_formats (user_t, user_t);
 

@@ -4402,6 +4402,77 @@ apply_report_format (gchar *report_format_id,
 }
 
 /**
+ * @brief Empty trashcan.
+ */
+int
+empty_trashcan_report_formats ()
+{
+  GArray *report_formats;
+  int index, length;
+  iterator_t rows;
+
+  sql ("DELETE FROM report_format_param_options_trash"
+       " WHERE report_format_param"
+       "       IN (SELECT id from report_format_params_trash"
+       "           WHERE report_format"
+       "                 IN (SELECT id FROM report_formats_trash"
+       "                     WHERE owner = (SELECT id FROM users"
+       "                                    WHERE uuid = '%s')));",
+       current_credentials.uuid);
+  sql ("DELETE FROM report_format_params_trash"
+       " WHERE report_format IN (SELECT id from report_formats_trash"
+       "                         WHERE owner = (SELECT id FROM users"
+       "                                        WHERE uuid = '%s'));",
+       current_credentials.uuid);
+
+  init_iterator (&rows,
+                 "SELECT id FROM report_formats_trash"
+                 " WHERE owner = (SELECT id FROM users WHERE uuid = '%s');",
+                 current_credentials.uuid);
+  report_formats = g_array_new (FALSE, FALSE, sizeof (report_format_t));
+  length = 0;
+  while (next (&rows))
+    {
+      report_format_t id;
+      id = iterator_int64 (&rows, 0);
+      g_array_append_val (report_formats, id);
+      length++;
+    }
+  cleanup_iterator (&rows);
+
+  sql ("DELETE FROM report_formats_trash"
+       " WHERE owner = (SELECT id FROM users WHERE uuid = '%s');",
+       current_credentials.uuid);
+
+  /* Remove the report formats dirs last, in case any SQL rolls back. */
+
+  for (index = 0; index < length; index++)
+    {
+      gchar *dir, *name;
+
+      name = g_strdup_printf ("%llu",
+                              g_array_index (report_formats,
+                                             report_format_t,
+                                             index));
+      dir = report_format_trash_dir (name);
+      g_free (name);
+
+      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+        {
+          g_warning ("%s: failed to remove trash dir %s", __func__, dir);
+          g_free (dir);
+          sql_rollback ();
+          return -1;
+        }
+
+      g_free (dir);
+    }
+
+  g_array_free (report_formats, TRUE);
+  return 0;
+}
+
+/**
  * @brief Change ownership of report formats, for user deletion.
  *
  * @param[in]  user       Current owner.
