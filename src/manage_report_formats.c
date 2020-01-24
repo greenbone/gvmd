@@ -26,6 +26,7 @@
 
 #include "manage_report_formats.h"
 #include "manage.h"
+#include "manage_sql.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -39,6 +40,66 @@
  * @brief GLib log domain.
  */
 #define G_LOG_DOMAIN "md manage"
+
+/**
+ * @brief Find a report format for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of report format.
+ * @param[out]  report_format  Report format return, 0 if successfully failed to
+ *                             find report_format.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find report_format), TRUE
+ *         on error.
+ */
+gboolean
+find_report_format_with_permission (const char *uuid,
+                                    report_format_t *report_format,
+                                    const char *permission)
+{
+  return find_resource_with_permission ("report_format", uuid, report_format,
+                                        permission, 0);
+}
+
+/**
+ * @brief Return whether a report format is writable.
+ *
+ * @param[in]  report_format Report Format.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+report_format_writable (report_format_t report_format)
+{
+  return report_format_in_use (report_format) == 0
+         && report_format_predefined (report_format) == 0;
+}
+
+/**
+ * @brief Return whether a trashcan report_format is writable.
+ *
+ * @param[in]  report_format  Report Format.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+trash_report_format_writable (report_format_t report_format)
+{
+  return trash_report_format_in_use (report_format) == 0;
+}
+
+/**
+ * @brief Return whether a report format is predefined.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+report_format_predefined (report_format_t report_format)
+{
+  return resource_predefined ("report_format", report_format);
+}
 
 /**
  * @brief Get the name of a report format param type.

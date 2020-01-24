@@ -504,6 +504,9 @@ gchar *resource_uuid (const gchar *, resource_t);
 gboolean find_resource_with_permission (const char *, const char *,
                                         resource_t *, const char *, int);
 
+int
+resource_predefined (const gchar *, resource_t);
+
 void parse_osp_report (task_t, report_t, const char *);
 
 void reschedule_task (const gchar *);

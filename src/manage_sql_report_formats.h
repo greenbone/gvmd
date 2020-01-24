@@ -25,9 +25,6 @@
 
 #include <glib.h>
 
-gchar *
-report_format_trash_dir (const gchar *);
-
 int
 check_report_format (const gchar *);
 

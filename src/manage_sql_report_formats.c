@@ -136,7 +136,7 @@ get_trustedkeys_name ()
  *
  * @return 1 if predefined, else 0.
  */
-static int
+int
 resource_predefined (const gchar *type, resource_t resource)
 {
   assert (valid_type (type));
@@ -424,7 +424,7 @@ typedef enum
  *
  * @return Freshly allocated trash dir.
  */
-gchar *
+static gchar *
 report_format_trash_dir (const gchar *report_format_id)
 {
   if (report_format_id)
@@ -436,26 +436,6 @@ report_format_trash_dir (const gchar *report_format_id)
   return g_build_filename (GVMD_STATE_DIR,
                            "report_formats_trash",
                            NULL);
-}
-
-/**
- * @brief Find a reportformat for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of report format.
- * @param[out]  report_format  Report format return, 0 if successfully failed to
- *                             find report_format.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find report_format), TRUE
- *         on error.
- */
-gboolean
-find_report_format_with_permission (const char* uuid,
-                                    report_format_t* report_format,
-                                    const char *permission)
-{
-  return find_resource_with_permission ("report_format", uuid, report_format,
-                                        permission, 0);
 }
 
 /**
@@ -2125,33 +2105,6 @@ trash_report_format_in_use (report_format_t report_format)
 }
 
 /**
- * @brief Return whether a report format is writable.
- *
- * @param[in]  report_format Report Format.
- *
- * @return 1 if writable, else 0.
- */
-int
-report_format_writable (report_format_t report_format)
-{
-  return report_format_in_use (report_format) == 0
-         && report_format_predefined (report_format) == 0;
-}
-
-/**
- * @brief Return whether a trashcan report_format is writable.
- *
- * @param[in]  report_format  Report Format.
- *
- * @return 1 if writable, else 0.
- */
-int
-trash_report_format_writable (report_format_t report_format)
-{
-  return trash_report_format_in_use (report_format) == 0;
-}
-
-/**
  * @brief Return the extension of a report format.
  *
  * @param[in]  report_format  Report format.
@@ -2180,19 +2133,6 @@ set_report_format_name (report_format_t report_format, const char *name)
        quoted_name,
        report_format);
   g_free (quoted_name);
-}
-
-/**
- * @brief Return whether a report format is predefined.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 1 if predefined, else 0.
- */
-int
-report_format_predefined (report_format_t report_format)
-{
-  return resource_predefined ("report_format", report_format);
 }
 
 /**
@@ -2310,7 +2250,6 @@ report_format_param_type_min (report_format_t report_format, const char *name)
   g_free (quoted_name);
   return min;
 }
-
 
 /**
  * @brief Validate a value for a report format param.
