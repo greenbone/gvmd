@@ -94,12 +94,9 @@ add_executable (manage-utils-test
 
                 gvmd.c gmpd.c
                 manage.c sql.c
-                manage_ranges_all_tcp_nmap_5_51_top_100.c
-                manage_ranges_all_tcp_nmap_5_51_top_1000.c
-                manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
-                manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_port_lists.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -118,12 +115,9 @@ add_executable (manage-test
 
                 gvmd.c gmpd.c
                 manage_utils.c sql.c
-                manage_ranges_all_tcp_nmap_5_51_top_100.c
-                manage_ranges_all_tcp_nmap_5_51_top_1000.c
-                manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
-                manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_port_lists.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -142,12 +136,9 @@ add_executable (gmp-tickets-test
 
                 gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
-                manage_ranges_all_tcp_nmap_5_51_top_100.c
-                manage_ranges_all_tcp_nmap_5_51_top_1000.c
-                manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
-                manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_port_lists.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -173,12 +164,9 @@ add_custom_target (tests
 add_executable (gvmd
                 main.c gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
-                manage_ranges_all_tcp_nmap_5_51_top_100.c
-                manage_ranges_all_tcp_nmap_5_51_top_1000.c
-                manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
-                manage_ranges_nmap_5_51_top_2000_top_100.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
+                manage_port_lists.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
@@ -210,9 +198,10 @@ target_link_libraries (gmp-tickets-test cgreen m
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 target_link_libraries (utils-test cgreen m
-                       ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
-                       ${LINKER_HARDENING_FLAGS})
+                       ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                       ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 
 set_target_properties (gvmd PROPERTIES LINKER_LANGUAGE C)
@@ -376,11 +365,6 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_host_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_system_discovery.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_all_tcp_nmap_5_51_top_100.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_all_tcp_nmap_5_51_top_1000.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_iana_tcp_2012.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_iana_tcp_udp_2012.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_nmap_5_51_top_2000_top_100.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
