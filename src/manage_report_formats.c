@@ -29,7 +29,10 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <glib.h>
 #include <locale.h>
+#include <stdlib.h>
+#include <string.h>
 
 #undef G_LOG_DOMAIN
 /**
