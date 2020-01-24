@@ -4342,6 +4342,8 @@ apply_report_format (gchar *report_format_id,
 
 /**
  * @brief Empty trashcan.
+ *
+ * @return 0 success, -1 error.
  */
 int
 empty_trashcan_report_formats ()
