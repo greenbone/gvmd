@@ -13834,7 +13834,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_START_TASK:
         {
           gvm_connection_t connection;
-          char *task_id, *report_id;
+          char *task_id, *report_id, *owner_id, *owner_name;
+          gchar *quoted_task_id;
           gmp_authenticate_info_opts_t auth_opts;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
@@ -13855,8 +13856,32 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             }
 
           task_id = alert_data (alert, "method", "start_task_task");
+          if (task_id == NULL || strcmp (task_id, "") == 0)
+            {
+              g_warning ("%s: start_task_task missing or empty", __func__);
+              return -1;
+            }
 
-          switch (manage_fork_connection (&connection, current_credentials.uuid))
+          quoted_task_id = sql_quote (task_id);
+          owner_id = sql_string ("SELECT uuid FROM users"
+                                 " WHERE id = (SELECT owner FROM tasks"
+                                 "              WHERE uuid = '%s')",
+                                 quoted_task_id);
+          owner_name = sql_string ("SELECT name FROM users"
+                                   " WHERE id = (SELECT owner FROM tasks"
+                                   "              WHERE uuid = '%s')",
+                                   quoted_task_id);
+          g_free (quoted_task_id);
+          if (owner_id == NULL)
+            {
+              g_warning ("%s: could not find start_task_task or its owner",
+                         __func__);
+              free (owner_id);
+              free (owner_name);
+              return -1;
+            }
+
+          switch (manage_fork_connection (&connection, owner_id))
             {
               case 0:
                 /* Child.  Break, stop task, exit. */
@@ -13872,6 +13897,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               default:
                 /* Parent.  Continue with whatever lead to this escalation. */
                 g_free (task_id);
+                free (owner_id);
+                free (owner_name);
                 return 0;
                 break;
             }
@@ -13879,23 +13906,29 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           /* Start the task. */
 
           auth_opts = gmp_authenticate_info_opts_defaults;
-          auth_opts.username = current_credentials.username;
+          auth_opts.username = owner_name;
           auth_opts.password = "dummy";
           if (gmp_authenticate_info_ext_c (&connection, auth_opts))
             {
+              g_free (task_id);
+              free (owner_id);
+              free (owner_name);
               gvm_connection_free (&connection);
               exit (EXIT_FAILURE);
             }
-
           if (gmp_start_task_report_c (&connection, task_id, &report_id))
             {
               g_free (task_id);
+              free (owner_id);
+              free (owner_name);
               gvm_connection_free (&connection);
               exit (EXIT_FAILURE);
             }
 
           g_free (task_id);
           g_free (report_id);
+          free (owner_id);
+          free (owner_name);
           gvm_connection_free (&connection);
           exit (EXIT_SUCCESS);
         }
