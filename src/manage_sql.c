@@ -52865,11 +52865,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
 
       inherit_port_lists (user, inheritor);
-
-      sql ("UPDATE report_formats SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
-      sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
+      inherit_report_formats (user, inheritor);
 
       sql ("UPDATE reports SET owner = %llu WHERE owner = %llu;",
            inheritor, user);

@@ -4402,6 +4402,22 @@ apply_report_format (gchar *report_format_id,
 }
 
 /**
+ * @brief Change ownership of report formats, for user deletion.
+ *
+ * @param[in]  user       Current owner.
+ * @param[in]  inheritor  New owner.
+ */
+void
+inherit_report_formats (user_t user, user_t inheritor)
+{
+  sql ("UPDATE report_formats SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
+
+  sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
+}
+
+/**
  * @brief Delete all report formats owned by a user.
  *
  * @param[in]  user  The user.
