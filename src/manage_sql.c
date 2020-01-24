@@ -53163,31 +53163,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql_rollback ();
       return 9;
     }
-  sql ("DELETE FROM report_format_param_options"
-       " WHERE report_format_param"
-       "       IN (SELECT id FROM report_format_params"
-       "           WHERE report_format IN (SELECT id"
-       "                                   FROM report_formats"
-       "                                   WHERE owner = %llu));",
-       user);
-  sql ("DELETE FROM report_format_param_options_trash"
-       " WHERE report_format_param"
-       "       IN (SELECT id FROM report_format_params_trash"
-       "           WHERE report_format IN (SELECT id"
-       "                                   FROM report_formats_trash"
-       "                                   WHERE owner = %llu));",
-       user);
-  sql ("DELETE FROM report_format_params"
-       " WHERE report_format IN (SELECT id FROM report_formats"
-       "                         WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM report_format_params_trash"
-       " WHERE report_format IN (SELECT id"
-       "                         FROM report_formats_trash"
-       "                         WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
-  sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
+  delete_report_formats_user (user);
 
   /* Delete credentials last because they can be used in various places */
 

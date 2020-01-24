@@ -4401,6 +4401,41 @@ apply_report_format (gchar *report_format_id,
   return output_file;
 }
 
+/**
+ * @brief Delete all report formats owned by a user.
+ *
+ * @param[in]  user  The user.
+ */
+void
+delete_report_formats_user (user_t user)
+{
+  sql ("DELETE FROM report_format_param_options"
+       " WHERE report_format_param"
+       "       IN (SELECT id FROM report_format_params"
+       "           WHERE report_format IN (SELECT id"
+       "                                   FROM report_formats"
+       "                                   WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM report_format_param_options_trash"
+       " WHERE report_format_param"
+       "       IN (SELECT id FROM report_format_params_trash"
+       "           WHERE report_format IN (SELECT id"
+       "                                   FROM report_formats_trash"
+       "                                   WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM report_format_params"
+       " WHERE report_format IN (SELECT id FROM report_formats"
+       "                         WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM report_format_params_trash"
+       " WHERE report_format IN (SELECT id"
+       "                         FROM report_formats_trash"
+       "                         WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
+  sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
+}
+
 
 /* Startup. */
 
