@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -1339,14 +1339,23 @@ nvti_from_vt (entity_t vt)
                       "cvss_base_v2")
               == 0))
         {
-          gchar * cvss_base;
+          entity_t value;
 
-          nvti_add_tag (nvti, "cvss_base_vector", entity_text (severity));
+          value = entity_child (severity, "value");
 
-          cvss_base = g_strdup_printf ("%.1f",
-            get_cvss_score_from_base_metrics (entity_text (severity)));
-          nvti_set_cvss_base (nvti, cvss_base);
-          g_free (cvss_base);
+          if (!value)
+            g_warning ("%s: no severity value", __func__);
+          else
+            {
+              gchar * cvss_base;
+
+              nvti_add_tag (nvti, "cvss_base_vector", entity_text (value));
+
+              cvss_base = g_strdup_printf ("%.1f",
+                get_cvss_score_from_base_metrics (entity_text (value)));
+              nvti_set_cvss_base (nvti, cvss_base);
+              g_free (cvss_base);
+            }
         }
       else
         g_warning ("%s: no severity", __func__);
