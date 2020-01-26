@@ -341,6 +341,13 @@ insert_nvt (const nvti_t *nvti)
       g_free (quoted_text);
     }
 
+  sql ("DELETE FROM vt_severities where vt_oid = '%s';", nvti_oid (nvti));
+
+  sql ("INSERT into vt_severities (vt_oid, type, origin, date, score, value)"
+       " VALUES ('%s', '%s', '%s', '%i', '%i', '%s');",
+       nvti_oid (nvti), "cvss_base_v2", "", nvti_creation_time (nvti),
+       (int)(atof (nvti_cvss_base (nvti)) * 10), quoted_cvss_base);
+
   g_free (quoted_name);
   g_free (quoted_summary);
   g_free (quoted_insight);
