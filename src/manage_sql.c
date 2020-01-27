@@ -13756,7 +13756,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         {
           gvm_connection_t connection;
           char *task_id, *report_id, *owner_id, *owner_name;
-          gchar *quoted_task_id;
           gmp_authenticate_info_opts_t auth_opts;
 
           if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
@@ -13783,19 +13782,18 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return -1;
             }
 
-          quoted_task_id = sql_quote (task_id);
           owner_id = sql_string ("SELECT uuid FROM users"
-                                 " WHERE id = (SELECT owner FROM tasks"
-                                 "              WHERE uuid = '%s')",
-                                 quoted_task_id);
+                                 " WHERE id = (SELECT owner FROM alerts"
+                                 "              WHERE id = %llu)",
+                                 alert);
           owner_name = sql_string ("SELECT name FROM users"
-                                   " WHERE id = (SELECT owner FROM tasks"
-                                   "              WHERE uuid = '%s')",
-                                   quoted_task_id);
-          g_free (quoted_task_id);
+                                   " WHERE id = (SELECT owner FROM alerts"
+                                   "              WHERE id = %llu)",
+                                   alert);
+
           if (owner_id == NULL)
             {
-              g_warning ("%s: could not find start_task_task or its owner",
+              g_warning ("%s: could not find alert owner",
                          __func__);
               free (owner_id);
               free (owner_name);
