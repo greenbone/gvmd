@@ -96,9 +96,10 @@ add_executable (manage-utils-test
                 manage.c sql.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_port_lists.c
+                manage_port_lists.c manage_report_formats.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
                 manage_migrators.c
@@ -117,9 +118,10 @@ add_executable (manage-test
                 manage_utils.c sql.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_port_lists.c
+                manage_port_lists.c manage_report_formats.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
                 manage_migrators.c
@@ -138,9 +140,10 @@ add_executable (gmp-tickets-test
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_port_lists.c
+                manage_port_lists.c manage_report_formats.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
                 manage_migrators.c
@@ -166,9 +169,10 @@ add_executable (gvmd
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_config_discovery.c
                 manage_config_host_discovery.c manage_config_system_discovery.c
-                manage_port_lists.c
+                manage_port_lists.c manage_report_formats.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
                 manage_migrators.c
@@ -362,13 +366,17 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_host_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_system_discovery.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"

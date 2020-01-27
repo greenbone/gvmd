@@ -300,6 +300,28 @@ name (iterator_t* iterator)                                       \
   return ret;                                                     \
 }
 
+/**
+ * @brief Write to a file or close stream and exit.
+ *
+ * @param[in]   stream    Stream to write to.
+ * @param[in]   format    Format specification.
+ * @param[in]   args      Arguments.
+ */
+#define PRINT(stream, format, args...)                                       \
+  do                                                                         \
+    {                                                                        \
+      gchar *msg;                                                            \
+      msg = g_markup_printf_escaped (format, ## args);                       \
+      if (fprintf (stream, "%s", msg) < 0)                                   \
+        {                                                                    \
+          g_free (msg);                                                      \
+          fclose (stream);                                                   \
+          return -1;                                                         \
+        }                                                                    \
+      g_free (msg);                                                          \
+    }                                                                        \
+  while (0)
+
 
 /* Iterator definitions. */
 
@@ -482,6 +504,9 @@ gchar *resource_uuid (const gchar *, resource_t);
 gboolean find_resource_with_permission (const char *, const char *,
                                         resource_t *, const char *, int);
 
+int
+resource_predefined (const gchar *, resource_t);
+
 void parse_osp_report (task_t, report_t, const char *);
 
 void reschedule_task (const gchar *);
@@ -575,5 +600,12 @@ lookup_nvti (const gchar *);
 
 int
 setting_value (const char *, char **);
+
+int
+valid_type (const char *);
+
+void
+add_role_permission_resource (const gchar *, const gchar *, const gchar *,
+                              const gchar *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */
