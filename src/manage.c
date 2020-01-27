@@ -4083,6 +4083,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
   osp_credential_t *snmp_credential;
   gchar *max_checks, *max_hosts, *source_iface, *hosts_ordering;
+  gchar *reverse_lookup_unify, *reverse_lookup_only;
   GHashTable *scanner_options;
   int ret;
   config_t config;
@@ -4193,6 +4194,26 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   if (hosts_ordering)
     g_hash_table_insert (scanner_options, g_strdup ("host_ordering"),
                          hosts_ordering);
+
+  /* Setup reverse_lookup_only preference. */
+  reverse_lookup_only = target_reverse_lookup_only (target);
+  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "0") == 0)
+    g_hash_table_insert (scanner_options, g_strdup ("reverse_lookup_only"),
+                         g_strdup ("no"));
+  else
+    g_hash_table_insert (scanner_options, g_strdup ("reverse_lookup_only"),
+                         g_strdup ("yes"));
+  g_free (reverse_lookup_only);
+
+  /* Send reverse_lookup_unify preference. */
+  reverse_lookup_unify = target_reverse_lookup_unify (target);
+  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "0") == 0)
+    g_hash_table_insert (scanner_options, g_strdup ("reverse_lookup_unify"),
+                         g_strdup("no"));
+  else
+    g_hash_table_insert (scanner_options, g_strdup ("reverse_lookup_unify"),
+                         g_strdup ("yes"));
+  g_free (reverse_lookup_unify);
 
   /* Setup vulnerability tests (without preferences) */
   vts = NULL;
