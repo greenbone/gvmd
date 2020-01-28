@@ -7333,7 +7333,6 @@ check_alert_params (event_t event, alert_condition_t condition,
     {
       if (method == ALERT_METHOD_HTTP_GET
           || method == ALERT_METHOD_SOURCEFIRE
-          || method == ALERT_METHOD_START_TASK
           || method == ALERT_METHOD_VERINICE)
         return 20;
 
@@ -13757,15 +13756,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           gvm_connection_t connection;
           char *task_id, *report_id, *owner_id, *owner_name;
           gmp_authenticate_info_opts_t auth_opts;
-
-          if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-            {
-              g_warning ("%s: Event \"%s NVTs arrived\" with method"
-                         " \"Start Task\" not support",
-                         __func__,
-                         event == EVENT_NEW_SECINFO ? "New" : "Updated");
-              return -1;
-            }
 
           /* Run the callback to fork a child connected to the Manager. */
 
