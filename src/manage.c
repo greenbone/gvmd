@@ -4072,7 +4072,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 {
   osp_connection_t *connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
-  int alive_test;
+  int alive_test, reverse_lookup_only, reverse_lookup_unify;
   osp_target_t *osp_target;
   GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
@@ -4089,6 +4089,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   connection = NULL;
 
   alive_test = 0;
+  reverse_lookup_unify = 0;
+  reverse_lookup_only = 0;
 
   /* Prepare the report */
   if (from)
@@ -4111,6 +4113,12 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   if (target_alive_tests (target) > 0)
    alive_test = target_alive_tests (target);
 
+  if (target_reverse_lookup_only (target) != NULL)
+    reverse_lookup_only = atoi (target_reverse_lookup_only (target));
+
+  if (target_reverse_lookup_unify (target) != NULL)
+    reverse_lookup_unify = atoi (target_reverse_lookup_unify (target));
+
   if (finished_hosts_str)
     {
       gchar *new_exclude_hosts;
@@ -4123,7 +4131,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
     }
 
   osp_target = osp_target_new (hosts_str, ports_str, exclude_hosts_str,
-                               alive_test);
+                               alive_test, reverse_lookup_unify,
+                               reverse_lookup_only);
   if (finished_hosts_str)
     osp_target_set_finished_hosts (osp_target, finished_hosts_str);
 
