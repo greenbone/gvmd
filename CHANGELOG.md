@@ -61,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Apply usage_type of tasks in get_aggregates (9.0) [#912](https://github.com/greenbone/gvmd/pull/912)
 - Add target's alive test method before starting a scan. [#947](https://github.com/greenbone/gvmd/pull/947)
 - Fix QoD handling in nvti cache and test_alert [#954](https://github.com/greenbone/gvmd/pull/954)
+- Fix "Start Task" alerts by using alert owner [#957](https://github.com/greenbone/gvmd/pull/957)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
