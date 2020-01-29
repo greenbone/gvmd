@@ -15136,6 +15136,10 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       if (request_report)
         cleanup_iterator (&reports);
 
+      /* Always enable details when using a report to test an alert. */
+      if (get_reports_data->alert_id)
+        get_reports_data->get.details = 1;
+
       ret = manage_send_report (report,
                                 delta_report,
                                 report_format,
