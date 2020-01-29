@@ -69,6 +69,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix "Start Task" alerts by using alert owner [#957](https://github.com/greenbone/gvmd/pull/957)
 - Fix Verinice ISM report format and update version [#962](https://github.com/greenbone/gvmd/pull/962)
 - Always use details testing alerts with a report [#964](https://github.com/greenbone/gvmd/pull/964)
+- Remove extra XML declaration in Anonymous XML [#965](https://github.com/greenbone/gvmd/pull/965)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
