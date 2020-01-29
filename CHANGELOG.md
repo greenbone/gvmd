@@ -51,7 +51,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Use stop_osp_task for SCANNER_TYPE_OSP_SENSOR [#955](https://github.com/greenbone/gvmd/pull/955)
 - Setup target's reverse_lookup_* settings to launch an osp openvas task (9.0) [#958](https://github.com/greenbone/gvmd/pull/958)
 - Always use details testing alerts with a report [#964](https://github.com/greenbone/gvmd/pull/964)
-- Fix Verinice ISM report format and update version [#962](https://github.com/greenbone/gvmd/pull/962)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
