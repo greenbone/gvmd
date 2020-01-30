@@ -121,6 +121,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add NULL check in nvts_feed_version_epoch [#773](https://github.com/greenbone/gvmd/pull/773)
 - Fix percent sign escaping in report_port_count [#782](https://github.com/greenbone/gvmd/pull/782)
 - If the nvt preference is "file" type, encode it into Base64 format [#785](https://github.com/greenbone/gvmd/pull/785)
+- Fix missing report ids in alert filenames [#966](https://github.com/greenbone/gvmd/pull/966)
 
 ### Removed
 - The handling of NVT updates via OTP has been removed. [#575](https://github.com/greenbone/gvmd/pull/575)
