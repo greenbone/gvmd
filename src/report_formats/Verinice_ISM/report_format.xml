@@ -1,8 +1,8 @@
 <report_format id="c15ad349-bd8d-457a-880a-c7056532ee15">
   <name>Verinice ISM</name>
-  <summary>Greenbone Verinice ISM Report, v3.0.0.</summary>
+  <summary>Greenbone Verinice ISM Report, v3.2.0.</summary>
   <description>
-    Information Security Management Report for Verinice import, version 3.0.0.
+    Information Security Management Report for Verinice import, version 3.2.0.
   </description>
   <extension>vna</extension>
   <content_type>application/zip</content_type>
