@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-Copyright (C) 2011-2019 Greenbone Networks GmbH
+Copyright (C) 2011-2020 Greenbone Networks GmbH
 
 SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -93,8 +93,8 @@ Parameters:
     <xsl:value-of select="@id"/>
   </xsl:template>
 
-  <xsl:key name="scenarios" match="/report/results/result/nvt/@oid" use="." />
-  <xsl:key name="vulnerabilities" match="/report/results/result/nvt/@oid" use="." />
+  <xsl:key name="scenarios" match="/report/results/result[count(notes/note) &gt; 0 and threat != 'False Positive']/nvt/@oid" use="." />
+  <xsl:key name="vulnerabilities" match="/report/results/result[count(notes/note) &gt; 0 and threat != 'False Positive']/nvt/@oid" use="." />
   <xsl:key name="controls" match="/report/results/result/notes/note/@id" use="." />
 
   <xsl:template name="extract_organization">
@@ -469,7 +469,7 @@ CIS</value>
   <xsl:template match="report/host">
     <xsl:param name="task_id"/>
     <xsl:variable name="addr">
-      <xsl:value-of select="host"/>
+      <xsl:value-of select="ip"/>
     </xsl:variable>
     <xsl:variable name="extid">
       <xsl:choose>
@@ -839,15 +839,17 @@ CIS</value>
     </xsl:call-template>
 
     <xsl:for-each select="/report/results/result[nvt/@oid = $cur_oid]">
-      <syncLink>
-        <dependant><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-scenario</dependant>
-        <dependency><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-vulnerability</dependency>
-        <relationId>rel_incscen_vulnerability</relationId>
-      </syncLink>
+      <xsl:if test="generate-id(nvt/@oid) = generate-id(key('vulnerabilities', nvt/@oid)[1])">
+        <syncLink>
+          <dependant><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-scenario</dependant>
+          <dependency><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-vulnerability</dependency>
+          <relationId>rel_incscen_vulnerability</relationId>
+        </syncLink>
+      </xsl:if>
       <syncLink>
         <dependant><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-scenario</dependant>
         <xsl:variable name="addr">
-          <xsl:value-of select="host"/>
+          <xsl:value-of select="host/text()"/>
         </xsl:variable>
         <xsl:variable name="extid">
           <xsl:choose>
