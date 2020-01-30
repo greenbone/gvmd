@@ -12334,6 +12334,49 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
 }
 
 /**
+ * @brief Sets the task or report if one of them is missing
+ *
+ * @param[in,out] task    Pointer to the task
+ * @param[in,out] report  Pointer to the report
+ *
+ * @return 0 success, -1 error
+ */
+static int
+set_missing_task_or_report (task_t *task, report_t *report)
+{
+  assert (task);
+  assert (report);
+
+  if (*report == 0)
+    switch (sql_int64 (report,
+                       "SELECT max (id) FROM reports"
+                       " WHERE task = %llu",
+                       *task))
+      {
+        case 0:
+          if (*report)
+            break;
+        case 1:        /* Too few rows in result of query. */
+        case -1:
+          return -1;
+          break;
+        default:       /* Programming error. */
+          assert (0);
+          return -1;
+      }
+
+  if (*task == 0 && *report)
+    {
+      int ret;
+      ret = report_task (*report, task);
+      if (ret)
+        return -1;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Generate report content for alert
  *
  * @param[in]  alert  The alert the report is generated for.
@@ -12384,6 +12427,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
   gchar *report_content;
   filter_t filter;
 
+  assert (report);
   assert (content);
 
   // Get filter
@@ -12391,26 +12435,6 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
   ret = generate_alert_filter_get (alert, get, &alert_filter_get, &filter);
   if (ret)
     return ret;
-
-  // Get last report from task if no report is given
-
-  if (report == 0)
-    switch (sql_int64 (&report,
-                        "SELECT max (id) FROM reports"
-                        " WHERE task = %llu",
-                        task))
-      {
-        case 0:
-          if (report)
-            break;
-        case 1:        /* Too few rows in result of query. */
-        case -1:
-          return -1;
-          break;
-        default:       /* Programming error. */
-          assert (0);
-          return -1;
-      }
 
   // Get report format or use fallback.
 
@@ -12513,6 +12537,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
  *  is used instead.
  *
  * @param[in]  report         The report to generate the filename for.
+ * @param[in]  task           The task the report belongs to.
  * @param[in]  report_format  The report format to use.
  * @param[in]  custom_format  A custom format string to use for the filename.
  * @param[in]  add_extension  Whether to add the filename extension or not.
@@ -12520,10 +12545,10 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
  * @return  Newly allocated filename.
  */
 static gchar *
-generate_report_filename (report_t report, report_format_t report_format,
+generate_report_filename (report_t report, task_t task,
+                          report_format_t report_format,
                           const char *custom_format, gboolean add_extension)
 {
-  task_t task;
   char *fname_format, *report_id, *creation_time, *modification_time;
   char *report_task_name, *rf_name;
   gchar *filename_base, *filename;
@@ -12553,7 +12578,8 @@ generate_report_filename (report_t report, report_format_t report_format,
                   " WHERE id = %llu",
                   report);
 
-  report_task (report, &task);
+  if (task == 0)
+    report_task (report, &task);
   report_task_name = task_name (task);
 
   rf_name = report_format ? report_format_name (report_format)
@@ -12641,24 +12667,10 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
       return -1;
     }
 
-  // Get report
-  if (report == 0)
-    switch (sql_int64 (&report,
-                       "SELECT max (id) FROM reports"
-                       " WHERE task = %llu",
-                       task))
-      {
-        case 0:
-          if (report)
-            break;
-        case 1:        /* Too few rows in result of query. */
-        case -1:
-          return -1;
-          break;
-        default:       /* Programming error. */
-          assert (0);
-          return -1;
-      }
+  // Get report or task
+  ret = set_missing_task_or_report (&task, &report);
+  if (ret)
+    return ret;
 
   // Get report results filter and corresponding get data
   alert_filter_get = NULL;
@@ -12742,7 +12754,11 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
                            alert_report_item->report_format_name);
 
           alert_report_item->remote_filename
-            = generate_report_filename (report, report_format, NULL, TRUE);
+            = generate_report_filename (report,
+                                        task,
+                                        report_format,
+                                        NULL,
+                                        TRUE);
 
           alert_report_item->local_filename
             = g_build_filename (reports_dir,
@@ -13005,6 +13021,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
                   /* Message with inlined report. */
 
+                  ret = set_missing_task_or_report (&task, &report);
+                  if (ret)
+                    return ret;
+
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
@@ -13012,7 +13032,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    * anyway, to make it easier for the compiler to see. */
                   filter = 0;
                   ret = report_content_for_alert
-                          (alert, 0, task, get,
+                          (alert, report, task, get,
                            "notice_report_format",
                            NULL,
                            /* TXT fallback */
@@ -13085,6 +13105,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
                   /* Message with attached report. */
 
+                  ret = set_missing_task_or_report (&task, &report);
+                  if (ret)
+                    return ret;
+
                   term = NULL;
                   report_zone = NULL;
                   host_summary = NULL;
@@ -13092,7 +13116,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    * anyway, to make it easier for the compiler to see. */
                   filter = 0;
                   ret = report_content_for_alert
-                          (alert, 0, task, get,
+                          (alert, report, task, get,
                            "notice_attach_format",
                            NULL,
                            /* TXT fallback */
@@ -13298,6 +13322,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               gchar *point, *end;
               GString *new_url;
 
+              ret = set_missing_task_or_report (&task, &report);
+              if (ret)
+                return ret;
+
               new_url = g_string_new ("");
               for (formatting = 0, point = url, end = (url + strlen (url));
                    point < end;
@@ -13422,8 +13450,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 }
             }
 
+          ret = set_missing_task_or_report (&task, &report);
+          if (ret)
+            return ret;
+
           ret = report_content_for_alert
-                  (alert, 0, task, get,
+                  (alert, report, task, get,
                    "scp_report_format",
                    NULL,
                    /* XML fallback. */
@@ -13520,8 +13552,12 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return ret;
             }
 
+          ret = set_missing_task_or_report (&task, &report);
+          if (ret)
+            return ret;
+
           ret = report_content_for_alert
-                  (alert, 0, task, get,
+                  (alert, report, task, get,
                    "send_report_format",
                    NULL,
                    /* XML fallback. */
@@ -13572,30 +13608,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return -1;
             }
 
-          if (report == 0)
-            switch (sql_int64 (&report,
-                                "SELECT max (id) FROM reports"
-                                " WHERE task = %llu",
-                                task))
-              {
-                case 0:
-                  if (report)
-                    break;
-                case 1:        /* Too few rows in result of query. */
-                case -1:
-                  return -1;
-                  break;
-                default:       /* Programming error. */
-                  assert (0);
-                  return -1;
-              }
-
-          if (task == 0 && report)
-            {
-              ret = report_task (report, &task);
-              if (ret)
-                return ret;
-            }
+          ret = set_missing_task_or_report (&task, &report);
+          if (ret)
+            return ret;
 
           credential_id = alert_data (alert, "method", "smb_credential");
           share_path = alert_data (alert, "method", "smb_share_path");
@@ -13648,10 +13663,16 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               char *dirname, *filename;
 
-              dirname = generate_report_filename (report, report_format,
-                                                  file_path_format, FALSE);
-              filename = generate_report_filename (report, report_format,
-                                                   NULL, TRUE);
+              dirname = generate_report_filename (report,
+                                                  task,
+                                                  report_format,
+                                                  file_path_format,
+                                                  FALSE);
+              filename = generate_report_filename (report,
+                                                   task,
+                                                   report_format,
+                                                   NULL,
+                                                   TRUE);
 
               file_path = g_strdup_printf ("%s\\%s", dirname, filename);
 
@@ -13660,8 +13681,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             }
           else
             {
-              file_path = generate_report_filename (report, report_format,
-                                                    file_path_format, TRUE);
+              file_path = generate_report_filename (report,
+                                                    task,
+                                                    report_format,
+                                                    file_path_format,
+                                                    TRUE);
             }
 
           credential = 0;
@@ -13789,6 +13813,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                          event == EVENT_NEW_SECINFO ? "New" : "Updated");
               return -1;
             }
+
+          ret = set_missing_task_or_report (&task, &report);
+          if (ret)
+            return ret;
 
           ret = report_content_for_alert
                   (alert, report, task, get,
@@ -13945,6 +13973,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             }
 
           /* Report content */
+          ret = set_missing_task_or_report (&task, &report);
+          if (ret)
+            return ret;
+
           extension = NULL;
           ret = report_content_for_alert
                   (alert, report, task, get,
@@ -14004,6 +14036,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                          event == EVENT_NEW_SECINFO ? "New" : "Updated");
               return -1;
             }
+
+          ret = set_missing_task_or_report (&task, &report);
+          if (ret)
+            return ret;
 
           ret = report_content_for_alert
                   (alert, report, task, get,
