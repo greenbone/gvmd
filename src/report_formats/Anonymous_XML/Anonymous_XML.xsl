@@ -10,6 +10,7 @@
     extension-element-prefixes="str date func gvm exslt">
   <xsl:output method="xml"
               indent="yes"
+              omit-xml-declaration="yes"
               encoding="UTF-8" />
 
 <!--
