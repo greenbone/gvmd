@@ -107,6 +107,8 @@ create_report_format_element_start (gmp_parser_t *gmp_parser, const gchar *name,
  *
  * @param[in]  entity  Entity.
  * @param[in]  name    Name of child.
+ *
+ * @return Text of child if there is such a child, else NULL.
  */
 static char *
 child_or_null (entity_t entity, const gchar *name)
