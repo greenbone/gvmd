@@ -64,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix QoD handling in nvti cache and test_alert [#954](https://github.com/greenbone/gvmd/pull/954)
 - Add target's reverse_lookup_* options [#959](https://github.com/greenbone/gvmd/pull/959)
 - Fix "Start Task" alerts by using alert owner [#957](https://github.com/greenbone/gvmd/pull/957)
+- Fix Verinice ISM report format and update version [#961](https://github.com/greenbone/gvmd/pull/961)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
