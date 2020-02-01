@@ -243,7 +243,7 @@ parse_report_format_entity (entity_t report_format,
                   if (strcmp (entity_name (option), "option") == 0)
                     array_add (options, g_strdup (entity_text (option)));
 
-                  children = next_entities (options_children);
+                  options_children = next_entities (options_children);
                 }
             }
 
