@@ -90,6 +90,7 @@
 #include "gmp_get.h"
 #include "gmp_configs.h"
 #include "gmp_port_lists.h"
+#include "gmp_report_formats.h"
 #include "gmp_tickets.h"
 #include "gmp_tls_certificates.h"
 #include "manage.h"
@@ -1023,79 +1024,6 @@ create_report_data_reset (create_report_data_t *data)
   free (data->type);
 
   memset (data, 0, sizeof (create_report_data_t));
-}
-
-/**
- * @brief Command data for the create_report_format command.
- */
-typedef struct
-{
-  char *content_type;     ///< Content type.
-  char *description;      ///< Description.
-  char *extension;        ///< File extension.
-  char *file;             ///< Current file during ...GRFR_REPORT_FORMAT_FILE.
-  char *file_name;        ///< Name of current file.
-  array_t *files;         ///< All files.
-  char *id;               ///< ID.
-  int import;             ///< Boolean.  Whether to import a format.
-  char *name;             ///< Name.
-  char *param_value;      ///< Param value during ...GRFR_REPORT_FORMAT_PARAM.
-  char *param_default;    ///< Default value for above param.
-  char *param_name;       ///< Name of above param.
-  char *param_option;     ///< Current option of above param.
-  array_t *param_options; ///< Options for above param.
-  array_t *params_options; ///< Options for all params.
-  char *param_type;       ///< Type of above param.
-  char *param_type_min;   ///< Min qualifier of above type.
-  char *param_type_max;   ///< Max qualifier of above type.
-  array_t *params;        ///< All params.
-  char *signature;        ///< Signature.
-  char *summary;          ///< Summary.
-  char *copy;             ///< UUID of Report Format to copy.
-} create_report_format_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_report_format_data_reset (create_report_format_data_t *data)
-{
-  free (data->content_type);
-  free (data->description);
-  free (data->extension);
-  free (data->file);
-  free (data->file_name);
-  array_free (data->files);
-  free (data->id);
-  free (data->name);
-  free (data->copy);
-  free (data->param_default);
-  free (data->param_name);
-
-  if (data->params_options)
-    {
-      guint index = data->params_options->len;
-      while (index--)
-        {
-          array_t *options;
-          options = (array_t*) g_ptr_array_index (data->params_options, index);
-          if (options)
-            array_free (options);
-        }
-      g_ptr_array_free (data->params_options, TRUE);
-    }
-
-  free (data->param_type);
-  free (data->param_type_min);
-  free (data->param_type_max);
-  free (data->param_value);
-  array_free (data->params);
-  free (data->signature);
-  free (data->summary);
-
-  memset (data, 0, sizeof (create_report_format_data_t));
 }
 
 /**
@@ -3715,7 +3643,6 @@ typedef union
   create_permission_data_t create_permission;         ///< create_permission
   create_port_range_data_t create_port_range;         ///< create_port_range
   create_report_data_t create_report;                 ///< create_report
-  create_report_format_data_t create_report_format;   ///< create_report_format
   create_role_data_t create_role;                     ///< create_role
   create_scanner_data_t create_scanner;               ///< create_scanner
   create_schedule_data_t create_schedule;             ///< create_schedule
@@ -3887,12 +3814,6 @@ static create_role_data_t *create_role_data
  */
 static create_report_data_t *create_report_data
  = (create_report_data_t*) &(command_data.create_report);
-
-/**
- * @brief Parser callback data for CREATE_REPORT_FORMAT.
- */
-static create_report_format_data_t *create_report_format_data
- = (create_report_format_data_t*) &(command_data.create_report_format);
 
 /**
  * @brief Parser callback data for CREATE_SCANNER.
@@ -4547,33 +4468,7 @@ typedef enum
   CLIENT_CREATE_PORT_RANGE_PORT_LIST,
   CLIENT_CREATE_PORT_RANGE_START,
   CLIENT_CREATE_PORT_RANGE_TYPE,
-  /* CREATE_REPORT_FORMAT. */
   CLIENT_CREATE_REPORT_FORMAT,
-  CLIENT_CREATE_REPORT_FORMAT_COPY,
-  CLIENT_CRF_GRFR,
-  CLIENT_CRF_GRFR_REPORT_FORMAT,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_FILE,
-  /* This is here to support importing of older report formats. */
-  CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_NAME,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT_REPORT_FORMAT,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE_REPORT_FORMAT,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PREDEFINED,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST,
   /* CREATE_REPORT. */
   CLIENT_CREATE_REPORT,
   CLIENT_CREATE_REPORT_IN_ASSETS,
@@ -5256,7 +5151,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_REPORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT);
         else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_REPORT_FORMAT);
+          {
+            create_report_format_start (gmp_parser, attribute_names,
+                                        attribute_values);
+            set_client_state (CLIENT_CREATE_REPORT_FORMAT);
+          }
         else if (strcasecmp ("CREATE_SCANNER", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCANNER);
         else if (strcasecmp ("CREATE_SCHEDULE", element_name) == 0)
@@ -7943,105 +7842,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_FORMAT:
-        if (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0)
-          {
-            create_report_format_data->import = 1;
-            set_client_state (CLIENT_CRF_GRFR);
-          }
-        else if (strcasecmp ("COPY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_REPORT_FORMAT_COPY);
-        ELSE_READ_OVER;
-
-      case CLIENT_CRF_GRFR:
-        if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
-          {
-            create_report_format_data->files = make_array ();
-            create_report_format_data->params = make_array ();
-            create_report_format_data->params_options = make_array ();
-            append_attribute (attribute_names, attribute_values, "id",
-                              &create_report_format_data->id);
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT:
-        if (strcasecmp ("CONTENT_TYPE", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE);
-        else if (strcasecmp ("DESCRIPTION", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION);
-        else if (strcasecmp ("EXTENSION", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION);
-        else if (strcasecmp ("GLOBAL", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL);
-        else if (strcasecmp ("FILE", element_name) == 0)
-          {
-            assert (create_report_format_data->file == NULL);
-            assert (create_report_format_data->file_name == NULL);
-            gvm_append_string (&create_report_format_data->file, "");
-            append_attribute (attribute_names, attribute_values, "name",
-                              &create_report_format_data->file_name);
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_FILE);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_NAME);
-        else if (strcasecmp ("PARAM", element_name) == 0)
-          {
-            assert (create_report_format_data->param_name == NULL);
-            assert (create_report_format_data->param_type == NULL);
-            assert (create_report_format_data->param_value == NULL);
-            gvm_append_string (&create_report_format_data->param_name, "");
-            gvm_append_string (&create_report_format_data->param_value, "");
-            create_report_format_data->param_options = make_array ();
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-          }
-        else if (strcasecmp ("PREDEFINED", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PREDEFINED);
-        else if (strcasecmp ("SIGNATURE", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE);
-        else if (strcasecmp ("SUMMARY", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY);
-        ELSE_READ_OVER;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
-        if (strcasecmp ("DEFAULT", element_name) == 0)
-          {
-            gvm_append_string (&create_report_format_data->param_default, "");
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME);
-        else if (strcasecmp ("OPTIONS", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS);
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          {
-            gvm_append_string (&create_report_format_data->param_type, "");
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
-          }
-        else if (strcasecmp ("VALUE", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE);
-        ELSE_READ_OVER;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS:
-        if (strcasecmp ("OPTION", element_name) == 0)
-          {
-            gvm_append_string (&create_report_format_data->param_option, "");
-            set_client_state
-             (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
-        if (strcasecmp ("MAX", element_name) == 0)
-          {
-            set_client_state
-             (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX);
-          }
-        else if (strcasecmp ("MIN", element_name) == 0)
-          {
-            set_client_state
-             (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN);
-          }
-        ELSE_READ_OVER;
+        create_report_format_element_start (gmp_parser, element_name,
+                                            attribute_names,
+                                            attribute_values);
+        break;
 
       case CLIENT_CREATE_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -22155,294 +21959,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_TASK, NAME);
 
       case CLIENT_CREATE_REPORT_FORMAT:
-        {
-          report_format_t new_report_format;
-
-          if (create_report_format_data->copy)
-            {
-              switch (copy_report_format (create_report_format_data->name,
-                                          create_report_format_data->copy,
-                                          &new_report_format))
-              {
-                case 0:
-                  {
-                    char *uuid;
-                    uuid = report_format_uuid (new_report_format);
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
-                                             ("create_report_format"),
-                                             uuid);
-                    log_event ("report_format", "Report Format", uuid, "created");
-                    free (uuid);
-                    break;
-                  }
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_report_format",
-                                      "Report Format exists already"));
-                  log_event_fail ("report_format", "Report Format", NULL,
-                                  "created");
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("create_report_format",
-                                                 "report_format",
-                                                 create_report_format_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  log_event_fail ("report_format", "Report Format", NULL,
-                                  "created");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_report_format",
-                                      "Permission denied"));
-                  log_event_fail ("report_format", "Report Format", NULL,
-                                  "created");
-                  break;
-                case -1:
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("create_report_format"));
-                  log_event_fail ("report_format", "Report Format", NULL,
-                                  "created");
-                  break;
-              }
-            }
-          else if (create_report_format_data->import)
-            {
-              array_terminate (create_report_format_data->files);
-              array_terminate (create_report_format_data->params);
-              array_terminate (create_report_format_data->params_options);
-
-              if (create_report_format_data->name == NULL)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "GET_REPORT_FORMATS_RESPONSE must have a"
-                                    " NAME element"));
-              else if (strlen (create_report_format_data->name) == 0)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "GET_REPORT_FORMATS_RESPONSE NAME must be"
-                                    " at least one character long"));
-              else if (create_report_format_data->id == NULL)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "GET_REPORT_FORMATS_RESPONSE must have an"
-                                    " ID attribute"));
-              else if (strlen (create_report_format_data->id) == 0)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "GET_REPORT_FORMATS_RESPONSE ID must be"
-                                    " at least one character long"));
-              else if (!is_uuid (create_report_format_data->id))
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "GET_REPORT_FORMATS_RESPONSE ID must be"
-                                    " a UUID"));
-              else switch (create_report_format
-                            (create_report_format_data->id,
-                             create_report_format_data->name,
-                             create_report_format_data->content_type,
-                             create_report_format_data->extension,
-                             create_report_format_data->summary,
-                             create_report_format_data->description,
-                             0,
-                             create_report_format_data->files,
-                             create_report_format_data->params,
-                             create_report_format_data->params_options,
-                             create_report_format_data->signature,
-                             &new_report_format))
-                {
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("create_report_format"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Report format exists already"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 2:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Every FILE must have a name"
-                                        " attribute"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 3:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Parameter value validation failed"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 4:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Parameter default validation failed"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 5:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "PARAM requires a DEFAULT element"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 6:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "PARAM MIN or MAX out of range"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 7:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "PARAM requires a TYPE element"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 8:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Duplicate PARAM name"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 9:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Bogus PARAM type"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  case 99:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Permission denied"));
-                    log_event_fail ("report_format", "Report Format", NULL,
-                                    "created");
-                    break;
-                  default:
-                    {
-                      char *uuid = report_format_uuid (new_report_format);
-                      SENDF_TO_CLIENT_OR_FAIL
-                       (XML_OK_CREATED_ID ("create_report_format"),
-                        uuid);
-                      log_event ("report_format", "Report Format", uuid, "created");
-                      free (uuid);
-                      break;
-                    }
-                }
-            }
-          else
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_report_format",
-                                "A GET_REPORT_FORMATS element is required"));
-
-          create_report_format_data_reset (create_report_format_data);
+        if (create_report_format_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_REPORT_FORMAT, COPY);
-      case CLIENT_CRF_GRFR:
-        set_client_state (CLIENT_CREATE_REPORT_FORMAT);
         break;
-      CLOSE (CLIENT_CRF_GRFR, REPORT_FORMAT);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, CONTENT_TYPE);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, DESCRIPTION);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, EXTENSION);
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_FILE:
-        {
-          gchar *string;
-
-          assert (create_report_format_data->files);
-          assert (create_report_format_data->file);
-          assert (create_report_format_data->file_name);
-
-          string = g_strconcat (create_report_format_data->file_name,
-                                "0",
-                                create_report_format_data->file,
-                                NULL);
-          string[strlen (create_report_format_data->file_name)] = '\0';
-          array_add (create_report_format_data->files, string);
-          gvm_free_string_var (&create_report_format_data->file);
-          gvm_free_string_var (&create_report_format_data->file_name);
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-          break;
-        }
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, GLOBAL);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, NAME);
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
-        {
-          create_report_format_param_t *param;
-
-          assert (create_report_format_data->params);
-          assert (create_report_format_data->param_name);
-          assert (create_report_format_data->param_value);
-
-          param = g_malloc (sizeof (*param));
-          param->fallback
-           = create_report_format_data->param_default
-              ? g_strdup (create_report_format_data->param_default)
-              : NULL;
-          param->name = g_strdup (create_report_format_data->param_name);
-          param->type
-           = create_report_format_data->param_type
-              ? g_strdup (create_report_format_data->param_type)
-              : NULL;
-          param->type_max
-           = create_report_format_data->param_type_max
-              ? g_strdup (create_report_format_data->param_type_max)
-              : NULL;
-          param->type_min
-           = create_report_format_data->param_type_min
-              ? g_strdup (create_report_format_data->param_type_min)
-              : NULL;
-          param->value = g_strdup (create_report_format_data->param_value);
-
-          array_add (create_report_format_data->params, param);
-          gvm_free_string_var (&create_report_format_data->param_default);
-          gvm_free_string_var (&create_report_format_data->param_name);
-          gvm_free_string_var (&create_report_format_data->param_type);
-          gvm_free_string_var (&create_report_format_data->param_type_max);
-          gvm_free_string_var (&create_report_format_data->param_type_min);
-          gvm_free_string_var (&create_report_format_data->param_value);
-
-          array_terminate (create_report_format_data->param_options);
-          array_add (create_report_format_data->params_options,
-                     create_report_format_data->param_options);
-
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-          break;
-        }
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, DEFAULT);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, NAME);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, TYPE);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, OPTIONS);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, VALUE);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, PREDEFINED);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SIGNATURE);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SUMMARY);
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
-        array_add (create_report_format_data->param_options,
-                   create_report_format_data->param_option);
-        create_report_format_data->param_option = NULL;
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS);
-        break;
-
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE, MAX);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE, MIN);
 
       case CLIENT_CREATE_ROLE:
         {
@@ -27559,52 +27078,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &create_report_data->host_start);
 
 
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE,
-              &create_report_format_data->content_type);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION,
-              &create_report_format_data->description);
-
-      APPEND (CLIENT_CREATE_REPORT_FORMAT_COPY,
-              &create_report_format_data->copy);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION,
-              &create_report_format_data->extension);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_FILE,
-              &create_report_format_data->file);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_NAME,
-              &create_report_format_data->name);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT,
-              &create_report_format_data->param_default);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME,
-              &create_report_format_data->param_name);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION,
-              &create_report_format_data->param_option);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE,
-              &create_report_format_data->param_type);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX,
-              &create_report_format_data->param_type_max);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN,
-              &create_report_format_data->param_type_min);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
-              &create_report_format_data->param_value);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE,
-              &create_report_format_data->signature);
-
-      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY,
-              &create_report_format_data->summary);
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
+      case CLIENT_CREATE_REPORT_FORMAT:
+        create_report_format_element_text (text, text_len);
         break;
 
 
