@@ -43,7 +43,7 @@ typedef struct
 
 int
 create_report_format (const char *, const char *, const char *, const char *,
-                      const char *, const char *, int, array_t *, array_t *,
+                      const char *, const char *, array_t *, array_t *,
                       array_t *, const char *, report_format_t *);
 
 int

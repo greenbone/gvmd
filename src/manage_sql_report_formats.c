@@ -525,7 +525,6 @@ compare_files (gconstpointer one, gconstpointer two)
  * @param[in]   extension      File extension of format.
  * @param[in]   summary        Summary of format.
  * @param[in]   description    Description of format.
- * @param[in]   global         Whether the report is global.
  * @param[in]   files          Array of memory.  Each item is a file name
  *                             string, a terminating NULL, the file contents
  *                             in base64 and a terminating NULL.
@@ -545,13 +544,13 @@ compare_files (gconstpointer one, gconstpointer two)
 int
 create_report_format (const char *uuid, const char *name,
                       const char *content_type, const char *extension,
-                      const char *summary, const char *description, int global,
+                      const char *summary, const char *description,
                       array_t *files, array_t *params, array_t *params_options,
                       const char *signature, report_format_t *report_format)
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *quoted_signature, *file_name, *dir;
-  gchar *candidate_name, *new_uuid, *uuid_actual;
+  gchar *candidate_name, *new_uuid, *uuid_actual, *report_dir;
   report_format_t report_format_rowid;
   int index, num;
   gchar *format_signature = NULL;
@@ -582,7 +581,7 @@ create_report_format (const char *uuid, const char *name,
                               uuid_actual ? uuid_actual : uuid,
                               extension,
                               content_type,
-                              global & 1);
+                              0); /* Old global flag. */
 
       index = 0;
       locale = setlocale (LC_ALL, "C");
@@ -659,12 +658,6 @@ create_report_format (const char *uuid, const char *name,
   sql_begin_immediate ();
 
   if (acl_user_may ("create_report_format") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (global && acl_user_can_everything (current_credentials.uuid) == 0)
     {
       sql_rollback ();
       return 99;
@@ -793,18 +786,11 @@ create_report_format (const char *uuid, const char *name,
 
   /* Write files to disk. */
 
-  assert (global == 0);
-  if (global)
-    dir = predefined_report_format_dir (new_uuid ? new_uuid : uuid);
-  else
-    {
-      assert (current_credentials.uuid);
-      dir = g_build_filename (GVMD_STATE_DIR,
-                              "report_formats",
-                              current_credentials.uuid,
-                              new_uuid ? new_uuid : uuid,
-                              NULL);
-    }
+  dir = g_build_filename (GVMD_STATE_DIR,
+                          "report_formats",
+                          current_credentials.uuid,
+                          new_uuid ? new_uuid : uuid,
+                          NULL);
 
   if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
     {
@@ -827,32 +813,27 @@ create_report_format (const char *uuid, const char *name,
       return -1;
     }
 
-  if (global == 0)
+  /* glib seems to apply the mode to the first dir only. */
+
+  report_dir = g_build_filename (GVMD_STATE_DIR,
+                                 "report_formats",
+                                 current_credentials.uuid,
+                                 NULL);
+
+  if (chmod (report_dir, 0755 /* rwxr-xr-x */))
     {
-      gchar *report_dir;
-
-      /* glib seems to apply the mode to the first dir only. */
-
-      report_dir = g_build_filename (GVMD_STATE_DIR,
-                                     "report_formats",
-                                     current_credentials.uuid,
-                                     NULL);
-
-      if (chmod (report_dir, 0755 /* rwxr-xr-x */))
-        {
-          g_warning ("%s: chmod failed: %s",
-                     __func__,
-                     strerror (errno));
-          g_free (dir);
-          g_free (report_dir);
-          g_free (quoted_name);
-          g_free (new_uuid);
-          sql_rollback ();
-          return -1;
-        }
-
+      g_warning ("%s: chmod failed: %s",
+                 __func__,
+                 strerror (errno));
+      g_free (dir);
       g_free (report_dir);
+      g_free (quoted_name);
+      g_free (new_uuid);
+      sql_rollback ();
+      return -1;
     }
+
+  g_free (report_dir);
 
   /* glib seems to apply the mode to the first dir only. */
   if (chmod (dir, 0755 /* rwxr-xr-x */))
@@ -942,40 +923,23 @@ create_report_format (const char *uuid, const char *name,
   quoted_signature = signature ? sql_quote (signature) : NULL;
   g_free (format_signature);
 
-  if (global)
-    sql ("INSERT INTO report_formats"
-         " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags, creation_time,"
-         "  modification_time)"
-         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i, 0,"
-         "         m_now (), m_now ());",
-         new_uuid ? new_uuid : uuid,
-         quoted_name,
-         quoted_summary ? quoted_summary : "",
-         quoted_description ? quoted_description : "",
-         quoted_extension ? quoted_extension : "",
-         quoted_content_type ? quoted_content_type : "",
-         quoted_signature ? quoted_signature : "",
-         format_trust,
-         time (NULL));
-  else
-    sql ("INSERT INTO report_formats"
-         " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags, creation_time,"
-         "  modification_time)"
-         " VALUES ('%s', '%s',"
-         " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '%s', '%s', '%s', %i, %i, 0, m_now (), m_now ());",
-         new_uuid ? new_uuid : uuid,
-         quoted_name,
-         current_credentials.uuid,
-         quoted_summary ? quoted_summary : "",
-         quoted_description ? quoted_description : "",
-         quoted_extension ? quoted_extension : "",
-         quoted_content_type ? quoted_content_type : "",
-         quoted_signature ? quoted_signature : "",
-         format_trust,
-         time (NULL));
+  sql ("INSERT INTO report_formats"
+       " (uuid, name, owner, summary, description, extension, content_type,"
+       "  signature, trust, trust_time, flags, creation_time,"
+       "  modification_time)"
+       " VALUES ('%s', '%s',"
+       " (SELECT id FROM users WHERE users.uuid = '%s'),"
+       " '%s', '%s', '%s', '%s', '%s', %i, %i, 0, m_now (), m_now ());",
+       new_uuid ? new_uuid : uuid,
+       quoted_name,
+       current_credentials.uuid,
+       quoted_summary ? quoted_summary : "",
+       quoted_description ? quoted_description : "",
+       quoted_extension ? quoted_extension : "",
+       quoted_content_type ? quoted_content_type : "",
+       quoted_signature ? quoted_signature : "",
+       format_trust,
+       time (NULL));
 
   g_free (new_uuid);
   g_free (quoted_summary);

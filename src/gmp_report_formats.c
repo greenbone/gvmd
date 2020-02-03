@@ -381,7 +381,6 @@ create_report_format_run (gmp_parser_t *gmp_parser, GError **error)
                                          extension,
                                          summary,
                                          description,
-                                         0,                  /* Global. */
                                          files,
                                          params,
                                          params_options,
