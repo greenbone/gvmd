@@ -3565,6 +3565,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   char *host, *ca_pub, *key_pub, *key_priv;
   int rc, port;
   scanner_t scanner;
+  gboolean started;
 
   scanner = task_scanner (task);
   host = scanner_host (scanner);
@@ -3572,6 +3573,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
+  started = FALSE;
 
   while (1)
     {
@@ -3646,6 +3648,14 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                    key_priv);
                   rc = 0;
                   break;
+                }
+              else if (osp_scan_status == OSP_SCAN_STATUS_RUNNING
+                       && started == FALSE)
+                {
+                  set_task_run_status (task, TASK_STATUS_RUNNING);
+                  set_report_scan_run_status (global_current_report,
+                                              TASK_STATUS_RUNNING);
+                  started = TRUE;
                 }
             }
         }
@@ -4455,9 +4465,6 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       g_free (report_id);
       exit (-1);
     }
-
-  set_task_run_status (task, TASK_STATUS_RUNNING);
-  set_report_scan_run_status (global_current_report, TASK_STATUS_RUNNING);
 
   snprintf (title, sizeof (title), "gvmd: OSP: Handling scan %s", report_id);
   proctitle_set (title);
@@ -5724,7 +5731,8 @@ stop_task (const char *task_id)
     return 3;
 
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
-      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP)
+      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP
+      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
     return stop_osp_task (task);
 
   return stop_task_internal (task);
@@ -6164,13 +6172,13 @@ get_system_report_types (const char *required_type, gchar ***start,
       scanner_type_t slave_type;
 
       slave = 0;
-      slave_type = SCANNER_TYPE_NONE;
 
       if (find_scanner_with_permission (slave_id, &slave, "get_scanners"))
         return -1;
       if (slave == 0)
         return 2;
 
+      slave_type = scanner_type (slave);
       if (slave_type == SCANNER_TYPE_GMP)
         return get_slave_system_report_types (required_type, start, types,
                                               slave);
