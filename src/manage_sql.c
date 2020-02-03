@@ -11769,8 +11769,9 @@ email_secinfo (alert_t alert, task_t task, event_t event,
                const gchar *from_address)
 {
   gchar *alert_subject, *message, *subject, *example, *list, *type, *base64;
-  gchar *body;
-  char *notice, *recipient_credential_id;
+  gchar *term, *body;
+  char *notice, *recipient_credential_id, *condition_filter_id;
+  filter_t condition_filter;
   credential_t recipient_credential;
   int ret, count;
 
@@ -11824,10 +11825,24 @@ email_secinfo (alert_t alert, task_t task, event_t event,
                                   strlen (list));
     }
 
+  condition_filter = 0;
+  term = NULL;
+  condition_filter_id = alert_data (alert, "condition", "filter_id");
+  if (condition_filter_id)
+    {
+      gchar *quoted_filter_id;
+      quoted_filter_id = sql_quote (condition_filter_id);
+      sql_int64 (&condition_filter,
+                 "SELECT id FROM filters WHERE uuid = '%s'",
+                 quoted_filter_id);
+      term = filter_term (condition_filter_id);
+    }
+  free (condition_filter_id);
+
   if (message && strlen (message))
     body = alert_message_print (message, event, type,
                                 task, alert, condition,
-                                NULL, 0, NULL, NULL, NULL,
+                                NULL, condition_filter, term, NULL, NULL,
                                 list,
                                 list ? strlen (list) : 0,
                                 0, count, 0);
@@ -11845,6 +11860,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
       free (condition_desc);
     }
 
+  g_free (term);
   g_free (message);
   g_free (list);
 
