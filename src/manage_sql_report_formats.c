@@ -4218,6 +4218,38 @@ create_report_format_from_file (const gchar *path)
 }
 
 /**
+ * @brief Check if a report format has been updated in the feed.
+ *
+ * @param[in]  path           Full path to report format XML in feed.
+ * @param[in]  report_format  Report Format.
+ *
+ * @return 1 if updated in feed, else 0.
+ */
+int
+report_format_updated_in_feed (report_format_t report_format, const gchar *path)
+{
+  GStatBuf state;
+  int last_update;
+
+  last_update = sql_int ("SELECT modification_time FROM report_formats"
+                         " WHERE id = %llu;",
+                         report_format);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed report_format file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if (state.st_mtime <= last_update)
+    return 0;
+
+  return 1;
+}
+
+/**
  * @brief Sync a single report format with the feed.
  *
  * @param[in]  path  Path to report format XML in feed.
@@ -4255,7 +4287,7 @@ sync_report_format_with_feed (const gchar *path)
 
       g_debug ("%s: considering %s for update", __func__, path);
 
-      if (0) // report_format_updated_in_feed (report_format, full_path))
+      if (report_format_updated_in_feed (report_format, full_path))
         {
           g_debug ("%s: updating %s", __func__, path);
           update_report_format_from_file (report_format, full_path);
