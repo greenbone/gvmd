@@ -226,4 +226,7 @@ init_param_option_iterator (iterator_t*, report_format_param_t, int,
 const char*
 param_option_iterator_value (iterator_t *);
 
+void
+manage_sync_report_formats ();
+
 #endif /* not _GVMD_MANAGE_REPORT_FORMATS_H */
