@@ -444,6 +444,38 @@ nvt_info_count (const get_data_t *get)
 }
 
 /**
+ * @brief Count number of nvts created or modified after a given time.
+ *
+ * @param[in]  get            GET params.
+ * @param[in]  count_time     Time NVTs must be created or modified after.
+ * @param[in]  get_modified   Whether to get the modification time.
+ *
+ * @return Total number of nvts in filtered set.
+ */
+int
+nvt_info_count_after (const get_data_t *get, time_t count_time,
+                      gboolean get_modified)
+{
+  static const char *filter_columns[] = NVT_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = NVT_ITERATOR_COLUMNS;
+  gchar *extra_where;
+  int ret;
+
+  if (get_modified)
+    extra_where = g_strdup_printf (" AND modification_time > %ld",
+                                   count_time);
+  else
+    extra_where = g_strdup_printf (" AND creation_time > %ld",
+                                   count_time);
+
+  ret = count ("nvt", get, columns, NULL, filter_columns, 0, 0, extra_where,
+               FALSE);
+
+  g_free (extra_where);
+  return ret;
+}
+
+/**
  * @brief Return SQL for selecting NVT's of a config from one family.
  *
  * @param[in]  config      Config.

@@ -1971,6 +1971,9 @@ init_nvt_info_iterator (iterator_t*, get_data_t*, const char*);
 int
 nvt_info_count (const get_data_t *);
 
+int
+nvt_info_count_after (const get_data_t *, time_t, gboolean);
+
 void
 init_nvt_iterator (iterator_t*, nvt_t, config_t, const char*, const char*, int,
                    const char*);

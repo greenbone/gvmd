@@ -14173,6 +14173,52 @@ event_applies (event_t event, const void *event_data,
 }
 
 /**
+ * @brief Return the SecInfo count .
+ *
+ * @param[in]  alert      Alert.
+ * @param[in]  filter_id  Condition filter id.
+ *
+ * @return 1 if met, else 0.
+ */
+static time_t
+alert_secinfo_count (alert_t alert, char *filter_id)
+{
+  get_data_t get;
+  int db_count, uuid_was_null;
+  event_t event;
+  gboolean get_modified;
+  time_t feed_version_epoch;
+
+  event = alert_event (alert);
+  get_modified = (event == EVENT_UPDATED_SECINFO);
+
+  if (current_credentials.uuid == NULL)
+    {
+      current_credentials.uuid = alert_owner_uuid (alert);
+      uuid_was_null = 1;
+    }
+  else
+    uuid_was_null = 0;
+
+  memset (&get, '\0', sizeof (get));
+  if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
+    get.filt_id = filter_id;
+
+  feed_version_epoch = nvts_feed_version_epoch ();
+  db_count = nvt_info_count_after (&get,
+                                   feed_version_epoch,
+                                   get_modified);
+
+  if (uuid_was_null)
+    {
+      free (current_credentials.uuid);
+      current_credentials.uuid = NULL;
+    }
+
+  return db_count;
+}
+
+/**
  * @brief Return whether the condition of an alert is met by a task.
  *
  * @param[in]  task       Task.
@@ -14214,28 +14260,10 @@ condition_met (task_t task, report_t report, alert_t alert,
 
           if (task == 0)
             {
-              get_data_t get;
-              int db_count, uuid_was_null;
-
-              /* NVT event. */
-
-              if (current_credentials.uuid == NULL)
-                {
-                  current_credentials.uuid = alert_owner_uuid (alert);
-                  uuid_was_null = 1;
-                }
-              else
-                uuid_was_null = 0;
-
-              memset (&get, '\0', sizeof (get));
-              if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
-                get.filt_id = filter_id;
-              db_count = nvt_info_count (&get);
-              if (uuid_was_null)
-                {
-                  free (current_credentials.uuid);
-                  current_credentials.uuid = NULL;
-                }
+              /* SecInfo event. */
+              int db_count;
+              db_count = alert_secinfo_count (alert, filter_id);
+ 
               if (db_count >= count)
                 return 1;
               break;
