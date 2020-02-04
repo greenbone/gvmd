@@ -33466,12 +33466,6 @@ new_cves_list (event_t event, const void* event_data, alert_t alert,
                    "                                = 'scap_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'scap_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
                    " ORDER BY modification_time DESC;");
 
   while (next (&rows))
@@ -33557,12 +33551,6 @@ new_cpes_list (event_t event, const void* event_data, alert_t alert,
                    "                                = 'scap_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'scap_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
                    " ORDER BY modification_time DESC;");
 
   while (next (&rows))
@@ -33647,12 +33635,6 @@ new_cert_bunds_list (event_t event, const void* event_data, alert_t alert,
                    "                                = 'cert_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'cert_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
                    " ORDER BY modification_time DESC;");
 
   while (next (&rows))
@@ -33734,12 +33716,6 @@ new_dfn_certs_list (event_t event, const void* event_data, alert_t alert,
                    "                                = 'cert_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'cert_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
                    " ORDER BY modification_time DESC;");
 
   while (next (&rows))
@@ -33821,12 +33797,6 @@ new_oval_defs_list (event_t event, const void* event_data, alert_t alert,
                    "                                = 'scap_check_time')"
                    "                         AS INTEGER),"
                    "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'scap_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
                    " ORDER BY modification_time DESC;");
 
   while (next (&rows))
