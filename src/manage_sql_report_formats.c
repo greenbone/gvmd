@@ -595,6 +595,7 @@ compare_files (gconstpointer one, gconstpointer two)
 /**
  * @brief Create a report format.
  *
+ * @param[in]   check_access   Whether to check for permission.
  * @param[in]   uuid           UUID of format.
  * @param[in]   name           Name of format.
  * @param[in]   content_type   Content type of format.
@@ -618,11 +619,13 @@ compare_files (gconstpointer one, gconstpointer two)
  *         denied, -1 error.
  */
 int
-create_report_format (const char *uuid, const char *name,
-                      const char *content_type, const char *extension,
-                      const char *summary, const char *description,
-                      array_t *files, array_t *params, array_t *params_options,
-                      const char *signature, report_format_t *report_format)
+create_report_format_internal (int check_access, const char *uuid,
+                               const char *name, const char *content_type,
+                               const char *extension, const char *summary,
+                               const char *description,
+                               array_t *files, array_t *params,
+                               array_t *params_options, const char *signature,
+                               report_format_t *report_format)
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *quoted_signature, *file_name, *dir;
@@ -733,7 +736,7 @@ create_report_format (const char *uuid, const char *name,
 
   sql_begin_immediate ();
 
-  if (acl_user_may ("create_report_format") == 0)
+  if (check_access && (acl_user_may ("create_report_format") == 0))
     {
       sql_rollback ();
       return 99;
@@ -1184,6 +1187,83 @@ create_report_format (const char *uuid, const char *name,
   sql_commit ();
 
   return 0;
+}
+
+/**
+ * @brief Create a report format.
+ *
+ * @param[in]   uuid           UUID of format.
+ * @param[in]   name           Name of format.
+ * @param[in]   content_type   Content type of format.
+ * @param[in]   extension      File extension of format.
+ * @param[in]   summary        Summary of format.
+ * @param[in]   description    Description of format.
+ * @param[in]   files          Array of memory.  Each item is a file name
+ *                             string, a terminating NULL, the file contents
+ *                             in base64 and a terminating NULL.
+ * @param[in]   params         Array of params.
+ * @param[in]   params_options Array.  Each item is an array corresponding to
+ *                             params.  Each item of an inner array is a string,
+ *                             the text of an option in a selection.
+ * @param[in]   signature      Signature.
+ * @param[out]  report_format  Created report format.
+ *
+ * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
+ *         validation failed, 4 param value validation failed, 5 param default
+ *         missing, 6 param min or max out of range, 7 param type missing,
+ *         8 duplicate param name, 9 bogus param type name, 99 permission
+ *         denied, -1 error.
+ */
+int
+create_report_format (const char *uuid, const char *name,
+                      const char *content_type, const char *extension,
+                      const char *summary, const char *description,
+                      array_t *files, array_t *params, array_t *params_options,
+                      const char *signature, report_format_t *report_format)
+{
+  return create_report_format_internal (1, uuid, name, content_type, extension,
+                                        summary, description, files, params,
+                                        params_options, signature,
+                                        report_format);
+}
+
+/**
+ * @brief Create a report format.
+ *
+ * @param[in]   uuid           UUID of format.
+ * @param[in]   name           Name of format.
+ * @param[in]   content_type   Content type of format.
+ * @param[in]   extension      File extension of format.
+ * @param[in]   summary        Summary of format.
+ * @param[in]   description    Description of format.
+ * @param[in]   files          Array of memory.  Each item is a file name
+ *                             string, a terminating NULL, the file contents
+ *                             in base64 and a terminating NULL.
+ * @param[in]   params         Array of params.
+ * @param[in]   params_options Array.  Each item is an array corresponding to
+ *                             params.  Each item of an inner array is a string,
+ *                             the text of an option in a selection.
+ * @param[in]   signature      Signature.
+ * @param[out]  report_format  Created report format.
+ *
+ * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
+ *         validation failed, 4 param value validation failed, 5 param default
+ *         missing, 6 param min or max out of range, 7 param type missing,
+ *         8 duplicate param name, 9 bogus param type name, 99 permission
+ *         denied, -1 error.
+ */
+static int
+create_report_format_no_acl (const char *uuid, const char *name,
+                             const char *content_type, const char *extension,
+                             const char *summary, const char *description,
+                             array_t *files, array_t *params,
+                             array_t *params_options, const char *signature,
+                             report_format_t *report_format)
+{
+  return create_report_format_internal (0, uuid, name, content_type, extension,
+                                        summary, description, files, params,
+                                        params_options, signature,
+                                        report_format);
 }
 
 /**
@@ -4036,7 +4116,7 @@ create_report_format_from_file (const gchar *path)
 
   /* Create the report format. */
 
-  switch (create_report_format /*_no_acl */ (report_format_id,
+  switch (create_report_format_no_acl (report_format_id,
                                        name,
                                        content_type,
                                        extension,
