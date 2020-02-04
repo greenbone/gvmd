@@ -1541,6 +1541,7 @@ DEF_ACCESS (nvt_dfn_cert_adv_iterator_name, 0);
  * @brief Count number of SecInfo items created or modified after a given time.
  *
  * @param[in]  get            GET params.
+ * @param[in]  type           The type of SecInfo to count.
  * @param[in]  count_time     Time SecInfo must be created or modified after.
  * @param[in]  get_modified   Whether to get the modification time.
  *
