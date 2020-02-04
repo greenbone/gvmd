@@ -14188,6 +14188,7 @@ alert_secinfo_count (alert_t alert, char *filter_id)
   event_t event;
   gboolean get_modified;
   time_t feed_version_epoch;
+  char *secinfo_type;
 
   event = alert_event (alert);
   get_modified = (event == EVENT_UPDATED_SECINFO);
@@ -14204,10 +14205,33 @@ alert_secinfo_count (alert_t alert, char *filter_id)
   if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
     get.filt_id = filter_id;
 
-  feed_version_epoch = nvts_feed_version_epoch ();
-  db_count = nvt_info_count_after (&get,
-                                   feed_version_epoch,
-                                   get_modified);
+  secinfo_type = alert_data (alert, "event", "secinfo_type");
+  printf ("secinfo_type: %s\n", secinfo_type);
+
+  if (strcmp (secinfo_type, "nvt") == 0)
+    {
+      feed_version_epoch = nvts_feed_version_epoch ();
+      db_count = nvt_info_count_after (&get,
+                                       feed_version_epoch,
+                                       get_modified);
+    }
+  else if (strcmp (secinfo_type, "cert_bund_adv") == 0
+           || strcmp (secinfo_type, "dfn_cert_adv") == 0)
+    {
+      feed_version_epoch = cert_check_time ();
+      db_count = secinfo_count_after (&get,
+                                      secinfo_type,
+                                      feed_version_epoch,
+                                      get_modified);
+    }
+  else // assume SCAP data
+    {
+      feed_version_epoch = scap_check_time ();
+      db_count = secinfo_count_after (&get,
+                                      secinfo_type,
+                                      feed_version_epoch,
+                                      get_modified);
+    }
 
   if (uuid_was_null)
     {

@@ -430,6 +430,30 @@ inserts_run (inserts_t *inserts)
 /* CPE data. */
 
 /**
+ * @brief Gets the SELECT columns for CPE iterators and counts.
+ *
+ * @return The SELECT columns.
+ */
+static const column_t*
+cpe_info_select_columns ()
+{
+  static column_t columns[] = CPE_INFO_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Gets the filter columns for CPE iterators and counts.
+ *
+ * @return The filter columns.
+ */
+static const char **
+cpe_info_filter_columns ()
+{
+  static const char *filter_columns[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
+  return filter_columns;
+}
+
+/**
  * @brief Count number of cpe.
  *
  * @param[in]  get  GET params.
@@ -546,6 +570,30 @@ DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
 
 
 /* CVE data. */
+
+/**
+ * @brief Gets the SELECT columns for CVE iterators and counts.
+ *
+ * @return The SELECT columns.
+ */
+static const column_t*
+cve_info_select_columns ()
+{
+  static column_t columns[] = CVE_INFO_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Gets the filter columns for CVE iterators and counts.
+ *
+ * @return The filter columns.
+ */
+static const char **
+cve_info_filter_columns ()
+{
+  static const char *filter_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
+  return filter_columns;
+}
 
 /**
  * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.
@@ -770,6 +818,30 @@ DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 8);
 
 
 /* OVAL data. */
+
+/**
+ * @brief Gets the SELECT columns for OVAL definition iterators and counts.
+ *
+ * @return The SELECT columns.
+ */
+static const column_t*
+ovaldef_info_select_columns ()
+{
+  static column_t columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Gets the filter columns for OVAL definition iterators and counts.
+ *
+ * @return The filter columns.
+ */
+static const char **
+ovaldef_info_filter_columns ()
+{
+  static const char *filter_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
+  return filter_columns;
+}
 
 /**
  * @brief Initialise an OVAL definition (ovaldef) info iterator.
@@ -1054,6 +1126,31 @@ ovaldef_cves (const char *id)
 /* CERT-Bund data. */
 
 /**
+ * @brief Gets the SELECT columns for CERT-Bund advisory iterators and counts.
+ *
+ * @return The SELECT columns.
+ */
+static const column_t*
+cert_bund_adv_info_select_columns ()
+{
+  static column_t columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Gets the filter columns for CERT-Bund advisory iterators and counts.
+ *
+ * @return The filter columns.
+ */
+static const char **
+cert_bund_adv_info_filter_columns ()
+{
+  static const char *filter_columns[]
+    = CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS;
+  return filter_columns;
+}
+
+/**
  * @brief Initialise an CERT-Bund advisory (cert_bund_adv) info iterator.
  *
  * @param[in]  iterator        Iterator.
@@ -1237,6 +1334,31 @@ DEF_ACCESS (nvt_cert_bund_adv_iterator_name, 0);
 /* DFN-CERT data. */
 
 /**
+ * @brief Gets the SELECT columns for DFN-CERT advisory iterators and counts.
+ *
+ * @return The SELECT columns.
+ */
+static const column_t*
+dfn_cert_adv_info_select_columns ()
+{
+  static column_t columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Gets the filter columns for DFN-CERT advisory iterators and counts.
+ *
+ * @return The filter columns.
+ */
+static const char **
+dfn_cert_adv_info_filter_columns ()
+{
+  static const char *filter_columns[]
+    = DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
+  return filter_columns;
+}
+
+/**
  * @brief Initialise an DFN-CERT advisory (dfn_cert_adv) info iterator.
  *
  * @param[in]  iterator        Iterator.
@@ -1414,6 +1536,71 @@ DEF_ACCESS (nvt_dfn_cert_adv_iterator_name, 0);
 
 
 /* All SecInfo data. */
+
+/**
+ * @brief Count number of SecInfo items created or modified after a given time.
+ *
+ * @param[in]  get            GET params.
+ * @param[in]  count_time     Time SecInfo must be created or modified after.
+ * @param[in]  get_modified   Whether to get the modification time.
+ *
+ * @return Total number of items in filtered set.
+ */
+int
+secinfo_count_after (const get_data_t *get,
+                     const char *type,
+                     time_t count_time,
+                     gboolean get_modified)
+{
+  const char **filter_columns;
+  const column_t *columns;
+  gchar *extra_where;
+  int ret;
+
+  if (strcmp (type, "cpe") == 0)
+    {
+      columns = cpe_info_select_columns ();
+      filter_columns = cpe_info_filter_columns ();
+    }
+  else if (strcmp (type, "cve") == 0)
+    {
+      columns = cve_info_select_columns ();
+      filter_columns = cve_info_filter_columns ();
+    }
+  else if (strcmp (type, "ovaldef") == 0)
+    {
+      columns = ovaldef_info_select_columns ();
+      filter_columns = ovaldef_info_filter_columns ();
+    }
+  else if (strcmp (type, "cert_bund_adv") == 0)
+    {
+      columns = cert_bund_adv_info_select_columns ();
+      filter_columns = cert_bund_adv_info_filter_columns ();
+    }
+  else if (strcmp (type, "dfn_cert_adv") == 0)
+    {
+      columns = dfn_cert_adv_info_select_columns ();
+      filter_columns = dfn_cert_adv_info_filter_columns ();
+    }
+  else
+    {
+      g_warning ("%s: Unexpected type %s", __func__, type);
+      return 0;
+    }
+
+  if (get_modified)
+    extra_where = g_strdup_printf (" AND modification_time > %ld",
+                                   count_time);
+  else
+    extra_where = g_strdup_printf (" AND creation_time > %ld",
+                                   count_time);
+
+  ret = count (type, get, (column_t*)columns, NULL, filter_columns,
+               0, 0, extra_where, FALSE);
+
+  g_free (extra_where);
+  return ret;
+}
 
 /**
  * @brief Initialise an ovaldi file iterator.

@@ -3488,6 +3488,9 @@ nvt_dfn_cert_adv_iterator_name (iterator_t*);
 
 /* All SecInfo Data */
 
+int
+secinfo_count_after (const get_data_t *, const char *, time_t, gboolean);
+
 void
 init_ovaldi_file_iterator (iterator_t*);
 
