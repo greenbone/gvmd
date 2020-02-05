@@ -3980,6 +3980,75 @@ feed_dir_report_formats ()
 }
 
 /**
+ * @brief Update a report format from an XML file.
+ *
+ * @param[in]  report_format    Existing report format.
+ * @param[in]  name             New name.
+ * @param[in]  content_type     New content type.
+ * @param[in]  extension        New extension.
+ * @param[in]  summary          New summary.
+ * @param[in]  description      New description.
+ * @param[in]  signature        New signature.
+ * @param[in]  files            New files.
+ * @param[in]  params           New params.
+ * @param[in]  params_options   Options for new params.
+ */
+static void
+update_report_format (report_format_t report_format, const gchar *name,
+                      const gchar *content_type, const gchar *extension,
+                      const gchar *summary, const gchar *description,
+                      const gchar *signature, array_t *files, array_t *params,
+                      array_t *params_options)
+{
+  gchar *quoted_name, *quoted_content_type, *quoted_extension, *quoted_summary;
+  gchar *quoted_description, *quoted_signature;
+
+  sql_begin_immediate ();
+
+  quoted_name = sql_quote (name ? name : "");
+  quoted_content_type = sql_quote (content_type ? content_type : "");
+  quoted_extension = sql_quote (extension ? extension : "");
+  quoted_summary = sql_quote (summary ? summary : "");
+  quoted_description = sql_quote (description ? description : "");
+  quoted_signature = sql_quote (signature ? signature : "");
+  sql ("UPDATE report_formats"
+       " SET name = '%s', content_type = '%s', extension = '%s',"
+       "     summary = '%s', description = '%s', signature = '%s',"
+       "     modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_name,
+       quoted_content_type,
+       quoted_extension,
+       quoted_summary,
+       quoted_description,
+       quoted_signature,
+       report_format);
+  g_free (quoted_name);
+  g_free (quoted_content_type);
+  g_free (quoted_extension);
+  g_free (quoted_summary);
+  g_free (quoted_description);
+  g_free (quoted_signature);
+
+  /* Replace the params. */
+
+  sql ("DELETE FROM report_format_param_options"
+       " WHERE report_format_param IN (SELECT id FROM report_format_params"
+       "                               WHERE report_format = %llu);",
+       report_format);
+  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
+       report_format);
+  //add_params (report_format, params, params_options);
+
+  /* Replace the files. */
+
+  //save_report_format_files (files);
+  // remove files not in 'files'
+
+  sql_commit ();
+}
+
+/**
  * @brief Grant 'Feed Import Roles' access to a report format.
  *
  * @param[in]  report_format_id  UUID of report format.
@@ -4058,10 +4127,8 @@ update_report_format_from_file (report_format_t report_format,
 
   /* Update the report format. */
 
-#if 0
   update_report_format (report_format, name, content_type, extension, summary,
                         description, signature, files, params, params_options);
-#endif
 
   /* Cleanup. */
 
