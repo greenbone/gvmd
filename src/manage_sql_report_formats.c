@@ -4241,6 +4241,8 @@ create_report_format_from_file (const gchar *path)
         {
           gchar *uuid;
 
+          resource_set_predefined ("report_format", new_report_format, 1);
+
           uuid = report_format_uuid (new_report_format);
           log_event ("report_format", "Report format", uuid, "created");
 
