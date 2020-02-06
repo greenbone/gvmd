@@ -861,6 +861,7 @@ add_report_format_params (report_format_t report_format, array_t *params,
  * @param[in]   check_access   Whether to check for permission.
  * @param[in]   may_exist      Whether it is OK if there is already a report
  *                             format with this UUID.
+ * @param[in]   active         Whether report format is active.
  * @param[in]   uuid           UUID of format.
  * @param[in]   name           Name of format.
  * @param[in]   content_type   Content type of format.
@@ -884,7 +885,7 @@ add_report_format_params (report_format_t report_format, array_t *params,
  *         denied, -1 error.
  */
 int
-create_report_format_internal (int check_access, int may_exist,
+create_report_format_internal (int check_access, int may_exist, int active,
                                const char *uuid, const char *name,
                                const char *content_type, const char *extension,
                                const char *summary, const char *description,
@@ -1160,7 +1161,7 @@ create_report_format_internal (int check_access, int may_exist,
        "  modification_time)"
        " VALUES ('%s', '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', '%s', '%s', '%s', %i, %i, 0, m_now (), m_now ());",
+       " '%s', '%s', '%s', '%s', '%s', %i, %i, %i, m_now (), m_now ());",
        new_uuid ? new_uuid : uuid,
        quoted_name,
        current_credentials.uuid,
@@ -1170,7 +1171,8 @@ create_report_format_internal (int check_access, int may_exist,
        quoted_content_type ? quoted_content_type : "",
        quoted_signature ? quoted_signature : "",
        format_trust,
-       time (NULL));
+       time (NULL),
+       active ? REPORT_FORMAT_FLAG_ACTIVE : 0);
 
   g_free (new_uuid);
   g_free (quoted_summary);
@@ -1236,6 +1238,7 @@ create_report_format (const char *uuid, const char *name,
 {
   return create_report_format_internal (1, /* Check permission. */
                                         0, /* Fail if report format exists. */
+                                        0, /* Active. */
                                         uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
@@ -1277,6 +1280,7 @@ create_report_format_no_acl (const char *uuid, const char *name,
 {
   return create_report_format_internal (0, /* Check permission. */
                                         1, /* Fail if report format exists. */
+                                        1, /* Active. */
                                         uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
