@@ -4018,6 +4018,7 @@ update_report_format (report_format_t report_format, const gchar *report_id, con
                       const gchar *signature, array_t *files, array_t *params,
                       array_t *params_options)
 {
+  int ret;
   gchar *quoted_name, *quoted_content_type, *quoted_extension, *quoted_summary;
   gchar *quoted_description, *quoted_signature;
 
@@ -4056,7 +4057,30 @@ update_report_format (report_format_t report_format, const gchar *report_id, con
        report_format);
   sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
        report_format);
-  //add_params (report_format, params, params_options);
+
+  ret = add_report_format_params (report_format, params, params_options);
+  if (ret)
+    {
+      if (ret == 3)
+        g_warning ("%s: Parameter value validation failed", __func__);
+      else if (ret == 4)
+        g_warning ("%s: Parameter default validation failed", __func__);
+      else if (ret == 5)
+        g_warning ("%s: PARAM requires a DEFAULT element", __func__);
+      else if (ret == 6)
+        g_warning ("%s: PARAM MIN or MAX out of range", __func__);
+      else if (ret == 7)
+        g_warning ("%s: PARAM requires a TYPE element", __func__);
+      else if (ret == 8)
+        g_warning ("%s: Duplicate PARAM name", __func__);
+      else if (ret == 9)
+        g_warning ("%s: Bogus PARAM type", __func__);
+      else if (ret)
+        g_warning ("%s: Internal error", __func__);
+
+      sql_rollback ();
+      return;
+    }
 
   /* Replace the files. */
 
