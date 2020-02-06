@@ -727,6 +727,8 @@ save_report_format_files (const gchar *report_id, array_t *files,
  * @brief Create a report format.
  *
  * @param[in]   check_access   Whether to check for permission.
+ * @param[in]   may_exist      Whether it is OK if there is already a report
+ *                             format with this UUID.
  * @param[in]   uuid           UUID of format.
  * @param[in]   name           Name of format.
  * @param[in]   content_type   Content type of format.
@@ -750,10 +752,10 @@ save_report_format_files (const gchar *report_id, array_t *files,
  *         denied, -1 error.
  */
 int
-create_report_format_internal (int check_access, const char *uuid,
-                               const char *name, const char *content_type,
-                               const char *extension, const char *summary,
-                               const char *description,
+create_report_format_internal (int check_access, int may_exist,
+                               const char *uuid, const char *name,
+                               const char *content_type, const char *extension,
+                               const char *summary, const char *description,
                                array_t *files, array_t *params,
                                array_t *params_options, const char *signature,
                                report_format_t *report_format)
@@ -881,6 +883,12 @@ create_report_format_internal (int check_access, const char *uuid,
     {
       gchar *base, *new, *old, *path;
       char *real_old;
+
+      if (may_exist == 0)
+        {
+          sql_rollback ();
+          return 10;
+        }
 
       /* Make a new UUID, because a report format exists with the given UUID. */
 
@@ -1220,7 +1228,7 @@ create_report_format_internal (int check_access, const char *uuid,
  * @param[in]   signature      Signature.
  * @param[out]  report_format  Created report format.
  *
- * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
+ * @return 0 success, 2 empty file name, 3 param value
  *         validation failed, 4 param value validation failed, 5 param default
  *         missing, 6 param min or max out of range, 7 param type missing,
  *         8 duplicate param name, 9 bogus param type name, 99 permission
@@ -1233,7 +1241,9 @@ create_report_format (const char *uuid, const char *name,
                       array_t *files, array_t *params, array_t *params_options,
                       const char *signature, report_format_t *report_format)
 {
-  return create_report_format_internal (1, uuid, name, content_type, extension,
+  return create_report_format_internal (1, /* Check permission. */
+                                        0, /* Fail if report format exists. */
+                                        uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
                                         report_format);
@@ -1272,7 +1282,9 @@ create_report_format_no_acl (const char *uuid, const char *name,
                              array_t *params_options, const char *signature,
                              report_format_t *report_format)
 {
-  return create_report_format_internal (0, uuid, name, content_type, extension,
+  return create_report_format_internal (0, /* Check permission. */
+                                        1, /* Fail if report format exists. */
+                                        uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
                                         report_format);
