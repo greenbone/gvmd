@@ -33,16 +33,19 @@ echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
 ERROR_FILE=`mktemp` || exit 1
 
 log_error() {
-  logger "SCP alert: $1"
-  echo "$1" >&2
+  # remove \r used in line feed by scp or sshpass (\r\n)
+  # which can make journalctl interpret the output as blob data
+  MESSAGE=`echo "$1" | tr -d '\r'`
+  logger "SCP alert: $MESSAGE"
+  echo "$MESSAGE" >&2
 }
 
 # Escape destination twice because it is also expanded on the remote end.
 if [ -z "$PRIVATE_KEY_FILE" ]
 then
-  sshpass -f ${PASSWORD_FILE} scp -o BatchMode=yes -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
+  sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
 else
-  sshpass -f ${PASSWORD_FILE} scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o BatchMode=yes -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
+  sshpass -f ${PASSWORD_FILE} -P "passphrase" scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
 fi
 
 EXIT_CODE=$?
