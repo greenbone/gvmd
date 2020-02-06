@@ -96,6 +96,7 @@ long schedule XML, not just if only the schedules are requested. [#500](https://
 - Apply ignore_pagination in delta reports [#597](https://github.com/greenbone/gvmd/pull/597)
 - Fix getting single unowned resources [#607](https://github.com/greenbone/gvmd/pull/607)
 - Fix the "Host Authentications" section in PDF / LaTeX reports. [#640](https://github.com/greenbone/gvmd/pull/640)
+- Fix SCP alert authentication and logging [#973](https://github.com/greenbone/gvmd/pull/973)
 
 ### Removed
 - Remove -m SMB3 for smbclient in SMB alert, which allows changing the maximum protocol version via the smbclient config instead of forcing a particular one in the alert script. [#505](https://github.com/greenbone/gvmd/pull/505)
