@@ -862,6 +862,7 @@ add_report_format_params (report_format_t report_format, array_t *params,
  * @param[in]   may_exist      Whether it is OK if there is already a report
  *                             format with this UUID.
  * @param[in]   active         Whether report format is active.
+ * @param[in]   trusted        Whether to assumed report format is trusted.
  * @param[in]   uuid           UUID of format.
  * @param[in]   name           Name of format.
  * @param[in]   content_type   Content type of format.
@@ -884,9 +885,9 @@ add_report_format_params (report_format_t report_format, array_t *params,
  *         8 duplicate param name, 9 bogus param type name, 99 permission
  *         denied, -1 error.
  */
-int
+static int
 create_report_format_internal (int check_access, int may_exist, int active,
-                               const char *uuid, const char *name,
+                               int trusted, const char *uuid, const char *name,
                                const char *content_type, const char *extension,
                                const char *summary, const char *description,
                                array_t *files, array_t *params,
@@ -909,12 +910,16 @@ create_report_format_internal (int check_access, int may_exist, int active,
   assert (files);
   assert (params);
 
+  if (trusted)
+    format_trust = TRUST_YES;
+
   /* Verify the signature. */
 
-  if ((find_signature ("report_formats", uuid, &format_signature,
+  if (trusted == 0
+      && ((find_signature ("report_formats", uuid, &format_signature,
                        &format_signature_size, &uuid_actual)
-       == 0)
-      || signature)
+          == 0)
+          || signature))
     {
       char *locale;
       GString *format;
@@ -1239,6 +1244,7 @@ create_report_format (const char *uuid, const char *name,
   return create_report_format_internal (1, /* Check permission. */
                                         0, /* Fail if report format exists. */
                                         0, /* Active. */
+                                        0, /* Assume trusted. */
                                         uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
@@ -1281,6 +1287,7 @@ create_report_format_no_acl (const char *uuid, const char *name,
   return create_report_format_internal (0, /* Check permission. */
                                         1, /* Fail if report format exists. */
                                         1, /* Active. */
+                                        1, /* Assume trusted. */
                                         uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
