@@ -724,6 +724,138 @@ save_report_format_files (const gchar *report_id, array_t *files,
 }
 
 /**
+ * @brief Add params to a report format.
+ *
+ * @param[in]   check_access   Whether to check for permission.
+ * @param[in]   params         Array of params.
+ * @param[in]   params_options Array.  Each item is an array corresponding to
+ *                             params.  Each item of an inner array is a string,
+ *                             the text of an option in a selection.
+ *
+ * @return 0 success, 3 param value validation failed, 4 param value
+ *         validation failed, 5 param default missing, 6 param min or max
+ *         out of range, 7 param type missing, 8 duplicate param name,
+ *         9 bogus param type name, 99 permission denied, -1 error.
+ */
+static int
+add_report_format_params (report_format_t report_format, array_t *params,
+                          array_t *params_options)
+{
+  int index;
+  create_report_format_param_t *param;
+
+  index = 0;
+  while ((param = (create_report_format_param_t*) g_ptr_array_index (params,
+                                                                     index++)))
+    {
+      gchar *quoted_param_name, *quoted_param_value, *quoted_param_fallback;
+      rowid_t param_rowid;
+      long long int min, max;
+
+      if (param->type == NULL)
+        return 7;
+
+      if (report_format_param_type_from_name (param->type)
+          == REPORT_FORMAT_PARAM_TYPE_ERROR)
+        return 9;
+
+      /* Param min and max are optional.  LLONG_MIN and LLONG_MAX mark in the db
+       * that they were missing, so if the user gives LLONG_MIN or LLONG_MAX it
+       * is an error.  This ensures that GPG verification works, because the
+       * verification knows when to leave out min and max. */
+
+      if (param->type_min)
+        {
+          min = strtoll (param->type_min, NULL, 0);
+          if (min == LLONG_MIN)
+            return 6;
+        }
+      else
+        min = LLONG_MIN;
+
+      if (param->type_max)
+        {
+          max = strtoll (param->type_max, NULL, 0);
+          if (max == LLONG_MAX)
+            return 6;
+        }
+      else
+        max = LLONG_MAX;
+
+      if (param->fallback == NULL)
+        return 5;
+
+      quoted_param_name = sql_quote (param->name);
+
+      if (sql_int ("SELECT count(*) FROM report_format_params"
+                   " WHERE name = '%s' AND report_format = %llu;",
+                   quoted_param_name,
+                   report_format))
+        {
+          g_free (quoted_param_name);
+          return 8;
+        }
+
+      quoted_param_value = sql_quote (param->value);
+      quoted_param_fallback = sql_quote (param->fallback);
+
+      sql ("INSERT INTO report_format_params"
+           " (report_format, name, type, value, type_min, type_max, type_regex,"
+           "  fallback)"
+           " VALUES (%llu, '%s', %u, '%s', %lli, %lli, '', '%s');",
+           report_format,
+           quoted_param_name,
+           report_format_param_type_from_name (param->type),
+           quoted_param_value,
+           min,
+           max,
+           quoted_param_fallback);
+
+      g_free (quoted_param_name);
+      g_free (quoted_param_value);
+      g_free (quoted_param_fallback);
+
+      param_rowid = sql_last_insert_id ();
+
+      {
+        array_t *options;
+        int option_index;
+        gchar *option_value;
+
+        options = (array_t*) g_ptr_array_index (params_options, index - 1);
+        if (options == NULL)
+          {
+            g_warning ("%s: options was NULL", __func__);
+            return -1;
+          }
+        option_index = 0;
+        while ((option_value = (gchar*) g_ptr_array_index (options,
+                                                           option_index++)))
+          {
+            gchar *quoted_option_value = sql_quote (option_value);
+            sql ("INSERT INTO report_format_param_options"
+                 " (report_format_param, value)"
+                 " VALUES (%llu, '%s');",
+                 param_rowid,
+                 quoted_option_value);
+            g_free (quoted_option_value);
+          }
+      }
+
+      if (validate_param_value (report_format, param_rowid, param->name,
+                                param->value))
+        return 3;
+
+      if (validate_param_value (report_format, param_rowid, param->name,
+                                param->fallback))
+        return 4;
+    }
+
+  return 0;
+}
+
+
+/**
  * @brief Create a report format.
  *
  * @param[in]   check_access   Whether to check for permission.
@@ -1051,152 +1183,13 @@ create_report_format_internal (int check_access, int may_exist,
   /* Add params to database. */
 
   report_format_rowid = sql_last_insert_id ();
-  index = 0;
-  while ((param = (create_report_format_param_t*) g_ptr_array_index (params,
-                                                                     index++)))
+  ret = add_report_format_params (report_format_rowid, params, params_options);
+  if (ret)
     {
-      gchar *quoted_param_name, *quoted_param_value, *quoted_param_fallback;
-      rowid_t param_rowid;
-      long long int min, max;
-
-      if (param->type == NULL)
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 7;
-        }
-
-      if (report_format_param_type_from_name (param->type)
-          == REPORT_FORMAT_PARAM_TYPE_ERROR)
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 9;
-        }
-
-      /* Param min and max are optional.  LLONG_MIN and LLONG_MAX mark in the db
-       * that they were missing, so if the user gives LLONG_MIN or LLONG_MAX it
-       * is an error.  This ensures that GPG verification works, because the
-       * verification knows when to leave out min and max. */
-
-      if (param->type_min)
-        {
-          min = strtoll (param->type_min, NULL, 0);
-          if (min == LLONG_MIN)
-            {
-              gvm_file_remove_recurse (dir);
-              g_free (dir);
-              sql_rollback ();
-              return 6;
-            }
-        }
-      else
-        min = LLONG_MIN;
-
-      if (param->type_max)
-        {
-          max = strtoll (param->type_max, NULL, 0);
-          if (max == LLONG_MAX)
-            {
-              gvm_file_remove_recurse (dir);
-              g_free (dir);
-              sql_rollback ();
-              return 6;
-            }
-        }
-      else
-        max = LLONG_MAX;
-
-      if (param->fallback == NULL)
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 5;
-        }
-
-      quoted_param_name = sql_quote (param->name);
-
-      if (sql_int ("SELECT count(*) FROM report_format_params"
-                   " WHERE name = '%s' AND report_format = %llu;",
-                   quoted_param_name,
-                   report_format_rowid))
-        {
-          g_free (quoted_param_name);
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 8;
-        }
-
-      quoted_param_value = sql_quote (param->value);
-      quoted_param_fallback = sql_quote (param->fallback);
-
-      sql ("INSERT INTO report_format_params"
-           " (report_format, name, type, value, type_min, type_max, type_regex,"
-           "  fallback)"
-           " VALUES (%llu, '%s', %u, '%s', %lli, %lli, '', '%s');",
-           report_format_rowid,
-           quoted_param_name,
-           report_format_param_type_from_name (param->type),
-           quoted_param_value,
-           min,
-           max,
-           quoted_param_fallback);
-
-      g_free (quoted_param_name);
-      g_free (quoted_param_value);
-      g_free (quoted_param_fallback);
-
-      param_rowid = sql_last_insert_id ();
-
-      {
-        array_t *options;
-        int option_index;
-        gchar *option_value;
-
-        options = (array_t*) g_ptr_array_index (params_options, index - 1);
-        if (options == NULL)
-          {
-            g_warning ("%s: options was NULL", __func__);
-            gvm_file_remove_recurse (dir);
-            g_free (dir);
-            sql_rollback ();
-            return -1;
-          }
-        option_index = 0;
-        while ((option_value = (gchar*) g_ptr_array_index (options,
-                                                           option_index++)))
-          {
-            gchar *quoted_option_value = sql_quote (option_value);
-            sql ("INSERT INTO report_format_param_options"
-                 " (report_format_param, value)"
-                 " VALUES (%llu, '%s');",
-                 param_rowid,
-                 quoted_option_value);
-            g_free (quoted_option_value);
-          }
-      }
-
-      if (validate_param_value (report_format_rowid, param_rowid, param->name,
-                                param->value))
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 3;
-        }
-
-      if (validate_param_value (report_format_rowid, param_rowid, param->name,
-                                param->fallback))
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 4;
-        }
+      gvm_file_remove_recurse (dir);
+      g_free (dir);
+      sql_rollback ();
+      return ret;
     }
 
   if (report_format)
