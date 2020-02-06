@@ -4007,6 +4007,7 @@ feed_dir_report_formats ()
  * @brief Update a report format from an XML file.
  *
  * @param[in]  report_format    Existing report format.
+ * @param[in]  report_id        UUID of report format.
  * @param[in]  name             New name.
  * @param[in]  content_type     New content type.
  * @param[in]  extension        New extension.
@@ -4018,7 +4019,7 @@ feed_dir_report_formats ()
  * @param[in]  params_options   Options for new params.
  */
 static void
-update_report_format (report_format_t report_format, const gchar *name,
+update_report_format (report_format_t report_format, const gchar *report_id, const gchar *name,
                       const gchar *content_type, const gchar *extension,
                       const gchar *summary, const gchar *description,
                       const gchar *signature, array_t *files, array_t *params,
@@ -4066,8 +4067,7 @@ update_report_format (report_format_t report_format, const gchar *name,
 
   /* Replace the files. */
 
-  //save_report_format_files (files);
-  // remove files not in 'files'
+  save_report_format_files (report_id, files, NULL);
 
   sql_commit ();
 }
@@ -4151,8 +4151,9 @@ update_report_format_from_file (report_format_t report_format,
 
   /* Update the report format. */
 
-  update_report_format (report_format, name, content_type, extension, summary,
-                        description, signature, files, params, params_options);
+  update_report_format (report_format, report_format_id, name, content_type,
+                        extension, summary, description, signature, files,
+                        params, params_options);
 
   /* Cleanup. */
 
