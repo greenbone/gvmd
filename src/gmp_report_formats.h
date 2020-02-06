@@ -37,6 +37,9 @@ void
 create_report_format_element_text (const gchar *, gsize);
 
 void
+params_options_free (array_t *);
+
+void
 parse_report_format_entity (entity_t, const char **, char **, char **,
                             char **, char **, char **, char **,
                             array_t **, array_t **, array_t **);

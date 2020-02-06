@@ -122,6 +122,28 @@ child_or_null (entity_t entity, const gchar *name)
 }
 
 /**
+ * @brief Free a "params_options".
+ *
+ * @param[in] params_options  Param options.
+ */
+void
+params_options_free (array_t *params_options)
+{
+  if (params_options)
+    {
+      guint index = params_options->len;
+      while (index--)
+        {
+          array_t *options;
+          options = (array_t*) g_ptr_array_index (params_options, index);
+          if (options)
+            array_free (options);
+        }
+      g_ptr_array_free (params_options, TRUE);
+    }
+}
+
+/**
  * @brief Get creation data from a report_format entity.
  *
  * @param[in]  report_format     Report format entity.
@@ -479,18 +501,7 @@ create_report_format_run (gmp_parser_t *gmp_parser, GError **error)
       /* Cleanup. */
 
       array_free (files);
-      if (params_options)
-        {
-          guint index = params_options->len;
-          while (index--)
-            {
-              array_t *options;
-              options = (array_t*) g_ptr_array_index (params_options, index);
-              if (options)
-                array_free (options);
-            }
-          g_ptr_array_free (params_options, TRUE);
-        }
+      params_options_free (params_options);
       array_free (params);
 
       create_report_format_reset ();

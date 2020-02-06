@@ -4175,18 +4175,7 @@ update_report_format_from_file (report_format_t report_format,
   /* Cleanup. */
 
   array_free (files);
-  if (params_options)
-    {
-      guint index = params_options->len;
-      while (index--)
-        {
-          array_t *options;
-          options = (array_t*) g_ptr_array_index (params_options, index);
-          if (options)
-            array_free (options);
-        }
-      g_ptr_array_free (params_options, TRUE);
-    }
+  params_options_free (params_options);
   array_free (params);
   free_entity (entity);
 
@@ -4308,18 +4297,7 @@ create_report_format_from_file (const gchar *path)
   /* Cleanup. */
 
   array_free (files);
-  if (params_options)
-    {
-      guint index = params_options->len;
-      while (index--)
-        {
-          array_t *options;
-          options = (array_t*) g_ptr_array_index (params_options, index);
-          if (options)
-            array_free (options);
-        }
-      g_ptr_array_free (params_options, TRUE);
-    }
+  params_options_free (params_options);
   array_free (params);
   free_entity (report_format);
 
