@@ -1242,7 +1242,7 @@ create_report_format (const char *uuid, const char *name,
                       const char *signature, report_format_t *report_format)
 {
   return create_report_format_internal (1, /* Check permission. */
-                                        0, /* Fail if report format exists. */
+                                        1, /* Allow existing report format. */
                                         0, /* Active. */
                                         0, /* Assume trusted. */
                                         uuid, name, content_type, extension,
@@ -1285,7 +1285,7 @@ create_report_format_no_acl (const char *uuid, const char *name,
                              report_format_t *report_format)
 {
   return create_report_format_internal (0, /* Check permission. */
-                                        1, /* Fail if report format exists. */
+                                        0, /* Allow existing report format. */
                                         1, /* Active. */
                                         1, /* Assume trusted. */
                                         uuid, name, content_type, extension,
