@@ -593,6 +593,137 @@ compare_files (gconstpointer one, gconstpointer two)
 }
 
 /**
+ * @brief Save files of a report format.
+ *
+ * @param[in]   report_id      UUID of format.
+ * @param[in]   files          Array of memory.  Each item is a file name
+ *                             string, a terminating NULL, the file contents
+ *                             in base64 and a terminating NULL.
+ * @param[out]  report_format_dir  Address for dir, or NULL.
+ *
+ * @return 0 success, 2 empty file name, -1 error.
+ */
+static int
+save_report_format_files (const gchar *report_id, array_t *files,
+                          gchar **report_format_dir)
+{
+  gchar *dir, *report_dir, *file_name;
+  int index;
+
+  dir = g_build_filename (GVMD_STATE_DIR,
+                          "report_formats",
+                          current_credentials.uuid,
+                          report_id,
+                          NULL);
+
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+    {
+      g_warning ("%s: failed to remove dir %s", __func__, dir);
+      g_free (dir);
+      return -1;
+    }
+
+  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
+    {
+      g_warning ("%s: failed to create dir %s: %s",
+                 __func__, dir, strerror (errno));
+      g_free (dir);
+      return -1;
+    }
+
+  /* glib seems to apply the mode to the first dir only. */
+
+  report_dir = g_build_filename (GVMD_STATE_DIR,
+                                 "report_formats",
+                                 current_credentials.uuid,
+                                 NULL);
+
+  if (chmod (report_dir, 0755 /* rwxr-xr-x */))
+    {
+      g_warning ("%s: chmod failed: %s",
+                 __func__,
+                 strerror (errno));
+      g_free (dir);
+      g_free (report_dir);
+      return -1;
+    }
+
+  g_free (report_dir);
+
+  /* glib seems to apply the mode to the first dir only. */
+  if (chmod (dir, 0755 /* rwxr-xr-x */))
+    {
+      g_warning ("%s: chmod failed: %s",
+                 __func__,
+                 strerror (errno));
+      g_free (dir);
+      return -1;
+    }
+
+  index = 0;
+  while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
+    {
+      gchar *contents, *file, *full_file_name;
+      gsize contents_size;
+      GError *error;
+      int ret;
+
+      if (strlen (file_name) == 0)
+        {
+          gvm_file_remove_recurse (dir);
+          g_free (dir);
+          return 2;
+        }
+
+      file = file_name + strlen (file_name) + 1;
+      if (strlen (file))
+        contents = (gchar*) g_base64_decode (file, &contents_size);
+      else
+        {
+          contents = g_strdup ("");
+          contents_size = 0;
+        }
+
+      full_file_name = g_build_filename (dir, file_name, NULL);
+
+      error = NULL;
+      g_file_set_contents (full_file_name, contents, contents_size, &error);
+      g_free (contents);
+      if (error)
+        {
+          g_warning ("%s: %s", __func__, error->message);
+          g_error_free (error);
+          gvm_file_remove_recurse (dir);
+          g_free (full_file_name);
+          g_free (dir);
+          return -1;
+        }
+
+      if (strcmp (file_name, "generate") == 0)
+        ret = chmod (full_file_name, 0755 /* rwxr-xr-x */);
+      else
+        ret = chmod (full_file_name, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+      if (ret)
+        {
+          g_warning ("%s: chmod failed: %s",
+                     __func__,
+                     strerror (errno));
+          gvm_file_remove_recurse (dir);
+          g_free (full_file_name);
+          g_free (dir);
+          return -1;
+        }
+
+      g_free (full_file_name);
+    }
+
+  if (report_format_dir)
+    *report_format_dir = dir;
+
+  return 0;
+}
+
+/**
  * @brief Create a report format.
  *
  * @param[in]   check_access   Whether to check for permission.
@@ -629,9 +760,9 @@ create_report_format_internal (int check_access, const char *uuid,
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *quoted_signature, *file_name, *dir;
-  gchar *candidate_name, *new_uuid, *uuid_actual, *report_dir;
+  gchar *candidate_name, *new_uuid, *uuid_actual;
   report_format_t report_format_rowid;
-  int index, num;
+  int index, num, ret;
   gchar *format_signature = NULL;
   gsize format_signature_size;
   int format_trust = TRUST_UNKNOWN;
@@ -865,132 +996,13 @@ create_report_format_internal (int check_access, const char *uuid,
 
   /* Write files to disk. */
 
-  dir = g_build_filename (GVMD_STATE_DIR,
-                          "report_formats",
-                          current_credentials.uuid,
-                          new_uuid ? new_uuid : uuid,
-                          NULL);
-
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+  ret = save_report_format_files (new_uuid ? new_uuid : uuid, files, &dir);
+  if (ret)
     {
-      g_warning ("%s: failed to remove dir %s", __func__, dir);
-      g_free (dir);
       g_free (quoted_name);
       g_free (new_uuid);
       sql_rollback ();
-      return -1;
-    }
-
-  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
-    {
-      g_warning ("%s: failed to create dir %s: %s",
-                 __func__, dir, strerror (errno));
-      g_free (dir);
-      g_free (quoted_name);
-      g_free (new_uuid);
-      sql_rollback ();
-      return -1;
-    }
-
-  /* glib seems to apply the mode to the first dir only. */
-
-  report_dir = g_build_filename (GVMD_STATE_DIR,
-                                 "report_formats",
-                                 current_credentials.uuid,
-                                 NULL);
-
-  if (chmod (report_dir, 0755 /* rwxr-xr-x */))
-    {
-      g_warning ("%s: chmod failed: %s",
-                 __func__,
-                 strerror (errno));
-      g_free (dir);
-      g_free (report_dir);
-      g_free (quoted_name);
-      g_free (new_uuid);
-      sql_rollback ();
-      return -1;
-    }
-
-  g_free (report_dir);
-
-  /* glib seems to apply the mode to the first dir only. */
-  if (chmod (dir, 0755 /* rwxr-xr-x */))
-    {
-      g_warning ("%s: chmod failed: %s",
-                 __func__,
-                 strerror (errno));
-      g_free (dir);
-      g_free (quoted_name);
-      g_free (new_uuid);
-      sql_rollback ();
-      return -1;
-    }
-
-  index = 0;
-  while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
-    {
-      gchar *contents, *file, *full_file_name;
-      gsize contents_size;
-      GError *error;
-      int ret;
-
-      if (strlen (file_name) == 0)
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          g_free (quoted_name);
-          g_free (new_uuid);
-          sql_rollback ();
-          return 2;
-        }
-
-      file = file_name + strlen (file_name) + 1;
-      if (strlen (file))
-        contents = (gchar*) g_base64_decode (file, &contents_size);
-      else
-        {
-          contents = g_strdup ("");
-          contents_size = 0;
-        }
-
-      full_file_name = g_build_filename (dir, file_name, NULL);
-
-      error = NULL;
-      g_file_set_contents (full_file_name, contents, contents_size, &error);
-      g_free (contents);
-      if (error)
-        {
-          g_warning ("%s: %s", __func__, error->message);
-          g_error_free (error);
-          gvm_file_remove_recurse (dir);
-          g_free (full_file_name);
-          g_free (dir);
-          g_free (quoted_name);
-          g_free (new_uuid);
-          sql_rollback ();
-          return -1;
-        }
-
-      if (strcmp (file_name, "generate") == 0)
-        ret = chmod (full_file_name, 0755 /* rwxr-xr-x */);
-      else
-        ret = chmod (full_file_name, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-      if (ret)
-        {
-          g_warning ("%s: chmod failed: %s",
-                     __func__,
-                     strerror (errno));
-          gvm_file_remove_recurse (dir);
-          g_free (full_file_name);
-          g_free (dir);
-          g_free (quoted_name);
-          g_free (new_uuid);
-          sql_rollback ();
-          return -1;
-        }
-
-      g_free (full_file_name);
+      return ret;
     }
 
   /* Add format to database. */
