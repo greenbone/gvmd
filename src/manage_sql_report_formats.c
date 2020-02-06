@@ -726,9 +726,9 @@ save_report_format_files (const gchar *report_id, array_t *files,
 /**
  * @brief Add params to a report format.
  *
- * @param[in]   check_access   Whether to check for permission.
- * @param[in]   params         Array of params.
- * @param[in]   params_options Array.  Each item is an array corresponding to
+ * @param[in]  report_format   Report format.
+ * @param[in]  params          Array of params.
+ * @param[in]  params_options  Array.  Each item is an array corresponding to
  *                             params.  Each item of an inner array is a string,
  *                             the text of an option in a selection.
  *
