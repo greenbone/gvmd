@@ -51797,7 +51797,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 
           if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
             {
-              //migrate_predefined_configs ();
+              migrate_predefined_configs ();
               migrate_predefined_port_lists ();
               migrate_predefined_report_formats ();
             }
