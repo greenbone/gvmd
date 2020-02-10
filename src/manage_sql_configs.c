@@ -76,18 +76,6 @@ static int
 insert_nvt_selectors (const char *, const array_t*);
 
 
-/* Headers from config specific files. */
-
-int
-check_config_discovery (const char *);
-
-void
-check_config_host_discovery (const char *);
-
-int
-check_config_system_discovery (const char *);
-
-
 /* Helpers. */
 
 /**
@@ -4776,10 +4764,4 @@ check_db_configs ()
          " AND family = 'Service detection'"
          " AND NOT EXISTS (SELECT * FROM nvts"
          "                 WHERE oid = nvt_selectors.family_or_nvt);");
-
-  check_config_discovery (CONFIG_UUID_DISCOVERY);
-
-  check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
-
-  check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
 }
