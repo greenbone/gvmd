@@ -51794,6 +51794,13 @@ manage_modify_setting (GSList *log_config, const gchar *database,
           g_free (quoted_value);
           g_free (quoted_name);
           g_free (quoted_description);
+
+          if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+            {
+              //migrate_predefined_configs ();
+              migrate_predefined_port_lists ();
+              //migrate_predefined_report_formats ();
+            }
         }
     }
 
