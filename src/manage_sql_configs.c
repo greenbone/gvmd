@@ -3019,17 +3019,6 @@ delete_config (const char *config_id, int ultimate)
 {
   config_t config = 0;
 
-  if ((strcmp (config_id, CONFIG_UUID_FULL_AND_FAST) == 0)
-      || (strcmp (config_id, CONFIG_UUID_FULL_AND_FAST_ULTIMATE) == 0)
-      || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP) == 0)
-      || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE) == 0)
-      || (strcmp (config_id, CONFIG_UUID_BASE) == 0)
-      || (strcmp (config_id, CONFIG_UUID_DISCOVERY) == 0)
-      || (strcmp (config_id, CONFIG_UUID_HOST_DISCOVERY) == 0)
-      || (strcmp (config_id, CONFIG_UUID_SYSTEM_DISCOVERY) == 0)
-      || (strcmp (config_id, CONFIG_UUID_EMPTY) == 0))
-    return 3;
-
   sql_begin_immediate ();
 
   if (acl_user_may ("delete_config") == 0)
@@ -3570,20 +3559,6 @@ config_in_use (config_t config)
 int
 config_writable (config_t config)
 {
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE id = %i"
-               " AND (uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
-               "      OR uuid = '" CONFIG_UUID_BASE "'"
-               "      OR uuid = '" CONFIG_UUID_EMPTY "'"
-               "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
-               "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
-               "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
-               config))
-    return 0;
-
   return 1;
 }
 
