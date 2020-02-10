@@ -51799,7 +51799,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
             {
               //migrate_predefined_configs ();
               migrate_predefined_port_lists ();
-              //migrate_predefined_report_formats ();
+              migrate_predefined_report_formats ();
             }
         }
     }

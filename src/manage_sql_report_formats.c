@@ -4495,6 +4495,20 @@ manage_sync_report_formats ()
   sync_report_formats_with_feed ();
 }
 
+/**
+ * @brief Migrate old ownerless report formats to the Feed Owner.
+ */
+void
+migrate_predefined_report_formats ()
+{
+  sql ("UPDATE report_formats"
+       " SET owner = (SELECT id FROM users"
+       "              WHERE uuid = (SELECT value FROM settings"
+       "                            WHERE uuid = '%s'))"
+       " WHERE owner is NULL;",
+       SETTING_UUID_FEED_IMPORT_OWNER);
+}
+
 
 /* Startup. */
 
@@ -4807,6 +4821,8 @@ check_db_trash_report_formats ()
 int
 check_db_report_formats ()
 {
+  migrate_predefined_report_formats ();
+
   if (sync_report_formats_with_feed ())
     g_warning ("%s: Failed to sync report formats with feed", __func__);
 

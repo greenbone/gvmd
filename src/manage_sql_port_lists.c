@@ -2571,6 +2571,8 @@ update_port_list (port_list_t port_list, const gchar *name,
 void
 check_db_port_lists ()
 {
+  migrate_predefined_port_lists ();
+
   if (sync_port_lists_with_feed ())
     g_warning ("%s: Failed to sync port lists with feed", __func__);
 
@@ -2581,6 +2583,4 @@ check_db_port_lists ()
    * This should be a migrator, but this way is easier to backport.  */
   sql ("UPDATE port_ranges SET \"end\" = 65535 WHERE \"end\" = 65536;");
   sql ("UPDATE port_ranges SET start = 65535 WHERE start = 65536;");
-
-  migrate_predefined_port_lists ();
 }
