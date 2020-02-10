@@ -15894,6 +15894,7 @@ check_db_nvt_selectors ()
            " '1.3.6.1.4.1.25623.1.0.80109', 'Web application abuses');");
     }
 }
+
 /**
  * @brief Add permissions for all global resources.
  *
@@ -15903,27 +15904,6 @@ static void
 add_permissions_on_globals (const gchar *role_uuid)
 {
   iterator_t scanners;
-
-  if (sql_int ("SELECT count(*) FROM permissions"
-               " WHERE owner is NULL"
-               " AND subject_type = 'role'"
-               " AND subject = (SELECT id FROM roles"
-               "                WHERE uuid = '%s')"
-               " AND resource != 0"
-               " AND name != 'get_report_formats';",
-               role_uuid)
-      == 0)
-    {
-      /* Clean-up any remaining permissions. */
-      sql ("DELETE FROM permissions"
-           " WHERE owner IS NULL"
-           " AND name != 'get_report_formats'"
-           " AND subject_type = 'role'"
-           " AND resource != 0"
-           " AND subject = (SELECT id FROM roles"
-           "                WHERE uuid = '%s');",
-           role_uuid);
-    }
 
   /* Global configs. */
   add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
