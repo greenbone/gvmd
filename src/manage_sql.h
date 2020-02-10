@@ -34,53 +34,6 @@
 /* Internal types and preprocessor definitions. */
 
 /**
- * @brief UUID of 'Base' config.
- */
-#define CONFIG_UUID_BASE "d21f6c81-2b88-4ac1-b7b4-a2a9f2ad4663"
-
-/**
- * @brief UUID of 'Full and fast' config.
- */
-#define CONFIG_UUID_FULL_AND_FAST "daba56c8-73ec-11df-a475-002264764cea"
-
-/**
- * @brief UUID of 'Full and fast ultimate' config.
- */
-#define CONFIG_UUID_FULL_AND_FAST_ULTIMATE \
- "698f691e-7489-11df-9d8c-002264764cea"
-
-/**
- * @brief UUID of 'Full and very deep' config.
- */
-#define CONFIG_UUID_FULL_AND_VERY_DEEP "708f25c4-7489-11df-8094-002264764cea"
-
-/**
- * @brief UUID of 'Full and very deep ultimate' config.
- */
-#define CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE \
- "74db13d6-7489-11df-91b9-002264764cea"
-
-/**
- * @brief UUID of 'Empty' config.
- */
-#define CONFIG_UUID_EMPTY "085569ce-73ed-11df-83c3-002264764cea"
-
-/**
- * @brief UUID of 'Discovery' config.
- */
-#define CONFIG_UUID_DISCOVERY "8715c877-47a0-438d-98a3-27c7a6ab2196"
-
-/**
- * @brief UUID of 'Host Discovery' config.
- */
-#define CONFIG_UUID_HOST_DISCOVERY "2d3f051c-55ba-11e3-bf43-406186ea4fc5"
-
-/**
- * @brief UUID of 'System Discovery' config.
- */
-#define CONFIG_UUID_SYSTEM_DISCOVERY "bbca7412-a950-11e3-9109-406186ea4fc5"
-
-/**
  * @brief Location of a constituent of a trashcan resource.
  */
 #define LOCATION_TABLE 0
@@ -129,48 +82,10 @@
 
 /**
  * @brief UUID of 'OpenVAS Default' port list.
+ *
+ * Required for the default port list case of CREATE_PORT_LIST.
  */
 #define PORT_LIST_UUID_DEFAULT "c7e03b6c-3bbe-11e1-a057-406186ea4fc5"
-
-/**
- * @brief UUID of 'All TCP' port list.
- */
-#define PORT_LIST_UUID_ALL_TCP "fd591a34-56fd-11e1-9f27-406186ea4fc5"
-
-/**
- * @brief UUID of 'All TCP and Nmap 5.51 Top 100 UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "730ef368-57e2-11e1-a90f-406186ea4fc5"
-
-/**
- * @brief UUID of 'All TCP and Nmap 5.51 Top 1000 UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "9ddce1ae-57e7-11e1-b13c-406186ea4fc5"
-
-/**
- * @brief UUID of 'All privileged TCP' port list.
- */
-#define PORT_LIST_UUID_ALL_PRIV_TCP "492b72f4-56fe-11e1-98a7-406186ea4fc5"
-
-/**
- * @brief UUID of 'All privileged TCP and UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_PRIV_TCP_UDP "5f2029f6-56fe-11e1-bb94-406186ea4fc5"
-
-/**
- * @brief UUID of 'All privileged TCP and UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_IANA_TCP_2012 "33d0cd82-57c6-11e1-8ed1-406186ea4fc5"
-
-/**
- * @brief UUID of 'All privileged TCP and UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "4a4717fe-57d2-11e1-9a26-406186ea4fc5"
-
-/**
- * @brief UUID of 'Nmap 5.51 top 2000 TCP top 100 UDP' port list.
- */
-#define PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "ab33f6b0-57f8-11e1-96f5-406186ea4fc5"
 
 /**
  * @brief Predefined role UUID.
