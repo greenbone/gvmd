@@ -15905,53 +15905,6 @@ add_permissions_on_globals (const gchar *role_uuid)
 {
   iterator_t scanners;
 
-  /* Global configs. */
-  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                CONFIG_UUID_FULL_AND_FAST);
-  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                CONFIG_UUID_FULL_AND_FAST_ULTIMATE);
-  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                CONFIG_UUID_FULL_AND_VERY_DEEP);
-  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE);
-  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                CONFIG_UUID_BASE);
-  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                CONFIG_UUID_EMPTY);
-  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                CONFIG_UUID_DISCOVERY);
-  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                CONFIG_UUID_HOST_DISCOVERY);
-  add_role_permission_resource (role_uuid, "GET_CONFIGS", "config",
-                                CONFIG_UUID_SYSTEM_DISCOVERY);
-
-  /* Global port lists. */
-  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                "port_list", PORT_LIST_UUID_DEFAULT);
-  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                "port_list", PORT_LIST_UUID_ALL_TCP);
-  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                "port_list",
-                                PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100);
-  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                "port_list",
-                                PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000);
-  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                "port_list",
-                                PORT_LIST_UUID_ALL_PRIV_TCP);
-  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                "port_list",
-                                PORT_LIST_UUID_ALL_PRIV_TCP_UDP);
-  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                "port_list",
-                                PORT_LIST_UUID_ALL_IANA_TCP_2012);
-  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                "port_list",
-                                PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012);
-  add_role_permission_resource (role_uuid, "GET_PORT_LISTS",
-                                "port_list",
-                                PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100);
-
   /* Scanners are global when created from the command line. */
   init_iterator (&scanners,
                   "SELECT id, uuid FROM scanners WHERE owner is NULL;");
