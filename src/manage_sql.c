@@ -11836,6 +11836,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
                  "SELECT id FROM filters WHERE uuid = '%s'",
                  quoted_filter_id);
       term = filter_term (condition_filter_id);
+      g_free (quoted_filter_id);
     }
   free (condition_filter_id);
 
@@ -14206,7 +14207,6 @@ alert_secinfo_count (alert_t alert, char *filter_id)
     get.filt_id = filter_id;
 
   secinfo_type = alert_data (alert, "event", "secinfo_type");
-  printf ("secinfo_type: %s\n", secinfo_type);
 
   if (strcmp (secinfo_type, "nvt") == 0)
     {
