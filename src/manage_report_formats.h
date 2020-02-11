@@ -43,7 +43,7 @@ typedef struct
 
 int
 create_report_format (const char *, const char *, const char *, const char *,
-                      const char *, const char *, int, array_t *, array_t *,
+                      const char *, const char *, array_t *, array_t *,
                       array_t *, const char *, report_format_t *);
 
 int
@@ -225,5 +225,8 @@ init_param_option_iterator (iterator_t*, report_format_param_t, int,
 
 const char*
 param_option_iterator_value (iterator_t *);
+
+void
+manage_sync_report_formats ();
 
 #endif /* not _GVMD_MANAGE_REPORT_FORMATS_H */
