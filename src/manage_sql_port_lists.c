@@ -2420,6 +2420,20 @@ delete_port_lists_user (user_t user)
   sql ("DELETE FROM port_lists_trash WHERE owner = %llu;", user);
 }
 
+/**
+ * @brief Migrate old ownerless port lists to the Feed Owner.
+ */
+void
+migrate_predefined_port_lists ()
+{
+  sql ("UPDATE port_lists"
+       " SET owner = (SELECT id FROM users"
+       "              WHERE uuid = (SELECT value FROM settings"
+       "                            WHERE uuid = '%s'))"
+       " WHERE owner is NULL;",
+       SETTING_UUID_FEED_IMPORT_OWNER);
+}
+
 
 /* Startup. */
 
@@ -2504,6 +2518,8 @@ update_port_list (port_list_t port_list, const gchar *name,
 void
 check_db_port_lists ()
 {
+  migrate_predefined_port_lists ();
+
   if (sync_port_lists_with_feed ())
     g_warning ("%s: Failed to sync port lists with feed", __func__);
 

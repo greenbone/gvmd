@@ -4615,6 +4615,20 @@ update_config_cache_init (const char *uuid)
   cleanup_iterator (&configs);
 }
 
+/**
+ * @brief Migrate old ownerless configs to the Feed Owner.
+ */
+void
+migrate_predefined_configs ()
+{
+  sql ("UPDATE configs"
+       " SET owner = (SELECT id FROM users"
+       "              WHERE uuid = (SELECT value FROM settings"
+       "                            WHERE uuid = '%s'))"
+       " WHERE owner is NULL;",
+       SETTING_UUID_FEED_IMPORT_OWNER);
+}
+
 
 /* Startup. */
 
@@ -4744,6 +4758,8 @@ update_config (config_t config, const gchar *type, const gchar *name,
 void
 check_db_configs ()
 {
+  migrate_predefined_configs ();
+
   if (sync_configs_with_feed ())
     g_warning ("%s: Failed to sync configs with feed", __func__);
 

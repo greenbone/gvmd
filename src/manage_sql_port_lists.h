@@ -61,6 +61,9 @@ inherit_port_lists (user_t, user_t);
 void
 delete_port_lists_user (user_t);
 
+void
+migrate_predefined_port_lists ();
+
 int
 port_list_updated_in_feed (port_list_t, const gchar *);
 
