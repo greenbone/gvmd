@@ -14174,7 +14174,7 @@ event_applies (event_t event, const void *event_data,
 }
 
 /**
- * @brief Return the SecInfo count .
+ * @brief Return the SecInfo count.
  *
  * @param[in]  alert      Alert.
  * @param[in]  filter_id  Condition filter id.
@@ -14284,8 +14284,10 @@ condition_met (task_t task, report_t report, alert_t alert,
 
           if (task == 0)
             {
-              /* SecInfo event. */
               int db_count;
+
+              /* SecInfo event. */
+
               db_count = alert_secinfo_count (alert, filter_id);
  
               if (db_count >= count)

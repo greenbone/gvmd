@@ -1596,7 +1596,7 @@ secinfo_count_after (const get_data_t *get,
     extra_where = g_strdup_printf (" AND creation_time > %ld",
                                    count_time);
 
-  ret = count (type, get, (column_t*)columns, NULL, filter_columns,
+  ret = count (type, get, (column_t*) columns, NULL, filter_columns,
                0, 0, extra_where, FALSE);
 
   g_free (extra_where);
