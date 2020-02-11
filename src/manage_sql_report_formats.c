@@ -25,9 +25,11 @@
  */
 
 #include "manage_sql_report_formats.h"
+#include "gmp_report_formats.h"
 #include "manage_acl.h"
 #include "manage_report_formats.h"
 #include "sql.h"
+#include "utils.h"
 
 #include <errno.h>
 #include <glib.h>
@@ -491,6 +493,80 @@ lookup_report_format (const char* name, report_format_t* report_format)
 }
 
 /**
+ * @brief Find a report format given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid           UUID of resource.
+ * @param[out]  report_format  Report Format return, 0 if no such report format.
+ *
+ * @return FALSE on success (including if no such report format), TRUE on error.
+ */
+gboolean
+find_report_format_no_acl (const char *uuid, report_format_t *report_format)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (report_format,
+                     "SELECT id FROM report_formats WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report_format = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Find a trash report format given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid           UUID of resource.
+ * @param[out]  report_format  Report Format return, 0 if no such report format.
+ *
+ * @return FALSE on success (including if no such report format), TRUE on error.
+ */
+gboolean
+find_trash_report_format_no_acl (const char *uuid, report_format_t *report_format)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (report_format,
+                     "SELECT id FROM report_formats WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report_format = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Compare files for create_report_format.
  *
  * @param[in]  one  First.
@@ -517,15 +593,282 @@ compare_files (gconstpointer one, gconstpointer two)
 }
 
 /**
+ * @brief Save files of a report format.
+ *
+ * @param[in]   report_id      UUID of format.
+ * @param[in]   files          Array of memory.  Each item is a file name
+ *                             string, a terminating NULL, the file contents
+ *                             in base64 and a terminating NULL.
+ * @param[out]  report_format_dir  Address for dir, or NULL.
+ *
+ * @return 0 success, 2 empty file name, -1 error.
+ */
+static int
+save_report_format_files (const gchar *report_id, array_t *files,
+                          gchar **report_format_dir)
+{
+  gchar *dir, *report_dir, *file_name;
+  int index;
+
+  dir = g_build_filename (GVMD_STATE_DIR,
+                          "report_formats",
+                          current_credentials.uuid,
+                          report_id,
+                          NULL);
+
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+    {
+      g_warning ("%s: failed to remove dir %s", __func__, dir);
+      g_free (dir);
+      return -1;
+    }
+
+  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
+    {
+      g_warning ("%s: failed to create dir %s: %s",
+                 __func__, dir, strerror (errno));
+      g_free (dir);
+      return -1;
+    }
+
+  /* glib seems to apply the mode to the first dir only. */
+
+  report_dir = g_build_filename (GVMD_STATE_DIR,
+                                 "report_formats",
+                                 current_credentials.uuid,
+                                 NULL);
+
+  if (chmod (report_dir, 0755 /* rwxr-xr-x */))
+    {
+      g_warning ("%s: chmod failed: %s",
+                 __func__,
+                 strerror (errno));
+      g_free (dir);
+      g_free (report_dir);
+      return -1;
+    }
+
+  g_free (report_dir);
+
+  /* glib seems to apply the mode to the first dir only. */
+  if (chmod (dir, 0755 /* rwxr-xr-x */))
+    {
+      g_warning ("%s: chmod failed: %s",
+                 __func__,
+                 strerror (errno));
+      g_free (dir);
+      return -1;
+    }
+
+  index = 0;
+  while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
+    {
+      gchar *contents, *file, *full_file_name;
+      gsize contents_size;
+      GError *error;
+      int ret;
+
+      if (strlen (file_name) == 0)
+        {
+          gvm_file_remove_recurse (dir);
+          g_free (dir);
+          return 2;
+        }
+
+      file = file_name + strlen (file_name) + 1;
+      if (strlen (file))
+        contents = (gchar*) g_base64_decode (file, &contents_size);
+      else
+        {
+          contents = g_strdup ("");
+          contents_size = 0;
+        }
+
+      full_file_name = g_build_filename (dir, file_name, NULL);
+
+      error = NULL;
+      g_file_set_contents (full_file_name, contents, contents_size, &error);
+      g_free (contents);
+      if (error)
+        {
+          g_warning ("%s: %s", __func__, error->message);
+          g_error_free (error);
+          gvm_file_remove_recurse (dir);
+          g_free (full_file_name);
+          g_free (dir);
+          return -1;
+        }
+
+      if (strcmp (file_name, "generate") == 0)
+        ret = chmod (full_file_name, 0755 /* rwxr-xr-x */);
+      else
+        ret = chmod (full_file_name, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+      if (ret)
+        {
+          g_warning ("%s: chmod failed: %s",
+                     __func__,
+                     strerror (errno));
+          gvm_file_remove_recurse (dir);
+          g_free (full_file_name);
+          g_free (dir);
+          return -1;
+        }
+
+      g_free (full_file_name);
+    }
+
+  if (report_format_dir)
+    *report_format_dir = dir;
+
+  return 0;
+}
+
+/**
+ * @brief Add params to a report format.
+ *
+ * @param[in]  report_format   Report format.
+ * @param[in]  params          Array of params.
+ * @param[in]  params_options  Array.  Each item is an array corresponding to
+ *                             params.  Each item of an inner array is a string,
+ *                             the text of an option in a selection.
+ *
+ * @return 0 success, 3 param value validation failed, 4 param value
+ *         validation failed, 5 param default missing, 6 param min or max
+ *         out of range, 7 param type missing, 8 duplicate param name,
+ *         9 bogus param type name, 99 permission denied, -1 error.
+ */
+static int
+add_report_format_params (report_format_t report_format, array_t *params,
+                          array_t *params_options)
+{
+  int index;
+  create_report_format_param_t *param;
+
+  index = 0;
+  while ((param = (create_report_format_param_t*) g_ptr_array_index (params,
+                                                                     index++)))
+    {
+      gchar *quoted_param_name, *quoted_param_value, *quoted_param_fallback;
+      rowid_t param_rowid;
+      long long int min, max;
+
+      if (param->type == NULL)
+        return 7;
+
+      if (report_format_param_type_from_name (param->type)
+          == REPORT_FORMAT_PARAM_TYPE_ERROR)
+        return 9;
+
+      /* Param min and max are optional.  LLONG_MIN and LLONG_MAX mark in the db
+       * that they were missing, so if the user gives LLONG_MIN or LLONG_MAX it
+       * is an error.  This ensures that GPG verification works, because the
+       * verification knows when to leave out min and max. */
+
+      if (param->type_min)
+        {
+          min = strtoll (param->type_min, NULL, 0);
+          if (min == LLONG_MIN)
+            return 6;
+        }
+      else
+        min = LLONG_MIN;
+
+      if (param->type_max)
+        {
+          max = strtoll (param->type_max, NULL, 0);
+          if (max == LLONG_MAX)
+            return 6;
+        }
+      else
+        max = LLONG_MAX;
+
+      if (param->fallback == NULL)
+        return 5;
+
+      quoted_param_name = sql_quote (param->name);
+
+      if (sql_int ("SELECT count(*) FROM report_format_params"
+                   " WHERE name = '%s' AND report_format = %llu;",
+                   quoted_param_name,
+                   report_format))
+        {
+          g_free (quoted_param_name);
+          return 8;
+        }
+
+      quoted_param_value = sql_quote (param->value);
+      quoted_param_fallback = sql_quote (param->fallback);
+
+      sql ("INSERT INTO report_format_params"
+           " (report_format, name, type, value, type_min, type_max, type_regex,"
+           "  fallback)"
+           " VALUES (%llu, '%s', %u, '%s', %lli, %lli, '', '%s');",
+           report_format,
+           quoted_param_name,
+           report_format_param_type_from_name (param->type),
+           quoted_param_value,
+           min,
+           max,
+           quoted_param_fallback);
+
+      g_free (quoted_param_name);
+      g_free (quoted_param_value);
+      g_free (quoted_param_fallback);
+
+      param_rowid = sql_last_insert_id ();
+
+      {
+        array_t *options;
+        int option_index;
+        gchar *option_value;
+
+        options = (array_t*) g_ptr_array_index (params_options, index - 1);
+        if (options == NULL)
+          {
+            g_warning ("%s: options was NULL", __func__);
+            return -1;
+          }
+        option_index = 0;
+        while ((option_value = (gchar*) g_ptr_array_index (options,
+                                                           option_index++)))
+          {
+            gchar *quoted_option_value = sql_quote (option_value);
+            sql ("INSERT INTO report_format_param_options"
+                 " (report_format_param, value)"
+                 " VALUES (%llu, '%s');",
+                 param_rowid,
+                 quoted_option_value);
+            g_free (quoted_option_value);
+          }
+      }
+
+      if (validate_param_value (report_format, param_rowid, param->name,
+                                param->value))
+        return 3;
+
+      if (validate_param_value (report_format, param_rowid, param->name,
+                                param->fallback))
+        return 4;
+    }
+
+  return 0;
+}
+
+
+/**
  * @brief Create a report format.
  *
+ * @param[in]   check_access   Whether to check for permission.
+ * @param[in]   may_exist      Whether it is OK if there is already a report
+ *                             format with this UUID.
+ * @param[in]   active         Whether report format is active.
+ * @param[in]   trusted        Whether to assumed report format is trusted.
  * @param[in]   uuid           UUID of format.
  * @param[in]   name           Name of format.
  * @param[in]   content_type   Content type of format.
  * @param[in]   extension      File extension of format.
  * @param[in]   summary        Summary of format.
  * @param[in]   description    Description of format.
- * @param[in]   global         Whether the report is global.
  * @param[in]   files          Array of memory.  Each item is a file name
  *                             string, a terminating NULL, the file contents
  *                             in base64 and a terminating NULL.
@@ -542,18 +885,20 @@ compare_files (gconstpointer one, gconstpointer two)
  *         8 duplicate param name, 9 bogus param type name, 99 permission
  *         denied, -1 error.
  */
-int
-create_report_format (const char *uuid, const char *name,
-                      const char *content_type, const char *extension,
-                      const char *summary, const char *description, int global,
-                      array_t *files, array_t *params, array_t *params_options,
-                      const char *signature, report_format_t *report_format)
+static int
+create_report_format_internal (int check_access, int may_exist, int active,
+                               int trusted, const char *uuid, const char *name,
+                               const char *content_type, const char *extension,
+                               const char *summary, const char *description,
+                               array_t *files, array_t *params,
+                               array_t *params_options, const char *signature,
+                               report_format_t *report_format)
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *quoted_signature, *file_name, *dir;
   gchar *candidate_name, *new_uuid, *uuid_actual;
   report_format_t report_format_rowid;
-  int index, num;
+  int index, num, ret;
   gchar *format_signature = NULL;
   gsize format_signature_size;
   int format_trust = TRUST_UNKNOWN;
@@ -565,12 +910,16 @@ create_report_format (const char *uuid, const char *name,
   assert (files);
   assert (params);
 
+  if (trusted)
+    format_trust = TRUST_YES;
+
   /* Verify the signature. */
 
-  if ((find_signature ("report_formats", uuid, &format_signature,
+  if (trusted == 0
+      && ((find_signature ("report_formats", uuid, &format_signature,
                        &format_signature_size, &uuid_actual)
-       == 0)
-      || signature)
+          == 0)
+          || signature))
     {
       char *locale;
       GString *format;
@@ -582,7 +931,7 @@ create_report_format (const char *uuid, const char *name,
                               uuid_actual ? uuid_actual : uuid,
                               extension,
                               content_type,
-                              global & 1);
+                              0); /* Old global flag. */
 
       index = 0;
       locale = setlocale (LC_ALL, "C");
@@ -658,13 +1007,7 @@ create_report_format (const char *uuid, const char *name,
 
   sql_begin_immediate ();
 
-  if (acl_user_may ("create_report_format") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (global && acl_user_can_everything (current_credentials.uuid) == 0)
+  if (check_access && (acl_user_may ("create_report_format") == 0))
     {
       sql_rollback ();
       return 99;
@@ -678,6 +1021,12 @@ create_report_format (const char *uuid, const char *name,
     {
       gchar *base, *new, *old, *path;
       char *real_old;
+
+      if (may_exist == 0)
+        {
+          sql_rollback ();
+          return 10;
+        }
 
       /* Make a new UUID, because a report format exists with the given UUID. */
 
@@ -793,144 +1142,13 @@ create_report_format (const char *uuid, const char *name,
 
   /* Write files to disk. */
 
-  assert (global == 0);
-  if (global)
-    dir = predefined_report_format_dir (new_uuid ? new_uuid : uuid);
-  else
+  ret = save_report_format_files (new_uuid ? new_uuid : uuid, files, &dir);
+  if (ret)
     {
-      assert (current_credentials.uuid);
-      dir = g_build_filename (GVMD_STATE_DIR,
-                              "report_formats",
-                              current_credentials.uuid,
-                              new_uuid ? new_uuid : uuid,
-                              NULL);
-    }
-
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
-    {
-      g_warning ("%s: failed to remove dir %s", __func__, dir);
-      g_free (dir);
       g_free (quoted_name);
       g_free (new_uuid);
       sql_rollback ();
-      return -1;
-    }
-
-  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
-    {
-      g_warning ("%s: failed to create dir %s: %s",
-                 __func__, dir, strerror (errno));
-      g_free (dir);
-      g_free (quoted_name);
-      g_free (new_uuid);
-      sql_rollback ();
-      return -1;
-    }
-
-  if (global == 0)
-    {
-      gchar *report_dir;
-
-      /* glib seems to apply the mode to the first dir only. */
-
-      report_dir = g_build_filename (GVMD_STATE_DIR,
-                                     "report_formats",
-                                     current_credentials.uuid,
-                                     NULL);
-
-      if (chmod (report_dir, 0755 /* rwxr-xr-x */))
-        {
-          g_warning ("%s: chmod failed: %s",
-                     __func__,
-                     strerror (errno));
-          g_free (dir);
-          g_free (report_dir);
-          g_free (quoted_name);
-          g_free (new_uuid);
-          sql_rollback ();
-          return -1;
-        }
-
-      g_free (report_dir);
-    }
-
-  /* glib seems to apply the mode to the first dir only. */
-  if (chmod (dir, 0755 /* rwxr-xr-x */))
-    {
-      g_warning ("%s: chmod failed: %s",
-                 __func__,
-                 strerror (errno));
-      g_free (dir);
-      g_free (quoted_name);
-      g_free (new_uuid);
-      sql_rollback ();
-      return -1;
-    }
-
-  index = 0;
-  while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
-    {
-      gchar *contents, *file, *full_file_name;
-      gsize contents_size;
-      GError *error;
-      int ret;
-
-      if (strlen (file_name) == 0)
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          g_free (quoted_name);
-          g_free (new_uuid);
-          sql_rollback ();
-          return 2;
-        }
-
-      file = file_name + strlen (file_name) + 1;
-      if (strlen (file))
-        contents = (gchar*) g_base64_decode (file, &contents_size);
-      else
-        {
-          contents = g_strdup ("");
-          contents_size = 0;
-        }
-
-      full_file_name = g_build_filename (dir, file_name, NULL);
-
-      error = NULL;
-      g_file_set_contents (full_file_name, contents, contents_size, &error);
-      g_free (contents);
-      if (error)
-        {
-          g_warning ("%s: %s", __func__, error->message);
-          g_error_free (error);
-          gvm_file_remove_recurse (dir);
-          g_free (full_file_name);
-          g_free (dir);
-          g_free (quoted_name);
-          g_free (new_uuid);
-          sql_rollback ();
-          return -1;
-        }
-
-      if (strcmp (file_name, "generate") == 0)
-        ret = chmod (full_file_name, 0755 /* rwxr-xr-x */);
-      else
-        ret = chmod (full_file_name, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-      if (ret)
-        {
-          g_warning ("%s: chmod failed: %s",
-                     __func__,
-                     strerror (errno));
-          gvm_file_remove_recurse (dir);
-          g_free (full_file_name);
-          g_free (dir);
-          g_free (quoted_name);
-          g_free (new_uuid);
-          sql_rollback ();
-          return -1;
-        }
-
-      g_free (full_file_name);
+      return ret;
     }
 
   /* Add format to database. */
@@ -942,40 +1160,24 @@ create_report_format (const char *uuid, const char *name,
   quoted_signature = signature ? sql_quote (signature) : NULL;
   g_free (format_signature);
 
-  if (global)
-    sql ("INSERT INTO report_formats"
-         " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags, creation_time,"
-         "  modification_time)"
-         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i, 0,"
-         "         m_now (), m_now ());",
-         new_uuid ? new_uuid : uuid,
-         quoted_name,
-         quoted_summary ? quoted_summary : "",
-         quoted_description ? quoted_description : "",
-         quoted_extension ? quoted_extension : "",
-         quoted_content_type ? quoted_content_type : "",
-         quoted_signature ? quoted_signature : "",
-         format_trust,
-         time (NULL));
-  else
-    sql ("INSERT INTO report_formats"
-         " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags, creation_time,"
-         "  modification_time)"
-         " VALUES ('%s', '%s',"
-         " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '%s', '%s', '%s', %i, %i, 0, m_now (), m_now ());",
-         new_uuid ? new_uuid : uuid,
-         quoted_name,
-         current_credentials.uuid,
-         quoted_summary ? quoted_summary : "",
-         quoted_description ? quoted_description : "",
-         quoted_extension ? quoted_extension : "",
-         quoted_content_type ? quoted_content_type : "",
-         quoted_signature ? quoted_signature : "",
-         format_trust,
-         time (NULL));
+  sql ("INSERT INTO report_formats"
+       " (uuid, name, owner, summary, description, extension, content_type,"
+       "  signature, trust, trust_time, flags, creation_time,"
+       "  modification_time)"
+       " VALUES ('%s', '%s',"
+       " (SELECT id FROM users WHERE users.uuid = '%s'),"
+       " '%s', '%s', '%s', '%s', '%s', %i, %i, %i, m_now (), m_now ());",
+       new_uuid ? new_uuid : uuid,
+       quoted_name,
+       current_credentials.uuid,
+       quoted_summary ? quoted_summary : "",
+       quoted_description ? quoted_description : "",
+       quoted_extension ? quoted_extension : "",
+       quoted_content_type ? quoted_content_type : "",
+       quoted_signature ? quoted_signature : "",
+       format_trust,
+       time (NULL),
+       active ? REPORT_FORMAT_FLAG_ACTIVE : 0);
 
   g_free (new_uuid);
   g_free (quoted_summary);
@@ -988,152 +1190,13 @@ create_report_format (const char *uuid, const char *name,
   /* Add params to database. */
 
   report_format_rowid = sql_last_insert_id ();
-  index = 0;
-  while ((param = (create_report_format_param_t*) g_ptr_array_index (params,
-                                                                     index++)))
+  ret = add_report_format_params (report_format_rowid, params, params_options);
+  if (ret)
     {
-      gchar *quoted_param_name, *quoted_param_value, *quoted_param_fallback;
-      rowid_t param_rowid;
-      long long int min, max;
-
-      if (param->type == NULL)
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 7;
-        }
-
-      if (report_format_param_type_from_name (param->type)
-          == REPORT_FORMAT_PARAM_TYPE_ERROR)
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 9;
-        }
-
-      /* Param min and max are optional.  LLONG_MIN and LLONG_MAX mark in the db
-       * that they were missing, so if the user gives LLONG_MIN or LLONG_MAX it
-       * is an error.  This ensures that GPG verification works, because the
-       * verification knows when to leave out min and max. */
-
-      if (param->type_min)
-        {
-          min = strtoll (param->type_min, NULL, 0);
-          if (min == LLONG_MIN)
-            {
-              gvm_file_remove_recurse (dir);
-              g_free (dir);
-              sql_rollback ();
-              return 6;
-            }
-        }
-      else
-        min = LLONG_MIN;
-
-      if (param->type_max)
-        {
-          max = strtoll (param->type_max, NULL, 0);
-          if (max == LLONG_MAX)
-            {
-              gvm_file_remove_recurse (dir);
-              g_free (dir);
-              sql_rollback ();
-              return 6;
-            }
-        }
-      else
-        max = LLONG_MAX;
-
-      if (param->fallback == NULL)
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 5;
-        }
-
-      quoted_param_name = sql_quote (param->name);
-
-      if (sql_int ("SELECT count(*) FROM report_format_params"
-                   " WHERE name = '%s' AND report_format = %llu;",
-                   quoted_param_name,
-                   report_format_rowid))
-        {
-          g_free (quoted_param_name);
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 8;
-        }
-
-      quoted_param_value = sql_quote (param->value);
-      quoted_param_fallback = sql_quote (param->fallback);
-
-      sql ("INSERT INTO report_format_params"
-           " (report_format, name, type, value, type_min, type_max, type_regex,"
-           "  fallback)"
-           " VALUES (%llu, '%s', %u, '%s', %lli, %lli, '', '%s');",
-           report_format_rowid,
-           quoted_param_name,
-           report_format_param_type_from_name (param->type),
-           quoted_param_value,
-           min,
-           max,
-           quoted_param_fallback);
-
-      g_free (quoted_param_name);
-      g_free (quoted_param_value);
-      g_free (quoted_param_fallback);
-
-      param_rowid = sql_last_insert_id ();
-
-      {
-        array_t *options;
-        int option_index;
-        gchar *option_value;
-
-        options = (array_t*) g_ptr_array_index (params_options, index - 1);
-        if (options == NULL)
-          {
-            g_warning ("%s: options was NULL", __func__);
-            gvm_file_remove_recurse (dir);
-            g_free (dir);
-            sql_rollback ();
-            return -1;
-          }
-        option_index = 0;
-        while ((option_value = (gchar*) g_ptr_array_index (options,
-                                                           option_index++)))
-          {
-            gchar *quoted_option_value = sql_quote (option_value);
-            sql ("INSERT INTO report_format_param_options"
-                 " (report_format_param, value)"
-                 " VALUES (%llu, '%s');",
-                 param_rowid,
-                 quoted_option_value);
-            g_free (quoted_option_value);
-          }
-      }
-
-      if (validate_param_value (report_format_rowid, param_rowid, param->name,
-                                param->value))
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 3;
-        }
-
-      if (validate_param_value (report_format_rowid, param_rowid, param->name,
-                                param->fallback))
-        {
-          gvm_file_remove_recurse (dir);
-          g_free (dir);
-          sql_rollback ();
-          return 4;
-        }
+      gvm_file_remove_recurse (dir);
+      g_free (dir);
+      sql_rollback ();
+      return ret;
     }
 
   if (report_format)
@@ -1144,6 +1207,91 @@ create_report_format (const char *uuid, const char *name,
   sql_commit ();
 
   return 0;
+}
+
+/**
+ * @brief Create a report format.
+ *
+ * @param[in]   uuid           UUID of format.
+ * @param[in]   name           Name of format.
+ * @param[in]   content_type   Content type of format.
+ * @param[in]   extension      File extension of format.
+ * @param[in]   summary        Summary of format.
+ * @param[in]   description    Description of format.
+ * @param[in]   files          Array of memory.  Each item is a file name
+ *                             string, a terminating NULL, the file contents
+ *                             in base64 and a terminating NULL.
+ * @param[in]   params         Array of params.
+ * @param[in]   params_options Array.  Each item is an array corresponding to
+ *                             params.  Each item of an inner array is a string,
+ *                             the text of an option in a selection.
+ * @param[in]   signature      Signature.
+ * @param[out]  report_format  Created report format.
+ *
+ * @return 0 success, 2 empty file name, 3 param value
+ *         validation failed, 4 param value validation failed, 5 param default
+ *         missing, 6 param min or max out of range, 7 param type missing,
+ *         8 duplicate param name, 9 bogus param type name, 99 permission
+ *         denied, -1 error.
+ */
+int
+create_report_format (const char *uuid, const char *name,
+                      const char *content_type, const char *extension,
+                      const char *summary, const char *description,
+                      array_t *files, array_t *params, array_t *params_options,
+                      const char *signature, report_format_t *report_format)
+{
+  return create_report_format_internal (1, /* Check permission. */
+                                        1, /* Allow existing report format. */
+                                        0, /* Active. */
+                                        0, /* Assume trusted. */
+                                        uuid, name, content_type, extension,
+                                        summary, description, files, params,
+                                        params_options, signature,
+                                        report_format);
+}
+
+/**
+ * @brief Create a report format.
+ *
+ * @param[in]   uuid           UUID of format.
+ * @param[in]   name           Name of format.
+ * @param[in]   content_type   Content type of format.
+ * @param[in]   extension      File extension of format.
+ * @param[in]   summary        Summary of format.
+ * @param[in]   description    Description of format.
+ * @param[in]   files          Array of memory.  Each item is a file name
+ *                             string, a terminating NULL, the file contents
+ *                             in base64 and a terminating NULL.
+ * @param[in]   params         Array of params.
+ * @param[in]   params_options Array.  Each item is an array corresponding to
+ *                             params.  Each item of an inner array is a string,
+ *                             the text of an option in a selection.
+ * @param[in]   signature      Signature.
+ * @param[out]  report_format  Created report format.
+ *
+ * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
+ *         validation failed, 4 param value validation failed, 5 param default
+ *         missing, 6 param min or max out of range, 7 param type missing,
+ *         8 duplicate param name, 9 bogus param type name, 99 permission
+ *         denied, -1 error.
+ */
+static int
+create_report_format_no_acl (const char *uuid, const char *name,
+                             const char *content_type, const char *extension,
+                             const char *summary, const char *description,
+                             array_t *files, array_t *params,
+                             array_t *params_options, const char *signature,
+                             report_format_t *report_format)
+{
+  return create_report_format_internal (0, /* Check permission. */
+                                        0, /* Allow existing report format. */
+                                        1, /* Active. */
+                                        1, /* Assume trusted. */
+                                        uuid, name, content_type, extension,
+                                        summary, description, files, params,
+                                        params_options, signature,
+                                        report_format);
 }
 
 /**
@@ -2922,628 +3070,6 @@ init_param_option_iterator (iterator_t* iterator,
 DEF_ACCESS (param_option_iterator_value, 1);
 
 /**
- * @brief Create or update report format for check_report_format.
- *
- * @param[in]  quoted_uuid    UUID of report format, quoted for SQL.
- * @param[in]  name           Name.
- * @param[in]  summary        Summary.
- * @param[in]  description    Description.
- * @param[in]  extension      Extension.
- * @param[in]  content_type   Content type.
- * @param[out] report_format  Created report format.
- *
- * @return 0 success, -1 error.
- */
-static int
-check_report_format_create (const gchar *quoted_uuid, const gchar *name,
-                            const gchar *summary, const gchar *description,
-                            const gchar *extension, const gchar *content_type,
-                            report_format_t *report_format)
-{
-  gchar *quoted_name, *quoted_summary, *quoted_description;
-  gchar *quoted_extension, *quoted_content_type;
-
-  quoted_name = sql_quote (name);
-  quoted_summary = sql_quote (summary);
-  quoted_description = sql_quote (description);
-  quoted_extension = sql_quote (extension);
-  quoted_content_type = sql_quote (content_type);
-
-  if (sql_int ("SELECT count (*) FROM report_formats WHERE uuid = '%s';",
-               quoted_uuid))
-    {
-      sql ("UPDATE report_formats"
-           " SET owner = NULL, name = '%s', summary = '%s', description = '%s',"
-           "     extension = '%s', content_type = '%s', signature = '',"
-           "     trust = %i, trust_time = %i, flags = %llu"
-           " WHERE uuid = '%s';",
-           g_strstrip (quoted_name),
-           g_strstrip (quoted_summary),
-           g_strstrip (quoted_description),
-           g_strstrip (quoted_extension),
-           g_strstrip (quoted_content_type),
-           TRUST_YES,
-           time (NULL),
-           (long long int) REPORT_FORMAT_FLAG_ACTIVE,
-           quoted_uuid);
-
-      sql ("UPDATE report_formats SET modification_time = m_now ()"
-           " WHERE id"
-           " IN (SELECT report_formats.id"
-           "     FROM report_formats, report_formats_check"
-           "     WHERE report_formats.uuid = '%s'"
-           "     AND report_formats.id = report_formats_check.id"
-           "     AND (report_formats.owner != report_formats_check.owner"
-           "          OR report_formats.name != report_formats_check.name"
-           "          OR report_formats.summary != report_formats_check.summary"
-           "          OR report_formats.description"
-           "             != report_formats_check.description"
-           "          OR report_formats.extension"
-           "             != report_formats_check.extension"
-           "          OR report_formats.content_type"
-           "             != report_formats_check.content_type"
-           "          OR report_formats.trust != report_formats_check.trust"
-           "          OR report_formats.flags != report_formats_check.flags));",
-           quoted_uuid);
-    }
-  else
-    sql ("INSERT INTO report_formats"
-         " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags, creation_time,"
-         "  modification_time)"
-         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '', %i, %i, %i,"
-         "         m_now (), m_now ());",
-         quoted_uuid,
-         g_strstrip (quoted_name),
-         g_strstrip (quoted_summary),
-         g_strstrip (quoted_description),
-         g_strstrip (quoted_extension),
-         g_strstrip (quoted_content_type),
-         TRUST_YES,
-         time (NULL),
-         (long long int) REPORT_FORMAT_FLAG_ACTIVE);
-
-  add_role_permission_resource (ROLE_UUID_ADMIN, "GET_REPORT_FORMATS",
-                                "report_format", quoted_uuid);
-  add_role_permission_resource (ROLE_UUID_GUEST, "GET_REPORT_FORMATS",
-                                "report_format", quoted_uuid);
-  add_role_permission_resource (ROLE_UUID_OBSERVER, "GET_REPORT_FORMATS",
-                                "report_format", quoted_uuid);
-  add_role_permission_resource (ROLE_UUID_USER, "GET_REPORT_FORMATS",
-                                "report_format", quoted_uuid);
-
-  g_free (quoted_name);
-  g_free (quoted_summary);
-  g_free (quoted_description);
-  g_free (quoted_extension);
-  g_free (quoted_content_type);
-
-  switch (sql_int64 (report_format,
-                     "SELECT id FROM report_formats WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case 1:        /* Too few rows in result of query. */
-      case -1:
-        g_warning ("%s: Report format missing: %s",
-                   __func__, quoted_uuid);
-        return -1;
-    }
-
-  resource_set_predefined ("report_format", *report_format, 1);
-
-  return 0;
-}
-
-/**
- * @brief Add params for check_report_format.
- *
- * @param[in]  quoted_uuid      UUID of report format, quoted.
- * @param[in]  config_path      Config path.
- * @param[in]  entity           Parsed XML.
- * @param[out] update_mod_time  Whether to update modification time.
- *
- * @return 0 success, -1 error.
- */
-static int
-check_report_format_add_params (const gchar *quoted_uuid, const gchar *config_path,
-                                entity_t entity, int *update_mod_time)
-{
-  entities_t entities;
-  entity_t param;
-
-  entities = entity->entities;
-  while ((param = first_entity (entities)))
-    {
-      g_debug ("%s: possible param: %s", __func__, entity_name (param));
-
-      if (strcmp (entity_name (param), "param") == 0)
-        {
-          const char *name, *value, *fallback;
-          gchar *quoted_name, *quoted_value, *quoted_fallback, *type;
-          const char *min, *max;
-          array_t *opts;
-          entity_t child;
-
-          opts = NULL;
-          min = max = NULL;
-
-          child = entity_child (param, "name");
-          if (child == NULL)
-            {
-              g_warning ("%s: Param missing name in '%s'",
-                         __func__, config_path);
-              return -1;
-            }
-          name = entity_text (child);
-
-          child = entity_child (param, "default");
-          if (child == NULL)
-            {
-              g_warning ("%s: Param missing default in '%s'",
-                         __func__, config_path);
-              return -1;
-            }
-          fallback = entity_text (child);
-
-          child = entity_child (param, "type");
-          if (child == NULL)
-            {
-              g_warning ("%s: Param missing type in '%s'",
-                         __func__, config_path);
-              return -1;
-            }
-          type = g_strstrip (g_strdup (entity_text (child)));
-          if (report_format_param_type_from_name (type)
-              == REPORT_FORMAT_PARAM_TYPE_ERROR)
-            {
-              g_warning ("%s: Error in param type in '%s'",
-                         __func__, config_path);
-              return -1;
-            }
-
-          if (strcmp (type, "report_format_list"))
-            {
-              entity_t bound;
-
-              bound = entity_child (child, "min");
-              if (bound && strlen (entity_text (bound)))
-                {
-                  long long int number;
-                  char *end;
-
-                  min = entity_text (bound);
-                  number = strtoll (min, &end, 0);
-                  if (*end != '\0'
-                      || number == LLONG_MAX
-                      || number == LLONG_MIN)
-                    {
-                      g_warning ("%s: Failed to parse min in '%s'",
-                                 __func__, config_path);
-                      g_free (type);
-                      return -1;
-                    }
-                }
-
-              bound = entity_child (child, "max");
-              if (bound && strlen (entity_text (bound)))
-                {
-                  long long int number;
-                  char *end;
-
-                  max = entity_text (bound);
-                  number = strtoll (max, &end, 0);
-                  if (*end != '\0'
-                      || number == LLONG_MAX
-                      || number == LLONG_MIN)
-                    {
-                      g_warning ("%s: Failed to parse max in '%s'",
-                                 __func__, config_path);
-                      g_free (type);
-                      return -1;
-                    }
-                }
-
-              if (strcmp (type, "selection") == 0)
-                {
-                  entity_t options, option;
-                  entities_t children;
-
-                  options = entity_child (child, "options");
-                  if (options == NULL)
-                    {
-                      g_warning ("%s: Selection missing options in '%s'",
-                                 __func__, config_path);
-                      g_free (type);
-                      return -1;
-                    }
-
-                  children = options->entities;
-                  opts = make_array ();
-                  while ((option = first_entity (children)))
-                    {
-                      array_add (opts, entity_text (option));
-                      children = next_entities (children);
-                    }
-                }
-
-              child = entity_child (param, "value");
-              if (child == NULL)
-                {
-                  g_warning ("%s: Param missing value in '%s'",
-                             __func__, config_path);
-                  g_free (type);
-                  return -1;
-                }
-              value = entity_text (child);
-
-            }
-          else
-            {
-              entity_t report_format;
-
-              child = entity_child (param, "value");
-              if (child == NULL)
-                {
-                  g_warning ("%s: Param missing value in '%s'",
-                             __func__, config_path);
-                  g_free (type);
-                  return -1;
-                }
-
-              report_format = entity_child (child, "report_format");
-              if (report_format == NULL)
-                {
-                  g_warning ("%s: Param missing report format in '%s'",
-                             __func__, config_path);
-                  g_free (type);
-                  return -1;
-                }
-
-              value = entity_attribute (report_format, "id");
-              if (value == NULL)
-                {
-                  g_warning ("%s: Report format missing id in '%s'",
-                             __func__, config_path);
-                  g_free (type);
-                  return -1;
-                }
-            }
-
-          /* Add or update the param. */
-
-          quoted_name = g_strstrip (sql_quote (name));
-          quoted_value = g_strstrip (sql_quote (value));
-          quoted_fallback = g_strstrip (sql_quote (fallback));
-
-          g_debug ("%s: param: %s", __func__, name);
-
-          if (sql_int ("SELECT count (*) FROM report_format_params"
-                       " WHERE name = '%s'"
-                       " AND report_format = (SELECT id FROM report_formats"
-                       "                      WHERE uuid = '%s');",
-                       quoted_name,
-                       quoted_uuid))
-            {
-              g_debug ("%s: param: %s: updating", __func__, name);
-
-              sql ("UPDATE report_format_params"
-                   " SET type = %u, value = '%s', type_min = %s,"
-                   "     type_max = %s, type_regex = '', fallback = '%s'"
-                   " WHERE name = '%s'"
-                   " AND report_format = (SELECT id FROM report_formats"
-                   "                      WHERE uuid = '%s');",
-                   report_format_param_type_from_name (type),
-                   quoted_value,
-                   min ? min : "NULL",
-                   max ? max : "NULL",
-                   quoted_fallback,
-                   quoted_name,
-                   quoted_uuid);
-
-               /* If any value changed, update the modification time. */
-
-               if (sql_int
-                    ("SELECT"
-                     " EXISTS"
-                     "  (SELECT *"
-                     "   FROM report_format_params,"
-                     "        report_format_params_check"
-                     "   WHERE report_format_params.name = '%s'"
-                     "   AND report_format_params_check.name = '%s'"
-                     "   AND report_format_params.report_format"
-                     "       = report_format_params_check.report_format"
-                     "   AND (report_format_params.type"
-                     "        != report_format_params_check.type"
-                     "        OR report_format_params.value"
-                     "           != report_format_params_check.value"
-                     "        OR report_format_params.type_min"
-                     "           != report_format_params_check.type_min"
-                     "        OR report_format_params.type_max"
-                     "           != report_format_params_check.type_max"
-                     "        OR report_format_params.fallback"
-                     "           != report_format_params_check.fallback));",
-                     quoted_name,
-                     quoted_name))
-                 *update_mod_time = 1;
-
-              /* Delete existing param options.
-               *
-               * Predefined report formats can't be modified so the options
-               * don't really matter, so don't worry about them for updating
-               * the modification time. */
-
-              sql ("DELETE FROM report_format_param_options"
-                   " WHERE report_format_param"
-                   "       IN (SELECT id FROM report_format_params"
-                   "           WHERE name = '%s'"
-                   "           AND report_format = (SELECT id"
-                   "                                FROM report_formats"
-                   "                                WHERE uuid = '%s'));",
-                   quoted_name,
-                   quoted_uuid);
-            }
-          else
-            {
-              g_debug ("%s: param: %s: creating", __func__, name);
-
-              sql ("INSERT INTO report_format_params"
-                   " (report_format, name, type, value, type_min, type_max,"
-                   "  type_regex, fallback)"
-                   " VALUES"
-                   " ((SELECT id FROM report_formats WHERE uuid = '%s'),"
-                   "  '%s', %u, '%s', %s, %s, '', '%s');",
-                   quoted_uuid,
-                   quoted_name,
-                   report_format_param_type_from_name (type),
-                   quoted_value,
-                   min ? min : "NULL",
-                   max ? max : "NULL",
-                   quoted_fallback);
-              *update_mod_time = 1;
-            }
-
-          g_free (type);
-
-          /* Keep this param. */
-
-          sql ("DELETE FROM report_format_params_check"
-               " WHERE report_format = (SELECT id FROM report_formats"
-               "                        WHERE uuid = '%s')"
-               " AND name = '%s';",
-               quoted_uuid,
-               quoted_name);
-
-          /* Add any options. */
-
-          if (opts)
-            {
-              int index;
-
-              index = 0;
-              while (opts && (index < opts->len))
-                {
-                  gchar *quoted_option;
-                  quoted_option = sql_quote (g_ptr_array_index (opts, index++));
-                  sql ("INSERT INTO report_format_param_options"
-                       " (report_format_param, value)"
-                       " VALUES ((SELECT id FROM report_format_params"
-                       "          WHERE name = '%s'"
-                       "          AND report_format = (SELECT id"
-                       "                               FROM report_formats"
-                       "                               WHERE uuid = '%s')),"
-                       "         '%s');",
-                       quoted_name,
-                       quoted_uuid,
-                       quoted_option);
-                  g_free (quoted_option);
-                }
-
-              /* array_free would try free the elements too. */
-              g_ptr_array_free (opts, TRUE);
-            }
-
-          g_free (quoted_name);
-          g_free (quoted_value);
-          g_free (quoted_fallback);
-        }
-      entities = next_entities (entities);
-    }
-
-  return 0;
-}
-
-/**
- * @brief Setup a predefined report format from disk.
- *
- * @param[in]  entity        XML.
- * @param[in]  config_path   Config path.
- * @param[in]  name          Name.
- * @param[in]  summary       Summary.
- * @param[in]  description   Description.
- * @param[in]  extension     Extension.
- * @param[in]  content_type  Content type.
- *
- * @return 0 success, -1 error.
- */
-static int
-check_report_format_parse (entity_t entity, const char *config_path,
-                           const char **name, const char **summary,
-                           const char **description, const char **extension,
-                           const char **content_type)
-{
-  entity_t child;
-
-  child = entity_child (entity, "name");
-  if (child == NULL)
-    {
-      g_warning ("%s: Missing name in '%s'", __func__, config_path);
-      return -1;
-    }
-  *name = entity_text (child);
-
-  child = entity_child (entity, "summary");
-  if (child == NULL)
-    {
-      g_warning ("%s: Missing summary in '%s'", __func__, config_path);
-      return -1;
-    }
-  *summary = entity_text (child);
-
-  child = entity_child (entity, "description");
-  if (child == NULL)
-    {
-      g_warning ("%s: Missing description in '%s'",
-                 __func__, config_path);
-      return -1;
-    }
-  *description = entity_text (child);
-
-  child = entity_child (entity, "extension");
-  if (child == NULL)
-    {
-      g_warning ("%s: Missing extension in '%s'", __func__, config_path);
-      return -1;
-    }
-  *extension = entity_text (child);
-
-  child = entity_child (entity, "content_type");
-  if (child == NULL)
-    {
-      g_warning ("%s: Missing content_type in '%s'",
-                 __func__, config_path);
-      return -1;
-    }
-  *content_type = entity_text (child);
-
-  return 0;
-}
-
-/**
- * @brief Setup a predefined report format from disk.
- *
- * @param[in]  uuid  UUID of report format.
- *
- * @return 0 success, -1 error.
- */
-int
-check_report_format (const gchar *uuid)
-{
-  GError *error;
-  gchar *path, *config_path, *xml, *quoted_uuid;
-  gsize xml_len;
-  const char *name, *summary, *description, *extension, *content_type;
-  entity_t entity;
-  int update_mod_time;
-  report_format_t report_format;
-
-  g_debug ("%s: uuid: %s", __func__, uuid);
-
-  update_mod_time = 0;
-  path = predefined_report_format_dir (uuid);
-  g_debug ("%s: path: %s", __func__, path);
-  config_path = g_build_filename (path, "report_format.xml", NULL);
-  g_free (path);
-
-  /* Read the file in. */
-
-  error = NULL;
-  g_file_get_contents (config_path, &xml, &xml_len, &error);
-  if (error)
-    {
-      g_warning ("%s: Failed to read '%s': %s",
-                  __func__,
-                 config_path,
-                 error->message);
-      g_error_free (error);
-      g_free (config_path);
-      return -1;
-    }
-
-  /* Parse it as XML. */
-
-  if (parse_entity (xml, &entity))
-    {
-      g_warning ("%s: Failed to parse '%s'", __func__, config_path);
-      g_free (config_path);
-      return -1;
-    }
-
-  /* Get the report format properties from the XML. */
-
-  if (check_report_format_parse (entity, config_path, &name, &summary,
-                                 &description, &extension, &content_type))
-    {
-      g_free (config_path);
-      free_entity (entity);
-      return -1;
-    }
-
-  quoted_uuid = sql_quote (uuid);
-
-  /* Create or update the report format. */
-
-  if (check_report_format_create (quoted_uuid, name, summary, description,
-                                  extension, content_type, &report_format))
-    goto fail;
-
-  /* Add or update the parameters from the parsed XML. */
-
-  if (check_report_format_add_params (quoted_uuid, config_path, entity,
-                                      &update_mod_time))
-    goto fail;
-
-  free_entity (entity);
-  g_free (config_path);
-
-  /* Remove any params that were not defined by the XML. */
-
-  if (sql_int ("SELECT count (*)"
-               " FROM report_format_params_check"
-               " WHERE report_format = (SELECT id FROM report_formats"
-               "                        WHERE uuid = '%s')",
-               quoted_uuid))
-    {
-      sql ("DELETE FROM report_format_param_options"
-           " WHERE report_format_param"
-           "       IN (SELECT id FROM report_format_params_check"
-           "           WHERE report_format = (SELECT id FROM report_formats"
-           "                                  WHERE uuid = '%s'));",
-           quoted_uuid);
-      sql ("DELETE FROM report_format_params"
-           " WHERE id IN (SELECT id FROM report_format_params_check"
-           "              WHERE report_format = (SELECT id FROM report_formats"
-           "                                     WHERE uuid = '%s'));",
-           quoted_uuid);
-      update_mod_time = 1;
-    }
-
-  /* Update modification time if report format changed. */
-
-  if (update_mod_time)
-    sql ("UPDATE report_formats SET modification_time = m_now ()"
-         " WHERE uuid = '%s';",
-         quoted_uuid);
-
-  /* Keep this report format. */
-
-  sql ("DELETE FROM report_formats_check WHERE uuid = '%s';",
-       quoted_uuid);
-
-  g_free (quoted_uuid);
-  return 0;
-
- fail:
-  g_free (quoted_uuid);
-  g_free (config_path);
-  free_entity (entity);
-  return -1;
-}
-
-/**
  * @brief Verify a report format.
  *
  * @param[in]  report_format  Report format.
@@ -4465,6 +3991,511 @@ delete_report_formats_user (user_t user)
 }
 
 
+/* Feed report formats. */
+
+/**
+ * @brief Get path to report formats in feed.
+ *
+ * @return Path to report formats in feed.
+ */
+static const gchar *
+feed_dir_report_formats ()
+{
+  static gchar *path = NULL;
+  if (path == NULL)
+    path = g_build_filename (GVMD_FEED_DIR, "report_formats", NULL);
+  return path;
+}
+
+/**
+ * @brief Update a report format from an XML file.
+ *
+ * @param[in]  report_format    Existing report format.
+ * @param[in]  report_id        UUID of report format.
+ * @param[in]  name             New name.
+ * @param[in]  content_type     New content type.
+ * @param[in]  extension        New extension.
+ * @param[in]  summary          New summary.
+ * @param[in]  description      New description.
+ * @param[in]  signature        New signature.
+ * @param[in]  files            New files.
+ * @param[in]  params           New params.
+ * @param[in]  params_options   Options for new params.
+ */
+static void
+update_report_format (report_format_t report_format, const gchar *report_id, const gchar *name,
+                      const gchar *content_type, const gchar *extension,
+                      const gchar *summary, const gchar *description,
+                      const gchar *signature, array_t *files, array_t *params,
+                      array_t *params_options)
+{
+  int ret;
+  gchar *quoted_name, *quoted_content_type, *quoted_extension, *quoted_summary;
+  gchar *quoted_description, *quoted_signature;
+
+  sql_begin_immediate ();
+
+  quoted_name = sql_quote (name ? name : "");
+  quoted_content_type = sql_quote (content_type ? content_type : "");
+  quoted_extension = sql_quote (extension ? extension : "");
+  quoted_summary = sql_quote (summary ? summary : "");
+  quoted_description = sql_quote (description ? description : "");
+  quoted_signature = sql_quote (signature ? signature : "");
+  sql ("UPDATE report_formats"
+       " SET name = '%s', content_type = '%s', extension = '%s',"
+       "     summary = '%s', description = '%s', signature = '%s',"
+       "     modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_name,
+       quoted_content_type,
+       quoted_extension,
+       quoted_summary,
+       quoted_description,
+       quoted_signature,
+       report_format);
+  g_free (quoted_name);
+  g_free (quoted_content_type);
+  g_free (quoted_extension);
+  g_free (quoted_summary);
+  g_free (quoted_description);
+  g_free (quoted_signature);
+
+  /* Replace the params. */
+
+  sql ("DELETE FROM report_format_param_options"
+       " WHERE report_format_param IN (SELECT id FROM report_format_params"
+       "                               WHERE report_format = %llu);",
+       report_format);
+  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
+       report_format);
+
+  ret = add_report_format_params (report_format, params, params_options);
+  if (ret)
+    {
+      if (ret == 3)
+        g_warning ("%s: Parameter value validation failed", __func__);
+      else if (ret == 4)
+        g_warning ("%s: Parameter default validation failed", __func__);
+      else if (ret == 5)
+        g_warning ("%s: PARAM requires a DEFAULT element", __func__);
+      else if (ret == 6)
+        g_warning ("%s: PARAM MIN or MAX out of range", __func__);
+      else if (ret == 7)
+        g_warning ("%s: PARAM requires a TYPE element", __func__);
+      else if (ret == 8)
+        g_warning ("%s: Duplicate PARAM name", __func__);
+      else if (ret == 9)
+        g_warning ("%s: Bogus PARAM type", __func__);
+      else if (ret)
+        g_warning ("%s: Internal error", __func__);
+
+      sql_rollback ();
+      return;
+    }
+
+  /* Replace the files. */
+
+  save_report_format_files (report_id, files, NULL);
+
+  sql_commit ();
+}
+
+/**
+ * @brief Grant 'Feed Import Roles' access to a report format.
+ *
+ * @param[in]  report_format_id  UUID of report format.
+ */
+static void
+create_feed_report_format_permissions (const gchar *report_format_id)
+{
+  gchar *roles, **split, **point;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles);
+
+  if (roles == NULL || strlen (roles) == 0)
+    {
+      g_debug ("%s: no 'Feed Import Roles', so not creating permissions",
+               __func__);
+      g_free (roles);
+      return;
+    }
+
+  point = split = g_strsplit (roles, ",", 0);
+  while (*point)
+    {
+      permission_t permission;
+
+      if (create_permission_no_acl ("get_report_formats",
+                                    "Automatically created for report format"
+                                    " from feed",
+                                    NULL,
+                                    report_format_id,
+                                    "role",
+                                    g_strstrip (*point),
+                                    &permission))
+        /* Keep going because we aren't strict about checking the value
+         * of the setting, and because we don't adjust the setting when
+         * roles are removed. */
+        g_warning ("%s: failed to create permission for role '%s'",
+                   __func__, g_strstrip (*point));
+
+      point++;
+    }
+  g_strfreev (split);
+
+  g_free (roles);
+}
+
+/**
+ * @brief Create a report format from an XML file.
+ *
+ * @param[in]  report_format  Existing report format.
+ * @param[in]  path           Full path to report format XML.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_report_format_from_file (report_format_t report_format,
+                                const gchar *path)
+{
+  entity_t entity;
+  array_t *files, *params, *params_options;
+  char *name, *content_type, *extension, *summary, *description, *signature;
+  const char *report_format_id;
+
+  g_debug ("%s: updating %s", __func__, path);
+
+  /* Parse the file into an entity. */
+
+  if (parse_xml_file (path, &entity))
+    return 1;
+
+  /* Parse the data out of the entity. */
+
+  parse_report_format_entity (entity, &report_format_id, &name,
+                              &content_type, &extension, &summary,
+                              &description, &signature, &files, &params,
+                              &params_options);
+
+  /* Update the report format. */
+
+  update_report_format (report_format, report_format_id, name, content_type,
+                        extension, summary, description, signature, files,
+                        params, params_options);
+
+  /* Cleanup. */
+
+  array_free (files);
+  params_options_free (params_options);
+  array_free (params);
+  free_entity (entity);
+
+  return 0;
+}
+
+/**
+ * @brief Create a report format from an XML file.
+ *
+ * @param[in]  path  Path to report format XML.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+create_report_format_from_file (const gchar *path)
+{
+  entity_t report_format;
+  array_t *files, *params, *params_options;
+  char *name, *content_type, *extension, *summary, *description, *signature;
+  const char *report_format_id;
+  report_format_t new_report_format;
+
+  g_debug ("%s: creating %s", __func__, path);
+
+  /* Parse the file into an entity. */
+
+  if (parse_xml_file (path, &report_format))
+    return 1;
+
+  /* Parse the data out of the entity. */
+
+  parse_report_format_entity (report_format, &report_format_id, &name,
+                              &content_type, &extension, &summary,
+                              &description, &signature, &files, &params,
+                              &params_options);
+
+  /* Create the report format. */
+
+  switch (create_report_format_no_acl (report_format_id,
+                                       name,
+                                       content_type,
+                                       extension,
+                                       summary,
+                                       description,
+                                       files,
+                                       params,
+                                       params_options,
+                                       signature,
+                                       &new_report_format))
+    {
+      case 0:
+        {
+          gchar *uuid;
+
+          resource_set_predefined ("report_format", new_report_format, 1);
+
+          uuid = report_format_uuid (new_report_format);
+          log_event ("report_format", "Report format", uuid, "created");
+
+          /* Create permissions. */
+          create_feed_report_format_permissions (uuid);
+
+          g_free (uuid);
+          break;
+        }
+      case 1:
+        g_warning ("%s: Report Format exists already", __func__);
+        log_event_fail ("report_format", "Report format", NULL, "created");
+        break;
+      case 2:
+        g_warning ("%s: Every FILE must have a name attribute", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 3:
+        g_warning ("%s: Parameter value validation failed", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 4:
+        g_warning ("%s: Parameter default validation failed", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 5:
+        g_warning ("%s: PARAM requires a DEFAULT element", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 6:
+        g_warning ("%s: PARAM MIN or MAX out of range", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 7:
+        g_warning ("%s: PARAM requires a TYPE element", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 8:
+        g_warning ("%s: Duplicate PARAM name", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 9:
+        g_warning ("%s: Bogus PARAM type", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 99:
+        g_warning ("%s: Permission denied", __func__);
+        log_event_fail ("report_format", "Report format", NULL, "created");
+        break;
+      default:
+      case -1:
+        g_warning ("%s: Internal error", __func__);
+        log_event_fail ("report_format", "Report format", NULL, "created");
+        break;
+    }
+
+  /* Cleanup. */
+
+  array_free (files);
+  params_options_free (params_options);
+  array_free (params);
+  free_entity (report_format);
+
+  return 0;
+}
+
+/**
+ * @brief Check if a report format has been updated in the feed.
+ *
+ * @param[in]  path           Full path to report format XML in feed.
+ * @param[in]  report_format  Report Format.
+ *
+ * @return 1 if updated in feed, else 0.
+ */
+int
+report_format_updated_in_feed (report_format_t report_format, const gchar *path)
+{
+  GStatBuf state;
+  int last_update;
+
+  last_update = sql_int ("SELECT modification_time FROM report_formats"
+                         " WHERE id = %llu;",
+                         report_format);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed report_format file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if (state.st_mtime <= last_update)
+    return 0;
+
+  return 1;
+}
+
+/**
+ * @brief Sync a single report format with the feed.
+ *
+ * @param[in]  path  Path to report format XML in feed.
+ */
+static void
+sync_report_format_with_feed (const gchar *path)
+{
+  gchar **split, *full_path, *uuid;
+  report_format_t report_format;
+
+  g_debug ("%s: considering %s", __func__, path);
+
+  split = g_regex_split_simple
+           (/* Format is: [AnYtHiNg]uuid.xml
+             * For example: PDF--daba56c8-73ec-11df-a475-002264764cea.xml */
+            "^.*([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12}).xml$",
+            path, 0, 0);
+
+  if (split == NULL || g_strv_length (split) != 7)
+    {
+      g_strfreev (split);
+      g_warning ("%s: path not in required format: %s", __func__, path);
+      return;
+    }
+
+  full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
+
+  uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
+                          split[1], split[2], split[3], split[4], split[5]);
+  g_strfreev (split);
+  if (find_report_format_no_acl (uuid, &report_format) == 0
+      && report_format)
+    {
+      g_free (uuid);
+
+      g_debug ("%s: considering %s for update", __func__, path);
+
+      if (report_format_updated_in_feed (report_format, full_path))
+        {
+          g_debug ("%s: updating %s", __func__, path);
+          update_report_format_from_file (report_format, full_path);
+        }
+
+      g_free (full_path);
+      return;
+    }
+
+  if (find_trash_report_format_no_acl (uuid, &report_format) == 0
+      && report_format)
+    {
+      g_warning ("%s: ignoring report format '%s', as it is in the trashcan",
+                 __func__, uuid);
+      g_free (uuid);
+      return;
+    }
+
+  g_free (uuid);
+
+  g_debug ("%s: adding %s", __func__, path);
+
+  create_report_format_from_file (full_path);
+
+  g_free (full_path);
+}
+
+/**
+ * @brief Sync all report formats with the feed.
+ *
+ * Create report formats that exists in the feed but not in the db.
+ * Update report formats in the db that have changed on the feed.
+ * Do nothing to report formats in db that have been removed from the feed.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sync_report_formats_with_feed ()
+{
+  GError *error;
+  GDir *dir;
+  const gchar *report_format_path;
+
+  /* Setup owner. */
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
+
+  if (current_credentials.uuid == NULL
+      || strlen (current_credentials.uuid) == 0)
+    {
+      /* Sync is disabled by having no "Feed Import Owner". */
+      g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
+      return 0;
+    }
+
+  current_credentials.username = user_name (current_credentials.uuid);
+  if (current_credentials.username == NULL)
+    {
+      g_debug ("%s: unknown Feed Import Owner so not syncing from feed",
+               __func__);
+      return 0;
+    }
+
+  /* Open feed import directory. */
+
+  error = NULL;
+  dir = g_dir_open (feed_dir_report_formats (), 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __func__, feed_dir_report_formats (), error->message);
+      g_error_free (error);
+      g_free (current_credentials.uuid);
+      g_free (current_credentials.username);
+      current_credentials.uuid = NULL;
+      current_credentials.username = NULL;
+      return -1;
+    }
+
+  /* Sync each file in the directory. */
+
+  while ((report_format_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (report_format_path, ".") == 0
+        && strlen (report_format_path) >= (36 /* UUID */ + strlen (".xml"))
+        && g_str_has_suffix (report_format_path, ".xml"))
+      sync_report_format_with_feed (report_format_path);
+
+  /* Cleanup. */
+
+  g_dir_close (dir);
+  g_free (current_credentials.uuid);
+  g_free (current_credentials.username);
+  current_credentials.uuid = NULL;
+  current_credentials.username = NULL;
+
+  return 0;
+}
+
+/**
+ * @brief Sync report formats with the feed.
+ */
+void
+manage_sync_report_formats ()
+{
+  sync_report_formats_with_feed ();
+}
+
+
 /* Startup. */
 
 /**
@@ -4748,7 +4779,8 @@ check_db_trash_report_formats ()
                " IN (SELECT id from report_format_params_trash"
                "     WHERE report_format = %llu);",
                report_format);
-          sql ("DELETE FROM report_format_params_trash WHERE report_format = %llu;",
+          sql ("DELETE FROM report_format_params_trash"
+               " WHERE report_format = %llu;",
                report_format);
           sql ("DELETE FROM report_formats_trash WHERE id = %llu;",
                report_format);
@@ -4775,11 +4807,8 @@ check_db_trash_report_formats ()
 int
 check_db_report_formats ()
 {
-  GError *error;
-  GDir *dir;
-  gchar *path;
-  const gchar *report_format_path;
-  iterator_t report_formats;
+  if (sync_report_formats_with_feed ())
+    g_warning ("%s: Failed to sync report formats with feed", __func__);
 
   if (check_db_trash_report_formats ())
     return -1;
@@ -4788,90 +4817,6 @@ check_db_report_formats ()
   update_report_format_uuids ();
   if (make_report_format_uuids_unique ())
     return -1;
-
-  /* Open the global report format dir. */
-
-  path = predefined_report_format_dir (NULL);
-
-  error = NULL;
-  dir = g_dir_open (path, 0, &error);
-  if (dir == NULL)
-    {
-      g_warning ("%s: Failed to open directory '%s': %s",
-                 __func__, path, error->message);
-      g_error_free (error);
-      g_free (path);
-      return -1;
-    }
-  g_free (path);
-
-  /* Remember existing global report formats. */
-
-  sql ("CREATE TEMPORARY TABLE report_formats_check"
-       " AS SELECT id, uuid, name, owner, summary, description, extension,"
-       "           content_type, signature, trust, trust_time, flags,"
-       "           creation_time, modification_time"
-       "    FROM report_formats"
-       "    WHERE owner IS NULL;");
-
-  sql ("CREATE TEMPORARY TABLE report_format_params_check"
-       " AS SELECT id, name, report_format, type, value, type_min, type_max,"
-       "           type_regex, fallback"
-       "    FROM report_format_params"
-       "    WHERE report_format IN (SELECT id FROM report_formats"
-       "                            WHERE owner IS NULL);");
-
-  /* Create or update global report formats from disk. */
-
-  while ((report_format_path = g_dir_read_name (dir)))
-    check_report_format (report_format_path);
-
-  /* Remove previous global report formats that were not defined. */
-
-  init_iterator (&report_formats,
-                 "SELECT id, uuid, name FROM report_formats"
-                 " WHERE uuid IN (SELECT uuid FROM report_formats_check)"
-                 " AND (EXISTS (SELECT * FROM alert_method_data_trash"
-                 "              WHERE data = report_formats.uuid"
-                 "              AND (name = 'notice_attach_format'"
-                 "                   OR name = 'notice_report_format'))"
-                 "      OR EXISTS (SELECT * FROM alert_method_data"
-                 "                 WHERE data = report_formats.uuid"
-                 "                 AND (name = 'notice_attach_format'"
-                 "                      OR name = 'notice_report_format')));");
-  while (next (&report_formats))
-    g_warning
-     ("Removing old report format %s (%s) which is in use by an alert.\n"
-      "Alert will fallback to TXT report format (%s), if TXT exists.",
-      iterator_string (&report_formats, 2),
-      iterator_string (&report_formats, 1),
-      "a3810a62-1f62-11e1-9219-406186ea4fc5");
-  cleanup_iterator (&report_formats);
-
-  sql ("DELETE FROM report_format_param_options"
-       " WHERE report_format_param"
-       "       IN (SELECT id FROM report_format_params"
-       "           WHERE report_format"
-       "                 IN (SELECT id FROM report_formats"
-       "                     WHERE uuid IN (SELECT uuid"
-       "                                    FROM report_formats_check)));");
-
-  sql ("DELETE FROM report_format_params"
-       " WHERE report_format IN (SELECT id FROM report_formats"
-       "                         WHERE uuid IN (SELECT uuid"
-       "                                        FROM report_formats_check));");
-
-  sql ("DELETE FROM resources_predefined"
-       " WHERE resource_type = 'report_format'"
-       " AND resource IN (SELECT id FROM report_formats_check);");
-
-  sql ("DELETE FROM report_formats"
-       " WHERE uuid IN (SELECT uuid FROM report_formats_check);");
-
-  /* Forget the old global report formats. */
-
-  sql ("DROP TABLE report_format_params_check;");
-  sql ("DROP TABLE report_formats_check;");
 
   return 0;
 }
