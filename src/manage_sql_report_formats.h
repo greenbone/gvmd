@@ -53,6 +53,9 @@ empty_trashcan_report_formats ();
 void
 inherit_report_formats (user_t, user_t);
 
+void
+migrate_predefined_report_formats ();
+
 int
 check_db_report_formats ();
 

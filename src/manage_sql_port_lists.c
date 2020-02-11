@@ -1597,13 +1597,6 @@ delete_port_list (const char *port_list_id, int ultimate)
       return -1;
     }
 
-  if (port_list
-      && port_list_is_predefined (port_list))
-    {
-      sql_rollback ();
-      return 3;
-    }
-
   if (port_list == 0)
     {
       if (find_trash ("port_list", port_list_id, &port_list))
@@ -1754,22 +1747,6 @@ delete_port_range (const char *port_range_id, int dummy)
       sql_rollback ();
       return 2;
     }
-
-  if (sql_int
-       ("SELECT count (*) FROM port_lists WHERE"
-        " id = (SELECT port_list FROM port_ranges"
-        "       WHERE port_ranges.id = %llu)"
-        " AND"
-        " (uuid = '" PORT_LIST_UUID_DEFAULT "'"
-        "  OR uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "'"
-        "  OR uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "'"
-        "  OR uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP "'"
-        "  OR uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "'"
-        "  OR uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_2012 "'"
-        "  OR uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "'"
-        "  OR uuid = '" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "');",
-        port_range))
-    return 3;
 
   sql ("DELETE FROM port_ranges WHERE id = %llu;", port_range);
 
@@ -2019,31 +1996,6 @@ port_range_uuid (port_range_t port_range)
 }
 
 /**
- * @brief Return whether a port list is predefined.
- *
- * @param[in]  port_list  Port List.
- *
- * @return Whether port list is predefined.
- */
-int
-port_list_is_predefined (port_list_t port_list)
-{
-  return !!sql_int
-            ("SELECT COUNT (*) FROM port_lists"
-             " WHERE id = %llu AND"
-             " (uuid = '" PORT_LIST_UUID_DEFAULT "'"
-             "  OR uuid = '" PORT_LIST_UUID_ALL_TCP "'"
-             "  OR uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "'"
-             "  OR uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "'"
-             "  OR uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP "'"
-             "  OR uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "'"
-             "  OR uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_2012 "'"
-             "  OR uuid = '" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "'"
-             "  OR uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "');",
-             port_list);
-}
-
-/**
  * @brief Return whether a port_list is in use by a task.
  *
  * @param[in]  port_list  Port_List.
@@ -2053,9 +2005,6 @@ port_list_is_predefined (port_list_t port_list)
 int
 port_list_in_use (port_list_t port_list)
 {
-  if (port_list_is_predefined (port_list))
-    return 1;
-
   return !!sql_int ("SELECT count(*) FROM targets"
                     " WHERE port_list = %llu",
                     port_list);
@@ -2088,8 +2037,6 @@ trash_port_list_in_use (port_list_t port_list)
 int
 port_list_writable (port_list_t port_list)
 {
-  if (port_list_is_predefined (port_list))
-    return 0;
   return port_list_in_use (port_list) == 0;
 }
 
@@ -2473,6 +2420,20 @@ delete_port_lists_user (user_t user)
   sql ("DELETE FROM port_lists_trash WHERE owner = %llu;", user);
 }
 
+/**
+ * @brief Migrate old ownerless port lists to the Feed Owner.
+ */
+void
+migrate_predefined_port_lists ()
+{
+  sql ("UPDATE port_lists"
+       " SET owner = (SELECT id FROM users"
+       "              WHERE uuid = (SELECT value FROM settings"
+       "                            WHERE uuid = '%s'))"
+       " WHERE owner is NULL;",
+       SETTING_UUID_FEED_IMPORT_OWNER);
+}
+
 
 /* Startup. */
 
@@ -2557,6 +2518,8 @@ update_port_list (port_list_t port_list, const gchar *name,
 void
 check_db_port_lists ()
 {
+  migrate_predefined_port_lists ();
+
   if (sync_port_lists_with_feed ())
     g_warning ("%s: Failed to sync port lists with feed", __func__);
 

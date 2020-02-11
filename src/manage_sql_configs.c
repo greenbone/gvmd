@@ -76,18 +76,6 @@ static int
 insert_nvt_selectors (const char *, const array_t*);
 
 
-/* Headers from config specific files. */
-
-int
-check_config_discovery (const char *);
-
-void
-check_config_host_discovery (const char *);
-
-int
-check_config_system_discovery (const char *);
-
-
 /* Helpers. */
 
 /**
@@ -3019,17 +3007,6 @@ delete_config (const char *config_id, int ultimate)
 {
   config_t config = 0;
 
-  if ((strcmp (config_id, CONFIG_UUID_FULL_AND_FAST) == 0)
-      || (strcmp (config_id, CONFIG_UUID_FULL_AND_FAST_ULTIMATE) == 0)
-      || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP) == 0)
-      || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE) == 0)
-      || (strcmp (config_id, CONFIG_UUID_BASE) == 0)
-      || (strcmp (config_id, CONFIG_UUID_DISCOVERY) == 0)
-      || (strcmp (config_id, CONFIG_UUID_HOST_DISCOVERY) == 0)
-      || (strcmp (config_id, CONFIG_UUID_SYSTEM_DISCOVERY) == 0)
-      || (strcmp (config_id, CONFIG_UUID_EMPTY) == 0))
-    return 3;
-
   sql_begin_immediate ();
 
   if (acl_user_may ("delete_config") == 0)
@@ -3570,20 +3547,6 @@ config_in_use (config_t config)
 int
 config_writable (config_t config)
 {
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE id = %i"
-               " AND (uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
-               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
-               "      OR uuid = '" CONFIG_UUID_BASE "'"
-               "      OR uuid = '" CONFIG_UUID_EMPTY "'"
-               "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
-               "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
-               "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
-               config))
-    return 0;
-
   return 1;
 }
 
@@ -4652,6 +4615,20 @@ update_config_cache_init (const char *uuid)
   cleanup_iterator (&configs);
 }
 
+/**
+ * @brief Migrate old ownerless configs to the Feed Owner.
+ */
+void
+migrate_predefined_configs ()
+{
+  sql ("UPDATE configs"
+       " SET owner = (SELECT id FROM users"
+       "              WHERE uuid = (SELECT value FROM settings"
+       "                            WHERE uuid = '%s'))"
+       " WHERE owner is NULL;",
+       SETTING_UUID_FEED_IMPORT_OWNER);
+}
+
 
 /* Startup. */
 
@@ -4781,6 +4758,8 @@ update_config (config_t config, const gchar *type, const gchar *name,
 void
 check_db_configs ()
 {
+  migrate_predefined_configs ();
+
   if (sync_configs_with_feed ())
     g_warning ("%s: Failed to sync configs with feed", __func__);
 
@@ -4801,10 +4780,4 @@ check_db_configs ()
          " AND family = 'Service detection'"
          " AND NOT EXISTS (SELECT * FROM nvts"
          "                 WHERE oid = nvt_selectors.family_or_nvt);");
-
-  check_config_discovery (CONFIG_UUID_DISCOVERY);
-
-  check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
-
-  check_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY);
 }
