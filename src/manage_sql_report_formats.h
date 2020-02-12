@@ -25,9 +25,6 @@
 
 #include <glib.h>
 
-int
-check_report_format (const gchar *);
-
 gboolean
 lookup_report_format (const char*, report_format_t*);
 
