@@ -31,6 +31,18 @@ check_report_format (const gchar *);
 gboolean
 lookup_report_format (const char*, report_format_t*);
 
+gboolean
+find_report_format_no_acl (const char *, report_format_t *);
+
+gboolean
+find_trash_report_format_no_acl (const char *, report_format_t *);
+
+int
+create_report_format_no_acl (const char *, const char *, const char *,
+                             const char *, const char *, const char *,
+                             array_t *, array_t *, array_t *, const char *,
+                             report_format_t *);
+
 const char**
 report_format_filter_columns ();
 
@@ -52,6 +64,15 @@ empty_trashcan_report_formats ();
 
 void
 inherit_report_formats (user_t, user_t);
+
+void
+update_report_format (report_format_t, const gchar *, const gchar *,
+                      const gchar *, const gchar *, const gchar *,
+                      const gchar *, const gchar *, array_t *, array_t *,
+                      array_t *);
+
+int
+report_format_updated_in_feed (report_format_t, const gchar *);
 
 void
 migrate_predefined_report_formats ();
