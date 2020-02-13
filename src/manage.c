@@ -1358,13 +1358,13 @@ alert_condition_description (alert_condition_t condition,
         return g_strdup ("Always");
       case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
         {
-          char *level;
+          char *count;
           gchar *ret;
 
-          level = alert_data (alert, "condition", "severity");
+          count = alert_data (alert, "condition", "count");
           ret = g_strdup_printf ("Filter count at least %s",
-                                 level ? level : "0");
-          free (level);
+                                 count ? count : "0");
+          free (count);
           return ret;
         }
       case ALERT_CONDITION_FILTER_COUNT_CHANGED:

@@ -11769,8 +11769,9 @@ email_secinfo (alert_t alert, task_t task, event_t event,
                const gchar *from_address)
 {
   gchar *alert_subject, *message, *subject, *example, *list, *type, *base64;
-  gchar *body;
-  char *notice, *recipient_credential_id;
+  gchar *term, *body;
+  char *notice, *recipient_credential_id, *condition_filter_id;
+  filter_t condition_filter;
   credential_t recipient_credential;
   int ret, count;
 
@@ -11824,10 +11825,25 @@ email_secinfo (alert_t alert, task_t task, event_t event,
                                   strlen (list));
     }
 
+  condition_filter = 0;
+  term = NULL;
+  condition_filter_id = alert_data (alert, "condition", "filter_id");
+  if (condition_filter_id)
+    {
+      gchar *quoted_filter_id;
+      quoted_filter_id = sql_quote (condition_filter_id);
+      sql_int64 (&condition_filter,
+                 "SELECT id FROM filters WHERE uuid = '%s'",
+                 quoted_filter_id);
+      term = filter_term (condition_filter_id);
+      g_free (quoted_filter_id);
+    }
+  free (condition_filter_id);
+
   if (message && strlen (message))
     body = alert_message_print (message, event, type,
                                 task, alert, condition,
-                                NULL, 0, NULL, NULL, NULL,
+                                NULL, condition_filter, term, NULL, NULL,
                                 list,
                                 list ? strlen (list) : 0,
                                 0, count, 0);
@@ -11845,6 +11861,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
       free (condition_desc);
     }
 
+  g_free (term);
   g_free (message);
   g_free (list);
 
@@ -14157,6 +14174,75 @@ event_applies (event_t event, const void *event_data,
 }
 
 /**
+ * @brief Return the SecInfo count.
+ *
+ * @param[in]  alert      Alert.
+ * @param[in]  filter_id  Condition filter id.
+ *
+ * @return 1 if met, else 0.
+ */
+static time_t
+alert_secinfo_count (alert_t alert, char *filter_id)
+{
+  get_data_t get;
+  int db_count, uuid_was_null;
+  event_t event;
+  gboolean get_modified;
+  time_t feed_version_epoch;
+  char *secinfo_type;
+
+  event = alert_event (alert);
+  get_modified = (event == EVENT_UPDATED_SECINFO);
+
+  if (current_credentials.uuid == NULL)
+    {
+      current_credentials.uuid = alert_owner_uuid (alert);
+      uuid_was_null = 1;
+    }
+  else
+    uuid_was_null = 0;
+
+  memset (&get, '\0', sizeof (get));
+  if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
+    get.filt_id = filter_id;
+
+  secinfo_type = alert_data (alert, "event", "secinfo_type");
+
+  if (strcmp (secinfo_type, "nvt") == 0)
+    {
+      feed_version_epoch = nvts_feed_version_epoch ();
+      db_count = nvt_info_count_after (&get,
+                                       feed_version_epoch,
+                                       get_modified);
+    }
+  else if (strcmp (secinfo_type, "cert_bund_adv") == 0
+           || strcmp (secinfo_type, "dfn_cert_adv") == 0)
+    {
+      feed_version_epoch = cert_check_time ();
+      db_count = secinfo_count_after (&get,
+                                      secinfo_type,
+                                      feed_version_epoch,
+                                      get_modified);
+    }
+  else // assume SCAP data
+    {
+      feed_version_epoch = scap_check_time ();
+      db_count = secinfo_count_after (&get,
+                                      secinfo_type,
+                                      feed_version_epoch,
+                                      get_modified);
+    }
+
+  if (uuid_was_null)
+    {
+      free (current_credentials.uuid);
+      current_credentials.uuid = NULL;
+    }
+
+  return db_count;
+}
+
+/**
  * @brief Return whether the condition of an alert is met by a task.
  *
  * @param[in]  task       Task.
@@ -14198,28 +14284,12 @@ condition_met (task_t task, report_t report, alert_t alert,
 
           if (task == 0)
             {
-              get_data_t get;
-              int db_count, uuid_was_null;
+              int db_count;
 
-              /* NVT event. */
+              /* SecInfo event. */
 
-              if (current_credentials.uuid == NULL)
-                {
-                  current_credentials.uuid = alert_owner_uuid (alert);
-                  uuid_was_null = 1;
-                }
-              else
-                uuid_was_null = 0;
-
-              memset (&get, '\0', sizeof (get));
-              if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
-                get.filt_id = filter_id;
-              db_count = nvt_info_count (&get);
-              if (uuid_was_null)
-                {
-                  free (current_credentials.uuid);
-                  current_credentials.uuid = NULL;
-                }
+              db_count = alert_secinfo_count (alert, filter_id);
+ 
               if (db_count >= count)
                 return 1;
               break;
@@ -33240,13 +33310,17 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
   else if (event == EVENT_NEW_SECINFO)
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE creation_time > %d"
-                   " ORDER BY creation_time DESC;", (int)feed_version_epoch);
+                   " WHERE creation_time > %ld"
+                   " ORDER BY creation_time DESC;",
+                   feed_version_epoch);
   else
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE modification_time > %d"
-                   " ORDER BY modification_time DESC;", (int)feed_version_epoch);
+                   " WHERE modification_time > %ld"
+                   "   AND creation_time <= %ld"
+                   " ORDER BY modification_time DESC;",
+                   feed_version_epoch,
+                   feed_version_epoch);
 
   while (next (&rows))
     {
