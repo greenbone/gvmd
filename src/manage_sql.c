@@ -33310,13 +33310,17 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
   else if (event == EVENT_NEW_SECINFO)
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE creation_time > %d"
-                   " ORDER BY creation_time DESC;", (int)feed_version_epoch);
+                   " WHERE creation_time > %ld"
+                   " ORDER BY creation_time DESC;",
+                   feed_version_epoch);
   else
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE modification_time > %d"
-                   " ORDER BY modification_time DESC;", (int)feed_version_epoch);
+                   " WHERE modification_time > %ld"
+                   "   AND creation_time <= %ld"
+                   " ORDER BY modification_time DESC;",
+                   feed_version_epoch,
+                   feed_version_epoch);
 
   while (next (&rows))
     {

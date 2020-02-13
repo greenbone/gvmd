@@ -1590,7 +1590,9 @@ secinfo_count_after (const get_data_t *get,
     }
 
   if (get_modified)
-    extra_where = g_strdup_printf (" AND modification_time > %ld",
+    extra_where = g_strdup_printf (" AND modification_time > %ld"
+                                   " AND creation_time <= %ld",
+                                   count_time,
                                    count_time);
   else
     extra_where = g_strdup_printf (" AND creation_time > %ld",
