@@ -25,8 +25,11 @@
  */
 
 #include "manage_report_formats.h"
+#include "gmp_report_formats.h"
 #include "manage.h"
 #include "manage_sql.h"
+#include "manage_sql_report_formats.h"
+#include "utils.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -390,4 +393,384 @@ file_iterator_content_64 (file_iterator_t* iterator)
     }
 
   return content;
+}
+
+
+/* Feed report formats. */
+
+/**
+ * @brief Get path to report formats in feed.
+ *
+ * @return Path to report formats in feed.
+ */
+static const gchar *
+feed_dir_report_formats ()
+{
+  static gchar *path = NULL;
+  if (path == NULL)
+    path = g_build_filename (GVMD_FEED_DIR, "report_formats", NULL);
+  return path;
+}
+
+/**
+ * @brief Create a report format from an XML file.
+ *
+ * @param[in]  report_format  Existing report format.
+ * @param[in]  path           Full path to report format XML.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_report_format_from_file (report_format_t report_format,
+                                const gchar *path)
+{
+  entity_t entity;
+  array_t *files, *params, *params_options;
+  char *name, *content_type, *extension, *summary, *description, *signature;
+  const char *report_format_id;
+
+  g_debug ("%s: updating %s", __func__, path);
+
+  /* Parse the file into an entity. */
+
+  if (parse_xml_file (path, &entity))
+    return 1;
+
+  /* Parse the data out of the entity. */
+
+  parse_report_format_entity (entity, &report_format_id, &name,
+                              &content_type, &extension, &summary,
+                              &description, &signature, &files, &params,
+                              &params_options);
+
+  /* Update the report format. */
+
+  update_report_format (report_format, report_format_id, name, content_type,
+                        extension, summary, description, signature, files,
+                        params, params_options);
+
+  /* Cleanup. */
+
+  array_free (files);
+  params_options_free (params_options);
+  array_free (params);
+  free_entity (entity);
+
+  return 0;
+}
+
+/**
+ * @brief Grant 'Feed Import Roles' access to a report format.
+ *
+ * @param[in]  report_format_id  UUID of report format.
+ */
+static void
+create_feed_report_format_permissions (const gchar *report_format_id)
+{
+  gchar *roles, **split, **point;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles);
+
+  if (roles == NULL || strlen (roles) == 0)
+    {
+      g_debug ("%s: no 'Feed Import Roles', so not creating permissions",
+               __func__);
+      g_free (roles);
+      return;
+    }
+
+  point = split = g_strsplit (roles, ",", 0);
+  while (*point)
+    {
+      permission_t permission;
+
+      if (create_permission_no_acl ("get_report_formats",
+                                    "Automatically created for report format"
+                                    " from feed",
+                                    NULL,
+                                    report_format_id,
+                                    "role",
+                                    g_strstrip (*point),
+                                    &permission))
+        /* Keep going because we aren't strict about checking the value
+         * of the setting, and because we don't adjust the setting when
+         * roles are removed. */
+        g_warning ("%s: failed to create permission for role '%s'",
+                   __func__, g_strstrip (*point));
+
+      point++;
+    }
+  g_strfreev (split);
+
+  g_free (roles);
+}
+
+/**
+ * @brief Create a report format from an XML file.
+ *
+ * @param[in]  path  Path to report format XML.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+create_report_format_from_file (const gchar *path)
+{
+  entity_t report_format;
+  array_t *files, *params, *params_options;
+  char *name, *content_type, *extension, *summary, *description, *signature;
+  const char *report_format_id;
+  report_format_t new_report_format;
+
+  g_debug ("%s: creating %s", __func__, path);
+
+  /* Parse the file into an entity. */
+
+  if (parse_xml_file (path, &report_format))
+    return 1;
+
+  /* Parse the data out of the entity. */
+
+  parse_report_format_entity (report_format, &report_format_id, &name,
+                              &content_type, &extension, &summary,
+                              &description, &signature, &files, &params,
+                              &params_options);
+
+  /* Create the report format. */
+
+  switch (create_report_format_no_acl (report_format_id,
+                                       name,
+                                       content_type,
+                                       extension,
+                                       summary,
+                                       description,
+                                       files,
+                                       params,
+                                       params_options,
+                                       signature,
+                                       &new_report_format))
+    {
+      case 0:
+        {
+          gchar *uuid;
+
+          resource_set_predefined ("report_format", new_report_format, 1);
+
+          uuid = report_format_uuid (new_report_format);
+          log_event ("report_format", "Report format", uuid, "created");
+
+          /* Create permissions. */
+          create_feed_report_format_permissions (uuid);
+
+          g_free (uuid);
+          break;
+        }
+      case 1:
+        g_warning ("%s: Report Format exists already", __func__);
+        log_event_fail ("report_format", "Report format", NULL, "created");
+        break;
+      case 2:
+        g_warning ("%s: Every FILE must have a name attribute", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 3:
+        g_warning ("%s: Parameter value validation failed", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 4:
+        g_warning ("%s: Parameter default validation failed", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 5:
+        g_warning ("%s: PARAM requires a DEFAULT element", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 6:
+        g_warning ("%s: PARAM MIN or MAX out of range", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 7:
+        g_warning ("%s: PARAM requires a TYPE element", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 8:
+        g_warning ("%s: Duplicate PARAM name", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 9:
+        g_warning ("%s: Bogus PARAM type", __func__);
+        log_event_fail ("report_format", "Report Format", NULL,
+                        "created");
+        break;
+      case 99:
+        g_warning ("%s: Permission denied", __func__);
+        log_event_fail ("report_format", "Report format", NULL, "created");
+        break;
+      default:
+      case -1:
+        g_warning ("%s: Internal error", __func__);
+        log_event_fail ("report_format", "Report format", NULL, "created");
+        break;
+    }
+
+  /* Cleanup. */
+
+  array_free (files);
+  params_options_free (params_options);
+  array_free (params);
+  free_entity (report_format);
+
+  return 0;
+}
+
+/**
+ * @brief Sync a single report format with the feed.
+ *
+ * @param[in]  path  Path to report format XML in feed.
+ */
+static void
+sync_report_format_with_feed (const gchar *path)
+{
+  gchar **split, *full_path, *uuid;
+  report_format_t report_format;
+
+  g_debug ("%s: considering %s", __func__, path);
+
+  split = g_regex_split_simple
+           (/* Format is: [AnYtHiNg]uuid.xml
+             * For example: PDF--daba56c8-73ec-11df-a475-002264764cea.xml */
+            "^.*([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12}).xml$",
+            path, 0, 0);
+
+  if (split == NULL || g_strv_length (split) != 7)
+    {
+      g_strfreev (split);
+      g_warning ("%s: path not in required format: %s", __func__, path);
+      return;
+    }
+
+  full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
+
+  uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
+                          split[1], split[2], split[3], split[4], split[5]);
+  g_strfreev (split);
+  if (find_report_format_no_acl (uuid, &report_format) == 0
+      && report_format)
+    {
+      g_free (uuid);
+
+      g_debug ("%s: considering %s for update", __func__, path);
+
+      if (report_format_updated_in_feed (report_format, full_path))
+        {
+          g_debug ("%s: updating %s", __func__, path);
+          update_report_format_from_file (report_format, full_path);
+        }
+
+      g_free (full_path);
+      return;
+    }
+
+  if (find_trash_report_format_no_acl (uuid, &report_format) == 0
+      && report_format)
+    {
+      g_warning ("%s: ignoring report format '%s', as it is in the trashcan",
+                 __func__, uuid);
+      g_free (uuid);
+      return;
+    }
+
+  g_free (uuid);
+
+  g_debug ("%s: adding %s", __func__, path);
+
+  create_report_format_from_file (full_path);
+
+  g_free (full_path);
+}
+
+/**
+ * @brief Sync all report formats with the feed.
+ *
+ * Create report formats that exists in the feed but not in the db.
+ * Update report formats in the db that have changed on the feed.
+ * Do nothing to report formats in db that have been removed from the feed.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sync_report_formats_with_feed ()
+{
+  GError *error;
+  GDir *dir;
+  const gchar *report_format_path;
+
+  /* Setup owner. */
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
+
+  if (current_credentials.uuid == NULL
+      || strlen (current_credentials.uuid) == 0)
+    {
+      /* Sync is disabled by having no "Feed Import Owner". */
+      g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
+      return 0;
+    }
+
+  current_credentials.username = user_name (current_credentials.uuid);
+  if (current_credentials.username == NULL)
+    {
+      g_debug ("%s: unknown Feed Import Owner so not syncing from feed",
+               __func__);
+      return 0;
+    }
+
+  /* Open feed import directory. */
+
+  error = NULL;
+  dir = g_dir_open (feed_dir_report_formats (), 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __func__, feed_dir_report_formats (), error->message);
+      g_error_free (error);
+      g_free (current_credentials.uuid);
+      g_free (current_credentials.username);
+      current_credentials.uuid = NULL;
+      current_credentials.username = NULL;
+      return -1;
+    }
+
+  /* Sync each file in the directory. */
+
+  while ((report_format_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (report_format_path, ".") == 0
+        && strlen (report_format_path) >= (36 /* UUID */ + strlen (".xml"))
+        && g_str_has_suffix (report_format_path, ".xml"))
+      sync_report_format_with_feed (report_format_path);
+
+  /* Cleanup. */
+
+  g_dir_close (dir);
+  g_free (current_credentials.uuid);
+  g_free (current_credentials.username);
+  current_credentials.uuid = NULL;
+  current_credentials.username = NULL;
+
+  return 0;
+}
+
+/**
+ * @brief Sync report formats with the feed.
+ */
+void
+manage_sync_report_formats ()
+{
+  sync_report_formats_with_feed ();
 }
