@@ -24,6 +24,9 @@
 
 #include <glib.h>
 
+void
+resource_set_predefined (const gchar *, resource_t, int);
+
 gboolean
 find_report_format_with_permission (const char*, report_format_t*,
                                     const char *);
