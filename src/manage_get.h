@@ -18,7 +18,7 @@
  */
 
 /*
- * @file manage.h
+ * @file manage_get.h
  * @brief Headers for Greenbone Vulnerability Manager: Manage lib: GET support.
  */
 
