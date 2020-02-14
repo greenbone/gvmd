@@ -308,32 +308,32 @@ typedef enum scanner_type
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 
-typedef long long int credential_t;
-typedef long long int alert_t;
-typedef long long int filter_t;
-typedef long long int group_t;
-typedef long long int host_t;
-typedef long long int tag_t;
-typedef long long int target_t;
-typedef long long int task_t;
-typedef long long int ticket_t;
-typedef long long int tls_certificate_t;
-typedef long long int result_t;
-typedef long long int report_t;
-typedef long long int report_host_t;
-typedef long long int report_format_t;
-typedef long long int report_format_param_t;
-typedef long long int role_t;
-typedef long long int note_t;
-typedef long long int nvt_t;
-typedef long long int override_t;
-typedef long long int permission_t;
-typedef long long int port_list_t;
-typedef long long int port_range_t;
-typedef long long int schedule_t;
-typedef long long int scanner_t;
-typedef long long int setting_t;
-typedef long long int user_t;
+typedef resource_t credential_t;
+typedef resource_t alert_t;
+typedef resource_t filter_t;
+typedef resource_t group_t;
+typedef resource_t host_t;
+typedef resource_t tag_t;
+typedef resource_t target_t;
+typedef resource_t task_t;
+typedef resource_t ticket_t;
+typedef resource_t tls_certificate_t;
+typedef resource_t result_t;
+typedef resource_t report_t;
+typedef resource_t report_host_t;
+typedef resource_t report_format_t;
+typedef resource_t report_format_param_t;
+typedef resource_t role_t;
+typedef resource_t note_t;
+typedef resource_t nvt_t;
+typedef resource_t override_t;
+typedef resource_t permission_t;
+typedef resource_t port_list_t;
+typedef resource_t port_range_t;
+typedef resource_t schedule_t;
+typedef resource_t scanner_t;
+typedef resource_t setting_t;
+typedef resource_t user_t;
 
 
 /* GMP GET support.
