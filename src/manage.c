@@ -9241,7 +9241,7 @@ get_termination_signal ()
  * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 resource in use, 2 failed to find resource,
- *         3 predefined resource, 99 permission denied, -1 error.
+ *         99 permission denied, -1 error.
  */
 int
 delete_resource (const char *type, const char *resource_id, int ultimate)

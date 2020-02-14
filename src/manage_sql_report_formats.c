@@ -129,8 +129,8 @@ get_trustedkeys_name ()
 
 /* Predefined resources.
  *
- * These are only used by report formats, and the concept is likely to change
- * when predefined report formats are defined by the feed. */
+ * These are only used by report formats, because report formats from the feed
+ * are automatically trusted, so we need to track them. */
 
 /**
  * @brief Return whether a resource is predefined.
@@ -1525,8 +1525,7 @@ copy_report_format (const char* name, const char* source_uuid,
  *
  * @return 0 success, 1 failed to find report format, 2 report_format_id
  * required, 3 failed to find report format parameter, 4 parameter value
- * validation failed, 5 error in predefined, 99 permission denied, -1 internal
- * error.
+ * validation failed, 99 permission denied, -1 internal error.
  */
 int
 modify_report_format (const char *report_format_id, const char *name,

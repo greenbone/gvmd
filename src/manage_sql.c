@@ -31596,7 +31596,7 @@ copy_target (const char* name, const char* comment, const char *target_id,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the target, 2 failed
- *         to find target, 3 predefined target, 99 permission denied, -1 error.
+ *         to find target, 99 permission denied, -1 error.
  */
 int
 delete_target (const char *target_id, int ultimate)
@@ -46402,7 +46402,7 @@ copy_filter (const char* name, const char* comment, const char *filter_id,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the filter, 2 failed
- *         to find filter, 3 predefined filter, 99 permission denied, -1 error.
+ *         to find filter, 99 permission denied, -1 error.
  */
 int
 delete_filter (const char *filter_id, int ultimate)

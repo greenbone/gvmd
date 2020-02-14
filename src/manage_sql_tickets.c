@@ -708,7 +708,7 @@ trash_ticket_writable (ticket_t ticket)
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because ticket is in use, 2 failed to find ticket,
- *         3 predefined ticket, 99 permission denied, -1 error.
+ *         99 permission denied, -1 error.
  */
 int
 delete_ticket (const char *ticket_id, int ultimate)

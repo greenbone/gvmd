@@ -863,8 +863,7 @@ copy_tls_certificate (const char *name,
  * @param[in]  ultimate   Dummy for consistency with other delete commands.
  *
  * @return 0 success, 1 fail because tls_certificate is in use,
- *         2 failed to find tls_certificate,
- *         3 predefined tls_certificate, 99 permission denied, -1 error.
+ *         2 failed to find tls_certificate, 99 permission denied, -1 error.
  */
 int
 delete_tls_certificate (const char *tls_certificate_id, int ultimate)
