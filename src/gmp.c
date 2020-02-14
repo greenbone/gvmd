@@ -15194,16 +15194,11 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
            ("<extension>%s</extension>"
             "<content_type>%s</content_type>"
             "<summary>%s</summary>"
-            "<description>%s</description>"
-            "<predefined>%i</predefined>",
+            "<description>%s</description>",
             report_format_iterator_extension (&report_formats),
             report_format_iterator_content_type (&report_formats),
             report_format_iterator_summary (&report_formats),
-            report_format_iterator_description (&report_formats),
-            get_report_formats_data->get.trash
-              ? 0
-              : report_format_predefined
-                  (get_iterator_resource (&report_formats)));
+            report_format_iterator_description (&report_formats));
 
           if (get_report_formats_data->alerts)
             {
