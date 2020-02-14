@@ -26,6 +26,9 @@
 #include "manage_sql.h"
 #include "sql.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 /**
  * @brief Reset command data.
  *
