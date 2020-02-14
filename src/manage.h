@@ -338,16 +338,6 @@ typedef long long int user_t;
 /* GMP GET. */
 
 /**
- * @brief filt_id value to use term or built-in default filter.
- */
-#define FILT_ID_NONE "0"
-
-/**
- * @brief filt_id value to use the filter in the user setting if possible.
- */
-#define FILT_ID_USER_SETTING "-2"
-
-/**
  * @brief Command data for a get command.
  */
 typedef struct
@@ -3197,6 +3187,16 @@ split_filter (const gchar*);
 
 
 /* Filters. */
+
+/**
+ * @brief filt_id value to use term or built-in default filter.
+ */
+#define FILT_ID_NONE "0"
+
+/**
+ * @brief filt_id value to use the filter in the user setting if possible.
+ */
+#define FILT_ID_USER_SETTING "-2"
 
 gboolean
 find_filter (const char*, filter_t*);
