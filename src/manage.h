@@ -26,6 +26,7 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_get.h"
 
 #include <stdio.h>
 #include <glib.h>
@@ -335,57 +336,12 @@ typedef long long int setting_t;
 typedef long long int user_t;
 
 
-/* GMP GET. */
-
-/**
- * @brief Command data for a get command.
- */
-typedef struct
-{
-  int details;         ///< Boolean.  Whether to include full details.
-  char *filt_id;       ///< Filter ID.  Overrides "filter".
-  char *filter;        ///< Filter term.
-  char *filter_replace; ///< Column to replace in filter.
-  char *filter_replacement; ///< Filter term to replace the one in filt_id.
-  char *id;            ///< ID of single item to get.
-  int trash;           ///< Boolean.  Whether to return from trashcan.
-  gchar *type;         ///< Type of resource.
-  gchar *subtype;      ///< Subtype, or NULL.
-  int ignore_max_rows_per_page; ///< Whether to ignore the Max Rows Per Page setting.
-  int ignore_pagination; ///< Whether to ignore the pagination (first and max).
-  int minimal;         ///< Whether to respond with minimal information.
-  GHashTable *extra_params; ///< Hashtable of type-specific extra parameters.
-} get_data_t;
-
-void
-get_data_reset (get_data_t*);
-
-const char *
-get_data_get_extra (const get_data_t *, const char *);
-
-void
-get_data_set_extra (get_data_t *, const char *, const char *);
+/* GMP GET support.
+ *
+ * The standalone parts of the GET support are in manage_get.h. */
 
 resource_t
 get_iterator_resource (iterator_t*);
-
-const char*
-get_iterator_uuid (iterator_t*);
-
-const char*
-get_iterator_name (iterator_t*);
-
-const char*
-get_iterator_comment (iterator_t*);
-
-const char*
-get_iterator_creation_time (iterator_t*);
-
-const char*
-get_iterator_modification_time (iterator_t*);
-
-const char*
-get_iterator_owner_name (iterator_t*);
 
 user_t
 get_iterator_owner (iterator_t*);
