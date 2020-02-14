@@ -23,6 +23,8 @@
  */
 
 #include "manage_get.h"
+#include "manage_sql.h"
+#include "sql.h"
 
 /**
  * @brief Reset command data.
@@ -92,4 +94,96 @@ get_data_set_extra (get_data_t *data, const char *name, const char *value)
                          g_strdup (value));
   else
     g_hash_table_remove (data->extra_params, name);
+}
+
+
+/* GET iterators. */
+
+/**
+ * @brief Get the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Resource.
+ */
+resource_t
+get_iterator_resource (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, 0);
+}
+
+/**
+ * @brief Get the UUID of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_uuid, 1);
+
+/**
+ * @brief Get the name of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_name, 2);
+
+/**
+ * @brief Get the comment from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Comment.
+ */
+const char*
+get_iterator_comment (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return "";
+  ret = iterator_string (iterator, 3);
+  return ret ? ret : "";
+}
+
+/**
+ * @brief Get the creation time of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Creation time of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_creation_time, 4);
+
+/**
+ * @brief Get the modification time of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Modification time of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_modification_time, 5);
+
+/**
+ * @brief Get the owner name of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Owner name of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_owner_name, 8);
+
+/**
+ * @brief Get the owner from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Owner.
+ */
+user_t
+get_iterator_owner (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, 9);
 }
