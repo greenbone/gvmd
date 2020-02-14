@@ -3720,8 +3720,4 @@ get_termination_signal ();
 int
 sql_cancel ();
 
-/* Extra sensor handling functions */
-
-
-
 #endif /* not _GVMD_MANAGE_H */
