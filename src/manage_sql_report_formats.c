@@ -1568,15 +1568,6 @@ modify_report_format (const char *report_format_id, const char *name,
       return 1;
     }
 
-  /* It is only possible to modify predefined report formats from the command
-   * line. */
-  if (current_credentials.uuid == NULL
-      && report_format_predefined (report_format))
-    {
-      sql_rollback ();
-      return 99;
-    }
-
   /* Update values */
   if (name)
     set_report_format_name (report_format, name);
