@@ -1522,7 +1522,6 @@ copy_report_format (const char* name, const char* source_uuid,
  * @param[in]  active            Active flag.
  * @param[in]  param_name        Parameter to modify.
  * @param[in]  param_value       Value of parameter.
- * @param[in]  predefined        Predefined flag.
  *
  * @return 0 success, 1 failed to find report format, 2 report_format_id
  * required, 3 failed to find report format parameter, 4 parameter value
@@ -1532,17 +1531,13 @@ copy_report_format (const char* name, const char* source_uuid,
 int
 modify_report_format (const char *report_format_id, const char *name,
                       const char *summary, const char *active,
-                      const char *param_name, const char *param_value,
-                      const char *predefined)
+                      const char *param_name, const char *param_value)
 {
   report_format_t report_format;
   int ret = 0;
 
   if (report_format_id == NULL)
     return 2;
-
-  if (predefined && strcmp (predefined, "0") && strcmp (predefined, "1"))
-    return 5;
 
   sql_begin_immediate ();
 
@@ -1577,10 +1572,6 @@ modify_report_format (const char *report_format_id, const char *name,
 
   if (active)
     set_report_format_active (report_format, strcmp (active, "0"));
-
-  if (predefined)
-    resource_set_predefined ("report_format", report_format,
-                             strcmp (predefined, "0"));
 
   sql_commit ();
 
