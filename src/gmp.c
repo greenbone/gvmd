@@ -14727,8 +14727,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_reports",
-                          "Report format must be predefined"
-                          " or trusted"));
+                          "Report format must be trusted"));
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
