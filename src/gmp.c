@@ -1808,44 +1808,6 @@ get_feeds_data_reset (get_feeds_data_t *data)
 }
 
 /**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-void
-get_data_reset (get_data_t *data)
-{
-  free (data->id);
-  free (data->filt_id);
-  free (data->filter);
-  free (data->filter_replace);
-  free (data->filter_replacement);
-  free (data->subtype);
-  free (data->type);
-  if (data->extra_params)
-    g_hash_table_destroy (data->extra_params);
-
-  memset (data, 0, sizeof (get_data_t));
-}
-
-/**
- * @brief Retrieves a type-specific extra parameter from a get_data_t.
- *
- * @param[in]  data   The get data to add the parameter to.
- * @param[in]  name   Name of the parameter to add.
- *
- * @return  Value of the parameter or NULL if not set.
- */
-const char *
-get_data_get_extra (const get_data_t *data, const char *name)
-{
-  if (data->extra_params == NULL)
-    return NULL;
-  else
-    return g_hash_table_lookup (data->extra_params, name);
-}
-
-/**
  * @brief Sets a type-specific extra parameter in a get_data_t.
  *
  * The names and values will be duplicated.
