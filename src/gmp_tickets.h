@@ -27,6 +27,8 @@
 #define _GVMD_GMP_TICKETS_H
 
 #include "gmp_base.h"
+/* This is only needed for result_t, which ideally would come from a smaller
+ * include file. */
 #include "manage.h"
 
 void
