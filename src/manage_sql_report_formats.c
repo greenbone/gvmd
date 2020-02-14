@@ -1702,7 +1702,7 @@ delete_report_format_rows (report_format_t report_format)
  * @param[in]  ultimate          Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 report format in use, 2 failed to find report format,
- *         3 predefined report format, 99 permission denied, -1 error.
+ *         99 permission denied, -1 error.
  */
 int
 delete_report_format (const char *report_format_id, int ultimate)
@@ -1813,12 +1813,6 @@ delete_report_format (const char *report_format_id, int ultimate)
       sql_commit ();
 
       return 0;
-    }
-
-  if (report_format_predefined (report_format))
-    {
-      sql_rollback ();
-      return 3;
     }
 
   owner_uuid = report_format_owner_uuid (report_format);
