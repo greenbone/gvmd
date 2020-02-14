@@ -24,6 +24,8 @@
 
 #include "manage_preferences.h"
 
+#include <stdlib.h>
+
 /**
  * @brief Create a new preference.
  *
