@@ -1720,23 +1720,6 @@ target_login_port (target_t, const char*);
 /* Configs. */
 
 /**
- * @brief An NVT preference.
- */
-typedef struct
-{
-  char *name;      ///< Name of preference.
-  char *id;        ///< ID of preference.
-  char *type;      ///< Type of preference (radio, password, ...).
-  char *value;     ///< Value of preference.
-  char *nvt_name;  ///< Name of NVT preference affects.
-  char *nvt_oid;   ///< OID of NVT preference affects.
-  array_t *alts;   ///< Array of gchar's.  Alternate values for radio type.
-  char *default_value; ///< Default value of preference.
-  char *hr_name;   ///< Extended, more human-readable name used by OSP.
-  int free_strings;///< Whether string fields are freed by preference_free.
-} preference_t;
-
-/**
  * @brief An NVT selector.
  */
 typedef struct

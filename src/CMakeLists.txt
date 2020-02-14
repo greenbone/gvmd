@@ -95,7 +95,8 @@ add_executable (manage-utils-test
                 gvmd.c gmpd.c
                 manage.c sql.c
                 manage_acl.c manage_configs.c
-                manage_port_lists.c manage_report_formats.c
+                manage_port_lists.c manage_preferences.c
+                manage_report_formats.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_report_formats.c
@@ -117,7 +118,8 @@ add_executable (manage-test
                 gvmd.c gmpd.c
                 manage_utils.c sql.c
                 manage_acl.c manage_configs.c
-                manage_port_lists.c manage_report_formats.c
+                manage_port_lists.c manage_preferences.c
+                manage_report_formats.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_report_formats.c
@@ -139,7 +141,8 @@ add_executable (gmp-tickets-test
                 gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c
-                manage_port_lists.c manage_report_formats.c
+                manage_port_lists.c manage_preferences.c
+                manage_report_formats.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_report_formats.c
@@ -167,7 +170,8 @@ add_executable (gvmd
                 main.c gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c
-                manage_port_lists.c manage_report_formats.c
+                manage_port_lists.c manage_preferences.c
+                manage_report_formats.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
                 manage_sql_report_formats.c
@@ -368,6 +372,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_preferences.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"

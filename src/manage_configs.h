@@ -27,17 +27,7 @@
 #define _GVMD_MANAGE_CONFIGS_H
 
 #include "manage.h"
-
-gpointer
-preference_new (char *, char *, char *, char *, char *,
-                char *, array_t *, char*,
-                char *, int);
-
-void
-preference_free (preference_t *);
-
-void
-cleanup_import_preferences (array_t *);
+#include "manage_preferences.h"
 
 preference_t *
 get_nvt_preference_by_id (const char *,
