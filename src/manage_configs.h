@@ -46,9 +46,6 @@ get_nvt_preference_by_id (const char *,
                           const char *,
                           const char *);
 
-int
-sync_configs_with_feed ();
-
 void
 manage_sync_configs ();
 
