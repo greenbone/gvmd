@@ -61,3 +61,35 @@ get_data_get_extra (const get_data_t *data, const char *name)
   else
     return g_hash_table_lookup (data->extra_params, name);
 }
+
+/**
+ * @brief Sets a type-specific extra parameter in a get_data_t.
+ *
+ * The names and values will be duplicated.
+ *
+ * @param[in]  data   The get data to add the parameter to.
+ * @param[in]  name   Name of the parameter to add.
+ * @param[in]  value  Value of the parameter to add.
+ */
+void
+get_data_set_extra (get_data_t *data, const char *name, const char *value)
+{
+  if (name == NULL)
+    return;
+
+  if (data->extra_params == NULL)
+    {
+      if (value == NULL)
+        return;
+
+      data->extra_params
+        = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    }
+
+  if (value)
+    g_hash_table_insert (data->extra_params,
+                         g_strdup (name),
+                         g_strdup (value));
+  else
+    g_hash_table_remove (data->extra_params, name);
+}
