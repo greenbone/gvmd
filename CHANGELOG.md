@@ -34,7 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Change rows of built-in default filters to -2 (use "Rows Per Page" setting) [#896](https://github.com/greenbone/gvmd/pull/896)
 - Force NVT update in migrate_219_to_220 [#895](https://github.com/greenbone/gvmd/pull/895)
 - Use temp tables to speed up migrate_213_to_214 [#911](https://github.com/greenbone/gvmd/pull/911)
-- Allow "Start Task" alert method for SecInfo events [#960](https://github.com/greenbone/gvmd/pull/960)
+- Allow "Start Task" alert method for SecInfo events [#960]
+- New Community Feed download URL in sync tools [#982](https://github.com/greenbone/gvmd/pull/982)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
