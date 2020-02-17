@@ -356,7 +356,7 @@ do_rsync_community_feed () {
   if [ -z "$COMMUNITY_SCAP_RSYNC_FEED" ]; then
     COMMUNITY_SCAP_RSYNC_FEED=rsync://feed.community.greenbone.net:/scap-data
     # An alternative syntax which might work if the above doesn't:
-    # COMMUNITY_SCAP_RSYNC_FEED=rsync@feed.communiy.greenbone.net::scap-data
+    # COMMUNITY_SCAP_RSYNC_FEED=rsync@feed.community.greenbone.net::scap-data
   fi
 
   if [ -z "$RSYNC" ]; then
