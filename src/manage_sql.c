@@ -31596,7 +31596,7 @@ copy_target (const char* name, const char* comment, const char *target_id,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the target, 2 failed
- *         to find target, 3 predefined target, 99 permission denied, -1 error.
+ *         to find target, 99 permission denied, -1 error.
  */
 int
 delete_target (const char *target_id, int ultimate)
@@ -36387,98 +36387,6 @@ credential_scanner_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
-}
-
-
-/* GET iterators. */
-
-/**
- * @brief Get the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Resource.
- */
-resource_t
-get_iterator_resource (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, 0);
-}
-
-/**
- * @brief Get the UUID of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_uuid, 1);
-
-/**
- * @brief Get the name of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_name, 2);
-
-/**
- * @brief Get the comment from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment.
- */
-const char*
-get_iterator_comment (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return "";
-  ret = iterator_string (iterator, 3);
-  return ret ? ret : "";
-}
-
-/**
- * @brief Get the creation time of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Creation time of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_creation_time, 4);
-
-/**
- * @brief Get the modification time of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Modification time of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_modification_time, 5);
-
-/**
- * @brief Get the owner name of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Owner name of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_owner_name, 8);
-
-/**
- * @brief Get the owner from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Owner.
- */
-user_t
-get_iterator_owner (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, 9);
 }
 
 
@@ -46402,7 +46310,7 @@ copy_filter (const char* name, const char* comment, const char *filter_id,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the filter, 2 failed
- *         to find filter, 3 predefined filter, 99 permission denied, -1 error.
+ *         to find filter, 99 permission denied, -1 error.
  */
 int
 delete_filter (const char *filter_id, int ultimate)

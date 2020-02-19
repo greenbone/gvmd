@@ -129,8 +129,8 @@ get_trustedkeys_name ()
 
 /* Predefined resources.
  *
- * These are only used by report formats, and the concept is likely to change
- * when predefined report formats are defined by the feed. */
+ * These are only used by report formats, because report formats from the feed
+ * are automatically trusted, so we need to track them. */
 
 /**
  * @brief Return whether a resource is predefined.
@@ -1522,27 +1522,21 @@ copy_report_format (const char* name, const char* source_uuid,
  * @param[in]  active            Active flag.
  * @param[in]  param_name        Parameter to modify.
  * @param[in]  param_value       Value of parameter.
- * @param[in]  predefined        Predefined flag.
  *
  * @return 0 success, 1 failed to find report format, 2 report_format_id
  * required, 3 failed to find report format parameter, 4 parameter value
- * validation failed, 5 error in predefined, 99 permission denied, -1 internal
- * error.
+ * validation failed, 99 permission denied, -1 internal error.
  */
 int
 modify_report_format (const char *report_format_id, const char *name,
                       const char *summary, const char *active,
-                      const char *param_name, const char *param_value,
-                      const char *predefined)
+                      const char *param_name, const char *param_value)
 {
   report_format_t report_format;
   int ret = 0;
 
   if (report_format_id == NULL)
     return 2;
-
-  if (predefined && strcmp (predefined, "0") && strcmp (predefined, "1"))
-    return 5;
 
   sql_begin_immediate ();
 
@@ -1568,15 +1562,6 @@ modify_report_format (const char *report_format_id, const char *name,
       return 1;
     }
 
-  /* It is only possible to modify predefined report formats from the command
-   * line. */
-  if (current_credentials.uuid == NULL
-      && report_format_predefined (report_format))
-    {
-      sql_rollback ();
-      return 99;
-    }
-
   /* Update values */
   if (name)
     set_report_format_name (report_format, name);
@@ -1586,10 +1571,6 @@ modify_report_format (const char *report_format_id, const char *name,
 
   if (active)
     set_report_format_active (report_format, strcmp (active, "0"));
-
-  if (predefined)
-    resource_set_predefined ("report_format", report_format,
-                             strcmp (predefined, "0"));
 
   sql_commit ();
 
@@ -1711,7 +1692,7 @@ delete_report_format_rows (report_format_t report_format)
  * @param[in]  ultimate          Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 report format in use, 2 failed to find report format,
- *         3 predefined report format, 99 permission denied, -1 error.
+ *         99 permission denied, -1 error.
  */
 int
 delete_report_format (const char *report_format_id, int ultimate)
@@ -1822,12 +1803,6 @@ delete_report_format (const char *report_format_id, int ultimate)
       sql_commit ();
 
       return 0;
-    }
-
-  if (report_format_predefined (report_format))
-    {
-      sql_rollback ();
-      return 3;
     }
 
   owner_uuid = report_format_owner_uuid (report_format);

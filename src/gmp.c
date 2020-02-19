@@ -1808,76 +1808,6 @@ get_feeds_data_reset (get_feeds_data_t *data)
 }
 
 /**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-void
-get_data_reset (get_data_t *data)
-{
-  free (data->id);
-  free (data->filt_id);
-  free (data->filter);
-  free (data->filter_replace);
-  free (data->filter_replacement);
-  free (data->subtype);
-  free (data->type);
-  if (data->extra_params)
-    g_hash_table_destroy (data->extra_params);
-
-  memset (data, 0, sizeof (get_data_t));
-}
-
-/**
- * @brief Retrieves a type-specific extra parameter from a get_data_t.
- *
- * @param[in]  data   The get data to add the parameter to.
- * @param[in]  name   Name of the parameter to add.
- *
- * @return  Value of the parameter or NULL if not set.
- */
-const char *
-get_data_get_extra (const get_data_t *data, const char *name)
-{
-  if (data->extra_params == NULL)
-    return NULL;
-  else
-    return g_hash_table_lookup (data->extra_params, name);
-}
-
-/**
- * @brief Sets a type-specific extra parameter in a get_data_t.
- *
- * The names and values will be duplicated.
- *
- * @param[in]  data   The get data to add the parameter to.
- * @param[in]  name   Name of the parameter to add.
- * @param[in]  value  Value of the parameter to add.
- */
-void
-get_data_set_extra (get_data_t *data, const char *name, const char *value)
-{
-  if (name == NULL)
-    return;
-
-  if (data->extra_params == NULL)
-    {
-      if (value == NULL)
-        return;
-
-      data->extra_params
-        = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-    }
-
-  if (value)
-    g_hash_table_insert (data->extra_params,
-                         g_strdup (name),
-                         g_strdup (value));
-  else
-    g_hash_table_remove (data->extra_params, name);
-}
-
-/**
  * @brief Command data for the get_aggregates command.
  */
 typedef struct
@@ -14727,8 +14657,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_reports",
-                          "Report format must be predefined"
-                          " or trusted"));
+                          "Report format must be trusted"));
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
@@ -15194,16 +15123,11 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
            ("<extension>%s</extension>"
             "<content_type>%s</content_type>"
             "<summary>%s</summary>"
-            "<description>%s</description>"
-            "<predefined>%i</predefined>",
+            "<description>%s</description>",
             report_format_iterator_extension (&report_formats),
             report_format_iterator_content_type (&report_formats),
             report_format_iterator_summary (&report_formats),
-            report_format_iterator_description (&report_formats),
-            get_report_formats_data->get.trash
-              ? 0
-              : report_format_predefined
-                  (get_iterator_resource (&report_formats)));
+            report_format_iterator_description (&report_formats));
 
           if (get_report_formats_data->alerts)
             {
@@ -24677,8 +24601,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     modify_report_format_data->summary,
                     modify_report_format_data->active,
                     modify_report_format_data->param_name,
-                    modify_report_format_data->param_value,
-                    NULL))
+                    modify_report_format_data->param_value))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));

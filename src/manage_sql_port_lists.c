@@ -1574,8 +1574,7 @@ create_port_range (const char *port_list_id, const char *type,
  * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a target refers to the port list, 2 failed
- *         to find port list, 3 predefined port list, 99 permission denied,
- *         -1 error.
+ *         to find port list, 99 permission denied, -1 error.
  */
 int
 delete_port_list (const char *port_list_id, int ultimate)
@@ -1719,8 +1718,8 @@ insert_port_range (port_list_t port_list, port_protocol_t type, int start,
  * @param[in]  port_range_id  UUID of port_range.
  * @param[in]  dummy          Dummy arg to match other delete functions.
  *
- * @return 0 success, 2 failed to find port range, 3 port range is part of
- *         predefined port list, 99 permission denied, -1 error.
+ * @return 0 success, 2 failed to find port range, 99 permission denied,
+ *         -1 error.
  */
 int
 delete_port_range (const char *port_range_id, int dummy)
@@ -2513,7 +2512,7 @@ update_port_list (port_list_t port_list, const gchar *name,
 }
 
 /**
- * @brief Ensure that the predefined port lists exist.
+ * @brief Check port lists, for startup.
  */
 void
 check_db_port_lists ()

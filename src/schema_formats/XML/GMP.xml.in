@@ -4817,7 +4817,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 CPE stands for Common Platform Enumeration.  It is a
                 <truncated>...</truncated>
               </description>
-              <predefined>1</predefined>
               <trust>
                 yes
                 <time>Thu Dec  2 13:22:26 2010</time>
@@ -15870,7 +15869,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>content_type</e>
           <e>summary</e>
           <e>description</e>
-          <e>predefined</e>
           <o><e>alerts</e></o>
           <o>
             <g>
@@ -15998,10 +15996,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>content_type</name>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>predefined</name>
-          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>alerts</name>
@@ -16302,7 +16296,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               A single HTML page listing results of a scan.  Style information
               <truncated>...</truncated>
             </description>
-            <predefined>1</predefined>
             <trust>
               no
               <time>Thu Dec  2 13:22:26 2010</time>
@@ -16336,7 +16329,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               A single HTML page listing results of a scan.  Style information
               <truncated>...</truncated>
             </description>
-            <predefined>1</predefined>
             <file name="HTML.xsl">
               PD9ldD4K
               <truncated>...</truncated>
@@ -26218,6 +26210,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_REPORT_FORMATS</command>
+    <summary>PREDEFINED has been removed</summary>
+    <description>
+      <p>
+        The element REPORT_FORMAT/PREDEFINED has been removed from the
+        response to GET_REPORT_FORMATS.
+      </p>
+      <p>
+        Predefined report formats have been replaced with report formats
+        that are delivered in the feed.  Existing predefined report
+        formats will remain in the db, and their ownership will be
+        transferred to the Feed Import Owner.
+      </p>
+    </description>
+    <version>20.04</version>
+  </change>
   <change>
     <command>COMMANDS</command>
     <summary>COMMANDS has been removed</summary>

@@ -74,8 +74,7 @@ find_report_format_with_permission (const char *uuid,
 int
 report_format_writable (report_format_t report_format)
 {
-  return report_format_in_use (report_format) == 0
-         && report_format_predefined (report_format) == 0;
+  return report_format_in_use (report_format) == 0;
 }
 
 /**
