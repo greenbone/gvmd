@@ -31976,7 +31976,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           results = next_entities (results);
           continue;
         }
-      else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1.0."))
+      else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
         {
           nvt_id = g_strdup (test_id);
           severity_str = nvt_severity (test_id, type);
