@@ -54,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove extra XML declaration in Anonymous XML [#965](https://github.com/greenbone/gvmd/pull/965)
 - Fix Verinice ISM report format and update version [#962](https://github.com/greenbone/gvmd/pull/962)
 - Fix SCP alert authentication and logging [#972](https://github.com/greenbone/gvmd/pull/972)
+- Accept expanded scheme OIDs in parse_osp_report [#983](https://github.com/greenbone/gvmd/pull/983)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
