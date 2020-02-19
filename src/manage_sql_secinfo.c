@@ -2535,7 +2535,7 @@ update_scap_cpes (int last_scap_update)
       g_info ("Skipping CPEs, file is older than last revision"
               " (this is not an error)");
       g_free (full_path);
-      return -1;
+      return 0;
     }
 
   g_info ("Updating CPEs");
