@@ -38,8 +38,9 @@
 
 #include <gvm/base/cvss.h>
 
-#include "manage_sql.h"
 #include "manage_sql_nvts.h"
+#include "manage_preferences.h"
+#include "manage_sql.h"
 #include "sql.h"
 #include "utils.h"
 

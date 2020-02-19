@@ -29526,7 +29526,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           results = next_entities (results);
           continue;
         }
-      else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1.0."))
+      else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
         {
           nvt_id = g_strdup (test_id);
           severity_str = nvt_severity (test_id, type);
@@ -36387,98 +36387,6 @@ credential_scanner_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
-}
-
-
-/* GET iterators. */
-
-/**
- * @brief Get the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Resource.
- */
-resource_t
-get_iterator_resource (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, 0);
-}
-
-/**
- * @brief Get the UUID of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_uuid, 1);
-
-/**
- * @brief Get the name of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_name, 2);
-
-/**
- * @brief Get the comment from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment.
- */
-const char*
-get_iterator_comment (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return "";
-  ret = iterator_string (iterator, 3);
-  return ret ? ret : "";
-}
-
-/**
- * @brief Get the creation time of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Creation time of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_creation_time, 4);
-
-/**
- * @brief Get the modification time of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Modification time of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_modification_time, 5);
-
-/**
- * @brief Get the owner name of the resource from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Owner name of the resource or NULL if iteration is complete.
- */
-DEF_ACCESS (get_iterator_owner_name, 8);
-
-/**
- * @brief Get the owner from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Owner.
- */
-user_t
-get_iterator_owner (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, 9);
 }
 
 

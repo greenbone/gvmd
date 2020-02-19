@@ -26,6 +26,8 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_configs.h"
+#include "manage_get.h"
 
 #include <stdio.h>
 #include <glib.h>
@@ -306,96 +308,40 @@ typedef enum scanner_type
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 
-typedef long long int config_t;
-typedef long long int credential_t;
-typedef long long int alert_t;
-typedef long long int filter_t;
-typedef long long int group_t;
-typedef long long int host_t;
-typedef long long int tag_t;
-typedef long long int target_t;
-typedef long long int task_t;
-typedef long long int ticket_t;
-typedef long long int tls_certificate_t;
-typedef long long int result_t;
-typedef long long int report_t;
-typedef long long int report_host_t;
-typedef long long int report_format_t;
-typedef long long int report_format_param_t;
-typedef long long int role_t;
-typedef long long int note_t;
-typedef long long int nvt_t;
-typedef long long int override_t;
-typedef long long int permission_t;
-typedef long long int port_list_t;
-typedef long long int port_range_t;
-typedef long long int schedule_t;
-typedef long long int scanner_t;
-typedef long long int setting_t;
-typedef long long int user_t;
+typedef resource_t credential_t;
+typedef resource_t alert_t;
+typedef resource_t filter_t;
+typedef resource_t group_t;
+typedef resource_t host_t;
+typedef resource_t tag_t;
+typedef resource_t target_t;
+typedef resource_t task_t;
+typedef resource_t ticket_t;
+typedef resource_t tls_certificate_t;
+typedef resource_t result_t;
+typedef resource_t report_t;
+typedef resource_t report_host_t;
+typedef resource_t report_format_t;
+typedef resource_t report_format_param_t;
+typedef resource_t role_t;
+typedef resource_t note_t;
+typedef resource_t nvt_t;
+typedef resource_t override_t;
+typedef resource_t permission_t;
+typedef resource_t port_list_t;
+typedef resource_t port_range_t;
+typedef resource_t schedule_t;
+typedef resource_t scanner_t;
+typedef resource_t setting_t;
+typedef resource_t user_t;
 
 
-/* GMP GET. */
-
-/**
- * @brief filt_id value to use term or built-in default filter.
- */
-#define FILT_ID_NONE "0"
-
-/**
- * @brief filt_id value to use the filter in the user setting if possible.
- */
-#define FILT_ID_USER_SETTING "-2"
-
-/**
- * @brief Command data for a get command.
- */
-typedef struct
-{
-  int details;         ///< Boolean.  Whether to include full details.
-  char *filt_id;       ///< Filter ID.  Overrides "filter".
-  char *filter;        ///< Filter term.
-  char *filter_replace; ///< Column to replace in filter.
-  char *filter_replacement; ///< Filter term to replace the one in filt_id.
-  char *id;            ///< ID of single item to get.
-  int trash;           ///< Boolean.  Whether to return from trashcan.
-  gchar *type;         ///< Type of resource.
-  gchar *subtype;      ///< Subtype, or NULL.
-  int ignore_max_rows_per_page; ///< Whether to ignore the Max Rows Per Page setting.
-  int ignore_pagination; ///< Whether to ignore the pagination (first and max).
-  int minimal;         ///< Whether to respond with minimal information.
-  GHashTable *extra_params; ///< Hashtable of type-specific extra parameters.
-} get_data_t;
-
-void
-get_data_reset (get_data_t*);
-
-const char *
-get_data_get_extra (const get_data_t *, const char *);
-
-void
-get_data_set_extra (get_data_t *, const char *, const char *);
+/* GMP GET support.
+ *
+ * The standalone parts of the GET support are in manage_get.h. */
 
 resource_t
 get_iterator_resource (iterator_t*);
-
-const char*
-get_iterator_uuid (iterator_t*);
-
-const char*
-get_iterator_name (iterator_t*);
-
-const char*
-get_iterator_comment (iterator_t*);
-
-const char*
-get_iterator_creation_time (iterator_t*);
-
-const char*
-get_iterator_modification_time (iterator_t*);
-
-const char*
-get_iterator_owner_name (iterator_t*);
 
 user_t
 get_iterator_owner (iterator_t*);
@@ -1771,178 +1717,18 @@ int
 target_login_port (target_t, const char*);
 
 
-/* Configs. */
-
-/**
- * @brief An NVT preference.
- */
-typedef struct
-{
-  char *name;      ///< Name of preference.
-  char *id;        ///< ID of preference.
-  char *type;      ///< Type of preference (radio, password, ...).
-  char *value;     ///< Value of preference.
-  char *nvt_name;  ///< Name of NVT preference affects.
-  char *nvt_oid;   ///< OID of NVT preference affects.
-  array_t *alts;   ///< Array of gchar's.  Alternate values for radio type.
-  char *default_value; ///< Default value of preference.
-  char *hr_name;   ///< Extended, more human-readable name used by OSP.
-  int free_strings;///< Whether string fields are freed by preference_free.
-} preference_t;
-
-/**
- * @brief An NVT selector.
- */
-typedef struct
-{
-  char *name;           ///< Name of NVT selector.
-  char *type;           ///< Name of NVT selector.
-  int include;          ///< Whether family/NVT is included or excluded.
-  char *family_or_nvt;  ///< Family or NVT that this selector selects.
-} nvt_selector_t;
-
-int
-create_config (const char*, const char*, int, const char*, const array_t*,
-               const array_t*, const char*, const char*, config_t*, char**);
-
-int
-create_config_from_scanner (const char*, const char *, const char *,
-                            const char *, char **);
-
-int
-copy_config (const char*, const char*, const char *, const char *, config_t*);
-
-int
-delete_config (const char*, int);
-
-int
-sync_config (const char *);
-
-gboolean
-find_config_with_permission (const char*, config_t*, const char *);
-
-char *
-config_uuid (config_t);
-
-int
-config_type (config_t);
-
-char *
-config_nvt_timeout (config_t, const char *);
-
-void
-init_user_config_iterator (iterator_t*, config_t, int, int, const char*);
-
-int
-init_config_iterator (iterator_t*, const get_data_t*);
-
-const char*
-config_iterator_nvt_selector (iterator_t*);
-
-int
-config_iterator_nvt_count (iterator_t*);
-
-int
-config_iterator_family_count (iterator_t*);
-
-int
-config_iterator_nvts_growing (iterator_t*);
-
-int
-config_iterator_type (iterator_t*);
-
-int
-config_iterator_families_growing (iterator_t*);
+/* Configs.
+ *
+ * These are here because they need definitions that are still in manage.h. */
 
 scanner_t
 config_iterator_scanner (iterator_t*);
-
-int
-config_iterator_scanner_trash (iterator_t*);
-
-const char*
-config_iterator_usage_type (iterator_t*);
-
-char*
-config_nvt_selector (config_t);
-
-int
-config_in_use (config_t);
-
-int
-config_writable (config_t);
-
-int
-config_count (const get_data_t *);
-
-int
-trash_config_in_use (config_t);
-
-int
-trash_config_writable (config_t);
-
-int
-trash_config_readable_uuid (const gchar *);
-
-int
-config_families_growing (config_t);
-
-int
-config_nvts_growing (config_t);
 
 int
 create_task_check_config_scanner (config_t, scanner_t);
 
 int
 modify_task_check_config_scanner (task_t, const char *, const char *);
-
-int
-manage_set_config_preference (const gchar *, const char*, const char*,
-                              const char*);
-
-void
-init_config_preference_iterator (iterator_t *, config_t);
-
-const char*
-config_preference_iterator_name (iterator_t *);
-
-const char*
-config_preference_iterator_value (iterator_t *);
-
-const char*
-config_preference_iterator_type (iterator_t *);
-
-const char*
-config_preference_iterator_default (iterator_t *);
-
-const char*
-config_preference_iterator_hr_name (iterator_t *);
-
-int
-manage_set_config (const gchar *, const char*, const char *, const char *);
-
-int
-manage_set_config_nvts (const gchar *, const char*, GPtrArray*);
-
-int
-manage_set_config_families (const gchar *, GPtrArray*, GPtrArray*, GPtrArray*,
-                            int);
-
-void
-init_config_timeout_iterator (iterator_t*, config_t);
-
-const char*
-config_timeout_iterator_oid (iterator_t *);
-
-const char*
-config_timeout_iterator_nvt_name (iterator_t *);
-
-const char*
-config_timeout_iterator_value (iterator_t *);
-
-void
-update_config_preference (const char *, const char *, const char *,
-                          const char *, gboolean);
 
 
 /* NVT's. */
@@ -3198,6 +2984,16 @@ split_filter (const gchar*);
 
 /* Filters. */
 
+/**
+ * @brief filt_id value to use term or built-in default filter.
+ */
+#define FILT_ID_NONE "0"
+
+/**
+ * @brief filt_id value to use the filter in the user setting if possible.
+ */
+#define FILT_ID_USER_SETTING "-2"
+
 gboolean
 find_filter (const char*, filter_t*);
 
@@ -3923,9 +3719,5 @@ get_termination_signal ();
 
 int
 sql_cancel ();
-
-/* Extra sensor handling functions */
-
-
 
 #endif /* not _GVMD_MANAGE_H */

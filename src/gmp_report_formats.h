@@ -21,7 +21,9 @@
 #define _GVMD_GMP_REPORT_FORMATS_H
 
 #include "gmp_base.h"
-#include "manage.h"
+
+#include <gvm/base/array.h>
+#include <gvm/util/xmlutils.h>
 
 void
 create_report_format_start (gmp_parser_t *, const gchar **, const gchar **);

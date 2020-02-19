@@ -52,6 +52,12 @@
 #define G_LOG_DOMAIN "md manage"
 
 
+/* Static headers for internal non-SQL functions. */
+
+int
+sync_configs_with_feed ();
+
+
 /* Static headers. */
 
 static int

@@ -26,7 +26,7 @@
 #ifndef _GVMD_GMP_GET_H
 #define _GVMD_GMP_GET_H
 
-#include "manage.h"
+#include "manage_get.h"
 
 void
 get_data_parse_attributes (get_data_t *, const gchar *, const gchar **,

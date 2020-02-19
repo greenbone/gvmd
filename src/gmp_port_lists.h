@@ -21,7 +21,9 @@
 #define _GVMD_GMP_PORT_LISTS_H
 
 #include "gmp_base.h"
-#include "manage.h"
+
+#include <gvm/base/array.h>
+#include <gvm/util/xmlutils.h>
 
 void
 create_port_list_start (gmp_parser_t *, const gchar **, const gchar **);
