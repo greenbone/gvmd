@@ -14657,8 +14657,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("get_reports",
-                          "Report format must be predefined"
-                          " or trusted"));
+                          "Report format must be trusted"));
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
@@ -15124,16 +15123,11 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
            ("<extension>%s</extension>"
             "<content_type>%s</content_type>"
             "<summary>%s</summary>"
-            "<description>%s</description>"
-            "<predefined>%i</predefined>",
+            "<description>%s</description>",
             report_format_iterator_extension (&report_formats),
             report_format_iterator_content_type (&report_formats),
             report_format_iterator_summary (&report_formats),
-            report_format_iterator_description (&report_formats),
-            get_report_formats_data->get.trash
-              ? 0
-              : report_format_predefined
-                  (get_iterator_resource (&report_formats)));
+            report_format_iterator_description (&report_formats));
 
           if (get_report_formats_data->alerts)
             {
@@ -24607,8 +24601,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     modify_report_format_data->summary,
                     modify_report_format_data->active,
                     modify_report_format_data->param_name,
-                    modify_report_format_data->param_value,
-                    NULL))
+                    modify_report_format_data->param_value))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));

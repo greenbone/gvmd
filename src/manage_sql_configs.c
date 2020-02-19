@@ -3006,7 +3006,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the config, 2 failed to
- *         find config, 3 config is predefined, 99 permission denied, -1 error.
+ *         find config, 99 permission denied, -1 error.
  */
 int
 delete_config (const char *config_id, int ultimate)
@@ -3527,8 +3527,6 @@ DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 8);
 /**
  * @brief Return whether a config is referenced by a task.
  *
- * The predefined configs are always in use.
- *
  * @param[in]  config  Config.
  *
  * @return 1 if in use, else 0.
@@ -3548,7 +3546,7 @@ config_in_use (config_t config)
  *
  * @param[in]  config  Config.
  *
- * @return 0 if predefined config, else 1.
+ * @return 1.
  */
 int
 config_writable (config_t config)
@@ -4759,7 +4757,7 @@ update_config (config_t config, const gchar *type, const gchar *name,
 }
 
 /**
- * @brief Ensure the predefined configs exist.
+ * @brief Check configs, for startup.
  */
 void
 check_db_configs ()
