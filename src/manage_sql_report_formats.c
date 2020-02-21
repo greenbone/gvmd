@@ -3919,8 +3919,9 @@ empty_trashcan_report_formats ()
 /**
  * @brief Change ownership of report formats, for user deletion.
  *
- * @param[in]  user       Current owner.
- * @param[in]  inheritor  New owner.
+ * @param[in]  report_format_id  UUID of report format.
+ * @param[in]  user              Current owner.
+ * @param[in]  inheritor         New owner.
  */
 static void
 inherit_report_format_dir (const gchar *report_format_id, user_t user,
