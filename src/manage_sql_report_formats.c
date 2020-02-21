@@ -1312,9 +1312,9 @@ copy_report_format (const char* name, const char* source_uuid,
                     report_format_t* new_report_format)
 {
   report_format_t new, old;
-  gchar *copy_uuid, *source_dir, *copy_dir;
+  gchar *copy_uuid, *source_dir, *copy_dir, *owner_uuid;
   gchar *tmp_dir;
-  int predefined, ret;
+  int ret;
 
   assert (current_credentials.uuid);
 
@@ -1350,21 +1350,14 @@ copy_report_format (const char* name, const char* source_uuid,
 
   /* Copy files on disk. */
 
-  predefined = report_format_predefined (old);
-  if (predefined)
-    source_dir = predefined_report_format_dir (source_uuid);
-  else
-    {
-      gchar *owner_uuid;
-      owner_uuid = report_format_owner_uuid (old);
-      assert (owner_uuid);
-      source_dir = g_build_filename (GVMD_STATE_DIR,
-                                     "report_formats",
-                                     owner_uuid,
-                                     source_uuid,
-                                     NULL);
-      g_free (owner_uuid);
-    }
+  owner_uuid = report_format_owner_uuid (old);
+  assert (owner_uuid);
+  source_dir = g_build_filename (GVMD_STATE_DIR,
+                                 "report_formats",
+                                 owner_uuid,
+                                 source_uuid,
+                                 NULL);
+  g_free (owner_uuid);
 
   /* Check that the source directory exists. */
 
