@@ -264,29 +264,21 @@ int
 init_report_format_file_iterator (file_iterator_t* iterator,
                                   report_format_t report_format)
 {
-  gchar *dir_name, *uuid;
+  gchar *dir_name, *uuid, *owner_uuid;
 
   uuid = report_format_uuid (report_format);
   if (uuid == NULL)
     return -1;
 
-  if (report_format_predefined (report_format))
-    dir_name = predefined_report_format_dir (uuid);
-  else
-    {
-      gchar *owner_uuid;
-
-      owner_uuid = report_format_owner_uuid (report_format);
-      if (owner_uuid == NULL)
-        return -1;
-      dir_name = g_build_filename (GVMD_STATE_DIR,
-                                   "report_formats",
-                                   owner_uuid,
-                                   uuid,
-                                   NULL);
-      g_free (owner_uuid);
-    }
-
+  owner_uuid = report_format_owner_uuid (report_format);
+  if (owner_uuid == NULL)
+    return -1;
+  dir_name = g_build_filename (GVMD_STATE_DIR,
+                               "report_formats",
+                               owner_uuid,
+                               uuid,
+                               NULL);
+  g_free (owner_uuid);
   g_free (uuid);
 
   if (get_report_format_files (dir_name, &iterator->start))
