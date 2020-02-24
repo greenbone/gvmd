@@ -1591,6 +1591,8 @@ move_report_format_dir (const char *dir, const char *new_dir)
   if (g_file_test (dir, G_FILE_TEST_EXISTS)
       && gvm_file_check_is_dir (dir))
     {
+      g_warning ("%s: rename %s to %s", __func__, dir, new_dir);
+
       if (rename (dir, new_dir))
         {
           GError *error;
@@ -4079,16 +4081,73 @@ report_format_updated_in_feed (report_format_t report_format, const gchar *path)
 
 /**
  * @brief Migrate old ownerless report formats to the Feed Owner.
+ *
+ * @return 0 success, -1 error.
  */
-void
+int
 migrate_predefined_report_formats ()
 {
-  sql ("UPDATE report_formats"
-       " SET owner = (SELECT id FROM users"
-       "              WHERE uuid = (SELECT value FROM settings"
-       "                            WHERE uuid = '%s'))"
-       " WHERE owner is NULL;",
-       SETTING_UUID_FEED_IMPORT_OWNER);
+  iterator_t rows;
+  gchar *owner_uuid, *quoted_owner_uuid;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &owner_uuid);
+
+  if (owner_uuid == NULL)
+    return 0;
+
+  if (strlen (owner_uuid) == 0)
+    {
+      g_free (owner_uuid);
+      return 0;
+    }
+
+  quoted_owner_uuid = sql_quote (owner_uuid);
+  init_iterator (&rows,
+                 "UPDATE report_formats"
+                 " SET owner = (SELECT id FROM users"
+                 "              WHERE uuid = '%s')"
+                 " WHERE owner is NULL"
+                 " RETURNING uuid;",
+                 quoted_owner_uuid);
+  g_free (quoted_owner_uuid);
+
+  /* Move report format files to the Feed Owner's report format dir. */
+
+  while (next (&rows))
+    {
+      gchar *old, *new;
+
+      if (iterator_string (&rows, 0) == NULL)
+        continue;
+
+      old = g_build_filename (GVMD_DATA_DIR,
+                              "report_formats",
+                              iterator_string (&rows, 0),
+                              NULL);
+
+      new = g_build_filename (GVMD_STATE_DIR,
+                              "report_formats",
+                              owner_uuid,
+                              iterator_string (&rows, 0),
+                              NULL);
+
+      if (move_report_format_dir (old, new))
+        {
+          g_warning ("%s: failed at report format %s", __func__,
+                     iterator_string (&rows, 0));
+          g_free (old);
+          g_free (new);
+          cleanup_iterator (&rows);
+          g_free (owner_uuid);
+          return -1;
+        }
+
+      g_free (old);
+      g_free (new);
+    }
+  cleanup_iterator (&rows);
+  g_free (owner_uuid);
+  return 0;
 }
 
 
@@ -4331,7 +4390,8 @@ check_db_trash_report_formats ()
 int
 check_db_report_formats ()
 {
-  migrate_predefined_report_formats ();
+  if (migrate_predefined_report_formats ())
+    return -1;
 
   if (sync_report_formats_with_feed ())
     g_warning ("%s: Failed to sync report formats with feed", __func__);

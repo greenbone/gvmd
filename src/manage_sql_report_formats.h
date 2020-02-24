@@ -71,7 +71,7 @@ update_report_format (report_format_t, const gchar *, const gchar *,
 int
 report_format_updated_in_feed (report_format_t, const gchar *);
 
-void
+int
 migrate_predefined_report_formats ();
 
 int

@@ -51714,7 +51714,12 @@ manage_modify_setting (GSList *log_config, const gchar *database,
             {
               migrate_predefined_configs ();
               migrate_predefined_port_lists ();
-              migrate_predefined_report_formats ();
+              if (migrate_predefined_report_formats ())
+                {
+                  sql_rollback ();
+                  manage_option_cleanup ();
+                  return -1;
+                }
             }
         }
     }
