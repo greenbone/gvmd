@@ -2886,6 +2886,9 @@ delete_permissions_cache_for_user (user_t);
 /* Roles. */
 
 int
+manage_get_roles (GSList *, const gchar *, int);
+
+int
 init_role_iterator (iterator_t *, const get_data_t *);
 
 int
