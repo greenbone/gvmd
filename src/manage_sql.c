@@ -45332,6 +45332,41 @@ modify_permission (const char *permission_id, const char *name_arg,
 /* Roles. */
 
 /**
+ * @brief List roles.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ * @param[in]  verbose     Whether to print UUID.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_get_roles (GSList *log_config, const gchar *database, int verbose)
+{
+  iterator_t roles;
+  int ret;
+
+  g_info ("   Getting roles.");
+
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    return ret;
+
+  init_iterator (&roles, "SELECT name, uuid FROM roles;");
+  while (next (&roles))
+    if (verbose)
+      printf ("%s %s\n", iterator_string (&roles, 0), iterator_string (&roles, 1));
+    else
+      printf ("%s\n", iterator_string (&roles, 0));
+
+  cleanup_iterator (&roles);
+
+  manage_option_cleanup ();
+
+  return 0;
+}
+
+/**
  * @brief Create a role from an existing role.
  *
  * @param[in]  name       Name of new role.  NULL to copy from existing.
