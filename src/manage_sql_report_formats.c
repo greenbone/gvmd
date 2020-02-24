@@ -3905,7 +3905,6 @@ empty_trashcan_report_formats ()
         {
           g_warning ("%s: failed to remove trash dir %s", __func__, dir);
           g_free (dir);
-          sql_rollback ();
           return -1;
         }
 
