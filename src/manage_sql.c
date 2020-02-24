@@ -51909,12 +51909,13 @@ manage_delete_user (GSList *log_config, const gchar *database,
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
  * @param[in]  role_name   Role name.
+ * @param[in]  verbose     Whether to print UUID.
  *
  * @return 0 success, -1 error.
  */
 int
 manage_get_users (GSList *log_config, const gchar *database,
-                  const gchar* role_name)
+                  const gchar* role_name, int verbose)
 {
   iterator_t users;
   int ret;
@@ -51941,15 +51942,19 @@ manage_get_users (GSList *log_config, const gchar *database,
           return -1;
         }
       init_iterator (&users,
-                     "SELECT name FROM users"
+                     "SELECT name, uuid FROM users"
                      " WHERE id IN (SELECT \"user\" FROM role_users"
                      "              WHERE role = %llu);",
                      role);
     }
   else
-    init_iterator (&users, "SELECT name FROM users;");
+    init_iterator (&users, "SELECT name, uuid FROM users;");
   while (next (&users))
-    printf ("%s\n", iterator_string (&users, 0));
+    if (verbose)
+      printf ("%s %s\n", iterator_string (&users, 0), iterator_string (&users, 1));
+    else
+      printf ("%s\n", iterator_string (&users, 0));
+
   cleanup_iterator (&users);
 
   manage_option_cleanup ();
