@@ -56,9 +56,6 @@
 
 /* Non-SQL internals defined in manage_report_formats.c. */
 
-gchar *
-predefined_report_format_dir (const gchar *);
-
 int
 sync_report_formats_with_feed ();
 

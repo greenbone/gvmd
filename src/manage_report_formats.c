@@ -236,22 +236,6 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
 }
 
 /**
- * @brief Get the directory of a report format.
- *
- * @param[in]  uuid  Report format UUID.  NULL to get parent dir.
- *
- * @return Freshly allocated dir name.
- */
-gchar *
-predefined_report_format_dir (const gchar *uuid)
-{
-  return g_build_filename (GVMD_DATA_DIR,
-                           "report_formats",
-                           uuid,
-                           NULL);
-}
-
-/**
  * @brief Initialise a report format file iterator.
  *
  * @param[in]  iterator       Iterator.
