@@ -21,7 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Automatically load predefined configs from the feed [#931](https://github.com/greenbone/gvmd/pull/931) [#933](https://github.com/greenbone/gvmd/pull/933) [#934](https://github.com/greenbone/gvmd/pull/934)
 - Automatically load predefined port lists from the feed [#950](https://github.com/greenbone/gvmd/pull/950) [#952](https://github.com/greenbone/gvmd/pull/952)
 - Automatically load predefined report formats from the feed [#968](https://github.com/greenbone/gvmd/pull/968) [#970](https://github.com/greenbone/gvmd/pull/970)
-- Print UUIDs in --get-users when --verbose given [#991](https://github.com/greenbone/gvmd/pull/968) [#970](https://github.com/greenbone/gvmd/pull/991)
+- Print UUIDs in --get-users when --verbose given [#991](https://github.com/greenbone/gvmd/pull/991)
+- Add --get-roles [#992](https://github.com/greenbone/gvmd/pull/992)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)

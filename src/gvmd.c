@@ -1589,6 +1589,7 @@ gvmd (int argc, char** argv)
   static gboolean decrypt_all_credentials = FALSE;
   static gboolean disable_password_policy = FALSE;
   static gboolean disable_scheduling = FALSE;
+  static gboolean get_roles = FALSE;
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
   static gboolean foreground = FALSE;
@@ -1704,6 +1705,10 @@ gvmd (int argc, char** argv)
         { "foreground", 'f', 0, G_OPTION_ARG_NONE,
           &foreground,
           "Run in foreground.",
+          NULL },
+        { "get-roles", '\0', 0, G_OPTION_ARG_NONE,
+          &get_roles,
+          "List roles and exit.",
           NULL },
         { "get-scanners", '\0', 0, G_OPTION_ARG_NONE,
           &get_scanners,
@@ -2381,6 +2386,22 @@ gvmd (int argc, char** argv)
         return EXIT_FAILURE;
 
       ret = manage_delete_user (log_config, database, delete_user, inheritor);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (get_roles)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: Getting roles");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_get_roles (log_config, database, verbose);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
