@@ -48131,7 +48131,10 @@ manage_empty_trashcan ()
 
   /* Remove report formats last, because dir deletion can't be rolled back. */
   if (empty_trashcan_report_formats ())
-    return -1;
+    {
+      sql_rollback ();
+      return -1;
+    }
 
   sql_commit ();
   return 0;
