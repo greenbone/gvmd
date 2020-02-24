@@ -3356,7 +3356,7 @@ int
 manage_delete_user (GSList *, const gchar *, const gchar *, const gchar *);
 
 int
-manage_get_users (GSList *, const gchar *, const gchar *);
+manage_get_users (GSList *, const gchar *, const gchar *, int);
 
 report_host_t
 manage_report_host_add (report_t, const char *, time_t, time_t);

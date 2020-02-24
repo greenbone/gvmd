@@ -3905,7 +3905,6 @@ empty_trashcan_report_formats ()
         {
           g_warning ("%s: failed to remove trash dir %s", __func__, dir);
           g_free (dir);
-          sql_rollback ();
           return -1;
         }
 
@@ -3919,14 +3918,79 @@ empty_trashcan_report_formats ()
 /**
  * @brief Change ownership of report formats, for user deletion.
  *
+ * @param[in]  report_format_id  UUID of report format.
+ * @param[in]  user              Current owner.
+ * @param[in]  inheritor         New owner.
+ */
+static void
+inherit_report_format_dir (const gchar *report_format_id, user_t user,
+                           user_t inheritor)
+{
+  gchar *user_id, *inheritor_id, *old_dir, *new_dir;
+
+  g_debug ("%s: %s from %llu to %llu", __func__, report_format_id, user,
+           inheritor);
+
+  user_id = user_uuid (user);
+  if (user_id == NULL)
+    {
+      g_warning ("%s: user_id NULL, skipping report format dir", __func__);
+      return;
+    }
+
+  inheritor_id = user_uuid (inheritor);
+  if (inheritor_id == NULL)
+    {
+      g_warning ("%s: inheritor_id NULL, skipping report format dir", __func__);
+      return;
+    }
+
+  old_dir = g_build_filename (GVMD_STATE_DIR,
+                              "report_formats",
+                              user_id,
+                              report_format_id,
+                              NULL);
+
+  new_dir = g_build_filename (GVMD_STATE_DIR,
+                              "report_formats",
+                              inheritor_id,
+                              report_format_id,
+                              NULL);
+
+  g_free (user_id);
+  g_free (inheritor_id);
+
+  if (move_report_format_dir (old_dir, new_dir))
+    g_warning ("%s: failed to move %s dir, but will try the rest",
+               report_format_id,
+               __func__);
+
+  g_free (old_dir);
+  g_free (new_dir);
+}
+
+/**
+ * @brief Change ownership of report formats, for user deletion.
+ *
  * @param[in]  user       Current owner.
  * @param[in]  inheritor  New owner.
  */
 void
 inherit_report_formats (user_t user, user_t inheritor)
 {
-  sql ("UPDATE report_formats SET owner = %llu WHERE owner = %llu;",
-       inheritor, user);
+  iterator_t rows;
+
+  if (user == inheritor)
+    return;
+
+  init_iterator (&rows,
+                 "UPDATE report_formats SET owner = %llu"
+                 " WHERE owner = %llu"
+                 " RETURNING uuid;",
+                 inheritor, user);
+  while (next (&rows))
+    inherit_report_format_dir (iterator_string (&rows, 0), user, inheritor);
+  cleanup_iterator (&rows);
 
   sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
        inheritor, user);

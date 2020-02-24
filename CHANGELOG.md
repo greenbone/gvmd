@@ -21,7 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Automatically load predefined configs from the feed [#931](https://github.com/greenbone/gvmd/pull/931) [#933](https://github.com/greenbone/gvmd/pull/933) [#934](https://github.com/greenbone/gvmd/pull/934)
 - Automatically load predefined port lists from the feed [#950](https://github.com/greenbone/gvmd/pull/950) [#952](https://github.com/greenbone/gvmd/pull/952)
 - Automatically load predefined report formats from the feed [#968](https://github.com/greenbone/gvmd/pull/968) [#970](https://github.com/greenbone/gvmd/pull/970)
-- Add --get-roles [#992](https://github.com/greenbone/gvmd/pull/968) [#970](https://github.com/greenbone/gvmd/pull/992)
+- Print UUIDs in --get-users when --verbose given [#991](https://github.com/greenbone/gvmd/pull/991)
+- Add --get-roles [#992](https://github.com/greenbone/gvmd/pull/992)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
@@ -76,6 +77,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix SecInfo alert filter conditions [#971](https://github.com/greenbone/gvmd/pull/971)
 - Accept expanded scheme OIDs in parse_osp_report [#984](https://github.com/greenbone/gvmd/pull/984)
 - Fix SCAP update not finishing when CPEs are older [#986](https://github.com/greenbone/gvmd/pull/986)
+- Move report format dirs when inheriting user [#989](https://github.com/greenbone/gvmd/pull/989)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
