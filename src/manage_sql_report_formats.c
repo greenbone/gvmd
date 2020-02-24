@@ -3256,7 +3256,7 @@ run_report_format_script (gchar *report_format_id,
 {
   iterator_t formats;
   report_format_t report_format;
-  gchar *script, *script_dir;
+  gchar *script, *script_dir, *owner;
   get_data_t report_format_get;
 
   gchar *command;
@@ -3277,24 +3277,16 @@ run_report_format_script (gchar *report_format_id,
 
   report_format = get_iterator_resource (&formats);
 
-  if (report_format_predefined (report_format))
-    {
-      script_dir = predefined_report_format_dir (report_format_id);
-    }
-  else
-    {
-      gchar *owner;
-      owner = sql_string ("SELECT uuid FROM users"
-                          " WHERE id = (SELECT owner FROM"
-                          "             report_formats WHERE id = %llu);",
-                          report_format);
-      script_dir = g_build_filename (GVMD_STATE_DIR,
-                                     "report_formats",
-                                     owner,
-                                     report_format_id,
-                                     NULL);
-      g_free (owner);
-    }
+  owner = sql_string ("SELECT uuid FROM users"
+                      " WHERE id = (SELECT owner FROM"
+                      "             report_formats WHERE id = %llu);",
+                      report_format);
+  script_dir = g_build_filename (GVMD_STATE_DIR,
+                                 "report_formats",
+                                 owner,
+                                 report_format_id,
+                                 NULL);
+  g_free (owner);
 
   cleanup_iterator (&formats);
 
