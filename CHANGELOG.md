@@ -75,6 +75,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix SecInfo alert filter conditions [#971](https://github.com/greenbone/gvmd/pull/971)
 - Accept expanded scheme OIDs in parse_osp_report [#984](https://github.com/greenbone/gvmd/pull/984)
 - Fix SCAP update not finishing when CPEs are older [#986](https://github.com/greenbone/gvmd/pull/986)
+- Move report format dirs when inheriting user [#989](https://github.com/greenbone/gvmd/pull/989)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
