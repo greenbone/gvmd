@@ -2396,7 +2396,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_get_users (log_config, database, role);
+      ret = manage_get_users (log_config, database, role, verbose);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
