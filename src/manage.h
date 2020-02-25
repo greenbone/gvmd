@@ -33,15 +33,13 @@
 #include <glib.h>
 #include <gnutls/gnutls.h>
 
-#include <gvm/base/array.h>       /* for array_t */
-#include <gvm/base/credentials.h> /* for credentials_t */
-#include <gvm/base/nvti.h>        /* for nvti_t */
-#include <gvm/base/networking.h>  /* for port_protocol_t */
-#include <gvm/util/serverutils.h> /* for gvm_connection_t */
-#include <gvm/util/authutils.h>   /* for auth_method_t */
-#include <gvm/osp/osp.h>          /* for osp_connection_t */
-
-
+#include <gvm/base/array.h>
+#include <gvm/base/credentials.h>
+#include <gvm/base/nvti.h>
+#include <gvm/base/networking.h>
+#include <gvm/util/serverutils.h>
+#include <gvm/util/authutils.h>
+#include <gvm/osp/osp.h>
 
 /**
  * @brief OID of ping_host.nasl
