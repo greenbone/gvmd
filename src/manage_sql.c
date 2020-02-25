@@ -53091,6 +53091,16 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     }
   delete_port_lists_user (user);
 
+  /* Check credentials before deleting report formats, because we can't
+   * rollback the deletion of the report format dirs. */
+  if (user_resources_in_use (user,
+                             "credentials", credential_in_use,
+                             "credentials_trash", trash_credential_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+
   /* Report formats (used by alerts). */
   if (user_resources_in_use (user,
                              "report_formats",
@@ -53105,13 +53115,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   /* Delete credentials last because they can be used in various places */
 
-  if (user_resources_in_use (user,
-                             "credentials", credential_in_use,
-                             "credentials_trash", trash_credential_in_use))
-    {
-      sql_rollback ();
-      return 9;
-    }
   sql ("DELETE FROM credentials_data WHERE credential IN"
        " (SELECT id FROM credentials WHERE owner = %llu);",
        user);
