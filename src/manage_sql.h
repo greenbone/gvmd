@@ -25,7 +25,7 @@
 #ifndef _GVMD_MANAGE_SQL_H
 #define _GVMD_MANAGE_SQL_H
 
-#include <gvm/util/xmlutils.h> /* for entity_t */
+#include <gvm/util/xmlutils.h>
 
 #include "manage.h"
 #include "manage_utils.h"
