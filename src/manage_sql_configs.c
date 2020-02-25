@@ -64,22 +64,7 @@ static int
 switch_representation (config_t, int);
 
 static void
-nvt_selector_add (const char*, const char*, const char*, int);
-
-static void
-nvt_selector_remove_selector (const char*, const char*, int);
-
-static void
 update_config_caches (config_t);
-
-static int
-nvt_selector_families_growing (const char *);
-
-static int
-nvt_selector_nvts_growing_2 (const char*, int);
-
-static int
-insert_nvt_selectors (const char *, const array_t*);
 
 
 /* Helpers. */
