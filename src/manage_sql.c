@@ -39043,11 +39043,13 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
       if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners"))
         {
           fprintf (stderr, "Error finding scanner.\n");
+          manage_option_cleanup ();
           return -1;
         }
       if (scanner == 0)
         {
           fprintf (stderr, "Failed to find scanner %s.\n", scanner_id);
+          manage_option_cleanup ();
           return 1;
         }
     }
@@ -51682,6 +51684,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
           sql_rollback ();
           fprintf (stderr,
                    "Modifying this setting for a single user is forbidden.\n");
+          manage_option_cleanup ();
           return 4;
         }
 
@@ -51689,6 +51692,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
         {
           sql_rollback ();
           fprintf (stderr, "Internal error.\n");
+          manage_option_cleanup ();
           return -1;
         }
 
@@ -51696,6 +51700,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
         {
           sql_rollback ();
           fprintf (stderr, "Failed to find user.\n");
+          manage_option_cleanup ();
           return 1;
         }
 
@@ -51818,15 +51823,15 @@ manage_create_user (GSList *log_config, const gchar *database,
       if (find_role_by_name (role_name, &role))
         {
           array_free (roles);
-          cleanup_manage_process (TRUE);
           fprintf (stderr, "Internal Error.\n");
+          manage_option_cleanup ();
           return -1;
         }
       if (role == 0)
         {
           array_free (roles);
-          cleanup_manage_process (TRUE);
           fprintf (stderr, "Failed to find role.\n");
+          manage_option_cleanup ();
           return -1;
         }
       array_add (roles, role_uuid (role));
@@ -56930,6 +56935,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
         {
           sql_rollback();
           fprintf (stderr, "Clean-up of result_nvts failed.\n");
+          manage_option_cleanup ();
           return 1;
         }
 
