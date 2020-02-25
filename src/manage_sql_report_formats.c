@@ -3988,6 +3988,30 @@ inherit_report_formats (user_t user, user_t inheritor)
 void
 delete_report_formats_user (user_t user)
 {
+  gchar *dir, *user_id;
+  iterator_t rows;
+
+  /* Remove trash report formats from trash directory. */
+
+  init_iterator (&rows,
+                 "SELECT id FROM report_formats_trash WHERE owner = %llu;",
+                 user);
+  while (next (&rows))
+    {
+      gchar *id;
+
+      id = g_strdup_printf ("%llu", iterator_int64 (&rows, 0));
+      dir = report_format_trash_dir (id);
+      g_free (id);
+      if (gvm_file_remove_recurse (dir))
+        g_warning ("%s: failed to remove dir %s, continuing anyway",
+                   __func__, dir);
+      g_free (dir);
+    }
+  cleanup_iterator (&rows);
+
+  /* Remove report formats from db. */
+
   sql ("DELETE FROM report_format_param_options"
        " WHERE report_format_param"
        "       IN (SELECT id FROM report_format_params"
@@ -4013,6 +4037,24 @@ delete_report_formats_user (user_t user)
        user);
   sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
   sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
+
+  /* Remove user's regular report formats directory. */
+
+  user_id = user_uuid (user);
+  if (user_id == NULL)
+    g_warning ("%s: user_id NULL, skipping removal of report formats dir",
+               __func__);
+
+  dir = g_build_filename (GVMD_STATE_DIR,
+                          "report_formats",
+                          user_id,
+                          NULL);
+  g_free (user_id);
+
+  if (gvm_file_remove_recurse (dir))
+    g_warning ("%s: failed to remove dir %s, continuing anyway",
+               __func__, dir);
+  g_free (dir);
 }
 
 
