@@ -56,9 +56,6 @@
 
 /* Non-SQL internals defined in manage_report_formats.c. */
 
-gchar *
-predefined_report_format_dir (const gchar *);
-
 int
 sync_report_formats_with_feed ();
 
@@ -1312,9 +1309,9 @@ copy_report_format (const char* name, const char* source_uuid,
                     report_format_t* new_report_format)
 {
   report_format_t new, old;
-  gchar *copy_uuid, *source_dir, *copy_dir;
+  gchar *copy_uuid, *source_dir, *copy_dir, *owner_uuid;
   gchar *tmp_dir;
-  int predefined, ret;
+  int ret;
 
   assert (current_credentials.uuid);
 
@@ -1350,21 +1347,14 @@ copy_report_format (const char* name, const char* source_uuid,
 
   /* Copy files on disk. */
 
-  predefined = report_format_predefined (old);
-  if (predefined)
-    source_dir = predefined_report_format_dir (source_uuid);
-  else
-    {
-      gchar *owner_uuid;
-      owner_uuid = report_format_owner_uuid (old);
-      assert (owner_uuid);
-      source_dir = g_build_filename (GVMD_STATE_DIR,
-                                     "report_formats",
-                                     owner_uuid,
-                                     source_uuid,
-                                     NULL);
-      g_free (owner_uuid);
-    }
+  owner_uuid = report_format_owner_uuid (old);
+  assert (owner_uuid);
+  source_dir = g_build_filename (GVMD_STATE_DIR,
+                                 "report_formats",
+                                 owner_uuid,
+                                 source_uuid,
+                                 NULL);
+  g_free (owner_uuid);
 
   /* Check that the source directory exists. */
 
@@ -1601,6 +1591,8 @@ move_report_format_dir (const char *dir, const char *new_dir)
   if (g_file_test (dir, G_FILE_TEST_EXISTS)
       && gvm_file_check_is_dir (dir))
     {
+      g_warning ("%s: rename %s to %s", __func__, dir, new_dir);
+
       if (rename (dir, new_dir))
         {
           GError *error;
@@ -3263,7 +3255,7 @@ run_report_format_script (gchar *report_format_id,
 {
   iterator_t formats;
   report_format_t report_format;
-  gchar *script, *script_dir;
+  gchar *script, *script_dir, *owner;
   get_data_t report_format_get;
 
   gchar *command;
@@ -3284,24 +3276,16 @@ run_report_format_script (gchar *report_format_id,
 
   report_format = get_iterator_resource (&formats);
 
-  if (report_format_predefined (report_format))
-    {
-      script_dir = predefined_report_format_dir (report_format_id);
-    }
-  else
-    {
-      gchar *owner;
-      owner = sql_string ("SELECT uuid FROM users"
-                          " WHERE id = (SELECT owner FROM"
-                          "             report_formats WHERE id = %llu);",
-                          report_format);
-      script_dir = g_build_filename (GVMD_STATE_DIR,
-                                     "report_formats",
-                                     owner,
-                                     report_format_id,
-                                     NULL);
-      g_free (owner);
-    }
+  owner = sql_string ("SELECT uuid FROM users"
+                      " WHERE id = (SELECT owner FROM"
+                      "             report_formats WHERE id = %llu);",
+                      report_format);
+  script_dir = g_build_filename (GVMD_STATE_DIR,
+                                 "report_formats",
+                                 owner,
+                                 report_format_id,
+                                 NULL);
+  g_free (owner);
 
   cleanup_iterator (&formats);
 
@@ -4161,92 +4145,77 @@ report_format_updated_in_feed (report_format_t report_format, const gchar *path)
 
 /**
  * @brief Migrate old ownerless report formats to the Feed Owner.
+ *
+ * @return 0 success, -1 error.
  */
-void
+int
 migrate_predefined_report_formats ()
 {
-  sql ("UPDATE report_formats"
-       " SET owner = (SELECT id FROM users"
-       "              WHERE uuid = (SELECT value FROM settings"
-       "                            WHERE uuid = '%s'))"
-       " WHERE owner is NULL;",
-       SETTING_UUID_FEED_IMPORT_OWNER);
+  iterator_t rows;
+  gchar *owner_uuid, *quoted_owner_uuid;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &owner_uuid);
+
+  if (owner_uuid == NULL)
+    return 0;
+
+  if (strlen (owner_uuid) == 0)
+    {
+      g_free (owner_uuid);
+      return 0;
+    }
+
+  quoted_owner_uuid = sql_quote (owner_uuid);
+  init_iterator (&rows,
+                 "UPDATE report_formats"
+                 " SET owner = (SELECT id FROM users"
+                 "              WHERE uuid = '%s')"
+                 " WHERE owner is NULL"
+                 " RETURNING uuid;",
+                 quoted_owner_uuid);
+  g_free (quoted_owner_uuid);
+
+  /* Move report format files to the Feed Owner's report format dir. */
+
+  while (next (&rows))
+    {
+      gchar *old, *new;
+
+      if (iterator_string (&rows, 0) == NULL)
+        continue;
+
+      old = g_build_filename (GVMD_DATA_DIR,
+                              "report_formats",
+                              iterator_string (&rows, 0),
+                              NULL);
+
+      new = g_build_filename (GVMD_STATE_DIR,
+                              "report_formats",
+                              owner_uuid,
+                              iterator_string (&rows, 0),
+                              NULL);
+
+      if (move_report_format_dir (old, new))
+        {
+          g_warning ("%s: failed at report format %s", __func__,
+                     iterator_string (&rows, 0));
+          g_free (old);
+          g_free (new);
+          cleanup_iterator (&rows);
+          g_free (owner_uuid);
+          return -1;
+        }
+
+      g_free (old);
+      g_free (new);
+    }
+  cleanup_iterator (&rows);
+  g_free (owner_uuid);
+  return 0;
 }
 
 
 /* Startup. */
-
-/**
- * @brief Bring UUIDs for single predefined report format up to date.
- *
- * @param[in]  old  Old UUID.
- * @param[in]  new  New UUID.
- */
-static void
-update_report_format_uuid (const char *old, const char *new)
-{
-  gchar *dir;
-
-  dir = predefined_report_format_dir (old);
-  if (g_file_test (dir, G_FILE_TEST_EXISTS))
-    gvm_file_remove_recurse (dir);
-  g_free (dir);
-
-  sql ("UPDATE report_formats"
-       " SET uuid = '%s', modification_time = m_now ()"
-       " WHERE uuid = '%s';",
-       new,
-       old);
-
-  sql ("UPDATE alert_method_data"
-       " SET data = '%s'"
-       " WHERE data = '%s';",
-       new,
-       old);
-}
-
-/**
- * @brief Bring report format UUIDs in database up to date.
- */
-static void
-update_report_format_uuids ()
-{
-  /* Same as migrate_58_to_59, to enable backporting r13519 to OpenVAS-5
-   * without backporting the 58 to 59 migrator.  In future these should be
-   * done here instead of in a migrator. */
-
-  update_report_format_uuid ("a0704abb-2120-489f-959f-251c9f4ffebd",
-                             "5ceff8ba-1f62-11e1-ab9f-406186ea4fc5");
-
-  update_report_format_uuid ("b993b6f5-f9fb-4e6e-9c94-dd46c00e058d",
-                             "6c248850-1f62-11e1-b082-406186ea4fc5");
-
-  update_report_format_uuid ("929884c6-c2c4-41e7-befb-2f6aa163b458",
-                             "77bd6c4a-1f62-11e1-abf0-406186ea4fc5");
-
-  update_report_format_uuid ("9f1ab17b-aaaa-411a-8c57-12df446f5588",
-                             "7fcc3a1a-1f62-11e1-86bf-406186ea4fc5");
-
-  update_report_format_uuid ("f5c2a364-47d2-4700-b21d-0a7693daddab",
-                             "9ca6fe72-1f62-11e1-9e7c-406186ea4fc5");
-
-  update_report_format_uuid ("1a60a67e-97d0-4cbf-bc77-f71b08e7043d",
-                             "a0b5bfb2-1f62-11e1-85db-406186ea4fc5");
-
-  update_report_format_uuid ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
-                             "a3810a62-1f62-11e1-9219-406186ea4fc5");
-
-  update_report_format_uuid ("d5da9f67-8551-4e51-807b-b6a873d70e34",
-                             "a994b278-1f62-11e1-96ac-406186ea4fc5");
-
-  /* New updates go here.  Oldest must come first, so add at the end. */
-
-  update_report_format_uuid ("7fcc3a1a-1f62-11e1-86bf-406186ea4fc5",
-                             "a684c02c-b531-11e1-bdc2-406186ea4fc5");
-
-  update_report_format_uuid ("a0b5bfb2-1f62-11e1-85db-406186ea4fc5",
-                             "c402cc3e-b531-11e1-9163-406186ea4fc5");
-}
 
 /**
  * @brief Ensure every report format has a unique UUID.
@@ -4485,7 +4454,8 @@ check_db_trash_report_formats ()
 int
 check_db_report_formats ()
 {
-  migrate_predefined_report_formats ();
+  if (migrate_predefined_report_formats ())
+    return -1;
 
   if (sync_report_formats_with_feed ())
     g_warning ("%s: Failed to sync report formats with feed", __func__);
@@ -4493,8 +4463,6 @@ check_db_report_formats ()
   if (check_db_trash_report_formats ())
     return -1;
 
-  /* Bring report format UUIDs in database up to date. */
-  update_report_format_uuids ();
   if (make_report_format_uuids_unique ())
     return -1;
 
