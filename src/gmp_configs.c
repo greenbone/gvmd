@@ -180,19 +180,22 @@ attr_or_null (entity_t entity, const gchar *name)
 /**
  * @brief Get creation data from a config entity.
  *
- * @param[in]  config     Config entity.
- * @param[out] config_id  Address for config ID if required, else NULL.
- * @param[out] name       Address for name.
- * @param[out] comment    Address for comment.
- * @param[out] type       Address for type.
+ * @param[in]  config                Config entity.
+ * @param[in]  require_preferences   Whether OpenVAS config preferences must
+ *                                   exist.
+ * @param[out] config_id             Address for config ID, or NULL.
+ * @param[out] name                  Address for name.
+ * @param[out] comment               Address for comment.
+ * @param[out] type                  Address for type.
  * @param[out] usage_type            Address for usage type.
  * @param[out] import_nvt_selectors  Address for selectors.
  * @param[out] import_preferences    Address for preferences.
  *
- * @return 0 success, -1 preference without ID.
+ * @return 0 success, 1 preference did no exist, -1 preference without ID.
  */
 int
-parse_config_entity (entity_t config, const char **config_id, char **name,
+parse_config_entity (entity_t config, int require_preferences,
+                     const char **config_id, char **name,
                      char **comment, char **type, char **usage_type,
                      array_t **import_nvt_selectors,
                      array_t **import_preferences)
@@ -339,10 +342,14 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
                                                 preference_type,
                                                 preference_value ?: "");
                   if (new_preference == NULL)
-                    g_warning ("%s: Preference %s:%s not found",
-                                __func__,
-                                preference_nvt_oid,
-                                preference_id);
+                    {
+                      g_warning ("%s: Preference %s:%s not found",
+                                 __func__,
+                                 preference_nvt_oid,
+                                 preference_id);
+                      if (require_preferences)
+                        return 1;
+                    }
                 }
               else
                 {
@@ -429,7 +436,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Get the config data from the XML. */
 
-      if (parse_config_entity (config, NULL, &import_name, &comment, &type,
+      if (parse_config_entity (config, 0, NULL, &import_name, &comment, &type,
                                NULL, &import_nvt_selectors,
                                &import_preferences))
         {
