@@ -130,12 +130,20 @@ update_config_from_file (config_t config, const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  if (parse_config_entity (entity, &config_id, &name, &comment, &type,
-                           &usage_type, &nvt_selectors, &preferences))
+  switch (parse_config_entity (entity, 1, &config_id, &name, &comment, &type,
+                               &usage_type, &nvt_selectors, &preferences))
     {
-      free_entity (entity);
-      g_warning ("%s: Failed to parse entity", __func__);
-      return -1;
+      case 0:
+        break;
+      case 1:
+        free_entity (entity);
+        g_warning ("%s: preference does not exist yet, skipping %s for now",
+                   __func__, path);
+        return 0;
+      default:
+        free_entity (entity);
+        g_warning ("%s: Failed to parse entity", __func__);
+        return -1;
     }
 
   /* Update the config. */
@@ -177,12 +185,20 @@ create_config_from_file (const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  if (parse_config_entity (config, &config_id, &name, &comment, &type,
-                           &usage_type, &nvt_selectors, &preferences))
+  switch (parse_config_entity (config, 1, &config_id, &name, &comment, &type,
+                               &usage_type, &nvt_selectors, &preferences))
     {
-      free_entity (config);
-      g_warning ("%s: Failed to parse entity", __func__);
-      return -1;
+      case 0:
+        break;
+      case 1:
+        free_entity (config);
+        g_warning ("%s: preference does not exist yet, skipping %s for now",
+                   __func__, path);
+        return 0;
+      default:
+        free_entity (config);
+        g_warning ("%s: Failed to parse entity", __func__);
+        return -1;
     }
 
   /* Create the config. */
