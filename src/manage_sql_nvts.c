@@ -1702,6 +1702,63 @@ manage_sync_nvts (int (*fork_update_nvt_cache) ())
 }
 
 /**
+ * @brief Update or rebuild NVT db.
+ *
+ * @param[in]  update  0 rebuild, else update.
+ *
+ * @return 0 success, -1 error, -4 no osp update socket.
+ */
+static int
+update_or_rebuild (int update)
+{
+  const char *osp_update_socket;
+  gchar *db_feed_version, *scanner_feed_version;
+  osp_connection_t *connection;
+
+  if (check_osp_vt_update_socket ())
+    {
+      printf ("No OSP VT update socket found."
+              " Use --osp-vt-update or change the 'OpenVAS Default'"
+              " scanner to use the main ospd-openvas socket.\n");
+      return -4;
+    }
+
+  osp_update_socket = get_osp_vt_update_socket ();
+  if (osp_update_socket == NULL)
+    {
+      printf ("No OSP VT update socket set.\n");
+      return -4;
+    }
+
+  db_feed_version = nvts_feed_version ();
+  g_debug ("%s: db_feed_version: %s", __func__, db_feed_version);
+
+  connection = osp_connection_new (osp_update_socket, 0, NULL, NULL, NULL);
+  if (!connection)
+    {
+      printf ("Failed to connect to %s.\n", osp_update_socket);
+      return -1;
+    }
+
+  if (osp_get_vts_version (connection, &scanner_feed_version))
+    {
+      printf ("Failed to get scanner_version.\n");
+      return -1;
+    }
+  g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
+
+  osp_connection_close (connection);
+
+  if (update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version))
+    {
+      printf ("Failed to update NVT cache.\n");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Rebuild NVT db.
  *
  * @param[in]  log_config  Log configuration.
@@ -1744,9 +1801,6 @@ int
 manage_update (GSList *log_config, const gchar *database)
 {
   int ret;
-  const char *osp_update_socket;
-  gchar *db_feed_version, *scanner_feed_version;
-  osp_connection_t *connection;
 
   g_info ("   Updating NVTs.");
 
@@ -1754,48 +1808,7 @@ manage_update (GSList *log_config, const gchar *database)
   if (ret)
     return ret;
 
-  if (check_osp_vt_update_socket ())
-    {
-      printf ("No OSP VT update socket found."
-              " Use --osp-vt-update or change the 'OpenVAS Default'"
-              " scanner to use the main ospd-openvas socket.\n");
-      manage_option_cleanup ();
-      return -4;
-    }
-
-  osp_update_socket = get_osp_vt_update_socket ();
-  if (osp_update_socket == NULL)
-    {
-      printf ("No OSP VT update socket set.\n");
-      manage_option_cleanup ();
-      return -4;
-    }
-
-  db_feed_version = nvts_feed_version ();
-  g_debug ("%s: db_feed_version: %s", __func__, db_feed_version);
-
-  connection = osp_connection_new (osp_update_socket, 0, NULL, NULL, NULL);
-  if (!connection)
-    {
-      g_warning ("%s: failed to connect to %s", __func__, osp_update_socket);
-      return -1;
-    }
-
-  if (osp_get_vts_version (connection, &scanner_feed_version))
-    {
-      g_warning ("%s: failed to get scanner_version", __func__);
-      return -1;
-    }
-  g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
-
-  osp_connection_close (connection);
-
-  if (update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version))
-    {
-      printf ("Failed to update NVT cache.\n");
-      manage_option_cleanup ();
-      return -1;
-    }
+  ret = update_or_rebuild (1);
 
   manage_option_cleanup ();
 
