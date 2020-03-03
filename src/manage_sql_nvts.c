@@ -1817,11 +1817,14 @@ update_or_rebuild (int update)
   osp_connection_close (connection);
 
   if (update == 0)
-    sql ("TRUNCATE nvts;");
+    {
+      sql ("TRUNCATE nvts;");
+      set_nvts_feed_version ("0");
+    }
 
   if (update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version))
     {
-      printf ("Failed to %s NVT cache.\n", update ? "update" : "rebuild);
+      printf ("Failed to %s NVT cache.\n", update ? "update" : "rebuild");
       return -1;
     }
 
@@ -1848,7 +1851,12 @@ manage_rebuild (GSList *log_config, const gchar *database)
   if (ret)
     return ret;
 
+  sql_begin_immediate ();
   ret = update_or_rebuild (0);
+  if (ret)
+    sql_rollback ();
+  else
+    sql_commit ();
 
   manage_option_cleanup ();
 
