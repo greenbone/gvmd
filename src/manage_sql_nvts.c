@@ -1738,3 +1738,61 @@ manage_sync_nvts (int (*fork_update_nvt_cache) ())
 {
   fork_update_nvt_cache ();
 }
+
+/**
+ * @brief Rebuild NVT db.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return 0 success, -1 error, -2 database is wrong version,
+ *         -3 database needs to be initialised from server.
+ */
+int
+manage_rebuild (GSList *log_config, const gchar *database)
+{
+  int ret;
+
+  g_info ("   Rebuilding NVTs.");
+
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    return ret;
+
+  // FIX
+
+  current_credentials.uuid = NULL;
+
+  manage_option_cleanup ();
+
+  return ret;
+}
+
+/**
+ * @brief Update NVT db.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return 0 success, -1 error, -2 database is wrong version,
+ *         -3 database needs to be initialised from server.
+ */
+int
+manage_update (GSList *log_config, const gchar *database)
+{
+  int ret;
+
+  g_info ("   Updating NVTs.");
+
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    return ret;
+
+  // FIX
+
+  current_credentials.uuid = NULL;
+
+  manage_option_cleanup ();
+
+  return ret;
+}
