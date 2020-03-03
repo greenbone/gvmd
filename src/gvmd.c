@@ -2777,29 +2777,13 @@ gvmd (int argc, char** argv)
   if (gvm_auth_init ())
     exit (EXIT_FAILURE);
 
-  /* Try to get OSP VT update socket from default OpenVAS if it
-   *  was not set with the --osp-vt-update option.
-   */
-  if (get_osp_vt_update_socket () == NULL)
+  if (check_osp_vt_update_socket ())
     {
-      char *default_socket = openvas_default_scanner_host ();
-      if (default_socket)
-        {
-          g_debug ("%s: Using OSP VT update socket from default OpenVAS"
-                   " scanner: %s",
-                   __func__,
-                   default_socket);
-          set_osp_vt_update_socket (default_socket);
-        }
-      else
-        {
-          g_critical ("%s: No OSP VT update socket found."
-                      " Use --osp-vt-update or change the 'OpenVAS Default'"
-                      " scanner to use the main ospd-openvas socket.",
-                      __func__);
-          return EXIT_FAILURE;
-        }
-      free (default_socket);
+      g_critical ("%s: No OSP VT update socket found."
+                  " Use --osp-vt-update or change the 'OpenVAS Default'"
+                  " scanner to use the main ospd-openvas socket.",
+                  __func__);
+      exit (EXIT_FAILURE);
     }
 
   /* Enter the main forever-loop. */
