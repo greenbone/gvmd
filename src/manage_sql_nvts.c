@@ -1888,5 +1888,5 @@ manage_update (GSList *log_config, const gchar *database)
 
   manage_option_cleanup ();
 
-  return 0;
+  return ret;
 }
