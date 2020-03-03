@@ -1816,9 +1816,12 @@ update_or_rebuild (int update)
 
   osp_connection_close (connection);
 
+  if (update == 0)
+    sql ("TRUNCATE nvts;");
+
   if (update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version))
     {
-      printf ("Failed to update NVT cache.\n");
+      printf ("Failed to %s NVT cache.\n", update ? "update" : "rebuild);
       return -1;
     }
 
@@ -1845,9 +1848,7 @@ manage_rebuild (GSList *log_config, const gchar *database)
   if (ret)
     return ret;
 
-  // FIX
-
-  current_credentials.uuid = NULL;
+  ret = update_or_rebuild (0);
 
   manage_option_cleanup ();
 
