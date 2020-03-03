@@ -79,6 +79,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix SCAP update not finishing when CPEs are older [#986](https://github.com/greenbone/gvmd/pull/986)
 - Move report format dirs when inheriting user [#989](https://github.com/greenbone/gvmd/pull/989)
 - Delete report format dirs when deleting user [#993](https://github.com/greenbone/gvmd/pull/993)
+- Put 'lean' back to 0 for GET_RESULTS [#1001](https://github.com/greenbone/gvmd/pull/1001)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
