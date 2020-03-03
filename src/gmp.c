@@ -15521,7 +15521,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                   NULL,
                                   0,
                                   -1,
-                                  1);   /* Lean. */
+                                  0);   /* Lean. */
               SEND_TO_CLIENT_OR_FAIL (buffer->str);
               g_string_free (buffer, TRUE);
               count ++;
