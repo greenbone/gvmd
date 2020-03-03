@@ -4253,6 +4253,12 @@ gvm_get_sync_script_feed_version (const gchar *, gchar **);
 int
 manage_update_nvts_osp (const gchar *);
 
+int
+manage_rebuild (GSList *, const gchar *);
+
+int
+manage_update (GSList *, const gchar *);
+
 
 /* Wizards. */
 
