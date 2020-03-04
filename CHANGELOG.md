@@ -23,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Automatically load predefined report formats from the feed [#968](https://github.com/greenbone/gvmd/pull/968) [#970](https://github.com/greenbone/gvmd/pull/970)
 - Print UUIDs in --get-users when --verbose given [#991](https://github.com/greenbone/gvmd/pull/991)
 - Add --get-roles [#992](https://github.com/greenbone/gvmd/pull/992)
-- Add --rebuild and --update [#998](https://github.com/greenbone/gvmd/pull/998)
+- Add --rebuild [#998](https://github.com/greenbone/gvmd/pull/998)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
