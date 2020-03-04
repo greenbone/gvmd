@@ -4256,9 +4256,6 @@ manage_update_nvts_osp (const gchar *);
 int
 manage_rebuild (GSList *, const gchar *);
 
-int
-manage_update (GSList *, const gchar *);
-
 
 /* Wizards. */
 

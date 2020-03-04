@@ -1636,7 +1636,6 @@ gvmd (int argc, char** argv)
   static gchar *relay_mapper = NULL;
   static gboolean rebuild = FALSE;
   static gchar *role = NULL;
-  static gboolean update = FALSE;
   static gchar *disable = NULL;
   static gchar *value = NULL;
   GError *error = NULL;
@@ -1875,10 +1874,6 @@ gvmd (int argc, char** argv)
           &manager_address_string_unix,
           "Listen on UNIX socket at <filename>.",
           "<filename>" },
-        { "update", 'm', 0, G_OPTION_ARG_NONE,
-          &update,
-          "Update entire NVT db from the scanner, without removing it first.",
-          NULL },
         { "user", '\0', 0, G_OPTION_ARG_STRING,
           &user,
           "User for --new-password.",
@@ -2249,22 +2244,6 @@ gvmd (int argc, char** argv)
         return EXIT_FAILURE;
 
       ret = manage_rebuild (log_config, database);
-      log_config_free ();
-      if (ret)
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
-    }
-
-  if (update)
-    {
-      int ret;
-
-      proctitle_set ("gvmd: --update");
-
-      if (option_lock (&lockfile_checking))
-        return EXIT_FAILURE;
-
-      ret = manage_update (log_config, database);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
