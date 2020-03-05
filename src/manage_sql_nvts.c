@@ -1721,7 +1721,7 @@ manage_sync_nvts (int (*fork_update_nvt_cache) ())
  *
  * @param[in]  update  0 rebuild, else update.
  *
- * @return 0 success, -1 error, -4 no osp update socket, -5 sync active.
+ * @return 0 success, -1 error, -4 no osp update socket.
  */
 static int
 update_or_rebuild (int update)
@@ -1786,7 +1786,7 @@ update_or_rebuild (int update)
  * @param[in]  database    Location of manage database.
  *
  * @return 0 success, -1 error, -2 database is wrong version,
- *         -3 database needs to be initialised from server.
+ *         -3 database needs to be initialised from server, -5 sync active.
  */
 int
 manage_rebuild (GSList *log_config, const gchar *database)
