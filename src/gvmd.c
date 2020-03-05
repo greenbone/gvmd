@@ -1635,6 +1635,7 @@ gvmd (int argc, char** argv)
   static gchar *scanner_name = NULL;
   static gchar *rc_name = NULL;
   static gchar *relay_mapper = NULL;
+  static gboolean rebuild = FALSE;
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
@@ -1804,6 +1805,10 @@ gvmd (int argc, char** argv)
           &manager_port_string_2,
           "Use port number <number> for address 2.",
           "<number>" },
+        { "rebuild", 'm', 0, G_OPTION_ARG_NONE,
+          &rebuild,
+          "Remove NVT db, and rebuild it from the scanner.",
+          NULL },
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,
           "Executable for mapping scanner hosts to relays."
@@ -2228,6 +2233,22 @@ gvmd (int argc, char** argv)
         return EXIT_FAILURE;
 
       ret = manage_optimize (log_config, database, optimize);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (rebuild)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: --rebuild");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_rebuild (log_config, database);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2735,29 +2756,13 @@ gvmd (int argc, char** argv)
   if (gvm_auth_init ())
     exit (EXIT_FAILURE);
 
-  /* Try to get OSP VT update socket from default OpenVAS if it
-   *  was not set with the --osp-vt-update option.
-   */
-  if (get_osp_vt_update_socket () == NULL)
+  if (check_osp_vt_update_socket ())
     {
-      char *default_socket = openvas_default_scanner_host ();
-      if (default_socket)
-        {
-          g_debug ("%s: Using OSP VT update socket from default OpenVAS"
-                   " scanner: %s",
-                   __func__,
-                   default_socket);
-          set_osp_vt_update_socket (default_socket);
-        }
-      else
-        {
-          g_critical ("%s: No OSP VT update socket found."
-                      " Use --osp-vt-update or change the 'OpenVAS Default'"
-                      " scanner to use the main ospd-openvas socket.",
-                      __func__);
-          return EXIT_FAILURE;
-        }
-      free (default_socket);
+      g_critical ("%s: No OSP VT update socket found."
+                  " Use --osp-vt-update or change the 'OpenVAS Default'"
+                  " scanner to use the main ospd-openvas socket.",
+                  __func__);
+      exit (EXIT_FAILURE);
     }
 
   /* Enter the main forever-loop. */
