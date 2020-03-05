@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Print UUIDs in --get-users when --verbose given [#991](https://github.com/greenbone/gvmd/pull/991)
 - Add --get-roles [#992](https://github.com/greenbone/gvmd/pull/992)
 - Add --rebuild [#998](https://github.com/greenbone/gvmd/pull/998)
+- Lock a file around the NVT sync [#1002](https://github.com/greenbone/gvmd/pull/1002)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
