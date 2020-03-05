@@ -1651,6 +1651,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 {
   osp_connection_t *connection;
   gchar *db_feed_version, *scanner_feed_version;
+  static lockfile_t lockfile;
 
   /* Re-open DB after fork. */
 
@@ -1681,6 +1682,16 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
   if ((db_feed_version == NULL)
       || strcmp (scanner_feed_version, db_feed_version))
     {
+      switch (lockfile_lock_nb (&lockfile, "gvm-syncing-nvts"))
+        {
+          case 1:
+            g_warning ("%s: an NVT sync is already running", __func__);
+            return -1;
+          case -1:
+            g_warning ("%s: error getting sync lock", __func__);
+            return -1;
+        }
+
       g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
 
@@ -1706,9 +1717,11 @@ manage_sync_nvts (int (*fork_update_nvt_cache) ())
 /**
  * @brief Update or rebuild NVT db.
  *
+ * Caller must get the lock.
+ *
  * @param[in]  update  0 rebuild, else update.
  *
- * @return 0 success, -1 error, -4 no osp update socket.
+ * @return 0 success, -1 error, -4 no osp update socket, -5 sync active.
  */
 static int
 update_or_rebuild (int update)
@@ -1779,8 +1792,19 @@ int
 manage_rebuild (GSList *log_config, const gchar *database)
 {
   int ret;
+  static lockfile_t lockfile;
 
   g_info ("   Rebuilding NVTs.");
+
+  switch (lockfile_lock_nb (&lockfile, "gvm-syncing-nvts"))
+    {
+      case 1:
+        printf ("An NVT sync is already running.\n");
+        return -5;
+      case -1:
+        printf ("Error getting sync lock.\n");
+        return -1;
+    }
 
   ret = manage_option_setup (log_config, database);
   if (ret)
