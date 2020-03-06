@@ -1819,6 +1819,7 @@ update_or_rebuild (int update)
   if (update == 0)
     {
       sql ("TRUNCATE nvts;");
+      sql ("TRUNCATE nvt_preferences;");
       set_nvts_feed_version ("0");
     }
 
