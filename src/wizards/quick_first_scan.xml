@@ -259,7 +259,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:template match="/">
           <xsl:choose>
             <xsl:when test="starts-with (/wizard/previous/extra_data/status, '2')">
-              <get_tasks task_id="{/wizard/previous/response/create_task_response/@id}"/>
+              <get_tasks task_id="{/wizard/previous/extra_data/task/@id}"/>
             </xsl:when>
             <xsl:otherwise>
               <xsl:if test="/wizard/previous/extra_data/task/@id != ''">
