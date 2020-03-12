@@ -2309,6 +2309,7 @@ config_insert_preferences (config_t config,
  * @param[in]   proposed_name  Proposed name of config.
  * @param[in]   make_name_unique  Whether to make name unique.
  * @param[in]   comment        Comment on config.
+ * @param[in]   all_selector   Whether to use "all" selector instead of selectors.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
  * @param[in]   config_type    Config type.
@@ -2324,6 +2325,7 @@ static int
 create_config_internal (int check_access, const char *config_id,
                         const char *proposed_name,
                         int make_name_unique, const char *comment,
+                        int all_selector,
                         const array_t *selectors /* nvt_selector_t. */,
                         const array_t *preferences /* preference_t. */,
                         const char *config_type, const char *usage_type,
@@ -2346,9 +2348,14 @@ create_config_internal (int check_access, const char *config_id,
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
-  selector_uuid = gvm_uuid_make ();
-  if (selector_uuid == NULL)
-    return -1;
+  if (all_selector)
+    selector_uuid = NULL;
+  else
+    {
+      selector_uuid = gvm_uuid_make ();
+      if (selector_uuid == NULL)
+        return -1;
+    }
 
   sql_begin_immediate ();
 
@@ -2390,7 +2397,7 @@ create_config_internal (int check_access, const char *config_id,
            config_id ? "'" : "",
            quoted_candidate_name,
            current_credentials.uuid,
-           selector_uuid,
+           selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
            quoted_comment,
            quoted_type,
            actual_usage_type);
@@ -2407,7 +2414,7 @@ create_config_internal (int check_access, const char *config_id,
          config_id ? "'" : "",
          quoted_candidate_name,
          current_credentials.uuid,
-         selector_uuid,
+         selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
          quoted_type,
          actual_usage_type);
   g_free (quoted_candidate_name);
@@ -2417,7 +2424,7 @@ create_config_internal (int check_access, const char *config_id,
 
   *config = sql_last_insert_id ();
 
-  if (config_type == NULL || strcmp (config_type, "0") == 0)
+  if (selector_uuid && (config_type == NULL || strcmp (config_type, "0") == 0))
     {
       if ((ret = insert_nvt_selectors (selector_uuid, selectors)))
         {
@@ -2455,6 +2462,7 @@ create_config_internal (int check_access, const char *config_id,
  * @param[in]   proposed_name  Proposed name of config.
  * @param[in]   make_name_unique  Whether to make name unique.
  * @param[in]   comment        Comment on config.
+ * @param[in]   all_selector   Whether to use "all" selector instead of selectors.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
  * @param[in]   config_type    Config type.
@@ -2468,15 +2476,15 @@ create_config_internal (int check_access, const char *config_id,
  */
 int
 create_config (const char *config_id, const char *proposed_name,
-               int make_name_unique, const char *comment,
+               int make_name_unique, const char *comment, int all_selector,
                const array_t *selectors /* nvt_selector_t. */,
                const array_t *preferences /* preference_t. */,
                const char *config_type, const char *usage_type,
                config_t *config, char **name)
 {
   return create_config_internal (1, config_id, proposed_name, make_name_unique,
-                                 comment, selectors, preferences, config_type,
-                                 usage_type, config, name);
+                                 comment, all_selector, selectors, preferences,
+                                 config_type, usage_type, config, name);
 }
 
 /**
@@ -2489,6 +2497,7 @@ create_config (const char *config_id, const char *proposed_name,
  * @param[in]   proposed_name  Proposed name of config.
  * @param[in]   make_name_unique  Whether to make name unique.
  * @param[in]   comment        Comment on config.
+ * @param[in]   all_selector   Whether to use "all" selector instead of selectors.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
  * @param[in]   config_type    Config type.
@@ -2503,14 +2512,15 @@ create_config (const char *config_id, const char *proposed_name,
 int
 create_config_no_acl (const char *config_id, const char *proposed_name,
                       int make_name_unique, const char *comment,
+                      int all_selector,
                       const array_t *selectors /* nvt_selector_t. */,
                       const array_t *preferences /* preference_t. */,
                       const char *config_type, const char *usage_type,
                       config_t *config, char **name)
 {
   return create_config_internal (0, config_id, proposed_name, make_name_unique,
-                                 comment, selectors, preferences, config_type,
-                                 usage_type, config, name);
+                                 comment, all_selector, selectors, preferences,
+                                 config_type, usage_type, config, name);
 }
 
 /**
@@ -4661,12 +4671,14 @@ config_updated_in_feed (config_t config, const gchar *path)
  * @param[in]  name         New name.
  * @param[in]  comment      New comment.
  * @param[in]  usage_type   New usage type.
- * @param[in]  selectors    New NVT selectors.
- * @param[in]  preferences  New preferences.
+ * @param[in]  all_selector  Whether to use "all" selector instead of selectors.
+ * @param[in]  selectors     New NVT selectors.
+ * @param[in]  preferences   New preferences.
  */
 void
 update_config (config_t config, const gchar *type, const gchar *name,
                const gchar *comment, const gchar *usage_type,
+               int all_selector,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */)
 {
@@ -4701,12 +4713,17 @@ update_config (config_t config, const gchar *type, const gchar *name,
     {
       char *selector_uuid;
 
-      selector_uuid = gvm_uuid_make ();
-      if (selector_uuid == NULL)
+      if (all_selector)
+        selector_uuid = NULL;
+      else
         {
-          g_warning ("%s: failed to allocate UUID", __func__);
-          sql_rollback ();
-          return;
+          selector_uuid = gvm_uuid_make ();
+          if (selector_uuid == NULL)
+            {
+              g_warning ("%s: failed to allocate UUID", __func__);
+              sql_rollback ();
+              return;
+            }
         }
 
       sql ("DELETE FROM nvt_selectors"
@@ -4715,9 +4732,10 @@ update_config (config_t config, const gchar *type, const gchar *name,
            config);
 
       sql ("UPDATE configs SET nvt_selector = '%s' WHERE id = %llu;",
-           selector_uuid, config);
+           selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
+           config);
 
-      if (insert_nvt_selectors (selector_uuid, selectors))
+      if (selector_uuid && insert_nvt_selectors (selector_uuid, selectors))
         {
           g_warning ("%s: Error in feed config NVT selector", __func__);
           free (selector_uuid);

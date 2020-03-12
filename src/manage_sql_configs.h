@@ -77,7 +77,7 @@ configs_extra_where (const char *);
 
 int
 create_config_no_acl (const char *, const char *, int, const char *,
-                      const array_t *, const array_t *, const char *,
+                      int, const array_t *, const array_t *, const char *,
                       const char *, config_t *, char **);
 
 gboolean
@@ -94,7 +94,7 @@ config_updated_in_feed (config_t, const gchar *);
 
 void
 update_config (config_t, const gchar *, const gchar *, const gchar *,
-               const gchar *, const array_t*, const array_t*);
+               const gchar *, int, const array_t*, const array_t*);
 
 void
 check_db_configs ();
