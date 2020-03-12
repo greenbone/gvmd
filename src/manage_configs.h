@@ -51,7 +51,7 @@ typedef struct
 } nvt_selector_t;
 
 int
-create_config (const char*, const char*, int, const char*, const array_t*,
+create_config (const char*, const char*, int, const char*, int, const array_t*,
                const array_t*, const char*, const char*, config_t*, char**);
 
 int
