@@ -120,6 +120,7 @@ update_config_from_file (config_t config, const gchar *path)
   array_t *nvt_selectors, *preferences;
   char *comment, *name, *type, *usage_type;
   const char *config_id;
+  int all_selector;
 
   g_debug ("%s: updating %s", __func__, path);
 
@@ -131,7 +132,8 @@ update_config_from_file (config_t config, const gchar *path)
   /* Parse the data out of the entity. */
 
   switch (parse_config_entity (entity, 1, &config_id, &name, &comment, &type,
-                               &usage_type, &nvt_selectors, &preferences))
+                               &usage_type, &all_selector, &nvt_selectors,
+                               &preferences))
     {
       case 0:
         break;
@@ -148,8 +150,8 @@ update_config_from_file (config_t config, const gchar *path)
 
   /* Update the config. */
 
-  update_config (config, type, name, comment, usage_type, nvt_selectors,
-                 preferences);
+  update_config (config, type, name, comment, usage_type, all_selector,
+                 nvt_selectors, preferences);
 
   /* Cleanup. */
 
@@ -175,6 +177,7 @@ create_config_from_file (const gchar *path)
   char *created_name, *comment, *name, *type, *usage_type;
   const char *config_id;
   config_t new_config;
+  int all_selector;
 
   g_debug ("%s: creating %s", __func__, path);
 
@@ -186,7 +189,8 @@ create_config_from_file (const gchar *path)
   /* Parse the data out of the entity. */
 
   switch (parse_config_entity (config, 1, &config_id, &name, &comment, &type,
-                               &usage_type, &nvt_selectors, &preferences))
+                               &usage_type, &all_selector, &nvt_selectors,
+                               &preferences))
     {
       case 0:
         break;
@@ -207,6 +211,7 @@ create_config_from_file (const gchar *path)
                                 name,
                                 0,              /* Use name exactly as given. */
                                 comment,
+                                all_selector,
                                 nvt_selectors,
                                 preferences,
                                 type,
