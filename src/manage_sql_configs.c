@@ -1164,7 +1164,7 @@ manage_set_config_families (const gchar *config_id,
  * @param[in]  selectors     NVT selectors.
  * @param[in]  allow_errors  Whether certain errors are allowed.
  *
- * @Return 0 success, -1 error, -3 input error.
+ * @return 0 success, -1 error, -3 input error.
  */
 static int
 insert_nvt_selectors (const char *quoted_name,
