@@ -1160,14 +1160,16 @@ manage_set_config_families (const gchar *config_id,
 /**
  * @brief Insert NVT selectors.
  *
- * @param[in]  quoted_name  Name of NVT selector.
- * @param[in]  selectors    NVT selectors.
+ * @param[in]  quoted_name   Name of NVT selector.
+ * @param[in]  selectors     NVT selectors.
+ * @param[in]  allow_errors  Whether certain errors are allowed.
  *
  * @return 0 success, -1 error, -3 input error.
  */
 static int
 insert_nvt_selectors (const char *quoted_name,
-                      const array_t* selectors /* nvt_selector_t. */)
+                      const array_t* selectors, /* nvt_selector_t. */
+                      int allow_errors)
 {
   int index = 0;
   const nvt_selector_t *selector;
@@ -1201,7 +1203,9 @@ insert_nvt_selectors (const char *quoted_name,
                              __func__,
                              selector->family_or_nvt,
                              quoted_name);
-                  continue;
+                  if (allow_errors)
+                    continue;
+                  return -1;
                 }
             }
           else
@@ -1211,7 +1215,9 @@ insert_nvt_selectors (const char *quoted_name,
                          __func__,
                          selector->family_or_nvt,
                          quoted_name);
-              continue;
+              if (allow_errors)
+                continue;
+              return -1;
             }
 
           quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
@@ -1240,7 +1246,9 @@ insert_nvt_selectors (const char *quoted_name,
                          __func__,
                          selector->family_or_nvt,
                          quoted_name);
-              continue;
+              if (allow_errors)
+                continue;
+              return -1;
             }
 
           quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
@@ -1265,7 +1273,9 @@ insert_nvt_selectors (const char *quoted_name,
                          " because the type is wrong (expected all)",
                          __func__,
                          quoted_name);
-              continue;
+              if (allow_errors)
+                continue;
+              return -1;
             }
 
           sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
@@ -2314,6 +2324,7 @@ config_insert_preferences (config_t config,
  * @param[in]   preferences    Preferences.
  * @param[in]   config_type    Config type.
  * @param[in]   usage_type     The usage type ("scan" or "policy")
+ * @param[in]   allow_errors  Whether certain errors are allowed.
  * @param[out]  config         On success the config.
  * @param[out]  name           On success the name of the config.
  *
@@ -2329,7 +2340,7 @@ create_config_internal (int check_access, const char *config_id,
                         const array_t *selectors /* nvt_selector_t. */,
                         const array_t *preferences /* preference_t. */,
                         const char *config_type, const char *usage_type,
-                        config_t *config, char **name)
+                        int allow_errors, config_t *config, char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
@@ -2426,7 +2437,7 @@ create_config_internal (int check_access, const char *config_id,
 
   if (selector_uuid && (config_type == NULL || strcmp (config_type, "0") == 0))
     {
-      if ((ret = insert_nvt_selectors (selector_uuid, selectors)))
+      if ((ret = insert_nvt_selectors (selector_uuid, selectors, allow_errors)))
         {
           sql_rollback ();
           free (selector_uuid);
@@ -2484,7 +2495,7 @@ create_config (const char *config_id, const char *proposed_name,
 {
   return create_config_internal (1, config_id, proposed_name, make_name_unique,
                                  comment, all_selector, selectors, preferences,
-                                 config_type, usage_type, config, name);
+                                 config_type, usage_type, 1, config, name);
 }
 
 /**
@@ -2520,7 +2531,7 @@ create_config_no_acl (const char *config_id, const char *proposed_name,
 {
   return create_config_internal (0, config_id, proposed_name, make_name_unique,
                                  comment, all_selector, selectors, preferences,
-                                 config_type, usage_type, config, name);
+                                 config_type, usage_type, 0, config, name);
 }
 
 /**
@@ -4735,7 +4746,7 @@ update_config (config_t config, const gchar *type, const gchar *name,
            selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
            config);
 
-      if (selector_uuid && insert_nvt_selectors (selector_uuid, selectors))
+      if (selector_uuid && insert_nvt_selectors (selector_uuid, selectors, 0))
         {
           g_warning ("%s: Error in feed config NVT selector", __func__);
           free (selector_uuid);
