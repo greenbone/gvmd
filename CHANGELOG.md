@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Change rows of built-in default filters to -2 (use "Rows Per Page" setting) [#896](https://github.com/greenbone/gvmd/pull/896)
 - Force NVT update in migrate_219_to_220 [#895](https://github.com/greenbone/gvmd/pull/895)
 - Use temp tables to speed up migrate_213_to_214 [#911](https://github.com/greenbone/gvmd/pull/911)
+- Add a delay for re-requesting scan information via osp [#1009](https://github.com/greenbone/gvmd/pull/1009)
 
 ### Fixed
 - Consider results_trash when deleting users [#799](https://github.com/greenbone/gvmd/pull/799)
