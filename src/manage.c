@@ -3660,6 +3660,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                 }
             }
         }
+
+      gvm_sleep (5);
     }
 
   g_free (host);

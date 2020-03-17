@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add --get-roles [#992](https://github.com/greenbone/gvmd/pull/992)
 - Add --rebuild [#998](https://github.com/greenbone/gvmd/pull/998)
 - Lock a file around the NVT sync [#1002](https://github.com/greenbone/gvmd/pull/1002)
+- Add a delay for re-requesting scan information via osp [#1012](https://github.com/greenbone/gvmd/pull/1012)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
