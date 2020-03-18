@@ -1126,7 +1126,7 @@ nvti_from_vt (entity_t vt)
   name = entity_child (vt, "name");
   if (name == NULL)
     {
-      g_warning ("%s: VT missing NAME", __FUNCTION__);
+      g_warning ("%s: VT %s missing NAME", __FUNCTION__, nvti_oid (nvti));
       nvti_free (nvti);
       return NULL;
     }
@@ -1182,7 +1182,7 @@ nvti_from_vt (entity_t vt)
   refs = entity_child (vt, "refs");
   if (refs == NULL)
     {
-      g_warning ("%s: VT missing REFS", __FUNCTION__);
+      g_warning ("%s: VT %s missing REFS", __FUNCTION__, nvti_oid (nvti));
       nvti_free (nvti);
       return NULL;
     }
@@ -1253,7 +1253,7 @@ nvti_from_vt (entity_t vt)
   custom = entity_child (vt, "custom");
   if (custom == NULL)
     {
-      g_warning ("%s: VT missing CUSTOM", __FUNCTION__);
+      g_warning ("%s: VT %s missing CUSTOM", __FUNCTION__, nvti_oid (nvti));
       nvti_free (nvti);
       return NULL;
     }
@@ -1261,7 +1261,8 @@ nvti_from_vt (entity_t vt)
   family = entity_child (custom, "family");
   if (family == NULL)
     {
-      g_warning ("%s: VT/CUSTOM missing FAMILY", __FUNCTION__);
+      g_warning ("%s: VT %s missing CUSTOM/FAMILY", __FUNCTION__,
+                 nvti_oid (nvti));
       nvti_free (nvti);
       return NULL;
     }
@@ -1270,7 +1271,8 @@ nvti_from_vt (entity_t vt)
   category = entity_child (custom, "category");
   if (category == NULL)
     {
-      g_warning ("%s: VT/CUSTOM missing CATEGORY", __FUNCTION__);
+      g_warning ("%s: VT %s missing CUSTOM/CATEGORY", __FUNCTION__,
+                 nvti_oid (nvti));
       nvti_free (nvti);
       return NULL;
     }
