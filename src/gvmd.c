@@ -1783,10 +1783,10 @@ gvmd (int argc, char** argv)
         { "optimize", '\0', 0, G_OPTION_ARG_STRING,
           &optimize,
           "Run an optimization: vacuum, analyze, cleanup-config-prefs,"
-          " cleanup-port-names, cleanup-report-formats, cleanup-result-nvts"
-          " cleanup-result-severities, cleanup-schedule-times,"
-          " migrate-relay-sensors, rebuild-report-cache or"
-          " update-report-cache.",
+          " cleanup-port-names, cleanup-report-formats, cleanup-result-encoding,"
+          " cleanup-result-nvts, cleanup-result-severities,"
+          " cleanup-schedule-times, migrate-relay-sensors,"
+          " rebuild-report-cache or update-report-cache.",
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
           &osp_vt_update,
