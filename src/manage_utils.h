@@ -73,6 +73,9 @@ valid_db_resource_type (const char *);
 int
 hosts_str_contains (const char *, const char *, int);
 
+void
+blank_control_chars (char *);
+
 icalcomponent *
 icalendar_from_old_schedule_data (time_t, time_t, time_t, time_t, int);
 

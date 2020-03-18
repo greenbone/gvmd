@@ -30,7 +30,6 @@
 #define _GNU_SOURCE
 
 #include <assert.h>
-#include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,20 +48,6 @@
  * @brief GLib log domain.
  */
 #define G_LOG_DOMAIN "md manage"
-
-
-/* Helper functions. */
-
-/** @brief Replace any control characters in string with spaces.
- *
- * @param[in,out]  string  String to replace in.
- */
-static void
-blank_control_chars (char *string)
-{
-  for (; *string; string++)
-    if (iscntrl (*string) && *string != '\n') *string = ' ';
-}
 
 
 /* NVT related global options */

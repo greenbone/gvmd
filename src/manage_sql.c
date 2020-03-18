@@ -56965,6 +56965,45 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       missing_severity_changes);
 
     }
+  else if (strcasecmp (name, "cleanup-result-encoding") == 0)
+    {
+      iterator_t results;
+
+      sql_begin_immediate ();
+
+      g_debug ("%s: Stripping control chars out of result descriptions",
+               __func__);
+
+      init_iterator (&results,
+                     "SELECT id, description FROM results;");
+      while (next (&results))
+        {
+          const char *descr;
+
+          descr = iterator_string (&results, 1);
+          if (descr)
+            {
+              gchar *copy, *quoted_descr;
+
+              copy = g_strdup (descr);
+
+              blank_control_chars (copy);
+
+              quoted_descr = sql_quote (copy);
+              g_free (copy);
+              sql ("UPDATE results SET description = '%s' WHERE id = %llu;",
+                   quoted_descr,
+                   iterator_int64 (&results, 0));
+              g_free (quoted_descr);
+            }
+        }
+      cleanup_iterator (&results);
+
+
+      sql_commit ();
+
+      success_text = g_strdup_printf ("Optimized: Cleaned up result encoding.");
+    }
   else if (strcasecmp (name, "cleanup-schedule-times") == 0)
     {
       int changes;
