@@ -25,6 +25,7 @@
 #include "manage_utils.h"
 
 #include <assert.h> /* for assert */
+#include <ctype.h>
 #include <stdlib.h> /* for getenv */
 #include <stdio.h>  /* for sscanf */
 #include <string.h> /* for strcmp */
@@ -687,6 +688,17 @@ valid_db_resource_type (const char* type)
          || (strcasecmp (type, "ticket") == 0)
          || (strcasecmp (type, "tls_certificate") == 0)
          || (strcasecmp (type, "user") == 0);
+}
+
+/** @brief Replace any control characters in string with spaces.
+ *
+ * @param[in,out]  string  String to replace in.
+ */
+void
+blank_control_chars (char *string)
+{
+  for (; *string; string++)
+    if (iscntrl (*string) && *string != '\n') *string = ' ';
 }
 
 /**
