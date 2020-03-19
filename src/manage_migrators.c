@@ -1792,6 +1792,41 @@ migrate_224_to_225 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 225 to version 226.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_225_to_226 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 225. */
+
+  if (manage_db_version () != 225)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* A setting's UUID was changed to the correct length. */
+
+  sql ("UPDATE settings"
+       " SET uuid = 'ce7b121-c609-47b0-ab57-fd020a0336f4a'"
+       " WHERE uuid = 'ce7b121-c609-47b0-ab57-fd020a0336f4';");
+
+  /* Set the database version to 226. */
+
+  set_db_version (226);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1823,6 +1858,7 @@ static migrator_t database_migrators[] = {
   {223, migrate_222_to_223},
   {224, migrate_223_to_224},
   {225, migrate_224_to_225},
+  {226, migrate_225_to_226},
   /* End marker. */
   {-1, NULL}};
 
