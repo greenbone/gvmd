@@ -3960,8 +3960,8 @@ inherit_report_format_dir (const gchar *report_format_id, user_t user,
 
   if (move_report_format_dir (old_dir, new_dir))
     g_warning ("%s: failed to move %s dir, but will try the rest",
-               report_format_id,
-               __func__);
+               __func__,
+               report_format_id);
 
   g_free (old_dir);
   g_free (new_dir);
