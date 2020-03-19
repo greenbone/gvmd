@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
 - Add --optimize option cleanup-result-encoding [#1013](https://github.com/greenbone/gvmd/pull/1013)
 - Add --rebuild [#1016](https://github.com/greenbone/gvmd/pull/1016)
+- Lock a file around the NVT sync [#1017](https://github.com/greenbone/gvmd/pull/1017)
 
 ### Changed
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
