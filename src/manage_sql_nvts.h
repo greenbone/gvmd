@@ -101,6 +101,9 @@ get_osp_vt_update_socket ();
 void
 set_osp_vt_update_socket (const char *new_socket);
 
+int
+check_osp_vt_update_socket ();
+
 void
 check_db_nvts ();
 
