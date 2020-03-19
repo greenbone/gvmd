@@ -51247,7 +51247,7 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Vulnerabilities Top Dashboard Configuration");
 
       /* Notes dashboard settings */
-      else if (strcmp (uuid, "ce7b121-c609-47b0-ab57-fd020a0336f4") == 0)
+      else if (strcmp (uuid, "ce7b121-c609-47b0-ab57-fd020a0336f4a") == 0)
         setting_name = g_strdup ("Notes Top Dashboard Configuration");
 
       /* Overrides dashboard settings */
