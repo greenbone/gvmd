@@ -545,7 +545,7 @@ find_trash_report_format_no_acl (const char *uuid, report_format_t *report_forma
 
   quoted_uuid = sql_quote (uuid);
   switch (sql_int64 (report_format,
-                     "SELECT id FROM report_formats WHERE uuid = '%s';",
+                     "SELECT id FROM report_formats_trash WHERE uuid = '%s';",
                      quoted_uuid))
     {
       case 0:
