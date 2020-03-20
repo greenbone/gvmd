@@ -546,7 +546,7 @@ find_trash_report_format_no_acl (const char *uuid, report_format_t *report_forma
 
   quoted_uuid = sql_quote (uuid);
   switch (sql_int64 (report_format,
-                     "SELECT id FROM report_formats WHERE uuid = '%s';",
+                     "SELECT id FROM report_formats_trash WHERE uuid = '%s';",
                      quoted_uuid))
     {
       case 0:
@@ -1712,7 +1712,7 @@ delete_report_format (const char *report_format_id, int ultimate)
    *   - the UUID of a report format is the same every time it is
    *     imported, so to prevent multiple deletes from producing
    *     duplicate UUIDs in the trashcan, each report format in the
-   *     trashcan gets a new UUID,
+   *     trashcan gets a new UUID (except feed report formats),
    *
    *   - the report format has information on disk on top of the
    *     info in the db, so the disk information has to be held
@@ -1889,11 +1889,12 @@ delete_report_format (const char *report_format_id, int ultimate)
            "  description, signature, trust, trust_time, flags, original_uuid,"
            "  creation_time, modification_time)"
            " SELECT"
-           "  make_uuid (), owner, name, extension, content_type, summary,"
+           "  %s, owner, name, extension, content_type, summary,"
            "  description, signature, trust, trust_time, flags, uuid,"
            "  creation_time, modification_time"
            " FROM report_formats"
            " WHERE id = %llu;",
+           report_format_predefined (report_format) ? "uuid" : "make_uuid ()",
            report_format);
 
       trash_report_format = sql_last_insert_id ();

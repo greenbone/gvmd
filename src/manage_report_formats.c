@@ -655,8 +655,15 @@ sync_report_format_with_feed (const gchar *path)
   if (find_trash_report_format_no_acl (uuid, &report_format) == 0
       && report_format)
     {
-      g_warning ("%s: ignoring report format '%s', as it is in the trashcan",
-                 __func__, uuid);
+      static int warned = 0;
+
+      if (warned == 0)
+        {
+          warned = 1;
+          g_warning ("%s: ignoring a report format ('%s'), as it is in the trashcan"
+                     " (will not warn again)",
+                     __func__, uuid);
+        }
       g_free (uuid);
       return;
     }
