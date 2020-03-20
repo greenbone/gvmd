@@ -49,28 +49,6 @@
 #define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
 
 /**
- * @brief UUID of 'Base' NVT selector.
- */
-#define MANAGE_NVT_SELECTOR_UUID_BASE "dd4a4170-0b5e-43fb-9bae-6ce93c19e893"
-
-/**
- * @brief UUID of 'Discovery' NVT selector.
- */
-#define MANAGE_NVT_SELECTOR_UUID_DISCOVERY "0d9a2738-8fe2-4e22-8f26-bb886179e759"
-
-/**
- * @brief UUID of 'Host Discovery' NVT selector.
- */
-#define MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY \
- "f5f80744-55c7-11e3-8dc6-406186ea4fc5"
-
-/**
- * @brief UUID of 'System Discovery' NVT selector.
- */
-#define MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY \
- "07045d1c-a951-11e3-8da7-406186ea4fc5"
-
-/**
  * @brief Predefined role UUID.
  */
 #define PERMISSION_UUID_ADMIN_EVERYTHING "b3b56a8c-c2fd-11e2-a135-406186ea4fc5"
