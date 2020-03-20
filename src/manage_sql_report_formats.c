@@ -34,6 +34,7 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <grp.h>
+#include <libgen.h>
 #include <limits.h>
 #include <locale.h>
 #include <pwd.h>
@@ -1591,7 +1592,20 @@ move_report_format_dir (const char *dir, const char *new_dir)
   if (g_file_test (dir, G_FILE_TEST_EXISTS)
       && gvm_file_check_is_dir (dir))
     {
+      gchar *new_dir_parent;
+
       g_warning ("%s: rename %s to %s", __func__, dir, new_dir);
+
+      /* Ensure parent of new_dir exists. */
+      new_dir_parent = g_path_get_dirname (new_dir);
+      if (g_mkdir_with_parents (new_dir_parent, 0755 /* "rwxr-xr-x" */))
+        {
+          g_warning ("%s: failed to create parent %s", __func__,
+                     new_dir_parent);
+          g_free (new_dir_parent);
+          return -1;
+        }
+      g_free (new_dir_parent);
 
       if (rename (dir, new_dir))
         {
@@ -3946,8 +3960,8 @@ inherit_report_format_dir (const gchar *report_format_id, user_t user,
 
   if (move_report_format_dir (old_dir, new_dir))
     g_warning ("%s: failed to move %s dir, but will try the rest",
-               report_format_id,
-               __func__);
+               __func__,
+               report_format_id);
 
   g_free (old_dir);
   g_free (new_dir);
