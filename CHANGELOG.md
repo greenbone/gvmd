@@ -86,6 +86,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Delete report format dirs when deleting user [#993](https://github.com/greenbone/gvmd/pull/993)
 - Put 'lean' back to 0 for GET_RESULTS [#1001](https://github.com/greenbone/gvmd/pull/1001)
 - Improve handling of removed NVT prefs [#1003](https://github.com/greenbone/gvmd/pull/1003)
+- Ensure parent exists when moving report format dir [#1019](https://github.com/greenbone/gvmd/pull/1019)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
