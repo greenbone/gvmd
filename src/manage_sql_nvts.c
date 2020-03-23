@@ -296,15 +296,13 @@ insert_nvt (const nvti_t *nvti)
 
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti) ? nvti_cvss_base (nvti) : "");
 
-  qod_str = nvti_get_tag (nvti, "qod");
+  qod_str = nvti_qod (nvti);
   qod_type = nvti_qod_type (nvti);
 
   if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
     qod = qod_from_type (qod_type);
 
   quoted_qod_type = sql_quote (qod_type ? qod_type : "");
-
-  g_free (qod_str);
 
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
@@ -1238,8 +1236,15 @@ nvti_from_vt (entity_t vt)
   detection = entity_child (vt, "detection");
   if (detection)
     {
+      const gchar *qod;
+
       nvti_set_detection (nvti, entity_text (detection));
-      nvti_set_qod_type (nvti, entity_attribute (detection, "qod_type"));
+
+      qod = entity_attribute (detection, "qod");
+      if (qod == NULL)
+        nvti_set_qod_type (nvti, entity_attribute (detection, "qod_type"));
+      else
+        nvti_set_qod (nvti, qod);
     }
 
   solution = entity_child (vt, "solution");

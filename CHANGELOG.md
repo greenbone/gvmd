@@ -87,6 +87,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Put 'lean' back to 0 for GET_RESULTS [#1001](https://github.com/greenbone/gvmd/pull/1001)
 - Improve handling of removed NVT prefs [#1003](https://github.com/greenbone/gvmd/pull/1003)
 - Ensure parent exists when moving report format dir [#1019](https://github.com/greenbone/gvmd/pull/1019)
+- Use nvti_qod instead of the old nvti_get_tag() [#1022](https://github.com/greenbone/gvmd/pull/1022)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
