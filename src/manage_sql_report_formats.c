@@ -534,6 +534,8 @@ find_report_format_no_acl (const char *uuid, report_format_t *report_format)
  *
  * This does not do any permission checks.
  *
+ * This considers the actual UUID of the report format, not the original_uuid.
+ *
  * @param[in]   uuid           UUID of resource.
  * @param[out]  report_format  Report Format return, 0 if no such report format.
  *

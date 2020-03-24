@@ -2800,6 +2800,14 @@ create_tables ()
        "  trust integer,"
        "  trust_time integer,"
        "  flags integer,"
+       /* The UUID that the report format had before it was deleted.
+        *
+        * Regular report formats are given a new UUID when they are moved to
+        * the trash, because it's possible to import the same report format
+        * again, and delete it a second time.  The trash UUIDs must be unique.
+        *
+        * Feed ("predefined") report formats are not given a new UUID because
+        * they are not created if they already exist in the trash. */
        "  original_uuid text,"
        "  creation_time integer,"
        "  modification_time integer);");
