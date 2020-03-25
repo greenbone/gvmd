@@ -2965,7 +2965,6 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
           "(EXISTS"
           "  (SELECT * FROM tags"
           "   WHERE tags.uuid = '%s'"
-          "   AND tags.active != 0"
           "   AND EXISTS (SELECT * FROM tag_resources"
           "                WHERE tag_resources.resource_uuid"
           "                        = %ss.uuid"
