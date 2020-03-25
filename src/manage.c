@@ -8597,8 +8597,7 @@ gvm_migrate_secinfo (int feed_type)
  *
  * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
  *
- * @return 0 success, -1 error, 1 VT integrity check failed,
- *         2 scanner still loading.
+ * @return 0 success, -1 error, 1 VT integrity check failed.
  */
 int
 manage_update_nvts_osp (const gchar *update_socket)

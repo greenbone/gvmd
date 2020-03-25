@@ -1075,8 +1075,7 @@ handle_sigabrt_simple (int signal)
  *
  * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
  *
- * @return 0 success, -1 error, 1 VT integrity check failed,
- *         2 scanner still loading.
+ * @return 0 success, -1 error, 1 VT integrity check failed.
  */
 static int
 update_nvt_cache_osp (const gchar *update_socket)
@@ -1123,7 +1122,7 @@ update_nvt_cache_retry ()
               int ret;
 
               ret = update_nvt_cache_osp (osp_update_socket);
-              if (ret)
+              if (ret == 1)
                 {
                   g_message ("Rebuilding NVTs because integrity check failed");
                   ret = update_or_rebuild_nvts (0);
