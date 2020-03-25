@@ -1821,12 +1821,13 @@ manage_sync_nvts (int (*fork_update_nvt_cache) ())
  *
  * @return 0 success, -1 error, -4 no osp update socket.
  */
-static int
-update_or_rebuild (int update)
+int
+update_or_rebuild_nvts (int update)
 {
   const char *osp_update_socket;
   gchar *db_feed_version, *scanner_feed_version;
   osp_connection_t *connection;
+  int ret;
 
   if (check_osp_vt_update_socket ())
     {
@@ -1869,9 +1870,9 @@ update_or_rebuild (int update)
       set_nvts_feed_version ("0");
     }
 
-  if (update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version))
+  ret = update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version);
+  if (ret)
     {
-      printf ("Failed to %s NVT cache.\n", update ? "update" : "rebuild");
       return -1;
     }
 
@@ -1884,7 +1885,8 @@ update_or_rebuild (int update)
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
+ * @return 0 success, 1 VT integrity check failed, -1 error,
+ *         -2 database is wrong version,
  *         -3 database needs to be initialised from server, -5 sync active.
  */
 int
@@ -1910,7 +1912,7 @@ manage_rebuild (GSList *log_config, const gchar *database)
     return ret;
 
   sql_begin_immediate ();
-  ret = update_or_rebuild (0);
+  ret = update_or_rebuild_nvts (0);
   if (ret)
     sql_rollback ();
   else
