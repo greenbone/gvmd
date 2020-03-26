@@ -1510,7 +1510,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
         {
           g_warning ("%s: SHA-256 hash of the VTs in the database (%s)"
                      " does not match the one from the scanner (%s).",
-                     __func__, osp_vt_hash, db_vts_hash);
+                     __func__, db_vts_hash, osp_vt_hash);
 
           g_free (db_vts_hash);
           return 1;
