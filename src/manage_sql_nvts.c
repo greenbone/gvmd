@@ -1465,14 +1465,46 @@ update_nvts_from_vts (entity_t *get_vts_response,
     {
       char *db_vts_hash;
 
+      /*
+       * The hashed string used for verifying the NVTs generated as follows:
+       *
+       * For each NVT, sorted by OID, concatenate:
+       *   - the OID
+       *   - the modification time as seconds since epoch
+       *   - the preferences sorted as strings(!) and concatenated including:
+       *     - the id
+       *     - the name
+       *     - the default value (including choices for the "radio" type)
+       *
+       * All values are concatenated without a separator.
+       */
       db_vts_hash
-        = sql_string ("WITH str AS"
-                      "  (SELECT oid||modification_time as vt_string"
-                      "   FROM nvts ORDER BY oid)"
-                      " SELECT encode(digest(string_agg(str.vt_string,''),"
+        = sql_string ("WITH pref_str AS ("
+                      "  SELECT name,"
+                      "         substring(name, '^(.*?):') AS oid,"
+                      "         substring (name, '^.*?:([^:]+):') AS pref_id,"
+                      "         (substring (name, '^.*?:([^:]+):')"
+                      "          || substring (name,"
+                      "                        '^[^:]*:[^:]*:[^:]*:(.*)')"
+                      "          || value) AS pref"
+                      "  FROM nvt_preferences"
+                      " ),"
+                      " nvt_str AS ("
+                      "  SELECT (SELECT nvts.oid"
+                      "            || max(modification_time)"
+                      "            || coalesce (string_agg(pref_str.pref, ''"
+                      "                                    ORDER BY pref_id),"
+                      "                         ''))"
+                      "         AS vt_string"
+                      "  FROM nvts"
+                      "  LEFT JOIN pref_str ON nvts.oid = pref_str.oid"
+                      "  GROUP BY nvts.oid"
+                      "  ORDER BY nvts.oid ASC"
+                      " )"
+                      " SELECT encode(digest(string_agg(nvt_str.vt_string,''),"
                       "                      'sha256'),"
                       "               'hex')"
-                      " FROM str;");
+                      " FROM nvt_str;");
 
       if (strcmp (osp_vt_hash, db_vts_hash ? db_vts_hash : ""))
         {
