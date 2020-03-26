@@ -1075,7 +1075,7 @@ handle_sigabrt_simple (int signal)
  *
  * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
  *
- * @return 0 success.
+ * @return 0 success, -1 error, 1 VT integrity check failed.
  */
 static int
 update_nvt_cache_osp (const gchar *update_socket)
@@ -1118,7 +1118,22 @@ update_nvt_cache_retry ()
           const char *osp_update_socket;
           osp_update_socket = get_osp_vt_update_socket ();
           if (osp_update_socket)
-            exit (update_nvt_cache_osp (osp_update_socket));
+            {
+              int ret;
+
+              ret = update_nvt_cache_osp (osp_update_socket);
+              if (ret == 1)
+                {
+                  g_message ("Rebuilding NVTs because integrity check failed");
+                  ret = update_or_rebuild_nvts (0);
+                  if (ret)
+                    g_warning ("%s: rebuild failed", __func__);
+                  else
+                    g_message ("%s: rebuild successful", __func__);
+                }
+
+              exit (ret);
+            }
           else
             {
               g_warning ("%s: No OSP VT update socket set", __func__);
@@ -2251,7 +2266,10 @@ gvmd (int argc, char** argv)
       ret = manage_rebuild (log_config, database);
       log_config_free ();
       if (ret)
-        return EXIT_FAILURE;
+        {
+          printf ("Failed to rebuild NVT cache.\n");
+          return EXIT_FAILURE;
+        }
       return EXIT_SUCCESS;
     }
 

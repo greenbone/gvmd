@@ -1370,8 +1370,10 @@ nvti_from_vt (entity_t vt)
  *
  * @param[in]  get_vts_response      OSP GET_VTS response.
  * @param[in]  scanner_feed_version  Version of feed from scanner.
+ *
+ * @return 0 success, 1 VT integrity check failed, -1 error
  */
-static void
+static int
 update_nvts_from_vts (entity_t *get_vts_response,
                       const gchar *scanner_feed_version)
 {
@@ -1380,6 +1382,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   GList *preferences;
   int count_modified_vts, count_new_vts;
   time_t feed_version_epoch;
+  const char *osp_vt_hash;
 
   count_modified_vts = 0;
   count_new_vts = 0;
@@ -1390,8 +1393,10 @@ update_nvts_from_vts (entity_t *get_vts_response,
   if (vts == NULL)
     {
       g_warning ("%s: VTS missing", __func__);
-      return;
+      return -1;
     }
+
+  osp_vt_hash = entity_attribute (vts, "sha256_hash");
 
   sql_begin_immediate ();
 
@@ -1430,7 +1435,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
         {
           sql_rollback ();
-          return;
+          return -1;
         }
       sql ("DELETE FROM nvt_preferences WHERE name LIKE '%s:%%';",
            nvti_oid (nvti));
@@ -1455,6 +1460,69 @@ update_nvts_from_vts (entity_t *get_vts_response,
           count_new_vts, count_modified_vts);
 
   sql_commit ();
+
+  if (osp_vt_hash && strcmp (osp_vt_hash, ""))
+    {
+      char *db_vts_hash;
+
+      /*
+       * The hashed string used for verifying the NVTs generated as follows:
+       *
+       * For each NVT, sorted by OID, concatenate:
+       *   - the OID
+       *   - the modification time as seconds since epoch
+       *   - the preferences sorted as strings(!) and concatenated including:
+       *     - the id
+       *     - the name
+       *     - the default value (including choices for the "radio" type)
+       *
+       * All values are concatenated without a separator.
+       */
+      db_vts_hash
+        = sql_string ("WITH pref_str AS ("
+                      "  SELECT name,"
+                      "         substring(name, '^(.*?):') AS oid,"
+                      "         substring (name, '^.*?:([^:]+):') AS pref_id,"
+                      "         (substring (name, '^.*?:([^:]+):')"
+                      "          || substring (name,"
+                      "                        '^[^:]*:[^:]*:[^:]*:(.*)')"
+                      "          || value) AS pref"
+                      "  FROM nvt_preferences"
+                      " ),"
+                      " nvt_str AS ("
+                      "  SELECT (SELECT nvts.oid"
+                      "            || max(modification_time)"
+                      "            || coalesce (string_agg(pref_str.pref, ''"
+                      "                                    ORDER BY pref_id),"
+                      "                         ''))"
+                      "         AS vt_string"
+                      "  FROM nvts"
+                      "  LEFT JOIN pref_str ON nvts.oid = pref_str.oid"
+                      "  GROUP BY nvts.oid"
+                      "  ORDER BY nvts.oid ASC"
+                      " )"
+                      " SELECT encode(digest(string_agg(nvt_str.vt_string,''),"
+                      "                      'sha256'),"
+                      "               'hex')"
+                      " FROM nvt_str;");
+
+      if (strcmp (osp_vt_hash, db_vts_hash ? db_vts_hash : ""))
+        {
+          g_warning ("%s: SHA-256 hash of the VTs in the database (%s)"
+                     " does not match the one from the scanner (%s).",
+                     __func__, db_vts_hash, osp_vt_hash);
+
+          g_free (db_vts_hash);
+          return 1;
+        }
+
+      g_free (db_vts_hash);
+    }
+  else
+    g_warning ("%s: No SHA-256 hash received from scanner, skipping check.",
+               __func__);
+
+  return 0;
 }
 
 /**
@@ -1558,7 +1626,7 @@ check_preference_names (int trash, time_t modification_time)
  * @param[in]  db_feed_version       Feed version from meta table.
  * @param[in]  scanner_feed_version  Feed version from scanner.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 VT integrity check failed, -1 error.
  */
 static int
 update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
@@ -1569,6 +1637,7 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
   entity_t vts;
   osp_get_vts_opts_t get_vts_opts;
   time_t old_nvts_last_modified;
+  int ret;
 
   if (db_feed_version == NULL
       || strcmp (db_feed_version, "") == 0
@@ -1600,8 +1669,10 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 
   osp_connection_close (connection);
 
-  update_nvts_from_vts (&vts, scanner_feed_version);
+  ret = update_nvts_from_vts (&vts, scanner_feed_version);
   free_entity (vts);
+  if (ret)
+    return ret;
 
   /* Update scanner preferences */
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
@@ -1700,7 +1771,7 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
  *
  * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
  *
- * @return 0 success, -1 error, 2 scanner still loading.
+ * @return 0 success, -1 error, 1 VT integrity check failed.
  */
 int
 manage_update_nvt_cache_osp (const gchar *update_socket)
@@ -1751,9 +1822,8 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
 
-      if (update_nvt_cache_osp (update_socket, db_feed_version,
-                                scanner_feed_version))
-        return -1;
+      return update_nvt_cache_osp (update_socket, db_feed_version,
+                                   scanner_feed_version);
     }
 
   return 0;
@@ -1779,12 +1849,13 @@ manage_sync_nvts (int (*fork_update_nvt_cache) ())
  *
  * @return 0 success, -1 error, -4 no osp update socket.
  */
-static int
-update_or_rebuild (int update)
+int
+update_or_rebuild_nvts (int update)
 {
   const char *osp_update_socket;
   gchar *db_feed_version, *scanner_feed_version;
   osp_connection_t *connection;
+  int ret;
 
   if (check_osp_vt_update_socket ())
     {
@@ -1827,9 +1898,9 @@ update_or_rebuild (int update)
       set_nvts_feed_version ("0");
     }
 
-  if (update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version))
+  ret = update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version);
+  if (ret)
     {
-      printf ("Failed to %s NVT cache.\n", update ? "update" : "rebuild");
       return -1;
     }
 
@@ -1842,7 +1913,8 @@ update_or_rebuild (int update)
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
+ * @return 0 success, 1 VT integrity check failed, -1 error,
+ *         -2 database is wrong version,
  *         -3 database needs to be initialised from server, -5 sync active.
  */
 int
@@ -1868,7 +1940,7 @@ manage_rebuild (GSList *log_config, const gchar *database)
     return ret;
 
   sql_begin_immediate ();
-  ret = update_or_rebuild (0);
+  ret = update_or_rebuild_nvts (0);
   if (ret)
     sql_rollback ();
   else

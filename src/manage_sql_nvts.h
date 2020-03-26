@@ -116,6 +116,9 @@ void
 manage_sync_nvts (int (*) ());
 
 int
+update_or_rebuild_nvts (int);
+
+int
 manage_update_nvt_cache_osp (const gchar *);
 
 int
