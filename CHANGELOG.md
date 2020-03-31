@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Allow "Start Task" alert method for SecInfo events [#960](https://github.com/greenbone/gvmd/pull/960)
 - New Community Feed download URL in sync tools [#982](https://github.com/greenbone/gvmd/pull/982)
 - Change setting UUID to correct length [#1018](https://github.com/greenbone/gvmd/pull/1018)
+- Change licence to AGPL-3.0-or-later [#1026](https://github.com/greenbone/gvmd/pull/1026)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
