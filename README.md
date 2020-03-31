@@ -77,4 +77,4 @@ GitHub](https://github.com/greenbone/gvmd/issues) first.
 
 Copyright (C) 2009-2019 [Greenbone Networks GmbH](https://www.greenbone.net/)
 
-Licensed under the [GNU General Public License v2.0 or later](COPYING).
+Licensed under the [GNU Affero General Public License v3.0 or later](COPYING).
