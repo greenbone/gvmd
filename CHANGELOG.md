@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check whether hosts are alive and have results when adding them in slave scans. [#718](https://github.com/greenbone/gvmd/pull/718) [#737](https://github.com/greenbone/gvmd/pull/737)
 - Change rows of built-in default filters to -2 (use "Rows Per Page" setting) [#897](https://github.com/greenbone/gvmd/pull/897)
 - Update SCAP and CERT feed info in sync scripts [#808](https://github.com/greenbone/gvmd/pull/808)
+- Count only best OS matches for OS asset hosts [#1027](https://github.com/greenbone/gvmd/pull/1027)
 
 ### Fixed
 - Allow to migrate gvmd 8 sqlite3 database to postgres with gvm-migrate-to-postgres script
