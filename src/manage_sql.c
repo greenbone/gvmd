@@ -6110,6 +6110,7 @@ aggregate_iterator_subgroup_value (iterator_t* iterator)
  *                               resource.
  * @param[in]  extra_where       Extra WHERE clauses.  Skipped for trash and
  *                               single resource.
+ * @param[in]  extra_with        Extra WITH clauses.
  * @param[in]  owned             Only count items owned by current user.
  *
  * @return Total number of resources in filtered set.
@@ -6117,8 +6118,9 @@ aggregate_iterator_subgroup_value (iterator_t* iterator)
 static int
 count2 (const char *type, const get_data_t *get, column_t *select_columns,
         column_t *trash_select_columns, column_t *where_columns,
-        column_t *trash_where_columns, const char **filter_columns, int distinct,
-        const char *extra_tables, const char *extra_where, int owned)
+        column_t *trash_where_columns, const char **filter_columns,
+        int distinct, const char *extra_tables, const char *extra_where,
+        const char *extra_with, int owned)
 {
   int ret;
   gchar *clause, *owned_clause, *owner_filter, *columns, *filter, *with;
@@ -6149,6 +6151,20 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
 
   owned_clause = acl_where_owned (type, get, owned, owner_filter, 0,
                                   permissions, &with);
+
+  if (extra_with)
+    {
+      if (with)
+        {
+          gchar *old_with;
+
+          old_with = with;
+          with = g_strdup_printf ("%s, %s", old_with, extra_with);
+          g_free (old_with);
+        }
+      else
+        with = g_strdup_printf ("WITH %s", extra_with);
+    }
 
   g_free (owner_filter);
   array_free (permissions);
@@ -6217,7 +6233,8 @@ count (const char *type, const get_data_t *get, column_t *select_columns,
        int owned)
 {
   return count2 (type, get, select_columns, trash_select_columns, NULL, NULL,
-                 filter_columns, distinct, extra_tables, extra_where, owned);
+                 filter_columns, distinct, extra_tables, extra_where, NULL,
+                 owned);
 }
 
 /**
@@ -19166,6 +19183,7 @@ task_count (const get_data_t *get)
                 get->trash
                  ? " AND hidden = 2"
                  : " AND hidden = 0",
+                NULL,
                 TRUE);
 
   g_free (extra_tables);
@@ -23481,6 +23499,7 @@ report_count (const get_data_t *get)
                  : " AND (SELECT hidden FROM tasks"
                    "      WHERE tasks.id = task)"
                    "     = 0",
+                NULL,
                 TRUE);
 
   g_free (extra_tables);
@@ -62995,7 +63014,7 @@ asset_host_count (const get_data_t *get)
   static column_t columns[] = HOST_ITERATOR_COLUMNS;
   static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
   return count2 ("host", get, columns, NULL, where_columns, NULL,
-                 filter_columns, 0, NULL, NULL, TRUE);
+                 filter_columns, 0, NULL, NULL, NULL, TRUE);
 }
 
 /**
@@ -63028,7 +63047,7 @@ asset_host_count (const get_data_t *get)
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
-     "(SELECT count (distinct host) FROM host_oss WHERE os = oss.id)",        \
+     "(SELECT count(*) FROM best_os_hosts WHERE cpe = oss.name)",             \
      "hosts",                                                                 \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
@@ -63099,6 +63118,48 @@ asset_host_count (const get_data_t *get)
  }
 
 /**
+ * @brief OS asset WITH clause for PostgreSQL
+ *
+ * This depends on non-standard (PostgreSQL 9.0+) "ORDER BY" clauses
+ * in aggregate functions to select latest detail id.
+ */
+#define ASSET_OS_WITH_POSTGRESQL                                              \
+  " best_os_hosts AS ("                                                       \
+  "  SELECT inner_cpes[1] AS cpe, host"                                       \
+  "    FROM (SELECT array_agg(value ORDER BY id DESC) AS inner_cpes, host"    \
+  "            FROM host_details WHERE name='best_os_cpe' GROUP BY host)"     \
+  "    AS inner_host_os_cpes"                                                 \
+  " )"
+
+/**
+ * @brief OS asset WITH clause for SQLite
+ *
+ * This depends on SQLite-specific behavior for "bare" columns and the max()
+ * aggregate function (https://sqlite.org/lang_select.html#bareagg)
+ */
+#define ASSET_OS_WITH_SQLITE3                                                 \
+  " best_os_hosts AS ("                                                       \
+  "  SELECT inner_cpe AS cpe, host"                                           \
+  "    FROM (SELECT value AS inner_cpe, host, max(id)"                        \
+  "            FROM host_details WHERE name='best_os_cpe' GROUP BY host)"     \
+  "    AS inner_host_os_cpes"                                                 \
+  " )"
+
+/**
+ * @brief Get the extra WITH clause for OS assets.
+ *
+ * @return The extra WITH clause.
+ */
+const char *
+asset_os_extra_with ()
+{
+  static const char *postgresql_with = ASSET_OS_WITH_POSTGRESQL;
+  static const char *sqlite3_with = ASSET_OS_WITH_SQLITE3;
+
+  return sql_is_sqlite3 () ? sqlite3_with : postgresql_with;
+}
+
+/**
  * @brief Initialise an OS iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -63110,28 +63171,36 @@ asset_host_count (const get_data_t *get)
 int
 init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
 {
+  int ret;
   static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
+  const char *extra_with;
 
-  return init_get_iterator2 (iterator,
-                             "os",
-                             get,
-                             /* Columns. */
-                             columns,
-                             /* Columns for trashcan. */
-                             NULL,
-                             /* WHERE Columns. */
-                             where_columns,
-                             /* WHERE Columns for trashcan. */
-                             NULL,
-                             filter_columns,
-                             0,
-                             NULL,
-                             NULL,
-                             TRUE,
-                             FALSE,
-                             NULL);
+  extra_with = asset_os_extra_with ();
+
+  ret = init_get_iterator2_with (iterator,
+                                 "os",
+                                 get,
+                                 /* Columns. */
+                                 columns,
+                                 /* Columns for trashcan. */
+                                 NULL,
+                                 /* WHERE Columns. */
+                                 where_columns,
+                                 /* WHERE Columns for trashcan. */
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 NULL,
+                                 NULL,
+                                 TRUE,
+                                 FALSE,
+                                 NULL,
+                                 extra_with,
+                                 0);
+
+  return ret;
 }
 
 /**
@@ -63201,8 +63270,15 @@ asset_os_count (const get_data_t *get)
   static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  return count2 ("os", get, columns, NULL, where_columns, NULL,
-                 extra_columns, 0, 0, 0, TRUE);
+  const char *extra_with;
+  int ret;
+
+  extra_with = asset_os_extra_with ();
+
+  ret = count2 ("os", get, columns, NULL, where_columns, NULL,
+                extra_columns, 0, 0, 0, extra_with, TRUE);
+
+  return ret;
 }
 
 /**
@@ -69701,6 +69777,21 @@ type_extra_where (const char *type, int trash, const char *filter)
 }
 
 /**
+ * @brief Get the extra WITH clauses for a resource type.
+ *
+ * @param[in]  type  The resource type.
+ *
+ * @return The extra WITH clauses.
+ */
+static const char *
+type_extra_with (const char *type)
+{
+  if (strcmp (type, "os") == 0)
+    return asset_os_extra_with ();
+  return NULL;
+}
+
+/**
  * @brief Builds a filtered SELECT statement for a certain type.
  *
  * @param[in]  type               Resource type
@@ -69729,6 +69820,7 @@ type_build_select (const char *type, const char *columns_str,
   int first, max;
   gchar *owned_clause, *owner_filter;
   array_t *permissions;
+  const char *extra_with;
 
   column_t *select_columns, *where_columns;
   const char **filter_columns;
@@ -69789,6 +69881,21 @@ type_build_select (const char *type, const char *columns_str,
                                           sql_select_limit (max),
                                           first);
 
+  extra_with = type_extra_with (type);
+
+  if (extra_with)
+    {
+      if (with)
+        {
+          gchar *old_with;
+
+          old_with = with;
+          with = g_strdup_printf ("%s, %s", old_with, extra_with);
+          g_free (old_with);
+        }
+      else
+        with = g_strdup_printf ("WITH %s", extra_with);
+    }
 
   *select = g_strdup_printf
              ("%s"           // WITH
