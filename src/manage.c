@@ -4067,6 +4067,50 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
 }
 
 /**
+ * @brief Add OSP preferences for limiting ifaces and hosts for users.
+ *
+ * @param[in]  scanner_options  The scanner preferences table to add to.
+ */
+static void
+add_user_scan_preferences (GHashTable *scanner_options)
+{
+  gchar *hosts, *ifaces, *name;
+  int hosts_allow, ifaces_allow;
+
+  // Limit access to hosts
+  hosts = user_hosts (current_credentials.uuid);
+  hosts_allow = user_hosts_allow (current_credentials.uuid);
+
+  if (hosts_allow == 1)
+    name = g_strdup ("hosts_allow");
+  else if (hosts_allow == 0)
+    name = g_strdup ("hosts_deny");
+  else
+    name = NULL;
+
+  if (name)
+    g_hash_table_replace (scanner_options, name, hosts);
+  else
+    g_free (hosts);
+
+  // Limit access to ifaces
+  ifaces = user_ifaces (current_credentials.uuid);
+  ifaces_allow = user_ifaces_allow (current_credentials.uuid);
+
+  if (ifaces_allow == 1)
+    name = g_strdup ("ifaces_allow");
+  else if (ifaces_allow == 0)
+    name = g_strdup ("ifaces_deny");
+  else
+    name = NULL;
+
+  if (name)
+    g_hash_table_replace (scanner_options, name, ifaces);
+  else
+    g_free (ifaces);
+}
+
+/**
  * @brief Launch an OpenVAS via OSP task.
  *
  * @param[in]   task        The task.
@@ -4195,6 +4239,9 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
                                 g_strdup (osp_value));
         }
     }
+
+  /* Setup user-specific scanner preference */
+  add_user_scan_preferences (scanner_options);
 
   /* Setup vulnerability tests (without preferences) */
   vts = NULL;
