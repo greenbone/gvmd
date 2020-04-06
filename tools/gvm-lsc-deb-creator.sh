@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2018 Greenbone Networks GmbH
+# Copyright (C) 2018-2020 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -155,13 +155,13 @@ COPYRIGHT_FILE="${DOC_DATA_DIR}/copyright"
   echo "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/"
   echo ""
   echo "Files: *"
-  echo "Copyright: 2018 Greenbone Networks GmbH"
+  echo "Copyright: 2018-2020 Greenbone Networks GmbH"
   echo "License: GPL-2+ (/usr/share/common-licenses/GPL-2)"
 } > "${COPYRIGHT_FILE}"
 
 # Create data archive
 cd "${DATA_DIR}"
-tar -acf "../data.tar.xz" "${HOME_SUBDIR}" "${DOC_SUBDIR}" -C "${DATA_DIR}"
+tar -C "${DATA_DIR}" -acf "../data.tar.xz" "${HOME_SUBDIR}" "${DOC_SUBDIR}"
 
 
 #
