@@ -93,6 +93,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Use nvti_qod instead of the old nvti_get_tag() [#1022](https://github.com/greenbone/gvmd/pull/1022)
 - Remove active clause when filtering resources by tag [#1025](https://github.com/greenbone/gvmd/pull/1025)
 - Add user limits on hosts and ifaces to OSP prefs [#1033](https://github.com/greenbone/gvmd/pull/1033)
+- Fix order of tar options in gvm-lsc-deb-creator.sh [#1034](https://github.com/greenbone/gvmd/pull/1034)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
