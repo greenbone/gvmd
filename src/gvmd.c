@@ -1195,6 +1195,12 @@ fork_update_nvt_cache ()
         if (manager_socket > -1) close (manager_socket);
         if (manager_socket_2 > -1) close (manager_socket_2);
 
+        /* The parent's signal handlers for these signals no longer work,
+         * because the child does not uses the pselect loop. */
+        setup_signal_handler (SIGTERM, SIG_DFL, 0);
+        setup_signal_handler (SIGINT, SIG_DFL, 0);
+        setup_signal_handler (SIGQUIT, SIG_DFL, 0);
+
         /* Update the cache. */
 
         update_nvt_cache_retry ();
