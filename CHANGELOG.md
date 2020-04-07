@@ -27,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Lock a file around the NVT sync [#1002](https://github.com/greenbone/gvmd/pull/1002)
 - Add a delay for re-requesting scan information via osp [#1012](https://github.com/greenbone/gvmd/pull/1012)
 - Add --optimize option cleanup-result-encoding [#1013](https://github.com/greenbone/gvmd/pull/1013)
-- Perform integrity check of VTs after updates [#1024](https://github.com/greenbone/gvmd/pull/1024)
+- Perform integrity check of VTs after updates [#1024](https://github.com/greenbone/gvmd/pull/1024) [#1035](https://github.com/greenbone/gvmd/pull/1035)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
