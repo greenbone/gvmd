@@ -142,12 +142,13 @@ Certificates`.
     grant dba to mattm;    # mattm is the user created in step 3
     ```
 
-5.  Create DB extension (also necessary when the database got dropped).
+5.  Create DB extensions (also necessary when the database got dropped).
 
     ```sh
     sudo -u postgres bash  # if you logged out after step 4
     psql gvmd
     create extension "uuid-ossp";
+    create extension "pgcrypto";
     ```
 
 6.  Make Postgres aware of the gvm libraries if not installed
