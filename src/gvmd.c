@@ -1186,7 +1186,10 @@ fork_update_nvt_cache ()
 
         /* Clean up the process. */
 
-        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+        if (sigmask_normal)
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+        else
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
         /** @todo This should happen via gmp, maybe with "cleanup_gmp ();". */
         cleanup_manage_process (FALSE);
         if (manager_socket > -1) close (manager_socket);
