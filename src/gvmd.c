@@ -1142,6 +1142,29 @@ update_nvt_cache_retry ()
     }
 }
 
+/**
+ * @brief Fork, setting default handlers for TERM, INT and QUIT in child.
+ *
+ * This should be used for pretty much all processes forked directly from
+ * the main gvmd process, because the main process's signal handlers will
+ * not longer work, because the child does not use the pselect loop.
+ *
+ * @return PID from fork.
+ */
+static int
+fork_with_handlers ()
+{
+  pid_t pid;
+
+  pid = fork ();
+  if (pid == 0)
+    {
+      setup_signal_handler (SIGTERM, SIG_DFL, 0);
+      setup_signal_handler (SIGINT, SIG_DFL, 0);
+      setup_signal_handler (SIGQUIT, SIG_DFL, 0);
+    }
+  return pid;
+}
 
 /**
  * @brief Update the NVT cache in a child process.
@@ -1176,7 +1199,7 @@ fork_update_nvt_cache ()
       return -1;
     }
 
-  pid = fork ();
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
@@ -1194,12 +1217,6 @@ fork_update_nvt_cache ()
         cleanup_manage_process (FALSE);
         if (manager_socket > -1) close (manager_socket);
         if (manager_socket_2 > -1) close (manager_socket_2);
-
-        /* The parent's signal handlers for these signals no longer work,
-         * because the child does not uses the pselect loop. */
-        setup_signal_handler (SIGTERM, SIG_DFL, 0);
-        setup_signal_handler (SIGINT, SIG_DFL, 0);
-        setup_signal_handler (SIGQUIT, SIG_DFL, 0);
 
         /* Update the cache. */
 
