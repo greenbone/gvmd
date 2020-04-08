@@ -9617,7 +9617,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
             return -1;
           }
 
-        pid = fork ();
+        pid = fork_with_handlers ();
         switch (pid)
           {
             case 0:
@@ -9726,6 +9726,18 @@ alert_script_exec (const char *alert_id, const char *command_args,
                 int status;
 
                 /* Parent on success.  Wait for child, and check result. */
+
+                /* This process does not use the loops which handle
+                 * termination_signal.  So we need to use the regular handlers
+                 * for termination signals.
+                 *
+                 * Technically returns and could continue to process commands
+                 * that do handle termination_signal, but it's unlikely the
+                 * client will request that, and those commands will still run
+                 * OK. */
+                setup_signal_handler (SIGTERM, SIG_DFL, 0);
+                setup_signal_handler (SIGINT, SIG_DFL, 0);
+                setup_signal_handler (SIGQUIT, SIG_DFL, 0);
 
                 while (waitpid (pid, &status, 0) < 0)
                   {
@@ -10413,7 +10425,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
         g_free (report_file);
         g_free (pkcs12_file);
 
-        pid = fork ();
+        pid = fork_with_handlers ();
         switch (pid)
           {
           case 0:
@@ -10482,6 +10494,18 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                 /* Parent on success.  Wait for child, and check result. */
 
                 g_free (command);
+
+                /* This process does not use the loops which handle
+                 * termination_signal.  So we need to use the regular handlers
+                 * for termination signals.
+                 *
+                 * Technically returns and could continue to process commands
+                 * that do handle termination_signal, but it's unlikely the
+                 * client will request that, and those commands will still run
+                 * OK. */
+                setup_signal_handler (SIGTERM, SIG_DFL, 0);
+                setup_signal_handler (SIGINT, SIG_DFL, 0);
+                setup_signal_handler (SIGQUIT, SIG_DFL, 0);
 
                 while (waitpid (pid, &status, 0) < 0)
                   {
@@ -10736,7 +10760,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
           }
         g_free (archive_file);
 
-        pid = fork ();
+        pid = fork_with_handlers ();
         switch (pid)
           {
           case 0:
@@ -10805,6 +10829,18 @@ send_to_verinice (const char *url, const char *username, const char *password,
                 int status;
 
                 /* Parent on success.  Wait for child, and check result. */
+
+                /* This process does not use the loops which handle
+                 * termination_signal.  So we need to use the regular handlers
+                 * for termination signals.
+                 *
+                 * Technically returns and could continue to process commands
+                 * that do handle termination_signal, but it's unlikely the
+                 * client will request that, and those commands will still run
+                 * OK. */
+                setup_signal_handler (SIGTERM, SIG_DFL, 0);
+                setup_signal_handler (SIGINT, SIG_DFL, 0);
+                setup_signal_handler (SIGQUIT, SIG_DFL, 0);
 
                 while (waitpid (pid, &status, 0) < 0)
                   {
@@ -20521,7 +20557,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
   /* Fork a child to import the results while the parent responds to the
    * client. */
 
-  pid = fork ();
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
