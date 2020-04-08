@@ -325,65 +325,6 @@ option_lock (lockfile_t *lockfile_checking)
   return 0;
 }
 
-/**
- * @brief Setup signal handler.
- *
- * Exit on failure.
- *
- * @param[in]  signal   Signal.
- * @param[in]  handler  Handler.
- * @param[in]  block    Whether to block all other signals during handler.
- */
-static void
-setup_signal_handler (int signal, void (*handler) (int), int block)
-{
-  struct sigaction action;
-
-  memset (&action, '\0', sizeof (action));
-  if (block)
-    sigfillset (&action.sa_mask);
-  else
-    sigemptyset (&action.sa_mask);
-  action.sa_handler = handler;
-  if (sigaction (signal, &action, NULL) == -1)
-    {
-      g_critical ("%s: failed to register %s handler",
-                  __func__, sys_siglist[signal]);
-      exit (EXIT_FAILURE);
-    }
-}
-
-/**
- * @brief Setup signal handler.
- *
- * Exit on failure.
- *
- * @param[in]  signal   Signal.
- * @param[in]  handler  Handler.
- * @param[in]  block    Whether to block all other signals during handler.
- */
-static void
-setup_signal_handler_info (int signal,
-                           void (*handler) (int, siginfo_t *, void *),
-                           int block)
-{
-  struct sigaction action;
-
-  memset (&action, '\0', sizeof (action));
-  if (block)
-    sigfillset (&action.sa_mask);
-  else
-    sigemptyset (&action.sa_mask);
-  action.sa_flags |= SA_SIGINFO;
-  action.sa_sigaction = handler;
-  if (sigaction (signal, &action, NULL) == -1)
-    {
-      g_critical ("%s: failed to register %s handler",
-                  __func__, sys_siglist[signal]);
-      exit (EXIT_FAILURE);
-    }
-}
-
 
 /* Forking, serving the client. */
 
@@ -1162,30 +1103,6 @@ update_nvt_cache_retry ()
             }
         }
     }
-}
-
-/**
- * @brief Fork, setting default handlers for TERM, INT and QUIT in child.
- *
- * This should be used for pretty much all processes forked directly from
- * the main gvmd process, because the main process's signal handlers will
- * not longer work, because the child does not use the pselect loop.
- *
- * @return PID from fork.
- */
-static int
-fork_with_handlers ()
-{
-  pid_t pid;
-
-  pid = fork ();
-  if (pid == 0)
-    {
-      setup_signal_handler (SIGTERM, SIG_DFL, 0);
-      setup_signal_handler (SIGINT, SIG_DFL, 0);
-      setup_signal_handler (SIGQUIT, SIG_DFL, 0);
-    }
-  return pid;
 }
 
 /**
