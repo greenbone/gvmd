@@ -86,9 +86,7 @@ void
 setup_signal_handler (int, void (*) (int), int);
 
 void
-setup_signal_handler_info (int,
-                           void (*) (int, siginfo_t *, void *),
-                           int);
+setup_signal_handler_info (int, void (*) (int, siginfo_t *, void *), int);
 
 int
 fork_with_handlers ();
