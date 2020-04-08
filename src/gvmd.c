@@ -555,7 +555,10 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
     }
   sockaddr_as_str (&addr, client_address);
 
-  /* Fork a child to serve the client. */
+  /* Fork a child to serve the client.
+   *
+   * serve_gmp in serve_client handles termination_signal, so this must 'fork'
+   * and not 'fork_with_handlers'. */
   pid = fork ();
   switch (pid)
     {
@@ -643,8 +646,10 @@ fork_connection_internal (gvm_connection_t *client_connection,
   struct sigaction action;
   gchar *auth_uuid;
 
-  /* Fork a child to use as scheduler client and server. */
+  /* Fork a child to use as scheduler/event client and server. */
 
+  /* This must 'fork' and not 'fork_with_handlers' so that the next fork can
+   * decide about handlers. */
   pid = fork ();
   switch (pid)
     {
@@ -687,6 +692,8 @@ fork_connection_internal (gvm_connection_t *client_connection,
 
   is_parent = 0;
 
+  /* The child calls serve_gmp (via serve_client) which handles
+   * termination_signal, so this must 'fork' and not 'fork_with_handlers'. */
   pid = fork ();
   switch (pid)
     {
@@ -1101,7 +1108,11 @@ update_nvt_cache_retry ()
   setup_signal_handler (SIGCHLD, SIG_DFL, 0);
   while (1)
     {
-      pid_t child_pid = fork ();
+      pid_t child_pid;
+
+      /* No need to worry about fork_with_handlers, because
+       * fork_update_nvt_cache already did that. */
+      child_pid = fork ();
       if (child_pid > 0)
         {
           int status, i;
