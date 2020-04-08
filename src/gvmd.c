@@ -695,9 +695,10 @@ fork_connection_internal (gvm_connection_t *client_connection,
 
   is_parent = 0;
 
-  /* The child calls serve_gmp (via serve_client) which handles
-   * termination_signal, so this must 'fork' and not 'fork_with_handlers'. */
-  pid = fork ();
+  /* As with accept_and_maybe_fork, use the default handlers for termination
+   * signals in the child.  This is required for signals to work when the
+   * child is waiting for spawns and forks. */
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
