@@ -4283,7 +4283,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
   /* Fork a child to sync the db, so that the parent can return to the main
    * loop. */
 
-  pid = fork ();
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
