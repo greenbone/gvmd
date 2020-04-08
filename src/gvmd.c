@@ -325,6 +325,65 @@ option_lock (lockfile_t *lockfile_checking)
   return 0;
 }
 
+/**
+ * @brief Setup signal handler.
+ *
+ * Exit on failure.
+ *
+ * @param[in]  signal   Signal.
+ * @param[in]  handler  Handler.
+ * @param[in]  block    Whether to block all other signals during handler.
+ */
+static void
+setup_signal_handler (int signal, void (*handler) (int), int block)
+{
+  struct sigaction action;
+
+  memset (&action, '\0', sizeof (action));
+  if (block)
+    sigfillset (&action.sa_mask);
+  else
+    sigemptyset (&action.sa_mask);
+  action.sa_handler = handler;
+  if (sigaction (signal, &action, NULL) == -1)
+    {
+      g_critical ("%s: failed to register %s handler",
+                  __func__, sys_siglist[signal]);
+      exit (EXIT_FAILURE);
+    }
+}
+
+/**
+ * @brief Setup signal handler.
+ *
+ * Exit on failure.
+ *
+ * @param[in]  signal   Signal.
+ * @param[in]  handler  Handler.
+ * @param[in]  block    Whether to block all other signals during handler.
+ */
+static void
+setup_signal_handler_info (int signal,
+                           void (*handler) (int, siginfo_t *, void *),
+                           int block)
+{
+  struct sigaction action;
+
+  memset (&action, '\0', sizeof (action));
+  if (block)
+    sigfillset (&action.sa_mask);
+  else
+    sigemptyset (&action.sa_mask);
+  action.sa_flags |= SA_SIGINFO;
+  action.sa_sigaction = handler;
+  if (sigaction (signal, &action, NULL) == -1)
+    {
+      g_critical ("%s: failed to register %s handler",
+                  __func__, sys_siglist[signal]);
+      exit (EXIT_FAILURE);
+    }
+}
+
 
 /* Forking, serving the client. */
 
@@ -799,6 +858,17 @@ fork_connection_internal (gvm_connection_t *client_connection,
          * fork_connection_for_scheduler so that the returned parent can wait
          * on this process. */
 
+        if (scheduler)
+          {
+            /* When used for scheduling this parent process waits for the
+             * child.  That means it does not use the loops which handle
+             * termination_signal.  So we need to use the regular handlers
+             * for termination signals. */
+            setup_signal_handler (SIGTERM, SIG_DFL, 0);
+            setup_signal_handler (SIGINT, SIG_DFL, 0);
+            setup_signal_handler (SIGQUIT, SIG_DFL, 0);
+          }
+
         /** @todo Give the parent time to prepare. */
         gvm_sleep (5);
 
@@ -903,65 +973,6 @@ cleanup ()
 
   /* Delete pidfile if this process is the parent. */
   if (is_parent == 1) pidfile_remove ("gvmd");
-}
-
-/**
- * @brief Setup signal handler.
- *
- * Exit on failure.
- *
- * @param[in]  signal   Signal.
- * @param[in]  handler  Handler.
- * @param[in]  block    Whether to block all other signals during handler.
- */
-static void
-setup_signal_handler (int signal, void (*handler) (int), int block)
-{
-  struct sigaction action;
-
-  memset (&action, '\0', sizeof (action));
-  if (block)
-    sigfillset (&action.sa_mask);
-  else
-    sigemptyset (&action.sa_mask);
-  action.sa_handler = handler;
-  if (sigaction (signal, &action, NULL) == -1)
-    {
-      g_critical ("%s: failed to register %s handler",
-                  __func__, sys_siglist[signal]);
-      exit (EXIT_FAILURE);
-    }
-}
-
-/**
- * @brief Setup signal handler.
- *
- * Exit on failure.
- *
- * @param[in]  signal   Signal.
- * @param[in]  handler  Handler.
- * @param[in]  block    Whether to block all other signals during handler.
- */
-static void
-setup_signal_handler_info (int signal,
-                           void (*handler) (int, siginfo_t *, void *),
-                           int block)
-{
-  struct sigaction action;
-
-  memset (&action, '\0', sizeof (action));
-  if (block)
-    sigfillset (&action.sa_mask);
-  else
-    sigemptyset (&action.sa_mask);
-  action.sa_flags |= SA_SIGINFO;
-  action.sa_sigaction = handler;
-  if (sigaction (signal, &action, NULL) == -1)
-    {
-      g_critical ("%s: failed to register %s handler",
-                  __func__, sys_siglist[signal]);
-      exit (EXIT_FAILURE);
-    }
 }
 
 #ifndef NDEBUG
