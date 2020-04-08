@@ -4451,7 +4451,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
 
   set_task_run_status (task, TASK_STATUS_REQUESTED);
 
-  switch (fork ())
+  switch (fork_with_handlers ())
     {
       case 0:
         break;
@@ -4743,7 +4743,7 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   set_task_run_status (task, TASK_STATUS_REQUESTED);
 
-  pid = fork ();
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
@@ -5087,6 +5087,8 @@ run_gmp_slave_task (task_t task, int from, char **report_id,
   /* Fork a child to start and handle the task while the parent responds to
    * the client. */
 
+  /* The child calls handle_slave_task, which handles termination_signal, so
+   * no need to use fork_with_handlers. */
   pid = fork ();
   switch (pid)
     {
@@ -6943,6 +6945,8 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
   /* Fork a child to start the task and wait for the response, so that the
    * parent can return to the main loop.  Only the parent returns. */
 
+  /* The child calls fork_connection, which deals with setting up handlers for
+   * termination signals.  So no need to use fork_with_handlers here. */
   pid = fork ();
   switch (pid)
     {
