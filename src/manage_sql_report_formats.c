@@ -3384,7 +3384,7 @@ run_report_format_script (gchar *report_format_id,
           return -1;
         }
 
-      pid = fork ();
+      pid = fork_with_handlers ();
       switch (pid)
         {
           case 0:
