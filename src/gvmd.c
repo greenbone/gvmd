@@ -557,9 +557,12 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
 
   /* Fork a child to serve the client.
    *
-   * serve_gmp in serve_client handles termination_signal, so this must 'fork'
-   * and not 'fork_with_handlers'. */
-  pid = fork ();
+   * Use the default handlers for termination signals in the child.  This
+   * is required because the child calls 'system' and 'g_spawn_sync' in many
+   * places.  As the child waits for the spawned command, the child will
+   * not return to any code that checks termination_signal, so the child
+   * can't use the signal handlers inherited from the main process. */
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
