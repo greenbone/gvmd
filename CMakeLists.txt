@@ -243,7 +243,6 @@ configure_file (src/gvmd_log_conf.cmake_in src/gvmd_log.conf)
 configure_file (src/schema_formats/XML/GMP.xml.in src/schema_formats/XML/GMP.xml @ONLY)
 configure_file (tools/greenbone-scapdata-sync.in tools/greenbone-scapdata-sync @ONLY)
 configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @ONLY)
-configure_file (tools/gvm-portnames-update.in tools/gvm-portnames-update @ONLY)
 configure_file (tools/gvm-manage-certs.in tools/gvm-manage-certs @ONLY)
 
 ## Testing
@@ -379,10 +378,6 @@ install (FILES src/wizards/quick_first_scan.xml
          DESTINATION ${GVMD_DATA_DIR}/wizards/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
-install (FILES tools/portnames_update.xsl
-         DESTINATION ${GVMD_DATA_DIR}/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-
 install (FILES tools/cpe_getbyname.xsl tools/cve_getbyname.xsl
          tools/ovaldef_getbyname.xsl
          DESTINATION ${GVM_SCAP_RES_DIR}
@@ -391,11 +386,6 @@ install (FILES tools/cpe_getbyname.xsl tools/cve_getbyname.xsl
 install (FILES tools/cert_bund_getbyname.xsl tools/dfn_cert_getbyname.xsl
          DESTINATION ${GVM_CERT_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-
-install (FILES ${CMAKE_BINARY_DIR}/tools/gvm-portnames-update
-         DESTINATION ${SBINDIR}
-         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
-                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-scapdata-sync
          DESTINATION ${SBINDIR}
