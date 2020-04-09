@@ -1370,6 +1370,7 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
   if (address_str_unix)
     {
       struct stat state;
+      gchar *address_parent;
 
       /* UNIX file socket. */
 
@@ -1398,6 +1399,18 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
 
       address = (struct sockaddr *) &address_unix;
       address_size = sizeof (address_unix);
+
+      /* Ensure the path of the socket exists. */
+
+      address_parent = g_path_get_dirname (address_str_unix);
+      if (g_mkdir_with_parents (address_parent, 0755 /* "rwxr-xr-x" */))
+        {
+          g_warning ("%s: failed to create socket dir %s", __func__,
+                     address_parent);
+          g_free (address_parent);
+          return -1;
+        }
+      g_free (address_parent);
     }
   else if (address_str_tls)
     {
