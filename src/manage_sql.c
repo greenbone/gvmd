@@ -23278,6 +23278,17 @@ cleanup_result_nvts ()
   GArray *affected;
   int index;
 
+  g_debug ("%s: Cleaning up results with wrong nvt ids", __func__);
+  sql ("UPDATE results"
+       " SET nvt = (SELECT oid FROM nvts WHERE name = nvt),"
+       "     result_nvt = NULL"
+       " WHERE nvt IN (SELECT name FROM nvts WHERE name != oid);");
+
+  g_debug ("%s: Cleaning up result_nvts entries with wrong nvt ids",
+           __func__);
+  sql ("DELETE FROM result_nvts"
+       " WHERE nvt IN (SELECT name FROM nvts WHERE name != oid);");
+
   g_debug ("%s: Creating missing result_nvts entries", __func__);
   sql ("INSERT INTO result_nvts (nvt)"
        " SELECT DISTINCT nvt FROM results ON CONFLICT (nvt) DO NOTHING;");
