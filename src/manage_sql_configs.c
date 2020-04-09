@@ -1605,19 +1605,6 @@ manage_nvt_preference_add (const char* name, const char* value)
 }
 
 /**
- * @brief Enable the NVT preferences.
- */
-void
-manage_nvt_preferences_enable ()
-{
-  sql ("DELETE FROM %s.meta WHERE name = 'nvt_preferences_enabled';",
-       sql_schema ());
-  sql ("INSERT INTO %s.meta (name, value)"
-       " VALUES ('nvt_preferences_enabled', 1);",
-       sql_schema ());
-}
-
-/**
  * @brief Initialise an NVT preference iterator.
  *
  * @param[in]  iterator  Iterator.
