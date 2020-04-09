@@ -2352,13 +2352,6 @@ create_tables ()
        "  comment text,"
        "  exclude integer);");
 
-  sql ("CREATE TABLE IF NOT EXISTS port_names"
-       " (id SERIAL PRIMARY KEY,"
-       "  number integer,"
-       "  protocol text,"
-       "  name text,"
-       "  UNIQUE (number, protocol));");
-
   sql ("CREATE TABLE IF NOT EXISTS targets"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
