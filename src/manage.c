@@ -164,8 +164,6 @@
  */
 #define MAX_HOSTS_DEFAULT "20"
 
-extern volatile int termination_signal;
-
 /**
  * @brief Path to the relay mapper executable, NULL to disable relays.
  */
@@ -3279,17 +3277,9 @@ handle_slave_task (task_t task, target_t target,
       }
     else
       {
-        int current_signal = get_termination_signal ();
         if ((task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
-            || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED)
-            || current_signal)
+            || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED))
           {
-            if (current_signal)
-              {
-                g_debug ("%s: Received %s signal.",
-                         __func__,
-                         sys_siglist[get_termination_signal()]);
-              }
             if (global_current_report)
               {
                 set_report_scan_run_status (global_current_report,
@@ -3306,21 +3296,6 @@ handle_slave_task (task_t task, target_t target,
 
   while (1)
     {
-      if (get_termination_signal ())
-        {
-          g_debug ("%s: Received %s signal.",
-                   __func__,
-                   sys_siglist[get_termination_signal()]);
-          if (global_current_report)
-            {
-              set_report_scan_run_status (global_current_report,
-                                          TASK_STATUS_STOPPED);
-            }
-          set_task_run_status (task, TASK_STATUS_STOPPED);
-          g_free (slave_task_name);
-          return 0;
-        }
-
       ret = slave_setup (connection, slave_task_name,
                          task, target, target_ssh_credential,
                          target_smb_credential, target_esxi_credential,
@@ -9265,17 +9240,6 @@ manage_run_wizard (const gchar *wizard_name,
   /* All the steps succeeded. */
 
   return 0;
-}
-
-/**
- * @brief Gets the last termination signal or 0.
- *
- * @return The last termination signal or 0 if there was none.
- */
-int
-get_termination_signal ()
-{
-  return termination_signal;
 }
 
 

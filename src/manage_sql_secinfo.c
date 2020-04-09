@@ -4283,7 +4283,11 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
   /* Fork a child to sync the db, so that the parent can return to the main
    * loop. */
 
-  pid = fork ();
+  /* Use the default termination handlers for the child, because sync_secinfo
+   * is called from the main process (via manage_schedule).  The signal
+   * handlers inherited from the main process would not work because they
+   * need the process to watch termination_signal. */
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
