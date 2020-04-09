@@ -15747,7 +15747,6 @@ check_db_versions ()
 {
   char *database_version;
   int scap_db_version, cert_db_version;
-  long long int count;
 
   database_version = sql_string ("SELECT value FROM %s.meta"
                                  " WHERE name = 'database_version';",
@@ -15768,24 +15767,7 @@ check_db_versions ()
           return -2;
         }
       g_free (database_version);
-
-      /* Check that the database was initialised from the scanner.
-       *
-       * This can also fail after a migration, for example if the database
-       * was created before NVT preferences were cached in the database.
-       */
-
-      if (sql_int64 (&count,
-                     "SELECT count(*) FROM %s.meta"
-                     " WHERE name = 'nvts_feed_version'"
-                     " OR name = 'nvt_preferences_enabled';",
-                     sql_schema ())
-          || count < 2)
-        g_warning ("database must be initialised from scanner");
     }
-  else
-    /* Assume database is missing. */
-    g_warning ("database must be initialised from scanner");
 
   /* Check SCAP database version. */
 
