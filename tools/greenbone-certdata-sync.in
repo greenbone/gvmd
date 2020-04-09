@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (C) 2011-2018 Greenbone Networks GmbH
+# Copyright (C) 2011-2020 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -135,9 +135,9 @@ else
   fi
 
   if [ -z "$COMMUNITY_CERT_RSYNC_FEED" ]; then
-    COMMUNITY_CERT_RSYNC_FEED=rsync://feed.openvas.org:/cert-data
+    COMMUNITY_CERT_RSYNC_FEED=rsync://feed.community.greenbone.net:/cert-data
     # An alternative syntax which might work if the above doesn't:
-    # COMMUNITY_CERT_RSYNC_FEED=rsync@feed.openvas.org::cert-data
+    # COMMUNITY_CERT_RSYNC_FEED=rsync@feed.community.greenbone.net::cert-data
   fi
 
 fi
