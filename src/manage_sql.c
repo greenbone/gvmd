@@ -31081,39 +31081,40 @@ validate_port (const char *port)
 }
 
 /**
- * @brief Validate a single port.
+ * @brief Validate a single port, for use in override or note.
  *
- * May come in values such as 100/foo and 100/foo (IANA: bar).
- * Will also validate values such as: general/tcp.
- *
- * @param[in]   port      A port.
+ * @param[in]  port  A port.
  *
  * @return 0 success, 1 failed.
  */
 static int
 validate_results_port (const char *port)
 {
-  int num;
-  char *buff;
+  long int num;
+  char *end;
 
   if (!port)
     return 1;
 
-  if (g_str_has_prefix (port, "cpe:"))
+  /* "cpe:abc", "general/tcp", "20/upd"
+   *
+   * The , and ; is to stop users from entering lists of ports.
+   * CPE doesn't use them because seems like they're valid in CPEs. */
+  if (g_regex_match_simple
+       ("^(cpe:[^\\s]+|general/[^\\s,;]+|[0-9]+/[[:alnum:]]+)$",
+        port, 0, 0)
+      == FALSE)
+    return 1;
+
+  if (g_str_has_prefix (port, "cpe:")
+      || g_str_has_prefix (port, "general/"))
     return 0;
 
-  if (strncmp ("general/", port, 8) == 0)
+  num = strtol (port, &end, 10);
+  if (*end != '/')
+    return 1;
+  if (num > 0 && num <= 65535)
     return 0;
-
-  num = atoi (port);
-  if (num > 0 && num < 65535)
-    return 0;
-
-  buff = g_newa (char, strlen (port));
-  sscanf (port, "%s (%i/%s)", buff, &num, buff);
-  if (num > 0 && num < 65535)
-    return 0;
-
   return 1;
 }
 
