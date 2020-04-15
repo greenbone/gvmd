@@ -2976,7 +2976,8 @@ update_ovaldef_xml (gchar **file_and_date,
                   entity_t metadata, title, description, repository, reference;
                   entity_t status;
                   entities_t references;
-                  const char *deprecated, *version;
+                  const char *deprecated, *version_str;
+                  int version;
                   gchar *id, *quoted_title, *quoted_class, *quoted_description;
                   gchar *quoted_status;
                   int cve_count;
@@ -3043,15 +3044,18 @@ update_ovaldef_xml (gchar **file_and_date,
                   quoted_oval_id =
                     sql_quote (entity_attribute (definition, "id"));
 
-                  version = entity_attribute (definition, "version");
-                  if (g_regex_match_simple ("^[0-9]+$", (gchar *) version, 0, 0)
+                  version_str = entity_attribute (definition, "version");
+                  if (g_regex_match_simple ("^[0-9]+$",
+                                            (gchar *) version_str, 0, 0)
                       == 0)
                     {
                       g_warning (
-                        "%s: invalid version: %s", __FUNCTION__, version);
+                        "%s: invalid version: %s", __FUNCTION__, version_str);
                       free_entity (entity);
                       goto fail;
                     }
+                  else
+                    version = atoi (version_str);
 
                   quoted_class =
                     sql_quote (entity_attribute (definition, "class"));
