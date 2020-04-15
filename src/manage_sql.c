@@ -31040,8 +31040,13 @@ validate_results_port (const char *port)
 
   /* "cpe:abc", "general/tcp", "20/udp"
    *
-   * The , and ; is to stop users from entering lists of ports.
-   * CPE doesn't use them because seems like they're valid in CPEs. */
+   * We keep the "general/tcp" case pretty open because it is not clearly
+   * restricted anywhere, and is already used with non-alphanumerics in
+   * "general/Host_Details".  We exclude whitespace, ',' and ';' to prevent
+   * users from entering lists of ports.
+   *
+   * Similary, the CPE case forbids whitespace, but allows ',' and ';' as
+   * these may occur in valid CPEs. */
   if (g_regex_match_simple
        ("^(cpe:[^\\s]+|general/[^\\s,;]+|[0-9]+/[[:alnum:]]+)$",
         port, 0, 0)
