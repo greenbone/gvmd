@@ -106,8 +106,7 @@ endif (NOT XSLTPROC_EXECUTABLE)
 
 if (XMLTOMAN_EXECUTABLE)
   add_custom_target (man COMMENT "Building manual page..."
-    DEPENDS gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
-            gvm-portnames-update.8)
+    DEPENDS gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8)
 
   add_custom_command (OUTPUT gvmd.8
 					  COMMAND sh
@@ -123,11 +122,6 @@ if (XMLTOMAN_EXECUTABLE)
 					  COMMAND sh
 					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/greenbone-scapdata-sync.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/greenbone-scapdata-sync.8\;\"
 					  DEPENDS greenbone-scapdata-sync.8.xml)
-
-  add_custom_command (OUTPUT gvm-portnames-update.8
-					  COMMAND sh
-					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gvm-portnames-update.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/gvm-portnames-update.8\;\"
-					  DEPENDS gvm-portnames-update.8.xml)
 else (XMLTOMAN_EXECUTABLE)
   message (STATUS "WARNING: xmltoman is required to generate manpage.")
   add_custom_command (OUTPUT gvmd.8
@@ -139,9 +133,6 @@ else (XMLTOMAN_EXECUTABLE)
   add_custom_command (OUTPUT greenbone-scapdata-sync.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
 					          > greenbone-scapdata-sync.8)
-  add_custom_command (OUTPUT gvm-portnames-update.8
-                      COMMAND echo "[Error: xmltoman required to see manpage here]"
-					          > gvm-portnames-update.8)
 endif (XMLTOMAN_EXECUTABLE)
 
 if (XMLMANTOHTML_EXECUTABLE)
@@ -168,6 +159,5 @@ if (XSLTPROC_EXECUTABLE)
 endif (XSLTPROC_EXECUTABLE)
 
 install (FILES gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
-               gvm-portnames-update.8
   DESTINATION share/man/man8/
   COMPONENT doc)
