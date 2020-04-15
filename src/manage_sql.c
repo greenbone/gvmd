@@ -6121,64 +6121,6 @@ manage_cert_db_version ()
 }
 
 /**
- * @brief Returns associated name for a tcp/ip port.
- *
- * @param   number      Port number to get name for.
- * @param   protocol    Protocol type of port.
- *
- * @return  associated name for port if found, NULL otherwise.
- */
-char *
-manage_port_name (int number, const char *protocol)
-{
-  if (protocol == NULL || number <= 0 || number > 65535)
-    return NULL;
-
-  return sql_string ("SELECT name FROM port_names"
-                     " WHERE number = %i AND protocol = '%s' LIMIT 1;",
-                     number, protocol);
-}
-
-/**
- * @brief Returns formatted port number, protocol and iana name from
- * @brief field in "number/proto" form.
- *
- * @param   field       Number/Protocol string.
- *
- * @return  Formatted port name string, NULL if error.
- */
-gchar *
-port_name_formatted (const char *field)
-{
-  int number;
-  char *protocol, *port_name;
-
-  if (field == NULL)
-    return NULL;
-
-  protocol = g_newa (char, strlen (field));
-
-  if (sscanf (field, "%i/%s",
-              &number, protocol)
-      != 2)
-    return g_strdup (field);
-
-  port_name = manage_port_name (number, protocol);
-  if (port_name)
-    {
-      char *formatted = g_strdup_printf
-                         ("%i/%s (IANA: %s)",
-                          number,
-                          protocol,
-                          port_name);
-      free (port_name);
-      return formatted;
-    }
-  else
-    return g_strdup (field);
-}
-
-/**
  * @brief Set the database version of the actual database.
  *
  * Caller must organise transaction.

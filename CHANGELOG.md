@@ -99,6 +99,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix order of tar options in gvm-lsc-deb-creator.sh [#1034](https://github.com/greenbone/gvmd/pull/1034)
 - Fix handling of termination signals [#1034](https://github.com/greenbone/gvmd/pull/1034)
 - Remove db init warning that no longer makes sense [#1044](https://github.com/greenbone/gvmd/pull/1044)
+- Use correct elements to get task ID in wizards [#1004](https://github.com/greenbone/gvmd/pull/1004) [#1046](https://github.com/greenbone/gvmd/pull/1046)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
@@ -108,6 +109,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed migration tool "gvm-migrate-to-postgres" including the man page [#905](https://github.com/greenbone/gvmd/pull/905)
 - Remove agents [#922](https://github.com/greenbone/gvmd/pull/922)
 - Remove GMP COMMANDS [#923](https://github.com/greenbone/gvmd/pull/923)
+- Remove unused port names facility [#1041](https://github.com/greenbone/gvmd/pull/1041)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 
