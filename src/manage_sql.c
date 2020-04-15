@@ -31038,7 +31038,7 @@ validate_results_port (const char *port)
   if (!port)
     return 1;
 
-  /* "cpe:abc", "general/tcp", "20/upd"
+  /* "cpe:abc", "general/tcp", "20/udp"
    *
    * The , and ; is to stop users from entering lists of ports.
    * CPE doesn't use them because seems like they're valid in CPEs. */
