@@ -108,6 +108,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed migration tool "gvm-migrate-to-postgres" including the man page [#905](https://github.com/greenbone/gvmd/pull/905)
 - Remove agents [#922](https://github.com/greenbone/gvmd/pull/922)
 - Remove GMP COMMANDS [#923](https://github.com/greenbone/gvmd/pull/923)
+- Remove unused port names facility [#1041](https://github.com/greenbone/gvmd/pull/1041)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 

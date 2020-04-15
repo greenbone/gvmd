@@ -209,14 +209,8 @@ manage_cert_db_supported_version ();
 int
 manage_cert_db_version ();
 
-char *
-port_name_formatted (const char *);
-
 void
 set_db_version (int version);
-
-char *
-manage_port_name (int, const char *);
 
 int
 manage_migrate (GSList*, const gchar*);
