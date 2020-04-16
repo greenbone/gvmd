@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Change licence to AGPL-3.0-or-later [#1026](https://github.com/greenbone/gvmd/pull/1026)
 - Count only best OS matches for OS asset hosts [#1029](https://github.com/greenbone/gvmd/pull/1029)
 - Clean up NVTs set to name in cleanup-result-nvts [#1039](https://github.com/greenbone/gvmd/pull/1039)
+- Improve validation of note and override ports [#1045](https://github.com/greenbone/gvmd/pull/1045)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
