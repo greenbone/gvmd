@@ -100,6 +100,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix handling of termination signals [#1034](https://github.com/greenbone/gvmd/pull/1034)
 - Remove db init warning that no longer makes sense [#1044](https://github.com/greenbone/gvmd/pull/1044)
 - Use correct elements to get task ID in wizards [#1004](https://github.com/greenbone/gvmd/pull/1004) [#1046](https://github.com/greenbone/gvmd/pull/1046)
+- Use current row for iterator_null, instead of first row [#1047](https://github.com/greenbone/gvmd/pull/1047)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)

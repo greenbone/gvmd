@@ -636,7 +636,7 @@ iterator_null (iterator_t* iterator, int col)
 {
   if (iterator->done) abort ();
   assert (iterator->stmt->result);
-  return PQgetisnull (iterator->stmt->result, 0, col);
+  return PQgetisnull (iterator->stmt->result, iterator->stmt->current_row, col);
 }
 
 /**
