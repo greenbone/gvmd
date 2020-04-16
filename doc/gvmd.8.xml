@@ -281,6 +281,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--rebuild-scap=<arg>TYPE</arg></opt></p>
+      <optdesc>
+        <p>
+          Rebuild SCAP data of type <arg>TYPE</arg>
+          (currently only supports 'ovaldefs').
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--relay-mapper=<arg>FILE</arg></opt></p>
       <optdesc>
         <p>Executable for mapping scanner hosts to relays.
