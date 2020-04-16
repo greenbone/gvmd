@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Init comment for MODIFY_USER/COMMENT, in case it's empty [#894](https://github.com/greenbone/gvmd/pull/894)
 - Init comment for MODIFY_PERMISSION, in case it's empty [#919](https://github.com/greenbone/gvmd/pull/919)
 - Fix Verinice ISM report format and update version [#963](https://github.com/greenbone/gvmd/pull/963)
+- Fix version field of OVAL definitions [#1048](https://github.com/greenbone/gvmd/pull/1048)
 
 ### Removed
 
