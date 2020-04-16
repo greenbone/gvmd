@@ -5124,6 +5124,128 @@ manage_sync_scap (sigset_t *sigmask_current)
 }
 
 /**
+ * @brief Rebuild part of the SCAP DB.
+ *
+ * @param[in]  type        The type of SCAP info to rebuild.
+ *
+ * @return 0 success, 1 invalid type, -1 error
+ */
+static int
+rebuild_scap (const char *type)
+{
+  int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
+
+  updated_scap_ovaldefs = 0;
+  updated_scap_cpes = 0;
+  updated_scap_cves = 0;
+
+  if (strcasecmp (type, "ovaldefs") == 0
+      || strcasecmp (type, "ovaldef") == 0)
+    {
+      g_debug ("%s: rebuilding ovaldefs", __FUNCTION__);
+      sql ("DELETE FROM ovalfiles");
+      sql ("DELETE FROM affected_ovaldefs");
+      sql ("DELETE FROM ovaldefs");
+
+      updated_scap_ovaldefs = update_scap_ovaldefs (0, 0 /* Feed data. */);
+      if (updated_scap_ovaldefs == -1)
+        return -1;
+
+      switch (update_scap_ovaldefs (0, 1 /* Private data. */))
+        {
+          case 0:
+            break;
+          case -1:
+            return -1;
+          default:
+            updated_scap_ovaldefs = 1;
+            break;
+        }
+    }
+  else
+    return 1;
+
+  update_scap_cvss (updated_scap_cves,
+                    updated_scap_cpes,
+                    updated_scap_ovaldefs);
+  update_scap_placeholders (updated_scap_cves);
+
+  return 0;
+}
+
+/**
+ * @brief Rebuild part of the SCAP DB.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ * @param[in]  type        The type of SCAP info to rebuild.
+
+ * @return 0 success, -1 error, -2 main database is wrong version,
+ *         -3 main database needs to be initialised from server,
+ *         -5 sync currently running.
+ */
+int
+manage_rebuild_scap (GSList *log_config, const gchar *database,
+                     const char *type)
+{
+  lockfile_t lockfile;
+  int ret;
+
+  g_info ("   Rebuilding SCAP data (%s).", type);
+
+  switch (lockfile_lock_nb (&lockfile, "gvm-sync-scap"))
+    {
+      case 1:
+        printf ("A SCAP sync is already running.\n");
+        return -5;
+      case -1:
+        printf ("Error getting sync lock.\n");
+        return -1;
+    }
+
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    return ret;
+
+  if (manage_update_scap_db_init ())
+    goto fail;
+
+  if (manage_scap_db_exists ())
+    {
+      if (check_scap_db_version ())
+        goto fail;
+    }
+  else
+    {
+      g_info ("%s: Initializing SCAP database", __FUNCTION__);
+
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("%s: Could not initialize SCAP database", __FUNCTION__);
+          goto fail;
+        }
+    }
+
+  ret = rebuild_scap (type);
+  if (ret == 1)
+    {
+      printf ("Type must be 'ovaldefs'.\n");
+      goto fail;
+    }
+  else if (ret)
+    goto fail;
+
+  manage_option_cleanup ();
+  lockfile_unlock (&lockfile);
+  return 0;
+
+fail:
+  manage_option_cleanup ();
+  lockfile_unlock (&lockfile);
+  return -1;
+}
+
+/**
  * @brief Set the SecInfo update commit size.
  *
  * @param new_commit_size The new SecInfo update commit size.
