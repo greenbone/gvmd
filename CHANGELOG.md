@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Document container tasks in GMP doc [#690](https://github.com/greenbone/gvmd/pull/690)
 - New columns Ports, Apps, Distance, and Auth in the CSV Hosts report format [#734](https://github.com/greenbone/gvmd/pull/734)
 - Allow use of public key auth in SCP alert [#846](https://github.com/greenbone/gvmd/pull/846)
+- Add --rebuild-scap option [#1049](https://github.com/greenbone/gvmd/pull/1049)
 
 ### Changes
 - Check and create default permissions individually [#672](https://github.com/greenbone/gvmd/pull/672)
