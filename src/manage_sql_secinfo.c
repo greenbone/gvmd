@@ -5135,7 +5135,7 @@ rebuild_scap (const char *type)
 {
   int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
 
-  updated_scap_ovaldefs = 0;
+  // updated_scap_ovaldefs = 0; // initial value currently unused
   updated_scap_cpes = 0;
   updated_scap_cves = 0;
 
