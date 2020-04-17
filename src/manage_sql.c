@@ -31045,7 +31045,7 @@ validate_results_port (const char *port)
    * "general/Host_Details".  We exclude whitespace, ',' and ';' to prevent
    * users from entering lists of ports.
    *
-   * Similary, the CPE case forbids whitespace, but allows ',' and ';' as
+   * Similarly, the CPE case forbids whitespace, but allows ',' and ';' as
    * these may occur in valid CPEs. */
   if (g_regex_match_simple
        ("^(cpe:[^\\s]+|general/[^\\s,;]+|[0-9]+/[[:alnum:]]+)$",
