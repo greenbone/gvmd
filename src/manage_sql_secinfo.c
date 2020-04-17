@@ -4922,7 +4922,7 @@ update_scap_placeholders (int updated_cves)
  * @param[in]  ignore_last_scap_update  Whether to ignore the last update time.
  * @param[in]  update_cpes              Whether to update CPEs.
  * @param[in]  update_cves              Whether to update CVEs.
- * @param[in]  ignore_ovaldefs          Whether to update OVAL definitions.
+ * @param[in]  update_ovaldefs          Whether to update OVAL definitions.
  *
  * @return 0 success, -1 error.
  */
