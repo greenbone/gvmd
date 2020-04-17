@@ -5091,7 +5091,7 @@ rebuild_scap (const char *type)
   if (strcasecmp (type, "ovaldefs") == 0
       || strcasecmp (type, "ovaldef") == 0)
     {
-      g_debug ("%s: rebuilding ovaldefs", __FUNCTION__);
+      g_debug ("%s: rebuilding ovaldefs", __func__);
       sql ("DELETE FROM ovalfiles");
       sql ("DELETE FROM affected_ovaldefs");
       sql ("DELETE FROM ovaldefs");
@@ -5166,11 +5166,11 @@ manage_rebuild_scap (GSList *log_config, const gchar *database,
     }
   else
     {
-      g_info ("%s: Initializing SCAP database", __FUNCTION__);
+      g_info ("%s: Initializing SCAP database", __func__);
 
       if (manage_db_init ("scap"))
         {
-          g_warning ("%s: Could not initialize SCAP database", __FUNCTION__);
+          g_warning ("%s: Could not initialize SCAP database", __func__);
           goto fail;
         }
     }
