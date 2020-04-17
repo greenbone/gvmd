@@ -5150,6 +5150,10 @@ rebuild_scap (const char *type)
   int lockfile;
 
   ret = open_secinfo_lockfile ("gvm-sync-scap", &lockfile);
+  if (ret == 1)
+    return 2;
+  else if (ret)
+    return -1;
 
   if (strcasecmp (type, "ovaldefs") == 0
       || strcasecmp (type, "ovaldef") == 0)
@@ -5187,9 +5191,7 @@ rebuild_scap (const char *type)
  * @param[in]  database    Location of manage database.
  * @param[in]  type        The type of SCAP info to rebuild.
 
- * @return 0 success, -1 error, -2 main database is wrong version,
- *         -3 main database needs to be initialised from server,
- *         -5 sync currently running.
+ * @return 0 success, -1 error.
  */
 int
 manage_rebuild_scap (GSList *log_config, const gchar *database,
@@ -5201,7 +5203,7 @@ manage_rebuild_scap (GSList *log_config, const gchar *database,
 
   ret = manage_option_setup (log_config, database);
   if (ret)
-    return ret;
+    return -1;
 
   if (manage_update_scap_db_init ())
     goto fail;
@@ -5226,6 +5228,11 @@ manage_rebuild_scap (GSList *log_config, const gchar *database,
   if (ret == 1)
     {
       printf ("Type must be 'ovaldefs'.\n");
+      goto fail;
+    }
+  else if (ret == 2)
+    {
+      printf ("SCAP sync is currently running.\n");
       goto fail;
     }
   else if (ret)
