@@ -22,6 +22,7 @@
  * @brief Manager Manage library: SQL backend headers.
  */
 
+#include <glib.h>
 #include <signal.h>
 
 #ifndef _GVMD_MANAGE_SQL_SECINFO_H
@@ -338,6 +339,9 @@
 
 void
 manage_sync_scap (sigset_t *);
+
+int
+manage_rebuild_scap (GSList *, const gchar *, const char *);
 
 void
 manage_sync_cert (sigset_t *);

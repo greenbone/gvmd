@@ -287,6 +287,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </optdesc>
     </option>
     <option>
+      <p><opt>--rebuild-scap=<arg>TYPE</arg></opt></p>
+      <optdesc>
+        <p>
+          Rebuild SCAP data of type <arg>TYPE</arg>
+          (currently only supports 'ovaldefs').
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--role=<arg>ROLE</arg></opt></p>
       <optdesc>
         <p>Role for --create-user and --get-users.</p>

@@ -1712,6 +1712,7 @@ main (int argc, char **argv)
   static gchar *modify_setting = NULL;
   static gchar *scanner_name = NULL;
   static gchar *rc_name = NULL;
+  static gchar *rebuild_scap = NULL;
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
@@ -1874,6 +1875,10 @@ main (int argc, char **argv)
       &manager_port_string_2,
       "Use port number <number> for address 2.",
       "<number>" },
+    { "rebuild-scap", '\0', 0, G_OPTION_ARG_STRING,
+      &rebuild_scap,
+      "Rebuild SCAP data of type <type> (currently only supports 'ovaldefs').",
+      "<type>" },
     { "role", '\0', 0, G_OPTION_ARG_STRING,
       &role,
       "Role for --create-user and --get-users.",
@@ -2262,6 +2267,25 @@ main (int argc, char **argv)
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (rebuild_scap)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: --rebuild-scap");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_rebuild_scap (log_config, database, rebuild_scap);
+      log_config_free ();
+      if (ret)
+        {
+          printf ("Failed to rebuild SCAP data.\n");
+          return EXIT_FAILURE;
+        }
       return EXIT_SUCCESS;
     }
 
