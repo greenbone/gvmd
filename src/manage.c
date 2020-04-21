@@ -4109,6 +4109,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   GHashTable *vts_hash_table;
   osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
   osp_credential_t *snmp_credential;
+  gchar *max_checks, *max_hosts, *source_iface, *hosts_ordering;
   GHashTable *scanner_options;
   int ret;
   config_t config;
@@ -4217,6 +4218,25 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
   /* Setup user-specific scanner preference */
   add_user_scan_preferences (scanner_options);
+
+  /* Setup general task preferences */
+  max_checks = task_preference_value (task, "max_checks");
+  g_hash_table_insert (scanner_options, g_strdup ("max_checks"),
+                       max_checks ? max_checks : g_strdup (MAX_CHECKS_DEFAULT));
+
+  max_hosts = task_preference_value (task, "max_hosts");
+  g_hash_table_insert (scanner_options, g_strdup ("max_hosts"),
+                       max_hosts ? max_hosts : g_strdup (MAX_HOSTS_DEFAULT));
+
+  source_iface = task_preference_value (task, "source_iface");
+  if (source_iface)
+    g_hash_table_insert (scanner_options, g_strdup ("source_iface"),
+                        source_iface);
+
+  hosts_ordering = task_hosts_ordering (task);
+  if (hosts_ordering)
+    g_hash_table_insert (scanner_options, g_strdup ("hosts_ordering"),
+                         hosts_ordering);
 
   /* Setup vulnerability tests (without preferences) */
   vts = NULL;
