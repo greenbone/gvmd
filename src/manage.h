@@ -1056,22 +1056,32 @@ user_has_super (const char *, user_t);
 /**
  * @brief SQL list of LSC families.
  */
-#define LSC_FAMILY_LIST                  \
-  "'AIX Local Security Checks',"         \
-  " 'CentOS Local Security Checks',"     \
-  " 'Debian Local Security Checks',"     \
-  " 'Fedora Local Security Checks',"     \
-  " 'FreeBSD Local Security Checks',"    \
-  " 'Gentoo Local Security Checks',"     \
-  " 'HP-UX Local Security Checks',"      \
-  " 'Mac OS X Local Security Checks',"   \
-  " 'Mandrake Local Security Checks',"   \
-  " 'Red Hat Local Security Checks',"    \
-  " 'Solaris Local Security Checks',"    \
-  " 'SuSE Local Security Checks',"       \
-  " 'Ubuntu Local Security Checks',"     \
-  " 'Windows : Microsoft Bulletins',"    \
-  " 'Privilege escalation'"
+#define LSC_FAMILY_LIST                            \
+  "'AIX Local Security Checks',"                   \
+  " 'Amazon Linux Local Security Checks',"         \
+  " 'CentOS Local Security Checks',"               \
+  " 'Citrix Xenserver Local Security Checks',"     \
+  " 'Debian Local Security Checks',"               \
+  " 'F5 Local Security Checks',"                   \
+  " 'Fedora Local Security Checks',"               \
+  " 'FortiOS Local Security Checks',"              \
+  " 'FreeBSD Local Security Checks',"              \
+  " 'Gentoo Local Security Checks',"               \
+  " 'HP-UX Local Security Checks',"                \
+  " 'Huawei EulerOS Local Security Checks',"       \
+  " 'JunOS Local Security Checks',"                \
+  " 'Mac OS X Local Security Checks',"             \
+  " 'Mageia Linux Local Security Checks',"         \
+  " 'Mandrake Local Security Checks',"             \
+  " 'Oracle Linux Local Security Checks',"         \
+  " 'Palo Alto PAN-OS Local Security Checks',"     \
+  " 'Red Hat Local Security Checks',"              \
+  " 'Slackware Local Security Checks',"            \
+  " 'Solaris Local Security Checks',"              \
+  " 'SuSE Local Security Checks',"                 \
+  " 'VMware Local Security Checks',"               \
+  " 'Ubuntu Local Security Checks',"               \
+  " 'Windows : Microsoft Bulletins'"
 
 gboolean
 find_result_with_permission (const char*, result_t*, const char *);
