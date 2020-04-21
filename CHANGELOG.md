@@ -102,6 +102,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove db init warning that no longer makes sense [#1044](https://github.com/greenbone/gvmd/pull/1044)
 - Use correct elements to get task ID in wizards [#1004](https://github.com/greenbone/gvmd/pull/1004) [#1046](https://github.com/greenbone/gvmd/pull/1046)
 - Use current row for iterator_null, instead of first row [#1047](https://github.com/greenbone/gvmd/pull/1047)
+- Setup general task preferences to launch an osp openvas task. [#1055](https://github.com/greenbone/gvmd/pull/1055)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
