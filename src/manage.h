@@ -3665,6 +3665,12 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define SCAP_FEED 2
 #define CERT_FEED 3
 
+const gchar *
+get_feed_lock_path ();
+
+void
+set_feed_lock_path (const char *);
+
 int
 gvm_migrate_secinfo (int);
 

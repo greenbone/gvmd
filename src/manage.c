@@ -165,6 +165,11 @@
 #define MAX_HOSTS_DEFAULT "20"
 
 /**
+ * @brief Path to the feed lock file
+ */
+static gchar *feed_lock_path = NULL;
+
+/**
  * @brief Path to the relay mapper executable, NULL to disable relays.
  */
 static gchar *relay_mapper_path = NULL;
@@ -8252,6 +8257,32 @@ sort_data_free (sort_data_t *sort_data)
 
 
 /* Feeds. */
+
+/**
+ * @brief Get the feed lock file path.
+ *
+ * @return The current path to the lock file.
+ */
+const gchar *
+get_feed_lock_path ()
+{
+  return feed_lock_path;
+}
+
+/**
+ * @brief Set the feed lock file path.
+ *
+ * @param new_path The new path to the lock file.
+ */
+void
+set_feed_lock_path (const char *new_path)
+{
+  g_free (feed_lock_path);
+  if (new_path && strcmp (new_path, ""))
+    feed_lock_path = g_strdup (new_path);
+  else
+    feed_lock_path = g_strdup (GVM_FEED_LOCK_PATH);
+}
 
 /**
  * @brief Request a feed synchronization script selftest.

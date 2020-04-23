@@ -132,6 +132,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--feed-lock-path=<arg>PATH</arg></opt></p>
+      <optdesc>
+        <p>Sets the path to the feed lock file.</p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>-f, --foreground</opt></p>
       <optdesc>
         <p>Run in foreground.</p>
