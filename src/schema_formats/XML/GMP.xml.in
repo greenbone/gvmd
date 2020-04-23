@@ -26220,7 +26220,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         to 'ce7b121-c609-47b0-ab57-fd020a0336f4a'.
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
   <change>
     <command>GET_REPORT_FORMATS</command>
@@ -26237,7 +26237,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         transferred to the Feed Import Owner.
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
   <change>
     <command>COMMANDS</command>
@@ -26250,7 +26250,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         GMP connection.
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
   <change>
     <command>CREATE_AGENT, DELETE_AGENT, GET_AGENTS, MODIFY_AGENT, VERIFY_AGENT</command>
@@ -26262,7 +26262,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         4a1334c1-cb93-4a79-8634-103b0a50bdcd).
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
   <change>
     <command>GET_... Commands using filters</command>
@@ -26290,7 +26290,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         The type "ALLINFO" is not supported anymore.
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
   <change>
     <command>MODIFY_REPORT</command>
@@ -26300,7 +26300,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         The command "MODIFY_REPORT" is not supported anymore.
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
 
   <change>
