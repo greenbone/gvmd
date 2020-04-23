@@ -27,6 +27,7 @@
 #include "iterator.h"
 #include "manage_configs.h"
 #include "manage_get.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <glib.h>
@@ -3670,6 +3671,15 @@ get_feed_lock_path ();
 
 void
 set_feed_lock_path (const char *);
+
+void
+write_sync_start (int);
+
+int
+feed_lockfile_lock (lockfile_t *);
+
+int
+feed_lockfile_unlock (lockfile_t *);
 
 int
 gvm_migrate_secinfo (int);

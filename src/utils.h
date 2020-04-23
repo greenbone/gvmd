@@ -68,6 +68,9 @@ int
 lockfile_lock_nb (lockfile_t *, const gchar *);
 
 int
+lockfile_lock_path_nb (lockfile_t *, const gchar *);
+
+int
 lockfile_lock_shared_nb (lockfile_t *, const gchar *);
 
 int

@@ -8285,6 +8285,93 @@ set_feed_lock_path (const char *new_path)
 }
 
 /**
+ * @brief Write start time to sync lock file.
+ *
+ * @param[in]  lockfile_fd  File descriptor of the lock file.
+ */
+void
+write_sync_start (int lockfile_fd)
+{
+  time_t now;
+  char *now_string;
+
+  now = time (NULL);
+  now_string = ctime (&now);
+  while (*now_string)
+    {
+      ssize_t count;
+      count = write (lockfile_fd,
+                     now_string,
+                     strlen (now_string));
+      if (count < 0)
+        {
+          if (errno == EAGAIN || errno == EINTR)
+            /* Interrupted, try write again. */
+            continue;
+          g_warning ("%s: failed to write to lockfile: %s",
+                     __func__,
+                     strerror (errno));
+          break;
+        }
+      now_string += count;
+    }
+}
+
+/**
+ * @brief Acquires the feed lock and writes the current time to the lockfile.
+ *
+ * @param[out] lockfile   Lockfile data struct.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+feed_lockfile_lock (lockfile_t *lockfile)
+{
+  int ret;
+
+  /* Try to lock the file */
+  ret = lockfile_lock_path_nb (lockfile, get_feed_lock_path ());
+  if (ret)
+    {
+      return ret;
+    }
+
+  /* Write the file contents (timestamp) */
+  write_sync_start (lockfile->fd);
+
+  return 0;
+}
+
+/**
+ * @brief Releases the feed lock and clears the contents.
+ *
+ * @param[in] lockfile   Lockfile data struct.
+ *
+ * @return 0 success, -1 error
+ */
+int
+feed_lockfile_unlock (lockfile_t *lockfile)
+{
+  int ret;
+
+  /* Clear timestamp from lock file. */
+  if (ftruncate (lockfile->fd, 0))
+    g_warning ("%s: failed to ftruncate lockfile: %s",
+               __func__,
+               strerror (errno));
+
+  /* Unlock the lockfile */
+  ret = lockfile_unlock (lockfile);
+  if (ret)
+    {
+      g_critical ("%s: Error releasing checking lock", __func__);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Request a feed synchronization script selftest.
  *
  * Ask a feed synchronization script to perform a selftest and report

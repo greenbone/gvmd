@@ -4214,39 +4214,6 @@ update_scap_ovaldefs (int last_scap_update, int private)
 /* CERT and SCAP update. */
 
 /**
- * @brief Write start time to sync lock file.
- *
- * @param[in]  lockfile  Lock file.
- */
-static void
-write_sync_start (int lockfile)
-{
-  time_t now;
-  char *now_string;
-
-  now = time (NULL);
-  now_string = ctime (&now);
-  while (*now_string)
-    {
-      ssize_t count;
-      count = write (lockfile,
-                     now_string,
-                     strlen (now_string));
-      if (count < 0)
-        {
-          if (errno == EAGAIN || errno == EINTR)
-            /* Interrupted, try write again. */
-            continue;
-          g_warning ("%s: failed to write to lockfile: %s",
-                     __func__,
-                     strerror (errno));
-          break;
-        }
-      now_string += count;
-    }
-}
-
-/**
  * @brief Reinit a db.
  *
  * @param[in]  name  Name of db.

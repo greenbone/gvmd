@@ -372,32 +372,36 @@ iso_time_tz (time_t *epoch_time, const char *zone, const char **abbrev)
  * @brief Lock a file.
  *
  * @param[in]  lockfile           Lockfile.
- * @param[in]  lockfile_basename  Basename of lock file.
+ * @param[in]  lockfile_name      Basename or full path of lock file.
  * @param[in]  operation          LOCK_EX (exclusive) or LOCK_SH (shared).
  *                                Maybe ORd with LOCK_NB to prevent blocking.
+ * @param[in]  name_is_full_path  Whether the name is a full path.
  *
  * @return 0 success, 1 already locked, -1 error
  */
 static int
-lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
-               int operation)
+lock_internal (lockfile_t *lockfile, const gchar *lockfile_name,
+               int operation, gboolean name_is_full_path)
 {
   int fd;
-  gchar *lockfile_name;
+  gchar *full_name;
 
   /* Open the lock file. */
 
-  lockfile_name = g_build_filename (GVM_RUN_DIR, lockfile_basename, NULL);
+  if (name_is_full_path)
+    full_name = g_strdup (lockfile_name);
+  else
+    full_name = g_build_filename (GVM_RUN_DIR, lockfile_name, NULL);
 
-  fd = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
+  fd = open (full_name, O_RDWR | O_CREAT | O_APPEND,
              /* "-rw-r--r--" */
              S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
   if (fd == -1)
     {
-      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
+      g_warning ("Failed to open lock file '%s': %s", full_name,
                  strerror (errno));
       lockfile->name = NULL;
-      g_free (lockfile_name);
+      g_free (full_name);
       return -1;
     }
 
@@ -409,7 +413,7 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
 
       flock_errno = errno;
       lockfile->name = NULL;
-      g_free (lockfile_name);
+      g_free (full_name);
       if (close (fd))
         g_warning ("%s: failed to close lock file fd: %s",
                    __func__,
@@ -421,7 +425,7 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_basename,
     }
 
   lockfile->fd = fd;
-  lockfile->name = lockfile_name;
+  lockfile->name = full_name;
 
   return 0;
 }
@@ -440,7 +444,7 @@ int
 lockfile_lock (lockfile_t *lockfile, const gchar *lockfile_basename)
 {
   g_debug ("%s: lock '%s'", __func__, lockfile_basename);
-  return lock_internal (lockfile, lockfile_basename, LOCK_EX);
+  return lock_internal (lockfile, lockfile_basename, LOCK_EX, FALSE);
 }
 
 /**
@@ -455,7 +459,22 @@ int
 lockfile_lock_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
 {
   g_debug ("%s: lock '%s'", __func__, lockfile_basename);
-  return lock_internal (lockfile, lockfile_basename, LOCK_EX | LOCK_NB);
+  return lock_internal (lockfile, lockfile_basename, LOCK_EX | LOCK_NB, FALSE);
+}
+
+/**
+ * @brief Lock a file exclusively, without blocking, given a full path.
+ *
+ * @param[in]  lockfile       Lockfile.
+ * @param[in]  lockfile_path  Full path of lock file.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+lockfile_lock_path_nb (lockfile_t *lockfile, const gchar *lockfile_path)
+{
+  g_debug ("%s: lock '%s'", __func__, lockfile_path);
+  return lock_internal (lockfile, lockfile_path, LOCK_EX | LOCK_NB, TRUE);
 }
 
 /**
@@ -470,7 +489,7 @@ int
 lockfile_lock_shared_nb (lockfile_t *lockfile, const gchar *lockfile_basename)
 {
   g_debug ("%s: lock '%s'", __func__, lockfile_basename);
-  return lock_internal (lockfile, lockfile_basename, LOCK_SH | LOCK_NB);
+  return lock_internal (lockfile, lockfile_basename, LOCK_SH | LOCK_NB, FALSE);
 }
 
 /**
