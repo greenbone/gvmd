@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Clean up NVTs set to name in cleanup-result-nvts [#1039](https://github.com/greenbone/gvmd/pull/1039)
 - Improve validation of note and override ports [#1045](https://github.com/greenbone/gvmd/pull/1045)
 - The internal list of current Local Security Checks for the Auto-FP feature was updated [#1054](https://github.com/greenbone/gvmd/pull/1054)
+- Simplify sync lockfile handling [#1059](https://github.com/greenbone/gvmd/pull/1059)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
