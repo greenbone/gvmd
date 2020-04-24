@@ -12823,7 +12823,8 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
 static void
 get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
 {
-  gchar *feed_name, *feed_description, *feed_version, *lockfile_name;
+  gchar *feed_name, *feed_description, *feed_version;
+  const char *lockfile_name;
   int lockfile;
 
   if (feed_type == NVT_FEED)
@@ -12846,11 +12847,7 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
     feed_version,
     feed_description);
 
-  lockfile_name = g_build_filename (g_get_tmp_dir (),
-                                    feed_type == SCAP_FEED
-                                     ? "gvm-sync-scap"
-                                     : "gvm-sync-cert",
-                                    NULL);
+  lockfile_name = get_feed_lock_path ();
 
   lockfile = open (lockfile_name,
                    O_RDWR | O_CREAT | O_APPEND,
@@ -12912,7 +12909,6 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
     g_warning ("%s: failed to close lock file '%s': %s", __func__,
                lockfile_name, strerror (errno));
 
-  g_free (lockfile_name);
   g_free (feed_name);
   g_free (feed_version);
   g_free (feed_description);
