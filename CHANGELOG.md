@@ -66,6 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix SCAP update not finishing when CPEs are older [#985](https://github.com/greenbone/gvmd/pull/985)
 - Add user limits on hosts and ifaces to OSP prefs [#1032](https://github.com/greenbone/gvmd/pull/1032)
 - Fix scanner_options not inserted correctly when starting ospd task [#1056](https://github.com/greenbone/gvmd/pull/1056)
+- Fix QoD handling in NVTi cache and sensor scans [#1060](https://github.com/greenbone/gvmd/pull/1060)
 
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
