@@ -15789,7 +15789,7 @@ update_nvti_cache ()
   init_iterator (&nvts,
                  "SELECT oid, name, family, cvss_base, tag,"
                  "       solution, solution_type, summary, insight, affected,"
-                 "       impact, detection"
+                 "       impact, detection, qod_type"
                  " FROM nvts;");
   while (next (&nvts))
     {
@@ -15808,6 +15808,7 @@ update_nvti_cache ()
       nvti_set_affected (nvti, iterator_string (&nvts, 9));
       nvti_set_impact (nvti, iterator_string (&nvts, 10));
       nvti_set_detection (nvti, iterator_string (&nvts, 11));
+      nvti_set_qod_type (nvti, iterator_string (&nvts, 12));
 
       init_iterator (&refs,
                      "SELECT type, ref_id, ref_text"
@@ -49426,7 +49427,9 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
         {
           gchar *qod_str, *qod_type;
           qod_str = tag_value (nvti_tag (nvti), "qod");
-          qod_type = tag_value (nvti_tag (nvti), "qod_type");
+          qod_type = g_strdup (nvti_qod_type (nvti));
+          if (qod_type == NULL)
+            qod_type = tag_value (nvti_tag (nvti), "qod_type");
 
           if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
             qod = qod_from_type (qod_type);
