@@ -4240,7 +4240,7 @@ manage_db_reinit (const gchar *name)
  * @param[in]  process_title      Process title.
  */
 static void
-sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
+sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
               const gchar *process_title)
 {
   int pid, ret;
@@ -4296,7 +4296,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
 
   proctitle_set (process_title);
 
-  if (update (lockfile.fd) == 0)
+  if (update () == 0)
     {
       check_alerts ();
     }
@@ -4510,12 +4510,10 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
 /**
  * @brief Sync the CERT DB.
  *
- * @param[in]  lockfile  Lock file.
- *
  * @return 0 success, -1 error.
  */
 static int
-sync_cert (int lockfile)
+sync_cert ()
 {
   int last_feed_update, last_cert_update, last_scap_update, updated_dfn_cert;
   int updated_cert_bund;
@@ -4818,7 +4816,6 @@ update_scap_placeholders (int updated_cves)
  *
  * Currently only works correctly with all data or OVAL definitions.
  *
- * @param[in]  lockfile                 Lock file.
  * @param[in]  ignore_last_scap_update  Whether to ignore the last update time.
  * @param[in]  update_cpes              Whether to update CPEs.
  * @param[in]  update_cves              Whether to update CVEs.
@@ -4827,8 +4824,7 @@ update_scap_placeholders (int updated_cves)
  * @return 0 success, -1 error.
  */
 static int
-update_scap (int lockfile,
-             gboolean ignore_last_scap_update,
+update_scap (gboolean ignore_last_scap_update,
              gboolean update_cpes,
              gboolean update_cves,
              gboolean update_ovaldefs)
@@ -4992,15 +4988,12 @@ update_scap (int lockfile,
 /**
  * @brief Sync the SCAP DB.
  *
- * @param[in]  lockfile  Lock file.
- *
  * @return 0 success, -1 error.
  */
 static int
-sync_scap (int lockfile)
+sync_scap ()
 {
-  return update_scap (lockfile,
-                      FALSE, /* ignore_last_scap_update */
+  return update_scap (FALSE, /* ignore_last_scap_update */
                       TRUE,  /* update_cpes */
                       TRUE,  /* update_cves */
                       TRUE   /* update_ovaldefs */);
@@ -5046,8 +5039,7 @@ rebuild_scap (const char *type)
       sql ("DELETE FROM affected_ovaldefs");
       sql ("DELETE FROM ovaldefs");
 
-      ret = update_scap (lockfile.fd,
-                         TRUE,  /* ignore_last_scap_update */
+      ret = update_scap (TRUE,  /* ignore_last_scap_update */
                          FALSE, /* update_cpes */
                          FALSE, /* update_cves */
                          TRUE   /* update_ovaldefs */);
