@@ -4238,11 +4238,10 @@ manage_db_reinit (const gchar *name)
  * @param[in]  sigmask_current    Sigmask to restore in child.
  * @param[in]  update             Function to do the sync.
  * @param[in]  process_title      Process title.
- * @param[in]  lockfile_basename  Basename for lockfile.
  */
 static void
 sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
-              const gchar *process_title, const gchar *lockfile_basename)
+              const gchar *process_title)
 {
   int pid, ret;
   lockfile_t lockfile;
@@ -4654,8 +4653,7 @@ manage_sync_cert (sigset_t *sigmask_current)
 {
   sync_secinfo (sigmask_current,
                 sync_cert,
-                "gvmd: Syncing CERT",
-                "gvm-sync-cert");
+                "gvmd: Syncing CERT");
 }
 
 
@@ -5046,8 +5044,7 @@ manage_sync_scap (sigset_t *sigmask_current)
 {
   sync_secinfo (sigmask_current,
                 sync_scap,
-                "gvmd: Syncing SCAP",
-                "gvm-sync-scap");
+                "gvmd: Syncing SCAP");
 }
 
 /**
