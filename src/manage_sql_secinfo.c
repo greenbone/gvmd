@@ -4233,51 +4233,6 @@ manage_db_reinit (const gchar *name)
 }
 
 /**
- * @brief Opens and locks a lockfile for use in SecInfo operations
- *
- * @param[in]  lockfile_basename  Basename for lockfile.
- * @param[out] lockfile           File descriptor of the lockfile or -1
- *
- * @return 0 success, 1 file already locked / sync in progress, -1 error
- */
-static int
-open_secinfo_lockfile (const gchar *lockfile_basename, int *lockfile)
-{
-  gchar *lockfile_name;
-
-  lockfile_name
-    = g_build_filename (g_get_tmp_dir (), lockfile_basename, NULL);
-
-  *lockfile = open (lockfile_name,
-                    O_RDWR | O_CREAT | O_APPEND,
-                    /* "-rw-r--r--" */
-                    S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
-
-  if (*lockfile == -1)
-    {
-      g_warning ("%s: failed to open lock file '%s': %s",
-                 __func__,
-                 lockfile_name,
-                 strerror (errno));
-      g_free (lockfile_name);
-      return -1;
-    }
-
-  if (flock (*lockfile, LOCK_EX | LOCK_NB)) /* Exclusive, Non blocking. */
-    {
-      if (errno == EWOULDBLOCK)
-        g_debug ("%s: skipping, sync in progress", __func__);
-      else
-        g_debug ("%s: flock: %s", __func__, strerror (errno));
-      g_free (lockfile_name);
-      return 1;
-    }
-
-  g_free (lockfile_name);
-  return 0;
-}
-
-/**
  * @brief Sync a SecInfo DB.
  *
  * @param[in]  sigmask_current    Sigmask to restore in child.
@@ -4289,7 +4244,8 @@ static void
 sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
               const gchar *process_title, const gchar *lockfile_basename)
 {
-  int pid, lockfile, ret;
+  int pid, ret;
+  lockfile_t lockfile;
 
   /* Fork a child to sync the db, so that the parent can return to the main
    * loop. */
@@ -4314,7 +4270,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
 
         /* Open the lock file. */
 
-        ret = open_secinfo_lockfile (lockfile_basename, &lockfile);
+        ret = feed_lockfile_lock (&lockfile);
 
         if (ret == 1)
           exit (EXIT_SUCCESS);
@@ -4341,19 +4297,14 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
 
   proctitle_set (process_title);
 
-  if (update (lockfile) == 0)
+  if (update (lockfile.fd) == 0)
     {
       check_alerts ();
     }
 
   /* Close the lock file. */
 
-  if (close (lockfile))
-    {
-      g_warning ("%s: failed to close lock file: %s", __func__,
-                 strerror (errno));
-      exit (EXIT_FAILURE);
-    }
+  feed_lockfile_unlock (&lockfile);
 
   exit (EXIT_SUCCESS);
 }
@@ -4611,8 +4562,6 @@ sync_cert (int lockfile)
     return -1;
 
   g_debug ("%s: sync", __func__);
-
-  write_sync_start (lockfile);
 
   manage_db_check_mode ("cert");
 
@@ -4953,8 +4902,6 @@ update_scap (int lockfile,
 
   g_debug ("%s: sync", __func__);
 
-  write_sync_start (lockfile);
-
   manage_db_check_mode ("scap");
 
   if (manage_db_check ("scap"))
@@ -5114,9 +5061,9 @@ static int
 rebuild_scap (const char *type)
 {
   int ret = -1;
-  int lockfile;
+  lockfile_t lockfile;
 
-  ret = open_secinfo_lockfile ("gvm-sync-scap", &lockfile);
+  ret = feed_lockfile_lock (&lockfile);
   if (ret == 1)
     return 2;
   else if (ret)
@@ -5130,7 +5077,7 @@ rebuild_scap (const char *type)
       sql ("DELETE FROM affected_ovaldefs");
       sql ("DELETE FROM ovaldefs");
 
-      ret = update_scap (lockfile,
+      ret = update_scap (lockfile.fd,
                          TRUE,  /* ignore_last_scap_update */
                          FALSE, /* update_cpes */
                          FALSE, /* update_cves */
@@ -5141,7 +5088,7 @@ rebuild_scap (const char *type)
   else
     ret = 1;
 
-  if (close (lockfile))
+  if (feed_lockfile_unlock (&lockfile))
     {
       g_warning (
         "%s: failed to close lock file: %s", __func__, strerror (errno));
