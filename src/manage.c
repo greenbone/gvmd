@@ -8683,70 +8683,27 @@ gvm_get_sync_script_feed_version (const gchar * sync_script,
 int
 gvm_migrate_secinfo (int feed_type)
 {
-  int lockfile, ret;
-  gchar *lockfile_name;
-  const gchar *lockfile_basename;
+  lockfile_t lockfile;
+  int ret;
 
-  if (feed_type == SCAP_FEED)
-    lockfile_basename = "gvm-sync-scap";
-  else if (feed_type == CERT_FEED)
-    lockfile_basename = "gvm-sync-cert";
-  else
+  if (feed_type != SCAP_FEED || feed_type != CERT_FEED)
     {
       g_warning ("%s: unsupported feed_type", __func__);
       return -1;
     }
 
-  /* Open the lock file. */
-
-  lockfile_name = g_build_filename (g_get_tmp_dir (), lockfile_basename, NULL);
-
-  lockfile = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
-                   /* "-rw-r--r--" */
-                   S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
-  if (lockfile == -1)
-    {
-      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
-                 strerror (errno));
-      g_free (lockfile_name);
-      return -1;
-    }
-
-  if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
-    {
-      if (errno == EWOULDBLOCK)
-        {
-          if (close (lockfile))
-            g_warning ("%s: failed to close lockfile: %s",
-                       __func__,
-                       strerror (errno));
-          g_free (lockfile_name);
-          return 1;
-        }
-      g_debug ("%s: flock: %s", __func__, strerror (errno));
-      if (close (lockfile))
-        g_warning ("%s: failed to close lockfile: %s",
-                   __func__,
-                   strerror (errno));
-      g_free (lockfile_name);
-      return -1;
-    }
+  ret = feed_lockfile_lock (&lockfile);
+  if (ret == 1)
+    return 1;
+  else if (ret)
+    return -1;
 
   if (feed_type == SCAP_FEED)
     ret = check_scap_db_version ();
   else
     ret = check_cert_db_version ();
 
-  /* Close the lock file. */
-
-  if (close (lockfile))
-    {
-      g_free (lockfile_name);
-      g_warning ("Failed to close lock file: %s", strerror (errno));
-      return -1;
-    }
-
-  g_free (lockfile_name);
+  feed_lockfile_unlock (&lockfile);
 
   return ret;
 }
