@@ -4623,23 +4623,9 @@ sync_cert (int lockfile)
 
   manage_update_cert_db_cleanup ();
 
-  /* Clear date from lock file. */
-
-  if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s",
-               __func__,
-               strerror (errno));
-
   return 0;
 
  fail:
-  /* Clear date from lock file. */
-
-  if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s",
-               __func__,
-               strerror (errno));
-
   return -1;
 }
 
@@ -4997,23 +4983,9 @@ update_scap (int lockfile,
 
   manage_update_scap_db_cleanup ();
 
-  /* Clear date from lock file. */
-
-  if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s",
-               __func__,
-               strerror (errno));
-
   return 0;
 
  fail:
-  /* Clear date from lock file. */
-
-  if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s",
-               __func__,
-               strerror (errno));
-
   return -1;
 }
 
