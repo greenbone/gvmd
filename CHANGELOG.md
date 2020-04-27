@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update SCAP and CERT feed info in sync scripts [#808](https://github.com/greenbone/gvmd/pull/808)
 - Count only best OS matches for OS asset hosts [#1027](https://github.com/greenbone/gvmd/pull/1027)
 - New Community Feed download URL in sync tools [#1043](https://github.com/greenbone/gvmd/pull/1043)
+- Do not ignore empty hosts_allow and ifaces_allow [#1062](https://github.com/greenbone/gvmd/pull/1062)
 
 ### Fixed
 - Allow to migrate gvmd 8 sqlite3 database to postgres with gvm-migrate-to-postgres script
