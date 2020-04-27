@@ -117,6 +117,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The details attribute of GET_REPORTS now defaults to 0 [#747](https://github.com/greenbone/gvmd/pull/747)
 - Incoming VT timestamps via OSP are now assumed to be seconds since epoch [#754](https://github.com/greenbone/gvmd/pull/754)
 - Accelerate NVT feed update [#757](https://github.com/greenbone/gvmd/pull/757)
+- Do not ignore empty hosts_allow and ifaces_allow [#1063](https://github.com/greenbone/gvmd/pull/1063)
 
 ### Fixed
 - Make get_settings return only one setting when setting_id is given [#779](https://github.com/greenbone/gvmd/pull/779)
