@@ -1789,7 +1789,7 @@ send_ifaces_access_preferences (void)
   ifaces = user_ifaces (current_credentials.uuid);
   ifaces_allow = user_ifaces_allow (current_credentials.uuid);
 
-  if (ifaces && strlen (ifaces))
+  if (ifaces_allow || (ifaces && strlen (ifaces)))
     {
       char *pref;
 
@@ -1803,7 +1803,7 @@ send_ifaces_access_preferences (void)
           return 0;
         }
 
-      if (sendf_to_server ("%s <|> %s\n", pref, ifaces))
+      if (sendf_to_server ("%s <|> %s\n", pref, ifaces ? ifaces : ""))
         {
           g_free (ifaces);
           return -1;
