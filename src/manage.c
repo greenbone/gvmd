@@ -1827,7 +1827,7 @@ send_hosts_access_preferences (void)
   hosts = user_hosts (current_credentials.uuid);
   hosts_allow = user_hosts_allow (current_credentials.uuid);
 
-  if (hosts && strlen (hosts))
+  if (hosts_allow || (hosts && strlen (hosts)))
     {
       char *pref;
 
@@ -1841,7 +1841,7 @@ send_hosts_access_preferences (void)
           return 0;
         }
 
-      if (sendf_to_server ("%s <|> %s\n", pref, hosts))
+      if (sendf_to_server ("%s <|> %s\n", pref, hosts ? hosts : ""))
         {
           g_free (hosts);
           return -1;
