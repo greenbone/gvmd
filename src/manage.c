@@ -4084,7 +4084,7 @@ add_user_scan_preferences (GHashTable *scanner_options)
     name = NULL;
 
   if (name
-      && (hosts_allow || (hosts && strlen (hosts)))
+      && (hosts_allow || (hosts && strlen (hosts))))
     g_hash_table_replace (scanner_options,
                           name,
                           hosts ? hosts : g_strdup (""));
@@ -4103,7 +4103,7 @@ add_user_scan_preferences (GHashTable *scanner_options)
     name = NULL;
 
   if (name
-      && (ifaces_allow || (ifaces && strlen (ifaces)))
+      && (ifaces_allow || (ifaces && strlen (ifaces))))
     g_hash_table_replace (scanner_options,
                           name,
                           ifaces ? ifaces : g_strdup (""));
