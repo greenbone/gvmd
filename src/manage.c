@@ -4083,8 +4083,11 @@ add_user_scan_preferences (GHashTable *scanner_options)
   else
     name = NULL;
 
-  if (name)
-    g_hash_table_replace (scanner_options, name, hosts);
+  if (name
+      && (hosts_allow || (hosts && strlen (hosts)))
+    g_hash_table_replace (scanner_options,
+                          name,
+                          hosts ? hosts : g_strdup (""));
   else
     g_free (hosts);
 
@@ -4099,8 +4102,11 @@ add_user_scan_preferences (GHashTable *scanner_options)
   else
     name = NULL;
 
-  if (name)
-    g_hash_table_replace (scanner_options, name, ifaces);
+  if (name
+      && (ifaces_allow || (ifaces && strlen (ifaces)))
+    g_hash_table_replace (scanner_options,
+                          name,
+                          ifaces ? ifaces : g_strdup (""));
   else
     g_free (ifaces);
 }
