@@ -20691,8 +20691,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Optional usage type to limit the tasks to. Affects total count unlike filter</summary>
         <type>
           <alts>
+            <alt>scan</alt>
             <alt>audit</alt>
-            <alt>policy</alt>
             <alt></alt>
           </alts>
         </type>
