@@ -52,6 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Clean up NVTs set to name in cleanup-result-nvts [#1039](https://github.com/greenbone/gvmd/pull/1039)
 - Improve validation of note and override ports [#1045](https://github.com/greenbone/gvmd/pull/1045)
 - The internal list of current Local Security Checks for the Auto-FP feature was updated [#1054](https://github.com/greenbone/gvmd/pull/1054)
+- Do not ignore empty hosts_allow and ifaces_allow [#1064](https://github.com/greenbone/gvmd/pull/1064)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
@@ -105,6 +106,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Use correct elements to get task ID in wizards [#1004](https://github.com/greenbone/gvmd/pull/1004) [#1046](https://github.com/greenbone/gvmd/pull/1046)
 - Use current row for iterator_null, instead of first row [#1047](https://github.com/greenbone/gvmd/pull/1047)
 - Setup general task preferences to launch an osp openvas task. [#1055](https://github.com/greenbone/gvmd/pull/1055)
+- Fix doc of get_tasks in GMP doc [#1066](https://github.com/greenbone/gvmd/pull/1066)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
