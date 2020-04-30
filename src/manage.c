@@ -7111,14 +7111,28 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
                                 scheduled_task->task_uuid,
                                 NULL))
     {
-      if (gmp_start_task_report_c (&connection,
-                                   scheduled_task->task_uuid,
-                                   NULL))
+      gmp_start_task_opts_t opts;
+
+      opts = gmp_start_task_opts_defaults;
+      opts.task_id = scheduled_task->task_uuid;
+
+      switch (gmp_start_task_ext_c (&connection, opts))
         {
-          g_warning ("%s: gmp_start_task and gmp_resume_task failed", __func__);
-          scheduled_task_free (scheduled_task);
-          gvm_connection_free (&connection);
-          exit (EXIT_FAILURE);
+          case 0:
+            break;
+
+          case 99:
+            g_warning ("%s: user denied permission to start task", __func__);
+            scheduled_task_free (scheduled_task);
+            gvm_connection_free (&connection);
+            /* Return success, so that parent stops trying to start the task. */
+            exit (EXIT_SUCCESS);
+
+          default:
+            g_warning ("%s: gmp_start_task and gmp_resume_task failed", __func__);
+            scheduled_task_free (scheduled_task);
+            gvm_connection_free (&connection);
+            exit (EXIT_FAILURE);
         }
     }
 
