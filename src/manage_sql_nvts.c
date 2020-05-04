@@ -1792,7 +1792,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
-      g_warning ("%s: failed to connect to %s", __func__, update_socket);
+      g_debug ("%s: failed to connect to %s", __func__, update_socket);
       return -1;
     }
 
