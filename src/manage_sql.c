@@ -26658,35 +26658,10 @@ report_progress_active (report_t report, long maximum_hosts, gchar **hosts_xml)
 int
 report_progress (report_t report, task_t task)
 {
-  int progress;
-
   if (report == 0)
     return -1;
 
-  /* Handles both slave and OSP cases. */
-  if ((progress = report_slave_progress (report)))
-    return progress;
-
-  target = task_target (task);
-  if (task_target_in_trash (task))
-    {
-      hosts = target ? trash_target_hosts (target) : NULL;
-      exclude_hosts = target ? trash_target_exclude_hosts
-                                (target) : NULL;
-    }
-  else
-    {
-      hosts = target ? target_hosts (target) : NULL;
-      exclude_hosts = target ? target_exclude_hosts (target) : NULL;
-    }
-  maximum_hosts = hosts ? manage_count_hosts_max (hosts, exclude_hosts, 0) : 0;
-  g_free (hosts);
-  g_free (exclude_hosts);
-
-  if (report_active (report))
-    return report_progress_active (report, maximum_hosts, NULL);
-
-  return -1;
+  return report_slave_progress (report);
 }
 
 /**
