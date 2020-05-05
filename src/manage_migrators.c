@@ -1859,6 +1859,52 @@ migrate_226_to_227 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 227 to version 228.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_227_to_228 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 227. */
+
+  if (manage_db_version () != 227)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Dead hosts are no longer stored. */
+
+  sql ("DELETE FROM results"
+       " WHERE EXISTS (SELECT * FROM report_host_details, report_hosts"
+       "               WHERE report_host_details.report_host = report_hosts.id"
+       "               AND report_hosts.report = results.report"
+       "               AND name = 'Host dead'"
+       "               AND value = '1');");
+
+  sql ("WITH dead_report_hosts"
+       " AS (DELETE FROM report_host_details"
+       "     WHERE name = 'Host dead'"
+       "     AND value = '1'"
+       "     RETURNING report_host)"
+       " DELETE FROM report_hosts"
+       " WHERE id IN (SELECT distinct report_host FROM dead_report_hosts);");
+
+  /* Set the database version to 228. */
+
+  set_db_version (228);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1892,6 +1938,7 @@ static migrator_t database_migrators[] = {
   {225, migrate_224_to_225},
   {226, migrate_225_to_226},
   {227, migrate_226_to_227},
+  {228, migrate_227_to_228},
   /* End marker. */
   {-1, NULL}};
 
