@@ -19874,8 +19874,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Optional usage type to limit the tasks to. Affects total count unlike filter</summary>
         <type>
           <alts>
+            <alt>scan</alt>
             <alt>audit</alt>
-            <alt>policy</alt>
             <alt></alt>
           </alts>
         </type>

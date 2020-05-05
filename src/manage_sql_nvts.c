@@ -1265,47 +1265,43 @@ nvti_from_vt (entity_t vt)
     }
 
   refs = entity_child (vt, "refs");
-  if (refs == NULL)
+  if (refs)
     {
-      g_warning ("%s: VT missing REFS", __func__);
-      nvti_free (nvti);
-      return NULL;
-    }
-
-  children = refs->entities;
-  while ((ref = first_entity (children)))
-    {
-      const gchar *ref_type;
-
-      ref_type = entity_attribute (ref, "type");
-      if (ref_type == NULL)
+      children = refs->entities;
+      while ((ref = first_entity (children)))
         {
-          GString *debug = g_string_new ("");
-          g_warning ("%s: REF missing type attribute", __func__);
-          print_entity_to_string (ref, debug);
-          g_warning ("%s: ref: %s", __func__, debug->str);
-          g_string_free (debug, TRUE);
-        }
-      else
-        {
-          const gchar *ref_id;
+          const gchar *ref_type;
 
-          ref_id = entity_attribute (ref, "id");
-          if (ref_id == NULL)
+          ref_type = entity_attribute (ref, "type");
+          if (ref_type == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: REF missing id attribute", __func__);
+              g_warning ("%s: REF missing type attribute", __func__);
               print_entity_to_string (ref, debug);
               g_warning ("%s: ref: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
           else
             {
-              nvti_add_vtref (nvti, vtref_new (ref_type, ref_id, NULL));
-            }
-        }
+              const gchar *ref_id;
 
-      children = next_entities (children);
+              ref_id = entity_attribute (ref, "id");
+              if (ref_id == NULL)
+                {
+                  GString *debug = g_string_new ("");
+                  g_warning ("%s: REF missing id attribute", __func__);
+                  print_entity_to_string (ref, debug);
+                  g_warning ("%s: ref: %s", __func__, debug->str);
+                  g_string_free (debug, TRUE);
+                }
+              else
+                {
+                  nvti_add_vtref (nvti, vtref_new (ref_type, ref_id, NULL));
+                }
+            }
+
+          children = next_entities (children);
+        }
     }
 
   severities = entity_child (vt, "severities");
@@ -1422,6 +1418,9 @@ update_nvts_from_vts (entity_t *get_vts_response,
   while ((vt = first_entity (children)))
     {
       nvti_t *nvti = nvti_from_vt (vt);
+
+      if (nvti == NULL)
+        continue;
 
       if (nvti_creation_time (nvti) > feed_version_epoch)
         count_new_vts += 1;
