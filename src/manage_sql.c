@@ -348,12 +348,6 @@ static char*
 trash_filter_name (filter_t);
 
 static char*
-trash_target_hosts (target_t);
-
-static char*
-trash_target_exclude_hosts (target_t);
-
-static char*
 trash_target_comment (target_t);
 
 static int
@@ -26550,157 +26544,19 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
 }
 
 /**
- * @brief Check whether the scan of a report is active.
- *
- * @param[in]  report         Report.
- *
- * @return 1 if active, else 0.
- */
-static int
-report_active (report_t report)
-{
-  task_status_t run_status;
-  report_scan_run_status (report, &run_status);
-  if (run_status == TASK_STATUS_REQUESTED
-      || run_status == TASK_STATUS_RUNNING
-      || run_status == TASK_STATUS_DELETE_REQUESTED
-      || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
-      || run_status == TASK_STATUS_STOP_REQUESTED
-      || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
-      || run_status == TASK_STATUS_STOPPED
-      || run_status == TASK_STATUS_INTERRUPTED)
-    return 1;
-  return 0;
-}
-
-/**
- * @brief Get progress for active report.
- *
- * @param[in]  report         Report.
- * @param[in]  maximum_hosts  Maximum number of hosts in target.
- * @param[out] hosts_xml      Return for hosts XML if required, else NULL.
- *
- * @return Progress XML.
- */
-static int
-report_progress_active (report_t report, long maximum_hosts, gchar **hosts_xml)
-{
-  long total = 0, num_hosts = 0, dead_hosts = 0;
-  int total_progress;
-  iterator_t hosts;
-  GString *string;
-
-  string = g_string_new ("");
-
-  init_report_host_iterator (&hosts, report, NULL, 0);
-  while (next (&hosts))
-    {
-      unsigned int max_port, current_port;
-      long progress;
-
-      max_port = host_iterator_max_port (&hosts);
-      current_port = host_iterator_current_port (&hosts);
-      if (max_port)
-        {
-          if (max_port == -1)
-            dead_hosts++;
-          progress = (current_port * 100) / max_port;
-          if (progress < 0) progress = 0;
-          else if (progress > 100) progress = 100;
-        }
-      else
-        progress = current_port ? 100 : 0;
-
-      total += progress;
-      num_hosts++;
-
-      if (hosts_xml)
-        g_string_append_printf (string,
-                                "<host_progress>"
-                                "<host>%s</host>"
-                                "%li"
-                                "</host_progress>",
-                                host_iterator_host (&hosts),
-                                progress);
-    }
-  cleanup_iterator (&hosts);
-
-  total_progress = (maximum_hosts - dead_hosts)
-                   ? (total / (maximum_hosts - dead_hosts)) : 0;
-
-#if 1
-  g_debug ("   total: %li", total);
-  g_debug ("   num_hosts: %li", num_hosts);
-  g_debug ("   maximum_hosts: %li", maximum_hosts);
-  g_debug ("   total_progress: %i", total_progress);
-#endif
-
-  if (total_progress == 0) total_progress = 1;
-  else if (total_progress == 100) total_progress = 99;
-
-  if (hosts_xml)
-    *hosts_xml = g_string_free (string, FALSE);
-  else
-    g_string_free (string, TRUE);
-
-  return total_progress;
-}
-
-/**
  * @brief Calculate the progress of a report.
  *
  * @param[in]  report     Report.
- * @param[in]  task       Report's task.
- * @param[out] hosts_xml  Return for hosts XML if required, else NULL.
  *
  * @return Progress.
  */
 int
-report_progress (report_t report, task_t task, gchar **hosts_xml)
+report_progress (report_t report)
 {
-  target_t target;
-  char *hosts, *exclude_hosts;
-  int progress;
-  long maximum_hosts;
-
   if (report == 0)
-    {
-      if (hosts_xml)
-        *hosts_xml = g_strdup ("");
-      return -1;
-    }
+    return -1;
 
-  /* Handles both slave and OSP cases. */
-  if ((progress = report_slave_progress (report)))
-    {
-      if (hosts_xml)
-        *hosts_xml = g_strdup ("");
-      return progress;
-    }
-
-  target = task_target (task);
-  if (task_target_in_trash (task))
-    {
-      hosts = target ? trash_target_hosts (target) : NULL;
-      exclude_hosts = target ? trash_target_exclude_hosts
-                                (target) : NULL;
-    }
-  else
-    {
-      hosts = target ? target_hosts (target) : NULL;
-      exclude_hosts = target ? target_exclude_hosts (target) : NULL;
-    }
-  maximum_hosts = hosts ? manage_count_hosts_max (hosts, exclude_hosts, 0) : 0;
-  g_free (hosts);
-  g_free (exclude_hosts);
-
-  if (report_active (report))
-    return report_progress_active (report, maximum_hosts, hosts_xml);
-
-  if (hosts_xml)
-    *hosts_xml = g_strdup ("");
-
-  return -1;
+  return report_slave_progress (report);
 }
 
 /**
@@ -28235,7 +28091,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       else
         {
           int progress;
-          progress = report_progress (report, task, NULL);
+          progress = report_progress (report);
           progress_xml = g_strdup_printf ("%i", progress);
         }
 
@@ -32778,37 +32634,6 @@ target_reverse_lookup_unify (target_t target)
 {
   return sql_string ("SELECT reverse_lookup_unify FROM targets"
                      " WHERE id = %llu;", target);
-}
-
-/**
- * @brief Return the hosts associated with a trashcan target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated comma separated list of hosts if available,
- *         else NULL.
- */
-static char*
-trash_target_hosts (target_t target)
-{
-  return sql_string ("SELECT hosts FROM targets_trash WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the excluded hosts associated with a trashcan target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated comma separated list of excluded hosts if available,
- *         else NULL.
- */
-static char*
-trash_target_exclude_hosts (target_t target)
-{
-  return sql_string ("SELECT exclude_hosts FROM targets_trash"
-                     " WHERE id = %llu;",
-                     target);
 }
 
 /**
