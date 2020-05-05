@@ -3204,15 +3204,15 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
  *         task name.
  */
 static int
-handle_slave_task (task_t task, target_t target,
-                   credential_t target_ssh_credential,
-                   credential_t target_smb_credential,
-                   credential_t target_esxi_credential,
-                   credential_t target_snmp_credential,
-                   report_t last_stopped_report,
-                   gvm_connection_t *connection,
-                   const gchar *slave_id,
-                   const gchar *slave_name)
+handle_gmp_slave_task (task_t task, target_t target,
+                       credential_t target_ssh_credential,
+                       credential_t target_smb_credential,
+                       credential_t target_esxi_credential,
+                       credential_t target_snmp_credential,
+                       report_t last_stopped_report,
+                       gvm_connection_t *connection,
+                       const gchar *slave_id,
+                       const gchar *slave_name)
 {
   char *name, *uuid;
   int ret;
@@ -5136,10 +5136,10 @@ run_gmp_slave_task (task_t task, int from, char **report_id,
   free (uuid);
   proctitle_set (title);
 
-  switch (handle_slave_task (task, target, ssh_credential, smb_credential,
-                             esxi_credential, snmp_credential,
-                             last_stopped_report, connection, slave_id,
-                             slave_name))
+  switch (handle_gmp_slave_task (task, target, ssh_credential, smb_credential,
+                                 esxi_credential, snmp_credential,
+                                 last_stopped_report, connection, slave_id,
+                                 slave_name))
     {
       case 0:
         break;
