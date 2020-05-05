@@ -26547,13 +26547,11 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
  * @brief Calculate the progress of a report.
  *
  * @param[in]  report     Report.
- * @param[in]  task       Report's task.
- * @param[out] hosts_xml  Return for hosts XML if required, else NULL.
  *
  * @return Progress.
  */
 int
-report_progress (report_t report, task_t task)
+report_progress (report_t report)
 {
   if (report == 0)
     return -1;
@@ -28093,7 +28091,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       else
         {
           int progress;
-          progress = report_progress (report, task);
+          progress = report_progress (report);
           progress_xml = g_strdup_printf ("%i", progress);
         }
 

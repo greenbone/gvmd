@@ -17607,7 +17607,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
               running_report = task_iterator_current_report (&tasks);
               progress
-                = report_progress (running_report, index);
+                = report_progress (running_report);
               progress_xml
                 = g_strdup_printf ("%i", progress);
             }
