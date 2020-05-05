@@ -3553,7 +3553,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   while (1)
     {
       char *report_xml = NULL;
-      int run_status;
+      int run_status, progress;
       osp_scan_status_t osp_scan_status;
 
       run_status = task_run_status (task);
@@ -3563,8 +3563,9 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           rc = -2;
           break;
         }
-      int progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 0, 0, &report_xml);
+
+      progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
+                                      key_priv, 0, 0, &report_xml);
       if (progress < 0 || progress > 100)
         {
           result_t result = make_osp_result
