@@ -17610,7 +17610,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 = report_progress (running_report, index);
               progress_xml
                 = g_strdup_printf ("%i", progress);
-              g_free (host_xml);
             }
 
           if (running_report)
