@@ -1487,7 +1487,7 @@ void
 trim_partial_report (report_t);
 
 int
-report_progress (report_t, task_t, gchar **);
+report_progress (report_t, task_t);
 
 gchar *
 manage_report (report_t, report_t, const get_data_t *, report_format_t,

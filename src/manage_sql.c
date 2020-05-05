@@ -26656,27 +26656,16 @@ report_progress_active (report_t report, long maximum_hosts, gchar **hosts_xml)
  * @return Progress.
  */
 int
-report_progress (report_t report, task_t task, gchar **hosts_xml)
+report_progress (report_t report, task_t task)
 {
-  target_t target;
-  char *hosts, *exclude_hosts;
   int progress;
-  long maximum_hosts;
 
   if (report == 0)
-    {
-      if (hosts_xml)
-        *hosts_xml = g_strdup ("");
-      return -1;
-    }
+    return -1;
 
   /* Handles both slave and OSP cases. */
   if ((progress = report_slave_progress (report)))
-    {
-      if (hosts_xml)
-        *hosts_xml = g_strdup ("");
-      return progress;
-    }
+    return progress;
 
   target = task_target (task);
   if (task_target_in_trash (task))
@@ -26695,10 +26684,7 @@ report_progress (report_t report, task_t task, gchar **hosts_xml)
   g_free (exclude_hosts);
 
   if (report_active (report))
-    return report_progress_active (report, maximum_hosts, hosts_xml);
-
-  if (hosts_xml)
-    *hosts_xml = g_strdup ("");
+    return report_progress_active (report, maximum_hosts, NULL);
 
   return -1;
 }
@@ -28235,7 +28221,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       else
         {
           int progress;
-          progress = report_progress (report, task, NULL);
+          progress = report_progress (report, task);
           progress_xml = g_strdup_printf ("%i", progress);
         }
 
