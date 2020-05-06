@@ -199,6 +199,11 @@ if (NOT GVM_RUN_DIR)
   set (GVM_RUN_DIR      "${LOCALSTATEDIR}/run")
 endif (NOT GVM_RUN_DIR)
 
+if (NOT GVM_FEED_LOCK_PATH)
+  set (GVM_FEED_LOCK_PATH "${GVM_RUN_DIR}/feed-update.lock")
+endif (NOT GVM_FEED_LOCK_PATH)
+add_definitions (-DGVM_FEED_LOCK_PATH="${GVM_FEED_LOCK_PATH}")
+
 # TODO: Once we separate the RFP signatures out of "plugins" and
 # into var/lib/gvm/rfpsigs/ (via a sync script) then we do not need
 # to know about the NVT_DIR anymore.

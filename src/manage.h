@@ -27,6 +27,7 @@
 #include "iterator.h"
 #include "manage_configs.h"
 #include "manage_get.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <glib.h>
@@ -3664,6 +3665,21 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define NVT_FEED 1
 #define SCAP_FEED 2
 #define CERT_FEED 3
+
+const gchar *
+get_feed_lock_path ();
+
+void
+set_feed_lock_path (const char *);
+
+void
+write_sync_start (int);
+
+int
+feed_lockfile_lock (lockfile_t *);
+
+int
+feed_lockfile_unlock (lockfile_t *);
 
 int
 gvm_migrate_secinfo (int);
