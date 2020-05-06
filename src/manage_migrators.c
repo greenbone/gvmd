@@ -1867,6 +1867,8 @@ migrate_226_to_227 ()
 int
 migrate_227_to_228 ()
 {
+  int count;
+
   sql_begin_immediate ();
 
   /* Ensure that the database is currently version 227. */
@@ -1881,20 +1883,39 @@ migrate_227_to_228 ()
 
   /* Dead hosts are no longer stored. */
 
-  sql ("DELETE FROM results"
-       " WHERE EXISTS (SELECT * FROM report_host_details, report_hosts"
-       "               WHERE report_host_details.report_host = report_hosts.id"
-       "               AND report_hosts.report = results.report"
-       "               AND name = 'Host dead'"
-       "               AND value = '1');");
+  count = sql_int ("WITH deleted"
+                   " AS (DELETE FROM results"
+                   "     WHERE EXISTS (SELECT *"
+                   "                   FROM report_host_details, report_hosts"
+                   "                   WHERE report_host_details.report_host"
+                   "                         = report_hosts.id"
+                   "                   AND report_hosts.report = results.report"
+                   "                   AND name = 'Host dead'"
+                   "                   AND value = '1')"
+                   "     RETURNING id)"
+                   " SELECT count(*) from deleted;");
+  if (count)
+    g_info ("%s: deleted %i result%s of dead report hosts",
+            __func__,
+            count,
+            count > 1 ? "s" : "");
 
-  sql ("WITH dead_report_hosts"
-       " AS (DELETE FROM report_host_details"
-       "     WHERE name = 'Host dead'"
-       "     AND value = '1'"
-       "     RETURNING report_host)"
-       " DELETE FROM report_hosts"
-       " WHERE id IN (SELECT distinct report_host FROM dead_report_hosts);");
+  count = sql_int ("WITH dead_report_hosts"
+                   " AS (DELETE FROM report_host_details"
+                   "     WHERE name = 'Host dead'"
+                   "     AND value = '1'"
+                   "     RETURNING report_host),"
+                   " deleted"
+                   " AS (DELETE FROM report_hosts"
+                   "     WHERE id IN (SELECT distinct report_host"
+                   "                  FROM dead_report_hosts)"
+                   "     RETURNING id)"
+                   " SELECT count(*) from deleted;");
+  if (count)
+    g_info ("%s: deleted %i dead report host%s",
+            __func__,
+            count,
+            count > 1 ? "s" : "");
 
   /* Set the database version to 228. */
 
