@@ -1860,6 +1860,31 @@ migrate_226_to_227 ()
 }
 
 /**
+ * @brief Delete results for migrate_227_to_228.
+ *
+ * @param[in]  table  Name of table.
+ *
+ * @return Count of deleted rows.
+ */
+static int
+migrate_227_to_228_delete (const char *table)
+{
+  return sql_int ("WITH deleted"
+                  " AS (DELETE FROM %s"
+                  "     WHERE EXISTS (SELECT *"
+                  "                   FROM report_host_details, report_hosts"
+                  "                   WHERE report_host_details.report_host"
+                  "                         = report_hosts.id"
+                  "                   AND report_hosts.report = %s.report"
+                  "                   AND name = 'Host dead'"
+                  "                   AND value = '1')"
+                  "     RETURNING id)"
+                  " SELECT count(*) from deleted;",
+                  table,
+                  table);
+}
+
+/**
  * @brief Migrate the database from version 227 to version 228.
  *
  * @return 0 success, -1 error.
@@ -1883,19 +1908,16 @@ migrate_227_to_228 ()
 
   /* Dead hosts are no longer stored. */
 
-  count = sql_int ("WITH deleted"
-                   " AS (DELETE FROM results"
-                   "     WHERE EXISTS (SELECT *"
-                   "                   FROM report_host_details, report_hosts"
-                   "                   WHERE report_host_details.report_host"
-                   "                         = report_hosts.id"
-                   "                   AND report_hosts.report = results.report"
-                   "                   AND name = 'Host dead'"
-                   "                   AND value = '1')"
-                   "     RETURNING id)"
-                   " SELECT count(*) from deleted;");
+  count = migrate_227_to_228_delete ("results");
   if (count)
     g_info ("%s: deleted %i result%s of dead report hosts",
+            __func__,
+            count,
+            count > 1 ? "s" : "");
+
+  count = migrate_227_to_228_delete ("results_trash");
+  if (count)
+    g_info ("%s: deleted %i trashcan result%s of dead report hosts",
             __func__,
             count,
             count > 1 ? "s" : "");
