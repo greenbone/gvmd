@@ -3209,15 +3209,15 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
  *         task name.
  */
 static int
-handle_slave_task (task_t task, target_t target,
-                   credential_t target_ssh_credential,
-                   credential_t target_smb_credential,
-                   credential_t target_esxi_credential,
-                   credential_t target_snmp_credential,
-                   report_t last_stopped_report,
-                   gvm_connection_t *connection,
-                   const gchar *slave_id,
-                   const gchar *slave_name)
+handle_gmp_slave_task (task_t task, target_t target,
+                       credential_t target_ssh_credential,
+                       credential_t target_smb_credential,
+                       credential_t target_esxi_credential,
+                       credential_t target_snmp_credential,
+                       report_t last_stopped_report,
+                       gvm_connection_t *connection,
+                       const gchar *slave_id,
+                       const gchar *slave_name)
 {
   char *name, *uuid;
   int ret;
@@ -3558,7 +3558,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   while (1)
     {
       char *report_xml = NULL;
-      int run_status;
+      int run_status, progress;
       osp_scan_status_t osp_scan_status;
 
       run_status = task_run_status (task);
@@ -3568,8 +3568,9 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           rc = -2;
           break;
         }
-      int progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 0, 0, &report_xml);
+
+      progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
+                                      key_priv, 0, 0, &report_xml);
       if (progress < 0 || progress > 100)
         {
           result_t result = make_osp_result
@@ -5140,10 +5141,10 @@ run_gmp_slave_task (task_t task, int from, char **report_id,
   free (uuid);
   proctitle_set (title);
 
-  switch (handle_slave_task (task, target, ssh_credential, smb_credential,
-                             esxi_credential, snmp_credential,
-                             last_stopped_report, connection, slave_id,
-                             slave_name))
+  switch (handle_gmp_slave_task (task, target, ssh_credential, smb_credential,
+                                 esxi_credential, snmp_credential,
+                                 last_stopped_report, connection, slave_id,
+                                 slave_name))
     {
       case 0:
         break;

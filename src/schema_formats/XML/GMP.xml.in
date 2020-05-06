@@ -20070,20 +20070,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>The percentage of the task that is complete</summary>
           <pattern>
             <t>integer</t>
-            <any><e>host_progress</e></any>
           </pattern>
-          <ele>
-            <name>host_progress</name>
-            <summary>Percentage complete for a particular host</summary>
-            <pattern>
-              <t>integer</t>
-              <e>host</e>
-            </pattern>
-            <ele>
-              <name>host</name>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
         </ele>
         <ele>
           <name>alterable</name>
@@ -26209,6 +26196,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>HOST_PROGRESS has been removed</summary>
+    <description>
+      <p>
+        The element HOST_PROGRESS in PROGRESS has been removed.
+      </p>
+      <p>
+        To be precise, it is no longer possible for the element to be included
+        in reports, as it was only sent for OTP scanners, and OTP scanners were
+        removed in an earlier version.
+      </p>
+    </description>
+    <version>20.08</version>
+  </change>
   <change>
     <command>GET_SETTINGS, MODIFY_SETTING</command>
     <summary>Setting UUID extended</summary>
