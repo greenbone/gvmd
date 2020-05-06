@@ -4574,28 +4574,19 @@ sync_cert ()
         }
     }
 
-  if (manage_update_cert_db_init ())
-    goto fail;
-
   g_info ("%s: Updating data from feed", __func__);
 
   g_debug ("%s: update dfn", __func__);
 
   updated_dfn_cert = update_dfn_cert_advisories (last_cert_update);
   if (updated_dfn_cert == -1)
-    {
-      manage_update_cert_db_cleanup ();
-      goto fail;
-    }
+    goto fail;
 
   g_debug ("%s: update bund", __func__);
 
   updated_cert_bund = update_cert_bund_advisories (last_cert_update);
   if (updated_cert_bund == -1)
-    {
-      manage_update_cert_db_cleanup ();
-      goto fail;
-    }
+    goto fail;
 
   g_debug ("%s: update cvss", __func__);
 
@@ -4612,14 +4603,9 @@ sync_cert ()
   g_debug ("%s: update timestamp", __func__);
 
   if (update_cert_timestamp ())
-    {
-      manage_update_cert_db_cleanup ();
-      goto fail;
-    }
+    goto fail;
 
   g_info ("%s: Updating CERT info succeeded.", __func__);
-
-  manage_update_cert_db_cleanup ();
 
   return 0;
 
@@ -4896,9 +4882,6 @@ update_scap (gboolean ignore_last_scap_update,
         }
     }
 
-  if (manage_update_scap_db_init ())
-     goto fail;
-
   g_info ("%s: Updating data from feed", __func__);
 
   if (update_cpes)
@@ -4908,10 +4891,7 @@ update_scap (gboolean ignore_last_scap_update,
 
       updated_scap_cpes = update_scap_cpes (last_scap_update);
       if (updated_scap_cpes == -1)
-        {
-          manage_update_scap_db_cleanup ();
-          goto fail;
-        }
+        goto fail;
     }
 
   if (update_cves)
@@ -4921,10 +4901,7 @@ update_scap (gboolean ignore_last_scap_update,
 
       updated_scap_cves = update_scap_cves (last_scap_update);
       if (updated_scap_cves == -1)
-        {
-          manage_update_scap_db_cleanup ();
-          goto fail;
-        }
+        goto fail;
     }
 
   if (update_ovaldefs)
@@ -4935,10 +4912,7 @@ update_scap (gboolean ignore_last_scap_update,
       updated_scap_ovaldefs =
         update_scap_ovaldefs (last_scap_update, 0 /* Feed data. */);
       if (updated_scap_ovaldefs == -1)
-        {
-          manage_update_scap_db_cleanup ();
-          goto fail;
-        }
+        goto fail;
 
       g_debug ("%s: updating user defined data", __func__);
 
@@ -4947,7 +4921,6 @@ update_scap (gboolean ignore_last_scap_update,
         case 0:
           break;
         case -1:
-          manage_update_scap_db_cleanup ();
           goto fail;
         default:
           updated_scap_ovaldefs = 1;
@@ -4969,15 +4942,10 @@ update_scap (gboolean ignore_last_scap_update,
   g_debug ("%s: update timestamp", __func__);
 
   if (update_scap_timestamp ())
-    {
-      manage_update_scap_db_cleanup ();
-      goto fail;
-    }
+    goto fail;
 
   g_info ("%s: Updating SCAP info succeeded", __func__);
   proctitle_set ("gvmd: Syncing SCAP: done");
-
-  manage_update_scap_db_cleanup ();
 
   return 0;
 
@@ -5079,9 +5047,6 @@ manage_rebuild_scap (GSList *log_config, const gchar *database,
   ret = manage_option_setup (log_config, database);
   if (ret)
     return -1;
-
-  if (manage_update_scap_db_init ())
-    goto fail;
 
   if (manage_scap_db_exists ())
     {

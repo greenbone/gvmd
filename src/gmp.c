@@ -17600,14 +17600,12 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           else
             {
               int progress;
-              gchar *host_xml;
 
               running_report = task_iterator_current_report (&tasks);
               progress
-                = report_progress (running_report, index, &host_xml);
+                = report_progress (running_report);
               progress_xml
-                = g_strdup_printf ("%i%s", progress, host_xml);
-              g_free (host_xml);
+                = g_strdup_printf ("%i", progress);
             }
 
           if (running_report)
