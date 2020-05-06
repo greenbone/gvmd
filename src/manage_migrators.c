@@ -1869,7 +1869,15 @@ migrate_226_to_227 ()
 static int
 migrate_227_to_228_delete (const char *table)
 {
-  return sql_int ("WITH deleted"
+  int location;
+
+  if (strcmp (table, "results") == 0)
+    location = LOCATION_TABLE;
+  else
+    location = LOCATION_TRASH;
+
+  return sql_int (/* Remove results, storing ids. */
+                  "WITH deleted"
                   " AS (DELETE FROM %s"
                   "     WHERE EXISTS (SELECT *"
                   "                   FROM report_host_details, report_hosts"
@@ -1878,10 +1886,25 @@ migrate_227_to_228_delete (const char *table)
                   "                   AND report_hosts.report = %s.report"
                   "                   AND name = 'Host dead'"
                   "                   AND value = '1')"
-                  "     RETURNING id)"
+                  "     RETURNING id),"
+                  /* Remove references to results in any tags. */
+                  " dummy1"
+                  " AS (DELETE FROM tag_resources"
+                  "     WHERE resource_type = 'result'"
+                  "     AND resource_location = %i"
+                  "     AND resource IN (SELECT id FROM deleted)),"
+                  /* Remove references to results in any trash tags. */
+                  " dummy2"
+                  " AS (DELETE FROM tag_resources_trash"
+                  "     WHERE resource_type = 'result'"
+                  "     AND resource_location = %i"
+                  "     AND resource IN (SELECT id FROM deleted))"
+                  /* Return count of deleted results. */
                   " SELECT count(*) from deleted;",
                   table,
-                  table);
+                  table,
+                  location,
+                  location);
 }
 
 /**
