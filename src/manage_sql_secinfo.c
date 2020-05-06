@@ -4214,39 +4214,6 @@ update_scap_ovaldefs (int last_scap_update, int private)
 /* CERT and SCAP update. */
 
 /**
- * @brief Write start time to sync lock file.
- *
- * @param[in]  lockfile  Lock file.
- */
-static void
-write_sync_start (int lockfile)
-{
-  time_t now;
-  char *now_string;
-
-  now = time (NULL);
-  now_string = ctime (&now);
-  while (*now_string)
-    {
-      ssize_t count;
-      count = write (lockfile,
-                     now_string,
-                     strlen (now_string));
-      if (count < 0)
-        {
-          if (errno == EAGAIN || errno == EINTR)
-            /* Interrupted, try write again. */
-            continue;
-          g_warning ("%s: failed to write to lockfile: %s",
-                     __func__,
-                     strerror (errno));
-          break;
-        }
-      now_string += count;
-    }
-}
-
-/**
  * @brief Reinit a db.
  *
  * @param[in]  name  Name of db.
@@ -4266,63 +4233,18 @@ manage_db_reinit (const gchar *name)
 }
 
 /**
- * @brief Opens and locks a lockfile for use in SecInfo operations
- *
- * @param[in]  lockfile_basename  Basename for lockfile.
- * @param[out] lockfile           File descriptor of the lockfile or -1
- *
- * @return 0 success, 1 file already locked / sync in progress, -1 error
- */
-static int
-open_secinfo_lockfile (const gchar *lockfile_basename, int *lockfile)
-{
-  gchar *lockfile_name;
-
-  lockfile_name
-    = g_build_filename (g_get_tmp_dir (), lockfile_basename, NULL);
-
-  *lockfile = open (lockfile_name,
-                    O_RDWR | O_CREAT | O_APPEND,
-                    /* "-rw-r--r--" */
-                    S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
-
-  if (*lockfile == -1)
-    {
-      g_warning ("%s: failed to open lock file '%s': %s",
-                 __func__,
-                 lockfile_name,
-                 strerror (errno));
-      g_free (lockfile_name);
-      return -1;
-    }
-
-  if (flock (*lockfile, LOCK_EX | LOCK_NB)) /* Exclusive, Non blocking. */
-    {
-      if (errno == EWOULDBLOCK)
-        g_debug ("%s: skipping, sync in progress", __func__);
-      else
-        g_debug ("%s: flock: %s", __func__, strerror (errno));
-      g_free (lockfile_name);
-      return 1;
-    }
-
-  g_free (lockfile_name);
-  return 0;
-}
-
-/**
  * @brief Sync a SecInfo DB.
  *
  * @param[in]  sigmask_current    Sigmask to restore in child.
  * @param[in]  update             Function to do the sync.
  * @param[in]  process_title      Process title.
- * @param[in]  lockfile_basename  Basename for lockfile.
  */
 static void
-sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
-              const gchar *process_title, const gchar *lockfile_basename)
+sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
+              const gchar *process_title)
 {
-  int pid, lockfile, ret;
+  int pid, ret;
+  lockfile_t lockfile;
 
   /* Fork a child to sync the db, so that the parent can return to the main
    * loop. */
@@ -4347,7 +4269,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
 
         /* Open the lock file. */
 
-        ret = open_secinfo_lockfile (lockfile_basename, &lockfile);
+        ret = feed_lockfile_lock (&lockfile);
 
         if (ret == 1)
           exit (EXIT_SUCCESS);
@@ -4374,19 +4296,14 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (int),
 
   proctitle_set (process_title);
 
-  if (update (lockfile) == 0)
+  if (update () == 0)
     {
       check_alerts ();
     }
 
   /* Close the lock file. */
 
-  if (close (lockfile))
-    {
-      g_warning ("%s: failed to close lock file: %s", __func__,
-                 strerror (errno));
-      exit (EXIT_FAILURE);
-    }
+  feed_lockfile_unlock (&lockfile);
 
   exit (EXIT_SUCCESS);
 }
@@ -4593,12 +4510,10 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
 /**
  * @brief Sync the CERT DB.
  *
- * @param[in]  lockfile  Lock file.
- *
  * @return 0 success, -1 error.
  */
 static int
-sync_cert (int lockfile)
+sync_cert ()
 {
   int last_feed_update, last_cert_update, last_scap_update, updated_dfn_cert;
   int updated_cert_bund;
@@ -4644,8 +4559,6 @@ sync_cert (int lockfile)
     return -1;
 
   g_debug ("%s: sync", __func__);
-
-  write_sync_start (lockfile);
 
   manage_db_check_mode ("cert");
 
@@ -4694,23 +4607,9 @@ sync_cert (int lockfile)
 
   g_info ("%s: Updating CERT info succeeded.", __func__);
 
-  /* Clear date from lock file. */
-
-  if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s",
-               __func__,
-               strerror (errno));
-
   return 0;
 
  fail:
-  /* Clear date from lock file. */
-
-  if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s",
-               __func__,
-               strerror (errno));
-
   return -1;
 }
 
@@ -4724,8 +4623,7 @@ manage_sync_cert (sigset_t *sigmask_current)
 {
   sync_secinfo (sigmask_current,
                 sync_cert,
-                "gvmd: Syncing CERT",
-                "gvm-sync-cert");
+                "gvmd: Syncing CERT");
 }
 
 
@@ -4904,7 +4802,6 @@ update_scap_placeholders (int updated_cves)
  *
  * Currently only works correctly with all data or OVAL definitions.
  *
- * @param[in]  lockfile                 Lock file.
  * @param[in]  ignore_last_scap_update  Whether to ignore the last update time.
  * @param[in]  update_cpes              Whether to update CPEs.
  * @param[in]  update_cves              Whether to update CVEs.
@@ -4913,8 +4810,7 @@ update_scap_placeholders (int updated_cves)
  * @return 0 success, -1 error.
  */
 static int
-update_scap (int lockfile,
-             gboolean ignore_last_scap_update,
+update_scap (gboolean ignore_last_scap_update,
              gboolean update_cpes,
              gboolean update_cves,
              gboolean update_ovaldefs)
@@ -4971,8 +4867,6 @@ update_scap (int lockfile,
     return -1;
 
   g_debug ("%s: sync", __func__);
-
-  write_sync_start (lockfile);
 
   manage_db_check_mode ("scap");
 
@@ -5053,38 +4947,21 @@ update_scap (int lockfile,
   g_info ("%s: Updating SCAP info succeeded", __func__);
   proctitle_set ("gvmd: Syncing SCAP: done");
 
-  /* Clear date from lock file. */
-
-  if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s",
-               __func__,
-               strerror (errno));
-
   return 0;
 
  fail:
-  /* Clear date from lock file. */
-
-  if (ftruncate (lockfile, 0))
-    g_warning ("%s: failed to ftruncate lockfile: %s",
-               __func__,
-               strerror (errno));
-
   return -1;
 }
 
 /**
  * @brief Sync the SCAP DB.
  *
- * @param[in]  lockfile  Lock file.
- *
  * @return 0 success, -1 error.
  */
 static int
-sync_scap (int lockfile)
+sync_scap ()
 {
-  return update_scap (lockfile,
-                      FALSE, /* ignore_last_scap_update */
+  return update_scap (FALSE, /* ignore_last_scap_update */
                       TRUE,  /* update_cpes */
                       TRUE,  /* update_cves */
                       TRUE   /* update_ovaldefs */);
@@ -5100,8 +4977,7 @@ manage_sync_scap (sigset_t *sigmask_current)
 {
   sync_secinfo (sigmask_current,
                 sync_scap,
-                "gvmd: Syncing SCAP",
-                "gvm-sync-scap");
+                "gvmd: Syncing SCAP");
 }
 
 /**
@@ -5115,9 +4991,9 @@ static int
 rebuild_scap (const char *type)
 {
   int ret = -1;
-  int lockfile;
+  lockfile_t lockfile;
 
-  ret = open_secinfo_lockfile ("gvm-sync-scap", &lockfile);
+  ret = feed_lockfile_lock (&lockfile);
   if (ret == 1)
     return 2;
   else if (ret)
@@ -5131,8 +5007,7 @@ rebuild_scap (const char *type)
       sql ("DELETE FROM affected_ovaldefs");
       sql ("DELETE FROM ovaldefs");
 
-      ret = update_scap (lockfile,
-                         TRUE,  /* ignore_last_scap_update */
+      ret = update_scap (TRUE,  /* ignore_last_scap_update */
                          FALSE, /* update_cpes */
                          FALSE, /* update_cves */
                          TRUE   /* update_ovaldefs */);
@@ -5142,7 +5017,7 @@ rebuild_scap (const char *type)
   else
     ret = 1;
 
-  if (close (lockfile))
+  if (feed_lockfile_unlock (&lockfile))
     {
       g_warning (
         "%s: failed to close lock file: %s", __func__, strerror (errno));

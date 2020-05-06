@@ -165,6 +165,11 @@
 #define MAX_HOSTS_DEFAULT "20"
 
 /**
+ * @brief Path to the feed lock file
+ */
+static gchar *feed_lock_path = NULL;
+
+/**
  * @brief Path to the relay mapper executable, NULL to disable relays.
  */
 static gchar *relay_mapper_path = NULL;
@@ -8275,6 +8280,119 @@ sort_data_free (sort_data_t *sort_data)
 /* Feeds. */
 
 /**
+ * @brief Get the feed lock file path.
+ *
+ * @return The current path to the lock file.
+ */
+const gchar *
+get_feed_lock_path ()
+{
+  return feed_lock_path;
+}
+
+/**
+ * @brief Set the feed lock file path.
+ *
+ * @param new_path The new path to the lock file.
+ */
+void
+set_feed_lock_path (const char *new_path)
+{
+  g_free (feed_lock_path);
+  if (new_path && strcmp (new_path, ""))
+    feed_lock_path = g_strdup (new_path);
+  else
+    feed_lock_path = g_strdup (GVM_FEED_LOCK_PATH);
+}
+
+/**
+ * @brief Write start time to sync lock file.
+ *
+ * @param[in]  lockfile_fd  File descriptor of the lock file.
+ */
+void
+write_sync_start (int lockfile_fd)
+{
+  time_t now;
+  char *now_string;
+
+  now = time (NULL);
+  now_string = ctime (&now);
+  while (*now_string)
+    {
+      ssize_t count;
+      count = write (lockfile_fd,
+                     now_string,
+                     strlen (now_string));
+      if (count < 0)
+        {
+          if (errno == EAGAIN || errno == EINTR)
+            /* Interrupted, try write again. */
+            continue;
+          g_warning ("%s: failed to write to lockfile: %s",
+                     __func__,
+                     strerror (errno));
+          break;
+        }
+      now_string += count;
+    }
+}
+
+/**
+ * @brief Acquires the feed lock and writes the current time to the lockfile.
+ *
+ * @param[out] lockfile   Lockfile data struct.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+feed_lockfile_lock (lockfile_t *lockfile)
+{
+  int ret;
+
+  /* Try to lock the file */
+  ret = lockfile_lock_path_nb (lockfile, get_feed_lock_path ());
+  if (ret)
+    {
+      return ret;
+    }
+
+  /* Write the file contents (timestamp) */
+  write_sync_start (lockfile->fd);
+
+  return 0;
+}
+
+/**
+ * @brief Releases the feed lock and clears the contents.
+ *
+ * @param[in] lockfile   Lockfile data struct.
+ *
+ * @return 0 success, -1 error
+ */
+int
+feed_lockfile_unlock (lockfile_t *lockfile)
+{
+  int ret;
+
+  /* Clear timestamp from lock file. */
+  if (ftruncate (lockfile->fd, 0))
+    g_warning ("%s: failed to ftruncate lockfile: %s",
+               __func__,
+               strerror (errno));
+
+  /* Unlock the lockfile */
+  ret = lockfile_unlock (lockfile);
+  if (ret)
+    {
+      g_critical ("%s: Error releasing checking lock", __func__);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * @brief Request a feed synchronization script selftest.
  *
  * Ask a feed synchronization script to perform a selftest and report
@@ -8586,70 +8704,27 @@ gvm_get_sync_script_feed_version (const gchar * sync_script,
 int
 gvm_migrate_secinfo (int feed_type)
 {
-  int lockfile, ret;
-  gchar *lockfile_name;
-  const gchar *lockfile_basename;
+  lockfile_t lockfile;
+  int ret;
 
-  if (feed_type == SCAP_FEED)
-    lockfile_basename = "gvm-sync-scap";
-  else if (feed_type == CERT_FEED)
-    lockfile_basename = "gvm-sync-cert";
-  else
+  if (feed_type != SCAP_FEED || feed_type != CERT_FEED)
     {
       g_warning ("%s: unsupported feed_type", __func__);
       return -1;
     }
 
-  /* Open the lock file. */
-
-  lockfile_name = g_build_filename (g_get_tmp_dir (), lockfile_basename, NULL);
-
-  lockfile = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
-                   /* "-rw-r--r--" */
-                   S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
-  if (lockfile == -1)
-    {
-      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
-                 strerror (errno));
-      g_free (lockfile_name);
-      return -1;
-    }
-
-  if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
-    {
-      if (errno == EWOULDBLOCK)
-        {
-          if (close (lockfile))
-            g_warning ("%s: failed to close lockfile: %s",
-                       __func__,
-                       strerror (errno));
-          g_free (lockfile_name);
-          return 1;
-        }
-      g_debug ("%s: flock: %s", __func__, strerror (errno));
-      if (close (lockfile))
-        g_warning ("%s: failed to close lockfile: %s",
-                   __func__,
-                   strerror (errno));
-      g_free (lockfile_name);
-      return -1;
-    }
+  ret = feed_lockfile_lock (&lockfile);
+  if (ret == 1)
+    return 1;
+  else if (ret)
+    return -1;
 
   if (feed_type == SCAP_FEED)
     ret = check_scap_db_version ();
   else
     ret = check_cert_db_version ();
 
-  /* Close the lock file. */
-
-  if (close (lockfile))
-    {
-      g_free (lockfile_name);
-      g_warning ("Failed to close lock file: %s", strerror (errno));
-      return -1;
-    }
-
-  g_free (lockfile_name);
+  feed_lockfile_unlock (&lockfile);
 
   return ret;
 }

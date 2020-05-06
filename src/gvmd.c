@@ -1636,6 +1636,7 @@ gvmd (int argc, char** argv)
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
+  static gchar *feed_lock_path = NULL;
   GError *error = NULL;
   lockfile_t lockfile_checking, lockfile_serving;
   GOptionContext *option_context;
@@ -1700,6 +1701,10 @@ gvmd (int argc, char** argv)
           &encrypt_all_credentials,
           "(Re-)Encrypt all credentials.",
           NULL },
+        { "feed-lock-path", '\0', 0, G_OPTION_ARG_FILENAME,
+          &feed_lock_path,
+          "Sets the path to the feed lock file.",
+          "<path>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE,
           &foreground,
           "Run in foreground.",
@@ -1942,6 +1947,9 @@ gvmd (int argc, char** argv)
     {
       client_watch_interval = 0;
     }
+
+  /* Set feed lock path */
+  set_feed_lock_path (feed_lock_path);
 
   /* Set schedule_timeout */
 

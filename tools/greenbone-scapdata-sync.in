@@ -70,7 +70,10 @@ SCRIPT_NAME="greenbone-scapdata-sync"
 LOG_CMD="logger -t $SCRIPT_NAME"
 
 # LOCK_FILE is the name of the file used to lock the feed during sync or update.
-LOCK_FILE=/tmp/gvm-sync-scap
+if [ -z LOCK_FILE ]
+then
+  LOCK_FILE="@GVM_FEED_LOCK_PATH@"
+fi
 
 
 ########## GLOBAL VARIABLES

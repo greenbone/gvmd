@@ -1807,10 +1807,12 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
   if ((db_feed_version == NULL)
       || strcmp (scanner_feed_version, db_feed_version))
     {
-      switch (lockfile_lock_nb (&lockfile, "gvm-syncing-nvts"))
+      int ret;
+
+      switch (feed_lockfile_lock (&lockfile))
         {
           case 1:
-            g_warning ("%s: an NVT sync is already running", __func__);
+            g_warning ("%s: a feed sync is already running", __func__);
             return -1;
           case -1:
             g_warning ("%s: error getting sync lock", __func__);
@@ -1820,8 +1822,12 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
 
-      return update_nvt_cache_osp (update_socket, db_feed_version,
-                                   scanner_feed_version);
+      ret = update_nvt_cache_osp (update_socket, db_feed_version,
+                                  scanner_feed_version);
+
+      feed_lockfile_unlock (&lockfile);
+
+      return ret;
     }
 
   return 0;
@@ -1923,10 +1929,10 @@ manage_rebuild (GSList *log_config, const gchar *database)
 
   g_info ("   Rebuilding NVTs.");
 
-  switch (lockfile_lock_nb (&lockfile, "gvm-syncing-nvts"))
+  switch (feed_lockfile_lock (&lockfile))
     {
       case 1:
-        printf ("An NVT sync is already running.\n");
+        printf ("A feed sync is already running.\n");
         return -5;
       case -1:
         printf ("Error getting sync lock.\n");
@@ -1935,7 +1941,10 @@ manage_rebuild (GSList *log_config, const gchar *database)
 
   ret = manage_option_setup (log_config, database);
   if (ret)
-    return ret;
+    {
+      feed_lockfile_unlock (&lockfile);
+      return ret;
+    }
 
   sql_begin_immediate ();
   ret = update_or_rebuild_nvts (0);
@@ -1944,6 +1953,7 @@ manage_rebuild (GSList *log_config, const gchar *database)
   else
     sql_commit ();
 
+  feed_lockfile_unlock (&lockfile);
   manage_option_cleanup ();
 
   return ret;
