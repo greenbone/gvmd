@@ -1900,20 +1900,30 @@ migrate_227_to_228 ()
             count,
             count > 1 ? "s" : "");
 
-  count = sql_int ("WITH dead_report_hosts"
+  count = sql_int (/* Delete "Host dead" details, getting dead report_hosts. */
+                   "WITH dead_report_hosts"
                    " AS (DELETE FROM report_host_details"
                    "     WHERE name = 'Host dead'"
                    "     AND value = '1'"
                    "     RETURNING report_host),"
+                   /* Delete any other details on the dead report_hosts. */
+                   " dummy1"
+                   " AS (DELETE FROM report_host_details"
+                   "     WHERE report_host"
+                   "           IN (SELECT distinct report_host"
+                   "               FROM dead_report_hosts)),"
+                   /* Delete dead report_hosts. */
                    " deleted"
                    " AS (DELETE FROM report_hosts"
                    "     WHERE id IN (SELECT distinct report_host"
                    "                  FROM dead_report_hosts)"
                    "     RETURNING report),"
-                   " dummy"
+                   /* Clear report counts for affected reports. */
+                   " dummy2"
                    " AS (DELETE FROM report_counts"
                    "     WHERE report IN (SELECT distinct report"
                    "                      FROM deleted))"
+                   /* Return count of dead report_hosts. */
                    " SELECT count(*) from deleted;");
   if (count)
     g_info ("%s: deleted %i dead report host%s",
