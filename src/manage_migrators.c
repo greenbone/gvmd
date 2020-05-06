@@ -1909,7 +1909,11 @@ migrate_227_to_228 ()
                    " AS (DELETE FROM report_hosts"
                    "     WHERE id IN (SELECT distinct report_host"
                    "                  FROM dead_report_hosts)"
-                   "     RETURNING id)"
+                   "     RETURNING report),"
+                   " dummy"
+                   " AS (DELETE FROM report_counts"
+                   "     WHERE report IN (SELECT distinct report"
+                   "                      FROM deleted))"
                    " SELECT count(*) from deleted;");
   if (count)
     g_info ("%s: deleted %i dead report host%s",
