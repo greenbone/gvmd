@@ -253,11 +253,10 @@ split_xml_file (gchar *path, const gchar *size, const gchar *tail)
               " && head -n 2 split-00.xml > head.xml"
               " && echo '%s' > tail.xml"
               " && for F in split-*.xml; do"
-              "    tail -n +3 $F"
-              "    | head -n -1"
-              "    | cat head.xml - tail.xml"
-              "    > new.xml"
-              "    && mv new.xml $F;"
+              /*   Remove the first two lines and last line. */
+              "    awk 'NR>3 {print last} {last=$0}' $A > body.xml"
+              /*   Combine with new start and end. */
+              "    && cat head.xml body.xml tail.xml > $F;"
               "    done",
               size,
               tail);
