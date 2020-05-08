@@ -556,6 +556,13 @@ static gboolean in_transaction;
  */
 static struct timeval last_msg;
 
+/**
+ * @brief String array to store name of permitted extra host identifiers 
+ *passed via command line argument
+ */
+gchar extra_host_idents[EXTRA_HOST_IDENT_SIZE][MAX_HOST_IDENT_LEN+1];
+
+
 
 /* GMP commands. */
 
@@ -1416,6 +1423,28 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
       columns++;
     }
 }
+
+/**
+ * @brief Checks if a given host identifer exists in the list of permitted identifiers.
+ *
+ * @param[in]  name  identifier name.
+ * @return TRUE if identifier name is permitted else FALSE
+ */
+gboolean
+is_extra_host_identifier(char *name)
+{
+  gboolean result = FALSE;
+  for(int i =0; i < sizeof(extra_host_idents); i++)
+  {
+    if(extra_host_idents[i] != NULL && extra_host_idents[i][0] != '\0' && g_strcmp0(name, extra_host_idents[i]) == 0)
+    {
+      result = TRUE;
+      break;
+    }
+  }
+  return result;
+}
+
 
 
 /* Filter utilities. */
@@ -61813,6 +61842,33 @@ manage_empty_trashcan ()
  */
 
 /**
+ * @brief Initializes list of permitted host identifiers configured via command line argument.
+ *
+ * @param[in]  idents  comma-separated list of identifier names
+ */
+void
+manage_set_extra_host_idents(const gchar *idents)
+{
+  char *token = NULL;
+  int idx = 0;
+
+  for(int i = 0; i < sizeof(extra_host_idents); i++)
+  {
+    g_strlcpy(extra_host_idents[i], "", MAX_HOST_IDENT_LEN + 1);
+  }
+
+  gchar *tmp_str = g_strdup(idents);
+  token = strtok(tmp_str, ",");
+  while(token != NULL && idx < sizeof(extra_host_idents))
+  {
+    g_strlcpy(extra_host_idents[idx], token, MAX_HOST_IDENT_LEN + 1);
+    token = strtok(NULL, ",");
+    idx++;
+  }
+  g_free(tmp_str);
+}
+
+/**
  * @brief Return the UUID of the asset associated with a result host.
  *
  * @param[in]  host    Host value from result.
@@ -62627,6 +62683,22 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
                   identifier = g_malloc (sizeof (identifier_t));
                   identifier->ip = g_strdup (ip);
                   identifier->name = g_strdup ("ssh-key");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
+              /* check extra permitted host identifiers passed via command line argument */
+              if (is_extra_host_identifier(entity_text (name)))
+                {
+                  identifier_t *identifier;
+
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup (entity_text (name));
                   identifier->value = g_strdup (entity_text (value));
                   identifier->source_id = g_strdup (uuid);
                   identifier->source_type = g_strdup ("Report Host Detail");

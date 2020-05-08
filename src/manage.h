@@ -4394,4 +4394,7 @@ get_termination_signal ();
 int
 sql_cancel ();
 
+void
+manage_set_extra_host_idents(const gchar *);
+
 #endif /* not _GVMD_MANAGE_H */

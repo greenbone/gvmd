@@ -1716,6 +1716,7 @@ main (int argc, char **argv)
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
+  static gchar *extra_host_idents = "";
   GError *error = NULL;
   lockfile_t lockfile_checking, lockfile_serving;
   GOptionContext *option_context;
@@ -1954,6 +1955,10 @@ main (int argc, char **argv)
       &print_version,
       "Print version and exit.",
       NULL },
+    { "extra-host-idents", '\0', 0, G_OPTION_ARG_STRING,
+      &extra_host_idents,
+     "comma-separated list of extra host identifier names",
+     "<id_1,id_2>" },
     { NULL }};
 
   /* Set locale based on environment variables. */
@@ -2609,6 +2614,12 @@ main (int argc, char **argv)
           exit (EXIT_SUCCESS);
           break;
         }
+    }
+
+    /* Setup list of extra host identifiers*/
+    if(extra_host_idents)
+    {
+       manage_set_extra_host_idents(extra_host_idents);
     }
 
   /* Initialise GMP daemon. */

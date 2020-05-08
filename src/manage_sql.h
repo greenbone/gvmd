@@ -263,6 +263,16 @@
 #define TIMEVAL_SUBTRACT_MS(a, b) \
   ((((a).tv_sec - (b).tv_sec) * 1000) + ((a).tv_usec - (b).tv_usec) / 1000)
 
+/**
+ * @brief Number of extra host detail identifiers passed via command line argument
+ */
+#define EXTRA_HOST_IDENT_SIZE 10
+
+/**
+ * @brief Maximum length of host identifier name
+ */
+#define MAX_HOST_IDENT_LEN 31
+
 /* Macros. */
 
 /**
