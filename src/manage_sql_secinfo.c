@@ -256,8 +256,8 @@ split_xml_file (gchar *path, const gchar *size, const gchar *tail)
               "    tail -n +3 $F"
               "    | head -n -1"
               "    | cat head.xml - tail.xml"
-              "    > new.xml;"
-              "    mv new.xml $F;"
+              "    > new.xml"
+              "    && mv new.xml $F;"
               "    done",
               size,
               tail);
