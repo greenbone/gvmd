@@ -263,12 +263,13 @@ split_xml_file (gchar *path, const gchar *size, const gchar *tail)
 
   g_debug ("%s: command: %s", __func__, command);
   ret = system (command);
-  if ((ret == -1) || WEXITSTATUS (ret))
+  if ((ret == -1) || WIFEXITED(ret) == 0 || WEXITSTATUS (ret))
     {
-      g_warning ("%s: system failed with ret %i, %i, %s",
+      g_warning ("%s: system failed with ret %i, %i (%i), %s",
                  __func__,
                  ret,
-                 WEXITSTATUS (ret),
+                 WIFEXITED (ret),
+                 WIFEXITED (ret) ? WEXITSTATUS (ret) : 0,
                  command);
       g_free (command);
       g_free (previous_dir);
