@@ -19467,9 +19467,8 @@ make_result (task_t task, const char* host, const char *hostname,
              const char* type, const char* description)
 {
   result_t result;
-  gchar *nvt_revision, *severity;
-  gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
-  int qod;
+  gchar *nvt_revision, *severity, *qod, *qod_type;
+  gchar *quoted_hostname, *quoted_descr;
   nvt_t nvt_id = 0;
 
   if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
@@ -19477,26 +19476,20 @@ make_result (task_t task, const char* host, const char *hostname,
       g_warning ("NVT '%s' not found. Result not created", nvt);
       return 0;
     }
-  else if (nvt && strcmp (nvt, ""))
+
+  severity = nvt_severity (nvt, type);
+  if (!severity)
     {
-      nvti_t *nvti;
+      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
+      return 0;
+    }
 
-      nvti = lookup_nvti (nvt);
-      if (nvti)
-        {
-          gchar *qod_type;
-
-          qod_type = nvti_qod_type (nvti);
-          qod = qod_from_type (qod_type);
-          quoted_qod_type = sql_quote (qod_type);
-
-          g_free (qod_type);
-        }
-      else
-        {
-          qod = QOD_DEFAULT;
-          quoted_qod_type = g_strdup ("");
-        }
+  if (nvt && strcmp (nvt, ""))
+    {
+      qod = g_strdup_printf ("(SELECT qod FROM nvts WHERE id = %llu)",
+                             nvt_id);
+      qod_type = g_strdup_printf ("(SELECT qod_type FROM nvts WHERE id = %llu)",
+                                  nvt_id);
 
       nvt_revision = sql_string ("SELECT iso_time (modification_time)"
                                  " FROM nvts"
@@ -19505,15 +19498,9 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   else
     {
-      qod = QOD_DEFAULT;
-      quoted_qod_type = g_strdup ("");
+      qod = G_STRINGIFY (QOD_DEFAULT);
+      qod_type = g_strdup ("''");
       nvt_revision = g_strdup ("");
-    }
-  severity = nvt_severity (nvt, type);
-  if (!severity)
-    {
-      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
-      return 0;
     }
 
   if (!strcmp (severity, ""))
@@ -19531,15 +19518,16 @@ make_result (task_t task, const char* host, const char *hostname,
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '%s', '%s',"
        "  '%s', '%s', '%s', '%s',"
-       "  '%s', make_uuid (), %i, '%s',"
+       "  '%s', make_uuid (), %s, %s,"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, port ?: "",
        nvt ?: "", nvt_revision, severity, type,
-       quoted_descr, qod, quoted_qod_type, nvt ? nvt : "");
+       quoted_descr, qod, qod_type, nvt ? nvt : "");
 
   g_free (quoted_hostname);
   g_free (quoted_descr);
-  g_free (quoted_qod_type);
+  g_free (qod);
+  g_free (qod_type);
   g_free (nvt_revision);
   g_free (severity);
   result = sql_last_insert_id ();
