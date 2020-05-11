@@ -42297,9 +42297,9 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
                const char* type, const char* description,
                report_t report, user_t owner)
 {
-  gchar *nvt_revision, *severity;
-  gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
-  int qod, first;
+  gchar *nvt_revision, *severity, *qod, *qod_type;
+  gchar *quoted_hostname, *quoted_descr;
+  int first;
   nvt_t nvt_id = 0;
 
   assert (report);
@@ -42310,30 +42310,12 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
       return -1;
     }
 
-  if (nvt && strcmp (nvt, ""))
+  if (nvt_id)
     {
-      nvti_t *nvti;
-
-      nvti = lookup_nvti (nvt);
-      if (nvti)
-        {
-          gchar *qod_str, *qod_type;
-          qod_str = nvti_get_tag (nvti, "qod");
-          qod_type = nvti_get_tag (nvti, "qod_type");
-
-          if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
-            qod = qod_from_type (qod_type);
-
-          quoted_qod_type = sql_quote (qod_type);
-
-          g_free (qod_str);
-          g_free (qod_type);
-        }
-      else
-        {
-          qod = QOD_DEFAULT;
-          quoted_qod_type = g_strdup ("");
-        }
+      qod = g_strdup_printf ("(SELECT qod FROM nvts WHERE id = %llu)",
+                             nvt_id);
+      qod_type = g_strdup_printf ("(SELECT qod_type FROM nvts WHERE id = %llu)",
+                                  nvt_id);
 
       nvt_revision = sql_string ("SELECT iso_time (modification_time)"
                                  " FROM nvts"
@@ -42342,8 +42324,8 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
     }
   else
     {
-      qod = QOD_DEFAULT;
-      quoted_qod_type = g_strdup ("");
+      qod = G_STRINGIFY (QOD_DEFAULT);
+      qod_type = g_strdup ("''");
       nvt_revision = g_strdup ("");
     }
   severity = nvt_severity (nvt, type);
@@ -42386,19 +42368,20 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
                           "%s"
                           " (%llu, m_now (), %llu, '%s', '%s', '%s',"
                           "  '%s', '%s', '%s', '%s',"
-                          "  '%s', make_uuid (), %i, '%s',"
+                          "  '%s', make_uuid (), %s, %s,"
                           "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
                           "  %llu)",
                           first ? "" : ",",
                           owner,
                           task, host ?: "", quoted_hostname, port ?: "",
                           nvt ?: "", nvt_revision, severity, type,
-                          quoted_descr, qod, quoted_qod_type, nvt ? nvt : "",
+                          quoted_descr, qod, qod_type, nvt ? nvt : "",
                           report);
 
   g_free (quoted_hostname);
   g_free (quoted_descr);
-  g_free (quoted_qod_type);
+  g_free (qod);
+  g_free (qod_type);
   g_free (nvt_revision);
   g_free (severity);
   return 0;
