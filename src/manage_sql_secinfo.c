@@ -253,23 +253,23 @@ split_xml_file (gchar *path, const gchar *size, const gchar *tail)
               " && head -n 2 split-00.xml > head.xml"
               " && echo '%s' > tail.xml"
               " && for F in split-*.xml; do"
-              "    tail -n +3 $F"
-              "    | head -n -1"
-              "    | cat head.xml - tail.xml"
-              "    > new.xml;"
-              "    mv new.xml $F;"
+              /*   Remove the first two lines and last line. */
+              "    awk 'NR>3 {print last} {last=$0}' $F > body.xml"
+              /*   Combine with new start and end. */
+              "    && cat head.xml body.xml tail.xml > $F;"
               "    done",
               size,
               tail);
 
   g_debug ("%s: command: %s", __func__, command);
   ret = system (command);
-  if ((ret == -1) || WEXITSTATUS (ret))
+  if ((ret == -1) || WIFEXITED(ret) == 0 || WEXITSTATUS (ret))
     {
-      g_warning ("%s: system failed with ret %i, %i, %s",
+      g_warning ("%s: system failed with ret %i, %i (%i), %s",
                  __func__,
                  ret,
-                 WEXITSTATUS (ret),
+                 WIFEXITED (ret),
+                 WIFEXITED (ret) ? WEXITSTATUS (ret) : 0,
                  command);
       g_free (command);
       g_free (previous_dir);
