@@ -1916,7 +1916,7 @@ int
 nvt_preference_count (const char *);
 
 void
-nvti_refs_append_xml (GString *, const char *, int *);
+xml_append_nvt_refs (GString *, const char *, int *);
 
 gchar*
 get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);

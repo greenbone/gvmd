@@ -22809,14 +22809,14 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
 }
 
 /**
- * @brief Get the NVT's references in XML format from a nvti object via oid.
+ * @brief Append an NVT's references to an XML string buffer.
  *
  * @param[in]  xml       The buffer where to append to.
  * @param[in]  oid       The oid of the nvti object from where to collect the refs.
  * @param[in]  first     Marker for first element.
  */
 void
-nvti_refs_append_xml (GString *xml, const char *oid, int *first)
+xml_append_nvt_refs (GString *xml, const char *oid, int *first)
 {
   nvti_t *nvti = lookup_nvti (oid);
   int i;
