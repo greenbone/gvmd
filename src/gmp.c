@@ -9557,7 +9557,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             }
 
           first = 1;
-          result_iterator_nvt_refs_append (buffer, results, &first);
+          nvti_refs_append_xml (buffer, result_iterator_nvt_oid (results), &first);
+
           results_xml_append_cert (buffer, results, oid, cert_loaded, &first);
           if (first == 0)
             buffer_xml_append_printf (buffer, "</refs>");

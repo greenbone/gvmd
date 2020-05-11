@@ -22840,21 +22840,6 @@ nvti_refs_append_xml (GString *xml, const char *oid, int *first)
 }
 
 /**
- * @brief Get the NVT's references in XML format from a result iterator.
- *
- * @param[in]  xml       The buffer where to append to.
- * @param[in]  iterator  Iterator.
- * @param[in]  first     Marker for first element.
- */
-void
-result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator, int *first)
-{
-  if (iterator->done) return;
-
-  nvti_refs_append_xml (xml, result_iterator_nvt_oid (iterator), first);
-}
-
-/**
  * @brief Get the NVT tags from a result iterator.
  *
  * @param[in]  iterator  Iterator.

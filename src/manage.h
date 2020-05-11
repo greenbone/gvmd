@@ -1391,9 +1391,6 @@ result_iterator_nvt_family (iterator_t *);
 const char*
 result_iterator_nvt_cvss_base (iterator_t *);
 
-void
-result_iterator_nvt_refs_append (GString *, iterator_t *, int *);
-
 const char*
 result_iterator_nvt_tag (iterator_t *);
 
