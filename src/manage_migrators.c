@@ -1859,6 +1859,132 @@ migrate_226_to_227 ()
   return 0;
 }
 
+/**
+ * @brief Delete results for migrate_227_to_228.
+ *
+ * @param[in]  table  Name of table.
+ *
+ * @return Count of deleted rows.
+ */
+static int
+migrate_227_to_228_delete (const char *table)
+{
+  int location;
+
+  if (strcmp (table, "results") == 0)
+    location = LOCATION_TABLE;
+  else
+    location = LOCATION_TRASH;
+
+  return sql_int (/* Remove results, storing ids. */
+                  "WITH deleted"
+                  " AS (DELETE FROM %s"
+                  "     WHERE EXISTS (SELECT *"
+                  "                   FROM report_host_details, report_hosts"
+                  "                   WHERE report_host_details.report_host"
+                  "                         = report_hosts.id"
+                  "                   AND report_hosts.report = %s.report"
+                  "                   AND name = 'Host dead'"
+                  "                   AND value = '1')"
+                  "     RETURNING id),"
+                  /* Remove references to results in any tags. */
+                  " dummy1"
+                  " AS (DELETE FROM tag_resources"
+                  "     WHERE resource_type = 'result'"
+                  "     AND resource_location = %i"
+                  "     AND resource IN (SELECT id FROM deleted)),"
+                  /* Remove references to results in any trash tags. */
+                  " dummy2"
+                  " AS (DELETE FROM tag_resources_trash"
+                  "     WHERE resource_type = 'result'"
+                  "     AND resource_location = %i"
+                  "     AND resource IN (SELECT id FROM deleted))"
+                  /* Return count of deleted results. */
+                  " SELECT count(*) from deleted;",
+                  table,
+                  table,
+                  location,
+                  location);
+}
+
+/**
+ * @brief Migrate the database from version 227 to version 228.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_227_to_228 ()
+{
+  int count;
+
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 227. */
+
+  if (manage_db_version () != 227)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Dead hosts are no longer stored. */
+
+  count = migrate_227_to_228_delete ("results");
+  if (count)
+    g_info ("%s: deleted %i result%s of dead report hosts",
+            __func__,
+            count,
+            count > 1 ? "s" : "");
+
+  count = migrate_227_to_228_delete ("results_trash");
+  if (count)
+    g_info ("%s: deleted %i trashcan result%s of dead report hosts",
+            __func__,
+            count,
+            count > 1 ? "s" : "");
+
+  count = sql_int (/* Delete "Host dead" details, getting dead report_hosts. */
+                   "WITH dead_report_hosts"
+                   " AS (DELETE FROM report_host_details"
+                   "     WHERE name = 'Host dead'"
+                   "     AND value = '1'"
+                   "     RETURNING report_host),"
+                   /* Delete any other details on the dead report_hosts. */
+                   " dummy1"
+                   " AS (DELETE FROM report_host_details"
+                   "     WHERE report_host"
+                   "           IN (SELECT distinct report_host"
+                   "               FROM dead_report_hosts)),"
+                   /* Delete dead report_hosts. */
+                   " deleted"
+                   " AS (DELETE FROM report_hosts"
+                   "     WHERE id IN (SELECT distinct report_host"
+                   "                  FROM dead_report_hosts)"
+                   "     RETURNING report),"
+                   /* Clear report counts for affected reports. */
+                   " dummy2"
+                   " AS (DELETE FROM report_counts"
+                   "     WHERE report IN (SELECT distinct report"
+                   "                      FROM deleted))"
+                   /* Return count of dead report_hosts. */
+                   " SELECT count(*) from deleted;");
+  if (count)
+    g_info ("%s: deleted %i dead report host%s",
+            __func__,
+            count,
+            count > 1 ? "s" : "");
+
+  /* Set the database version to 228. */
+
+  set_db_version (228);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1892,6 +2018,7 @@ static migrator_t database_migrators[] = {
   {225, migrate_224_to_225},
   {226, migrate_225_to_226},
   {227, migrate_226_to_227},
+  {228, migrate_227_to_228},
   /* End marker. */
   {-1, NULL}};
 
