@@ -22618,12 +22618,7 @@ DEF_ACCESS (result_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 2);
 const char*
 result_iterator_nvt_name (iterator_t *iterator)
 {
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_name (nvti);
-  return NULL;
+  return get_iterator_name (iterator);
 }
 
 /**
