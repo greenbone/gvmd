@@ -4,9 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [8.0.2] (unreleased)
+## [8.0.2] (2020-05-12)
 
 ### Added
+- Add setting 'GMP Slave Check Period' [#628](https://github.com/greenbone/gvmd/pull/628)
 - Command cleanup-report-formats for --optimize option [#651](https://github.com/greenbone/gvmd/pull/651)
 - Document container tasks in GMP doc [#690](https://github.com/greenbone/gvmd/pull/690)
 - New columns Ports, Apps, Distance, and Auth in the CSV Hosts report format [#734](https://github.com/greenbone/gvmd/pull/734)
@@ -14,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add --rebuild-scap option [#1049](https://github.com/greenbone/gvmd/pull/1049)
 
 ### Changes
+- Use lower case for new style DELETE responses [#664](https://github.com/greenbone/gvmd/pull/664)
 - Check and create default permissions individually [#672](https://github.com/greenbone/gvmd/pull/672)
 - Add -f arg to sendmail call in email alert [#677](https://github.com/greenbone/gvmd/pull/677) [#679](https://github.com/greenbone/gvmd/pull/679)
 - Change get_tickets to use the status text for filtering. [#698](https://github.com/greenbone/gvmd/pull/698)
@@ -26,8 +28,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Do not ignore empty hosts_allow and ifaces_allow [#1062](https://github.com/greenbone/gvmd/pull/1062)
 
 ### Fixed
-- Allow to migrate gvmd 8 sqlite3 database to postgres with gvm-migrate-to-postgres script
-  [#820](https://github.com/greenbone/gvmd/pull/820)
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#691](https://github.com/greenbone/gvmd/pull/691)
 - Fix iCalendar recurrence and timezone handling [#653](https://github.com/greenbone/gvmd/pull/653)
 - Fix issues with some scheduled tasks by using iCalendar more instead of old period fields [#655](https://github.com/greenbone/gvmd/pull/655)
@@ -36,26 +36,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix RAW_DATA when calling GET_INFO with type NVT without attributes name or info_id [#682](https://github.com/greenbone/gvmd/pull/682)
 - Fix assignment of orphaned tickets to the current user [#686](https://github.com/greenbone/gvmd/pull/686)
 - Fix ORPHAN calculations in GET_TICKETS [#687](https://github.com/greenbone/gvmd/pull/687) [#700](https://github.com/greenbone/gvmd/pull/700)
-- Fix response from GET_VULNS when given vuln_id does not exists [#699](https://github.com/greenbone/gvmd/pull/699)
+- Fix response from GET_VULNS when given vuln_id does not exist [#699](https://github.com/greenbone/gvmd/pull/699)
 - Make bulk tagging with a filter work if the resources are already tagged [#712](https://github.com/greenbone/gvmd/pull/712)
 - Fix columnless search phrase filter keywords with quotes [#716](https://github.com/greenbone/gvmd/pull/716)
 - Fix issues importing results or getting them from slaves if they contain "%s" [#724](https://github.com/greenbone/gvmd/pull/724)
-- A possible database migration issue from GVMd-7 to GVMd-8 has been addressed [#742](https://github.com/greenbone/gvmd/pull/742)
+- A possible database migration issue from GVMd-7 to GVMd-8 has been addressed [#742](https://github.com/greenbone/gvmd/pull/742) [#755](https://github.com/greenbone/gvmd/pull/755)
 - Fix escaping that was preventing start_task from running [#758](https://github.com/greenbone/gvmd/pull/758)
 - Fix array index error when modifying roles and groups [#763](https://github.com/greenbone/gvmd/pull/763)
 - Fix percent sign escaping in report_port_count [#781](https://github.com/greenbone/gvmd/pull/781)
 - Consider results_trash when deleting users [#804](https://github.com/greenbone/gvmd/pull/804)
+- Allow to migrate gvmd 8 sqlite3 database to postgres with gvm-migrate-to-postgres script
+  [#820](https://github.com/greenbone/gvmd/pull/820)
 - Fix asset host details insertion SQL [#840](https://github.com/greenbone/gvmd/pull/840)
 - Fix creation of "Super" permissions [#893](https://github.com/greenbone/gvmd/pull/893)
 - Init comment for MODIFY_USER/COMMENT, in case it's empty [#894](https://github.com/greenbone/gvmd/pull/894)
 - Init comment for MODIFY_PERMISSION, in case it's empty [#919](https://github.com/greenbone/gvmd/pull/919)
 - Fix Verinice ISM report format and update version [#963](https://github.com/greenbone/gvmd/pull/963)
+- Fix SCP alert authentication and logging [#973](https://github.com/greenbone/gvmd/pull/973)
 - Use right format specifier for merge_ovaldef version [#1053](https://github.com/greenbone/gvmd/pull/1053)
 - Fix deletion of OVAL definition data [#1077](https://github.com/greenbone/gvmd/pull/1077)
 
 ### Removed
 
-[8.0.2]: https://github.com/greenbone/gvmd/compare/v8.0.1...gvmd-8.0
+[8.0.2]: https://github.com/greenbone/gvmd/compare/v8.0.1...v8.0.2
 
 ## [8.0.1] (2019-07-17)
 
@@ -102,7 +105,6 @@ long schedule XML, not just if only the schedules are requested. [#500](https://
 - Apply ignore_pagination in delta reports [#597](https://github.com/greenbone/gvmd/pull/597)
 - Fix getting single unowned resources [#607](https://github.com/greenbone/gvmd/pull/607)
 - Fix the "Host Authentications" section in PDF / LaTeX reports. [#640](https://github.com/greenbone/gvmd/pull/640)
-- Fix SCP alert authentication and logging [#973](https://github.com/greenbone/gvmd/pull/973)
 
 ### Removed
 - Remove -m SMB3 for smbclient in SMB alert, which allows changing the maximum protocol version via the smbclient config instead of forcing a particular one in the alert script. [#505](https://github.com/greenbone/gvmd/pull/505)
