@@ -4437,6 +4437,9 @@ manage_db_init (const gchar *name)
       sql ("CREATE TRIGGER scap.ovalfiles_delete AFTER DELETE"
            " ON ovalfiles"
            " BEGIN"
+           "   DELETE FROM affected_ovaldefs"
+           "     WHERE id IN (SELECT id FROM ovaldefs"
+           "                  WHERE ovaldefs.xml_file = old.xml_file);"
            "   DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;"
            " END;");
 
