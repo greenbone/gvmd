@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Init comment for MODIFY_PERMISSION, in case it's empty [#919](https://github.com/greenbone/gvmd/pull/919)
 - Fix Verinice ISM report format and update version [#963](https://github.com/greenbone/gvmd/pull/963)
 - Use right format specifier for merge_ovaldef version [#1053](https://github.com/greenbone/gvmd/pull/1053)
+- Fix deletion of OVAL definition data [#1077](https://github.com/greenbone/gvmd/pull/1077)
 
 ### Removed
 
