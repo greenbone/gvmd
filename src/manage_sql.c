@@ -21997,7 +21997,31 @@ where_qod (int min_qod)
       KEYWORD_TYPE_INTEGER },                                                 \
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT summary FROM nvts WHERE oid = nvt)",                           \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT insight FROM nvts WHERE oid = nvt)",                           \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT affected FROM nvts WHERE oid = nvt)",                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT impact FROM nvts WHERE oid = nvt)",                            \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT solution FROM nvts WHERE oid = nvt)",                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT detection FROM nvts WHERE oid = nvt)",                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT family FROM nvts WHERE oid = nvt)",                            \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT tag FROM nvts WHERE oid = nvt)",                               \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },
 
 /**
  * @brief Result iterator columns.
@@ -22628,16 +22652,7 @@ result_iterator_nvt_name (iterator_t *iterator)
  *
  * @return The summary of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_summary (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_summary (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 27);
 
 /**
  * @brief Get the NVT insight from a result iterator.
@@ -22646,16 +22661,7 @@ result_iterator_nvt_summary (iterator_t *iterator)
  *
  * @return The insight of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_insight (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_insight (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 28);
 
 /**
  * @brief Get the NVT affected from a result iterator.
@@ -22664,34 +22670,16 @@ result_iterator_nvt_insight (iterator_t *iterator)
  *
  * @return The affected of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_affected (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_affected (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 29);
 
 /**
- * @brief Get the NVT affected from a result iterator.
+ * @brief Get the NVT impact from a result iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Impact text of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_impact (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_impact (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 30);
 
 /**
  * @brief Get the NVT solution from a result iterator.
@@ -22700,16 +22688,7 @@ result_iterator_nvt_impact (iterator_t *iterator)
  *
  * @return The solution of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_solution (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_solution (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_solution, GET_ITERATOR_COLUMN_COUNT + 31);
 
 /**
  * @brief Get the NVT solution_type from a result iterator.
@@ -22736,11 +22715,7 @@ result_iterator_nvt_solution_type (iterator_t *iterator)
 const char*
 result_iterator_nvt_solution_method (iterator_t *iterator)
 {
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_solution_method (nvti);
+  /* When we used a cache this was never added to the cache. */
   return NULL;
 }
 
@@ -22751,16 +22726,7 @@ result_iterator_nvt_solution_method (iterator_t *iterator)
  *
  * @return The detection of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_detection (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_detection (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 32);
 
 /**
  * @brief Get the NVT family from a result iterator.
@@ -22769,16 +22735,7 @@ result_iterator_nvt_detection (iterator_t *iterator)
  *
  * @return The family of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_family (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_family (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 33);
 
 /**
  * @brief Get the NVT CVSS base value from a result iterator.
@@ -22827,16 +22784,7 @@ xml_append_nvt_refs (GString *xml, const char *oid, int *first)
  *
  * @return The tags of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_tag (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_tag (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
 
 /**
  * @brief Get the original type from a result iterator.
@@ -23179,7 +23127,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 27);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
 }
 
 /**
@@ -23193,7 +23141,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
 }
 
 /**
