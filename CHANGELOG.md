@@ -110,6 +110,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix doc of get_tasks in GMP doc [#1066](https://github.com/greenbone/gvmd/pull/1066)
 - Improve refs and error handling in NVTs update [#1067](https://github.com/greenbone/gvmd/pull/1067)
 - Fix failure detection for xml_split command [#1074](https://github.com/greenbone/gvmd/pull/1074)
+- Fix deletion of OVAL definition data [#1079](https://github.com/greenbone/gvmd/pull/1079)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
