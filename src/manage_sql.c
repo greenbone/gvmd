@@ -4920,6 +4920,8 @@ resource_uuid (const gchar *type, resource_t resource)
  * @param[in]  extra_tables    Extra tables to join in FROM clause.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
  *                             resource.
+ * @param[in]  extra_where_single  Extra WHERE clauses.  Used for single
+ *                                 resource.
  * @param[in]  owned           Only get items owned by the current user.
  * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
  * @param[in]  extra_order     Extra ORDER clauses.
@@ -4937,7 +4939,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                          column_t *trash_where_columns,
                          const char **filter_columns, int distinct,
                          const char *extra_tables,
-                         const char *extra_where, int owned,
+                         const char *extra_where,
+                         const char *extra_where_single, int owned,
                          int ignore_id,
                          const char *extra_order,
                          const char *extra_with,
@@ -5084,16 +5087,18 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "%sSELECT %s"
                    " FROM %ss%s %s"
-                   " WHERE id = %llu"
-                   " AND %s"
+                   " WHERE %ss.id = %llu"
+                   " AND %s%s"
                    "%s%s;",
                    with_clause ? with_clause : "",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
                    extra_tables ? extra_tables : "",
+                   type,
                    resource,
                    owned_clause,
+                   extra_where_single ? extra_where_single : "",
                    order ? order : "",
                    order ? (extra_order ? extra_order : "") : "");
   else if (get->trash)
@@ -5117,15 +5122,17 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "%sSELECT %s"
                    " FROM %ss %s"
-                   " WHERE id = %llu"
-                   " AND %s"
+                   " WHERE %ss.id = %llu"
+                   " AND %s%s"
                    "%s%s;",
                    with_clause ? with_clause : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
+                   type,
                    resource,
                    owned_clause,
+                   extra_where_single ? extra_where_single : "",
                    order ? order : "",
                    order ? (extra_order ? extra_order : "") : "");
   else
@@ -5178,6 +5185,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
  * @param[in]  extra_tables    Extra tables to join in FROM clause.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
  *                             resource.
+ * @param[in]  extra_where_single  Extra WHERE clauses.  Used for single
+ *                                 resource.
  * @param[in]  owned           Only get items owned by the current user.
  * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
  * @param[in]  extra_order     Extra ORDER clauses.
@@ -5193,15 +5202,15 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                     column_t *trash_where_columns,
                     const char **filter_columns, int distinct,
                     const char *extra_tables,
-                    const char *extra_where, int owned,
-                    int ignore_id,
+                    const char *extra_where, const char *extra_where_single,
+                    int owned, int ignore_id,
                     const char *extra_order)
 {
   return init_get_iterator2_with (iterator, type, get, select_columns,
                                  trash_select_columns, where_columns,
                                  trash_where_columns, filter_columns, distinct,
-                                 extra_tables, extra_where, owned, ignore_id,
-                                 extra_order, NULL, 0);
+                                 extra_tables, extra_where, extra_where_single,
+                                 owned, ignore_id, extra_order, NULL, 0);
 }
 
 /**
@@ -5233,8 +5242,8 @@ init_get_iterator (iterator_t* iterator, const char *type,
 {
   return init_get_iterator2 (iterator, type, get, select_columns,
                              trash_select_columns, NULL, NULL, filter_columns,
-                             distinct, extra_tables, extra_where, owned, FALSE,
-                             NULL);
+                             distinct, extra_tables, extra_where, NULL, owned,
+                             FALSE, NULL);
 }
 
 /**
@@ -15059,6 +15068,7 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                             0,
                             extra_tables,
                             extra_where,
+                            NULL,
                             current_credentials.uuid ? TRUE : FALSE,
                             FALSE,
                             NULL);
@@ -21437,6 +21447,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                              : " AND (SELECT hidden FROM tasks"
                                "      WHERE tasks.id = task)"
                                "     = 0",
+                            NULL,
                             TRUE,
                             FALSE,
                             NULL);
@@ -21701,7 +21712,7 @@ where_qod (int min_qod)
   if (min_qod <= 0)
     qod_sql = g_strdup ("");
   else
-    qod_sql = g_strdup_printf (" AND (qod >= CAST (%d AS INTEGER))",
+    qod_sql = g_strdup_printf (" AND (results.qod >= CAST (%d AS INTEGER))",
                                min_qod);
 
   return qod_sql;
@@ -21867,9 +21878,9 @@ where_qod (int min_qod)
  * @brief Result iterator columns.
  */
 #define BASE_RESULT_ITERATOR_COLUMNS                                          \
-    { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
-    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
-    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+    { "results.id", NULL, KEYWORD_TYPE_INTEGER },                             \
+    { "results.uuid", NULL, KEYWORD_TYPE_STRING },                            \
+    { "nvts.name",                                                            \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
@@ -21884,7 +21895,7 @@ where_qod (int min_qod)
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
       "_owner",                                                               \
       KEYWORD_TYPE_STRING },                                                  \
-    { "owner", NULL, KEYWORD_TYPE_INTEGER },                                  \
+    { "results.owner", NULL, KEYWORD_TYPE_INTEGER },                          \
     { "host", NULL, KEYWORD_TYPE_STRING },                                    \
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
@@ -21917,18 +21928,18 @@ where_qod (int min_qod)
       " LIMIT 1)",                                                            \
       "severity",                                                             \
       KEYWORD_TYPE_DOUBLE },                                                  \
-    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+    { "nvts.name",                                                            \
       "vulnerability",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "date" , NULL, KEYWORD_TYPE_INTEGER },                                  \
     { "(SELECT uuid FROM reports WHERE id = report)",                         \
       "report_id",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
+    { "nvts.solution_type",                                                   \
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
-    { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
-    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "results.qod", NULL, KEYWORD_TYPE_INTEGER },                            \
+    { "results.qod_type", NULL, KEYWORD_TYPE_STRING },                        \
     { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
       " THEN (SELECT value FROM report_host_details"                          \
       "       WHERE name = 'hostname'"                                        \
@@ -21944,7 +21955,7 @@ where_qod (int min_qod)
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "nvts.cve", "cve", KEYWORD_TYPE_STRING },                               \
     { "(SELECT value"                                                         \
       " FROM report_host_details"                                             \
       " WHERE report_host = (SELECT id"                                       \
@@ -21994,28 +22005,28 @@ where_qod (int min_qod)
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-    { "(SELECT summary FROM nvts WHERE oid = nvt)",                           \
+    { "nvts.summary",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT insight FROM nvts WHERE oid = nvt)",                           \
+    { "nvts.insight",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT affected FROM nvts WHERE oid = nvt)",                          \
+    { "nvts.affected",                                                        \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT impact FROM nvts WHERE oid = nvt)",                            \
+    { "nvts.impact",                                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT solution FROM nvts WHERE oid = nvt)",                          \
+    { "nvts.solution",                                                        \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT detection FROM nvts WHERE oid = nvt)",                         \
+    { "nvts.detection",                                                       \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT family FROM nvts WHERE oid = nvt)",                            \
+    { "nvts.family",                                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT tag FROM nvts WHERE oid = nvt)",                               \
+    { "nvts.tag",                                                             \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },
 
@@ -22439,6 +22450,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  0,
                                  extra_tables,
                                  extra_where,
+                                 NULL,
                                  TRUE,
                                  report ? TRUE : FALSE,
                                  extra_order,
@@ -22473,10 +22485,8 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
   int autofp, apply_overrides, dynamic_severity;
-
-  gchar *extra_tables, *extra_where;
 
   if (report == -1)
     {
@@ -22498,12 +22508,16 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
-  extra_tables
+  opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  g_free (opts_tables);
 
-  extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+  where = results_extra_where (get->trash, report, host,
+                               autofp, apply_overrides, dynamic_severity,
+                               filter ? filter : get->filter);
+  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
+  g_free (where);
 
   free (filter);
 
@@ -22519,6 +22533,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             filter_columns,
                             0,
                             extra_tables,
+                            extra_where,
                             extra_where,
                             TRUE,
                             report ? TRUE : FALSE,
@@ -49059,6 +49074,7 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
                              0,
                              NULL,
                              NULL,
+                             NULL,
                              TRUE,
                              FALSE,
                              NULL);
@@ -49279,6 +49295,7 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  NULL,
                                  filter_columns,
                                  0,
+                                 NULL,
                                  NULL,
                                  NULL,
                                  TRUE,
@@ -53974,7 +53991,8 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0     /* distinct */,
                             extra_tables, /* extra_tables */
-                            extra_where,  /* extra_where, */
+                            extra_where,  /* extra_where */
+                            NULL, /* extra_where_single */
                             0,    /* owned */
                             0,    /* ignore_id */
                             NULL);/* extra_order */
