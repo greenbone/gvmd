@@ -643,8 +643,7 @@ cleanup_iterator (iterator_t* iterator)
       return;
     }
 
-  if (iterator->prepared == 0)
-    sql_finalize (iterator->stmt);
+  sql_finalize (iterator->stmt);
   if (iterator->crypt_ctx)
     {
       lsc_crypt_release (iterator->crypt_ctx);
