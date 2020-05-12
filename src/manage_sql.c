@@ -22722,12 +22722,7 @@ result_iterator_nvt_solution (iterator_t *iterator)
 const char*
 result_iterator_nvt_solution_type (iterator_t *iterator)
 {
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_solution_type (nvti);
-  return NULL;
+  return result_iterator_solution_type (iterator);
 }
 
 /**
@@ -22792,16 +22787,7 @@ result_iterator_nvt_family (iterator_t *iterator)
  *
  * @return The CVSS base of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_cvss_base (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_cvss_base (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_cvss_base, GET_ITERATOR_COLUMN_COUNT + 9);
 
 /**
  * @brief Append an NVT's references to an XML string buffer.
