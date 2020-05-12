@@ -5003,9 +5003,9 @@ rebuild_scap (const char *type)
       || strcasecmp (type, "ovaldef") == 0)
     {
       g_debug ("%s: rebuilding ovaldefs", __func__);
-      sql ("DELETE FROM ovalfiles");
       sql ("DELETE FROM affected_ovaldefs");
       sql ("DELETE FROM ovaldefs");
+      sql ("DELETE FROM ovalfiles");
 
       ret = update_scap (TRUE,  /* ignore_last_scap_update */
                          FALSE, /* update_cpes */
