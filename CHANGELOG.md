@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [9.0.1] (unreleased)
+## [9.0.1] (2020-05-12)
 
 ### Added
 - Add option --optimize migrate-relay-sensors [#827](https://github.com/greenbone/gvmd/pull/827)
@@ -12,10 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Allow use of public key auth in SCP alert [#845](https://github.com/greenbone/gvmd/pull/845)
 - Refuse to import config with missing NVT preference ID [#856](https://github.com/greenbone/gvmd/pull/856) [#860](https://github.com/greenbone/gvmd/pull/860)
 - Add "Base" scan config [#862](https://github.com/greenbone/gvmd/pull/862)
-- Add --optimize option cleanup-result-encoding [#1013](https://github.com/greenbone/gvmd/pull/1013)
+- Add setting "BPM Data" [#914](https://github.com/greenbone/gvmd/pull/914)
+- Add --optimize option cleanup-result-encoding [#1014](https://github.com/greenbone/gvmd/pull/1014) [#1031](https://github.com/greenbone/gvmd/pull/1031)
 - Add --rebuild [#1016](https://github.com/greenbone/gvmd/pull/1016)
 - Lock a file around the NVT sync [#1017](https://github.com/greenbone/gvmd/pull/1017)
 - Add --rebuild-scap option [#1050](https://github.com/greenbone/gvmd/pull/1050)
+
 
 ### Changed
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
@@ -32,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Count only best OS matches for OS asset hosts [#1028](https://github.com/greenbone/gvmd/pull/1028)
 - Clean up NVTs set to name in cleanup-result-nvts [#1038](https://github.com/greenbone/gvmd/pull/1038)
 - New Community Feed download URL in sync tools [#1042](https://github.com/greenbone/gvmd/pull/1042)
+- Do not ignore empty hosts_allow and ifaces_allow [#1063](https://github.com/greenbone/gvmd/pull/1063)
 
 ### Fixed
 - Consider results_trash when deleting users [#799](https://github.com/greenbone/gvmd/pull/799)
@@ -50,14 +53,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix creation of "Super" permissions [#892](https://github.com/greenbone/gvmd/pull/892)
 - Setup general task preferences to launch an osp openvas task. [#898](https://github.com/greenbone/gvmd/pull/898)
 - Add tags used for result NVTs to update_nvti_cache [#916](https://github.com/greenbone/gvmd/pull/916)
-- Apply usage_type of tasks in get_aggregates (9.0) [#912](https://github.com/greenbone/gvmd/pull/912)
-- Setup target's alive test setting to launch an osp openvas task (9.0) [#936](https://github.com/greenbone/gvmd/pull/936)
+- Apply usage_type of tasks in get_aggregates [#912](https://github.com/greenbone/gvmd/pull/912)
+- Setup target's alive test setting to launch an osp openvas task [#936](https://github.com/greenbone/gvmd/pull/936)
 - Remove incorrect duplicates from config preference migrator [#940](https://github.com/greenbone/gvmd/pull/940)
 - Correct pref ID in migrate_219_to_220 [#941](https://github.com/greenbone/gvmd/pull/941)
+- Fix alive test. Target's alive test setting has priority over scan config [#943](https://github.com/greenbone/gvmd/pull/943)
 - Set run status only after getting OSP-OpenVAS scan [#948](https://github.com/greenbone/gvmd/pull/948) [#951](https://github.com/greenbone/gvmd/pull/951)
 - Fix get_system_reports for GMP scanners [#949](https://github.com/greenbone/gvmd/pull/949)
 - Use stop_osp_task for SCANNER_TYPE_OSP_SENSOR [#955](https://github.com/greenbone/gvmd/pull/955)
-- Setup target's reverse_lookup_* settings to launch an osp openvas task (9.0) [#958](https://github.com/greenbone/gvmd/pull/958)
+- Setup target's reverse_lookup_* settings to launch an osp openvas task [#958](https://github.com/greenbone/gvmd/pull/958)
 - Always use details testing alerts with a report [#964](https://github.com/greenbone/gvmd/pull/964)
 - Remove extra XML declaration in Anonymous XML [#965](https://github.com/greenbone/gvmd/pull/965)
 - Fix Verinice ISM report format and update version [#962](https://github.com/greenbone/gvmd/pull/962)
@@ -73,7 +77,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - Remove 1.3.6.1.4.1.25623.1.0.90011 from Discovery config (9.0) [#847](https://github.com/greenbone/gvmd/pull/847)
 
-[9.0.1]: https://github.com/greenbone/gvmd/compare/v9.0.0...gvmd-9.0
+[9.0.1]: https://github.com/greenbone/gvmd/compare/v9.0.0...v9.0.1
 
 ## [9.0.0] (2019-10-11)
 
@@ -92,7 +96,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add explicit columns for the NVT tags "summary", "insight", "detection", "impact" and "affected" [#719](https://github.com/greenbone/gvmd/pull/719) [#746](https://github.com/greenbone/gvmd/pull/746)
 - Add lean option to GET_REPORTS [#745](https://github.com/greenbone/gvmd/pull/745)
 - Add scanner relays and OSP sensor scanner type [#756](https://github.com/greenbone/gvmd/pull/756) [#759](https://github.com/greenbone/gvmd/pull/759)
-- Add setting "BPM Data" [#914](https://github.com/greenbone/gvmd/pull/914)
 
 ### Changed
 - Always convert iCalendar strings to use UTC. [#777](https://github.com/greenbone/gvmd/pull/777)
@@ -119,7 +122,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The details attribute of GET_REPORTS now defaults to 0 [#747](https://github.com/greenbone/gvmd/pull/747)
 - Incoming VT timestamps via OSP are now assumed to be seconds since epoch [#754](https://github.com/greenbone/gvmd/pull/754)
 - Accelerate NVT feed update [#757](https://github.com/greenbone/gvmd/pull/757)
-- Do not ignore empty hosts_allow and ifaces_allow [#1063](https://github.com/greenbone/gvmd/pull/1063)
 
 ### Fixed
 - Make get_settings return only one setting when setting_id is given [#779](https://github.com/greenbone/gvmd/pull/779)
