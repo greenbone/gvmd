@@ -468,7 +468,7 @@ sqli (resource_t *resource, char* sql, ...)
  * @param[in]  args   Arguments for format string.
  * @param[out] stmt   Statement return.
  *
- * @return 0 success, 1 gave up, -1 error.
+ * @return 0 success.
  */
 int
 sql_prepare_internal (int retry, int log, const char* sql, va_list args,
@@ -728,7 +728,8 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
 void
 sql_finalize (sql_stmt_t *stmt)
 {
-  PQclear (stmt->result);
+  if (stmt->result)
+    PQclear (stmt->result);
   g_free (stmt->sql);
   array_free (stmt->param_values);
   g_array_free (stmt->param_lengths, TRUE);
