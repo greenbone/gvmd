@@ -238,10 +238,6 @@ check_for_updated_scap ();
 static void
 check_for_updated_cert ();
 
-static gchar*
-results_extra_where (int, report_t, const gchar*,
-                     int, int, int, const gchar*);
-
 static int
 report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
