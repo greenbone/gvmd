@@ -51,6 +51,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <glib/gstdio.h>
+#include <malloc.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -15433,6 +15434,8 @@ update_nvti_cache ()
     }
 
   cleanup_iterator (&nvts);
+
+  malloc_trim (0);
 }
 
 /**
