@@ -495,11 +495,11 @@ then
 fi
 (
   flock -n 9
-  date > $LOCK_FILE
   if [ $? -eq 1 ] ; then
     log_notice "Sync in progress, exiting."
     exit 1
   fi
+  date > $LOCK_FILE
   sync_certdata
   echo -n > $LOCK_FILE
 ) 9>$LOCK_FILE
