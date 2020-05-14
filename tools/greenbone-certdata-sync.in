@@ -66,7 +66,7 @@ SCRIPT_NAME="greenbone-certdata-sync"
 LOG_CMD="logger -t $SCRIPT_NAME"
 
 # LOCK_FILE is the name of the file used to lock the feed during sync or update.
-if [ -z LOCK_FILE ]
+if [ -z "$LOCK_FILE" ]
 then
   LOCK_FILE="@GVM_FEED_LOCK_PATH@"
 fi
