@@ -212,17 +212,79 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
-  sql ("CREATE OR REPLACE FUNCTION level_max_severity (text, text)"
-       " RETURNS double precision"
-       " AS '%s/libgvm-pg-server', 'sql_level_max_severity'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
+  sql ("CREATE OR REPLACE FUNCTION level_max_severity (lvl text, cls text)"
+       "RETURNS double precision AS $$"
+       "DECLARE"
+       "  v double precision;"
+       "BEGIN"
+       "  CASE"
+       "    WHEN lvl = 'Log' THEN"
+       "      v := 0.0;" // SEVERITY_LOG
+       "    WHEN lvl = 'False Positive' THEN"
+       "      v := -1.0;" // SEVERITY_FP
+       "    WHEN lvl = 'Debug' THEN"
+       "      v := -2.0;" // SEVERITY_DEBUG"
+       "    WHEN lvl = 'Error' THEN"
+       "      v :=  -3.0;" // SEVERITY_ERROR
+       "    WHEN cls = 'pci-dss' THEN"
+       "      CASE"
+       "        WHEN  lvl = 'high' THEN"
+       "          v := 10.0;"
+       "        ELSE"
+       "          v := -98.0;" // SEVERITY_UNDEFINED
+       "        END CASE;"
+       "    ELSE" // NIST/BSI.
+       "      CASE"
+       "        WHEN lvl = 'high' THEN"
+       "          v := 10.0;"
+       "        WHEN lvl = 'medium' THEN"
+       "          v := 6.9;"
+       "        WHEN lvl = 'low' THEN"
+       "          v := 3.9;"
+       "        ELSE"
+       "          v := -98.0;" // SEVERITY_UNDEFINED
+       "        END CASE;"
+       "    END CASE;"
+       "  return v;"
+       "END;"
+       "$$ LANGUAGE plpgsql;");
 
-  sql ("CREATE OR REPLACE FUNCTION level_min_severity (text, text)"
-       " RETURNS double precision"
-       " AS '%s/libgvm-pg-server', 'sql_level_min_severity'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
+  sql ("CREATE OR REPLACE FUNCTION level_min_severity(lvl text, cls text)"
+       "RETURNS double precision AS $$"
+       "DECLARE"
+       "  v double precision;"
+       "BEGIN"
+       "  CASE"
+       "    WHEN lvl = 'Log' THEN"
+       "      v := 0.0;" // SEVERITY_LOG
+       "    WHEN lvl = 'False Positive' THEN"
+       "      v := -1.0;" // SEVERITY_FP
+       "    WHEN lvl = 'Debug' THEN"
+       "      v := -2.0;" // SEVERITY_DEBUG
+       "    WHEN lvl = 'Error' THEN"
+       "      v :=  -3.0;" // SEVERITY_ERROR
+       "    WHEN cls = 'pci-dss' THEN"
+       "      CASE"
+       "        WHEN  lvl = 'high' THEN"
+       "          v := 4.0;"
+       "        ELSE"
+       "          v := -98.0;" // SEVERITY_UNDEFINED
+       "        END CASE;"
+       "    ELSE" // NIST/BSI.
+       "      CASE"
+       "        WHEN lvl = 'high' THEN"
+       "          v := 7.0;"
+       "        WHEN lvl = 'medium' THEN"
+       "          v := 4.0;"
+       "        WHEN lvl = 'low' THEN"
+       "          v := 0.1;"
+       "        ELSE"
+       "          v := -98.0;" // SEVERITY_UNDEFINED
+       "        END CASE;"
+       "    END CASE;"
+       "  return v;"
+       "END;"
+       "$$ LANGUAGE plpgsql;");
 
   sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, text)"
        " RETURNS integer"
