@@ -22544,9 +22544,8 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
   int apply_overrides, autofp, dynamic_severity;
-  gchar *extra_tables, *extra_where;
 
   if (report == -1)
     return 0;
@@ -22565,12 +22564,16 @@ result_count (const get_data_t *get, report_t report, const char* host)
   autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
-  extra_tables
+  opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  g_free (opts_tables);
 
-  extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+  where = results_extra_where (get->trash, report, host,
+                               autofp, apply_overrides, dynamic_severity,
+                               filter ? filter : get->filter);
+  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
+  g_free (where);
 
   ret = count ("result", get,
                 manage_cert_loaded () ? columns : columns_no_cert,
