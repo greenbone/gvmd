@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ensure path of listening UNIX socket exists [#1040](https://github.com/greenbone/gvmd/pull/1040)
 - Add --rebuild-scap option [#1051](https://github.com/greenbone/gvmd/pull/1051)
 - Stop current scheduling of task when permission denied [#1058](https://github.com/greenbone/gvmd/pull/1058)
+- Trim malloc heap after updating cache [#1085](https://github.com/greenbone/gvmd/pull/1085)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
