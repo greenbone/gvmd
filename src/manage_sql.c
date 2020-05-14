@@ -48,6 +48,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <glib/gstdio.h>
+#include <malloc.h>
 #include <locale.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -15828,6 +15829,8 @@ update_nvti_cache ()
       nvtis_add (nvti_cache, nvti);
     }
   cleanup_iterator (&nvts);
+
+  malloc_trim (0);
 }
 
 /**
