@@ -56109,6 +56109,14 @@ type_build_select (const char *type, const char *columns_str,
   from_table = type_table (type, get->trash);
 
   opts_table = type_opts_table (type, filter ? filter : get->filter);
+  if (strcasecmp (type, "RESULT") == 0)
+    {
+      gchar *original;
+
+      original = opts_table;
+      opts_table = g_strdup_printf ("%s, nvts", original);
+      g_free (original);
+    }
 
   // WHERE ... part
   select_columns = type_select_columns (type);
