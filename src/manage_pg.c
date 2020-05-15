@@ -219,19 +219,19 @@ manage_create_sql_functions ()
        "BEGIN"
        "  CASE"
        "    WHEN lvl = 'Log' THEN"
-       "      v := 0.0;" // SEVERITY_LOG
+       "      v := " G_STRINGIFY (SEVERITY_LOG) ";"
        "    WHEN lvl = 'False Positive' THEN"
-       "      v := -1.0;" // SEVERITY_FP
+       "      v := " G_STRINGIFY (SEVERITY_FP) ";"
        "    WHEN lvl = 'Debug' THEN"
-       "      v := -2.0;" // SEVERITY_DEBUG"
+       "      v := " G_STRINGIFY (SEVERITY_DEBUG) ";"
        "    WHEN lvl = 'Error' THEN"
-       "      v :=  -3.0;" // SEVERITY_ERROR
+       "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
        "    WHEN cls = 'pci-dss' THEN"
        "      CASE"
        "        WHEN  lvl = 'high' THEN"
        "          v := 10.0;"
        "        ELSE"
-       "          v := -98.0;" // SEVERITY_UNDEFINED
+       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
        "        END CASE;"
        "    ELSE" // NIST/BSI.
        "      CASE"
@@ -242,7 +242,7 @@ manage_create_sql_functions ()
        "        WHEN lvl = 'low' THEN"
        "          v := 3.9;"
        "        ELSE"
-       "          v := -98.0;" // SEVERITY_UNDEFINED
+       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
        "        END CASE;"
        "    END CASE;"
        "  return v;"
@@ -256,19 +256,19 @@ manage_create_sql_functions ()
        "BEGIN"
        "  CASE"
        "    WHEN lvl = 'Log' THEN"
-       "      v := 0.0;" // SEVERITY_LOG
+       "      v := " G_STRINGIFY (SEVERITY_LOG) ";"
        "    WHEN lvl = 'False Positive' THEN"
-       "      v := -1.0;" // SEVERITY_FP
+       "      v := " G_STRINGIFY (SEVERITY_FP) ";"
        "    WHEN lvl = 'Debug' THEN"
-       "      v := -2.0;" // SEVERITY_DEBUG
+       "      v := " G_STRINGIFY (SEVERITY_DEBUG) ";"
        "    WHEN lvl = 'Error' THEN"
-       "      v :=  -3.0;" // SEVERITY_ERROR
+       "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
        "    WHEN cls = 'pci-dss' THEN"
        "      CASE"
        "        WHEN  lvl = 'high' THEN"
        "          v := 4.0;"
        "        ELSE"
-       "          v := -98.0;" // SEVERITY_UNDEFINED
+       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
        "        END CASE;"
        "    ELSE" // NIST/BSI.
        "      CASE"
@@ -279,7 +279,7 @@ manage_create_sql_functions ()
        "        WHEN lvl = 'low' THEN"
        "          v := 0.1;"
        "        ELSE"
-       "          v := -98.0;" // SEVERITY_UNDEFINED
+       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
        "        END CASE;"
        "    END CASE;"
        "  return v;"
