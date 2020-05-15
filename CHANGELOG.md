@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ensure path of listening UNIX socket exists [#1040](https://github.com/greenbone/gvmd/pull/1040)
 - Add --rebuild-scap option [#1051](https://github.com/greenbone/gvmd/pull/1051)
 - Stop current scheduling of task when permission denied [#1058](https://github.com/greenbone/gvmd/pull/1058)
+- Trim malloc heap after updating cache [#1085](https://github.com/greenbone/gvmd/pull/1085)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
@@ -109,6 +110,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Setup general task preferences to launch an osp openvas task. [#1055](https://github.com/greenbone/gvmd/pull/1055)
 - Fix doc of get_tasks in GMP doc [#1066](https://github.com/greenbone/gvmd/pull/1066)
 - Improve refs and error handling in NVTs update [#1067](https://github.com/greenbone/gvmd/pull/1067)
+- Fix failure detection for xml_split command [#1074](https://github.com/greenbone/gvmd/pull/1074)
+- Fix deletion of OVAL definition data [#1079](https://github.com/greenbone/gvmd/pull/1079)
+- Fix feed lock in sync script [#1088](https://github.com/greenbone/gvmd/pull/1088)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
@@ -119,6 +123,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove agents [#922](https://github.com/greenbone/gvmd/pull/922)
 - Remove GMP COMMANDS [#923](https://github.com/greenbone/gvmd/pull/923)
 - Remove unused port names facility [#1041](https://github.com/greenbone/gvmd/pull/1041)
+- Add migrator to remove dead hosts [#1071](https://github.com/greenbone/gvmd/pull/1071)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 
