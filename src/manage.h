@@ -4395,6 +4395,6 @@ int
 sql_cancel ();
 
 void
-manage_set_extra_host_idents(const gchar *);
+manage_set_extra_host_identifiers (const gchar *);
 
 #endif /* not _GVMD_MANAGE_H */

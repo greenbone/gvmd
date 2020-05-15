@@ -560,7 +560,7 @@ static struct timeval last_msg;
  * @brief String array to store name of permitted extra host identifiers 
  *passed via command line argument
  */
-gchar extra_host_idents[EXTRA_HOST_IDENT_SIZE][MAX_HOST_IDENT_LEN+1];
+gchar extra_host_identifiers[EXTRA_HOST_IDENTIFIERS_SIZE][MAX_HOST_IDENTIFIER_LEN+1];
 
 
 
@@ -1431,17 +1431,19 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
  * @return TRUE if identifier name is permitted else FALSE
  */
 gboolean
-is_extra_host_identifier(char *name)
+is_extra_host_identifier (const char *name)
 {
   gboolean result = FALSE;
-  for(int i =0; i < sizeof(extra_host_idents); i++)
-  {
-    if(extra_host_idents[i] != NULL && extra_host_idents[i][0] != '\0' && g_strcmp0(name, extra_host_idents[i]) == 0)
-    {
-      result = TRUE;
-      break;
-    }
-  }
+  for (int i =0; i < sizeof (extra_host_identifiers); i++)
+   {
+    if (extra_host_identifiers[i] != NULL &&
+        extra_host_identifiers[i][0] != '\0' &&
+        g_strcmp0 (name, extra_host_identifiers[i]) == 0)
+     {
+       result = TRUE;
+       break;
+     }
+   }
   return result;
 }
 
@@ -61847,25 +61849,25 @@ manage_empty_trashcan ()
  * @param[in]  idents  comma-separated list of identifier names
  */
 void
-manage_set_extra_host_idents(const gchar *idents)
+manage_set_extra_host_identifiers (const gchar *idents)
 {
   char *token = NULL;
   int idx = 0;
 
-  for(int i = 0; i < sizeof(extra_host_idents); i++)
-  {
-    g_strlcpy(extra_host_idents[i], "", MAX_HOST_IDENT_LEN + 1);
-  }
+  for (int i = 0; i < sizeof (extra_host_identifiers); i++)
+   {
+     g_strlcpy(extra_host_identifiers[i], "", MAX_HOST_IDENTIFIER_LEN + 1);
+   }
 
-  gchar *tmp_str = g_strdup(idents);
-  token = strtok(tmp_str, ",");
-  while(token != NULL && idx < sizeof(extra_host_idents))
-  {
-    g_strlcpy(extra_host_idents[idx], token, MAX_HOST_IDENT_LEN + 1);
-    token = strtok(NULL, ",");
-    idx++;
-  }
-  g_free(tmp_str);
+  gchar *tmp_str = g_strdup (idents);
+  token = strtok (tmp_str, ",");
+  while (token != NULL && idx < sizeof (extra_host_identifiers))
+   {
+     g_strlcpy (extra_host_identifiers[idx], token, MAX_HOST_IDENTIFIER_LEN + 1);
+     token = strtok (NULL, ",");
+     idx++;
+   }
+  g_free (tmp_str);
 }
 
 /**
@@ -62692,7 +62694,7 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
                   array_add_new_string (identifier_hosts, g_strdup (ip));
                 }
               /* check extra permitted host identifiers passed via command line argument */
-              if (is_extra_host_identifier(entity_text (name)))
+              if (is_extra_host_identifier (entity_text (name)))
                 {
                   identifier_t *identifier;
 
@@ -63480,7 +63482,8 @@ identifier_name (const char *name)
   return (strcmp ("hostname", name) == 0)
          || (strcmp ("MAC", name) == 0)
          || (strcmp ("OS", name) == 0)
-         || (strcmp ("ssh-key", name) == 0);
+         || (strcmp ("ssh-key", name) == 0)
+         || is_extra_host_identifier (name);
 }
 
 /**
