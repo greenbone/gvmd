@@ -54509,31 +54509,39 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
           return -1;
         }
     }
-  else switch (type_build_select (type,
-                                  "id, uuid",
-                                  &resources_get, 0, 1, NULL, NULL, NULL,
-                                  &filtered_select))
+  else
     {
-      case 0:
-        if (sql_int ("SELECT count(*) FROM (%s) AS filter_selection",
-                     filtered_select) == 0)
-          {
-            g_free (filtered_select);
-            return 2;
-          }
+      gchar *columns;
 
-        init_iterator (&resources,
-                       "%s",
-                       filtered_select);
+      columns = g_strdup_printf ("%ss.id, %ss.uuid", type, type);
+      switch (type_build_select (type,
+                                 columns,
+                                 &resources_get, 0, 1, NULL, NULL, NULL,
+                                 &filtered_select))
+        {
+          case 0:
+            g_free (columns);
+            if (sql_int ("SELECT count(*) FROM (%s) AS filter_selection",
+                         filtered_select) == 0)
+              {
+                g_free (filtered_select);
+                return 2;
+              }
 
-        break;
-      default:
-        ignore_max_rows_per_page = 0;
-        g_warning ("%s: Failed to build filter SELECT", __func__);
-        sql_rollback ();
-        g_free (resources_get.filter);
-        g_free (resources_get.type);
-        return -1;
+            init_iterator (&resources,
+                           "%s",
+                           filtered_select);
+
+            break;
+          default:
+            g_free (columns);
+            ignore_max_rows_per_page = 0;
+            g_warning ("%s: Failed to build filter SELECT", __func__);
+            sql_rollback ();
+            g_free (resources_get.filter);
+            g_free (resources_get.type);
+            return -1;
+        }
     }
   ignore_max_rows_per_page = 0;
 
@@ -54647,21 +54655,29 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
           return -1;
         }
     }
-  else switch (type_build_select (type,
-                                  "id",
-                                  &resources_get, 0, 1, NULL, NULL, NULL,
-                                  &iterator_select))
+  else
     {
-      case 0:
-        init_iterator (&resources, "%s", iterator_select);
-        break;
-      default:
-        ignore_max_rows_per_page = 0;
-        g_warning ("%s: Failed to build filter SELECT", __func__);
-        sql_rollback ();
-        g_free (resources_get.filter);
-        g_free (resources_get.type);
-        return -1;
+      gchar *columns;
+
+      columns = g_strdup_printf ("%ss.id", type);
+      switch (type_build_select (type,
+                                 columns,
+                                 &resources_get, 0, 1, NULL, NULL, NULL,
+                                 &iterator_select))
+        {
+          case 0:
+            g_free (columns);
+            init_iterator (&resources, "%s", iterator_select);
+            break;
+          default:
+            g_free (columns);
+            ignore_max_rows_per_page = 0;
+            g_warning ("%s: Failed to build filter SELECT", __func__);
+            sql_rollback ();
+            g_free (resources_get.filter);
+            g_free (resources_get.type);
+            return -1;
+        }
     }
   ignore_max_rows_per_page = 0;
 
