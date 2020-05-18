@@ -56157,6 +56157,14 @@ type_build_select (const char *type, const char *columns_str,
     extra_where = type_extra_where (type, get->trash,
                                     filter ? filter : get->filter,
                                     get->extra_params);
+  if (strcasecmp (type, "RESULT") == 0)
+    {
+      gchar *original;
+
+      original = extra_where;
+      extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", original);
+      g_free (original);
+    }
 
   if (get->ignore_pagination)
     pagination_clauses = NULL;
