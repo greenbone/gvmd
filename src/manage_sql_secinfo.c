@@ -2581,6 +2581,19 @@ hashed_cpes_cpe_id (GHashTable *hashed_cpes, const gchar *product_tilde)
 }
 
 /**
+ * @brief Push a generic pointer onto an array.
+ *
+ * @param[in]  array    Array.
+ * @param[in]  pointer  Pointer.
+ */
+static void
+array_remove (array_t *array, gpointer pointer)
+{
+  if (array)
+    g_ptr_array_remove_fast (array, pointer);
+}
+
+/**
  * @brief Insert products for a CVE.
  *
  * @param[in]  list              XML product list.
@@ -2598,6 +2611,8 @@ insert_cve_products (element_t list, resource_t cve,
   element_t product;
   int first_product, first_affected;
   GString *sql_cpes, *sql_affected;
+  array_t *initial_affected;
+  iterator_t rows;
 
   if (list == NULL)
     return;
@@ -2614,6 +2629,17 @@ insert_cve_products (element_t list, resource_t cve,
   sql_affected = g_string_new ("INSERT INTO scap.affected_products"
                                " (cve, cpe)"
                                " VALUES");
+
+  /* Record existing affected products. */
+
+  initial_affected = make_array ();
+  init_iterator (&rows,
+                 "SELECT cpe FROM scap.affected_products"
+                 " WHERE cve = %llu;",
+                 cve);
+  while (next (&rows))
+    array_add (initial_affected, GINT_TO_POINTER (iterator_int64 (&rows, 0)));
+  cleanup_iterator (&rows);
 
   /* Buffer the SQL. */
 
@@ -2679,15 +2705,22 @@ insert_cve_products (element_t list, resource_t cve,
             }
           else
             {
+              int cpe;
+
               /* The product is in the db.
                *
                * So we don't need to insert it. */
+
+              cpe = hashed_cpes_cpe_id (hashed_cpes, product_tilde);
 
               g_string_append_printf
                (sql_affected,
                 "%s (%llu, %i)",
                 first_affected ? "" : ",", cve,
-                hashed_cpes_cpe_id (hashed_cpes, product_tilde));
+                cpe);
+
+              /* Remove the affected product from initial_affected. */
+              array_remove (initial_affected, GINT_TO_POINTER (cpe));
             }
 
           first_affected = 0;
@@ -2699,6 +2732,27 @@ insert_cve_products (element_t list, resource_t cve,
 
       product = element_next (product);
     }
+
+  /* Remove affected_products that remain in initial_affected. */
+
+  if (initial_affected->len)
+    {
+      guint index;
+      GString *ids;
+
+      ids = g_string_new ("");
+      for (index = 0; index < initial_affected->len; index++)
+        g_string_append_printf (ids,
+                                "%s%i",
+                                index == 0 ? "" : ",",
+                                GPOINTER_TO_INT (g_ptr_array_index
+                                                  (initial_affected, index)));
+      sql ("DELETE from scap.affected_products"
+           " WHERE cve = %llu AND cpe = ANY(array[%s]);",
+           cve, ids->str);
+      g_string_free (ids, TRUE);
+    }
+   g_ptr_array_free (initial_affected, TRUE);
 
   /* Run the SQL. */
 
