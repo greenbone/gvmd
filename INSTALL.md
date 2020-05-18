@@ -243,6 +243,20 @@ clients like the Greenbone Security Assistant (GSA).
 Also, the new user can change their password via GSA.
 
 
+## Set the Feed Import Owner
+
+Certain resources that were previously part of the gvmd source code are now
+shipped via the feed.  An example is the config "Full and Fast".
+
+gvmd will only create these resources if a "Feed Import Owner" is configured:
+
+    gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value <uuid_of_user>
+
+The UUIDs of all created users can be found using
+
+    gvmd --get-users --verbose
+
+
 ## Logging Configuration
 
 By default, Manager writes logs to the file
