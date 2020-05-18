@@ -4006,9 +4006,10 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
         }
     }
   else if (status == OSP_SCAN_STATUS_RUNNING
+           || status == OSP_SCAN_STATUS_PENDING
            || status == OSP_SCAN_STATUS_FINISHED)
     {
-      g_debug ("%s: Scan %s running or finished", __func__, scan_id);
+      g_debug ("%s: Scan %s pending, running or finished", __func__, scan_id);
       /* It would be possible to simply continue getting the results
        * from the scanner, but gvmd may have crashed while receiving
        * or storing the results, so some may be missing. */
