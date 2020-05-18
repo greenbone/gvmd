@@ -235,8 +235,6 @@ You can create an administrator user with the `--create-user` option of `gvmd`:
 
     gvmd --create-user=myuser
 
-The new user's password is printed on success.
-
 An administrator user can later create further users or administrators via
 clients like the Greenbone Security Assistant (GSA).
 
