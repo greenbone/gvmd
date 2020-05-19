@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [9.0.2] (unreleased)
+
+### Fixed
+- Fix NVTs list in CVE details [#1098](https://github.com/greenbone/gvmd/pull/1098)
+
+[9.0.2]: https://github.com/greenbone/gvmd/compare/v9.0.1...gvmd-9.0
+
 ## [9.0.1] (2020-05-12)
 
 ### Added
