@@ -122,7 +122,7 @@ member (GPtrArray *array, const char *string)
  *
  *      The all selector and an optional exclude for each family,
  *      optional NVT includes in the excluded families, and optional NVT
- *      includes in all other families.
+ *      excludes in all other families.
  *
  *      This allows a growing collection of families, while any family
  *      can still have a static NVT selection.
