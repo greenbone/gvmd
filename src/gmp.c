@@ -8297,8 +8297,8 @@ send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
 {
   gchar *msg;
 
-  msg = get_nvti_xml (nvts, details, pref_count, preferences, timeout, config,
-                      0);
+  msg = get_nvt_xml (nvts, details, pref_count, preferences, timeout, config,
+                     0);
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);
@@ -9557,7 +9557,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             }
 
           first = 1;
-          result_iterator_nvt_refs_append (buffer, results, &first);
+          xml_append_nvt_refs (buffer, result_iterator_nvt_oid (results),
+                               &first);
+
           results_xml_append_cert (buffer, results, oid, cert_loaded, &first);
           if (first == 0)
             buffer_xml_append_printf (buffer, "</refs>");

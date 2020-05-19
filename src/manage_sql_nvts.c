@@ -984,6 +984,26 @@ nvt_default_timeout (const char* oid)
 }
 
 /**
+ * @brief Get the family of an NVT.
+ *
+ * @param[in]  oid  The OID of the NVT.
+ *
+ * @return Newly allocated string of the family, or NULL.
+ */
+char *
+nvt_family (const char *oid)
+{
+  gchar *quoted_oid;
+  char *ret;
+
+  quoted_oid = sql_quote (oid);
+  ret = sql_string ("SELECT family FROM nvts WHERE oid = '%s' LIMIT 1;",
+                    quoted_oid);
+  g_free (quoted_oid);
+  return ret;
+}
+
+/**
  * @brief Get the number of NVTs in one or all families.
  *
  * @param[in]  family  Family name.  NULL for all families.
