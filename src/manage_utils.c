@@ -179,6 +179,9 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
 /**
  * @brief Get the minimum severity for a severity level and class.
  *
+ * This function has a database equivalent in manage_pg_server.c.
+ * These two functions must stay in sync.
+ *
  * @param[in] level  The name of the severity level.
  * @param[in] class  The severity class, NULL to get from current user setting.
  *
@@ -218,6 +221,9 @@ level_min_severity (const char *level, const char *class)
 
 /**
  * @brief Get the minimum severity for a severity level and class.
+ *
+ * This function has a database equivalent in manage_pg_server.c.
+ * These two functions must stay in sync.
  *
  * @param[in] level  The name of the severity level.
  * @param[in] class  The severity class.

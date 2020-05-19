@@ -212,6 +212,10 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
+  /*
+   * This database function is a duplicate of 'level_max_severity' from manage_utils.c
+   * These two functions must stay in sync.
+   */
   sql ("CREATE OR REPLACE FUNCTION level_max_severity (lvl text, cls text)"
        "RETURNS double precision AS $$"
        "DECLARE"
@@ -249,6 +253,10 @@ manage_create_sql_functions ()
        "END;"
        "$$ LANGUAGE plpgsql;");
 
+  /*
+   * This database function is a duplicate of 'level_min_severity' from manage_utils.c
+   * These two functions must stay in sync.
+   */
   sql ("CREATE OR REPLACE FUNCTION level_min_severity(lvl text, cls text)"
        "RETURNS double precision AS $$"
        "DECLARE"
