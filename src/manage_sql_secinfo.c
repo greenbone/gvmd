@@ -3128,6 +3128,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
             g_string_append_printf (all_xml_cves, "'%s'", id);
           else
             g_string_append_printf (all_xml_cves, ",'%s'", id);
+          g_free (id);
 
           if (parse_iso_time_element_text (last_modified) > last_cve_update)
             {
