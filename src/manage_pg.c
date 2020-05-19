@@ -212,17 +212,87 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
-  sql ("CREATE OR REPLACE FUNCTION level_max_severity (text, text)"
-       " RETURNS double precision"
-       " AS '%s/libgvm-pg-server', 'sql_level_max_severity'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
+  /*
+   * This database function is a duplicate of 'level_max_severity' from manage_utils.c
+   * These two functions must stay in sync.
+   */
+  sql ("CREATE OR REPLACE FUNCTION level_max_severity (lvl text, cls text)"
+       "RETURNS double precision AS $$"
+       "DECLARE"
+       "  v double precision;"
+       "BEGIN"
+       "  CASE"
+       "    WHEN lvl = 'Log' THEN"
+       "      v := " G_STRINGIFY (SEVERITY_LOG) ";"
+       "    WHEN lvl = 'False Positive' THEN"
+       "      v := " G_STRINGIFY (SEVERITY_FP) ";"
+       "    WHEN lvl = 'Debug' THEN"
+       "      v := " G_STRINGIFY (SEVERITY_DEBUG) ";"
+       "    WHEN lvl = 'Error' THEN"
+       "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
+       "    WHEN cls = 'pci-dss' THEN"
+       "      CASE"
+       "        WHEN  lvl = 'high' THEN"
+       "          v := 10.0;"
+       "        ELSE"
+       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
+       "        END CASE;"
+       "    ELSE" // NIST/BSI.
+       "      CASE"
+       "        WHEN lvl = 'high' THEN"
+       "          v := 10.0;"
+       "        WHEN lvl = 'medium' THEN"
+       "          v := 6.9;"
+       "        WHEN lvl = 'low' THEN"
+       "          v := 3.9;"
+       "        ELSE"
+       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
+       "        END CASE;"
+       "    END CASE;"
+       "  return v;"
+       "END;"
+       "$$ LANGUAGE plpgsql;");
 
-  sql ("CREATE OR REPLACE FUNCTION level_min_severity (text, text)"
-       " RETURNS double precision"
-       " AS '%s/libgvm-pg-server', 'sql_level_min_severity'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
+  /*
+   * This database function is a duplicate of 'level_min_severity' from manage_utils.c
+   * These two functions must stay in sync.
+   */
+  sql ("CREATE OR REPLACE FUNCTION level_min_severity(lvl text, cls text)"
+       "RETURNS double precision AS $$"
+       "DECLARE"
+       "  v double precision;"
+       "BEGIN"
+       "  CASE"
+       "    WHEN lvl = 'Log' THEN"
+       "      v := " G_STRINGIFY (SEVERITY_LOG) ";"
+       "    WHEN lvl = 'False Positive' THEN"
+       "      v := " G_STRINGIFY (SEVERITY_FP) ";"
+       "    WHEN lvl = 'Debug' THEN"
+       "      v := " G_STRINGIFY (SEVERITY_DEBUG) ";"
+       "    WHEN lvl = 'Error' THEN"
+       "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
+       "    WHEN cls = 'pci-dss' THEN"
+       "      CASE"
+       "        WHEN  lvl = 'high' THEN"
+       "          v := 4.0;"
+       "        ELSE"
+       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
+       "        END CASE;"
+       "    ELSE" // NIST/BSI.
+       "      CASE"
+       "        WHEN lvl = 'high' THEN"
+       "          v := 7.0;"
+       "        WHEN lvl = 'medium' THEN"
+       "          v := 4.0;"
+       "        WHEN lvl = 'low' THEN"
+       "          v := 0.1;"
+       "        ELSE"
+       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
+       "        END CASE;"
+       "    END CASE;"
+       "  return v;"
+       "END;"
+       "$$ LANGUAGE plpgsql;");
 
   sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, text)"
        " RETURNS integer"
@@ -242,12 +312,6 @@ manage_create_sql_functions ()
        " AS '%s/libgvm-pg-server', 'sql_severity_matches_ov'"
        " LANGUAGE C"
        " IMMUTABLE;",
-       GVM_LIB_INSTALL_DIR);
-
-  sql ("CREATE OR REPLACE FUNCTION valid_db_resource_type (text)"
-       " RETURNS boolean"
-       " AS '%s/libgvm-pg-server', 'sql_valid_db_resource_type'"
-       " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
   sql ("CREATE OR REPLACE FUNCTION regexp (text, text)"
@@ -297,8 +361,6 @@ manage_create_sql_functions ()
            "   execute_name text;"
            " BEGIN"
            "   CASE"
-           "   WHEN NOT valid_db_resource_type ($1)"
-           "   THEN RAISE EXCEPTION 'Invalid resource type argument: %%', $1;"
            "   WHEN $1 = 'note'"
            "        AND $3 = "  G_STRINGIFY (LOCATION_TABLE)
            "   THEN RETURN (SELECT 'Note for: '"
