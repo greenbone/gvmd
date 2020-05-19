@@ -1391,9 +1391,6 @@ result_iterator_nvt_family (iterator_t *);
 const char*
 result_iterator_nvt_cvss_base (iterator_t *);
 
-void
-result_iterator_nvt_refs_append (GString *, iterator_t *, int *);
-
 const char*
 result_iterator_nvt_tag (iterator_t *);
 
@@ -1919,10 +1916,10 @@ int
 nvt_preference_count (const char *);
 
 void
-nvti_refs_append_xml (GString *, const char *, int *);
+xml_append_nvt_refs (GString *, const char *, int *);
 
 gchar*
-get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);
+get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int);
 
 char*
 task_preference_value (task_t, const char *);
