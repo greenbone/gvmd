@@ -3293,6 +3293,7 @@ update_scap_cves (int last_scap_update)
                       " WHERE id IN (SELECT id FROM removed);");
 
       sql (all_xml_cves->str);
+      updated_scap_cves = 1;
     }
   g_string_free (all_xml_cves, TRUE);
 
@@ -5217,6 +5218,7 @@ update_scap (int lockfile,
        (all_xml_cpes, "]);");
 
       sql (all_xml_cpes->str);
+      updated_scap_cpes = 1;
     }
   g_string_free (all_xml_cpes, TRUE);
 
