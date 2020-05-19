@@ -2329,11 +2329,13 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
  *
  * @param[in]  path             Path to file.
  * @param[in]  last_cve_update  Time of last CVE update.
+ * @param[in]  all_xml_cpes     String to add all CPEs to.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_scap_cpes_from_file (const gchar *path, int last_cve_update)
+update_scap_cpes_from_file (const gchar *path, int last_cve_update,
+                            GString *all_xml_cpes)
 {
   GError *error;
   element_t element, cpe_list, cpe_item;
@@ -2393,7 +2395,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
   cpe_item = element_first_child (cpe_list);
   while (cpe_item)
     {
-      gchar *modification_date;
+      gchar *modification_date, *name;
       int modification_time;
       element_t item_metadata;
 
@@ -2420,6 +2422,19 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
 
       modification_time = parse_iso_time (modification_date);
       g_free (modification_date);
+
+      name = element_attribute (cpe_item, "name");
+      if (name == NULL)
+        {
+          g_warning ("%s: name missing", __func__);
+          goto fail;
+        }
+
+      if (all_xml_cpes->str[0] == '\0')
+        g_string_append_printf (all_xml_cpes, "'%s'", name);
+      else
+        g_string_append_printf (all_xml_cpes, ",'%s'", name);
+      g_free (name);
 
       if (modification_time > last_cve_update)
         {
@@ -2451,11 +2466,12 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update)
  * @brief Update SCAP CPEs.
  *
  * @param[in]  last_scap_update  Time of last SCAP update.
+ * @param[in]  all_xml_cpes      String to add all CPEs to.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_scap_cpes (int last_scap_update)
+update_scap_cpes (int last_scap_update, GString *all_xml_cpes)
 {
   gchar *full_path;
   const gchar *split_dir;
@@ -2495,7 +2511,8 @@ update_scap_cpes (int last_scap_update)
       g_warning ("%s: Failed to split CPEs, attempting with full file",
                  __func__);
       updated_scap_cpes = update_scap_cpes_from_file (full_path,
-                                                      last_cve_update);
+                                                      last_cve_update,
+                                                      all_xml_cpes);
       g_free (full_path);
       return updated_scap_cpes;
     }
@@ -2516,7 +2533,7 @@ update_scap_cpes (int last_scap_update)
           break;
         }
 
-      ret = update_scap_cpes_from_file (path, last_cve_update);
+      ret = update_scap_cpes_from_file (path, last_cve_update, all_xml_cpes);
       g_free (path);
       if (ret < 0)
         {
@@ -4913,6 +4930,7 @@ update_scap (gboolean ignore_last_scap_update,
 {
   int last_feed_update, last_scap_update;
   int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
+  GString *all_xml_cpes;
 
   updated_scap_ovaldefs = 0;
   updated_scap_cpes = 0;
@@ -4980,14 +4998,19 @@ update_scap (gboolean ignore_last_scap_update,
 
   g_info ("%s: Updating data from feed", __func__);
 
+  all_xml_cpes = g_string_new ("");
+
   if (update_cpes)
     {
       g_debug ("%s: update cpes", __func__);
       proctitle_set ("gvmd: Syncing SCAP: Updating CPEs");
 
-      updated_scap_cpes = update_scap_cpes (last_scap_update);
+      updated_scap_cpes = update_scap_cpes (last_scap_update, all_xml_cpes);
       if (updated_scap_cpes == -1)
-        goto fail;
+        {
+          g_string_free (all_xml_cpes, TRUE);
+          goto fail;
+        }
     }
 
   if (update_cves)
@@ -4997,8 +5020,28 @@ update_scap (gboolean ignore_last_scap_update,
 
       updated_scap_cves = update_scap_cves (last_scap_update);
       if (updated_scap_cves == -1)
-        goto fail;
+        {
+          g_string_free (all_xml_cpes, TRUE);
+          goto fail;
+        }
     }
+
+  if (strlen (all_xml_cpes->str) > 0)
+    {
+      /* Remove CPES not in all_xml_cpes, except those in affected_products. */
+
+      g_string_prepend
+       (all_xml_cpes, "DELETE FROM scap.cpes"
+                      " WHERE NOT EXISTS (SELECT * FROM scap.affected_products"
+                      "                   WHERE cpe = scap.cpes.id)"
+                      " AND NOT uuid = ANY(array[");
+
+      g_string_append
+       (all_xml_cpes, "]);");
+
+      sql (all_xml_cpes->str);
+    }
+  g_string_free (all_xml_cpes, TRUE);
 
   if (update_ovaldefs)
     {
