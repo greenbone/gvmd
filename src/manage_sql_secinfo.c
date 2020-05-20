@@ -4512,7 +4512,7 @@ rebuild_scap (const char *type)
         ret = 2;
     }
   else if (strcasecmp (type, "ovaldefs") == 0
-      || strcasecmp (type, "ovaldef") == 0)
+           || strcasecmp (type, "ovaldef") == 0)
     {
       g_debug ("%s: rebuilding ovaldefs", __FUNCTION__);
       sql ("DELETE FROM affected_ovaldefs");
