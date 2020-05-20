@@ -7792,9 +7792,9 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
  * @return A dynamically allocated string containing the XML description.
  */
 gchar *
-get_nvti_xml (iterator_t *nvts, int details, int pref_count,
-              int preferences, const char *timeout, config_t config,
-              int close_tag)
+get_nvt_xml (iterator_t *nvts, int details, int pref_count,
+             int preferences, const char *timeout, config_t config,
+             int close_tag)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -7918,7 +7918,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                            "<warning>database not available</warning>");
         }
 
-      nvti_refs_append_xml (refs_str, oid, NULL);
+      xml_append_nvt_refs (refs_str, oid, NULL);
 
       tags_str = g_string_new ("");
       tag_count = resource_tag_count ("nvt",
@@ -8183,13 +8183,13 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
           init_nvt_iterator (&nvts, nvt, 0, NULL, NULL, 0, NULL);
 
           if (next (&nvts))
-            *result = get_nvti_xml (&nvts,
-                                    1,    /* Include details. */
-                                    0,    /* Preference count. */
-                                    1,    /* Include preferences. */
-                                    NULL, /* Timeout. */
-                                    0,    /* Config. */
-                                    1);   /* Close tag. */
+            *result = get_nvt_xml (&nvts,
+                                   1,    /* Include details. */
+                                   0,    /* Preference count. */
+                                   1,    /* Include preferences. */
+                                   NULL, /* Timeout. */
+                                   0,    /* Config. */
+                                   1);   /* Close tag. */
 
           cleanup_iterator (&nvts);
         }

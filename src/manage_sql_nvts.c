@@ -793,9 +793,12 @@ init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM nvts"
-                 " WHERE cve %s '%%%s%%'"
+                 " WHERE cve %s '%%%s, %%'"
+                 "    OR cve %s '%%%s'"
                  " ORDER BY %s %s;",
                  nvt_iterator_columns (),
+                 sql_ilike_op (),
+                 cve ? cve : "",
                  sql_ilike_op (),
                  cve ? cve : "",
                  sort_field ? sort_field : "name",
@@ -981,6 +984,26 @@ nvt_default_timeout (const char* oid)
   return sql_string ("SELECT value FROM nvt_preferences"
                      " WHERE name = '%s:0:entry:Timeout'",
                      oid);
+}
+
+/**
+ * @brief Get the family of an NVT.
+ *
+ * @param[in]  oid  The OID of the NVT.
+ *
+ * @return Newly allocated string of the family, or NULL.
+ */
+char *
+nvt_family (const char *oid)
+{
+  gchar *quoted_oid;
+  char *ret;
+
+  quoted_oid = sql_quote (oid);
+  ret = sql_string ("SELECT family FROM nvts WHERE oid = '%s' LIMIT 1;",
+                    quoted_oid);
+  g_free (quoted_oid);
+  return ret;
 }
 
 /**

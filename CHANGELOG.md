@@ -55,6 +55,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The internal list of current Local Security Checks for the Auto-FP feature was updated [#1054](https://github.com/greenbone/gvmd/pull/1054)
 - Simplify sync lockfile handling [#1059](https://github.com/greenbone/gvmd/pull/1059)
 - Do not ignore empty hosts_allow and ifaces_allow [#1064](https://github.com/greenbone/gvmd/pull/1064)
+- Reduce the memory cache of NVTs [#1076](https://github.com/greenbone/gvmd/pull/1076)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
@@ -114,6 +115,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix deletion of OVAL definition data [#1079](https://github.com/greenbone/gvmd/pull/1079)
 - Fix feed lock in sync script [#1088](https://github.com/greenbone/gvmd/pull/1088)
 - Handle removed CPEs and CVEs in SCAP sync [#1097](https://github.com/greenbone/gvmd/pull/1097)
+- Fix NVTs list in CVE details [#1100](https://github.com/greenbone/gvmd/pull/1100)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
