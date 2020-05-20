@@ -1808,7 +1808,7 @@ gvmd (int argc, char** argv)
         { "rebuild-scap", '\0', 0, G_OPTION_ARG_STRING,
           &rebuild_scap,
           "Rebuild SCAP data of type <type>"
-          " (currently only supports 'ovaldefs').",
+          " (currently supports 'ovaldefs' and 'all').",
           "<type>" },
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,

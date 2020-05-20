@@ -5207,7 +5207,17 @@ rebuild_scap (const char *type)
   else if (ret)
     return -1;
 
-  if (strcasecmp (type, "ovaldefs") == 0
+  if (strcasecmp (type, "all") == 0)
+    {
+      sql ("UPDATE scap.meta SET value = '-1' WHERE name = 'last_update';");
+      ret = update_scap (FALSE,  /* ignore_last_scap_update */
+                         TRUE,   /* update_cpes */
+                         TRUE,   /* update_cves */
+                         TRUE    /* update_ovaldefs */);
+      if (ret == 1)
+        ret = 2;
+    }
+  else if (strcasecmp (type, "ovaldefs") == 0
       || strcasecmp (type, "ovaldef") == 0)
     {
       g_debug ("%s: rebuilding ovaldefs", __func__);
@@ -5279,7 +5289,7 @@ manage_rebuild_scap (GSList *log_config, const gchar *database,
   ret = rebuild_scap (type);
   if (ret == 1)
     {
-      printf ("Type must be 'ovaldefs'.\n");
+      printf ("Type must be 'ovaldefs' or 'all'.\n");
       goto fail;
     }
   else if (ret == 2)
