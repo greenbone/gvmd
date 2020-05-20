@@ -4839,18 +4839,29 @@ update_scap (gboolean ignore_last_scap_update,
     }
 
   if (manage_scap_loaded () == 0)
-    last_scap_update = -1;
+    last_scap_update = -2;
   else if (ignore_last_scap_update)
     last_scap_update = 0;
   else
     last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
                                 "                  WHERE name = 'last_update'),"
-                                "                 '-1');");
+                                "                 '-3');");
 
-  if (last_scap_update == -1)
+  if (last_scap_update < 0)
     {
-      g_warning ("%s: Inconsistent data, resetting SCAP database",
-                 __func__);
+      if (last_scap_update == -1)
+        g_warning ("%s: Full rebuild requested, resetting SCAP db",
+                   __func__);
+      else if (last_scap_update == -2)
+        g_warning ("%s: No SCAP db present, rebuilding SCAP db from scratch",
+                   __func__);
+      else if (last_scap_update == -3)
+        g_warning ("%s: SCAP db missing last_update record, resetting SCAP db",
+                   __func__);
+      else
+        g_warning ("%s: Inconsistent data, resetting SCAP db",
+                   __func__);
+
       if (manage_db_reinit ("scap"))
         {
           g_warning ("%s: could not reinitialize SCAP database", __func__);
