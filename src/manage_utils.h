@@ -97,4 +97,7 @@ icalendar_duration_from_vcalendar (icalcomponent *);
 time_t
 icalendar_first_time_from_vcalendar (icalcomponent *, const char *);
 
+char *
+icalendar_string (icalcomponent *, const gchar *);
+
 #endif /* not _GVMD_MANAGE_UTILS_H */

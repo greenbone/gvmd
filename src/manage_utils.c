@@ -1395,3 +1395,39 @@ icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
   // Convert to time_t
   return icaltime_as_timet_with_zone (dtstart, tz);
 }
+
+/**
+ * @brief Get the first time from a VCALENDAR component.
+ *
+ * @param[in]  vcalendar       The VCALENDAR component to get the time from.
+ * @param[in]  default_tzid    Timezone id to use if none is set in the iCal.
+ *
+ * @return The first time as a time_t.
+ */
+char *
+icalendar_string (icalcomponent *ical_component, const gchar *timezone)
+{
+  static gchar *leak = NULL;
+  gchar *replacement;
+  GRegex *regex;
+
+  if (timezone == NULL)
+    return icalcomponent_as_ical_string (ical_component);
+
+  replacement = g_strdup_printf ("DTSTART;TZID=/%s:\\1", timezone);
+
+  regex = g_regex_new ("DTSTART:(.*)Z", 0, 0, NULL);
+
+  g_free (leak);
+  leak = g_regex_replace (regex,
+                          icalcomponent_as_ical_string (ical_component),
+                          -1, /* string len */
+                          0,  /* start */
+                          replacement,
+                          0,
+                          NULL);
+
+  g_regex_unref (regex);
+
+  return leak;
+}

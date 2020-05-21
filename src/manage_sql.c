@@ -40904,7 +40904,8 @@ create_schedule (const char* name, const char *comment,
           g_free (quoted_timezone);
           return 3;
         }
-      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
+      quoted_ical = sql_quote (icalendar_string (ical_component,
+                                                 insert_timezone));
       first_time = icalendar_first_time_from_vcalendar (ical_component,
                                                         zone);
       duration = icalendar_duration_from_vcalendar (ical_component);
@@ -40919,7 +40920,8 @@ create_schedule (const char* name, const char *comment,
       ical_component = icalendar_from_old_schedule_data
                           (first_time, period, period_months, duration,
                            byday_mask);
-      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
+      quoted_ical = sql_quote (icalendar_string (ical_component,
+                                                 insert_timezone));
     }
 
   sql ("INSERT INTO schedules"
@@ -41986,8 +41988,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
           return 6;
         }
 
-      quoted_icalendar = sql_quote (icalcomponent_as_ical_string
-                                      (ical_component));
+      quoted_icalendar = sql_quote (icalendar_string (ical_component,
+                                                      real_timezone));
 
       ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
                                                              real_timezone);
@@ -42123,8 +42125,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
                           (real_first_time,
                            real_period, real_period_months,
                            real_duration, real_byday);
-      quoted_icalendar
-        = sql_quote (icalcomponent_as_ical_string (ical_component));
+      quoted_icalendar = sql_quote (icalendar_string (ical_component,
+                                                      real_timezone));
 
       sql ("UPDATE schedules SET icalendar = '%s' WHERE id = %llu",
            quoted_icalendar, schedule);
