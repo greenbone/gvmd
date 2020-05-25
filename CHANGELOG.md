@@ -114,6 +114,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix failure detection for xml_split command [#1074](https://github.com/greenbone/gvmd/pull/1074)
 - Fix deletion of OVAL definition data [#1079](https://github.com/greenbone/gvmd/pull/1079)
 - Fix feed lock in sync script [#1088](https://github.com/greenbone/gvmd/pull/1088)
+- Handle removed CPEs and CVEs in SCAP sync [#1097](https://github.com/greenbone/gvmd/pull/1097)
 - Fix NVTs list in CVE details [#1100](https://github.com/greenbone/gvmd/pull/1100)
 
 ### Removed
