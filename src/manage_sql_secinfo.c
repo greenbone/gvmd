@@ -5368,7 +5368,6 @@ rebuild_scap (const char *type)
 
   if (strcasecmp (type, "all") == 0)
     {
-      sql ("UPDATE scap.meta SET value = '-1' WHERE name = 'last_update';");
       ret = update_scap (lockfile,
                          TRUE,   /* ignore_last_scap_update */
                          TRUE,   /* reset_scap_db */
