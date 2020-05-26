@@ -3077,12 +3077,14 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
  * @param[in]  last_scap_update  Time of last SCAP update.
  * @param[in]  last_cve_update   Time of last update to a DFN.
  * @param[in]  hashed_cpes       Hashed CPEs.
+ * @param[in]  all_xml_cves      String to add all CVEs to.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
 update_cve_xml (const gchar *xml_path, int last_scap_update,
-                int last_cve_update, GHashTable *hashed_cpes)
+                int last_cve_update, GHashTable *hashed_cpes,
+                GString *all_xml_cves)
 {
   GError *error;
   element_t element, entry;
@@ -3141,6 +3143,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
     {
       if (strcmp (element_name (entry), "entry") == 0)
         {
+          gchar *id;
           element_t last_modified;
 
           last_modified = element_child (entry, "vuln:last-modified-datetime");
@@ -3150,6 +3153,20 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                          __FUNCTION__);
               goto fail;
             }
+
+          id = element_attribute (entry, "id");
+          if (id == NULL)
+            {
+              g_warning ("%s: id missing",
+                         __func__);
+              goto fail;
+            }
+
+          if (all_xml_cves->str[0] == '\0')
+            g_string_append_printf (all_xml_cves, "'%s'", id);
+          else
+            g_string_append_printf (all_xml_cves, ",'%s'", id);
+
           if (parse_iso_time_element_text (last_modified) > last_cve_update)
             {
               if (insert_cve_from_entry (entry, last_modified, hashed_cpes,
@@ -3193,6 +3210,7 @@ update_scap_cves (int last_scap_update)
   const gchar *xml_path;
   GHashTable *hashed_cpes;
   iterator_t cpes;
+  GString *all_xml_cves;
 
   error = NULL;
   dir = g_dir_open (GVM_SCAP_DATA_DIR, 0, &error);
@@ -3214,13 +3232,15 @@ update_scap_cves (int last_scap_update)
                          (gpointer*) iterator_string (&cpes, 0),
                          GINT_TO_POINTER (iterator_int (&cpes, 1)));
 
+  all_xml_cves = g_string_new ("");
+
   count = 0;
   updated_scap_cves = 0;
   while ((xml_path = g_dir_read_name (dir)))
     if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
       {
         switch (update_cve_xml (xml_path, last_scap_update, last_cve_update,
-                                hashed_cpes))
+                                hashed_cpes, all_xml_cves))
           {
             case 0:
               break;
@@ -3230,11 +3250,33 @@ update_scap_cves (int last_scap_update)
             default:
               g_dir_close (dir);
               g_hash_table_destroy (hashed_cpes);
+              g_string_free (all_xml_cves, TRUE);
               cleanup_iterator (&cpes);
               return -1;
           }
         count++;
       }
+
+  if (strlen (all_xml_cves->str) > 0)
+    {
+      /* Remove CVES from the db that are not in all_xml_cves. */
+
+      g_string_prepend
+       (all_xml_cves, "WITH"
+                      " removed AS (SELECT id FROM scap.cves"
+                      "             WHERE NOT uuid = ANY(array[");
+
+      g_string_append
+       (all_xml_cves, "])),"
+                      " dummy AS (DELETE FROM scap.affected_products"
+                      "           WHERE cve IN (SELECT id FROM removed)"
+                      "           RETURNING *)"
+                     " DELETE FROM scap.cves"
+                      " WHERE id IN (SELECT id FROM removed);");
+
+      sql (all_xml_cves->str);
+    }
+  g_string_free (all_xml_cves, TRUE);
 
   if (count == 0)
     g_warning ("No CVEs found in %s", GVM_SCAP_DATA_DIR);
