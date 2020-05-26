@@ -4918,6 +4918,9 @@ update_scap_placeholders (int updated_cves)
  * Currently only works correctly with all data or OVAL definitions.
  *
  * @param[in]  ignore_last_scap_update  Whether to ignore the last update time.
+ * @param[in]  reset_scap_db            Whether to remove the DB entirely first.
+ *                                      DB will also be reset if last_scap_update
+ *                                      is negative.
  * @param[in]  update_cpes              Whether to update CPEs.
  * @param[in]  update_cves              Whether to update CVEs.
  * @param[in]  update_ovaldefs          Whether to update OVAL definitions.
@@ -4926,11 +4929,12 @@ update_scap_placeholders (int updated_cves)
  */
 static int
 update_scap (gboolean ignore_last_scap_update,
+             gboolean reset_scap_db,
              gboolean update_cpes,
              gboolean update_cves,
              gboolean update_ovaldefs)
 {
-  int last_feed_update, last_scap_update;
+  int last_feed_update, last_scap_update, reset_required;
   int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
   GString *all_xml_cpes;
 
@@ -4954,19 +4958,36 @@ update_scap (gboolean ignore_last_scap_update,
         }
     }
 
+  reset_required = reset_scap_db ? -1 : 0;
+
   if (manage_scap_loaded () == 0)
-    last_scap_update = -1;
+    reset_required = -2;
   else if (ignore_last_scap_update)
     last_scap_update = 0;
   else
-    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
-                                "                  WHERE name = 'last_update'),"
-                                "                 '-1');");
-
-  if (last_scap_update == -1)
     {
-      g_warning ("%s: Inconsistent data, resetting SCAP database",
-                 __func__);
+      last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
+                                  "                  WHERE name = 'last_update'),"
+                                  "                 '-3');");
+      if (last_scap_update < 0)
+        reset_required = last_scap_update;
+    }
+
+  if (reset_required)
+    {
+      if (reset_required == -1)
+        g_warning ("%s: Full rebuild requested, resetting SCAP db",
+                   __func__);
+      else if (reset_required == -2)
+        g_warning ("%s: No SCAP db present, rebuilding SCAP db from scratch",
+                   __func__);
+      else if (reset_required == -3)
+        g_warning ("%s: SCAP db missing last_update record, resetting SCAP db",
+                   __func__);
+      else
+        g_warning ("%s: Inconsistent data, resetting SCAP db",
+                   __func__);
+
       if (manage_db_reinit ("scap"))
         {
           g_warning ("%s: could not reinitialize SCAP database", __func__);
@@ -5104,6 +5125,7 @@ static int
 sync_scap ()
 {
   return update_scap (FALSE, /* ignore_last_scap_update */
+                      FALSE, /* reset_scap_db */
                       TRUE,  /* update_cpes */
                       TRUE,  /* update_cves */
                       TRUE   /* update_ovaldefs */);
@@ -5141,8 +5163,18 @@ rebuild_scap (const char *type)
   else if (ret)
     return -1;
 
-  if (strcasecmp (type, "ovaldefs") == 0
-      || strcasecmp (type, "ovaldef") == 0)
+  if (strcasecmp (type, "all") == 0)
+    {
+      ret = update_scap (TRUE,   /* ignore_last_scap_update */
+                         TRUE,   /* reset_scap_db */
+                         TRUE,   /* update_cpes */
+                         TRUE,   /* update_cves */
+                         TRUE    /* update_ovaldefs */);
+      if (ret == 1)
+        ret = 2;
+    }
+  else if (strcasecmp (type, "ovaldefs") == 0
+           || strcasecmp (type, "ovaldef") == 0)
     {
       g_debug ("%s: rebuilding ovaldefs", __func__);
       sql ("DELETE FROM affected_ovaldefs");
@@ -5150,6 +5182,7 @@ rebuild_scap (const char *type)
       sql ("DELETE FROM ovalfiles");
 
       ret = update_scap (TRUE,  /* ignore_last_scap_update */
+                         FALSE, /* reset_scap_db */
                          FALSE, /* update_cpes */
                          FALSE, /* update_cves */
                          TRUE   /* update_ovaldefs */);
@@ -5209,7 +5242,7 @@ manage_rebuild_scap (GSList *log_config, const gchar *database,
   ret = rebuild_scap (type);
   if (ret == 1)
     {
-      printf ("Type must be 'ovaldefs'.\n");
+      printf ("Type must be 'ovaldefs' or 'all'.\n");
       goto fail;
     }
   else if (ret == 2)
