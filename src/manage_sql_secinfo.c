@@ -2329,7 +2329,7 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
  *
  * @param[in]  path             Path to file.
  * @param[in]  last_cve_update  Time of last CVE update.
- * @param[in]  all_xml_cpes     String to add all CPEs to.
+ * @param[in]  all_xml_cpes     String to add all CPEs to, or NULL.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
@@ -2430,9 +2430,9 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update,
           goto fail;
         }
 
-      if (all_xml_cpes->str[0] == '\0')
+      if (all_xml_cpes && (all_xml_cpes->str[0] == '\0'))
         g_string_append_printf (all_xml_cpes, "'%s'", name);
-      else
+      else if (all_xml_cpes)
         g_string_append_printf (all_xml_cpes, ",'%s'", name);
       g_free (name);
 
@@ -2466,7 +2466,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update,
  * @brief Update SCAP CPEs.
  *
  * @param[in]  last_scap_update  Time of last SCAP update.
- * @param[in]  all_xml_cpes      String to add all CPEs to.
+ * @param[in]  all_xml_cpes      String to add all CPEs to, or NULL.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
@@ -5021,7 +5021,10 @@ update_scap (gboolean ignore_last_scap_update,
 
   g_info ("%s: Updating data from feed", __func__);
 
-  all_xml_cpes = g_string_new ("");
+  if (reset_required)
+    all_xml_cpes = NULL;
+  else
+    all_xml_cpes = g_string_new ("");
 
   if (update_cpes)
     {
@@ -5031,7 +5034,8 @@ update_scap (gboolean ignore_last_scap_update,
       updated_scap_cpes = update_scap_cpes (last_scap_update, all_xml_cpes);
       if (updated_scap_cpes == -1)
         {
-          g_string_free (all_xml_cpes, TRUE);
+          if (all_xml_cpes)
+            g_string_free (all_xml_cpes, TRUE);
           goto fail;
         }
     }
@@ -5044,12 +5048,13 @@ update_scap (gboolean ignore_last_scap_update,
       updated_scap_cves = update_scap_cves (last_scap_update);
       if (updated_scap_cves == -1)
         {
-          g_string_free (all_xml_cpes, TRUE);
+          if (all_xml_cpes)
+            g_string_free (all_xml_cpes, TRUE);
           goto fail;
         }
     }
 
-  if (strlen (all_xml_cpes->str) > 0)
+  if (all_xml_cpes && (strlen (all_xml_cpes->str) > 0))
     {
       /* Remove CPES not in all_xml_cpes, except those in affected_products. */
 
@@ -5065,7 +5070,8 @@ update_scap (gboolean ignore_last_scap_update,
       sql ("%s", all_xml_cpes->str);
       updated_scap_cpes = 1;
     }
-  g_string_free (all_xml_cpes, TRUE);
+  if (all_xml_cpes)
+    g_string_free (all_xml_cpes, TRUE);
 
   if (update_ovaldefs)
     {
