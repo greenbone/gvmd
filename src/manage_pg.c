@@ -2621,7 +2621,8 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  value text);");
+       "  value text,"
+       "  UNIQUE (uuid, owner));");
 
   sql ("CREATE TABLE IF NOT EXISTS tags"
        " (id SERIAL PRIMARY KEY,"
