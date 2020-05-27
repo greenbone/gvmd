@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Fix NVTs list in CVE details [#1098](https://github.com/greenbone/gvmd/pull/1098)
+- Fix handling of duplicate settings [#1105](https://github.com/greenbone/gvmd/pull/1105)
 - Handle removed CPEs and CVEs in SCAP sync [#1107](https://github.com/greenbone/gvmd/pull/1107)
 
 [9.0.2]: https://github.com/greenbone/gvmd/compare/v9.0.1...gvmd-9.0

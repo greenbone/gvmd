@@ -59191,7 +59191,7 @@ setting_auto_cache_rebuild_int ()
                   "        ((SELECT value FROM settings"
                   "          WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
                   "          AND " ACL_USER_OWNS () ""
-                  "          ORDER BY coalesce (owner, 0) DESC),"
+                  "          ORDER BY coalesce (owner, 0) DESC LIMIT 1),"
                   "         '1');",
                   current_credentials.uuid);
 }
@@ -65587,7 +65587,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
           "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
           "             AND (settings.owner = results.owner"
           "                  OR settings.owner IS NULL)"
-          "          ORDER BY settings.owner DESC)"
+          "          ORDER BY settings.owner DESC LIMIT 1)"
           " WHERE severity IS NULL;");
 
       missing_severity_changes = sql_changes();
