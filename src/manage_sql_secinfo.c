@@ -2623,7 +2623,7 @@ array_remove (array_t *array, gpointer pointer)
 static void
 insert_cve_products (element_t list, resource_t cve,
                      int time_modified, int time_published,
-                     GHashTable *hashed_cpes, int *transaction_size)
+                     GHashTable *hashed_cpes, int *transaction_size, int fresh)
 {
   element_t product;
   int first_product, first_affected;
@@ -2649,14 +2649,20 @@ insert_cve_products (element_t list, resource_t cve,
 
   /* Record existing affected products. */
 
-  initial_affected = make_array ();
-  init_iterator (&rows,
-                 "SELECT cpe FROM scap.affected_products"
-                 " WHERE cve = %llu;",
-                 cve);
-  while (next (&rows))
-    array_add (initial_affected, GINT_TO_POINTER (iterator_int64 (&rows, 0)));
-  cleanup_iterator (&rows);
+  if (fresh)
+    initial_affected = NULL;
+  else
+    {
+      initial_affected = make_array ();
+      init_iterator (&rows,
+                     "SELECT cpe FROM scap.affected_products"
+                     " WHERE cve = %llu;",
+                     cve);
+      while (next (&rows))
+        array_add (initial_affected,
+                   GINT_TO_POINTER (iterator_int64 (&rows, 0)));
+      cleanup_iterator (&rows);
+    }
 
   /* Buffer the SQL. */
 
@@ -2736,8 +2742,9 @@ insert_cve_products (element_t list, resource_t cve,
                 first_affected ? "" : ",", cve,
                 cpe);
 
-              /* Remove the affected product from initial_affected. */
-              array_remove (initial_affected, GINT_TO_POINTER (cpe));
+              if (initial_affected)
+                /* Remove the affected product from initial_affected. */
+                array_remove (initial_affected, GINT_TO_POINTER (cpe));
             }
 
           first_affected = 0;
@@ -2752,7 +2759,7 @@ insert_cve_products (element_t list, resource_t cve,
 
   /* Remove affected_products that remain in initial_affected. */
 
-  if (initial_affected->len)
+  if (initial_affected && initial_affected->len)
     {
       guint index;
       GString *ids;
@@ -2769,7 +2776,8 @@ insert_cve_products (element_t list, resource_t cve,
            cve, ids->str);
       g_string_free (ids, TRUE);
     }
-   g_ptr_array_free (initial_affected, TRUE);
+   if (initial_affected)
+     g_ptr_array_free (initial_affected, TRUE);
 
   /* Run the SQL. */
 
@@ -2808,7 +2816,8 @@ insert_cve_products (element_t list, resource_t cve,
  */
 static int
 insert_cve_from_entry (element_t entry, element_t last_modified,
-                       GHashTable *hashed_cpes, int *transaction_size)
+                       GHashTable *hashed_cpes, int *transaction_size,
+                       int fresh)
 {
   element_t published, summary, cvss, score, base_metrics;
   element_t access_vector, access_complexity, authentication;
@@ -3026,7 +3035,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   g_free (score_text);
 
   insert_cve_products (list, cve, time_published, time_modified,
-                       hashed_cpes, transaction_size);
+                       hashed_cpes, transaction_size, fresh);
 
   g_free (quoted_id);
   return 0;
@@ -3046,7 +3055,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
 static int
 update_cve_xml (const gchar *xml_path, int last_scap_update,
                 int last_cve_update, GHashTable *hashed_cpes,
-                GString *all_xml_cves)
+                GString *all_xml_cves, int fresh)
 {
   GError *error;
   element_t element, entry;
@@ -3124,16 +3133,16 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               goto fail;
             }
 
-          if (all_xml_cves->str[0] == '\0')
+          if (all_xml_cves && (all_xml_cves->str[0] == '\0'))
             g_string_append_printf (all_xml_cves, "'%s'", id);
-          else
+          else if (all_xml_cves)
             g_string_append_printf (all_xml_cves, ",'%s'", id);
           g_free (id);
 
           if (parse_iso_time_element_text (last_modified) > last_cve_update)
             {
               if (insert_cve_from_entry (entry, last_modified, hashed_cpes,
-                                         &transaction_size))
+                                         &transaction_size, fresh))
                 goto fail;
               updated_scap_bund = 1;
             }
@@ -3165,7 +3174,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_scap_cves (int last_scap_update)
+update_scap_cves (int last_scap_update, int fresh)
 {
   GError *error;
   int count, last_cve_update, updated_scap_cves;
@@ -3195,7 +3204,10 @@ update_scap_cves (int last_scap_update)
                          (gpointer*) iterator_string (&cpes, 0),
                          GINT_TO_POINTER (iterator_int (&cpes, 1)));
 
-  all_xml_cves = g_string_new ("");
+  if (fresh)
+    all_xml_cves = NULL;
+  else
+    all_xml_cves = g_string_new ("");
 
   count = 0;
   updated_scap_cves = 0;
@@ -3203,7 +3215,7 @@ update_scap_cves (int last_scap_update)
     if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
       {
         switch (update_cve_xml (xml_path, last_scap_update, last_cve_update,
-                                hashed_cpes, all_xml_cves))
+                                hashed_cpes, all_xml_cves, fresh))
           {
             case 0:
               break;
@@ -3213,14 +3225,15 @@ update_scap_cves (int last_scap_update)
             default:
               g_dir_close (dir);
               g_hash_table_destroy (hashed_cpes);
-              g_string_free (all_xml_cves, TRUE);
+              if (all_xml_cves)
+                g_string_free (all_xml_cves, TRUE);
               cleanup_iterator (&cpes);
               return -1;
           }
         count++;
       }
 
-  if (strlen (all_xml_cves->str) > 0)
+  if (all_xml_cves && (strlen (all_xml_cves->str) > 0))
     {
       /* Remove CVES from the db that are not in all_xml_cves. */
 
@@ -3240,7 +3253,8 @@ update_scap_cves (int last_scap_update)
       sql ("%s", all_xml_cves->str);
       updated_scap_cves = 1;
     }
-  g_string_free (all_xml_cves, TRUE);
+  if (all_xml_cves)
+    g_string_free (all_xml_cves, TRUE);
 
   if (count == 0)
     g_warning ("No CVEs found in %s", GVM_SCAP_DATA_DIR);
@@ -5045,7 +5059,7 @@ update_scap (gboolean ignore_last_scap_update,
       g_debug ("%s: update cves", __func__);
       proctitle_set ("gvmd: Syncing SCAP: Updating CVEs");
 
-      updated_scap_cves = update_scap_cves (last_scap_update);
+      updated_scap_cves = update_scap_cves (last_scap_update, reset_required);
       if (updated_scap_cves == -1)
         {
           if (all_xml_cpes)
