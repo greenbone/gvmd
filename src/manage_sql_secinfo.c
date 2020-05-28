@@ -4375,7 +4375,6 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
   if (updated_dfn_cert || (last_scap_update > last_cert_update))
     {
       g_info ("Updating Max CVSS for DFN-CERT");
-      sql_recursive_triggers_off ();
       sql ("UPDATE cert.dfn_cert_advs"
            " SET max_cvss = (SELECT max (cvss)"
            "                 FROM scap2.cves"
@@ -4407,7 +4406,6 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
   if (updated_cert_bund || (last_scap_update > last_cert_update))
     {
       g_info ("Updating Max CVSS for CERT-Bund");
-      sql_recursive_triggers_off ();
       sql ("UPDATE cert.cert_bund_advs"
            " SET max_cvss = (SELECT max (cvss)"
            "                 FROM scap2.cves"
@@ -4638,7 +4636,6 @@ update_scap_cvss ()
   /* TODO greenbone-scapdata-sync did retries. */
 
   g_info ("Updating CVSS scores and CVE counts for CPEs");
-  sql_recursive_triggers_off ();
   sql ("UPDATE scap2.cpes"
        " SET (max_cvss, cve_refs)"
        "     = (WITH affected_cves"
@@ -4649,7 +4646,6 @@ update_scap_cvss ()
        "               (SELECT count (*) FROM affected_cves));");
 
   g_info ("Updating CVSS scores for OVAL definitions");
-  sql_recursive_triggers_off ();
   sql ("UPDATE scap2.ovaldefs"
        " SET max_cvss = (SELECT max (cvss)"
        "                 FROM scap2.cves"
