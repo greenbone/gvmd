@@ -77,6 +77,9 @@ manage_db_remove (const gchar *);
 int
 manage_db_init (const gchar *);
 
+int
+manage_db_init_indexes (const gchar *);
+
 
 /* Helpers. */
 
@@ -4813,6 +4816,19 @@ update_scap (gboolean reset_scap_db)
       updated_scap_ovaldefs = 1;
       break;
     }
+
+  /* Add the indexes now that the data is ready. */
+
+  g_debug ("%s: update max cvss", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating max CVSS");
+
+  if (manage_db_init_indexes ("scap"))
+    {
+      g_warning ("%s: could not initialize SCAP indexes", __func__);
+      return -1;
+    }
+
+  /* Do calculations that need all data. */
 
   g_debug ("%s: update max cvss", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Updating max CVSS");
