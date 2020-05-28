@@ -4741,6 +4741,17 @@ update_scap (gboolean reset_scap_db)
       return -1;
     }
 
+  /* Add the indexes, now that the data is ready. */
+
+  g_debug ("%s: add indexes", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Adding indexes");
+
+  if (manage_db_init_indexes ("scap"))
+    {
+      g_warning ("%s: could not initialize SCAP indexes", __func__);
+      return -1;
+    }
+
   /* Update into the new schema. */
 
   g_debug ("%s: sync", __func__);
@@ -4769,17 +4780,6 @@ update_scap (gboolean reset_scap_db)
 
   if (update_scap_ovaldefs (1 /* Private data. */) == -1)
     goto fail;
-
-  /* Add the indexes now that the data is ready. */
-
-  g_debug ("%s: update max cvss", __func__);
-  proctitle_set ("gvmd: Syncing SCAP: Updating max CVSS");
-
-  if (manage_db_init_indexes ("scap"))
-    {
-      g_warning ("%s: could not initialize SCAP indexes", __func__);
-      return -1;
-    }
 
   /* Do calculations that need all data. */
 
