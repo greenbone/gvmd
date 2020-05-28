@@ -3239,7 +3239,6 @@ manage_db_init (const gchar *name)
 
       /* Create deletion triggers. */
 
-#if 0
       sql ("CREATE OR REPLACE FUNCTION scap_delete_affected ()"
            " RETURNS TRIGGER AS $$"
            " BEGIN"
@@ -3289,7 +3288,7 @@ manage_db_init (const gchar *name)
       sql ("CREATE TRIGGER affected_ovaldefs_delete"
            " AFTER DELETE ON affected_ovaldefs"
 	   " FOR EACH ROW EXECUTE PROCEDURE scap_update_oval ();");
-#endif
+
       /* Init tables. */
 
       sql ("INSERT INTO scap.meta (name, value)"
