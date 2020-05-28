@@ -4643,41 +4643,30 @@ update_scap_timestamp ()
  * @param[in]  updated_ovaldefs  Whether OVAL defs were updated.
  */
 static void
-update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
+update_scap_cvss ()
 {
   /* TODO greenbone-scapdata-sync did retries. */
 
-  if (updated_cves || updated_cpes)
-    {
-      g_info ("Updating CVSS scores and CVE counts for CPEs");
-      sql_recursive_triggers_off ();
-      sql ("UPDATE scap2.cpes"
-           " SET (max_cvss, cve_refs)"
-           "     = (WITH affected_cves"
-           "        AS (SELECT cve FROM scap2.affected_products"
-           "            WHERE cpe=cpes.id)"
-           "        SELECT (SELECT max (cvss) FROM scap2.cves"
-           "                WHERE id IN (SELECT cve FROM affected_cves)),"
-           "               (SELECT count (*) FROM affected_cves));");
-    }
-  else
-    g_info ("No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs.");
+  g_info ("Updating CVSS scores and CVE counts for CPEs");
+  sql_recursive_triggers_off ();
+  sql ("UPDATE scap2.cpes"
+       " SET (max_cvss, cve_refs)"
+       "     = (WITH affected_cves"
+       "        AS (SELECT cve FROM scap2.affected_products"
+       "            WHERE cpe=cpes.id)"
+       "        SELECT (SELECT max (cvss) FROM scap2.cves"
+       "                WHERE id IN (SELECT cve FROM affected_cves)),"
+       "               (SELECT count (*) FROM affected_cves));");
 
-  if (updated_cves || updated_ovaldefs)
-    {
-      g_info ("Updating CVSS scores for OVAL definitions");
-      sql_recursive_triggers_off ();
-      sql ("UPDATE scap2.ovaldefs"
-           " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap2.cves"
-           "                 WHERE id IN (SELECT cve"
-           "                              FROM scap2.affected_ovaldefs"
-           "                              WHERE ovaldef=ovaldefs.id)"
-           "                 AND cvss != 0.0);");
-    }
-  else
-    g_info ("No OVAL definitions or CVEs updated,"
-            " skipping CVSS recount for OVAL definitions.");
+  g_info ("Updating CVSS scores for OVAL definitions");
+  sql_recursive_triggers_off ();
+  sql ("UPDATE scap2.ovaldefs"
+       " SET max_cvss = (SELECT max (cvss)"
+       "                 FROM scap2.cves"
+       "                 WHERE id IN (SELECT cve"
+       "                              FROM scap2.affected_ovaldefs"
+       "                              WHERE ovaldef=ovaldefs.id)"
+       "                 AND cvss != 0.0);");
 }
 
 /**
@@ -4686,28 +4675,23 @@ update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
  * @param[in]  updated_cves  Whether the CVEs were updated.
  */
 static void
-update_scap_placeholders (int updated_cves)
+update_scap_placeholders ()
 {
   /* TODO greenbone-scapdata-sync did retries. */
 
-  if (updated_cves)
-    {
-      g_info ("Updating placeholder CPEs");
-      sql ("UPDATE scap2.cpes"
-           " SET creation_time = (SELECT min (creation_time)"
-           "                      FROM scap2.cves"
-           "                      WHERE id IN (SELECT cve"
-           "                                   FROM scap2.affected_products"
-           "                                   WHERE cpe=cpes.id)),"
-           "     modification_time = (SELECT min(creation_time)"
-           "                          FROM scap2.cves"
-           "                          WHERE id IN (SELECT cve"
-           "                                       FROM scap2.affected_products"
-           "                                       WHERE cpe=cpes.id))"
-           " WHERE cpes.title IS NULL;");
-    }
-  else
-    g_info ("No CVEs updated, skipping placeholder CPE update.");
+  g_info ("Updating placeholder CPEs");
+  sql ("UPDATE scap2.cpes"
+       " SET creation_time = (SELECT min (creation_time)"
+       "                      FROM scap2.cves"
+       "                      WHERE id IN (SELECT cve"
+       "                                   FROM scap2.affected_products"
+       "                                   WHERE cpe=cpes.id)),"
+       "     modification_time = (SELECT min(creation_time)"
+       "                          FROM scap2.cves"
+       "                          WHERE id IN (SELECT cve"
+       "                                       FROM scap2.affected_products"
+       "                                       WHERE cpe=cpes.id))"
+       " WHERE cpes.title IS NULL;");
 }
 
 /**
@@ -4833,13 +4817,12 @@ update_scap (gboolean reset_scap_db)
   g_debug ("%s: update max cvss", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Updating max CVSS");
 
-  update_scap_cvss (updated_scap_cves, updated_scap_cpes,
-                    updated_scap_ovaldefs);
+  update_scap_cvss ();
 
   g_debug ("%s: update placeholders", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Updating placeholders");
 
-  update_scap_placeholders (updated_scap_cves);
+  update_scap_placeholders ();
 
   g_debug ("%s: update timestamp", __func__);
 
