@@ -2332,7 +2332,7 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
  *
  * @param[in]  path             Path to file.
  *
- * @return 0 nothing to do, 1 updated, -1 error.
+ * @return 0 success, -1 error.
  */
 static int
 update_scap_cpes_from_file (const gchar *path)
@@ -2341,12 +2341,9 @@ update_scap_cpes_from_file (const gchar *path)
   element_t element, cpe_list, cpe_item;
   gchar *xml;
   gsize xml_len;
-  int updated_scap_cpes;
   inserts_t inserts;
 
   g_debug ("%s: parsing %s", __func__, path);
-
-  updated_scap_cpes = 0;
 
   error = NULL;
   g_file_get_contents (path, &xml, &xml_len, &error);
@@ -2426,8 +2423,6 @@ update_scap_cpes_from_file (const gchar *path)
       if (insert_scap_cpe (&inserts, cpe_item, item_metadata,
                            modification_time))
         goto fail;
-      // FIX always true
-      updated_scap_cpes = 1;
       cpe_item = element_next (cpe_item);
     }
 
@@ -2436,7 +2431,7 @@ update_scap_cpes_from_file (const gchar *path)
   inserts_run (&inserts);
 
   sql_commit ();
-  return updated_scap_cpes;
+  return 0;
 
  fail:
   inserts_free (&inserts);
@@ -2449,7 +2444,7 @@ update_scap_cpes_from_file (const gchar *path)
 /**
  * @brief Update SCAP CPEs.
  *
- * @return 0 nothing to do, 1 updated, -1 error.
+ * @return 0 success, -1 error.
  */
 static int
 update_scap_cpes ()
@@ -2457,9 +2452,8 @@ update_scap_cpes ()
   gchar *full_path;
   const gchar *split_dir;
   GStatBuf state;
-  int updated_scap_cpes, index;
+  int index;
 
-  updated_scap_cpes = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
                                 "official-cpe-dictionary_v2.2.xml",
                                 NULL);
@@ -2477,11 +2471,13 @@ update_scap_cpes ()
   split_dir = split_xml_file (full_path, "40Mb", "</cpe-list>");
   if (split_dir == NULL)
     {
+      int ret;
+
       g_warning ("%s: Failed to split CPEs, attempting with full file",
                  __func__);
-      updated_scap_cpes = update_scap_cpes_from_file (full_path);
+      ret = update_scap_cpes_from_file (full_path);
       g_free (full_path);
-      return updated_scap_cpes;
+      return ret;
     }
   g_free (full_path);
 
@@ -2507,13 +2503,11 @@ update_scap_cpes ()
           gvm_file_remove_recurse (split_dir);
           return -1;
         }
-      if (ret)
-        updated_scap_cpes = 1;
     }
 
   gvm_file_remove_recurse (split_dir);
 
-  return updated_scap_cpes;
+  return 0;
 }
 
 
@@ -3046,13 +3040,13 @@ update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
  *
  * Assume that the databases are attached.
  *
- * @return 0 nothing to do, 1 updated, -1 error.
+ * @return 0 success, -1 error.
  */
 static int
 update_scap_cves ()
 {
   GError *error;
-  int count, updated_scap_cves;
+  int count;
   GDir *dir;
   const gchar *xml_path;
   GHashTable *hashed_cpes;
@@ -3076,7 +3070,6 @@ update_scap_cves ()
                          GINT_TO_POINTER (iterator_int (&cpes, 1)));
 
   count = 0;
-  updated_scap_cves = 0;
   while ((xml_path = g_dir_read_name (dir)))
     if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
       {
@@ -3085,7 +3078,6 @@ update_scap_cves ()
             case 0:
               break;
             case 1:
-              updated_scap_cves = 1;
               break;
             default:
               g_dir_close (dir);
@@ -3102,7 +3094,7 @@ update_scap_cves ()
   g_dir_close (dir);
   g_hash_table_destroy (hashed_cpes);
   cleanup_iterator (&cpes);
-  return updated_scap_cves;
+  return 0;
 }
 
 
@@ -3898,12 +3890,12 @@ oval_files_free ()
  * @param[in]  private           Whether to update private SCAP data, instead
  *                               of the feed data.
  *
- * @return 0 nothing to do, 1 updated, -1 error.
+ * @return 0 success, -1 error.
  */
 static int
 update_scap_ovaldefs (int private)
 {
-  int count, updated_scap_ovaldefs;
+  int count;
   gchar *oval_dir;
   guint index;
   struct stat state;
@@ -4041,7 +4033,6 @@ update_scap_ovaldefs (int private)
   /* Process each file in the list, in the sorted order. */
 
   count = 0;
-  updated_scap_ovaldefs = 0;
   for (index = 0; index < oval_files->len; index++)
     {
       gchar **pair;
@@ -4052,7 +4043,6 @@ update_scap_ovaldefs (int private)
           case 0:
             break;
           case 1:
-            updated_scap_ovaldefs = 1;
             break;
           default:
             oval_files_free ();
@@ -4133,7 +4123,7 @@ update_scap_ovaldefs (int private)
 
   g_free (oval_dir);
   oval_files_free ();
-  return updated_scap_ovaldefs;
+  return 0;
 }
 
 
@@ -4704,12 +4694,6 @@ update_scap_placeholders ()
 static int
 update_scap (gboolean reset_scap_db)
 {
-  int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
-
-  updated_scap_ovaldefs = 0;
-  updated_scap_cpes = 0;
-  updated_scap_cves = 0;
-
   if (reset_scap_db)
     g_warning ("%s: Full rebuild requested, resetting SCAP db",
                __func__);
@@ -4770,36 +4754,25 @@ update_scap (gboolean reset_scap_db)
   g_debug ("%s: update cpes", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Updating CPEs");
 
-  updated_scap_cpes = update_scap_cpes ();
-  if (updated_scap_cpes == -1)
+  if (update_scap_cpes () == -1)
     goto fail;
 
   g_debug ("%s: update cves", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Updating CVEs");
 
-  updated_scap_cves = update_scap_cves ();
-  if (updated_scap_cves == -1)
+  if (update_scap_cves () == -1)
     goto fail;
 
   g_debug ("%s: update ovaldefs", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Updating OVALdefs");
 
-  updated_scap_ovaldefs = update_scap_ovaldefs (0 /* Feed data. */);
-  if (updated_scap_ovaldefs == -1)
+  if (update_scap_ovaldefs (0 /* Feed data. */) == -1)
     goto fail;
 
   g_debug ("%s: updating user defined data", __func__);
 
-  switch (update_scap_ovaldefs (1 /* Private data. */))
-    {
-    case 0:
-      break;
-    case -1:
-      goto fail;
-    default:
-      updated_scap_ovaldefs = 1;
-      break;
-    }
+  if (update_scap_ovaldefs (1 /* Private data. */) == -1)
+    goto fail;
 
   /* Add the indexes now that the data is ready. */
 
