@@ -2376,7 +2376,7 @@ update_scap_cpes_from_file (const gchar *path)
 
   inserts_init (&inserts,
                 CPE_MAX_CHUNK_SIZE,
-                "INSERT INTO scap.cpes"
+                "INSERT INTO scap2.cpes"
                 " (uuid, name, title, creation_time,"
                 "  modification_time, status, deprecated_by_id,"
                 "  nvd_id)"
@@ -2588,11 +2588,11 @@ insert_cve_products (element_t list, resource_t cve,
   if (product == NULL)
     return;
 
-  sql_cpes = g_string_new ("INSERT INTO scap.cpes"
+  sql_cpes = g_string_new ("INSERT INTO scap2.cpes"
                            " (uuid, name, creation_time,"
                            "  modification_time)"
                            " VALUES");
-  sql_affected = g_string_new ("INSERT INTO scap.affected_products"
+  sql_affected = g_string_new ("INSERT INTO scap2.affected_products"
                                " (cve, cpe)"
                                " VALUES");
 
@@ -2893,7 +2893,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   time_published = parse_iso_time_element_text (published);
   score_text = score ? element_text (score) : g_strdup ("NULL");
   cve = sql_int64_0
-         ("INSERT INTO scap.cves"
+         ("INSERT INTO scap2.cves"
           " (uuid, name, creation_time, modification_time,"
           "  cvss, description, vector, complexity,"
           "  authentication, confidentiality_impact,"
@@ -2915,7 +2915,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
           "     integrity_impact = EXCLUDED.integrity_impact,"
           "     availability_impact = EXCLUDED.availability_impact,"
           "     products = EXCLUDED.products"
-          " RETURNING scap.cves.id;",
+          " RETURNING scap2.cves.id;",
           quoted_id,
           quoted_id,
           time_published,
@@ -3066,7 +3066,7 @@ update_scap_cves ()
     }
 
   hashed_cpes = g_hash_table_new (g_str_hash, g_str_equal);
-  init_iterator (&cpes, "SELECT uuid, id FROM scap.cpes;");
+  init_iterator (&cpes, "SELECT uuid, id FROM scap2.cpes;");
   while (next (&cpes))
     g_hash_table_insert (hashed_cpes,
                          (gpointer*) iterator_string (&cpes, 0),
@@ -3584,7 +3584,7 @@ update_ovaldef_xml (gchar **file_and_date, int private)
                     quoted_status = sql_quote ("");
                   g_free (status_text);
 
-                  sql ("INSERT INTO scap.ovaldefs"
+                  sql ("INSERT INTO scap2.ovaldefs"
                        " (uuid, name, comment, creation_time,"
                        "  modification_time, version, deprecated, def_class,"
                        "  title, description, xml_file, status,"
@@ -4103,7 +4103,7 @@ update_scap_ovaldefs (int private)
       g_string_append (oval_files_clause, "))");
 
       init_iterator (&files,
-                     "SELECT DISTINCT xml_file FROM scap.ovaldefs"
+                     "SELECT DISTINCT xml_file FROM scap2.ovaldefs"
                      " WHERE (xml_file NOT LIKE 'oval/%%')"
                      "%s",
                      oval_files_clause->str);
@@ -4118,7 +4118,7 @@ update_scap_ovaldefs (int private)
       cleanup_iterator (&files);
 
       // FIX possibly can remove too
-      sql ("DELETE FROM scap.ovaldefs"
+      sql ("DELETE FROM scap2.ovaldefs"
            " WHERE (xml_file NOT LIKE 'oval/%%')"
            "%s;",
            oval_files_clause->str);
@@ -4385,7 +4385,7 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
       sql_recursive_triggers_off ();
       sql ("UPDATE cert.dfn_cert_advs"
            " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap.cves"
+           "                 FROM scap2.cves"
            "                 WHERE name"
            "                 IN (SELECT cve_name"
            "                     FROM cert.dfn_cert_cves"
@@ -4417,7 +4417,7 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
       sql_recursive_triggers_off ();
       sql ("UPDATE cert.cert_bund_advs"
            " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap.cves"
+           "                 FROM scap2.cves"
            "                 WHERE name"
            "                       IN (SELECT cve_name"
            "                           FROM cert.cert_bund_cves"
@@ -4501,7 +4501,7 @@ sync_cert ()
 
   last_scap_update = 0;
   if (manage_scap_loaded ())
-    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
+    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap2.meta"
                                 "                  WHERE name = 'last_update'),"
                                 "                 '0');");
   g_debug ("%s: last_scap_update: %i", __func__, last_scap_update);
@@ -4546,6 +4546,7 @@ manage_sync_cert (sigset_t *sigmask_current)
 int
 check_scap_db_version ()
 {
+  // FIX drop with full rebuild
   switch (manage_scap_db_version ())
     {
       /* TODO The sync script had a whole lot of migrators in here. */
@@ -4568,8 +4569,8 @@ check_scap_db_version ()
        return manage_db_reinit ("scap");
        break;
       case 15:
-       sql ("ALTER TABLE scap.affected_products ADD UNIQUE (cve, cpe);");
-       sql ("UPDATE scap.meta"
+       sql ("ALTER TABLE scap2.affected_products ADD UNIQUE (cve, cpe);");
+       sql ("UPDATE scap2.meta"
             " SET value = '16'"
             " WHERE name = 'database_version';");
        break;
@@ -4625,7 +4626,7 @@ update_scap_timestamp ()
     }
 
   g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
-  sql ("UPDATE scap.meta SET value = '%lld' WHERE name = 'last_update';",
+  sql ("UPDATE scap2.meta SET value = '%lld' WHERE name = 'last_update';",
        (long long) stamp);
 
   return 0;
@@ -4647,12 +4648,12 @@ update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
     {
       g_info ("Updating CVSS scores and CVE counts for CPEs");
       sql_recursive_triggers_off ();
-      sql ("UPDATE scap.cpes"
+      sql ("UPDATE scap2.cpes"
            " SET (max_cvss, cve_refs)"
            "     = (WITH affected_cves"
-           "        AS (SELECT cve FROM scap.affected_products"
+           "        AS (SELECT cve FROM scap2.affected_products"
            "            WHERE cpe=cpes.id)"
-           "        SELECT (SELECT max (cvss) FROM scap.cves"
+           "        SELECT (SELECT max (cvss) FROM scap2.cves"
            "                WHERE id IN (SELECT cve FROM affected_cves)),"
            "               (SELECT count (*) FROM affected_cves));");
     }
@@ -4663,11 +4664,11 @@ update_scap_cvss (int updated_cves, int updated_cpes, int updated_ovaldefs)
     {
       g_info ("Updating CVSS scores for OVAL definitions");
       sql_recursive_triggers_off ();
-      sql ("UPDATE scap.ovaldefs"
+      sql ("UPDATE scap2.ovaldefs"
            " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap.cves"
+           "                 FROM scap2.cves"
            "                 WHERE id IN (SELECT cve"
-           "                              FROM scap.affected_ovaldefs"
+           "                              FROM scap2.affected_ovaldefs"
            "                              WHERE ovaldef=ovaldefs.id)"
            "                 AND cvss != 0.0);");
     }
@@ -4689,16 +4690,16 @@ update_scap_placeholders (int updated_cves)
   if (updated_cves)
     {
       g_info ("Updating placeholder CPEs");
-      sql ("UPDATE scap.cpes"
+      sql ("UPDATE scap2.cpes"
            " SET creation_time = (SELECT min (creation_time)"
-           "                      FROM scap.cves"
+           "                      FROM scap2.cves"
            "                      WHERE id IN (SELECT cve"
-           "                                   FROM scap.affected_products"
+           "                                   FROM scap2.affected_products"
            "                                   WHERE cpe=cpes.id)),"
            "     modification_time = (SELECT min(creation_time)"
-           "                          FROM scap.cves"
+           "                          FROM scap2.cves"
            "                          WHERE id IN (SELECT cve"
-           "                                       FROM scap.affected_products"
+           "                                       FROM scap2.affected_products"
            "                                       WHERE cpe=cpes.id))"
            " WHERE cpes.title IS NULL;");
     }
@@ -4765,11 +4766,15 @@ update_scap (gboolean reset_scap_db)
         }
     }
 
-  if (manage_db_reinit ("scap"))
+  /* Create a new schema, "scap2". */
+
+  if (manage_db_init ("scap"))
     {
-      g_warning ("%s: could not reinitialize SCAP database", __func__);
+      g_warning ("%s: could not initialize SCAP database 2", __func__);
       return -1;
     }
+
+  /* Update into the new schema. */
 
   g_debug ("%s: sync", __func__);
 
@@ -4824,6 +4829,19 @@ update_scap (gboolean reset_scap_db)
 
   if (update_scap_timestamp ())
     goto fail;
+
+  /* Replace the real scap schema with the new one. */
+
+  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
+               "               information_schema.schemata"
+               "               WHERE schema_name = 'name');"))
+    {
+      sql ("ALTER SCHEMA scap RENAME TO scap3;");
+      sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+      sql ("DROP SCHEMA scap3 CASCADE;");
+    }
+  else
+    sql ("ALTER SCHEMA scap2 RENAME TO scap;");
 
   g_info ("%s: Updating SCAP info succeeded", __func__);
   proctitle_set ("gvmd: Syncing SCAP: done");
@@ -4928,22 +4946,6 @@ manage_rebuild_scap (GSList *log_config, const gchar *database,
   ret = manage_option_setup (log_config, database);
   if (ret)
     return -1;
-
-  if (manage_scap_db_exists ())
-    {
-      if (check_scap_db_version ())
-        goto fail;
-    }
-  else
-    {
-      g_info ("%s: Initializing SCAP database", __func__);
-
-      if (manage_db_init ("scap"))
-        {
-          g_warning ("%s: Could not initialize SCAP database", __func__);
-          goto fail;
-        }
-    }
 
   ret = rebuild_scap (type);
   if (ret == 1)
