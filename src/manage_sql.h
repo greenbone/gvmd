@@ -409,10 +409,6 @@ int manage_cert_db_exists ();
 
 int manage_scap_db_exists ();
 
-void manage_db_check_mode (const gchar *);
-
-int manage_db_check (const gchar *);
-
 int
 count (const char *, const get_data_t *, column_t *, column_t *, const char **,
        int, const char *, const char *, int);

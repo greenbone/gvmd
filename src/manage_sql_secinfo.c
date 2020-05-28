@@ -4693,20 +4693,6 @@ sync_cert ()
 
   g_debug ("%s: sync", __func__);
 
-  manage_db_check_mode ("cert");
-
-  if (manage_db_check ("cert"))
-    {
-      g_warning ("%s: Database broken, resetting CERT database",
-                 __func__);
-      if (manage_db_reinit ("cert"))
-        {
-          g_warning ("%s: could not reinitialize CERT database",
-                     __func__);
-          goto fail;
-        }
-    }
-
   g_info ("%s: Updating data from feed", __func__);
 
   g_debug ("%s: update dfn", __func__);
@@ -5022,20 +5008,6 @@ update_scap (gboolean ignore_last_scap_update,
     return -1;
 
   g_debug ("%s: sync", __func__);
-
-  manage_db_check_mode ("scap");
-
-  if (manage_db_check ("scap"))
-    {
-      g_warning ("%s: Database broken, resetting SCAP database",
-                 __func__);
-      if (manage_db_reinit ("scap"))
-        {
-          g_warning ("%s: could not reinitialize SCAP database",
-                     __func__);
-          goto fail;
-        }
-    }
 
   g_info ("%s: Updating data from feed", __func__);
 

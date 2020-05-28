@@ -3306,30 +3306,6 @@ manage_db_init (const gchar *name)
 }
 
 /**
- * @brief Dummy function.
- *
- * @param[in]  name  Dummy arg.
- */
-void
-manage_db_check_mode (const gchar *name)
-{
-  return;
-}
-
-/**
- * @brief Dummy function.
- *
- * @param[in]  name  Dummy arg.
- *
- * @return 0.
- */
-int
-manage_db_check (const gchar *name)
-{
-  return 0;
-}
-
-/**
  * @brief Check whether CERT is available.
  *
  * @return 1 if CERT database is loaded, else 0.
