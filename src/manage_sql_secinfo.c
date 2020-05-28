@@ -4867,20 +4867,10 @@ rebuild_scap (const char *type)
   else if (ret)
     return -1;
 
-  if (strcasecmp (type, "all") == 0)
+  if (strcasecmp (type, "all") == 0
+      || strcasecmp (type, "ovaldefs") == 0
+      || strcasecmp (type, "ovaldef") == 0)
     {
-      ret = update_scap (TRUE);
-      if (ret == 1)
-        ret = 2;
-    }
-  else if (strcasecmp (type, "ovaldefs") == 0
-           || strcasecmp (type, "ovaldef") == 0)
-    {
-      g_debug ("%s: rebuilding ovaldefs", __func__);
-
-      sql ("DELETE FROM affected_ovaldefs");
-      sql ("DELETE FROM ovaldefs");
-      sql ("DELETE FROM ovalfiles");
       ret = update_scap (TRUE);
       if (ret == 1)
         ret = 2;
