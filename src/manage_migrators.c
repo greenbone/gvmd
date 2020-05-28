@@ -1985,6 +1985,43 @@ migrate_227_to_228 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 228 to version 229.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_228_to_229 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 228. */
+
+  if (manage_db_version () != 228)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Setting UUIDs now have to be unique per owner. */
+  sql ("DELETE FROM settings"
+       " WHERE id NOT IN (SELECT max(id) FROM settings"
+       "                  GROUP BY uuid, owner);");
+
+  sql ("ALTER TABLE settings ADD UNIQUE(uuid, owner);");
+
+  /* Set the database version to 229. */
+
+  set_db_version (229);
+
+  sql_commit ();
+
+  return 0;
+}
+
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2019,6 +2056,7 @@ static migrator_t database_migrators[] = {
   {226, migrate_225_to_226},
   {227, migrate_226_to_227},
   {228, migrate_227_to_228},
+  {229, migrate_228_to_229},
   /* End marker. */
   {-1, NULL}};
 
