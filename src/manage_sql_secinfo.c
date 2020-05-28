@@ -2328,14 +2328,11 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
  * @brief Update SCAP CPEs from a file.
  *
  * @param[in]  path             Path to file.
- * @param[in]  last_cve_update  Time of last CVE update.
- * @param[in]  all_xml_cpes     String to add all CPEs to, or NULL.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_scap_cpes_from_file (const gchar *path, int last_cve_update,
-                            GString *all_xml_cpes)
+update_scap_cpes_from_file (const gchar *path)
 {
   GError *error;
   element_t element, cpe_list, cpe_item;
@@ -2395,7 +2392,7 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update,
   cpe_item = element_first_child (cpe_list);
   while (cpe_item)
     {
-      gchar *modification_date, *name;
+      gchar *modification_date;
       int modification_time;
       element_t item_metadata;
 
@@ -2423,27 +2420,11 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update,
       modification_time = parse_iso_time (modification_date);
       g_free (modification_date);
 
-      name = element_attribute (cpe_item, "name");
-      if (name == NULL)
-        {
-          g_warning ("%s: name missing", __func__);
-          goto fail;
-        }
-
-      if (all_xml_cpes && (all_xml_cpes->str[0] == '\0'))
-        g_string_append_printf (all_xml_cpes, "'%s'", name);
-      else if (all_xml_cpes)
-        g_string_append_printf (all_xml_cpes, ",'%s'", name);
-      g_free (name);
-
-      if (modification_time > last_cve_update)
-        {
-          if (insert_scap_cpe (&inserts, cpe_item, item_metadata,
-                               modification_time))
-            goto fail;
-          updated_scap_cpes = 1;
-        }
-
+      if (insert_scap_cpe (&inserts, cpe_item, item_metadata,
+                           modification_time))
+        goto fail;
+      // FIX always true
+      updated_scap_cpes = 1;
       cpe_item = element_next (cpe_item);
     }
 
@@ -2465,18 +2446,15 @@ update_scap_cpes_from_file (const gchar *path, int last_cve_update,
 /**
  * @brief Update SCAP CPEs.
  *
- * @param[in]  last_scap_update  Time of last SCAP update.
- * @param[in]  all_xml_cpes      String to add all CPEs to, or NULL.
- *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_scap_cpes (int last_scap_update, GString *all_xml_cpes)
+update_scap_cpes ()
 {
   gchar *full_path;
   const gchar *split_dir;
   GStatBuf state;
-  int updated_scap_cpes, last_cve_update, index;
+  int updated_scap_cpes, index;
 
   updated_scap_cpes = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
@@ -2491,28 +2469,14 @@ update_scap_cpes (int last_scap_update, GString *all_xml_cpes)
       return -1;
     }
 
-  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
-    {
-      g_info ("Skipping CPEs, file is older than last revision"
-              " (this is not an error)");
-      g_free (full_path);
-      return 0;
-    }
-
   g_info ("Updating CPEs");
-
-  /* This will be zero for an empty db, so everything will be added. */
-  last_cve_update = sql_int ("SELECT max (modification_time)"
-                             " FROM scap.cves;");
 
   split_dir = split_xml_file (full_path, "40Mb", "</cpe-list>");
   if (split_dir == NULL)
     {
       g_warning ("%s: Failed to split CPEs, attempting with full file",
                  __func__);
-      updated_scap_cpes = update_scap_cpes_from_file (full_path,
-                                                      last_cve_update,
-                                                      all_xml_cpes);
+      updated_scap_cpes = update_scap_cpes_from_file (full_path);
       g_free (full_path);
       return updated_scap_cpes;
     }
@@ -2533,7 +2497,7 @@ update_scap_cpes (int last_scap_update, GString *all_xml_cpes)
           break;
         }
 
-      ret = update_scap_cpes_from_file (path, last_cve_update, all_xml_cpes);
+      ret = update_scap_cpes_from_file (path);
       g_free (path);
       if (ret < 0)
         {
@@ -2598,19 +2562,6 @@ hashed_cpes_cpe_id (GHashTable *hashed_cpes, const gchar *product_tilde)
 }
 
 /**
- * @brief Push a generic pointer onto an array.
- *
- * @param[in]  array    Array.
- * @param[in]  pointer  Pointer.
- */
-static void
-array_remove (array_t *array, gpointer pointer)
-{
-  if (array)
-    g_ptr_array_remove_fast (array, pointer);
-}
-
-/**
  * @brief Insert products for a CVE.
  *
  * @param[in]  list              XML product list.
@@ -2619,18 +2570,15 @@ array_remove (array_t *array, gpointer pointer)
  * @param[in]  time_modified     Time modified.
  * @param[in]  hashed_cpes       Hashed CPEs.
  * @param[in]  transaction_size  Statement counter for batching.
- * @param[in]  fresh             Whether the db was reset.
  */
 static void
 insert_cve_products (element_t list, resource_t cve,
                      int time_modified, int time_published,
-                     GHashTable *hashed_cpes, int *transaction_size, int fresh)
+                     GHashTable *hashed_cpes, int *transaction_size)
 {
   element_t product;
   int first_product, first_affected;
   GString *sql_cpes, *sql_affected;
-  array_t *initial_affected;
-  iterator_t rows;
 
   if (list == NULL)
     return;
@@ -2647,23 +2595,6 @@ insert_cve_products (element_t list, resource_t cve,
   sql_affected = g_string_new ("INSERT INTO scap.affected_products"
                                " (cve, cpe)"
                                " VALUES");
-
-  /* Record existing affected products. */
-
-  if (fresh)
-    initial_affected = NULL;
-  else
-    {
-      initial_affected = make_array ();
-      init_iterator (&rows,
-                     "SELECT cpe FROM scap.affected_products"
-                     " WHERE cve = %llu;",
-                     cve);
-      while (next (&rows))
-        array_add (initial_affected,
-                   GINT_TO_POINTER (iterator_int64 (&rows, 0)));
-      cleanup_iterator (&rows);
-    }
 
   /* Buffer the SQL. */
 
@@ -2742,10 +2673,6 @@ insert_cve_products (element_t list, resource_t cve,
                 "%s (%llu, %i)",
                 first_affected ? "" : ",", cve,
                 cpe);
-
-              if (initial_affected)
-                /* Remove the affected product from initial_affected. */
-                array_remove (initial_affected, GINT_TO_POINTER (cpe));
             }
 
           first_affected = 0;
@@ -2757,28 +2684,6 @@ insert_cve_products (element_t list, resource_t cve,
 
       product = element_next (product);
     }
-
-  /* Remove affected_products that remain in initial_affected. */
-
-  if (initial_affected && initial_affected->len)
-    {
-      guint index;
-      GString *ids;
-
-      ids = g_string_new ("");
-      for (index = 0; index < initial_affected->len; index++)
-        g_string_append_printf (ids,
-                                "%s%i",
-                                index == 0 ? "" : ",",
-                                GPOINTER_TO_INT (g_ptr_array_index
-                                                  (initial_affected, index)));
-      sql ("DELETE from scap.affected_products"
-           " WHERE cve = %llu AND cpe = ANY(array[%s]);",
-           cve, ids->str);
-      g_string_free (ids, TRUE);
-    }
-   if (initial_affected)
-     g_ptr_array_free (initial_affected, TRUE);
 
   /* Run the SQL. */
 
@@ -2812,14 +2717,12 @@ insert_cve_products (element_t list, resource_t cve,
  * @param[in]  last_modified     XML last_modified element.
  * @param[in]  transaction_size  Statement counter for batching.
  * @param[in]  hashed_cpes       Hashed CPEs.
- * @param[in]  fresh             Whether the db was reset.
  *
  * @return 0 success, -1 error.
  */
 static int
 insert_cve_from_entry (element_t entry, element_t last_modified,
-                       GHashTable *hashed_cpes, int *transaction_size,
-                       int fresh)
+                       GHashTable *hashed_cpes, int *transaction_size)
 {
   element_t published, summary, cvss, score, base_metrics;
   element_t access_vector, access_complexity, authentication;
@@ -3037,7 +2940,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   g_free (score_text);
 
   insert_cve_products (list, cve, time_published, time_modified,
-                       hashed_cpes, transaction_size, fresh);
+                       hashed_cpes, transaction_size);
 
   g_free (quoted_id);
   return 0;
@@ -3047,18 +2950,12 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
  * @brief Update CVE info from a single XML feed file.
  *
  * @param[in]  xml_path          XML path.
- * @param[in]  last_scap_update  Time of last SCAP update.
- * @param[in]  last_cve_update   Time of last update to a DFN.
  * @param[in]  hashed_cpes       Hashed CPEs.
- * @param[in]  all_xml_cves      String to add all CVEs to.
- * @param[in]  fresh             Whether the db was reset.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_cve_xml (const gchar *xml_path, int last_scap_update,
-                int last_cve_update, GHashTable *hashed_cpes,
-                GString *all_xml_cves, int fresh)
+update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
 {
   GError *error;
   element_t element, entry;
@@ -3077,15 +2974,6 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
                  __func__,
                  strerror (errno));
       return -1;
-    }
-
-  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
-    {
-      g_info ("Skipping %s, file is older than last revision"
-              " (this is not an error)",
-              full_path);
-      g_free (full_path);
-      return 0;
     }
 
   g_info ("Updating %s", full_path);
@@ -3117,7 +3005,6 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
     {
       if (strcmp (element_name (entry), "entry") == 0)
         {
-          gchar *id;
           element_t last_modified;
 
           last_modified = element_child (entry, "vuln:last-modified-datetime");
@@ -3128,27 +3015,11 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
               goto fail;
             }
 
-          id = element_attribute (entry, "id");
-          if (id == NULL)
-            {
-              g_warning ("%s: id missing",
-                         __func__);
-              goto fail;
-            }
-
-          if (all_xml_cves && (all_xml_cves->str[0] == '\0'))
-            g_string_append_printf (all_xml_cves, "'%s'", id);
-          else if (all_xml_cves)
-            g_string_append_printf (all_xml_cves, ",'%s'", id);
-          g_free (id);
-
-          if (parse_iso_time_element_text (last_modified) > last_cve_update)
-            {
-              if (insert_cve_from_entry (entry, last_modified, hashed_cpes,
-                                         &transaction_size, fresh))
-                goto fail;
-              updated_scap_bund = 1;
-            }
+          if (insert_cve_from_entry (entry, last_modified, hashed_cpes,
+                                     &transaction_size))
+            goto fail;
+          // FIX always true
+          updated_scap_bund = 1;
         }
       entry = element_next (entry);
     }
@@ -3172,21 +3043,17 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
  *
  * Assume that the databases are attached.
  *
- * @param[in]  last_scap_update  Time of last SCAP update from meta.
- * @param[in]  fresh             Whether the db was reset.
- *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_scap_cves (int last_scap_update, int fresh)
+update_scap_cves ()
 {
   GError *error;
-  int count, last_cve_update, updated_scap_cves;
+  int count, updated_scap_cves;
   GDir *dir;
   const gchar *xml_path;
   GHashTable *hashed_cpes;
   iterator_t cpes;
-  GString *all_xml_cves;
 
   error = NULL;
   dir = g_dir_open (GVM_SCAP_DATA_DIR, 0, &error);
@@ -3198,9 +3065,6 @@ update_scap_cves (int last_scap_update, int fresh)
       return -1;
     }
 
-  last_cve_update = sql_int ("SELECT max (modification_time)"
-                             " FROM scap.cves;");
-
   hashed_cpes = g_hash_table_new (g_str_hash, g_str_equal);
   init_iterator (&cpes, "SELECT uuid, id FROM scap.cpes;");
   while (next (&cpes))
@@ -3208,18 +3072,12 @@ update_scap_cves (int last_scap_update, int fresh)
                          (gpointer*) iterator_string (&cpes, 0),
                          GINT_TO_POINTER (iterator_int (&cpes, 1)));
 
-  if (fresh)
-    all_xml_cves = NULL;
-  else
-    all_xml_cves = g_string_new ("");
-
   count = 0;
   updated_scap_cves = 0;
   while ((xml_path = g_dir_read_name (dir)))
     if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
       {
-        switch (update_cve_xml (xml_path, last_scap_update, last_cve_update,
-                                hashed_cpes, all_xml_cves, fresh))
+        switch (update_cve_xml (xml_path, hashed_cpes))
           {
             case 0:
               break;
@@ -3229,36 +3087,11 @@ update_scap_cves (int last_scap_update, int fresh)
             default:
               g_dir_close (dir);
               g_hash_table_destroy (hashed_cpes);
-              if (all_xml_cves)
-                g_string_free (all_xml_cves, TRUE);
               cleanup_iterator (&cpes);
               return -1;
           }
         count++;
       }
-
-  if (all_xml_cves && (strlen (all_xml_cves->str) > 0))
-    {
-      /* Remove CVES from the db that are not in all_xml_cves. */
-
-      g_string_prepend
-       (all_xml_cves, "WITH"
-                      " removed AS (SELECT id FROM scap.cves"
-                      "             WHERE NOT uuid = ANY(array[");
-
-      g_string_append
-       (all_xml_cves, "])),"
-                      " dummy AS (DELETE FROM scap.affected_products"
-                      "           WHERE cve IN (SELECT id FROM removed)"
-                      "           RETURNING *)"
-                      " DELETE FROM scap.cves"
-                      " WHERE id IN (SELECT id FROM removed);");
-
-      sql ("%s", all_xml_cves->str);
-      updated_scap_cves = 1;
-    }
-  if (all_xml_cves)
-    g_string_free (all_xml_cves, TRUE);
 
   if (count == 0)
     g_warning ("No CVEs found in %s", GVM_SCAP_DATA_DIR);
@@ -3515,23 +3348,19 @@ verify_oval_file (const gchar *full_path)
  * @brief Update OVALDEF info from a single XML feed file.
  *
  * @param[in]  file_and_date     Array containing XML path and timestamp.
- * @param[in]  last_scap_update  Time of last SCAP update.
- * @param[in]  last_ovaldef_update   Time of last update to an ovaldef.
  * @param[in]  private           Whether this is from the user's private dir.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
-                    int last_ovaldef_update, int private)
+update_ovaldef_xml (gchar **file_and_date, int private)
 {
   GError *error;
   element_t element, child;
-  const gchar *xml_path, *oval_timestamp;
+  const gchar *xml_path;
   gchar *xml_basename, *xml, *quoted_xml_basename;
   gsize xml_len;
-  GStatBuf state;
-  int last_oval_update, file_timestamp;
+  int file_timestamp;
   int transaction_size = 0;
 
   /* Setup variables. */
@@ -3540,26 +3369,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   assert (xml_path);
 
   g_debug ("%s: xml_path: %s", __func__, xml_path);
-
-  /* The timestamp from the OVAL XML. */
-  oval_timestamp = file_and_date[1];
-
-  if (g_stat (xml_path, &state))
-    {
-      g_warning ("%s: Failed to stat OVAL file %s: %s",
-                 __func__,
-                 xml_path,
-                 strerror (errno));
-      return -1;
-    }
-
-  if ((state.st_mtime - (state.st_mtime % 60)) <= last_scap_update)
-    {
-      g_info ("Skipping %s, file is older than last revision"
-              " (this is not an error)",
-              xml_path);
-      return 0;
-    }
 
   xml_basename = strstr (xml_path, GVM_SCAP_DATA_DIR);
   if (xml_basename == NULL)
@@ -3572,22 +3381,6 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
   xml_basename += strlen (GVM_SCAP_DATA_DIR);
 
   quoted_xml_basename = sql_quote (xml_basename);
-
-  /* The last time this file was updated in the db. */
-  last_oval_update = sql_int ("SELECT max(modification_time)"
-                              " FROM scap.ovaldefs"
-                              " WHERE xml_file = '%s';",
-                              quoted_xml_basename);
-
-  if (oval_timestamp
-      && (parse_iso_time (oval_timestamp) <= last_oval_update))
-    {
-      g_free (quoted_xml_basename);
-      g_info ("Skipping %s, file has older timestamp than latest OVAL"
-              " definition in database (this is not an error)",
-              xml_path);
-      return 0;
-    }
 
   if (private)
     {
@@ -3667,10 +3460,11 @@ update_ovaldef_xml (gchar **file_and_date, int last_scap_update,
                                      &definition_date_newest,
                                      &definition_date_oldest);
 
-              if (definition_date_oldest
-                  && (definition_date_oldest <= last_oval_update))
+              if (0)
                 {
                   gchar *id;
+
+                  // FIX remove.  now always full update
 
                   id = element_attribute (definition, "id");
                   quoted_oval_id = sql_quote (id ? id : "");
@@ -4098,16 +3892,15 @@ oval_files_free ()
  *
  * Assume that the databases are attached.
  *
- * @param[in]  last_scap_update  Time of last SCAP update from meta.
  * @param[in]  private           Whether to update private SCAP data, instead
  *                               of the feed data.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
 static int
-update_scap_ovaldefs (int last_scap_update, int private)
+update_scap_ovaldefs (int private)
 {
-  int count, last_oval_update, updated_scap_ovaldefs;
+  int count, updated_scap_ovaldefs;
   gchar *oval_dir;
   guint index;
   struct stat state;
@@ -4244,9 +4037,6 @@ update_scap_ovaldefs (int last_scap_update, int private)
 
   /* Process each file in the list, in the sorted order. */
 
-  last_oval_update = sql_int ("SELECT max (modification_time)"
-                              " FROM scap.ovaldefs;");
-
   count = 0;
   updated_scap_ovaldefs = 0;
   for (index = 0; index < oval_files->len; index++)
@@ -4254,8 +4044,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
       gchar **pair;
 
       pair = g_ptr_array_index (oval_files, index);
-      switch (update_ovaldef_xml (pair, last_scap_update, last_oval_update,
-                                  private))
+      switch (update_ovaldef_xml (pair, private))
         {
           case 0:
             break;
@@ -4328,6 +4117,7 @@ update_scap_ovaldefs (int last_scap_update, int private)
         }
       cleanup_iterator (&files);
 
+      // FIX possibly can remove too
       sql ("DELETE FROM scap.ovaldefs"
            " WHERE (xml_file NOT LIKE 'oval/%%')"
            "%s;",
@@ -4917,174 +4707,106 @@ update_scap_placeholders (int updated_cves)
 }
 
 /**
- * @brief Update data in the SCAP DB.
+ * @brief Update all data in the SCAP DB.
  *
- * Currently only works correctly with all data or OVAL definitions.
- *
- * @param[in]  ignore_last_scap_update  Whether to ignore the last update time.
- * @param[in]  reset_scap_db            Whether to remove the DB entirely first.
- *                                      DB will also be reset if last_scap_update
- *                                      is negative.
- * @param[in]  update_cpes              Whether to update CPEs.
- * @param[in]  update_cves              Whether to update CVEs.
- * @param[in]  update_ovaldefs          Whether to update OVAL definitions.
+ * @param[in]  reset_scap_db  Whether to rebuild regardless of last_scap_update.
  *
  * @return 0 success, -1 error.
  */
 static int
-update_scap (gboolean ignore_last_scap_update,
-             gboolean reset_scap_db,
-             gboolean update_cpes,
-             gboolean update_cves,
-             gboolean update_ovaldefs)
+update_scap (gboolean reset_scap_db)
 {
-  int last_feed_update, last_scap_update, reset_required;
   int updated_scap_ovaldefs, updated_scap_cpes, updated_scap_cves;
-  GString *all_xml_cpes;
 
   updated_scap_ovaldefs = 0;
   updated_scap_cpes = 0;
   updated_scap_cves = 0;
 
-  if (manage_scap_db_exists ())
-    {
-      if (check_scap_db_version ())
-        return -1;
-    }
+  if (reset_scap_db)
+    g_warning ("%s: Full rebuild requested, resetting SCAP db",
+               __func__);
+  else if (manage_scap_loaded () == 0)
+    g_warning ("%s: No SCAP db present, rebuilding SCAP db from scratch",
+               __func__);
   else
     {
-      g_info ("%s: Initializing SCAP database", __func__);
+      int last_scap_update;
 
-      if (manage_db_init ("scap"))
-        {
-          g_warning ("%s: Could not initialize SCAP database", __func__);
-          return -1;
-        }
-    }
-
-  reset_required = reset_scap_db ? -1 : 0;
-
-  if (manage_scap_loaded () == 0)
-    reset_required = -2;
-  else if (ignore_last_scap_update)
-    last_scap_update = 0;
-  else
-    {
       last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
                                   "                  WHERE name = 'last_update'),"
                                   "                 '-3');");
-      if (last_scap_update < 0)
-        reset_required = last_scap_update;
-    }
-
-  if (reset_required)
-    {
-      if (reset_required == -1)
-        g_warning ("%s: Full rebuild requested, resetting SCAP db",
-                   __func__);
-      else if (reset_required == -2)
-        g_warning ("%s: No SCAP db present, rebuilding SCAP db from scratch",
-                   __func__);
-      else if (reset_required == -3)
+      if (last_scap_update == -3)
         g_warning ("%s: SCAP db missing last_update record, resetting SCAP db",
                    __func__);
-      else
+      else if (last_scap_update < 0)
         g_warning ("%s: Inconsistent data, resetting SCAP db",
                    __func__);
-
-      if (manage_db_reinit ("scap"))
+      else
         {
-          g_warning ("%s: could not reinitialize SCAP database", __func__);
-          return -1;
+          int last_feed_update;
+
+          last_feed_update = manage_feed_timestamp ("scap");
+
+          if (last_feed_update == -1)
+            return -1;
+
+          if (last_scap_update == last_feed_update)
+            {
+              proctitle_set ("gvmd: Syncing SCAP: done");
+              return 0;
+            }
+
+          if (last_scap_update > last_feed_update)
+            {
+              g_warning ("%s: last scap update later than last feed update",
+                         __func__);
+              return -1;
+            }
         }
-      last_scap_update = 0;
     }
 
-  last_feed_update = manage_feed_timestamp ("scap");
-  if (last_feed_update == -1)
-    return -1;
-
-  if (last_scap_update >= last_feed_update)
-    return -1;
+  if (manage_db_reinit ("scap"))
+    {
+      g_warning ("%s: could not reinitialize SCAP database", __func__);
+      return -1;
+    }
 
   g_debug ("%s: sync", __func__);
 
   g_info ("%s: Updating data from feed", __func__);
 
-  if (reset_required)
-    all_xml_cpes = NULL;
-  else
-    all_xml_cpes = g_string_new ("");
+  g_debug ("%s: update cpes", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating CPEs");
 
-  if (update_cpes)
+  updated_scap_cpes = update_scap_cpes ();
+  if (updated_scap_cpes == -1)
+    goto fail;
+
+  g_debug ("%s: update cves", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating CVEs");
+
+  updated_scap_cves = update_scap_cves ();
+  if (updated_scap_cves == -1)
+    goto fail;
+
+  g_debug ("%s: update ovaldefs", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: Updating OVALdefs");
+
+  updated_scap_ovaldefs = update_scap_ovaldefs (0 /* Feed data. */);
+  if (updated_scap_ovaldefs == -1)
+    goto fail;
+
+  g_debug ("%s: updating user defined data", __func__);
+
+  switch (update_scap_ovaldefs (1 /* Private data. */))
     {
-      g_debug ("%s: update cpes", __func__);
-      proctitle_set ("gvmd: Syncing SCAP: Updating CPEs");
-
-      updated_scap_cpes = update_scap_cpes (last_scap_update, all_xml_cpes);
-      if (updated_scap_cpes == -1)
-        {
-          if (all_xml_cpes)
-            g_string_free (all_xml_cpes, TRUE);
-          goto fail;
-        }
-    }
-
-  if (update_cves)
-    {
-      g_debug ("%s: update cves", __func__);
-      proctitle_set ("gvmd: Syncing SCAP: Updating CVEs");
-
-      updated_scap_cves = update_scap_cves (last_scap_update, reset_required);
-      if (updated_scap_cves == -1)
-        {
-          if (all_xml_cpes)
-            g_string_free (all_xml_cpes, TRUE);
-          goto fail;
-        }
-    }
-
-  if (all_xml_cpes && (strlen (all_xml_cpes->str) > 0))
-    {
-      /* Remove CPES not in all_xml_cpes, except those in affected_products. */
-
-      g_string_prepend
-       (all_xml_cpes, "DELETE FROM scap.cpes"
-                      " WHERE NOT EXISTS (SELECT * FROM scap.affected_products"
-                      "                   WHERE cpe = scap.cpes.id)"
-                      " AND NOT uuid = ANY(array[");
-
-      g_string_append
-       (all_xml_cpes, "]);");
-
-      sql ("%s", all_xml_cpes->str);
-      updated_scap_cpes = 1;
-    }
-  if (all_xml_cpes)
-    g_string_free (all_xml_cpes, TRUE);
-
-  if (update_ovaldefs)
-    {
-      g_debug ("%s: update ovaldefs", __func__);
-      proctitle_set ("gvmd: Syncing SCAP: Updating OVALdefs");
-
-      updated_scap_ovaldefs =
-        update_scap_ovaldefs (last_scap_update, 0 /* Feed data. */);
-      if (updated_scap_ovaldefs == -1)
-        goto fail;
-
-      g_debug ("%s: updating user defined data", __func__);
-
-      switch (update_scap_ovaldefs (last_scap_update, 1 /* Private data. */))
-        {
-        case 0:
-          break;
-        case -1:
-          goto fail;
-        default:
-          updated_scap_ovaldefs = 1;
-          break;
-        }
+    case 0:
+      break;
+    case -1:
+      goto fail;
+    default:
+      updated_scap_ovaldefs = 1;
+      break;
     }
 
   g_debug ("%s: update max cvss", __func__);
@@ -5120,11 +4842,7 @@ update_scap (gboolean ignore_last_scap_update,
 static int
 sync_scap ()
 {
-  return update_scap (FALSE, /* ignore_last_scap_update */
-                      FALSE, /* reset_scap_db */
-                      TRUE,  /* update_cpes */
-                      TRUE,  /* update_cves */
-                      TRUE   /* update_ovaldefs */);
+  return update_scap (FALSE);
 }
 
 /**
@@ -5161,11 +4879,7 @@ rebuild_scap (const char *type)
 
   if (strcasecmp (type, "all") == 0)
     {
-      ret = update_scap (TRUE,   /* ignore_last_scap_update */
-                         TRUE,   /* reset_scap_db */
-                         TRUE,   /* update_cpes */
-                         TRUE,   /* update_cves */
-                         TRUE    /* update_ovaldefs */);
+      ret = update_scap (TRUE);
       if (ret == 1)
         ret = 2;
     }
@@ -5173,15 +4887,11 @@ rebuild_scap (const char *type)
            || strcasecmp (type, "ovaldef") == 0)
     {
       g_debug ("%s: rebuilding ovaldefs", __func__);
+
       sql ("DELETE FROM affected_ovaldefs");
       sql ("DELETE FROM ovaldefs");
       sql ("DELETE FROM ovalfiles");
-
-      ret = update_scap (TRUE,  /* ignore_last_scap_update */
-                         FALSE, /* reset_scap_db */
-                         FALSE, /* update_cpes */
-                         FALSE, /* update_cves */
-                         TRUE   /* update_ovaldefs */);
+      ret = update_scap (TRUE);
       if (ret == 1)
         ret = 2;
     }
