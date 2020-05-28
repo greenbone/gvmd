@@ -2619,6 +2619,7 @@ array_remove (array_t *array, gpointer pointer)
  * @param[in]  time_modified     Time modified.
  * @param[in]  hashed_cpes       Hashed CPEs.
  * @param[in]  transaction_size  Statement counter for batching.
+ * @param[in]  fresh             Whether the db was reset.
  */
 static void
 insert_cve_products (element_t list, resource_t cve,
@@ -2811,6 +2812,7 @@ insert_cve_products (element_t list, resource_t cve,
  * @param[in]  last_modified     XML last_modified element.
  * @param[in]  transaction_size  Statement counter for batching.
  * @param[in]  hashed_cpes       Hashed CPEs.
+ * @param[in]  fresh             Whether the db was reset.
  *
  * @return 0 success, -1 error.
  */
@@ -3049,6 +3051,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
  * @param[in]  last_cve_update   Time of last update to a DFN.
  * @param[in]  hashed_cpes       Hashed CPEs.
  * @param[in]  all_xml_cves      String to add all CVEs to.
+ * @param[in]  fresh             Whether the db was reset.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
@@ -3170,6 +3173,7 @@ update_cve_xml (const gchar *xml_path, int last_scap_update,
  * Assume that the databases are attached.
  *
  * @param[in]  last_scap_update  Time of last SCAP update from meta.
+ * @param[in]  fresh             Whether the db was reset.
  *
  * @return 0 nothing to do, 1 updated, -1 error.
  */
