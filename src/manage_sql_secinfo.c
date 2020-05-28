@@ -4834,7 +4834,7 @@ update_scap (gboolean reset_scap_db)
 
   if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
                "               information_schema.schemata"
-               "               WHERE schema_name = 'name');"))
+               "               WHERE schema_name = 'scap');"))
     {
       sql ("ALTER SCHEMA scap RENAME TO scap3;");
       sql ("ALTER SCHEMA scap2 RENAME TO scap;");
