@@ -4741,6 +4741,87 @@ update_scap (gboolean reset_scap_db)
       return -1;
     }
 
+  gchar *file_cve, *file_cpe, *file_affected_products;
+  gchar *file_ovaldefs, *file_ovalfiles, *file_affected_ovaldefs;
+
+  // GRANT pg_read_server_files TO student;
+/*
+psql -c "COPY scap.cpes TO STDOUT WITH CSV" gvmd > table-cpes.csv
+psql -c "COPY scap.cves TO STDOUT WITH CSV" gvmd > table-cves.csv
+psql -c "COPY scap.affected_products TO STDOUT WITH CSV" gvmd > table-affected-products.csv
+psql -c "COPY scap.ovaldefs TO STDOUT WITH CSV" gvmd > table-ovaldefs.csv
+psql -c "COPY scap.ovalfiles TO STDOUT WITH CSV" gvmd > table-ovalfiles.csv
+psql -c "COPY scap.affected_ovaldefs TO STDOUT WITH CSV" gvmd > table-affected-ovaldefs.csv
+*/
+
+  file_cve = g_build_filename (GVM_SCAP_DATA_DIR, "table-cves.csv", NULL);
+  file_cpe = g_build_filename (GVM_SCAP_DATA_DIR, "table-cpes.csv", NULL);
+  file_affected_products = g_build_filename (GVM_SCAP_DATA_DIR,
+                                             "table-affected.csv",
+                                             NULL);
+  file_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovaldefs.csv", NULL);
+  file_ovalfiles = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovalfiles.csv", NULL);
+  file_affected_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR,
+                                             "table-affected-ovaldefs.csv",
+                                             NULL);
+
+  if (g_file_test (file_cve, G_FILE_TEST_EXISTS)
+      && g_file_test (file_cpe, G_FILE_TEST_EXISTS)
+      && g_file_test (file_affected_products, G_FILE_TEST_EXISTS)
+      && g_file_test (file_ovaldefs, G_FILE_TEST_EXISTS)
+      && g_file_test (file_ovalfiles, G_FILE_TEST_EXISTS)
+      && g_file_test (file_affected_ovaldefs, G_FILE_TEST_EXISTS))
+    {
+      sql ("COPY scap2.cves FROM '%s' WITH (FORMAT csv);", file_cve);
+      g_free (file_cve);
+
+      sql ("COPY scap2.cpes FROM '%s' WITH (FORMAT csv);", file_cpe);
+      g_free (file_cpe);
+
+      sql ("COPY scap2.affected_products FROM '%s' WITH (FORMAT csv);",
+           file_affected_products);
+      g_free (file_affected_products);
+
+      sql ("COPY scap2.ovaldefs FROM '%s' WITH (FORMAT csv);", file_ovaldefs);
+      g_free (file_ovaldefs);
+
+      sql ("COPY scap2.ovalfiles FROM '%s' WITH (FORMAT csv);", file_ovalfiles);
+      g_free (file_ovalfiles);
+
+      sql ("COPY scap2.affected_ovaldefs FROM '%s' WITH (FORMAT csv);",
+           file_affected_ovaldefs);
+      g_free (file_affected_ovaldefs);
+
+      /* Add the indexes, now that the data is ready. */
+
+      g_debug ("%s: add indexes", __func__);
+      proctitle_set ("gvmd: Syncing SCAP: Adding indexes");
+
+      if (manage_db_init_indexes ("scap"))
+        {
+          g_warning ("%s: could not initialize SCAP indexes", __func__);
+          return -1;
+        }
+
+      /* Replace the real scap schema with the new one. */
+
+      if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
+                   "               information_schema.schemata"
+                   "               WHERE schema_name = 'scap');"))
+        {
+          sql ("ALTER SCHEMA scap RENAME TO scap3;");
+          sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+          sql ("DROP SCHEMA scap3 CASCADE;");
+        }
+      else
+        sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+
+      g_info ("%s: Updating SCAP info succeeded", __func__);
+      proctitle_set ("gvmd: Syncing SCAP: done");
+
+      return 0;
+    }
+
   /* Add the indexes, now that the data is ready. */
 
   g_debug ("%s: add indexes", __func__);
