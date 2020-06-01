@@ -4829,10 +4829,7 @@ psql -c "COPY scap.affected_ovaldefs TO STDOUT WITH CSV" gvmd > table-affected-o
           return -1;
         }
 
-      if (update_scap_end ())
-        goto fail;
-
-      return 0;
+      return update_scap_end ();
     }
 
   /* Add the indexes, now that the data is ready. */
@@ -4856,24 +4853,24 @@ psql -c "COPY scap.affected_ovaldefs TO STDOUT WITH CSV" gvmd > table-affected-o
   proctitle_set ("gvmd: Syncing SCAP: Updating CPEs");
 
   if (update_scap_cpes () == -1)
-    goto fail;
+    return -1;
 
   g_debug ("%s: update cves", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Updating CVEs");
 
   if (update_scap_cves () == -1)
-    goto fail;
+    return -1;
 
   g_debug ("%s: update ovaldefs", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Updating OVALdefs");
 
   if (update_scap_ovaldefs (0 /* Feed data. */) == -1)
-    goto fail;
+    return -1;
 
   g_debug ("%s: updating user defined data", __func__);
 
   if (update_scap_ovaldefs (1 /* Private data. */) == -1)
-    goto fail;
+    return -1;
 
   /* Do calculations that need all data. */
 
@@ -4887,13 +4884,7 @@ psql -c "COPY scap.affected_ovaldefs TO STDOUT WITH CSV" gvmd > table-affected-o
 
   update_scap_placeholders ();
 
-  if (update_scap_end ())
-    goto fail;
-
-  return 0;
-
- fail:
-  return -1;
+  return update_scap_end ();
 }
 
 /**
