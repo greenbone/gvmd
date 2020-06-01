@@ -4624,11 +4624,7 @@ update_scap_timestamp ()
 }
 
 /**
- * @brief Update CERT-Bund Max CVSS.
- *
- * @param[in]  updated_cves      Whether CVEs were updated.
- * @param[in]  updated_cpes      Whether CPEs were updated.
- * @param[in]  updated_ovaldefs  Whether OVAL defs were updated.
+ * @brief Update SCAP Max CVSS.
  */
 static void
 update_scap_cvss ()
@@ -4657,8 +4653,6 @@ update_scap_cvss ()
 
 /**
  * @brief Update SCAP placeholder CVES.
- *
- * @param[in]  updated_cves  Whether the CVEs were updated.
  */
 static void
 update_scap_placeholders ()
