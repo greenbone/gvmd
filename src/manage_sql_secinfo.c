@@ -3439,6 +3439,12 @@ update_ovaldef_xml (gchar **file_and_date, int private)
             {
               int definition_date_newest, definition_date_oldest;
               gchar *quoted_id, *quoted_oval_id;
+              element_t metadata, title, description, repository, reference;
+              element_t status;
+              gchar *deprecated, *version, *id, *id_value, *class;
+              gchar *quoted_title, *quoted_class, *quoted_description;
+              gchar *quoted_status, *status_text;
+              int cve_count;
 
               /* The newest and oldest of this definition's dates (created,
                * modified, etc), from the OVAL XML. */
@@ -3446,213 +3452,188 @@ update_ovaldef_xml (gchar **file_and_date, int private)
                                      &definition_date_newest,
                                      &definition_date_oldest);
 
-              if (0)
+              id_value = element_attribute (definition, "id");
+              if (id_value == NULL)
                 {
-                  gchar *id;
-
-                  // FIX remove.  now always full update
-
-                  id = element_attribute (definition, "id");
-                  quoted_oval_id = sql_quote (id ? id : "");
-                  g_free (id);
-                  g_info ("%s: Filtered %s (%i)",
-                          __func__,
-                          quoted_oval_id,
-                          definition_date_oldest);
-                  g_free (quoted_oval_id);
+                  g_warning ("%s: oval_definition missing id",
+                             __func__);
+                  element_free (element);
+                  goto fail;
                 }
-              else
+
+              metadata = element_child (definition, "metadata");
+              if (metadata == NULL)
                 {
-                  element_t metadata, title, description, repository, reference;
-                  element_t status;
-                  gchar *deprecated, *version, *id, *id_value, *class;
-                  gchar *quoted_title, *quoted_class, *quoted_description;
-                  gchar *quoted_status, *status_text;
-                  int cve_count;
-
-                  id_value = element_attribute (definition, "id");
-                  if (id_value == NULL)
-                    {
-                      g_warning ("%s: oval_definition missing id",
-                                 __func__);
-                      element_free (element);
-                      goto fail;
-                    }
-
-                  metadata = element_child (definition, "metadata");
-                  if (metadata == NULL)
-                    {
-                      g_warning ("%s: metadata missing",
-                                 __func__);
-                      element_free (element);
-                      g_free (id_value);
-                      goto fail;
-                    }
-
-                  title = element_child (metadata, "title");
-                  if (title == NULL)
-                    {
-                      g_warning ("%s: title missing",
-                                 __func__);
-                      element_free (element);
-                      g_free (id_value);
-                      goto fail;
-                    }
-
-                  description = element_child (metadata, "description");
-                  if (description == NULL)
-                    {
-                      g_warning ("%s: description missing",
-                                 __func__);
-                      element_free (element);
-                      g_free (id_value);
-                      goto fail;
-                    }
-
-                  repository = element_child (metadata, "oval_repository");
-                  if (repository == NULL)
-                    {
-                      g_warning ("%s: oval_repository missing",
-                                 __func__);
-                      element_free (element);
-                      g_free (id_value);
-                      goto fail;
-                    }
-
-                  cve_count = 0;
-                  reference = element_first_child (metadata);
-                  while (reference)
-                    {
-                      if (strcmp (element_name (reference), "reference") == 0)
-                        {
-                          gchar *source;
-
-                          source = element_attribute (reference, "source");
-                          if (source && strcasecmp (source, "cve") == 0)
-                            cve_count++;
-                          g_free (source);
-                        }
-                      reference = element_next (reference);
-                    }
-
-                  id = g_strdup_printf ("%s_%s", id_value, xml_basename);
-                  quoted_id = sql_quote (id);
-                  g_free (id);
-                  quoted_oval_id = sql_quote (id_value);
+                  g_warning ("%s: metadata missing",
+                             __func__);
+                  element_free (element);
                   g_free (id_value);
-
-                  version = element_attribute (definition, "version");
-                  if (g_regex_match_simple ("^[0-9]+$", (gchar *) version, 0, 0) == 0)
-                    {
-                      g_warning ("%s: invalid version: %s",
-                                 __func__,
-                                 version);
-                      element_free (element);
-                      g_free (version);
-                      goto fail;
-                    }
-
-                  class = element_attribute (definition, "class");
-                  quoted_class = sql_quote (class);
-                  g_free (class);
-                  quoted_title = sql_quote_element_text (title);
-                  quoted_description = sql_quote_element_text (description);
-                  status = element_child (repository, "status");
-                  deprecated = element_attribute (definition, "deprecated");
-                  status_text = NULL;
-                  if (status)
-                    status_text = element_text (status);
-                  if (status_text && strlen (status_text))
-                    quoted_status = sql_quote (status_text);
-                  else if (deprecated && strcasecmp (deprecated, "TRUE"))
-                    quoted_status = sql_quote ("DEPRECATED");
-                  else
-                    quoted_status = sql_quote ("");
-                  g_free (status_text);
-
-                  sql ("INSERT INTO scap2.ovaldefs"
-                       " (uuid, name, comment, creation_time,"
-                       "  modification_time, version, deprecated, def_class,"
-                       "  title, description, xml_file, status,"
-                       "  max_cvss, cve_refs)"
-                       " VALUES ('%s', '%s', '', %i, %i, %s, %i, '%s', '%s',"
-                       "         '%s', '%s', '%s', 0.0, %i)"
-                       " ON CONFLICT (uuid) DO UPDATE"
-                       " SET name = EXCLUDED.name,"
-                       "     comment = EXCLUDED.comment,"
-                       "     creation_time = EXCLUDED.creation_time,"
-                       "     modification_time = EXCLUDED.modification_time,"
-                       "     version = EXCLUDED.version,"
-                       "     deprecated = EXCLUDED.deprecated,"
-                       "     def_class = EXCLUDED.def_class,"
-                       "     title = EXCLUDED.title,"
-                       "     description = EXCLUDED.description,"
-                       "     xml_file = EXCLUDED.xml_file,"
-                       "     status = EXCLUDED.status,"
-                       "     max_cvss = 0.0,"
-                       "     cve_refs = EXCLUDED.cve_refs;",
-                       quoted_id,
-                       quoted_oval_id,
-                       definition_date_oldest == 0
-                        ? file_timestamp
-                        : definition_date_newest,
-                       definition_date_oldest == 0
-                        ? file_timestamp
-                        : definition_date_oldest,
-                       version,
-                       (deprecated && strcasecmp (deprecated, "TRUE")) ? 1 : 0,
-                       quoted_class,
-                       quoted_title,
-                       quoted_description,
-                       quoted_xml_basename,
-                       quoted_status,
-                       cve_count);
-                  increment_transaction_size (&transaction_size);
-                  g_free (quoted_id);
-                  g_free (quoted_class);
-                  g_free (quoted_title);
-                  g_free (quoted_description);
-                  g_free (quoted_status);
-                  g_free (deprecated);
-                  g_free (version);
-
-                  reference = element_first_child (metadata);
-                  while (reference)
-                    {
-                      if (strcmp (element_name (reference), "reference") == 0)
-                        {
-                          gchar *source;
-
-                          source = element_attribute (reference, "source");
-                          if (source && strcasecmp (source, "cve") == 0)
-                            {
-                              gchar *ref_id, *quoted_ref_id;
-
-                              ref_id = element_attribute (reference, "ref_id");
-                              quoted_ref_id = sql_quote (ref_id);
-                              g_free (ref_id);
-
-                              sql ("INSERT INTO scap2.affected_ovaldefs (cve, ovaldef)"
-                                   " SELECT cves.id, ovaldefs.id"
-                                   " FROM scap2.cves, scap2.ovaldefs"
-                                   " WHERE cves.name='%s'"
-                                   " AND ovaldefs.name = '%s'"
-                                   " AND NOT EXISTS (SELECT * FROM scap2.affected_ovaldefs"
-                                   "                 WHERE cve = cves.id"
-                                   "                 AND ovaldef = ovaldefs.id);",
-                                   quoted_ref_id,
-                                   quoted_oval_id);
-
-                              g_free (quoted_ref_id);
-                              increment_transaction_size (&transaction_size);
-                            }
-                          g_free (source);
-                        }
-                      reference = element_next (reference);
-                    }
-
-                  g_free (quoted_oval_id);
+                  goto fail;
                 }
+
+              title = element_child (metadata, "title");
+              if (title == NULL)
+                {
+                  g_warning ("%s: title missing",
+                             __func__);
+                  element_free (element);
+                  g_free (id_value);
+                  goto fail;
+                }
+
+              description = element_child (metadata, "description");
+              if (description == NULL)
+                {
+                  g_warning ("%s: description missing",
+                             __func__);
+                  element_free (element);
+                  g_free (id_value);
+                  goto fail;
+                }
+
+              repository = element_child (metadata, "oval_repository");
+              if (repository == NULL)
+                {
+                  g_warning ("%s: oval_repository missing",
+                             __func__);
+                  element_free (element);
+                  g_free (id_value);
+                  goto fail;
+                }
+
+              cve_count = 0;
+              reference = element_first_child (metadata);
+              while (reference)
+                {
+                  if (strcmp (element_name (reference), "reference") == 0)
+                    {
+                      gchar *source;
+
+                      source = element_attribute (reference, "source");
+                      if (source && strcasecmp (source, "cve") == 0)
+                        cve_count++;
+                      g_free (source);
+                    }
+                  reference = element_next (reference);
+                }
+
+              id = g_strdup_printf ("%s_%s", id_value, xml_basename);
+              quoted_id = sql_quote (id);
+              g_free (id);
+              quoted_oval_id = sql_quote (id_value);
+              g_free (id_value);
+
+              version = element_attribute (definition, "version");
+              if (g_regex_match_simple ("^[0-9]+$", (gchar *) version, 0, 0) == 0)
+                {
+                  g_warning ("%s: invalid version: %s",
+                             __func__,
+                             version);
+                  element_free (element);
+                  g_free (version);
+                  goto fail;
+                }
+
+              class = element_attribute (definition, "class");
+              quoted_class = sql_quote (class);
+              g_free (class);
+              quoted_title = sql_quote_element_text (title);
+              quoted_description = sql_quote_element_text (description);
+              status = element_child (repository, "status");
+              deprecated = element_attribute (definition, "deprecated");
+              status_text = NULL;
+              if (status)
+                status_text = element_text (status);
+              if (status_text && strlen (status_text))
+                quoted_status = sql_quote (status_text);
+              else if (deprecated && strcasecmp (deprecated, "TRUE"))
+                quoted_status = sql_quote ("DEPRECATED");
+              else
+                quoted_status = sql_quote ("");
+              g_free (status_text);
+
+              sql ("INSERT INTO scap2.ovaldefs"
+                   " (uuid, name, comment, creation_time,"
+                   "  modification_time, version, deprecated, def_class,"
+                   "  title, description, xml_file, status,"
+                   "  max_cvss, cve_refs)"
+                   " VALUES ('%s', '%s', '', %i, %i, %s, %i, '%s', '%s',"
+                   "         '%s', '%s', '%s', 0.0, %i)"
+                   " ON CONFLICT (uuid) DO UPDATE"
+                   " SET name = EXCLUDED.name,"
+                   "     comment = EXCLUDED.comment,"
+                   "     creation_time = EXCLUDED.creation_time,"
+                   "     modification_time = EXCLUDED.modification_time,"
+                   "     version = EXCLUDED.version,"
+                   "     deprecated = EXCLUDED.deprecated,"
+                   "     def_class = EXCLUDED.def_class,"
+                   "     title = EXCLUDED.title,"
+                   "     description = EXCLUDED.description,"
+                   "     xml_file = EXCLUDED.xml_file,"
+                   "     status = EXCLUDED.status,"
+                   "     max_cvss = 0.0,"
+                   "     cve_refs = EXCLUDED.cve_refs;",
+                   quoted_id,
+                   quoted_oval_id,
+                   definition_date_oldest == 0
+                    ? file_timestamp
+                    : definition_date_newest,
+                   definition_date_oldest == 0
+                    ? file_timestamp
+                    : definition_date_oldest,
+                   version,
+                   (deprecated && strcasecmp (deprecated, "TRUE")) ? 1 : 0,
+                   quoted_class,
+                   quoted_title,
+                   quoted_description,
+                   quoted_xml_basename,
+                   quoted_status,
+                   cve_count);
+              increment_transaction_size (&transaction_size);
+              g_free (quoted_id);
+              g_free (quoted_class);
+              g_free (quoted_title);
+              g_free (quoted_description);
+              g_free (quoted_status);
+              g_free (deprecated);
+              g_free (version);
+
+              reference = element_first_child (metadata);
+              while (reference)
+                {
+                  if (strcmp (element_name (reference), "reference") == 0)
+                    {
+                      gchar *source;
+
+                      source = element_attribute (reference, "source");
+                      if (source && strcasecmp (source, "cve") == 0)
+                        {
+                          gchar *ref_id, *quoted_ref_id;
+
+                          ref_id = element_attribute (reference, "ref_id");
+                          quoted_ref_id = sql_quote (ref_id);
+                          g_free (ref_id);
+
+                          sql ("INSERT INTO scap2.affected_ovaldefs (cve, ovaldef)"
+                               " SELECT cves.id, ovaldefs.id"
+                               " FROM scap2.cves, scap2.ovaldefs"
+                               " WHERE cves.name='%s'"
+                               " AND ovaldefs.name = '%s'"
+                               " AND NOT EXISTS (SELECT * FROM scap2.affected_ovaldefs"
+                               "                 WHERE cve = cves.id"
+                               "                 AND ovaldef = ovaldefs.id);",
+                               quoted_ref_id,
+                               quoted_oval_id);
+
+                          g_free (quoted_ref_id);
+                          increment_transaction_size (&transaction_size);
+                        }
+                      g_free (source);
+                    }
+                  reference = element_next (reference);
+                }
+
+              g_free (quoted_oval_id);
             }
           definition = element_next (definition);
         }
