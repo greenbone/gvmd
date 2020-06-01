@@ -4504,7 +4504,6 @@ manage_sync_cert (sigset_t *sigmask_current)
 int
 check_scap_db_version ()
 {
-  // FIX drop with full rebuild
   switch (manage_scap_db_version ())
     {
       /* TODO The sync script had a whole lot of migrators in here. */
