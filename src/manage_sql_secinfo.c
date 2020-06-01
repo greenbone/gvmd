@@ -4077,7 +4077,6 @@ update_scap_ovaldefs (int private)
         }
       cleanup_iterator (&files);
 
-      // FIX possibly can remove too
       sql ("DELETE FROM scap2.ovaldefs"
            " WHERE (xml_file NOT LIKE 'oval/%%')"
            "%s;",
