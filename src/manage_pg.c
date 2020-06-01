@@ -3126,7 +3126,7 @@ manage_db_init (const gchar *name)
            " $$ LANGUAGE plpgsql;");
 
       sql ("SELECT set_config ('search_path',"
-           "                   current_setting ('search_path') || ',scap2',"
+           "                   'scap2,' || current_setting ('search_path'),"
            "                   false);");
 
       sql ("SELECT drop_scap2 ();");
