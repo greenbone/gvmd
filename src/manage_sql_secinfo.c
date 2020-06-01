@@ -2949,7 +2949,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
  * @param[in]  xml_path          XML path.
  * @param[in]  hashed_cpes       Hashed CPEs.
  *
- * @return 0 nothing to do, 1 updated, -1 error.
+ * @return 0 success, -1 error.
  */
 static int
 update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
@@ -2959,10 +2959,8 @@ update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
   gchar *xml, *full_path;
   gsize xml_len;
   GStatBuf state;
-  int updated_scap_bund;
   int transaction_size = 0;
 
-  updated_scap_bund = 0;
   full_path = g_build_filename (GVM_SCAP_DATA_DIR, xml_path, NULL);
 
   if (g_stat (full_path, &state))
@@ -3015,8 +3013,6 @@ update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
           if (insert_cve_from_entry (entry, last_modified, hashed_cpes,
                                      &transaction_size))
             goto fail;
-          // FIX always true
-          updated_scap_bund = 1;
         }
       entry = element_next (entry);
     }
@@ -3024,7 +3020,7 @@ update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
   element_free (element);
   g_free (full_path);
   sql_commit ();
-  return updated_scap_bund;
+  return 0;
 
  fail:
   element_free (element);
@@ -3073,17 +3069,12 @@ update_scap_cves ()
   while ((xml_path = g_dir_read_name (dir)))
     if (fnmatch ("nvdcve-2.0-*.xml", xml_path, 0) == 0)
       {
-        switch (update_cve_xml (xml_path, hashed_cpes))
+        if (update_cve_xml (xml_path, hashed_cpes))
           {
-            case 0:
-              break;
-            case 1:
-              break;
-            default:
-              g_dir_close (dir);
-              g_hash_table_destroy (hashed_cpes);
-              cleanup_iterator (&cpes);
-              return -1;
+            g_dir_close (dir);
+            g_hash_table_destroy (hashed_cpes);
+            cleanup_iterator (&cpes);
+            return -1;
           }
         count++;
       }
