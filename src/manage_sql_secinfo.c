@@ -2651,7 +2651,7 @@ insert_cve_products (element_t list, resource_t cve,
               g_string_append_printf
                (sql_affected,
                 "%s (%llu,"
-                "    (SELECT id FROM cpes"
+                "    (SELECT id FROM scap2.cpes"
                 "     WHERE name='%s'))",
                 first_affected ? "" : ",", cve, quoted_product);
             }
@@ -3641,12 +3641,12 @@ update_ovaldef_xml (gchar **file_and_date, int private)
                               quoted_ref_id = sql_quote (ref_id);
                               g_free (ref_id);
 
-                              sql ("INSERT INTO affected_ovaldefs (cve, ovaldef)"
+                              sql ("INSERT INTO scap2.affected_ovaldefs (cve, ovaldef)"
                                    " SELECT cves.id, ovaldefs.id"
-                                   " FROM cves, ovaldefs"
+                                   " FROM scap2.cves, scap2.ovaldefs"
                                    " WHERE cves.name='%s'"
                                    " AND ovaldefs.name = '%s'"
-                                   " AND NOT EXISTS (SELECT * FROM affected_ovaldefs"
+                                   " AND NOT EXISTS (SELECT * FROM scap2.affected_ovaldefs"
                                    "                 WHERE cve = cves.id"
                                    "                 AND ovaldef = ovaldefs.id);",
                                    quoted_ref_id,
