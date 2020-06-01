@@ -4675,6 +4675,38 @@ update_scap_placeholders ()
 }
 
 /**
+ * @brief Finish scap update.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_scap_end ()
+{
+  g_debug ("%s: update timestamp", __func__);
+
+  if (update_scap_timestamp ())
+    return -1;
+
+  /* Replace the real scap schema with the new one. */
+
+  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
+               "               information_schema.schemata"
+               "               WHERE schema_name = 'scap');"))
+    {
+      sql ("ALTER SCHEMA scap RENAME TO scap3;");
+      sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+      sql ("DROP SCHEMA scap3 CASCADE;");
+    }
+  else
+    sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+
+  g_info ("%s: Updating SCAP info succeeded", __func__);
+  proctitle_set ("gvmd: Syncing SCAP: done");
+
+  return 0;
+}
+
+/**
  * @brief Update all data in the SCAP DB.
  *
  * @param[in]  reset_scap_db  Whether to rebuild regardless of last_scap_update.
@@ -4797,21 +4829,8 @@ psql -c "COPY scap.affected_ovaldefs TO STDOUT WITH CSV" gvmd > table-affected-o
           return -1;
         }
 
-      /* Replace the real scap schema with the new one. */
-
-      if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
-                   "               information_schema.schemata"
-                   "               WHERE schema_name = 'scap');"))
-        {
-          sql ("ALTER SCHEMA scap RENAME TO scap3;");
-          sql ("ALTER SCHEMA scap2 RENAME TO scap;");
-          sql ("DROP SCHEMA scap3 CASCADE;");
-        }
-      else
-        sql ("ALTER SCHEMA scap2 RENAME TO scap;");
-
-      g_info ("%s: Updating SCAP info succeeded", __func__);
-      proctitle_set ("gvmd: Syncing SCAP: done");
+      if (update_scap_end ())
+        goto fail;
 
       return 0;
     }
@@ -4868,26 +4887,8 @@ psql -c "COPY scap.affected_ovaldefs TO STDOUT WITH CSV" gvmd > table-affected-o
 
   update_scap_placeholders ();
 
-  g_debug ("%s: update timestamp", __func__);
-
-  if (update_scap_timestamp ())
+  if (update_scap_end ())
     goto fail;
-
-  /* Replace the real scap schema with the new one. */
-
-  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
-               "               information_schema.schemata"
-               "               WHERE schema_name = 'scap');"))
-    {
-      sql ("ALTER SCHEMA scap RENAME TO scap3;");
-      sql ("ALTER SCHEMA scap2 RENAME TO scap;");
-      sql ("DROP SCHEMA scap3 CASCADE;");
-    }
-  else
-    sql ("ALTER SCHEMA scap2 RENAME TO scap;");
-
-  g_info ("%s: Updating SCAP info succeeded", __func__);
-  proctitle_set ("gvmd: Syncing SCAP: done");
 
   return 0;
 
