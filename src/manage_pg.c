@@ -3206,60 +3206,6 @@ manage_db_init (const gchar *name)
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
            "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id));");
 
-      /* Create deletion triggers. */
-
-#if 0
-      sql ("CREATE OR REPLACE FUNCTION scap_delete_affected ()"
-           " RETURNS TRIGGER AS $$"
-           " BEGIN"
-           "   DELETE FROM affected_products where cve = old.id;"
-           "   DELETE FROM affected_ovaldefs where cve = old.id;"
-           "   RETURN old;"
-           " END;"
-           "$$ LANGUAGE plpgsql;");
-
-      sql ("CREATE TRIGGER cves_delete AFTER DELETE ON cves"
-	   " FOR EACH ROW EXECUTE PROCEDURE scap_delete_affected ();");
-
-      sql ("CREATE OR REPLACE FUNCTION scap_update_cpes ()"
-           " RETURNS TRIGGER AS $$"
-           " BEGIN"
-           "   UPDATE cpes SET max_cvss = 0.0 WHERE id = old.cpe;"
-           "   UPDATE cpes SET cve_refs = cve_refs -1 WHERE id = old.cpe;"
-           "   RETURN old;"
-           " END;"
-           "$$ LANGUAGE plpgsql;");
-
-      sql ("CREATE TRIGGER affected_delete AFTER DELETE ON affected_products"
-           " FOR EACH ROW EXECUTE PROCEDURE scap_update_cpes ();");
-
-      sql ("CREATE OR REPLACE FUNCTION scap_delete_oval ()"
-           " RETURNS TRIGGER AS $$"
-           " BEGIN"
-           "   DELETE FROM affected_ovaldefs"
-           "     WHERE id IN (SELECT id FROM ovaldefs"
-           "                  WHERE ovaldefs.xml_file = old.xml_file);"
-           "   DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;"
-           "   RETURN old;"
-           " END;"
-           "$$ LANGUAGE plpgsql;");
-
-      sql ("CREATE TRIGGER ovalfiles_delete AFTER DELETE ON ovalfiles"
-           " FOR EACH ROW EXECUTE PROCEDURE scap_delete_oval ();");
-
-      sql ("CREATE OR REPLACE FUNCTION scap_update_oval ()"
-           " RETURNS TRIGGER AS $$"
-           " BEGIN"
-           "   UPDATE ovaldefs SET max_cvss = 0.0 WHERE id = old.ovaldef;"
-           "   RETURN old;"
-           " END;"
-           "$$ LANGUAGE plpgsql;");
-
-      sql ("CREATE TRIGGER affected_ovaldefs_delete"
-           " AFTER DELETE ON affected_ovaldefs"
-	   " FOR EACH ROW EXECUTE PROCEDURE scap_update_oval ();");
-#endif
-
       /* Init tables. */
 
       sql ("INSERT INTO scap2.meta (name, value)"
