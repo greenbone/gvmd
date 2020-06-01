@@ -4707,6 +4707,71 @@ update_scap_end ()
 }
 
 /**
+ * @brief Try load the feed from feed CSV files.
+ *
+ * @return 0 success, -1 error, 1 no CSV.
+ */
+static int
+try_load_csv ()
+{
+  gchar *file_cves, *file_cpes, *file_affected_products;
+  gchar *file_ovaldefs, *file_ovalfiles, *file_affected_ovaldefs;
+
+  file_cves = g_build_filename (GVM_SCAP_DATA_DIR, "table-cves.csv", NULL);
+  file_cpes = g_build_filename (GVM_SCAP_DATA_DIR, "table-cpes.csv", NULL);
+  file_affected_products = g_build_filename (GVM_SCAP_DATA_DIR,
+                                             "table-affected-products.csv",
+                                             NULL);
+  file_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovaldefs.csv", NULL);
+  file_ovalfiles = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovalfiles.csv", NULL);
+  file_affected_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR,
+                                             "table-affected-ovaldefs.csv",
+                                             NULL);
+
+  if (g_file_test (file_cves, G_FILE_TEST_EXISTS)
+      && g_file_test (file_cpes, G_FILE_TEST_EXISTS)
+      && g_file_test (file_affected_products, G_FILE_TEST_EXISTS)
+      && g_file_test (file_ovaldefs, G_FILE_TEST_EXISTS)
+      && g_file_test (file_ovalfiles, G_FILE_TEST_EXISTS)
+      && g_file_test (file_affected_ovaldefs, G_FILE_TEST_EXISTS))
+    {
+      sql ("COPY scap2.cves FROM '%s' WITH (FORMAT csv);", file_cves);
+      g_free (file_cves);
+
+      sql ("COPY scap2.cpes FROM '%s' WITH (FORMAT csv);", file_cpes);
+      g_free (file_cpes);
+
+      sql ("COPY scap2.affected_products FROM '%s' WITH (FORMAT csv);",
+           file_affected_products);
+      g_free (file_affected_products);
+
+      sql ("COPY scap2.ovaldefs FROM '%s' WITH (FORMAT csv);", file_ovaldefs);
+      g_free (file_ovaldefs);
+
+      sql ("COPY scap2.ovalfiles FROM '%s' WITH (FORMAT csv);", file_ovalfiles);
+      g_free (file_ovalfiles);
+
+      sql ("COPY scap2.affected_ovaldefs FROM '%s' WITH (FORMAT csv);",
+           file_affected_ovaldefs);
+      g_free (file_affected_ovaldefs);
+
+      /* Add the indexes, now that the data is ready. */
+
+      g_debug ("%s: add indexes", __func__);
+      proctitle_set ("gvmd: Syncing SCAP: Adding indexes");
+
+      if (manage_db_init_indexes ("scap"))
+        {
+          g_warning ("%s: could not initialize SCAP indexes", __func__);
+          return -1;
+        }
+
+      return update_scap_end ();
+    }
+  return 1;
+}
+
+/**
  * @brief Update all data in the SCAP DB.
  *
  * @param[in]  reset_scap_db  Whether to rebuild regardless of last_scap_update.
@@ -4767,70 +4832,10 @@ update_scap (gboolean reset_scap_db)
       return -1;
     }
 
-  gchar *file_cves, *file_cpes, *file_affected_products;
-  gchar *file_ovaldefs, *file_ovalfiles, *file_affected_ovaldefs;
+  /* If there's CSV in the feed, just load it. */
 
-  // GRANT pg_read_server_files TO student;
-/*
-psql -c "COPY scap.cpes TO STDOUT WITH CSV" gvmd > table-cpes.csv
-psql -c "COPY scap.cves TO STDOUT WITH CSV" gvmd > table-cves.csv
-psql -c "COPY scap.affected_products TO STDOUT WITH CSV" gvmd > table-affected-products.csv
-psql -c "COPY scap.ovaldefs TO STDOUT WITH CSV" gvmd > table-ovaldefs.csv
-psql -c "COPY scap.ovalfiles TO STDOUT WITH CSV" gvmd > table-ovalfiles.csv
-psql -c "COPY scap.affected_ovaldefs TO STDOUT WITH CSV" gvmd > table-affected-ovaldefs.csv
-*/
-
-  file_cves = g_build_filename (GVM_SCAP_DATA_DIR, "table-cves.csv", NULL);
-  file_cpes = g_build_filename (GVM_SCAP_DATA_DIR, "table-cpes.csv", NULL);
-  file_affected_products = g_build_filename (GVM_SCAP_DATA_DIR,
-                                             "table-affected-products.csv",
-                                             NULL);
-  file_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovaldefs.csv", NULL);
-  file_ovalfiles = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovalfiles.csv", NULL);
-  file_affected_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR,
-                                             "table-affected-ovaldefs.csv",
-                                             NULL);
-
-  if (g_file_test (file_cves, G_FILE_TEST_EXISTS)
-      && g_file_test (file_cpes, G_FILE_TEST_EXISTS)
-      && g_file_test (file_affected_products, G_FILE_TEST_EXISTS)
-      && g_file_test (file_ovaldefs, G_FILE_TEST_EXISTS)
-      && g_file_test (file_ovalfiles, G_FILE_TEST_EXISTS)
-      && g_file_test (file_affected_ovaldefs, G_FILE_TEST_EXISTS))
-    {
-      sql ("COPY scap2.cves FROM '%s' WITH (FORMAT csv);", file_cves);
-      g_free (file_cves);
-
-      sql ("COPY scap2.cpes FROM '%s' WITH (FORMAT csv);", file_cpes);
-      g_free (file_cpes);
-
-      sql ("COPY scap2.affected_products FROM '%s' WITH (FORMAT csv);",
-           file_affected_products);
-      g_free (file_affected_products);
-
-      sql ("COPY scap2.ovaldefs FROM '%s' WITH (FORMAT csv);", file_ovaldefs);
-      g_free (file_ovaldefs);
-
-      sql ("COPY scap2.ovalfiles FROM '%s' WITH (FORMAT csv);", file_ovalfiles);
-      g_free (file_ovalfiles);
-
-      sql ("COPY scap2.affected_ovaldefs FROM '%s' WITH (FORMAT csv);",
-           file_affected_ovaldefs);
-      g_free (file_affected_ovaldefs);
-
-      /* Add the indexes, now that the data is ready. */
-
-      g_debug ("%s: add indexes", __func__);
-      proctitle_set ("gvmd: Syncing SCAP: Adding indexes");
-
-      if (manage_db_init_indexes ("scap"))
-        {
-          g_warning ("%s: could not initialize SCAP indexes", __func__);
-          return -1;
-        }
-
-      return update_scap_end ();
-    }
+  if (try_load_csv () == 0)
+    return 0;
 
   /* Add the indexes, now that the data is ready. */
 
