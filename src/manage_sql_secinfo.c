@@ -3336,7 +3336,7 @@ verify_oval_file (const gchar *full_path)
  * @param[in]  file_and_date     Array containing XML path and timestamp.
  * @param[in]  private           Whether this is from the user's private dir.
  *
- * @return 0 nothing to do, 1 updated, -1 error.
+ * @return 0 success, -1 error.
  */
 static int
 update_ovaldef_xml (gchar **file_and_date, int private)
@@ -3664,7 +3664,7 @@ update_ovaldef_xml (gchar **file_and_date, int private)
   g_free (quoted_xml_basename);
   element_free (element);
   sql_commit ();
-  return 1;
+  return 0;
 
  fail:
   g_free (quoted_xml_basename);
@@ -4029,16 +4029,11 @@ update_scap_ovaldefs (int private)
       gchar **pair;
 
       pair = g_ptr_array_index (oval_files, index);
-      switch (update_ovaldef_xml (pair, private))
+      if (update_ovaldef_xml (pair, private))
         {
-          case 0:
-            break;
-          case 1:
-            break;
-          default:
-            oval_files_free ();
-            g_free (oval_dir);
-            return -1;
+          oval_files_free ();
+          g_free (oval_dir);
+          return -1;
         }
       count++;
     }
