@@ -4735,7 +4735,7 @@ update_scap (gboolean reset_scap_db)
       return -1;
     }
 
-  gchar *file_cve, *file_cpe, *file_affected_products;
+  gchar *file_cves, *file_cpes, *file_affected_products;
   gchar *file_ovaldefs, *file_ovalfiles, *file_affected_ovaldefs;
 
   // GRANT pg_read_server_files TO student;
@@ -4748,10 +4748,10 @@ psql -c "COPY scap.ovalfiles TO STDOUT WITH CSV" gvmd > table-ovalfiles.csv
 psql -c "COPY scap.affected_ovaldefs TO STDOUT WITH CSV" gvmd > table-affected-ovaldefs.csv
 */
 
-  file_cve = g_build_filename (GVM_SCAP_DATA_DIR, "table-cves.csv", NULL);
-  file_cpe = g_build_filename (GVM_SCAP_DATA_DIR, "table-cpes.csv", NULL);
+  file_cves = g_build_filename (GVM_SCAP_DATA_DIR, "table-cves.csv", NULL);
+  file_cpes = g_build_filename (GVM_SCAP_DATA_DIR, "table-cpes.csv", NULL);
   file_affected_products = g_build_filename (GVM_SCAP_DATA_DIR,
-                                             "table-affected.csv",
+                                             "table-affected-products.csv",
                                              NULL);
   file_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovaldefs.csv", NULL);
   file_ovalfiles = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovalfiles.csv", NULL);
@@ -4759,18 +4759,18 @@ psql -c "COPY scap.affected_ovaldefs TO STDOUT WITH CSV" gvmd > table-affected-o
                                              "table-affected-ovaldefs.csv",
                                              NULL);
 
-  if (g_file_test (file_cve, G_FILE_TEST_EXISTS)
-      && g_file_test (file_cpe, G_FILE_TEST_EXISTS)
+  if (g_file_test (file_cves, G_FILE_TEST_EXISTS)
+      && g_file_test (file_cpes, G_FILE_TEST_EXISTS)
       && g_file_test (file_affected_products, G_FILE_TEST_EXISTS)
       && g_file_test (file_ovaldefs, G_FILE_TEST_EXISTS)
       && g_file_test (file_ovalfiles, G_FILE_TEST_EXISTS)
       && g_file_test (file_affected_ovaldefs, G_FILE_TEST_EXISTS))
     {
-      sql ("COPY scap2.cves FROM '%s' WITH (FORMAT csv);", file_cve);
-      g_free (file_cve);
+      sql ("COPY scap2.cves FROM '%s' WITH (FORMAT csv);", file_cves);
+      g_free (file_cves);
 
-      sql ("COPY scap2.cpes FROM '%s' WITH (FORMAT csv);", file_cpe);
-      g_free (file_cpe);
+      sql ("COPY scap2.cpes FROM '%s' WITH (FORMAT csv);", file_cpes);
+      g_free (file_cpes);
 
       sql ("COPY scap2.affected_products FROM '%s' WITH (FORMAT csv);",
            file_affected_products);
