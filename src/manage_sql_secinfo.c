@@ -4514,7 +4514,8 @@ rebuild_scap (const char *type)
 
   if (strcasecmp (type, "all") == 0)
     {
-      ret = update_scap (TRUE,   /* ignore_last_scap_update */
+      ret = update_scap (lockfile,
+                         TRUE,   /* ignore_last_scap_update */
                          TRUE,   /* reset_scap_db */
                          TRUE,   /* update_cpes */
                          TRUE,   /* update_cves */
