@@ -3550,7 +3550,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   char *host, *ca_pub, *key_pub, *key_priv;
   int rc, port;
   scanner_t scanner;
-  gboolean started;
+  gboolean started, pending_status_updated;
 
   scanner = task_scanner (task);
   host = scanner_host (scanner);
@@ -3559,6 +3559,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
   started = FALSE;
+  pending_status_updated = FALSE;
 
   while (1)
     {
@@ -3614,11 +3615,13 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               osp_scan_status = get_osp_scan_status (scan_id, host, port,
                                                      ca_pub, key_pub, key_priv);
 
-              if (osp_scan_status == OSP_SCAN_STATUS_PENDING)
+              if (osp_scan_status == OSP_SCAN_STATUS_PENDING
+                  && pending_status_updated == FALSE)
                 {
                   set_task_run_status (task, TASK_STATUS_PENDING);
                   set_report_scan_run_status (global_current_report,
                                               TASK_STATUS_PENDING);
+                  pending_status_updated = TRUE;
                 }
               else if (progress >= 0 && progress < 100
                   && osp_scan_status == OSP_SCAN_STATUS_STOPPED)
