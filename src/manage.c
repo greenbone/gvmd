@@ -1576,6 +1576,8 @@ run_status_name (task_status_t status)
 
       case TASK_STATUS_RUNNING:          return "Running";
 
+      case TASK_STATUS_PENDING:          return "Pending";
+
       case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
       case TASK_STATUS_STOP_WAITING:
@@ -1610,6 +1612,8 @@ run_status_name_internal (task_status_t status)
       case TASK_STATUS_REQUESTED:        return "Requested";
 
       case TASK_STATUS_RUNNING:          return "Running";
+
+      case TASK_STATUS_PENDING:          return "Pending";
 
       case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
@@ -2922,6 +2926,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           case TASK_STATUS_NEW:
           case TASK_STATUS_REQUESTED:
           case TASK_STATUS_RUNNING:
+          case TASK_STATUS_PENDING:
           case TASK_STATUS_STOP_WAITING:
           case TASK_STATUS_INTERRUPTED:
             break;
@@ -3608,7 +3613,14 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
 
               osp_scan_status = get_osp_scan_status (scan_id, host, port,
                                                      ca_pub, key_pub, key_priv);
-              if (progress >= 0 && progress < 100
+
+              if (osp_scan_status == OSP_SCAN_STATUS_PENDING)
+                {
+                  set_task_run_status (task, TASK_STATUS_PENDING);
+                  set_report_scan_run_status (global_current_report,
+                                              TASK_STATUS_PENDING);
+                }
+              else if (progress >= 0 && progress < 100
                   && osp_scan_status == OSP_SCAN_STATUS_STOPPED)
                 {
                   result_t result = make_osp_result
@@ -4006,9 +4018,10 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
         }
     }
   else if (status == OSP_SCAN_STATUS_RUNNING
+           || status == OSP_SCAN_STATUS_PENDING
            || status == OSP_SCAN_STATUS_FINISHED)
     {
-      g_debug ("%s: Scan %s running or finished", __func__, scan_id);
+      g_debug ("%s: Scan %s pending, running or finished", __func__, scan_id);
       /* It would be possible to simply continue getting the results
        * from the scanner, but gvmd may have crashed while receiving
        * or storing the results, so some may be missing. */
@@ -5736,7 +5749,8 @@ stop_task_internal (task_t task)
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
-      || run_status == TASK_STATUS_RUNNING)
+      || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_PENDING)
     {
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
@@ -5914,6 +5928,7 @@ move_task (const char *task_id, const char *slave_id)
         return 5;
         break;
       case TASK_STATUS_RUNNING:
+      case TASK_STATUS_PENDING:
         if (task_scanner_type == SCANNER_TYPE_CVE)
           return 6;
         // Check permissions to stop and resume task
