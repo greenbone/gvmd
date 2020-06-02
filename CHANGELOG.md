@@ -32,7 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add --rebuild-scap option [#1051](https://github.com/greenbone/gvmd/pull/1051)
 - Stop current scheduling of task when permission denied [#1058](https://github.com/greenbone/gvmd/pull/1058)
 - Trim malloc heap after updating cache [#1085](https://github.com/greenbone/gvmd/pull/1085)
-- Handle PENDING osp scan status. [#1113](https://github.com/greenbone/gvmd/pull/1113)
+- Handle QUEUED osp scan status. [#1113](https://github.com/greenbone/gvmd/pull/1113)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)

@@ -1576,7 +1576,7 @@ run_status_name (task_status_t status)
 
       case TASK_STATUS_RUNNING:          return "Running";
 
-      case TASK_STATUS_PENDING:          return "Pending";
+      case TASK_STATUS_QUEUED:           return "Queued";
 
       case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
@@ -1613,7 +1613,7 @@ run_status_name_internal (task_status_t status)
 
       case TASK_STATUS_RUNNING:          return "Running";
 
-      case TASK_STATUS_PENDING:          return "Pending";
+      case TASK_STATUS_QUEUED:           return "Queued";
 
       case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
@@ -2926,7 +2926,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           case TASK_STATUS_NEW:
           case TASK_STATUS_REQUESTED:
           case TASK_STATUS_RUNNING:
-          case TASK_STATUS_PENDING:
+          case TASK_STATUS_QUEUED:
           case TASK_STATUS_STOP_WAITING:
           case TASK_STATUS_INTERRUPTED:
             break;
@@ -3550,7 +3550,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   char *host, *ca_pub, *key_pub, *key_priv;
   int rc, port;
   scanner_t scanner;
-  gboolean started, pending_status_updated;
+  gboolean started, queued_status_updated;
 
   scanner = task_scanner (task);
   host = scanner_host (scanner);
@@ -3559,7 +3559,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
   started = FALSE;
-  pending_status_updated = FALSE;
+  queued_status_updated = FALSE;
 
   while (1)
     {
@@ -3615,13 +3615,15 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               osp_scan_status = get_osp_scan_status (scan_id, host, port,
                                                      ca_pub, key_pub, key_priv);
 
-              if (osp_scan_status == OSP_SCAN_STATUS_PENDING
-                  && pending_status_updated == FALSE)
+              if (osp_scan_status == OSP_SCAN_STATUS_QUEUED)
                 {
-                  set_task_run_status (task, TASK_STATUS_PENDING);
-                  set_report_scan_run_status (global_current_report,
-                                              TASK_STATUS_PENDING);
-                  pending_status_updated = TRUE;
+                  if (queued_status_updated == FALSE)
+                    {
+                      set_task_run_status (task, TASK_STATUS_QUEUED);
+                      set_report_scan_run_status (global_current_report,
+                                                  TASK_STATUS_QUEUED);
+                      queued_status_updated = TRUE;
+                    }
                 }
               else if (progress >= 0 && progress < 100
                   && osp_scan_status == OSP_SCAN_STATUS_STOPPED)
@@ -4021,10 +4023,10 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
         }
     }
   else if (status == OSP_SCAN_STATUS_RUNNING
-           || status == OSP_SCAN_STATUS_PENDING
+           || status == OSP_SCAN_STATUS_QUEUED
            || status == OSP_SCAN_STATUS_FINISHED)
     {
-      g_debug ("%s: Scan %s pending, running or finished", __func__, scan_id);
+      g_debug ("%s: Scan %s queued, running or finished", __func__, scan_id);
       /* It would be possible to simply continue getting the results
        * from the scanner, but gvmd may have crashed while receiving
        * or storing the results, so some may be missing. */
@@ -5753,7 +5755,7 @@ stop_task_internal (task_t task)
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
-      || run_status == TASK_STATUS_PENDING)
+      || run_status == TASK_STATUS_QUEUED)
     {
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
@@ -5931,7 +5933,7 @@ move_task (const char *task_id, const char *slave_id)
         return 5;
         break;
       case TASK_STATUS_RUNNING:
-      case TASK_STATUS_PENDING:
+      case TASK_STATUS_QUEUED:
         if (task_scanner_type == SCANNER_TYPE_CVE)
           return 6;
         // Check permissions to stop and resume task
