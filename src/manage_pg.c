@@ -3186,6 +3186,8 @@ manage_db_init (const gchar *name)
            " ON cpes (modification_time);");
       sql ("CREATE INDEX cpes_by_cvss"
            " ON cpes (max_cvss);");
+      sql ("CREATE INDEX cpes_by_uuid"
+           " ON cpes (uuid);");
 
       sql ("CREATE TABLE scap.affected_products"
            " (cve INTEGER NOT NULL,"
