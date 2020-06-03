@@ -2726,9 +2726,8 @@ int
 schedule_task_iterator_readable (iterator_t*);
 
 int
-modify_schedule (const char *, const char*, const char *, const char*,
-                 time_t, time_t, time_t,
-                 const char *, time_t, const char *, gchar **);
+modify_schedule (const char *, const char *, const char *, const char*,
+                 const char *, gchar **);
 
 int
 get_schedule_timeout ();

@@ -15989,18 +15989,10 @@ create_schedule_leave:
 static void
 handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
 {
-  time_t first_time, period, period_months, duration;
-  period_months = 0;
   gchar *ical_error = NULL;
 
-  if (modify_schedule_data->icalendar)
-    {
-      first_time = 0;
-      period = 0;
-      period_months = 0;
-      duration = 0;
-    }
-  else
+  if (modify_schedule_data->icalendar == NULL
+      || strcmp (modify_schedule_data->icalendar, "") == 0)
     {
       SEND_TO_CLIENT_OR_FAIL
         (XML_ERROR_SYNTAX ("modify_schedule",
@@ -16015,11 +16007,6 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
                  modify_schedule_data->name,
                  modify_schedule_data->comment,
                  modify_schedule_data->icalendar,
-                 first_time,
-                 period == -1 ? 0 : period,
-                 period_months,
-                 NULL,
-                 duration == -1 ? 0 : duration,
                  modify_schedule_data->timezone,
                  &ical_error))
     {

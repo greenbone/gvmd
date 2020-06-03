@@ -40775,55 +40775,6 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
 }
 
 /**
- * @brief Get Byday mask from ical style string.
- *
- * @param[in]  byday  Byday string.
- *
- * @return Byday mask, or -1 on syntax error.
- */
-static int
-byday_from_string (const char* byday)
-{
-  gchar **split, **point;
-  int mask;
-
-  /* "MO,WE,FR" */
-
-  if (byday == NULL)
-    return 0;
-
-  split = g_strsplit (byday, ",", 0);
-  point = split;
-  mask = 0;
-
-  while (*point)
-    {
-      if (strcasecmp (*point, "MO") == 0)
-        mask |= 1 << 0;
-      else if (strcasecmp (*point, "TU") == 0)
-        mask |= 1 << 1;
-      else if (strcasecmp (*point, "WE") == 0)
-        mask |= 1 << 2;
-      else if (strcasecmp (*point, "TH") == 0)
-        mask |= 1 << 3;
-      else if (strcasecmp (*point, "FR") == 0)
-        mask |= 1 << 4;
-      else if (strcasecmp (*point, "SA") == 0)
-        mask |= 1 << 5;
-      else if (strcasecmp (*point, "SU") == 0)
-        mask |= 1 << 6;
-      else
-        {
-          mask = -1;
-          break;
-        }
-      point++;
-    }
-  g_strfreev (split);
-  return mask;
-}
-
-/**
  * @brief Create a schedule.
  *
  * @param[in]   name        Name of schedule.
@@ -41754,13 +41705,6 @@ schedule_task_iterator_readable (iterator_t* iterator)
  * @param[in]   comment      Comment on schedule.
  * @param[in]   ical_string  iCalendar string.  Overrides first_time, period,
  *                           period_months, byday and duration.
- * @param[in]   first_time   First time action will run.
- * @param[in]   period       How often the action will run in seconds.  0 means
- *                           once.
- * @param[in]   period_months  The months part of the period.
- * @param[in]   byday        Which days of week schedule will run.
- * @param[in]   duration     The length of the time window the action will run
- *                           in.  0 means entire duration of action.
  * @param[in]   zone         Timezone.
  * @param[out]  error_out    Output for iCalendar errors and warnings.
  *
@@ -41771,22 +41715,15 @@ schedule_task_iterator_readable (iterator_t* iterator)
  */
 int
 modify_schedule (const char *schedule_id, const char *name, const char *comment,
-                 const char *ical_string,
-                 time_t first_time, time_t period, time_t period_months,
-                 const char *byday, time_t duration, const char *zone,
-                 gchar **error_out)
+                 const char *ical_string, const char *zone, gchar **error_out)
 {
   gchar *quoted_name, *quoted_comment, *quoted_timezone, *quoted_icalendar;
   icalcomponent *ical_component;
-  gchar *first_time_string, *duration_string, *period_string;
-  gchar *period_months_string, *offset_string, *byday_mask_string;
   schedule_t schedule;
-  time_t real_first_time, real_period, real_period_months, real_duration;
-  time_t new_next_time;
-  int real_byday;
-  int byday_mask = 0;
+  time_t new_next_time, ical_first_time, ical_duration;
   gchar *real_timezone;
-  iterator_t schedule_iter;
+
+  assert (ical_string && strcmp (ical_string, ""));
 
   if (schedule_id == NULL)
     return 4;
@@ -41812,16 +41749,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
     {
       sql_rollback ();
       return 1;
-    }
-
-  if (byday)
-    {
-      byday_mask = byday_from_string (byday);
-      if (byday_mask == -1)
-        {
-          sql_rollback ();
-          return 5;
-        }
     }
 
   /* Check whether a schedule with the same name exists already. */
@@ -41857,189 +41784,58 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        quoted_timezone ? "'" : "",
        schedule);
 
-  real_timezone 
+  real_timezone
     = sql_string ("SELECT timezone FROM schedules WHERE id = %llu;",
                   schedule);
 
   /* Update times */
-  if (ical_string && strcmp (ical_string, ""))
+
+  ical_component = icalendar_from_string (ical_string, error_out);
+  if (ical_component == NULL)
     {
-      time_t ical_first_time, ical_duration;
-      ical_component = icalendar_from_string (ical_string, error_out);
-      if (ical_component == NULL)
-        {
-          g_free (real_timezone);
-          return 6;
-        }
-
-      quoted_icalendar = sql_quote (icalcomponent_as_ical_string
-                                      (ical_component));
-
-      ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                             real_timezone);
-      ical_duration = icalendar_duration_from_vcalendar (ical_component);
-
-      byday_mask_string = NULL;
-      duration_string = NULL;
-      first_time_string = NULL;
-      offset_string = NULL;
-      period_string = NULL;
-      period_months_string = NULL;
-
-      sql ("UPDATE schedules SET"
-           " icalendar = '%s',"
-           " first_time = %ld,"
-           " period = 0,"
-           " period_months = 0,"
-           " byday = 0,"
-           " duration = %d,"
-           " initial_offset = 0,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quoted_icalendar,
-           ical_first_time,
-           ical_duration,
-           schedule);
+      g_free (real_timezone);
+      return 6;
     }
-  else
-    {
-      if (byday)
-        {
-          byday_mask = byday_from_string (byday);
-          if (byday_mask == -1)
-            {
-              g_free (quoted_name);
-              g_free (quoted_comment);
-              g_free (quoted_timezone);
-              sql_rollback ();
-              return 5;
-            }
-          byday_mask_string = g_strdup_printf ("%i", byday_mask);
-        }
-      else
-        byday_mask_string = NULL;
 
-      if (duration == -1)
-        duration_string = NULL;
-      else
-        duration_string = g_strdup_printf ("%li", duration);
+  quoted_icalendar = sql_quote (icalcomponent_as_ical_string
+                                  (ical_component));
 
-      if (first_time == -1)
-        first_time_string = NULL;
-      else
-        first_time_string = g_strdup_printf ("%li", first_time);
+  ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
+                                                         real_timezone);
+  ical_duration = icalendar_duration_from_vcalendar (ical_component);
 
-      if ((period_months == -1) || (period_months == 0))
-        {
-          if (period == -1)
-            {
-              period_months_string = NULL;
-              period_string = NULL;
-            }
-          else
-            {
-              period_months_string = g_strdup ("0");
-              period_string = g_strdup_printf ("%li", period);
-            }
-        }
-      else
-        {
-          period_months_string = g_strdup_printf ("%li", period_months);
-          period_string = g_strdup ("0");
-        }
-
-      if (first_time)
-        {
-          if (zone)
-            offset_string = g_strdup_printf ("%li", current_offset (zone));
-          else
-            offset_string = NULL;
-        }
-      else
-        offset_string = NULL;
-
-      ical_component = NULL;
-        quoted_icalendar = NULL;
-
-      sql ("UPDATE schedules SET"
-           " icalendar = '',"
-           " first_time = %s,"
-           " period = %s,"
-           " period_months = %s,"
-           " byday = %s,"
-           " duration = %s,"
-           " initial_offset = %s,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           first_time ? first_time_string : "first_time",
-           period_string ? period_string : "period",
-           period_months_string ? period_months_string : "period_months",
-           byday_mask_string ? byday_mask_string : "byday",
-           (duration >= 0) ? duration_string : "duration",
-           offset_string ? offset_string : "initial_offset",
-           schedule);
-
-    }
+  sql ("UPDATE schedules SET"
+       " icalendar = '%s',"
+       " first_time = %ld,"
+       " period = 0,"
+       " period_months = 0,"
+       " byday = 0,"
+       " duration = %d,"
+       " initial_offset = 0,"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_icalendar,
+       ical_first_time,
+       ical_duration,
+       schedule);
 
   // Update scheduled next times for tasks
-  init_iterator (&schedule_iter,
-                 "SELECT first_time, period, period_months, duration, byday"
-                 " FROM schedules"
-                 " WHERE id = %llu",
-                 schedule);
-
-  next (&schedule_iter);
-  real_first_time = (time_t) iterator_int64 (&schedule_iter, 0);
-  real_period = (time_t) iterator_int64 (&schedule_iter, 1);
-  real_period_months = (time_t) iterator_int64 (&schedule_iter, 2);
-  real_duration = (time_t) iterator_int64 (&schedule_iter, 3);
-  real_byday = iterator_int (&schedule_iter, 4);
-
-  if (ical_component == NULL
-      && (byday_mask_string
-          || first_time_string
-          || period_string
-          || period_months_string
-          || byday_mask_string
-          || duration_string
-          || offset_string))
-    {
-      // Generate iCalendar here if using old-style schedule data
-      ical_component = icalendar_from_old_schedule_data
-                          (real_first_time,
-                           real_period, real_period_months,
-                           real_duration, real_byday);
-      quoted_icalendar
-        = sql_quote (icalcomponent_as_ical_string (ical_component));
-
-      sql ("UPDATE schedules SET icalendar = '%s' WHERE id = %llu",
-           quoted_icalendar, schedule);
-    }
 
   new_next_time = icalendar_next_time_from_vcalendar (ical_component,
                                                       real_timezone, 0);
-
-  cleanup_iterator (&schedule_iter);
 
   sql ("UPDATE tasks SET schedule_next_time = %ld"
        " WHERE schedule = %llu;",
        new_next_time,
        schedule);
 
-  g_free (byday_mask_string);
-  g_free (duration_string);
-  g_free (first_time_string);
-  g_free (offset_string);
-  g_free (period_string);
-  g_free (period_months_string);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_timezone);
   g_free (quoted_icalendar);
 
   free (real_timezone);
-  if (ical_component)
-    icalcomponent_free (ical_component);
+  icalcomponent_free (ical_component);
 
   sql_commit ();
 
