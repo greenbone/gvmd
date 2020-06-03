@@ -15999,14 +15999,8 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
       SEND_GET_START ("schedule");
       while (1)
         {
-          time_t first_time, next_time;
-          gchar *iso;
+          time_t first_time;
           const char *zone, *abbrev, *icalendar;
-          char *simple_period_unit, *simple_duration_unit;
-          int period, period_minutes, period_hours, period_days;
-          int period_weeks, period_months, duration, duration_minutes;
-          int duration_hours, duration_days, duration_weeks;
-          int simple_period, simple_duration;
 
           ret = get_next (&schedules, &get_schedules_data->get, &first,
                           &count, init_schedule_iterator);
@@ -16022,112 +16016,21 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
 
           zone = schedule_iterator_timezone (&schedules);
           first_time = schedule_iterator_first_time (&schedules);
-          next_time = schedule_iterator_next_time (&schedules);
           icalendar = schedule_iterator_icalendar (&schedules);
 
-          /* Duplicate static string because there's an iso_time_tz below. */
           abbrev = NULL;
-          iso = g_strdup (iso_time_tz (&first_time, zone, &abbrev));
-
-          period = schedule_iterator_period (&schedules);
-          if (period)
-            {
-              period_minutes = period / 60;
-              period_hours = period_minutes / 60;
-              period_days = period_hours / 24;
-              period_weeks = period_days / 7;
-            }
-          simple_period_unit = "";
-          if (period == 0)
-            simple_period = 0;
-          else if (period_weeks && (period % (60 * 60 * 24 * 7) == 0))
-            {
-              simple_period = period_weeks;
-              simple_period_unit = "week";
-            }
-          else if (period_days && (period % (60 * 60 * 24) == 0))
-            {
-              simple_period = period_days;
-              simple_period_unit = "day";
-            }
-          else if (period_hours && (period % (60 * 60) == 0))
-            {
-              simple_period = period_hours;
-              simple_period_unit = "hour";
-            }
-          /* The granularity of the "simple" GSA interface stops at hours. */
-          else
-            simple_period = 0;
-
-          period_months = schedule_iterator_period_months (&schedules);
-          if (period_months && (period_months < 25))
-            {
-              simple_period = period_months;
-              simple_period_unit = "month";
-            }
-
-          duration = schedule_iterator_duration (&schedules);
-          if (duration)
-            {
-              duration_minutes = duration / 60;
-              duration_hours = duration_minutes / 60;
-              duration_days = duration_hours / 24;
-              duration_weeks = duration_days / 7;
-            }
-          simple_duration_unit = "";
-          if (duration == 0)
-            simple_duration = 0;
-          else if (duration_weeks
-                    && (duration % (60 * 60 * 24 * 7) == 0))
-            {
-              simple_duration = duration_weeks;
-              simple_duration_unit = "week";
-            }
-          else if (duration_days
-                    && (duration % (60 * 60 * 24) == 0))
-            {
-              simple_duration = duration_days;
-              simple_duration_unit = "day";
-            }
-          else if (duration_hours
-                    && (duration % (60 * 60) == 0))
-            {
-              simple_duration = duration_hours;
-              simple_duration_unit = "hour";
-            }
-          /* The granularity of the "simple" GSA interface stops at hours. */
-          else
-            simple_duration = 0;
+          iso_time_tz (&first_time, zone, &abbrev);
 
           SENDF_TO_CLIENT_OR_FAIL
-           ("<first_time>%s</first_time>"
-            "<next_time>%s</next_time>"
-            "<icalendar>%s</icalendar>"
-            "<period>%ld</period>"
-            "<period_months>%ld</period_months>"
-            "<simple_period>%i<unit>%s</unit></simple_period>"
-            "<byday>%s</byday>"
-            "<duration>%ld</duration>"
-            "<simple_duration>%i<unit>%s</unit></simple_duration>"
+           ("<icalendar>%s</icalendar>"
             "<timezone>%s</timezone>"
             "<timezone_abbrev>%s</timezone_abbrev>",
-            iso,
-            (next_time == 0 ? "over" : iso_time_tz (&next_time, zone, NULL)),
             icalendar ? icalendar : "",
-            schedule_iterator_period (&schedules),
-            schedule_iterator_period_months (&schedules),
-            simple_period,
-            simple_period_unit,
-            schedule_iterator_byday_string (&schedules),
-            schedule_iterator_duration (&schedules),
-            simple_duration,
-            simple_duration_unit,
             schedule_iterator_timezone (&schedules)
               ? schedule_iterator_timezone (&schedules)
               : "UTC",
             abbrev ? abbrev : "UTC");
 
-          g_free (iso);
           if (get_schedules_data->tasks)
             {
               iterator_t tasks;
