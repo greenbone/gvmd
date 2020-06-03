@@ -2690,32 +2690,8 @@ schedule_info (schedule_t, int, time_t *, time_t *, int *, int *, int *,
 int
 init_schedule_iterator (iterator_t*, const get_data_t *);
 
-time_t
-schedule_iterator_first_time (iterator_t *);
-
-time_t
-schedule_iterator_next_time (iterator_t *);
-
-time_t
-schedule_iterator_period (iterator_t *);
-
-time_t
-schedule_iterator_period_months (iterator_t *);
-
-time_t
-schedule_iterator_duration (iterator_t *);
-
-int
-schedule_iterator_byday (iterator_t *);
-
-gchar *
-schedule_iterator_byday_string (iterator_t *);
-
 const char*
 schedule_iterator_timezone (iterator_t *);
-
-time_t
-schedule_iterator_initial_offset (iterator_t *);
 
 const char*
 schedule_iterator_icalendar (iterator_t *);

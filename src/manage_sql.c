@@ -41413,99 +41413,6 @@ init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
- * @brief Get the first time from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return First time of schedule.
- */
-time_t
-schedule_iterator_first_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT);
-  return ret;
-}
-
-/**
- * @brief Get the period from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Period of schedule.
- */
-time_t
-schedule_iterator_period (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
-  return ret;
-}
-
-/**
- * @brief Get the period months from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Period of schedule (months).
- */
-time_t
-schedule_iterator_period_months (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
-  return ret;
-}
-
-/**
- * @brief Get the byday string from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Byday string.
- */
-gchar *
-schedule_iterator_byday_string (iterator_t *iterator)
-{
-  int byday;
-  if (iterator->done) return NULL;
-  byday = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-  return g_strdup_printf ("%s%s%s%s%s%s%s%s%s%s%s%s%s",
-                          byday & (1 << 0) ? "MO" : "",
-                          byday & (1 << 1) ? "," : "",
-                          byday & (1 << 1) ? "TU" : "",
-                          byday & (1 << 2) ? "," : "",
-                          byday & (1 << 2) ? "WE" : "",
-                          byday & (1 << 3) ? "," : "",
-                          byday & (1 << 3) ? "TH" : "",
-                          byday & (1 << 4) ? "," : "",
-                          byday & (1 << 4) ? "FR" : "",
-                          byday & (1 << 5) ? "," : "",
-                          byday & (1 << 5) ? "SA" : "",
-                          byday & (1 << 6) ? "," : "",
-                          byday & (1 << 6) ? "SU" : "");
-}
-
-/**
- * @brief Get the duration from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Duration of schedule.
- */
-time_t
-schedule_iterator_duration (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-  return ret;
-}
-
-/**
  * @brief Get the timezone from a schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -41524,22 +41431,6 @@ DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 5);
  *         cleanup_iterator.
  */
 DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 7);
-
-/**
- * @brief Get the next time a schedule could be schedulable.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Next time an action associated with schedule could be run.
- */
-time_t
-schedule_iterator_next_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
-  return ret;
-}
 
 /**
  * @brief Initialise a task schedule iterator.
