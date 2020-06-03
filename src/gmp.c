@@ -16141,78 +16141,10 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
     }
   else
     {
-      // Classic schedule
-      if ((first_time = time_from_strings
-                              (create_schedule_data->first_time_hour,
-                               create_schedule_data->first_time_minute,
-                               create_schedule_data->first_time_day_of_month,
-                               create_schedule_data->first_time_month,
-                               create_schedule_data->first_time_year,
-                               create_schedule_data->timezone))
-                == -1)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Failed to create time from FIRST_TIME"
-                               " elements"));
-          goto create_schedule_leave;
-        }
-      else if ((period = interval_from_strings
-                           (create_schedule_data->period,
-                            create_schedule_data->period_unit,
-                            &period_months))
-                == -3)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "PERIOD out of range"));
-          goto create_schedule_leave;
-        }
-      else if (period < -1)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Failed to create interval from PERIOD"));
-          goto create_schedule_leave;
-        }
-      else if ((duration = interval_from_strings
-                            (create_schedule_data->duration,
-                              create_schedule_data->duration_unit,
-                              NULL))
-                == -3)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "DURATION out of range"));
-          goto create_schedule_leave;
-        }
-      else if (duration < -1)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Failed to create interval from DURATION"));
-          goto create_schedule_leave;
-        }
-#if 0
-      /* The actual time of a period in months can vary, so it's extremely
-       * hard to do this check.  The schedule will still work fine if the
-       * duration is longer than the period. */
-      else if (period_months
-                && (duration > (period_months * 60 * 60 * 24 * 28)))
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Duration too long for number of months"));
-          goto create_schedule_leave;
-        }
-#endif
-      else if (period && (duration > period))
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Duration is longer than period"));
-          goto create_schedule_leave;
-        }
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_schedule",
+                           "An ICALENDAR entity is required"));
+      goto create_schedule_leave;
     }
 
   switch (create_schedule (create_schedule_data->name,
