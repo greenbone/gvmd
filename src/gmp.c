@@ -16742,7 +16742,6 @@ static gchar*
 get_task_schedule_xml (task_t task)
 {
   schedule_t schedule;
-  time_t next_time;
   int schedule_in_trash, schedule_available;
   char *task_schedule_uuid, *task_schedule_name;
   GString *xml;
@@ -16810,19 +16809,13 @@ get_task_schedule_xml (task_t task)
     }
   else
     {
-      next_time = task_schedule_next_time (task);
-
       xml_string_append (xml,
                          "<schedule id=\"%s\">"
                          "<name>%s</name>"
-                         "<next_time>%s</next_time>"
                          "<trash>%d</trash>"
                          "</schedule>",
                          task_schedule_uuid,
                          task_schedule_name,
-                         next_time
-                            ? iso_time (&next_time)
-                            : "over",
                          schedule_in_trash);
     }
 
