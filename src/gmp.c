@@ -930,16 +930,6 @@ typedef struct
   char *name;                    ///< Name for new schedule.
   char *comment;                 ///< Comment.
   char *copy;                    ///< UUID of resource to copy.
-  char *first_time_day_of_month; ///< Day of month schedule must first run.
-  char *first_time_hour;         ///< Hour schedule must first run.
-  char *first_time_minute;       ///< Minute schedule must first run.
-  char *first_time_month;        ///< Month schedule must first run.
-  char *first_time_year;         ///< Year schedule must first run.
-  char *period;                  ///< Period of schedule (how often it runs).
-  char *period_unit;             ///< Unit of period: "hour", "day", "week", ....
-  char *byday;                   ///< Which weekdays to run on.
-  char *duration;                ///< Duration of schedule (how long it runs for).
-  char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
   char *timezone;                ///< Time zone of the schedule
   char *icalendar;               ///< iCalendar string
 } create_schedule_data_t;
@@ -955,16 +945,6 @@ create_schedule_data_reset (create_schedule_data_t *data)
   free (data->name);
   free (data->copy);
   free (data->comment);
-  free (data->first_time_day_of_month);
-  free (data->first_time_hour);
-  free (data->first_time_minute);
-  free (data->first_time_month);
-  free (data->first_time_year);
-  free (data->period);
-  free (data->period_unit);
-  free (data->byday);
-  free (data->duration);
-  free (data->duration_unit);
   free (data->timezone);
   free (data->icalendar);
 
@@ -4308,21 +4288,10 @@ typedef enum
   CLIENT_CREATE_SCANNER_CA_PUB,
   CLIENT_CREATE_SCANNER_CREDENTIAL,
   CLIENT_CREATE_SCHEDULE,
-  CLIENT_CREATE_SCHEDULE_BYDAY,
   CLIENT_CREATE_SCHEDULE_COMMENT,
   CLIENT_CREATE_SCHEDULE_COPY,
-  CLIENT_CREATE_SCHEDULE_DURATION,
-  CLIENT_CREATE_SCHEDULE_DURATION_UNIT,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR,
   CLIENT_CREATE_SCHEDULE_ICALENDAR,
   CLIENT_CREATE_SCHEDULE_NAME,
-  CLIENT_CREATE_SCHEDULE_PERIOD,
-  CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
   CLIENT_CREATE_SCHEDULE_TIMEZONE,
   CLIENT_CREATE_TAG,
   CLIENT_CREATE_TAG_ACTIVE,
@@ -6099,47 +6068,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_SCHEDULE:
-        if (strcasecmp ("BYDAY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_BYDAY);
-        else if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_COPY);
-        else if (strcasecmp ("DURATION", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_DURATION);
-        else if (strcasecmp ("FIRST_TIME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
         else if (strcasecmp ("ICALENDAR", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_ICALENDAR);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_NAME);
-        else if (strcasecmp ("PERIOD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
         else if (strcasecmp ("TIMEZONE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_TIMEZONE);
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME:
-        if (strcasecmp ("DAY_OF_MONTH", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH);
-        else if (strcasecmp ("HOUR", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR);
-        else if (strcasecmp ("MINUTE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE);
-        else if (strcasecmp ("MONTH", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH);
-        else if (strcasecmp ("YEAR", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR);
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_SCHEDULE_DURATION:
-        if (strcasecmp ("UNIT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_DURATION_UNIT);
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_SCHEDULE_PERIOD:
-        if (strcasecmp ("UNIT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT);
         ELSE_READ_OVER;
 
       case CLIENT_GET_AGGREGATES:
@@ -21507,25 +21445,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           handle_create_schedule (gmp_parser, error);
           break;
         }
-      CLOSE (CLIENT_CREATE_SCHEDULE, BYDAY);
       CLOSE (CLIENT_CREATE_SCHEDULE, COMMENT);
       CLOSE (CLIENT_CREATE_SCHEDULE, COPY);
-      CLOSE (CLIENT_CREATE_SCHEDULE, DURATION);
-      CLOSE (CLIENT_CREATE_SCHEDULE, FIRST_TIME);
       CLOSE (CLIENT_CREATE_SCHEDULE, ICALENDAR);
       CLOSE (CLIENT_CREATE_SCHEDULE, NAME);
-      CLOSE (CLIENT_CREATE_SCHEDULE, PERIOD);
       CLOSE (CLIENT_CREATE_SCHEDULE, TIMEZONE);
-
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, DAY_OF_MONTH);
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, HOUR);
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, MINUTE);
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, MONTH);
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, YEAR);
-
-      CLOSE (CLIENT_CREATE_SCHEDULE_DURATION, UNIT);
-
-      CLOSE (CLIENT_CREATE_SCHEDULE_PERIOD, UNIT);
 
       case CLIENT_CREATE_TAG:
         {
@@ -26509,47 +26433,17 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &create_scanner_data->ca_pub);
 
 
-      APPEND (CLIENT_CREATE_SCHEDULE_BYDAY,
-              &create_schedule_data->byday);
-
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
               &create_schedule_data->comment);
 
       APPEND (CLIENT_CREATE_SCHEDULE_COPY,
               &create_schedule_data->copy);
 
-      APPEND (CLIENT_CREATE_SCHEDULE_DURATION,
-              &create_schedule_data->duration);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_DURATION_UNIT,
-              &create_schedule_data->duration_unit);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
-              &create_schedule_data->first_time_day_of_month);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR,
-              &create_schedule_data->first_time_hour);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE,
-              &create_schedule_data->first_time_minute);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH,
-              &create_schedule_data->first_time_month);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR,
-              &create_schedule_data->first_time_year);
-
       APPEND (CLIENT_CREATE_SCHEDULE_ICALENDAR,
               &create_schedule_data->icalendar);
 
       APPEND (CLIENT_CREATE_SCHEDULE_NAME,
               &create_schedule_data->name);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_PERIOD,
-              &create_schedule_data->period);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
-              &create_schedule_data->period_unit);
 
       APPEND (CLIENT_CREATE_SCHEDULE_TIMEZONE,
               &create_schedule_data->timezone);
