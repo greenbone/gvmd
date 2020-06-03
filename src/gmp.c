@@ -16783,59 +16783,27 @@ get_task_schedule_xml (task_t task)
 
   if (schedule_available && schedule)
     {
-      time_t first_time, info_next_time;
-      int period, period_months, duration;
       gchar *icalendar, *zone;
 
       icalendar = zone = NULL;
 
-      if (schedule_info (schedule, schedule_in_trash,
-                          &first_time, &info_next_time, &period,
-                          &period_months, &duration,
-                          &icalendar, &zone) == 0)
-        {
-          gchar *first_time_str, *next_time_str;
-
-          // Copy ISO time strings to avoid one overwriting the other
-          first_time_str = g_strdup (first_time
-                                      ? iso_time (&first_time)
-                                      : "");
-          next_time_str = g_strdup (info_next_time
-                                      ? iso_time (&info_next_time)
-                                      : "over");
-
-          xml_string_append (xml,
-                             "<schedule id=\"%s\">"
-                             "<name>%s</name>"
-                             "<trash>%d</trash>"
-                             "<first_time>%s</first_time>"
-                             "<next_time>%s</next_time>"
-                             "<icalendar>%s</icalendar>"
-                             "<period>%d</period>"
-                             "<period_months>"
-                             "%d"
-                             "</period_months>"
-                             "<duration>%d</duration>"
-                             "<timezone>%s</timezone>"
-                             "</schedule>"
-                             "<schedule_periods>"
-                             "%d"
-                             "</schedule_periods>",
-                             task_schedule_uuid,
-                             task_schedule_name,
-                             schedule_in_trash,
-                             first_time_str,
-                             next_time_str,
-                             icalendar ? icalendar : "",
-                             period,
-                             period_months,
-                             duration,
-                             zone ? zone : "",
-                             task_schedule_periods (task));
-
-          g_free (first_time_str);
-          g_free (next_time_str);
-        }
+      if (schedule_info (schedule, schedule_in_trash, &icalendar, &zone) == 0)
+        xml_string_append (xml,
+                           "<schedule id=\"%s\">"
+                           "<name>%s</name>"
+                           "<trash>%d</trash>"
+                           "<icalendar>%s</icalendar>"
+                           "<timezone>%s</timezone>"
+                           "</schedule>"
+                           "<schedule_periods>"
+                           "%d"
+                           "</schedule_periods>",
+                           task_schedule_uuid,
+                           task_schedule_name,
+                           schedule_in_trash,
+                           icalendar ? icalendar : "",
+                           zone ? zone : "",
+                           task_schedule_periods (task));
 
       g_free (icalendar);
       g_free (zone);

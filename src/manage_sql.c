@@ -41205,41 +41205,23 @@ schedule_duration (schedule_t schedule)
  *
  * @param[in]  schedule    Schedule.
  * @param[in]  trash       Whether to get schedule from trash.
- * @param[out] first_time  First time schedule ran.
- * @param[out] next_time   Next time schedule will run.
- * @param[out] period      Period.
- * @param[out] period_months  Period months.
- * @param[out] duration       Duration.
  * @param[out] icalendar      iCalendar string.
  * @param[out] zone           Timezone string.
  *
  * @return 0 success, -1 error.
  */
 int
-schedule_info (schedule_t schedule, int trash,
-               time_t *first_time, time_t *next_time,
-               int *period, int *period_months, int *duration,
-               gchar **icalendar, gchar **zone)
+schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
 {
   iterator_t schedules;
 
   init_iterator (&schedules,
-                 "SELECT"
-                 " first_time,"
-                 " next_time_ical (icalendar, timezone),"
-                 " period, period_months, duration,"
-                 " icalendar, timezone"
-                 " FROM schedules%s"
-                 " WHERE id = %llu",
+                 "SELECT icalendar, timezone FROM schedules%s"
+                 " WHERE id = %llu;",
                  trash ? "_trash" : "",
                  schedule);
   if (next (&schedules))
     {
-      *first_time = iterator_int (&schedules, 0);
-      *next_time = iterator_int (&schedules, 1);
-      *period = iterator_int (&schedules, 2);
-      *period_months = iterator_int (&schedules, 3);
-      *duration = iterator_int (&schedules, 4);
       *icalendar = g_strdup (iterator_string (&schedules, 5));
       *zone = g_strdup (iterator_string (&schedules, 6));
       cleanup_iterator (&schedules);

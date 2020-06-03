@@ -2683,8 +2683,7 @@ int
 schedule_period (schedule_t);
 
 int
-schedule_info (schedule_t, int, time_t *, time_t *, int *, int *, int *,
-               gchar **, gchar **);
+schedule_info (schedule_t, int, gchar **, gchar **);
 
 int
 init_schedule_iterator (iterator_t*, const get_data_t *);
