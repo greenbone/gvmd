@@ -15999,8 +15999,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
       SEND_GET_START ("schedule");
       while (1)
         {
-          time_t first_time;
-          const char *zone, *abbrev, *icalendar;
+          const char *icalendar;
 
           ret = get_next (&schedules, &get_schedules_data->get, &first,
                           &count, init_schedule_iterator);
@@ -16014,22 +16013,15 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
 
           SEND_GET_COMMON (schedule, &get_schedules_data->get, &schedules);
 
-          zone = schedule_iterator_timezone (&schedules);
-          first_time = schedule_iterator_first_time (&schedules);
           icalendar = schedule_iterator_icalendar (&schedules);
-
-          abbrev = NULL;
-          iso_time_tz (&first_time, zone, &abbrev);
 
           SENDF_TO_CLIENT_OR_FAIL
            ("<icalendar>%s</icalendar>"
-            "<timezone>%s</timezone>"
-            "<timezone_abbrev>%s</timezone_abbrev>",
+            "<timezone>%s</timezone>",
             icalendar ? icalendar : "",
             schedule_iterator_timezone (&schedules)
               ? schedule_iterator_timezone (&schedules)
-              : "UTC",
-            abbrev ? abbrev : "UTC");
+              : "UTC");
 
           if (get_schedules_data->tasks)
             {
