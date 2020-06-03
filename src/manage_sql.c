@@ -40846,10 +40846,8 @@ byday_from_string (const char* byday)
  */
 int
 create_schedule (const char* name, const char *comment,
-                 const char *ical_string, time_t first_time,
-                 time_t period, time_t period_months, const char *byday,
-                 time_t duration, const char* zone, schedule_t *schedule,
-                 gchar **error_out)
+                 const char *ical_string, const char* zone,
+                 schedule_t *schedule, gchar **error_out)
 {
   gchar *quoted_comment, *quoted_name, *quoted_timezone;
   gchar *insert_timezone;
@@ -40857,8 +40855,10 @@ create_schedule (const char* name, const char *comment,
   int byday_mask;
   icalcomponent *ical_component;
   gchar *quoted_ical;
+  time_t first_time, period, period_months, duration;
 
   assert (current_credentials.uuid);
+  assert (ical_string && strcmp (ical_string, ""));
 
   sql_begin_immediate ();
 
@@ -40869,13 +40869,6 @@ create_schedule (const char* name, const char *comment,
     }
 
   if (resource_with_name_exists (name, "schedule", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  byday_mask = byday_from_string (byday);
-  if (byday_mask == -1)
     {
       sql_rollback ();
       return 1;
@@ -40906,34 +40899,24 @@ create_schedule (const char* name, const char *comment,
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_timezone = sql_quote (insert_timezone);
 
-  if (ical_string && strcmp (ical_string, ""))
+  ical_component = icalendar_from_string (ical_string, error_out);
+  if (ical_component == NULL)
     {
-      ical_component = icalendar_from_string (ical_string, error_out);
-      if (ical_component == NULL)
-        {
-          g_free (quoted_name);
-          g_free (quoted_comment);
-          g_free (insert_timezone);
-          g_free (quoted_timezone);
-          return 3;
-        }
-      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
-      first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                        zone);
-      duration = icalendar_duration_from_vcalendar (ical_component);
+      g_free (quoted_name);
+      g_free (quoted_comment);
+      g_free (insert_timezone);
+      g_free (quoted_timezone);
+      return 3;
+    }
+  quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
+  first_time = icalendar_first_time_from_vcalendar (ical_component,
+                                                    zone);
+  duration = icalendar_duration_from_vcalendar (ical_component);
 
-      icalendar_approximate_rrule_from_vcalendar (ical_component,
-                                                  &period,
-                                                  &period_months,
-                                                  &byday_mask);
-    }
-  else
-    {
-      ical_component = icalendar_from_old_schedule_data
-                          (first_time, period, period_months, duration,
-                           byday_mask);
-      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
-    }
+  icalendar_approximate_rrule_from_vcalendar (ical_component,
+                                              &period,
+                                              &period_months,
+                                              &byday_mask);
 
   sql ("INSERT INTO schedules"
        " (uuid, name, owner, comment, first_time, period, period_months,"

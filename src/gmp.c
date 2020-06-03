@@ -16069,11 +16069,8 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
 static void
 handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
 {
-  time_t first_time, period, period_months, duration;
   schedule_t new_schedule;
   gchar *ical_error = NULL;
-
-  period_months = 0;
 
   // Copy the schedule
   if (create_schedule_data->copy)
@@ -16131,15 +16128,8 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
                            "A NAME entity is required"));
       goto create_schedule_leave;
     }
-  else if (create_schedule_data->icalendar
-           && strcmp (create_schedule_data->icalendar, ""))
-    {
-      first_time = 0;
-      period = 0;
-      period_months = 0;
-      duration = 0;
-    }
-  else
+  else if (create_schedule_data->icalendar == NULL
+           || strcmp (create_schedule_data->icalendar, "") == 0)
     {
       SEND_TO_CLIENT_OR_FAIL
         (XML_ERROR_SYNTAX ("create_schedule",
@@ -16150,11 +16140,6 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
   switch (create_schedule (create_schedule_data->name,
                            create_schedule_data->comment,
                            create_schedule_data->icalendar,
-                           first_time,
-                           period == -1 ? 0 : period,
-                           period_months,
-                           create_schedule_data->byday,
-                           duration == -1 ? 0 : duration,
                            create_schedule_data->timezone,
                            &new_schedule,
                            &ical_error))

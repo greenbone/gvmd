@@ -2639,8 +2639,7 @@ find_schedule_with_permission (const char*, schedule_t*, const char*);
 
 int
 create_schedule (const char *, const char*, const char *,
-                 time_t, time_t, time_t, const char *, time_t, const char*,
-                 schedule_t *, gchar**);
+                 const char*, schedule_t *, gchar**);
 
 int
 copy_schedule (const char*, const char*, const char *, schedule_t *);
