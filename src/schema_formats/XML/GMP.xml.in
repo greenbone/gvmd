@@ -25974,6 +25974,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <!-- Compatibility changes between versions. -->
 
   <change>
+    <command>CREATE_SCHEDULE, GET_SCHEDULES, MODIFY_SCHEDULE</command>
+    <summary>Classic schedule elements removed</summary>
+    <description>
+      <p>
+        The classic schedule elements like PERIOD, DURATION and BYDAY have been
+        removed.  Schedules are now always created, defined and modified using
+        the newer iCalendar elements.
+      </p>
+    </description>
+    <version>20.08</version>
+  </change>
+  <change>
     <command>GET_REPORTS</command>
     <summary>HOST_PROGRESS has been removed</summary>
     <description>
