@@ -940,7 +940,7 @@ manage_create_sql_functions ()
            "         WHEN (SELECT scan_run_status FROM reports"
            "               WHERE reports.id = $1)"
            "               IN (SELECT unnest (ARRAY [%i, %i, %i, %i, %i, %i,"
-           "                                         %i, %i]))"
+           "                                         %i, %i, %i]))"
            "         THEN true"
            "         ELSE false"
            "         END;"
@@ -952,7 +952,8 @@ manage_create_sql_functions ()
            TASK_STATUS_STOP_REQUESTED,
            TASK_STATUS_STOP_REQUESTED_GIVEUP,
            TASK_STATUS_STOPPED,
-           TASK_STATUS_INTERRUPTED);
+           TASK_STATUS_INTERRUPTED,
+           TASK_STATUS_QUEUED);
 
       sql ("CREATE OR REPLACE FUNCTION report_progress (integer)"
            " RETURNS integer AS $$"
@@ -1324,6 +1325,8 @@ manage_create_sql_functions ()
        "         THEN 'Stop Requested'"
        "         WHEN $1 = %i"
        "         THEN 'Stopped'"
+       "         WHEN $1 = %i"
+       "         THEN 'Queued'"
        "         ELSE 'Interrupted'"
        "         END;"
        "$$ LANGUAGE SQL"
@@ -1339,7 +1342,8 @@ manage_create_sql_functions ()
        TASK_STATUS_STOP_REQUESTED_GIVEUP,
        TASK_STATUS_STOP_REQUESTED,
        TASK_STATUS_STOP_WAITING,
-       TASK_STATUS_STOPPED);
+       TASK_STATUS_STOPPED,
+       TASK_STATUS_QUEUED);
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
