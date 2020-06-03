@@ -41338,7 +41338,6 @@ schedule_info (schedule_t schedule, int trash,
    { "first_time", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "period", NULL, KEYWORD_TYPE_INTEGER },                               \
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "byday", NULL, KEYWORD_TYPE_INTEGER },                                \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
@@ -41359,7 +41358,6 @@ schedule_info (schedule_t schedule, int trash,
    { "first_time", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "period", NULL, KEYWORD_TYPE_INTEGER },                               \
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "byday", NULL, KEYWORD_TYPE_INTEGER },                                \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
@@ -41420,7 +41418,7 @@ init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
  * @return Timezone, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the iCalendar string from a schedule iterator.
@@ -41430,7 +41428,7 @@ DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 5);
  * @return The iCalendar string or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 7);
+DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Initialise a task schedule iterator.
