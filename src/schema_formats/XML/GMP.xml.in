@@ -5028,9 +5028,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>comment</e></o>
       <o><e>copy</e></o>
       <o><e>icalendar</e></o>
-      <o><e>first_time</e></o>
-      <o><e>duration</e></o>
-      <o><e>period</e></o>
       <o><e>timezone</e></o>
     </pattern>
     <ele>
@@ -5060,63 +5057,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </pattern>
     </ele>
     <ele>
-      <name>first_time</name>
-      <summary>The first time the schedule will run</summary>
-      <pattern>
-        <e>minute</e>
-        <e>hour</e>
-        <e>day_of_month</e>
-        <e>month</e>
-        <e>year</e>
-      </pattern>
-      <ele>
-        <name>minute</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-      <ele>
-        <name>hour</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-      <ele>
-        <name>day_of_month</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-      <ele>
-        <name>month</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-      <ele>
-        <name>year</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>duration</name>
-      <summary>How long the Manager will run the scheduled task for</summary>
-      <description>A duration of 0 means to run to completion.</description>
-      <pattern>
-        <e>unit</e>
-      </pattern>
-      <ele>
-        <name>unit</name>
-        <summary>Duration time unit</summary>
-        <pattern><t>time_unit</t></pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>period</name>
-      <summary>How often the Manager will repeat the scheduled task</summary>
-      <description>A period of 0 means to run once.</description>
-      <pattern>
-        <e>unit</e>
-      </pattern>
-      <ele>
-        <name>unit</name>
-        <summary>Period time unit</summary>
-        <pattern><t>time_unit</t></pattern>
-      </ele>
-    </ele>
-    <ele>
       <name>timezone</name>
       <summary>The timezone the schedule will follow</summary>
       <pattern>timezone</pattern>
@@ -5144,28 +5084,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <summary>Create a schedule</summary>
       <request>
         <create_schedule>
-          <name>Every night</name>
-          <first_time>
-            <day_of_month>1</day_of_month>
-            <hour>0</hour>
-            <minute>0</minute>
-            <month>1</month>
-            <year>2011</year>
-          </first_time>
-          <duration>
-            3
-            <unit>hour</unit>
-          </duration>
-          <period>
-            1
-            <unit>day</unit>
-          </period>
+          <name>Every day</name>
+          <timezone>UTC</timezone>
+          <icalendar>
+            <truncated>...</truncated>
+            DTSTART;TZID=/UTC:20200603T162600
+          </icalendar>
         </create_schedule>
       </request>
       <response>
         <create_schedule_response status="201"
-                                   status_text="OK, resource created"
-                                   id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+                                  status_text="OK, resource created"
+                                  id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_schedule_response>
       </response>
     </example>
@@ -17882,16 +17812,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>in_use</e>
           <e>permissions</e>
           <o><e>user_tags</e></o>
-          <e>first_time</e>
-          <e>next_time</e>
           <e>icalendar</e>
           <e>timezone</e>
-          <e>timezone_abbrev</e>
-          <e>period</e>
-          <e>period_months</e>
-          <e>simple_period</e>
-          <e>duration</e>
-          <e>simple_duration</e>
           <o>
             <e>tasks</e>
           </o>
@@ -18005,16 +17927,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </ele>
         </ele>
         <ele>
-          <name>first_time</name>
-          <summary>First time the task ran or will run</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>next_time</name>
-          <summary>The next time the task will run</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
           <name>icalendar</name>
           <summary>iCalendar text containing the time data.</summary>
           <pattern>
@@ -18025,50 +17937,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>timezone</name>
           <summary>The timezone that the schedule follows</summary>
           <pattern>timezone</pattern>
-        </ele>
-        <ele>
-          <name>timezone_abbrev</name>
-          <summary>The abbreviated name of the timezone</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>period</name>
-          <summary>How often the task will run, in seconds</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>period_months</name>
-          <summary>How often the task will run, months portion</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>simple_period</name>
-          <summary>Simple representation of period, if available</summary>
-          <pattern>
-            text
-            <o><e>unit</e></o>
-          </pattern>
-          <ele>
-            <name>unit</name>
-            <pattern><t>time_unit</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>duration</name>
-          <summary>How long the task will run for (0 for entire task)</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>simple_duration</name>
-          <summary>Simple representation of duration, if available</summary>
-          <pattern>
-            text
-            <o><e>unit</e></o>
-          </pattern>
-          <ele>
-            <name>unit</name>
-            <pattern><t>time_unit</t></pattern>
-          </ele>
         </ele>
         <ele>
           <name>tasks</name>
@@ -18226,28 +18094,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </request>
       <response>
         <get_schedules_response status="200" status_text="OK">
-          <schedule id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
-            <name>Overnight</name>
-            <comment>3 hours, starting at 12h00.</comment>
-            <creation_time>2013-01-01T13:57:25+01:00</creation_time>
-            <modification_time>2013-01-18T12:07:36+01:00</modification_time>
-            <writable>0</writable>
-            <in_use>1</in_use>
-            <first_time>2010-07-29T00:00:00+02:00</first_time>
-            <next_time>2010-07-29T00:00:00+02:00</next_time>
-            <icalendar>[...]</icalendar>
-            <period>86400</period>
-            <period_months>0</period_months>
-            <simple_period>1<unit>day</unit></simple_period>
-            <duration>10800</duration>
-            <simple_duration>3<unit>hour</unit></simple_duration>
-            <timezone>Europe/Berlin</timezone>
-            <timezone_abbrev>CEST</timezone_abbrev>
-            <tasks>
-              <task id="d4daf4c4-25c7-40ac-87d3-38e489f34330">
-                <name>Task 1</name>
-              </task>
-            </tasks>
+          <schedule id="ddda859a-45be-4c58-85b3-517c66230232">
+            <owner>
+              <name>username</name>
+            </owner>
+            <name>Every day</name>
+            <comment></comment>
+            <creation_time>2020-06-03T16:27:05Z</creation_time>
+            <modification_time>2020-06-03T16:27:05Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <icalendar>
+              <truncated>...</truncated>
+              DTSTART:20200603T162600Z DURATION:PT0S RRULE:FREQ=DAILY
+            </icalendar>
+            <timezone>UTC</timezone>
           </schedule>
           <truncate>...</truncate>
         </get_schedules_response>
@@ -24766,9 +24632,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>comment</e></o>
       <o><e>name</e></o>
       <o><e>icalendar</e></o>
-      <o><e>first_time</e></o>
-      <o><e>duration</e></o>
-      <o><e>period</e></o>
       <o><e>timezone</e></o>
     </pattern>
     <ele>
@@ -24789,64 +24652,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </pattern>
     </ele>
     <ele>
-      <name>first_time</name>
-      <summary>First time the task will run. Missing subelements default to current system time</summary>
-      <pattern>
-        <o><e>day_of_month</e></o>
-        <o><e>hour</e></o>
-        <o><e>minute</e></o>
-        <o><e>month</e></o>
-        <o><e>year</e></o>
-      </pattern>
-      <ele>
-        <name>day_of_month</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>hour</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>minute</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>month</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>year</name>
-        <pattern>text</pattern>
-      </ele>
-    </ele>
-    <ele>
       <name>timezone</name>
       <summary>The timezone the schedule will follow. User's timezone is used if omitted</summary>
       <pattern>timezone</pattern>
-    </ele>
-    <ele>
-      <name>duration</name>
-      <summary>How long the task will run for</summary>
-      <pattern>
-        text
-        <o><e>unit</e></o>
-      </pattern>
-      <ele>
-        <name>unit</name>
-        <pattern><t>time_unit</t></pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>period</name>
-      <summary>How often the task will run</summary>
-      <pattern>
-        text
-        <o><e>unit</e></o>
-      </pattern>
-      <ele>
-        <name>unit</name>
-        <pattern><t>time_unit</t></pattern>
-      </ele>
     </ele>
     <response>
       <pattern>
