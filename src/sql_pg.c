@@ -232,17 +232,6 @@ sql_default_database ()
 }
 
 /**
- * @brief Turn off recursive triggers.
- *
- * Ignored when DB is Postgres.
- */
-void
-sql_recursive_triggers_off ()
-{
-  return;
-}
-
-/**
  * @brief Open the database.
  *
  * @param[in]  database  Database, or NULL for default.

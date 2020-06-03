@@ -57,6 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Simplify sync lockfile handling [#1059](https://github.com/greenbone/gvmd/pull/1059)
 - Do not ignore empty hosts_allow and ifaces_allow [#1064](https://github.com/greenbone/gvmd/pull/1064)
 - Reduce the memory cache of NVTs [#1076](https://github.com/greenbone/gvmd/pull/1076)
+- Sync SCAP using a second schema [#1111](https://github.com/greenbone/gvmd/pull/1111)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
