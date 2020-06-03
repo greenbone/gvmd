@@ -3119,32 +3119,33 @@ manage_db_init (const gchar *name)
     }
   else if (strcasecmp (name, "scap") == 0)
     {
-      sql ("CREATE OR REPLACE FUNCTION drop_scap () RETURNS void AS $$"
+      sql ("CREATE OR REPLACE FUNCTION drop_scap2 () RETURNS void AS $$"
            " BEGIN"
            "   IF EXISTS (SELECT schema_name FROM information_schema.schemata"
-           "              WHERE schema_name = 'scap')"
+           "              WHERE schema_name = 'scap2')"
            "   THEN"
-           "     DROP SCHEMA IF EXISTS scap CASCADE;"
+           "     DROP SCHEMA IF EXISTS scap2 CASCADE;"
            "   END IF;"
            " END;"
            " $$ LANGUAGE plpgsql;");
 
-      sql ("SELECT drop_scap ();");
-      sql ("DROP FUNCTION drop_scap ();");
-      sql ("CREATE SCHEMA scap;");
-
       sql ("SELECT set_config ('search_path',"
-           "                   current_setting ('search_path') || ',scap',"
+           "                   'scap2,' || current_setting ('search_path'),"
            "                   false);");
 
-      /* Create tables and indexes. */
+      sql ("SELECT drop_scap2 ();");
+      sql ("DROP FUNCTION drop_scap2 ();");
 
-      sql ("CREATE TABLE scap.meta"
+      sql ("CREATE SCHEMA scap2;");
+
+      /* Create tables. */
+
+      sql ("CREATE TABLE scap2.meta"
            " (id SERIAL PRIMARY KEY,"
            "  name text UNIQUE,"
            "  value text);");
 
-      sql ("CREATE TABLE scap.cves"
+      sql ("CREATE TABLE scap2.cves"
            " (id SERIAL PRIMARY KEY,"
            "  uuid text UNIQUE,"
            "  name text,"
@@ -3160,16 +3161,8 @@ manage_db_init (const gchar *name)
            "  availability_impact text,"
            "  products text,"
            "  cvss FLOAT DEFAULT 0);");
-      sql ("CREATE UNIQUE INDEX cve_idx"
-           " ON cves (name);");
-      sql ("CREATE INDEX cves_by_creation_time_idx"
-           " ON cves (creation_time);");
-      sql ("CREATE INDEX cves_by_modification_time_idx"
-           " ON cves (modification_time);");
-      sql ("CREATE INDEX cves_by_cvss"
-           " ON cves (cvss);");
 
-      sql ("CREATE TABLE scap.cpes"
+      sql ("CREATE TABLE scap2.cpes"
            " (id SERIAL PRIMARY KEY,"
            "  uuid text UNIQUE,"
            "  name text,"
@@ -3182,29 +3175,15 @@ manage_db_init (const gchar *name)
            "  max_cvss FLOAT DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
            "  nvd_id text);");
-      sql ("CREATE UNIQUE INDEX cpe_idx"
-           " ON cpes (name);");
-      sql ("CREATE INDEX cpes_by_creation_time_idx"
-           " ON cpes (creation_time);");
-      sql ("CREATE INDEX cpes_by_modification_time_idx"
-           " ON cpes (modification_time);");
-      sql ("CREATE INDEX cpes_by_cvss"
-           " ON cpes (max_cvss);");
-      sql ("CREATE INDEX cpes_by_uuid"
-           " ON cpes (uuid);");
 
-      sql ("CREATE TABLE scap.affected_products"
+      sql ("CREATE TABLE scap2.affected_products"
            " (cve INTEGER NOT NULL,"
            "  cpe INTEGER NOT NULL,"
            "  UNIQUE (cve, cpe),"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
            "  FOREIGN KEY(cpe) REFERENCES cpes(id));");
-      sql ("CREATE INDEX afp_cpe_idx"
-           " ON affected_products (cpe);");
-      sql ("CREATE INDEX afp_cve_idx"
-           " ON affected_products (cve);");
 
-      sql ("CREATE TABLE scap.ovaldefs"
+      sql ("CREATE TABLE scap2.ovaldefs"
            " (id SERIAL PRIMARY KEY,"
            "  uuid text UNIQUE,"
            "  name text,"                   /* OVAL identifier. */
@@ -3220,84 +3199,22 @@ manage_db_init (const gchar *name)
            "  status TEXT,"
            "  max_cvss FLOAT DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0);");
-      sql ("CREATE INDEX ovaldefs_idx"
-           " ON ovaldefs (name);");
-      sql ("CREATE INDEX ovaldefs_by_creation_time"
-           " ON ovaldefs (creation_time);");
 
-      sql ("CREATE TABLE scap.ovalfiles"
+      sql ("CREATE TABLE scap2.ovalfiles"
            " (id SERIAL PRIMARY KEY,"
            "  xml_file TEXT UNIQUE);");
-      sql ("CREATE UNIQUE INDEX ovalfiles_idx"
-           " ON ovalfiles (xml_file);");
 
-      sql ("CREATE TABLE scap.affected_ovaldefs"
+      sql ("CREATE TABLE scap2.affected_ovaldefs"
            " (cve INTEGER NOT NULL,"
            "  ovaldef INTEGER NOT NULL,"
            "  FOREIGN KEY(cve) REFERENCES cves(id),"
            "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id));");
-      sql ("CREATE INDEX aff_ovaldefs_def_idx"
-           " ON affected_ovaldefs (ovaldef);");
-      sql ("CREATE INDEX aff_ovaldefs_cve_idx"
-           " ON affected_ovaldefs (cve);");
-
-      /* Create deletion triggers. */
-
-      sql ("CREATE OR REPLACE FUNCTION scap_delete_affected ()"
-           " RETURNS TRIGGER AS $$"
-           " BEGIN"
-           "   DELETE FROM affected_products where cve = old.id;"
-           "   DELETE FROM affected_ovaldefs where cve = old.id;"
-           "   RETURN old;"
-           " END;"
-           "$$ LANGUAGE plpgsql;");
-
-      sql ("CREATE TRIGGER cves_delete AFTER DELETE ON cves"
-	   " FOR EACH ROW EXECUTE PROCEDURE scap_delete_affected ();");
-
-      sql ("CREATE OR REPLACE FUNCTION scap_update_cpes ()"
-           " RETURNS TRIGGER AS $$"
-           " BEGIN"
-           "   UPDATE cpes SET max_cvss = 0.0 WHERE id = old.cpe;"
-           "   UPDATE cpes SET cve_refs = cve_refs -1 WHERE id = old.cpe;"
-           "   RETURN old;"
-           " END;"
-           "$$ LANGUAGE plpgsql;");
-
-      sql ("CREATE TRIGGER affected_delete AFTER DELETE ON affected_products"
-           " FOR EACH ROW EXECUTE PROCEDURE scap_update_cpes ();");
-
-      sql ("CREATE OR REPLACE FUNCTION scap_delete_oval ()"
-           " RETURNS TRIGGER AS $$"
-           " BEGIN"
-           "   DELETE FROM affected_ovaldefs"
-           "     WHERE id IN (SELECT id FROM ovaldefs"
-           "                  WHERE ovaldefs.xml_file = old.xml_file);"
-           "   DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;"
-           "   RETURN old;"
-           " END;"
-           "$$ LANGUAGE plpgsql;");
-
-      sql ("CREATE TRIGGER ovalfiles_delete AFTER DELETE ON ovalfiles"
-           " FOR EACH ROW EXECUTE PROCEDURE scap_delete_oval ();");
-
-      sql ("CREATE OR REPLACE FUNCTION scap_update_oval ()"
-           " RETURNS TRIGGER AS $$"
-           " BEGIN"
-           "   UPDATE ovaldefs SET max_cvss = 0.0 WHERE id = old.ovaldef;"
-           "   RETURN old;"
-           " END;"
-           "$$ LANGUAGE plpgsql;");
-
-      sql ("CREATE TRIGGER affected_ovaldefs_delete"
-           " AFTER DELETE ON affected_ovaldefs"
-	   " FOR EACH ROW EXECUTE PROCEDURE scap_update_oval ();");
 
       /* Init tables. */
 
-      sql ("INSERT INTO scap.meta (name, value)"
+      sql ("INSERT INTO scap2.meta (name, value)"
            " VALUES ('database_version', '16');");
-      sql ("INSERT INTO scap.meta (name, value)"
+      sql ("INSERT INTO scap2.meta (name, value)"
            " VALUES ('last_update', '0');");
     }
   else
@@ -3310,26 +3227,61 @@ manage_db_init (const gchar *name)
 }
 
 /**
- * @brief Dummy function.
+ * @brief Init external database.
  *
- * @param[in]  name  Dummy arg.
- */
-void
-manage_db_check_mode (const gchar *name)
-{
-  return;
-}
-
-/**
- * @brief Dummy function.
+ * @param[in]  name  Name.  Currently only "scap".
  *
- * @param[in]  name  Dummy arg.
- *
- * @return 0.
+ * @return 0 success, -1 error.
  */
 int
-manage_db_check (const gchar *name)
+manage_db_init_indexes (const gchar *name)
 {
+  if (strcasecmp (name, "scap") == 0)
+    {
+      sql ("CREATE UNIQUE INDEX cve_idx"
+           " ON scap2.cves (name);");
+      sql ("CREATE INDEX cves_by_creation_time_idx"
+           " ON scap2.cves (creation_time);");
+      sql ("CREATE INDEX cves_by_modification_time_idx"
+           " ON scap2.cves (modification_time);");
+      sql ("CREATE INDEX cves_by_cvss"
+           " ON scap2.cves (cvss);");
+
+      sql ("CREATE UNIQUE INDEX cpe_idx"
+           " ON scap2.cpes (name);");
+      sql ("CREATE INDEX cpes_by_creation_time_idx"
+           " ON scap2.cpes (creation_time);");
+      sql ("CREATE INDEX cpes_by_modification_time_idx"
+           " ON scap2.cpes (modification_time);");
+      sql ("CREATE INDEX cpes_by_cvss"
+           " ON scap2.cpes (max_cvss);");
+      sql ("CREATE INDEX cpes_by_uuid"
+           " ON scap2.cpes (uuid);");
+
+      sql ("CREATE INDEX afp_cpe_idx"
+           " ON scap2.affected_products (cpe);");
+      sql ("CREATE INDEX afp_cve_idx"
+           " ON scap2.affected_products (cve);");
+
+      sql ("CREATE INDEX ovaldefs_idx"
+           " ON scap2.ovaldefs (name);");
+      sql ("CREATE INDEX ovaldefs_by_creation_time"
+           " ON scap2.ovaldefs (creation_time);");
+
+      sql ("CREATE UNIQUE INDEX ovalfiles_idx"
+           " ON scap2.ovalfiles (xml_file);");
+
+      sql ("CREATE INDEX aff_ovaldefs_def_idx"
+           " ON scap2.affected_ovaldefs (ovaldef);");
+      sql ("CREATE INDEX aff_ovaldefs_cve_idx"
+           " ON scap2.affected_ovaldefs (cve);");
+    }
+  else
+    {
+      assert (0);
+      return -1;
+    }
+
   return 0;
 }
 
