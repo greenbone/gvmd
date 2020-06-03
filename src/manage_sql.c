@@ -40781,13 +40781,6 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
  * @param[in]   comment     Comment on schedule.
  * @param[in]   ical_string iCalendar string.  Overrides first_time, period,
  *                           period_months, byday and duration.
- * @param[in]   first_time  First time action will run.
- * @param[in]   period      How often the action will run in seconds.  0 means
- *                          once.
- * @param[in]   period_months  The months part of the period.
- * @param[in]   byday       Which days of week schedule will run.
- * @param[in]   duration    The length of the time window the action will run
- *                          in.  0 means entire duration of action.
  * @param[in]   zone        Timezone.
  * @param[out]  schedule    Created schedule.
  * @param[out]  error_out   Output for iCalendar errors and warnings.
