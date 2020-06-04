@@ -63,6 +63,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix SCP alert authentication and logging [#973](https://github.com/greenbone/gvmd/pull/973)
 - Use right format specifier for merge_ovaldef version [#1053](https://github.com/greenbone/gvmd/pull/1053)
 - Fix deletion of OVAL definition data [#1077](https://github.com/greenbone/gvmd/pull/1077)
+- Fix table check in gvm-migrate-to-postgres [#1117](https://github.com/greenbone/gvmd/pull/1117)
 
 ### Removed
 
