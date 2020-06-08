@@ -130,7 +130,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove GMP COMMANDS [#923](https://github.com/greenbone/gvmd/pull/923)
 - Remove unused port names facility [#1041](https://github.com/greenbone/gvmd/pull/1041)
 - Add migrator to remove dead hosts [#1071](https://github.com/greenbone/gvmd/pull/1071)
-- Remove classic schedules elements from GMP [#1116](https://github.com/greenbone/gvmd/pull/1116)
+- Remove classic schedules elements from GMP [#1116](https://github.com/greenbone/gvmd/pull/1116) [#1121](https://github.com/greenbone/gvmd/pull/1121)
 - Remove parallel from target options. [#1119](https://github.com/greenbone/gvmd/pull/1119)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
