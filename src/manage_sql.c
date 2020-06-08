@@ -239,10 +239,6 @@ check_for_updated_scap ();
 static void
 check_for_updated_cert ();
 
-static gchar*
-results_extra_where (int, report_t, const gchar*,
-                     int, int, int, const gchar*);
-
 static int
 report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
@@ -2800,6 +2796,7 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
       && (strstr ("Done", keyword->string) == NULL)
       && (strstr ("New", keyword->string) == NULL)
       && (strstr ("Running", keyword->string) == NULL)
+      && (strstr ("Queued", keyword->string) == NULL)
       && (strstr ("Stop Requested", keyword->string) == NULL)
       && (strstr ("Stopped", keyword->string) == NULL)
       && (strstr ("Interrupted", keyword->string) == NULL))
@@ -4925,6 +4922,8 @@ resource_uuid (const gchar *type, resource_t resource)
  * @param[in]  extra_tables    Extra tables to join in FROM clause.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
  *                             resource.
+ * @param[in]  extra_where_single  Extra WHERE clauses.  Used for single
+ *                                 resource.
  * @param[in]  owned           Only get items owned by the current user.
  * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
  * @param[in]  extra_order     Extra ORDER clauses.
@@ -4942,7 +4941,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                          column_t *trash_where_columns,
                          const char **filter_columns, int distinct,
                          const char *extra_tables,
-                         const char *extra_where, int owned,
+                         const char *extra_where,
+                         const char *extra_where_single, int owned,
                          int ignore_id,
                          const char *extra_order,
                          const char *extra_with,
@@ -5089,16 +5089,18 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "%sSELECT %s"
                    " FROM %ss%s %s"
-                   " WHERE id = %llu"
-                   " AND %s"
+                   " WHERE %ss.id = %llu"
+                   " AND %s%s"
                    "%s%s;",
                    with_clause ? with_clause : "",
                    columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
                    extra_tables ? extra_tables : "",
+                   type,
                    resource,
                    owned_clause,
+                   extra_where_single ? extra_where_single : "",
                    order ? order : "",
                    order ? (extra_order ? extra_order : "") : "");
   else if (get->trash)
@@ -5122,15 +5124,17 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "%sSELECT %s"
                    " FROM %ss %s"
-                   " WHERE id = %llu"
-                   " AND %s"
+                   " WHERE %ss.id = %llu"
+                   " AND %s%s"
                    "%s%s;",
                    with_clause ? with_clause : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
+                   type,
                    resource,
                    owned_clause,
+                   extra_where_single ? extra_where_single : "",
                    order ? order : "",
                    order ? (extra_order ? extra_order : "") : "");
   else
@@ -5183,6 +5187,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
  * @param[in]  extra_tables    Extra tables to join in FROM clause.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
  *                             resource.
+ * @param[in]  extra_where_single  Extra WHERE clauses.  Used for single
+ *                                 resource.
  * @param[in]  owned           Only get items owned by the current user.
  * @param[in]  ignore_id       Whether to ignore id (e.g. for report results).
  * @param[in]  extra_order     Extra ORDER clauses.
@@ -5198,15 +5204,15 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                     column_t *trash_where_columns,
                     const char **filter_columns, int distinct,
                     const char *extra_tables,
-                    const char *extra_where, int owned,
-                    int ignore_id,
+                    const char *extra_where, const char *extra_where_single,
+                    int owned, int ignore_id,
                     const char *extra_order)
 {
   return init_get_iterator2_with (iterator, type, get, select_columns,
                                  trash_select_columns, where_columns,
                                  trash_where_columns, filter_columns, distinct,
-                                 extra_tables, extra_where, owned, ignore_id,
-                                 extra_order, NULL, 0);
+                                 extra_tables, extra_where, extra_where_single,
+                                 owned, ignore_id, extra_order, NULL, 0);
 }
 
 /**
@@ -5238,8 +5244,8 @@ init_get_iterator (iterator_t* iterator, const char *type,
 {
   return init_get_iterator2 (iterator, type, get, select_columns,
                              trash_select_columns, NULL, NULL, filter_columns,
-                             distinct, extra_tables, extra_where, owned, FALSE,
-                             NULL);
+                             distinct, extra_tables, extra_where, NULL, owned,
+                             FALSE, NULL);
 }
 
 /**
@@ -15064,6 +15070,7 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                             0,
                             extra_tables,
                             extra_where,
+                            NULL,
                             current_credentials.uuid ? TRUE : FALSE,
                             FALSE,
                             NULL);
@@ -15219,6 +15226,7 @@ task_in_use (task_t task)
          || status == TASK_STATUS_DELETE_ULTIMATE_WAITING
          || status == TASK_STATUS_REQUESTED
          || status == TASK_STATUS_RUNNING
+         || status == TASK_STATUS_QUEUED
          || status == TASK_STATUS_STOP_REQUESTED_GIVEUP
          || status == TASK_STATUS_STOP_REQUESTED
          || status == TASK_STATUS_STOP_WAITING;
@@ -15391,11 +15399,8 @@ update_nvti_cache ()
    * check if we've already seen the NVT.  This also means we don't have
    * to sort the data by NVT, which would make the query too slow. */
   init_iterator (&nvts,
-                 "SELECT nvts.oid, nvts.name, nvts.family, nvts.cvss_base,"
-                 "       nvts.tag, nvts.solution, nvts.solution_type,"
-                 "       nvts.summary, nvts.insight, nvts.affected,"
-                 "       nvts.impact, nvts.detection, nvts.qod_type,"
-                 "       vt_refs.type, vt_refs.ref_id, vt_refs.ref_text"
+                 "SELECT nvts.oid, vt_refs.type, vt_refs.ref_id,"
+                 "       vt_refs.ref_text"
                  " FROM nvts"
                  " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
 
@@ -15408,18 +15413,6 @@ update_nvti_cache ()
         {
           nvti = nvti_new ();
           nvti_set_oid (nvti, iterator_string (&nvts, 0));
-          nvti_set_name (nvti, iterator_string (&nvts, 1));
-          nvti_set_family (nvti, iterator_string (&nvts, 2));
-          nvti_set_cvss_base (nvti, iterator_string (&nvts, 3));
-          nvti_set_tag (nvti, iterator_string (&nvts, 4));
-          nvti_set_solution (nvti, iterator_string (&nvts, 5));
-          nvti_set_solution_type (nvti, iterator_string (&nvts, 6));
-          nvti_set_summary (nvti, iterator_string (&nvts, 7));
-          nvti_set_insight (nvti, iterator_string (&nvts, 8));
-          nvti_set_affected (nvti, iterator_string (&nvts, 9));
-          nvti_set_impact (nvti, iterator_string (&nvts, 10));
-          nvti_set_detection (nvti, iterator_string (&nvts, 11));
-          nvti_set_qod_type (nvti, iterator_string (&nvts, 12));
 
           nvtis_add (nvti_cache, nvti);
         }
@@ -15428,9 +15421,9 @@ update_nvti_cache ()
         /* No refs. */;
       else
         nvti_add_vtref (nvti,
-                        vtref_new (iterator_string (&nvts, 13),
-                                   iterator_string (&nvts, 14),
-                                   iterator_string (&nvts, 15)));
+                        vtref_new (iterator_string (&nvts, 1),
+                                   iterator_string (&nvts, 2),
+                                   iterator_string (&nvts, 3)));
     }
 
   cleanup_iterator (&nvts);
@@ -16351,6 +16344,7 @@ stop_active_tasks ()
           case TASK_STATUS_DELETE_WAITING:
           case TASK_STATUS_REQUESTED:
           case TASK_STATUS_RUNNING:
+          case TASK_STATUS_QUEUED:
           case TASK_STATUS_STOP_REQUESTED_GIVEUP:
           case TASK_STATUS_STOP_REQUESTED:
           case TASK_STATUS_STOP_WAITING:
@@ -16386,6 +16380,7 @@ stop_active_tasks ()
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
        " OR scan_run_status = %u;",
        TASK_STATUS_INTERRUPTED,
        TASK_STATUS_DELETE_REQUESTED,
@@ -16394,6 +16389,7 @@ stop_active_tasks ()
        TASK_STATUS_DELETE_WAITING,
        TASK_STATUS_REQUESTED,
        TASK_STATUS_RUNNING,
+       TASK_STATUS_QUEUED,
        TASK_STATUS_STOP_REQUESTED,
        TASK_STATUS_STOP_REQUESTED_GIVEUP,
        TASK_STATUS_STOP_WAITING);
@@ -17831,6 +17827,7 @@ set_task_requested (task_t task, task_status_t *status)
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_QUEUED
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOP_WAITING
@@ -17904,13 +17901,16 @@ task_running_report (task_t task)
 {
   task_status_t run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
-      || run_status == TASK_STATUS_RUNNING)
+      || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_QUEUED)
     {
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu AND end_time IS NULL"
-                                     " AND scan_run_status = %u;",
+                                     " AND (scan_run_status = %u "
+                                     " OR scan_run_status = %u);",
                                      task,
-                                     TASK_STATUS_RUNNING);
+                                     TASK_STATUS_RUNNING,
+                                     TASK_STATUS_QUEUED);
     }
   return (report_t) 0;
 }
@@ -17929,6 +17929,7 @@ task_iterator_current_report (iterator_t *iterator)
   task_status_t run_status = task_iterator_run_status (iterator);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_QUEUED
       || run_status == TASK_STATUS_DELETE_REQUESTED
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
@@ -17945,10 +17946,12 @@ task_iterator_current_report (iterator_t *iterator)
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
+                                     " OR scan_run_status = %u"
                                      " OR scan_run_status = %u);",
                                      task,
                                      TASK_STATUS_REQUESTED,
                                      TASK_STATUS_RUNNING,
+                                     TASK_STATUS_QUEUED,
                                      TASK_STATUS_DELETE_REQUESTED,
                                      TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED,
@@ -19470,9 +19473,8 @@ make_result (task_t task, const char* host, const char *hostname,
              const char* type, const char* description)
 {
   result_t result;
-  gchar *nvt_revision, *severity;
-  gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
-  int qod;
+  gchar *nvt_revision, *severity, *qod, *qod_type;
+  gchar *quoted_hostname, *quoted_descr;
   nvt_t nvt_id = 0;
 
   if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
@@ -19480,26 +19482,20 @@ make_result (task_t task, const char* host, const char *hostname,
       g_warning ("NVT '%s' not found. Result not created", nvt);
       return 0;
     }
-  else if (nvt && strcmp (nvt, ""))
+
+  severity = nvt_severity (nvt, type);
+  if (!severity)
     {
-      nvti_t *nvti;
+      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
+      return 0;
+    }
 
-      nvti = lookup_nvti (nvt);
-      if (nvti)
-        {
-          gchar *qod_type;
-
-          qod_type = nvti_qod_type (nvti);
-          qod = qod_from_type (qod_type);
-          quoted_qod_type = sql_quote (qod_type);
-
-          g_free (qod_type);
-        }
-      else
-        {
-          qod = QOD_DEFAULT;
-          quoted_qod_type = g_strdup ("");
-        }
+  if (nvt && strcmp (nvt, ""))
+    {
+      qod = g_strdup_printf ("(SELECT qod FROM nvts WHERE id = %llu)",
+                             nvt_id);
+      qod_type = g_strdup_printf ("(SELECT qod_type FROM nvts WHERE id = %llu)",
+                                  nvt_id);
 
       nvt_revision = sql_string ("SELECT iso_time (modification_time)"
                                  " FROM nvts"
@@ -19508,15 +19504,9 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   else
     {
-      qod = QOD_DEFAULT;
-      quoted_qod_type = g_strdup ("");
+      qod = G_STRINGIFY (QOD_DEFAULT);
+      qod_type = g_strdup ("''");
       nvt_revision = g_strdup ("");
-    }
-  severity = nvt_severity (nvt, type);
-  if (!severity)
-    {
-      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
-      return 0;
     }
 
   if (!strcmp (severity, ""))
@@ -19534,15 +19524,16 @@ make_result (task_t task, const char* host, const char *hostname,
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '%s', '%s',"
        "  '%s', '%s', '%s', '%s',"
-       "  '%s', make_uuid (), %i, '%s',"
+       "  '%s', make_uuid (), %s, %s,"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, port ?: "",
        nvt ?: "", nvt_revision, severity, type,
-       quoted_descr, qod, quoted_qod_type, nvt ? nvt : "");
+       quoted_descr, qod, qod_type, nvt ? nvt : "");
 
   g_free (quoted_hostname);
   g_free (quoted_descr);
-  g_free (quoted_qod_type);
+  g_free (qod);
+  g_free (qod_type);
   g_free (nvt_revision);
   g_free (severity);
   result = sql_last_insert_id ();
@@ -21456,6 +21447,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                              : " AND (SELECT hidden FROM tasks"
                                "      WHERE tasks.id = task)"
                                "     = 0",
+                            NULL,
                             TRUE,
                             FALSE,
                             NULL);
@@ -21720,7 +21712,7 @@ where_qod (int min_qod)
   if (min_qod <= 0)
     qod_sql = g_strdup ("");
   else
-    qod_sql = g_strdup_printf (" AND (qod >= CAST (%d AS INTEGER))",
+    qod_sql = g_strdup_printf (" AND (results.qod >= CAST (%d AS INTEGER))",
                                min_qod);
 
   return qod_sql;
@@ -21886,9 +21878,9 @@ where_qod (int min_qod)
  * @brief Result iterator columns.
  */
 #define BASE_RESULT_ITERATOR_COLUMNS                                          \
-    { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
-    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
-    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+    { "results.id", NULL, KEYWORD_TYPE_INTEGER },                             \
+    { "results.uuid", NULL, KEYWORD_TYPE_STRING },                            \
+    { "nvts.name",                                                            \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
@@ -21903,7 +21895,7 @@ where_qod (int min_qod)
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
       "_owner",                                                               \
       KEYWORD_TYPE_STRING },                                                  \
-    { "owner", NULL, KEYWORD_TYPE_INTEGER },                                  \
+    { "results.owner", NULL, KEYWORD_TYPE_INTEGER },                          \
     { "host", NULL, KEYWORD_TYPE_STRING },                                    \
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
@@ -21936,18 +21928,18 @@ where_qod (int min_qod)
       " LIMIT 1)",                                                            \
       "severity",                                                             \
       KEYWORD_TYPE_DOUBLE },                                                  \
-    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+    { "nvts.name",                                                            \
       "vulnerability",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "date" , NULL, KEYWORD_TYPE_INTEGER },                                  \
     { "(SELECT uuid FROM reports WHERE id = report)",                         \
       "report_id",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
+    { "nvts.solution_type",                                                   \
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
-    { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
-    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "results.qod", NULL, KEYWORD_TYPE_INTEGER },                            \
+    { "results.qod_type", NULL, KEYWORD_TYPE_STRING },                        \
     { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
       " THEN (SELECT value FROM report_host_details"                          \
       "       WHERE name = 'hostname'"                                        \
@@ -21963,7 +21955,7 @@ where_qod (int min_qod)
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "nvts.cve", "cve", KEYWORD_TYPE_STRING },                               \
     { "(SELECT value"                                                         \
       " FROM report_host_details"                                             \
       " WHERE report_host = (SELECT id"                                       \
@@ -22012,7 +22004,31 @@ where_qod (int min_qod)
       KEYWORD_TYPE_INTEGER },                                                 \
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "nvts.summary",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "nvts.insight",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "nvts.affected",                                                        \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "nvts.impact",                                                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "nvts.solution",                                                        \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "nvts.detection",                                                       \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "nvts.family",                                                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "nvts.tag",                                                             \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },
 
 /**
  * @brief Result iterator columns.
@@ -22434,6 +22450,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  0,
                                  extra_tables,
                                  extra_where,
+                                 NULL,
                                  TRUE,
                                  report ? TRUE : FALSE,
                                  extra_order,
@@ -22468,10 +22485,8 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
   int autofp, apply_overrides, dynamic_severity;
-
-  gchar *extra_tables, *extra_where;
 
   if (report == -1)
     {
@@ -22493,12 +22508,16 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
-  extra_tables
+  opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  g_free (opts_tables);
 
-  extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+  where = results_extra_where (get->trash, report, host,
+                               autofp, apply_overrides, dynamic_severity,
+                               filter ? filter : get->filter);
+  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
+  g_free (where);
 
   free (filter);
 
@@ -22514,6 +22533,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             filter_columns,
                             0,
                             extra_tables,
+                            extra_where,
                             extra_where,
                             TRUE,
                             report ? TRUE : FALSE,
@@ -22539,9 +22559,8 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
   int apply_overrides, autofp, dynamic_severity;
-  gchar *extra_tables, *extra_where;
 
   if (report == -1)
     return 0;
@@ -22560,12 +22579,16 @@ result_count (const get_data_t *get, report_t report, const char* host)
   autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
-  extra_tables
+  opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  g_free (opts_tables);
 
-  extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+  where = results_extra_where (get->trash, report, host,
+                               autofp, apply_overrides, dynamic_severity,
+                               filter ? filter : get->filter);
+  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
+  g_free (where);
 
   ret = count ("result", get,
                 manage_cert_loaded () ? columns : columns_no_cert,
@@ -22633,12 +22656,7 @@ DEF_ACCESS (result_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 2);
 const char*
 result_iterator_nvt_name (iterator_t *iterator)
 {
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_name (nvti);
-  return NULL;
+  return get_iterator_name (iterator);
 }
 
 /**
@@ -22648,16 +22666,7 @@ result_iterator_nvt_name (iterator_t *iterator)
  *
  * @return The summary of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_summary (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_summary (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 27);
 
 /**
  * @brief Get the NVT insight from a result iterator.
@@ -22666,16 +22675,7 @@ result_iterator_nvt_summary (iterator_t *iterator)
  *
  * @return The insight of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_insight (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_insight (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 28);
 
 /**
  * @brief Get the NVT affected from a result iterator.
@@ -22684,34 +22684,16 @@ result_iterator_nvt_insight (iterator_t *iterator)
  *
  * @return The affected of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_affected (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_affected (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 29);
 
 /**
- * @brief Get the NVT affected from a result iterator.
+ * @brief Get the NVT impact from a result iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Impact text of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_impact (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_impact (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 30);
 
 /**
  * @brief Get the NVT solution from a result iterator.
@@ -22720,16 +22702,7 @@ result_iterator_nvt_impact (iterator_t *iterator)
  *
  * @return The solution of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_solution (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_solution (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_solution, GET_ITERATOR_COLUMN_COUNT + 31);
 
 /**
  * @brief Get the NVT solution_type from a result iterator.
@@ -22742,12 +22715,7 @@ result_iterator_nvt_solution (iterator_t *iterator)
 const char*
 result_iterator_nvt_solution_type (iterator_t *iterator)
 {
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_solution_type (nvti);
-  return NULL;
+  return result_iterator_solution_type (iterator);
 }
 
 /**
@@ -22761,11 +22729,7 @@ result_iterator_nvt_solution_type (iterator_t *iterator)
 const char*
 result_iterator_nvt_solution_method (iterator_t *iterator)
 {
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_solution_method (nvti);
+  /* When we used a cache this was never added to the cache. */
   return NULL;
 }
 
@@ -22776,16 +22740,7 @@ result_iterator_nvt_solution_method (iterator_t *iterator)
  *
  * @return The detection of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_detection (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_detection (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 32);
 
 /**
  * @brief Get the NVT family from a result iterator.
@@ -22794,16 +22749,7 @@ result_iterator_nvt_detection (iterator_t *iterator)
  *
  * @return The family of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_family (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_family (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 33);
 
 /**
  * @brief Get the NVT CVSS base value from a result iterator.
@@ -22812,26 +22758,17 @@ result_iterator_nvt_family (iterator_t *iterator)
  *
  * @return The CVSS base of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_cvss_base (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_cvss_base (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_cvss_base, GET_ITERATOR_COLUMN_COUNT + 9);
 
 /**
- * @brief Get the NVT's references in XML format from a nvti object via oid.
+ * @brief Append an NVT's references to an XML string buffer.
  *
  * @param[in]  xml       The buffer where to append to.
  * @param[in]  oid       The oid of the nvti object from where to collect the refs.
  * @param[in]  first     Marker for first element.
  */
 void
-nvti_refs_append_xml (GString *xml, const char *oid, int *first)
+xml_append_nvt_refs (GString *xml, const char *oid, int *first)
 {
   nvti_t *nvti = lookup_nvti (oid);
   int i;
@@ -22855,37 +22792,13 @@ nvti_refs_append_xml (GString *xml, const char *oid, int *first)
 }
 
 /**
- * @brief Get the NVT's references in XML format from a result iterator.
- *
- * @param[in]  xml       The buffer where to append to.
- * @param[in]  iterator  Iterator.
- * @param[in]  first     Marker for first element.
- */
-void
-result_iterator_nvt_refs_append (GString *xml, iterator_t *iterator, int *first)
-{
-  if (iterator->done) return;
-
-  nvti_refs_append_xml (xml, result_iterator_nvt_oid (iterator), first);
-}
-
-/**
  * @brief Get the NVT tags from a result iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return The tags of the NVT that produced the result, or NULL on error.
  */
-const char*
-result_iterator_nvt_tag (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = lookup_nvti (result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_tag (nvti);
-  return NULL;
-}
+DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
 
 /**
  * @brief Get the original type from a result iterator.
@@ -23228,7 +23141,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 27);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
 }
 
 /**
@@ -23242,7 +23155,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
 }
 
 /**
@@ -24682,9 +24595,10 @@ delete_report_internal (report_t report)
   if (sql_int ("SELECT count(*) FROM reports WHERE id = %llu"
                " AND (scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
-               " OR scan_run_status = %u);",
+               " OR scan_run_status = %u OR scan_run_status = %u);",
                report,
                TASK_STATUS_RUNNING,
+               TASK_STATUS_QUEUED,
                TASK_STATUS_REQUESTED,
                TASK_STATUS_DELETE_REQUESTED,
                TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
@@ -40861,68 +40775,12 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
 }
 
 /**
- * @brief Get Byday mask from ical style string.
- *
- * @param[in]  byday  Byday string.
- *
- * @return Byday mask, or -1 on syntax error.
- */
-static int
-byday_from_string (const char* byday)
-{
-  gchar **split, **point;
-  int mask;
-
-  /* "MO,WE,FR" */
-
-  if (byday == NULL)
-    return 0;
-
-  split = g_strsplit (byday, ",", 0);
-  point = split;
-  mask = 0;
-
-  while (*point)
-    {
-      if (strcasecmp (*point, "MO") == 0)
-        mask |= 1 << 0;
-      else if (strcasecmp (*point, "TU") == 0)
-        mask |= 1 << 1;
-      else if (strcasecmp (*point, "WE") == 0)
-        mask |= 1 << 2;
-      else if (strcasecmp (*point, "TH") == 0)
-        mask |= 1 << 3;
-      else if (strcasecmp (*point, "FR") == 0)
-        mask |= 1 << 4;
-      else if (strcasecmp (*point, "SA") == 0)
-        mask |= 1 << 5;
-      else if (strcasecmp (*point, "SU") == 0)
-        mask |= 1 << 6;
-      else
-        {
-          mask = -1;
-          break;
-        }
-      point++;
-    }
-  g_strfreev (split);
-  return mask;
-}
-
-/**
  * @brief Create a schedule.
  *
  * @param[in]   name        Name of schedule.
  * @param[in]   comment     Comment on schedule.
  * @param[in]   ical_string iCalendar string.  Overrides first_time, period,
  *                           period_months, byday and duration.
- * @param[in]   first_time  First time action will run.
- * @param[in]   period      How often the action will run in seconds.  0 means
- *                          once.
- * @param[in]   period_months  The months part of the period.
- * @param[in]   byday       Which days of week schedule will run.
- * @param[in]   duration    The length of the time window the action will run
- *                          in.  0 means entire duration of action.
  * @param[in]   zone        Timezone.
  * @param[out]  schedule    Created schedule.
  * @param[out]  error_out   Output for iCalendar errors and warnings.
@@ -40932,10 +40790,8 @@ byday_from_string (const char* byday)
  */
 int
 create_schedule (const char* name, const char *comment,
-                 const char *ical_string, time_t first_time,
-                 time_t period, time_t period_months, const char *byday,
-                 time_t duration, const char* zone, schedule_t *schedule,
-                 gchar **error_out)
+                 const char *ical_string, const char* zone,
+                 schedule_t *schedule, gchar **error_out)
 {
   gchar *quoted_comment, *quoted_name, *quoted_timezone;
   gchar *insert_timezone;
@@ -40943,8 +40799,10 @@ create_schedule (const char* name, const char *comment,
   int byday_mask;
   icalcomponent *ical_component;
   gchar *quoted_ical;
+  time_t first_time, period, period_months, duration;
 
   assert (current_credentials.uuid);
+  assert (ical_string && strcmp (ical_string, ""));
 
   sql_begin_immediate ();
 
@@ -40955,13 +40813,6 @@ create_schedule (const char* name, const char *comment,
     }
 
   if (resource_with_name_exists (name, "schedule", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  byday_mask = byday_from_string (byday);
-  if (byday_mask == -1)
     {
       sql_rollback ();
       return 1;
@@ -40992,34 +40843,24 @@ create_schedule (const char* name, const char *comment,
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_timezone = sql_quote (insert_timezone);
 
-  if (ical_string && strcmp (ical_string, ""))
+  ical_component = icalendar_from_string (ical_string, error_out);
+  if (ical_component == NULL)
     {
-      ical_component = icalendar_from_string (ical_string, error_out);
-      if (ical_component == NULL)
-        {
-          g_free (quoted_name);
-          g_free (quoted_comment);
-          g_free (insert_timezone);
-          g_free (quoted_timezone);
-          return 3;
-        }
-      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
-      first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                        zone);
-      duration = icalendar_duration_from_vcalendar (ical_component);
+      g_free (quoted_name);
+      g_free (quoted_comment);
+      g_free (insert_timezone);
+      g_free (quoted_timezone);
+      return 3;
+    }
+  quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
+  first_time = icalendar_first_time_from_vcalendar (ical_component,
+                                                    zone);
+  duration = icalendar_duration_from_vcalendar (ical_component);
 
-      icalendar_approximate_rrule_from_vcalendar (ical_component,
-                                                  &period,
-                                                  &period_months,
-                                                  &byday_mask);
-    }
-  else
-    {
-      ical_component = icalendar_from_old_schedule_data
-                          (first_time, period, period_months, duration,
-                           byday_mask);
-      quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
-    }
+  icalendar_approximate_rrule_from_vcalendar (ical_component,
+                                              &period,
+                                              &period_months,
+                                              &byday_mask);
 
   sql ("INSERT INTO schedules"
        " (uuid, name, owner, comment, first_time, period, period_months,"
@@ -41364,41 +41205,23 @@ schedule_duration (schedule_t schedule)
  *
  * @param[in]  schedule    Schedule.
  * @param[in]  trash       Whether to get schedule from trash.
- * @param[out] first_time  First time schedule ran.
- * @param[out] next_time   Next time schedule will run.
- * @param[out] period      Period.
- * @param[out] period_months  Period months.
- * @param[out] duration       Duration.
  * @param[out] icalendar      iCalendar string.
  * @param[out] zone           Timezone string.
  *
  * @return 0 success, -1 error.
  */
 int
-schedule_info (schedule_t schedule, int trash,
-               time_t *first_time, time_t *next_time,
-               int *period, int *period_months, int *duration,
-               gchar **icalendar, gchar **zone)
+schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
 {
   iterator_t schedules;
 
   init_iterator (&schedules,
-                 "SELECT"
-                 " first_time,"
-                 " next_time_ical (icalendar, timezone),"
-                 " period, period_months, duration,"
-                 " icalendar, timezone"
-                 " FROM schedules%s"
-                 " WHERE id = %llu",
+                 "SELECT icalendar, timezone FROM schedules%s"
+                 " WHERE id = %llu;",
                  trash ? "_trash" : "",
                  schedule);
   if (next (&schedules))
     {
-      *first_time = iterator_int (&schedules, 0);
-      *next_time = iterator_int (&schedules, 1);
-      *period = iterator_int (&schedules, 2);
-      *period_months = iterator_int (&schedules, 3);
-      *duration = iterator_int (&schedules, 4);
       *icalendar = g_strdup (iterator_string (&schedules, 5));
       *zone = g_strdup (iterator_string (&schedules, 6));
       cleanup_iterator (&schedules);
@@ -41424,7 +41247,6 @@ schedule_info (schedule_t schedule, int trash,
    { "first_time", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "period", NULL, KEYWORD_TYPE_INTEGER },                               \
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "byday", NULL, KEYWORD_TYPE_INTEGER },                                \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
@@ -41445,7 +41267,6 @@ schedule_info (schedule_t schedule, int trash,
    { "first_time", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "period", NULL, KEYWORD_TYPE_INTEGER },                               \
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "byday", NULL, KEYWORD_TYPE_INTEGER },                                \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
@@ -41499,99 +41320,6 @@ init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
- * @brief Get the first time from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return First time of schedule.
- */
-time_t
-schedule_iterator_first_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT);
-  return ret;
-}
-
-/**
- * @brief Get the period from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Period of schedule.
- */
-time_t
-schedule_iterator_period (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
-  return ret;
-}
-
-/**
- * @brief Get the period months from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Period of schedule (months).
- */
-time_t
-schedule_iterator_period_months (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
-  return ret;
-}
-
-/**
- * @brief Get the byday string from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Byday string.
- */
-gchar *
-schedule_iterator_byday_string (iterator_t *iterator)
-{
-  int byday;
-  if (iterator->done) return NULL;
-  byday = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-  return g_strdup_printf ("%s%s%s%s%s%s%s%s%s%s%s%s%s",
-                          byday & (1 << 0) ? "MO" : "",
-                          byday & (1 << 1) ? "," : "",
-                          byday & (1 << 1) ? "TU" : "",
-                          byday & (1 << 2) ? "," : "",
-                          byday & (1 << 2) ? "WE" : "",
-                          byday & (1 << 3) ? "," : "",
-                          byday & (1 << 3) ? "TH" : "",
-                          byday & (1 << 4) ? "," : "",
-                          byday & (1 << 4) ? "FR" : "",
-                          byday & (1 << 5) ? "," : "",
-                          byday & (1 << 5) ? "SA" : "",
-                          byday & (1 << 6) ? "," : "",
-                          byday & (1 << 6) ? "SU" : "");
-}
-
-/**
- * @brief Get the duration from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Duration of schedule.
- */
-time_t
-schedule_iterator_duration (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-  return ret;
-}
-
-/**
  * @brief Get the timezone from a schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -41599,7 +41327,7 @@ schedule_iterator_duration (iterator_t* iterator)
  * @return Timezone, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the iCalendar string from a schedule iterator.
@@ -41609,23 +41337,7 @@ DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 5);
  * @return The iCalendar string or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 7);
-
-/**
- * @brief Get the next time a schedule could be schedulable.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Next time an action associated with schedule could be run.
- */
-time_t
-schedule_iterator_next_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
-  return ret;
-}
+DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Initialise a task schedule iterator.
@@ -41829,7 +41541,8 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
       run_status = task_run_status (task_schedule_iterator_task (iterator));
 
       if (run_status == TASK_STATUS_RUNNING
-          || run_status == TASK_STATUS_REQUESTED)
+          || run_status == TASK_STATUS_REQUESTED
+          || run_status == TASK_STATUS_QUEUED)
         {
           time_t now, start;
 
@@ -41967,13 +41680,6 @@ schedule_task_iterator_readable (iterator_t* iterator)
  * @param[in]   comment      Comment on schedule.
  * @param[in]   ical_string  iCalendar string.  Overrides first_time, period,
  *                           period_months, byday and duration.
- * @param[in]   first_time   First time action will run.
- * @param[in]   period       How often the action will run in seconds.  0 means
- *                           once.
- * @param[in]   period_months  The months part of the period.
- * @param[in]   byday        Which days of week schedule will run.
- * @param[in]   duration     The length of the time window the action will run
- *                           in.  0 means entire duration of action.
  * @param[in]   zone         Timezone.
  * @param[out]  error_out    Output for iCalendar errors and warnings.
  *
@@ -41984,22 +41690,15 @@ schedule_task_iterator_readable (iterator_t* iterator)
  */
 int
 modify_schedule (const char *schedule_id, const char *name, const char *comment,
-                 const char *ical_string,
-                 time_t first_time, time_t period, time_t period_months,
-                 const char *byday, time_t duration, const char *zone,
-                 gchar **error_out)
+                 const char *ical_string, const char *zone, gchar **error_out)
 {
   gchar *quoted_name, *quoted_comment, *quoted_timezone, *quoted_icalendar;
   icalcomponent *ical_component;
-  gchar *first_time_string, *duration_string, *period_string;
-  gchar *period_months_string, *offset_string, *byday_mask_string;
   schedule_t schedule;
-  time_t real_first_time, real_period, real_period_months, real_duration;
-  time_t new_next_time;
-  int real_byday;
-  int byday_mask = 0;
+  time_t new_next_time, ical_first_time, ical_duration;
   gchar *real_timezone;
-  iterator_t schedule_iter;
+
+  assert (ical_string && strcmp (ical_string, ""));
 
   if (schedule_id == NULL)
     return 4;
@@ -42025,16 +41724,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
     {
       sql_rollback ();
       return 1;
-    }
-
-  if (byday)
-    {
-      byday_mask = byday_from_string (byday);
-      if (byday_mask == -1)
-        {
-          sql_rollback ();
-          return 5;
-        }
     }
 
   /* Check whether a schedule with the same name exists already. */
@@ -42070,189 +41759,58 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        quoted_timezone ? "'" : "",
        schedule);
 
-  real_timezone 
+  real_timezone
     = sql_string ("SELECT timezone FROM schedules WHERE id = %llu;",
                   schedule);
 
   /* Update times */
-  if (ical_string && strcmp (ical_string, ""))
+
+  ical_component = icalendar_from_string (ical_string, error_out);
+  if (ical_component == NULL)
     {
-      time_t ical_first_time, ical_duration;
-      ical_component = icalendar_from_string (ical_string, error_out);
-      if (ical_component == NULL)
-        {
-          g_free (real_timezone);
-          return 6;
-        }
-
-      quoted_icalendar = sql_quote (icalcomponent_as_ical_string
-                                      (ical_component));
-
-      ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                             real_timezone);
-      ical_duration = icalendar_duration_from_vcalendar (ical_component);
-
-      byday_mask_string = NULL;
-      duration_string = NULL;
-      first_time_string = NULL;
-      offset_string = NULL;
-      period_string = NULL;
-      period_months_string = NULL;
-
-      sql ("UPDATE schedules SET"
-           " icalendar = '%s',"
-           " first_time = %ld,"
-           " period = 0,"
-           " period_months = 0,"
-           " byday = 0,"
-           " duration = %d,"
-           " initial_offset = 0,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quoted_icalendar,
-           ical_first_time,
-           ical_duration,
-           schedule);
+      g_free (real_timezone);
+      return 6;
     }
-  else
-    {
-      if (byday)
-        {
-          byday_mask = byday_from_string (byday);
-          if (byday_mask == -1)
-            {
-              g_free (quoted_name);
-              g_free (quoted_comment);
-              g_free (quoted_timezone);
-              sql_rollback ();
-              return 5;
-            }
-          byday_mask_string = g_strdup_printf ("%i", byday_mask);
-        }
-      else
-        byday_mask_string = NULL;
 
-      if (duration == -1)
-        duration_string = NULL;
-      else
-        duration_string = g_strdup_printf ("%li", duration);
+  quoted_icalendar = sql_quote (icalcomponent_as_ical_string
+                                  (ical_component));
 
-      if (first_time == -1)
-        first_time_string = NULL;
-      else
-        first_time_string = g_strdup_printf ("%li", first_time);
+  ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
+                                                         real_timezone);
+  ical_duration = icalendar_duration_from_vcalendar (ical_component);
 
-      if ((period_months == -1) || (period_months == 0))
-        {
-          if (period == -1)
-            {
-              period_months_string = NULL;
-              period_string = NULL;
-            }
-          else
-            {
-              period_months_string = g_strdup ("0");
-              period_string = g_strdup_printf ("%li", period);
-            }
-        }
-      else
-        {
-          period_months_string = g_strdup_printf ("%li", period_months);
-          period_string = g_strdup ("0");
-        }
-
-      if (first_time)
-        {
-          if (zone)
-            offset_string = g_strdup_printf ("%li", current_offset (zone));
-          else
-            offset_string = NULL;
-        }
-      else
-        offset_string = NULL;
-
-      ical_component = NULL;
-        quoted_icalendar = NULL;
-
-      sql ("UPDATE schedules SET"
-           " icalendar = '',"
-           " first_time = %s,"
-           " period = %s,"
-           " period_months = %s,"
-           " byday = %s,"
-           " duration = %s,"
-           " initial_offset = %s,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           first_time ? first_time_string : "first_time",
-           period_string ? period_string : "period",
-           period_months_string ? period_months_string : "period_months",
-           byday_mask_string ? byday_mask_string : "byday",
-           (duration >= 0) ? duration_string : "duration",
-           offset_string ? offset_string : "initial_offset",
-           schedule);
-
-    }
+  sql ("UPDATE schedules SET"
+       " icalendar = '%s',"
+       " first_time = %ld,"
+       " period = 0,"
+       " period_months = 0,"
+       " byday = 0,"
+       " duration = %d,"
+       " initial_offset = 0,"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_icalendar,
+       ical_first_time,
+       ical_duration,
+       schedule);
 
   // Update scheduled next times for tasks
-  init_iterator (&schedule_iter,
-                 "SELECT first_time, period, period_months, duration, byday"
-                 " FROM schedules"
-                 " WHERE id = %llu",
-                 schedule);
-
-  next (&schedule_iter);
-  real_first_time = (time_t) iterator_int64 (&schedule_iter, 0);
-  real_period = (time_t) iterator_int64 (&schedule_iter, 1);
-  real_period_months = (time_t) iterator_int64 (&schedule_iter, 2);
-  real_duration = (time_t) iterator_int64 (&schedule_iter, 3);
-  real_byday = iterator_int (&schedule_iter, 4);
-
-  if (ical_component == NULL
-      && (byday_mask_string
-          || first_time_string
-          || period_string
-          || period_months_string
-          || byday_mask_string
-          || duration_string
-          || offset_string))
-    {
-      // Generate iCalendar here if using old-style schedule data
-      ical_component = icalendar_from_old_schedule_data
-                          (real_first_time,
-                           real_period, real_period_months,
-                           real_duration, real_byday);
-      quoted_icalendar
-        = sql_quote (icalcomponent_as_ical_string (ical_component));
-
-      sql ("UPDATE schedules SET icalendar = '%s' WHERE id = %llu",
-           quoted_icalendar, schedule);
-    }
 
   new_next_time = icalendar_next_time_from_vcalendar (ical_component,
                                                       real_timezone, 0);
-
-  cleanup_iterator (&schedule_iter);
 
   sql ("UPDATE tasks SET schedule_next_time = %ld"
        " WHERE schedule = %llu;",
        new_next_time,
        schedule);
 
-  g_free (byday_mask_string);
-  g_free (duration_string);
-  g_free (first_time_string);
-  g_free (offset_string);
-  g_free (period_string);
-  g_free (period_months_string);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_timezone);
   g_free (quoted_icalendar);
 
   free (real_timezone);
-  if (ical_component)
-    icalcomponent_free (ical_component);
+  icalcomponent_free (ical_component);
 
   sql_commit ();
 
@@ -42300,9 +41858,9 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
                const char* type, const char* description,
                report_t report, user_t owner)
 {
-  gchar *nvt_revision, *severity;
-  gchar *quoted_hostname, *quoted_descr, *quoted_qod_type;
-  int qod, first;
+  gchar *nvt_revision, *severity, *qod, *qod_type;
+  gchar *quoted_hostname, *quoted_descr;
+  int first;
   nvt_t nvt_id = 0;
 
   assert (report);
@@ -42313,30 +41871,12 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
       return -1;
     }
 
-  if (nvt && strcmp (nvt, ""))
+  if (nvt_id)
     {
-      nvti_t *nvti;
-
-      nvti = lookup_nvti (nvt);
-      if (nvti)
-        {
-          gchar *qod_str, *qod_type;
-          qod_str = nvti_get_tag (nvti, "qod");
-          qod_type = nvti_get_tag (nvti, "qod_type");
-
-          if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
-            qod = qod_from_type (qod_type);
-
-          quoted_qod_type = sql_quote (qod_type);
-
-          g_free (qod_str);
-          g_free (qod_type);
-        }
-      else
-        {
-          qod = QOD_DEFAULT;
-          quoted_qod_type = g_strdup ("");
-        }
+      qod = g_strdup_printf ("(SELECT qod FROM nvts WHERE id = %llu)",
+                             nvt_id);
+      qod_type = g_strdup_printf ("(SELECT qod_type FROM nvts WHERE id = %llu)",
+                                  nvt_id);
 
       nvt_revision = sql_string ("SELECT iso_time (modification_time)"
                                  " FROM nvts"
@@ -42345,8 +41885,8 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
     }
   else
     {
-      qod = QOD_DEFAULT;
-      quoted_qod_type = g_strdup ("");
+      qod = G_STRINGIFY (QOD_DEFAULT);
+      qod_type = g_strdup ("''");
       nvt_revision = g_strdup ("");
     }
   severity = nvt_severity (nvt, type);
@@ -42389,19 +41929,20 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
                           "%s"
                           " (%llu, m_now (), %llu, '%s', '%s', '%s',"
                           "  '%s', '%s', '%s', '%s',"
-                          "  '%s', make_uuid (), %i, '%s',"
+                          "  '%s', make_uuid (), %s, %s,"
                           "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
                           "  %llu)",
                           first ? "" : ",",
                           owner,
                           task, host ?: "", quoted_hostname, port ?: "",
                           nvt ?: "", nvt_revision, severity, type,
-                          quoted_descr, qod, quoted_qod_type, nvt ? nvt : "",
+                          quoted_descr, qod, qod_type, nvt ? nvt : "",
                           report);
 
   g_free (quoted_hostname);
   g_free (quoted_descr);
-  g_free (quoted_qod_type);
+  g_free (qod);
+  g_free (qod_type);
   g_free (nvt_revision);
   g_free (severity);
   return 0;
@@ -49181,6 +48722,7 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
                              0,
                              NULL,
                              NULL,
+                             NULL,
                              TRUE,
                              FALSE,
                              NULL);
@@ -49401,6 +48943,7 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  NULL,
                                  filter_columns,
                                  0,
+                                 NULL,
                                  NULL,
                                  NULL,
                                  TRUE,
@@ -50368,7 +49911,7 @@ setting_auto_cache_rebuild_int ()
                   "        ((SELECT value FROM settings"
                   "          WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
                   "          AND " ACL_USER_OWNS () ""
-                  "          ORDER BY coalesce (owner, 0) DESC),"
+                  "          ORDER BY coalesce (owner, 0) DESC LIMIT 1),"
                   "         '1');",
                   current_credentials.uuid);
 }
@@ -52493,6 +52036,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
         case TASK_STATUS_DELETE_WAITING:
         case TASK_STATUS_REQUESTED:
         case TASK_STATUS_RUNNING:
+        case TASK_STATUS_QUEUED:
         case TASK_STATUS_STOP_REQUESTED_GIVEUP:
         case TASK_STATUS_STOP_REQUESTED:
         case TASK_STATUS_STOP_WAITING:
@@ -54096,7 +53640,8 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0     /* distinct */,
                             extra_tables, /* extra_tables */
-                            extra_where,  /* extra_where, */
+                            extra_where,  /* extra_where */
+                            NULL, /* extra_where_single */
                             0,    /* owned */
                             0,    /* ignore_id */
                             NULL);/* extra_order */
@@ -54622,31 +54167,39 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
           return -1;
         }
     }
-  else switch (type_build_select (type,
-                                  "id, uuid",
-                                  &resources_get, 0, 1, NULL, NULL, NULL,
-                                  &filtered_select))
+  else
     {
-      case 0:
-        if (sql_int ("SELECT count(*) FROM (%s) AS filter_selection",
-                     filtered_select) == 0)
-          {
-            g_free (filtered_select);
-            return 2;
-          }
+      gchar *columns;
 
-        init_iterator (&resources,
-                       "%s",
-                       filtered_select);
+      columns = g_strdup_printf ("%ss.id, %ss.uuid", type, type);
+      switch (type_build_select (type,
+                                 columns,
+                                 &resources_get, 0, 1, NULL, NULL, NULL,
+                                 &filtered_select))
+        {
+          case 0:
+            g_free (columns);
+            if (sql_int ("SELECT count(*) FROM (%s) AS filter_selection",
+                         filtered_select) == 0)
+              {
+                g_free (filtered_select);
+                return 2;
+              }
 
-        break;
-      default:
-        ignore_max_rows_per_page = 0;
-        g_warning ("%s: Failed to build filter SELECT", __func__);
-        sql_rollback ();
-        g_free (resources_get.filter);
-        g_free (resources_get.type);
-        return -1;
+            init_iterator (&resources,
+                           "%s",
+                           filtered_select);
+
+            break;
+          default:
+            g_free (columns);
+            ignore_max_rows_per_page = 0;
+            g_warning ("%s: Failed to build filter SELECT", __func__);
+            sql_rollback ();
+            g_free (resources_get.filter);
+            g_free (resources_get.type);
+            return -1;
+        }
     }
   ignore_max_rows_per_page = 0;
 
@@ -54760,21 +54313,29 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
           return -1;
         }
     }
-  else switch (type_build_select (type,
-                                  "id",
-                                  &resources_get, 0, 1, NULL, NULL, NULL,
-                                  &iterator_select))
+  else
     {
-      case 0:
-        init_iterator (&resources, "%s", iterator_select);
-        break;
-      default:
-        ignore_max_rows_per_page = 0;
-        g_warning ("%s: Failed to build filter SELECT", __func__);
-        sql_rollback ();
-        g_free (resources_get.filter);
-        g_free (resources_get.type);
-        return -1;
+      gchar *columns;
+
+      columns = g_strdup_printf ("%ss.id", type);
+      switch (type_build_select (type,
+                                 columns,
+                                 &resources_get, 0, 1, NULL, NULL, NULL,
+                                 &iterator_select))
+        {
+          case 0:
+            g_free (columns);
+            init_iterator (&resources, "%s", iterator_select);
+            break;
+          default:
+            g_free (columns);
+            ignore_max_rows_per_page = 0;
+            g_warning ("%s: Failed to build filter SELECT", __func__);
+            sql_rollback ();
+            g_free (resources_get.filter);
+            g_free (resources_get.type);
+            return -1;
+        }
     }
   ignore_max_rows_per_page = 0;
 
@@ -56222,6 +55783,14 @@ type_build_select (const char *type, const char *columns_str,
   from_table = type_table (type, get->trash);
 
   opts_table = type_opts_table (type, filter ? filter : get->filter);
+  if (strcasecmp (type, "RESULT") == 0)
+    {
+      gchar *original;
+
+      original = opts_table;
+      opts_table = g_strdup_printf ("%s, nvts", original);
+      g_free (original);
+    }
 
   // WHERE ... part
   select_columns = type_select_columns (type);
@@ -56246,6 +55815,14 @@ type_build_select (const char *type, const char *columns_str,
     extra_where = type_extra_where (type, get->trash,
                                     filter ? filter : get->filter,
                                     get->extra_params);
+  if (strcasecmp (type, "RESULT") == 0)
+    {
+      gchar *original;
+
+      original = extra_where;
+      extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", original);
+      g_free (original);
+    }
 
   if (get->ignore_pagination)
     pagination_clauses = NULL;
@@ -56810,7 +56387,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
           "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
           "             AND (settings.owner = results.owner"
           "                  OR settings.owner IS NULL)"
-          "          ORDER BY settings.owner DESC)"
+          "          ORDER BY settings.owner DESC LIMIT 1)"
           " WHERE severity IS NULL;");
 
       missing_severity_changes = sql_changes();

@@ -227,80 +227,6 @@ sql_max_hosts (PG_FUNCTION_ARGS)
 /**
  * @brief Define function for Postgres.
  */
-PG_FUNCTION_INFO_V1 (sql_level_min_severity);
-
-/**
- * @brief Return min severity of level.
- *
- * This is a callback for a SQL function of two arguments.
- *
- * @return Postgres Datum.
- */
-Datum
-sql_level_min_severity (PG_FUNCTION_ARGS)
-{
-  if (PG_ARGISNULL (0))
-    PG_RETURN_FLOAT8 (0.0);
-  else
-    {
-      text *level_arg, *class_arg;
-      char *level, *class;
-      float8 severity;
-
-      class_arg = PG_GETARG_TEXT_P (1);
-      class = textndup (class_arg, VARSIZE (class_arg) - VARHDRSZ);
-
-      level_arg = PG_GETARG_TEXT_P (0);
-      level = textndup (level_arg, VARSIZE (level_arg) - VARHDRSZ);
-
-      severity = level_min_severity (level, class);
-
-      pfree (level);
-      pfree (class);
-      PG_RETURN_FLOAT8 (severity);
-    }
-}
-
-/**
- * @brief Define function for Postgres.
- */
-PG_FUNCTION_INFO_V1 (sql_level_max_severity);
-
-/**
- * @brief Return max severity of level.
- *
- * This is a callback for a SQL function of two arguments.
- *
- * @return Postgres Datum.
- */
-Datum
-sql_level_max_severity (PG_FUNCTION_ARGS)
-{
-  if (PG_ARGISNULL (0))
-    PG_RETURN_FLOAT8 (0.0);
-  else
-    {
-      text *level_arg, *class_arg;
-      char *level, *class;
-      float8 severity;
-
-      class_arg = PG_GETARG_TEXT_P (1);
-      class = textndup (class_arg, VARSIZE (class_arg) - VARHDRSZ);
-
-      level_arg = PG_GETARG_TEXT_P (0);
-      level = textndup (level_arg, VARSIZE (level_arg) - VARHDRSZ);
-
-      severity = level_max_severity (level, class);
-
-      pfree (level);
-      pfree (class);
-      PG_RETURN_FLOAT8 (severity);
-    }
-}
-
-/**
- * @brief Define function for Postgres.
- */
 PG_FUNCTION_INFO_V1 (sql_severity_matches_ov);
 
 /**
@@ -327,39 +253,6 @@ sql_severity_matches_ov (PG_FUNCTION_ARGS)
         PG_RETURN_BOOL (arg_one == arg_two);
       else
         PG_RETURN_BOOL (arg_one >= arg_two);
-    }
-}
-
-/**
- * @brief Define function for Postgres.
- */
-PG_FUNCTION_INFO_V1 (sql_valid_db_resource_type);
-
-/**
- * @brief Return max severity of level.
- *
- * This is a callback for a SQL function of one argument.
- *
- * @return Postgres Datum.
- */
-Datum
-sql_valid_db_resource_type (PG_FUNCTION_ARGS)
-{
-  if (PG_ARGISNULL (0))
-    PG_RETURN_BOOL (0);
-  else
-    {
-      text *type_arg;
-      char *type;
-      int ret;
-
-      type_arg = PG_GETARG_TEXT_P (0);
-      type = textndup (type_arg, VARSIZE (type_arg) - VARHDRSZ);
-
-      ret = valid_db_resource_type (type);
-
-      pfree (type);
-      PG_RETURN_BOOL (ret);
     }
 }
 

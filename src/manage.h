@@ -254,7 +254,8 @@ typedef enum
   TASK_STATUS_DELETE_ULTIMATE_REQUESTED = 14,
   TASK_STATUS_STOP_REQUESTED_GIVEUP = 15,
   TASK_STATUS_DELETE_WAITING = 16,
-  TASK_STATUS_DELETE_ULTIMATE_WAITING = 17
+  TASK_STATUS_DELETE_ULTIMATE_WAITING = 17,
+  TASK_STATUS_QUEUED = 18
 } task_status_t;
 
 /**
@@ -1391,9 +1392,6 @@ result_iterator_nvt_family (iterator_t *);
 const char*
 result_iterator_nvt_cvss_base (iterator_t *);
 
-void
-result_iterator_nvt_refs_append (GString *, iterator_t *, int *);
-
 const char*
 result_iterator_nvt_tag (iterator_t *);
 
@@ -1919,10 +1917,10 @@ int
 nvt_preference_count (const char *);
 
 void
-nvti_refs_append_xml (GString *, const char *, int *);
+xml_append_nvt_refs (GString *, const char *, int *);
 
 gchar*
-get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);
+get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int);
 
 char*
 task_preference_value (task_t, const char *);
@@ -2641,8 +2639,7 @@ find_schedule_with_permission (const char*, schedule_t*, const char*);
 
 int
 create_schedule (const char *, const char*, const char *,
-                 time_t, time_t, time_t, const char *, time_t, const char*,
-                 schedule_t *, gchar**);
+                 const char*, schedule_t *, gchar**);
 
 int
 copy_schedule (const char*, const char*, const char *, schedule_t *);
@@ -2686,38 +2683,13 @@ int
 schedule_period (schedule_t);
 
 int
-schedule_info (schedule_t, int, time_t *, time_t *, int *, int *, int *,
-               gchar **, gchar **);
+schedule_info (schedule_t, int, gchar **, gchar **);
 
 int
 init_schedule_iterator (iterator_t*, const get_data_t *);
 
-time_t
-schedule_iterator_first_time (iterator_t *);
-
-time_t
-schedule_iterator_next_time (iterator_t *);
-
-time_t
-schedule_iterator_period (iterator_t *);
-
-time_t
-schedule_iterator_period_months (iterator_t *);
-
-time_t
-schedule_iterator_duration (iterator_t *);
-
-int
-schedule_iterator_byday (iterator_t *);
-
-gchar *
-schedule_iterator_byday_string (iterator_t *);
-
 const char*
 schedule_iterator_timezone (iterator_t *);
-
-time_t
-schedule_iterator_initial_offset (iterator_t *);
 
 const char*
 schedule_iterator_icalendar (iterator_t *);
@@ -2753,9 +2725,8 @@ int
 schedule_task_iterator_readable (iterator_t*);
 
 int
-modify_schedule (const char *, const char*, const char *, const char*,
-                 time_t, time_t, time_t,
-                 const char *, time_t, const char *, gchar **);
+modify_schedule (const char *, const char *, const char *, const char*,
+                 const char *, gchar **);
 
 int
 get_schedule_timeout ();

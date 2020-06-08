@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add --rebuild-scap option [#1051](https://github.com/greenbone/gvmd/pull/1051)
 - Stop current scheduling of task when permission denied [#1058](https://github.com/greenbone/gvmd/pull/1058)
 - Trim malloc heap after updating cache [#1085](https://github.com/greenbone/gvmd/pull/1085)
+- Handle QUEUED osp scan status. [#1113](https://github.com/greenbone/gvmd/pull/1113)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
@@ -55,6 +56,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The internal list of current Local Security Checks for the Auto-FP feature was updated [#1054](https://github.com/greenbone/gvmd/pull/1054)
 - Simplify sync lockfile handling [#1059](https://github.com/greenbone/gvmd/pull/1059)
 - Do not ignore empty hosts_allow and ifaces_allow [#1064](https://github.com/greenbone/gvmd/pull/1064)
+- Reduce the memory cache of NVTs [#1076](https://github.com/greenbone/gvmd/pull/1076)
+- Sync SCAP using a second schema [#1111](https://github.com/greenbone/gvmd/pull/1111)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
@@ -113,6 +116,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix failure detection for xml_split command [#1074](https://github.com/greenbone/gvmd/pull/1074)
 - Fix deletion of OVAL definition data [#1079](https://github.com/greenbone/gvmd/pull/1079)
 - Fix feed lock in sync script [#1088](https://github.com/greenbone/gvmd/pull/1088)
+- Handle removed CPEs and CVEs in SCAP sync [#1097](https://github.com/greenbone/gvmd/pull/1097)
+- Fix NVTs list in CVE details [#1100](https://github.com/greenbone/gvmd/pull/1100)
+- Fix handling of duplicate settings [#1106](https://github.com/greenbone/gvmd/pull/1106)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
@@ -124,6 +130,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove GMP COMMANDS [#923](https://github.com/greenbone/gvmd/pull/923)
 - Remove unused port names facility [#1041](https://github.com/greenbone/gvmd/pull/1041)
 - Add migrator to remove dead hosts [#1071](https://github.com/greenbone/gvmd/pull/1071)
+- Remove classic schedules elements from GMP [#1116](https://github.com/greenbone/gvmd/pull/1116)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 
