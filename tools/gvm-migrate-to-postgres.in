@@ -1039,7 +1039,7 @@ cleanup_sqlite_db () {
   sqlite "DROP TABLE IF EXISTS escalator_condition_data_trash;"
   test_sql_exit "Failed to remove escalator_condition_data_trash"
 
-  HAVE_CACHE=`sqlite "SELECT EXISTS (SELECT FROM sqlite_master WHERE type='table' AND name='permissions_get_tasks');"`
+  HAVE_CACHE=`sqlite "SELECT EXISTS (SELECT * FROM sqlite_master WHERE type='table' AND name='permissions_get_tasks');"`
   if [ "$HAVE_CACHE" != "0" ]
   then
     sqlite "UPDATE permissions_get_tasks SET has_permission = 1 WHERE has_permission != '0';"
