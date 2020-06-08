@@ -2639,8 +2639,7 @@ find_schedule_with_permission (const char*, schedule_t*, const char*);
 
 int
 create_schedule (const char *, const char*, const char *,
-                 time_t, time_t, time_t, const char *, time_t, const char*,
-                 schedule_t *, gchar**);
+                 const char*, schedule_t *, gchar**);
 
 int
 copy_schedule (const char*, const char*, const char *, schedule_t *);
@@ -2684,38 +2683,13 @@ int
 schedule_period (schedule_t);
 
 int
-schedule_info (schedule_t, int, time_t *, time_t *, int *, int *, int *,
-               gchar **, gchar **);
+schedule_info (schedule_t, int, gchar **, gchar **);
 
 int
 init_schedule_iterator (iterator_t*, const get_data_t *);
 
-time_t
-schedule_iterator_first_time (iterator_t *);
-
-time_t
-schedule_iterator_next_time (iterator_t *);
-
-time_t
-schedule_iterator_period (iterator_t *);
-
-time_t
-schedule_iterator_period_months (iterator_t *);
-
-time_t
-schedule_iterator_duration (iterator_t *);
-
-int
-schedule_iterator_byday (iterator_t *);
-
-gchar *
-schedule_iterator_byday_string (iterator_t *);
-
 const char*
 schedule_iterator_timezone (iterator_t *);
-
-time_t
-schedule_iterator_initial_offset (iterator_t *);
 
 const char*
 schedule_iterator_icalendar (iterator_t *);
@@ -2751,9 +2725,8 @@ int
 schedule_task_iterator_readable (iterator_t*);
 
 int
-modify_schedule (const char *, const char*, const char *, const char*,
-                 time_t, time_t, time_t,
-                 const char *, time_t, const char *, gchar **);
+modify_schedule (const char *, const char *, const char *, const char*,
+                 const char *, gchar **);
 
 int
 get_schedule_timeout ();
