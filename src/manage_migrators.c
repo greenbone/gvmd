@@ -2021,6 +2021,37 @@ migrate_228_to_229 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 229 to version 230.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_229_to_230 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 229. */
+
+  if (manage_db_version () != 229)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE schedules DROP COLUMN initial_offset;");
+
+  /* Set the database version to 230. */
+
+  set_db_version (230);
+
+  sql_commit ();
+
+  return 0;
+}
+
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -2057,6 +2088,7 @@ static migrator_t database_migrators[] = {
   {227, migrate_226_to_227},
   {228, migrate_227_to_228},
   {229, migrate_228_to_229},
+  {230, migrate_229_to_230},
   /* End marker. */
   {-1, NULL}};
 

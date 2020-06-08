@@ -2219,7 +2219,6 @@ create_tables ()
        "  byday integer,"
        "  duration integer,"
        "  timezone text,"
-       "  initial_offset integer,"
        "  creation_time integer,"
        "  modification_time integer,"
        "  icalendar text);");
@@ -2236,7 +2235,6 @@ create_tables ()
        "  byday integer,"
        "  duration integer,"
        "  timezone text,"
-       "  initial_offset integer,"
        "  creation_time integer,"
        "  modification_time integer,"
        "  icalendar text);");
