@@ -4362,7 +4362,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   start_scan_opts.vt_groups = NULL;
   start_scan_opts.vts = vts;
   start_scan_opts.scanner_params = scanner_options;
-  start_scan_opts.parallel = 1;
   start_scan_opts.scan_id = scan_id;
 
   ret = osp_start_scan_ext (connection,
