@@ -17745,11 +17745,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Timezone the schedule uses</summary>
           </column>
           <column>
-            <name>initial_offset</name>
-            <type>integer</type>
-            <summary>Initial offset in seconds</summary>
-          </column>
-          <column>
             <name>first_run</name>
             <type>iso_time</type>
             <summary>Alias for first_time</summary>
@@ -25981,6 +25976,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         The classic schedule elements like PERIOD, DURATION and BYDAY have been
         removed.  Schedules are now always created, defined and modified using
         the newer iCalendar elements.
+      </p>
+      <p>
+        This includes this filter term 'initial_offset'.
       </p>
     </description>
     <version>20.08</version>
