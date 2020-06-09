@@ -41786,6 +41786,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   if (ical_timezone == NULL)
     {
       g_free (real_timezone);
+      sql_rollback ();
       return 7;
     }
 
@@ -41794,6 +41795,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   if (ical_component == NULL)
     {
       g_free (real_timezone);
+      sql_rollback ();
       return 6;
     }
 
