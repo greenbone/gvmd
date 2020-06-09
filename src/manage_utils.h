@@ -75,7 +75,7 @@ hosts_str_contains (const char *, const char *, int);
 void
 blank_control_chars (char *);
 
-icaltimezone*
+icaltimezone *
 icalendar_timezone_from_string (const char *);
 
 icalcomponent *
