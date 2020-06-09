@@ -41747,8 +41747,18 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update basic data */
   quoted_comment = comment ? sql_quote (comment) : NULL;
-  // FIX zone should get same treatment as in create_schedule
-  quoted_timezone = zone ? sql_quote (zone) : NULL;
+
+  if (zone == NULL)
+    quoted_timezone = NULL;
+  else
+    {
+      quoted_timezone = g_strstrip (sql_quote (zone));
+      if (strcmp (quoted_timezone, "") == 0)
+        {
+          g_free (quoted_timezone);
+          quoted_timezone = NULL;
+        }
+    }
 
   sql ("UPDATE schedules SET"
        " name = %s%s%s,"
