@@ -2054,6 +2054,102 @@ migrate_229_to_230 ()
   return 0;
 }
 
+/**
+ * @brief Add timezones to schedule iCalendar strings.
+ *
+ * @param[in]  trash  Whether to convert the trash table.
+ */
+static void
+convert_schedules_231 (gboolean trash)
+{
+  iterator_t schedules;
+
+  init_iterator (&schedules,
+                 "SELECT id, icalendar, uuid, timezone FROM %s;",
+                 trash ? "schedules_trash" : "schedules");
+
+  while (next (&schedules))
+    {
+      schedule_t schedule;
+      const char *ical_string, *schedule_id, *timezone;
+      icalcomponent *ical_component;
+      icaltimezone *ical_zone;
+      gchar *error_out;
+
+      error_out = NULL;
+      schedule = iterator_int64 (&schedules, 0);
+      ical_string = iterator_string (&schedules, 1);
+      schedule_id = iterator_string (&schedules, 2);
+      timezone = iterator_string (&schedules, 3);
+
+      ical_zone = icalendar_timezone_from_string (timezone);
+      if (ical_zone == NULL)
+        {
+          g_warning ("%s: error converting schedule %s: timezone '%s'",
+                     __func__, schedule_id, timezone);
+          continue;
+        }
+
+      ical_component = icalendar_from_string (ical_string,
+                                              ical_zone,
+                                              &error_out);
+      if (ical_component == NULL)
+        g_warning ("%s: error converting schedule %s: %s", __func__,
+                   schedule_id, error_out);
+      else
+        {
+          gchar *quoted_ical;
+
+          quoted_ical
+            = sql_quote (icalcomponent_as_ical_string (ical_component));
+
+          sql ("UPDATE %s SET icalendar = '%s' WHERE id = %llu",
+               trash ? "schedules_trash" : "schedules",
+               quoted_ical,
+               schedule);
+
+          g_free (quoted_ical);
+        }
+
+      g_free (error_out);
+    }
+
+  cleanup_iterator (&schedules);
+}
+
+/**
+ * @brief Migrate the database from version 230 to version 231.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_230_to_231 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 230. */
+
+  if (manage_db_version () != 230)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add timezones to schedule iCalendar strings. */
+  convert_schedules_231 (FALSE);
+  convert_schedules_231 (TRUE);
+
+  /* Set the database version to 231. */
+
+  set_db_version (231);
+
+  sql_commit ();
+
+  return 0;
+}
+
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -2091,6 +2187,7 @@ static migrator_t database_migrators[] = {
   {228, migrate_227_to_228},
   {229, migrate_228_to_229},
   {230, migrate_229_to_230},
+  {231, migrate_230_to_231},
   /* End marker. */
   {-1, NULL}};
 
