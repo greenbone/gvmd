@@ -15956,10 +15956,10 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
     {
       case 0:
         SENDF_TO_CLIENT_OR_FAIL
-          ("<create_schedule_response status=\"200\""
+          ("<modify_schedule_response status=\"200\""
            " status_text=\"OK\">"
            "<status_details>%s</status_details>"
-           "</create_schedule_response>",
+           "</modify_schedule_response>",
            ical_error ? ical_error : "");
         log_event ("schedule", "Schedule",
                    modify_schedule_data->schedule_id, "modified");
