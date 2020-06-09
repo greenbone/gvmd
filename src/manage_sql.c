@@ -40785,7 +40785,7 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
  * @param[out]  schedule    Created schedule.
  * @param[out]  error_out   Output for iCalendar errors and warnings.
  *
- * @return 0 success, 1 schedule exists already, 2 syntax error in byday,
+ * @return 0 success, 1 schedule exists already,
  *         3 error in iCal string, 4 error in timezone, 99 permission denied.
  */
 int
@@ -41690,7 +41690,7 @@ schedule_task_iterator_readable (iterator_t* iterator)
  *
  * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
  *         3 error in type name, 4 schedule_id required,
- *         5 syntax error in byday, 6 error in iCalendar, 7 error in zone,
+ *         6 error in iCalendar, 7 error in zone,
  *         99 permission denied, -1 internal error.
  */
 int

@@ -15879,12 +15879,6 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
                              "Schedule exists already"));
         log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
-      case 2:
-        SEND_TO_CLIENT_OR_FAIL
-          (XML_ERROR_SYNTAX ("create_schedule",
-                             "Syntax error in BYDAY"));
-        log_event_fail ("schedule", "Schedule", NULL, "created");
-        break;
       case 3:
         {
           SENDF_TO_CLIENT_OR_FAIL
