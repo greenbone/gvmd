@@ -2071,7 +2071,7 @@ convert_schedules_231 (gboolean trash)
   while (next (&schedules))
     {
       schedule_t schedule;
-      const char *ical_string, *schedule_id, *timezone;
+      const char *ical_string, *schedule_id, *zone;
       icalcomponent *ical_component;
       icaltimezone *ical_zone;
       gchar *error_out;
@@ -2080,13 +2080,13 @@ convert_schedules_231 (gboolean trash)
       schedule = iterator_int64 (&schedules, 0);
       ical_string = iterator_string (&schedules, 1);
       schedule_id = iterator_string (&schedules, 2);
-      timezone = iterator_string (&schedules, 3);
+      zone = iterator_string (&schedules, 3);
 
-      ical_zone = icalendar_timezone_from_string (timezone);
+      ical_zone = icalendar_timezone_from_string (zone);
       if (ical_zone == NULL)
         {
           g_warning ("%s: error converting schedule %s: timezone '%s'",
-                     __func__, schedule_id, timezone);
+                     __func__, schedule_id, zone);
           continue;
         }
 
