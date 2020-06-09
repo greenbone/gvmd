@@ -40786,7 +40786,7 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
  * @param[out]  error_out   Output for iCalendar errors and warnings.
  *
  * @return 0 success, 1 schedule exists already, 2 syntax error in byday,
- *         3 error in iCal string, 99 permission denied.
+ *         3 error in iCal string, 4 error in timezone, 99 permission denied.
  */
 int
 create_schedule (const char* name, const char *comment,
@@ -40797,6 +40797,7 @@ create_schedule (const char* name, const char *comment,
   gchar *insert_timezone;
   int byday_mask;
   icalcomponent *ical_component;
+  icaltimezone *ical_timezone;
   gchar *quoted_ical;
   time_t first_time, period, period_months, duration;
 
@@ -40838,10 +40839,18 @@ create_schedule (const char* name, const char *comment,
         }
     }
 
+  ical_timezone = icalendar_timezone_from_string (insert_timezone);
+  if (ical_timezone == NULL)
+    {
+      g_free (insert_timezone);
+      return 4;
+    }
+
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_timezone = sql_quote (insert_timezone);
 
-  ical_component = icalendar_from_string (ical_string, error_out);
+  ical_component = icalendar_from_string (ical_string, ical_timezone,
+                                          error_out);
   if (ical_component == NULL)
     {
       g_free (quoted_name);
@@ -40852,7 +40861,7 @@ create_schedule (const char* name, const char *comment,
     }
   quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
   first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                    zone);
+                                                    ical_timezone);
   duration = icalendar_duration_from_vcalendar (ical_component);
 
   icalendar_approximate_rrule_from_vcalendar (ical_component,
@@ -41681,7 +41690,7 @@ schedule_task_iterator_readable (iterator_t* iterator)
  *
  * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
  *         3 error in type name, 4 schedule_id required,
- *         5 syntax error in byday, 6 error in iCalendar,
+ *         5 syntax error in byday, 6 error in iCalendar, 7 error in zone,
  *         99 permission denied, -1 internal error.
  */
 int
@@ -41690,6 +41699,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 {
   gchar *quoted_name, *quoted_comment, *quoted_timezone, *quoted_icalendar;
   icalcomponent *ical_component;
+  icaltimezone *ical_timezone;
   schedule_t schedule;
   time_t new_next_time, ical_first_time, ical_duration;
   gchar *real_timezone;
@@ -41737,6 +41747,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update basic data */
   quoted_comment = comment ? sql_quote (comment) : NULL;
+  // FIX zone should get same treatment as in create_schedule
   quoted_timezone = zone ? sql_quote (zone) : NULL;
 
   sql ("UPDATE schedules SET"
@@ -41761,7 +41772,15 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update times */
 
-  ical_component = icalendar_from_string (ical_string, error_out);
+  ical_timezone = icalendar_timezone_from_string (real_timezone);
+  if (ical_timezone == NULL)
+    {
+      g_free (real_timezone);
+      return 7;
+    }
+
+  ical_component = icalendar_from_string (ical_string, ical_timezone,
+                                          error_out);
   if (ical_component == NULL)
     {
       g_free (real_timezone);
@@ -41772,7 +41791,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
                                   (ical_component));
 
   ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                         real_timezone);
+                                                         ical_timezone);
   ical_duration = icalendar_duration_from_vcalendar (ical_component);
 
   sql ("UPDATE schedules SET"

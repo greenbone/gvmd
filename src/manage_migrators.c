@@ -1572,7 +1572,9 @@ convert_schedules_221 (gboolean trash)
       ical_string = iterator_string (&schedules, 1);
       schedule_id = iterator_string (&schedules, 2);
 
-      ical_component = icalendar_from_string (ical_string, &error_out);
+      ical_component = icalendar_from_string (ical_string,
+                                              icaltimezone_get_utc_timezone (),
+                                              &error_out);
       if (ical_component == NULL)
         g_warning ("Error converting schedule %s: %s", schedule_id, error_out);
       else

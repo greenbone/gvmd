@@ -15894,6 +15894,12 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
           log_event_fail ("schedule", "Schedule", NULL, "created");
         }
         break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_schedule",
+                             "Error in TIMEZONE"));
+        log_event_fail ("schedule", "Schedule", NULL, "created");
+        break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_schedule",
@@ -16003,6 +16009,13 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
           log_event_fail ("schedule", "Schedule",
                           modify_schedule_data->schedule_id, "modified");
         }
+        break;
+      case 7:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_schedule",
+                             "Error in TIMEZONE"));
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id, "modified");
         break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL
