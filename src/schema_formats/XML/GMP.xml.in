@@ -25978,7 +25978,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         the newer iCalendar elements.
       </p>
       <p>
-        This includes this filter term 'initial_offset'.
+        This includes the filter keyword 'initial_offset'.
       </p>
     </description>
     <version>20.08</version>
