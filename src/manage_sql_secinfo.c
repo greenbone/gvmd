@@ -4882,14 +4882,12 @@ manage_sync_scap (sigset_t *sigmask_current)
 }
 
 /**
- * @brief Rebuild part of the SCAP DB.
+ * @brief Rebuild the entire SCAP DB.
  *
- * @param[in]  type        The type of SCAP info to rebuild.
- *
- * @return 0 success, 1 invalid type, 2 sync running, -1 error
+ * @return 0 success, 2 sync running, -1 error
  */
 static int
-rebuild_scap (const char *type)
+rebuild_scap ()
 {
   int ret = -1;
   lockfile_t lockfile;
@@ -4900,16 +4898,9 @@ rebuild_scap (const char *type)
   else if (ret)
     return -1;
 
-  if (strcasecmp (type, "all") == 0
-      || strcasecmp (type, "ovaldefs") == 0
-      || strcasecmp (type, "ovaldef") == 0)
-    {
-      ret = update_scap (TRUE);
-      if (ret == 1)
-        ret = 2;
-    }
-  else
-    ret = 1;
+  ret = update_scap (TRUE);
+  if (ret == 1)
+    ret = 2;
 
   if (feed_lockfile_unlock (&lockfile))
     {
@@ -4926,29 +4917,22 @@ rebuild_scap (const char *type)
  *
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
- * @param[in]  type        The type of SCAP info to rebuild.
-
+ *
  * @return 0 success, -1 error.
  */
 int
-manage_rebuild_scap (GSList *log_config, const gchar *database,
-                     const char *type)
+manage_rebuild_scap (GSList *log_config, const gchar *database)
 {
   int ret;
 
-  g_info ("   Rebuilding SCAP data (%s).", type);
+  g_info ("   Rebuilding SCAP data");
 
   ret = manage_option_setup (log_config, database);
   if (ret)
     return -1;
 
-  ret = rebuild_scap (type);
-  if (ret == 1)
-    {
-      printf ("Type must be 'ovaldefs' or 'all'.\n");
-      goto fail;
-    }
-  else if (ret == 2)
+  ret = rebuild_scap ();
+  if (ret == 2)
     {
       printf ("SCAP sync is currently running.\n");
       goto fail;

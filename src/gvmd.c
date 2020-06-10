@@ -1632,7 +1632,7 @@ gvmd (int argc, char** argv)
   static gchar *rc_name = NULL;
   static gchar *relay_mapper = NULL;
   static gboolean rebuild = FALSE;
-  static gchar *rebuild_scap = NULL;
+  static gboolean rebuild_scap = FALSE;
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
@@ -1807,15 +1807,14 @@ gvmd (int argc, char** argv)
           &manager_port_string_2,
           "Use port number <number> for address 2.",
           "<number>" },
-        { "rebuild", 'm', 0, G_OPTION_ARG_NONE,
+        { "rebuild", '\0', 0, G_OPTION_ARG_NONE,
           &rebuild,
           "Remove NVT db, and rebuild it from the scanner.",
           NULL },
-        { "rebuild-scap", '\0', 0, G_OPTION_ARG_STRING,
+        { "rebuild-scap", '\0', 0, G_OPTION_ARG_NONE,
           &rebuild_scap,
-          "Rebuild SCAP data of type <type>"
-          " (currently supports 'ovaldefs' and 'all').",
-          "<type>" },
+          "Rebuild all SCAP data.",
+          NULL },
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,
           "Executable for mapping scanner hosts to relays."
@@ -2277,7 +2276,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_rebuild_scap (log_config, database, rebuild_scap);
+      ret = manage_rebuild_scap (log_config, database);
       log_config_free ();
       if (ret)
         {
