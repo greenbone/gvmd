@@ -4682,14 +4682,18 @@ try_load_csv ()
   gchar *file_cves, *file_cpes, *file_affected_products;
   gchar *file_ovaldefs, *file_ovalfiles, *file_affected_ovaldefs;
 
-  file_cves = g_build_filename (GVM_SCAP_DATA_DIR, "table-cves.csv", NULL);
-  file_cpes = g_build_filename (GVM_SCAP_DATA_DIR, "table-cpes.csv", NULL);
-  file_affected_products = g_build_filename (GVM_SCAP_DATA_DIR,
+  file_cves = g_build_filename (GVM_SCAP_DATA_CSV_DIR, "table-cves.csv", NULL);
+  file_cpes = g_build_filename (GVM_SCAP_DATA_CSV_DIR, "table-cpes.csv", NULL);
+  file_affected_products = g_build_filename (GVM_SCAP_DATA_CSV_DIR,
                                              "table-affected-products.csv",
                                              NULL);
-  file_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovaldefs.csv", NULL);
-  file_ovalfiles = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovalfiles.csv", NULL);
-  file_affected_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR,
+  file_ovaldefs = g_build_filename (GVM_SCAP_DATA_CSV_DIR,
+                                    "table-ovaldefs.csv",
+                                    NULL);
+  file_ovalfiles = g_build_filename (GVM_SCAP_DATA_CSV_DIR,
+                                     "table-ovalfiles.csv",
+                                     NULL);
+  file_affected_ovaldefs = g_build_filename (GVM_SCAP_DATA_CSV_DIR,
                                              "table-affected-ovaldefs.csv",
                                              NULL);
 
