@@ -1877,7 +1877,8 @@ main (int argc, char **argv)
       "<number>" },
     { "rebuild-scap", '\0', 0, G_OPTION_ARG_STRING,
       &rebuild_scap,
-      "Rebuild SCAP data of type <type> (currently only supports 'ovaldefs').",
+      "Rebuild SCAP data of type <type>"
+      " (currently supports 'ovaldefs' and 'all').",
       "<type>" },
     { "role", '\0', 0, G_OPTION_ARG_STRING,
       &role,
