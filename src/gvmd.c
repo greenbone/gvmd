@@ -1807,7 +1807,7 @@ gvmd (int argc, char** argv)
           &manager_port_string_2,
           "Use port number <number> for address 2.",
           "<number>" },
-        { "rebuild", 'm', 0, G_OPTION_ARG_NONE,
+        { "rebuild", '\0', 0, G_OPTION_ARG_NONE,
           &rebuild,
           "Remove NVT db, and rebuild it from the scanner.",
           NULL },
