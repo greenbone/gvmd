@@ -40795,7 +40795,6 @@ create_schedule (const char* name, const char *comment,
 {
   gchar *quoted_comment, *quoted_name, *quoted_timezone;
   gchar *insert_timezone;
-  long offset;
   int byday_mask;
   icalcomponent *ical_component;
   gchar *quoted_ical;
@@ -40839,7 +40838,6 @@ create_schedule (const char* name, const char *comment,
         }
     }
 
-  offset = current_offset (insert_timezone);
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_timezone = sql_quote (insert_timezone);
 
@@ -40864,17 +40862,17 @@ create_schedule (const char* name, const char *comment,
 
   sql ("INSERT INTO schedules"
        " (uuid, name, owner, comment, first_time, period, period_months,"
-       "  byday, duration, timezone, icalendar, initial_offset,"
+       "  byday, duration, timezone, icalendar,"
        "  creation_time, modification_time)"
        " VALUES"
        " (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
        "  '%s', %i, %i, %i, %i, %i,"
        "  '%s', '%s',"
-       "  %li, m_now (), m_now ());",
+       "  m_now (), m_now ());",
        quoted_name, current_credentials.uuid, quoted_comment, first_time,
        period, period_months, byday_mask, duration, quoted_timezone,
-       quoted_ical, offset);
+       quoted_ical);
 
   if (schedule)
     *schedule = sql_last_insert_id ();
@@ -40908,7 +40906,7 @@ copy_schedule (const char* name, const char* comment, const char *schedule_id,
 {
   return copy_resource ("schedule", name, comment, schedule_id,
                         "first_time, period, period_months, byday, duration,"
-                        " timezone, initial_offset, icalendar",
+                        " timezone, icalendar",
                         1, new_schedule, NULL);
 }
 
@@ -40991,10 +40989,10 @@ delete_schedule (const char *schedule_id, int ultimate)
 
       sql ("INSERT INTO schedules_trash"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  byday, duration, timezone, initial_offset, creation_time,"
+           "  byday, duration, timezone, creation_time,"
            "  modification_time, icalendar)"
            " SELECT uuid, owner, name, comment, first_time, period, period_months,"
-           "        byday, duration, timezone, initial_offset, creation_time,"
+           "        byday, duration, timezone, creation_time,"
            "        modification_time, icalendar"
            " FROM schedules WHERE id = %llu;",
            schedule);
@@ -41236,7 +41234,7 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
  */
 #define SCHEDULE_ITERATOR_FILTER_COLUMNS                                      \
  { GET_ITERATOR_FILTER_COLUMNS, "first_time", "period", "period_months",      \
-   "duration", "timezone", "initial_offset", "first_run", "next_run", NULL }
+   "duration", "timezone", "first_run", "next_run", NULL }
 
 /**
  * @brief Schedule iterator columns.
@@ -41249,7 +41247,6 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
-   { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
    { "icalendar", NULL, KEYWORD_TYPE_STRING },                             \
    { "next_time_ical (icalendar, timezone)",                               \
      "next_run",                                                           \
@@ -41269,7 +41266,6 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
-   { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
    { "icalendar", NULL, KEYWORD_TYPE_STRING },                             \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
@@ -41337,7 +41333,7 @@ DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 4);
  * @return The iCalendar string or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Initialise a task schedule iterator.
@@ -41786,7 +41782,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        " period_months = 0,"
        " byday = 0,"
        " duration = %d,"
-       " initial_offset = 0,"
        " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_icalendar,
@@ -47131,10 +47126,10 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO schedules"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  byday, duration, timezone, initial_offset, creation_time,"
+           "  byday, duration, timezone, creation_time,"
            "  modification_time, icalendar)"
            " SELECT uuid, owner, name, comment, first_time, period,"
-           "        period_months, byday, duration, timezone, initial_offset,"
+           "        period_months, byday, duration, timezone,"
            "        creation_time, modification_time, icalendar"
            " FROM schedules_trash WHERE id = %llu;",
            resource);
