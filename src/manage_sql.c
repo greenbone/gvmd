@@ -772,8 +772,8 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 /**
  * @brief Convert an ISO time into seconds since epoch.
  *
- * For backward compatibility, if the conversion fails try parse in ctime
- * format.
+ * If no offset is specified, the timezone of the current user is used.
+ * If there is no current user timezone, UTC is used.
  *
  * @param[in]  text_time  Time as text in ISO format: 2011-11-03T09:23:28+02:00.
  *
@@ -782,205 +782,7 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 int
 parse_iso_time (const char *text_time)
 {
-  int epoch_time;
-  struct tm tm;
-
-  memset (&tm, 0, sizeof (struct tm));
-  tm.tm_isdst = -1;
-  if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
-    {
-      gchar *tz;
-
-      memset (&tm, 0, sizeof (struct tm));
-      tm.tm_isdst = -1;
-      if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
-        {
-          /* Try time without timezone suffix, applying timezone of user. */
-
-          memset (&tm, 0, sizeof (struct tm));
-          tm.tm_isdst = -1;
-          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
-            {
-              memset (&tm, 0, sizeof (struct tm));
-              tm.tm_isdst = -1;
-              if (strptime ((char*) text_time, "%F %T", &tm) == NULL)
-                return parse_ctime (text_time);
-            }
-
-          /* Store current TZ. */
-          tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-          if (setenv ("TZ",
-                      current_credentials.timezone
-                       ? current_credentials.timezone
-                       : "UTC",
-                      1)
-              == -1)
-            {
-              g_warning ("%s: Failed to switch to timezone %s",
-                         __func__, current_credentials.timezone);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
-            }
-
-          memset (&tm, 0, sizeof (struct tm));
-          tm.tm_isdst = -1;
-          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
-            {
-              memset (&tm, 0, sizeof (struct tm));
-              tm.tm_isdst = -1;
-              if (strptime ((char*) text_time, "%F %T", &tm) == NULL)
-                {
-                  assert (0);
-                  g_warning ("%s: Failed to parse time", __func__);
-                  if (tz != NULL)
-                    setenv ("TZ", tz, 1);
-                  g_free (tz);
-                  return 0;
-                }
-            }
-        }
-      else
-        {
-          /* Time has "Z" suffix for UTC */
-
-          /* Store current TZ. */
-          tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-          if (setenv ("TZ", "UTC", 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to UTC", __func__);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
-            }
-
-          memset (&tm, 0, sizeof (struct tm));
-          tm.tm_isdst = -1;
-          if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
-            {
-              assert (0);
-              g_warning ("%s: Failed to parse time", __func__);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
-            }
-        }
-
-      epoch_time = mktime (&tm);
-      if (epoch_time == -1)
-        {
-          g_warning ("%s: Failed to make time", __func__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-
-      /* Revert to stored TZ. */
-      if (tz)
-        {
-          if (setenv ("TZ", tz, 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to original TZ", __func__);
-              g_free (tz);
-              return 0;
-            }
-        }
-      else
-        unsetenv ("TZ");
-
-      g_free (tz);
-    }
-  else
-    {
-      gchar *tz, *new_tz;
-      int offset_hour, offset_minute;
-      char sign;
-
-      /* Get the timezone offset from the string. */
-
-      if (sscanf ((char*) text_time,
-                  "%*u-%*u-%*uT%*u:%*u:%*u%[-+]%d:%d",
-                  &sign, &offset_hour, &offset_minute)
-          != 3)
-        {
-          /* Perhaps %z is an acronym like "CEST".  Assume it's local time. */
-          epoch_time = mktime (&tm);
-          if (epoch_time == -1)
-            {
-              g_warning ("%s: Failed to make time", __func__);
-              return 0;
-            }
-          return epoch_time;
-        }
-
-      /* Store current TZ. */
-
-      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-      /* Switch to the timezone in the time string. */
-
-      new_tz = g_strdup_printf ("UTC%c%d:%d",
-                                sign == '-' ? '+' : '-',
-                                offset_hour,
-                                offset_minute);
-      if (setenv ("TZ", new_tz, 1) == -1)
-        {
-          g_warning ("%s: Failed to switch to %s", __func__, new_tz);
-          g_free (new_tz);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-      g_free (new_tz);
-
-      /* Parse time again under the new timezone. */
-
-      memset (&tm, 0, sizeof (struct tm));
-      tm.tm_isdst = -1;
-      if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
-        {
-          assert (0);
-          g_warning ("%s: Failed to parse time", __func__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-
-      epoch_time = mktime (&tm);
-      if (epoch_time == -1)
-        {
-          g_warning ("%s: Failed to make time", __func__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-
-      /* Revert to stored TZ. */
-      if (tz)
-        {
-          if (setenv ("TZ", tz, 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to original TZ", __func__);
-              g_free (tz);
-              return 0;
-            }
-        }
-      else
-        unsetenv ("TZ");
-
-      g_free (tz);
-    }
-
-  return epoch_time;
+  return parse_iso_time_tz (text_time, current_credentials.timezone);
 }
 
 /**
@@ -40785,8 +40587,8 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
  * @param[out]  schedule    Created schedule.
  * @param[out]  error_out   Output for iCalendar errors and warnings.
  *
- * @return 0 success, 1 schedule exists already, 2 syntax error in byday,
- *         3 error in iCal string, 99 permission denied.
+ * @return 0 success, 1 schedule exists already,
+ *         3 error in iCal string, 4 error in timezone, 99 permission denied.
  */
 int
 create_schedule (const char* name, const char *comment,
@@ -40797,6 +40599,7 @@ create_schedule (const char* name, const char *comment,
   gchar *insert_timezone;
   int byday_mask;
   icalcomponent *ical_component;
+  icaltimezone *ical_timezone;
   gchar *quoted_ical;
   time_t first_time, period, period_months, duration;
 
@@ -40838,10 +40641,18 @@ create_schedule (const char* name, const char *comment,
         }
     }
 
+  ical_timezone = icalendar_timezone_from_string (insert_timezone);
+  if (ical_timezone == NULL)
+    {
+      g_free (insert_timezone);
+      return 4;
+    }
+
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_timezone = sql_quote (insert_timezone);
 
-  ical_component = icalendar_from_string (ical_string, error_out);
+  ical_component = icalendar_from_string (ical_string, ical_timezone,
+                                          error_out);
   if (ical_component == NULL)
     {
       g_free (quoted_name);
@@ -40852,7 +40663,7 @@ create_schedule (const char* name, const char *comment,
     }
   quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
   first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                    zone);
+                                                    ical_timezone);
   duration = icalendar_duration_from_vcalendar (ical_component);
 
   icalendar_approximate_rrule_from_vcalendar (ical_component,
@@ -41681,7 +41492,7 @@ schedule_task_iterator_readable (iterator_t* iterator)
  *
  * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
  *         3 error in type name, 4 schedule_id required,
- *         5 syntax error in byday, 6 error in iCalendar,
+ *         6 error in iCalendar, 7 error in zone,
  *         99 permission denied, -1 internal error.
  */
 int
@@ -41690,6 +41501,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 {
   gchar *quoted_name, *quoted_comment, *quoted_timezone, *quoted_icalendar;
   icalcomponent *ical_component;
+  icaltimezone *ical_timezone;
   schedule_t schedule;
   time_t new_next_time, ical_first_time, ical_duration;
   gchar *real_timezone;
@@ -41737,7 +41549,18 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update basic data */
   quoted_comment = comment ? sql_quote (comment) : NULL;
-  quoted_timezone = zone ? sql_quote (zone) : NULL;
+
+  if (zone == NULL)
+    quoted_timezone = NULL;
+  else
+    {
+      quoted_timezone = g_strstrip (sql_quote (zone));
+      if (strcmp (quoted_timezone, "") == 0)
+        {
+          g_free (quoted_timezone);
+          quoted_timezone = NULL;
+        }
+    }
 
   sql ("UPDATE schedules SET"
        " name = %s%s%s,"
@@ -41761,10 +41584,20 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update times */
 
-  ical_component = icalendar_from_string (ical_string, error_out);
+  ical_timezone = icalendar_timezone_from_string (real_timezone);
+  if (ical_timezone == NULL)
+    {
+      g_free (real_timezone);
+      sql_rollback ();
+      return 7;
+    }
+
+  ical_component = icalendar_from_string (ical_string, ical_timezone,
+                                          error_out);
   if (ical_component == NULL)
     {
       g_free (real_timezone);
+      sql_rollback ();
       return 6;
     }
 
@@ -41772,7 +41605,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
                                   (ical_component));
 
   ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                         real_timezone);
+                                                         ical_timezone);
   ical_duration = icalendar_duration_from_vcalendar (ical_component);
 
   sql ("UPDATE schedules SET"
