@@ -378,9 +378,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <xsl:if test="/wizard/params/param[name='auto_start']/value = 2">
-            <start_task task_id="{/wizard/previous/response/create_task_response/@id}"/>
-          </xsl:if>
+          <xsl:choose>
+            <xsl:when test="/wizard/params/param[name='auto_start']/value = 2">
+              <start_task task_id="{/wizard/previous/response/create_task_response/@id}"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <get_version/>
+            </xsl:otherwise>
+          </xsl:choose>
+
         </xsl:template>
       </xsl:stylesheet>
     </command>
