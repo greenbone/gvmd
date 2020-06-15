@@ -43,6 +43,52 @@ Ensure (utils, gvm_sleep_sleep_for_0)
   assert_that (gvm_sleep (0), is_equal_to (0));
 }
 
+/* parse_iso_time_tz */
+
+Ensure (utils, parse_iso_time_tz_with_offset)
+{
+  assert_that (parse_iso_time_tz ("2020-06-01T01:02:03+04:30",
+                                  "Europe/Berlin"),
+               is_equal_to (1590957123));
+
+  assert_that (parse_iso_time_tz ("2020-06-01T01:02:03-0123",
+                                  "Europe/Berlin"),
+               is_equal_to (1590978303));
+}
+
+Ensure (utils, parse_iso_time_tz_with_z)
+{
+  assert_that (parse_iso_time_tz ("2020-06-01T01:02:03Z",
+                                  "Europe/Berlin"),
+               is_equal_to (1590973323));
+}
+
+Ensure (utils, parse_iso_time_tz_with_fallback_tz)
+{
+  assert_that (parse_iso_time_tz ("2020-06-01T01:02:03",
+                                  "Australia/Sydney"),
+               is_equal_to (1590937323));
+
+  assert_that (parse_iso_time_tz ("2020-01-01T01:02:03",
+                                  "Australia/Adelaide"),
+               is_equal_to (1577802723));
+  
+  assert_that (parse_iso_time_tz ("2020-01-01T01:02:03",
+                                  NULL),
+               is_equal_to (1577840523));
+}
+
+Ensure (utils, parse_iso_time_tz_variants)
+{
+  assert_that (parse_iso_time_tz ("2020-06-01T01:02Z",
+                                  "Europe/Berlin"),
+               is_equal_to (1590973320));
+
+  assert_that (parse_iso_time_tz ("2020-06-01 01:02:03.123+0000",
+                                  "Australia/Sydney"),
+               is_equal_to (1590973323));
+}
+
 /* Number of nanoseconds in a second. */
 #define NANOSECONDS 1000000000
 
@@ -77,6 +123,11 @@ main (int argc, char **argv)
 
   add_test_with_context (suite, utils, gvm_sleep_sleep_for_0);
   add_test_with_context (suite, utils, gvm_sleep_sleep_for_1);
+
+  add_test_with_context (suite, utils, parse_iso_time_tz_with_offset);
+  add_test_with_context (suite, utils, parse_iso_time_tz_with_z);
+  add_test_with_context (suite, utils, parse_iso_time_tz_with_fallback_tz);
+  add_test_with_context (suite, utils, parse_iso_time_tz_variants);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());
