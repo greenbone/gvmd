@@ -171,6 +171,75 @@ parse_utc_time (const char *format, const char *text_time)
 }
 
 /**
+ * @brief Parses a time string using strptime, resetting the data structure.
+ *
+ * @param[in]  text_time  The time string to parse.
+ * @param[in]  format     The format string.
+ * @param[out] tm         The tm date structure to write to.
+ *
+ * @return Pointer to first character not processed by strptime.
+ */
+static char *
+strptime_with_reset (const char *text_time, const char *format, struct tm* tm)
+{
+  memset (tm, 0, sizeof (struct tm));
+  tm->tm_isdst = -1;
+  return strptime ((char*) text_time, format, tm);
+}
+
+/**
+ * @brief Converts a tm struct into seconds since epoch with a given timezone.
+ *
+ * @param[in]  tm       The time data structure.
+ * @param[in]  new_tz   The timezone to use or NULL for UTC.
+ *
+ * @return The seconds since epoch from the given time data.
+ */
+static time_t
+mktime_with_tz (struct tm *tm, const char *new_tz)
+{
+  gchar *tz;
+  int epoch_time;
+
+  /* Store current TZ. */
+  tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+  /* Set new TZ */
+  if (setenv ("TZ",
+              new_tz
+                ? new_tz
+                : "UTC",
+              1)
+      == -1)
+    {
+      g_warning ("%s: Failed to switch to timezone %s",
+                 __func__, new_tz);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+
+  /* Get the time */
+  epoch_time = mktime (tm);
+
+  /* Revert to stored TZ. */
+  if (tz)
+    {
+      if (setenv ("TZ", tz, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to original TZ", __func__);
+          g_free (tz);
+          return 0;
+        }
+    }
+  else
+    unsetenv ("TZ");
+
+  return epoch_time;
+}
+
+/**
  * @brief Convert a UTC ctime string into seconds since the epoch.
  *
  * @param[in]  text_time  Time as text in ctime format.
@@ -245,6 +314,95 @@ days_from_now (time_t *epoch_time)
 
   if (diff < 0) return -1;
   return diff / 86400; /* 60 sec * 60 min * 24 h */
+}
+
+/**
+ * @brief Convert an ISO time into seconds since epoch.
+ *
+ * If no offset is specified, the given timezone is used (UTC in case of NULL).
+ *
+ * @param[in]  text_time  Time as text in ISO format: 2011-11-03T09:23:28+02:00.
+ * @param[in]  fallback_tz  The fallback timezone if offset is missing.
+ *
+ * @return Time since epoch.  0 on error.
+ */
+time_t
+parse_iso_time_tz (const char *text_time, const char *fallback_tz)
+{
+  static GRegex *regex = NULL;
+  GMatchInfo *match_info;
+  struct tm tm;
+  int epoch_time;
+
+  epoch_time = 0;
+
+  if (regex == NULL)
+    regex = g_regex_new ("^([0-9]{4}-[0-9]{2}-[0-9]{2})"
+                         "[T ]([0-9]{2}:[0-9]{2})"
+                         "(:[0-9]{2})?(?:\\.[0-9]+)?"
+                         "(Z|[+-][0-9]{2}:?[0-9]{2})?$",
+                         0, 0, NULL);
+
+  if (g_regex_match (regex, text_time, 0, &match_info))
+    {
+      gchar *date_str, *time_str, *secs_str, *offset_str, *cleaned_text_time;
+
+      /* Converting the date-time string to a more strictly defined format
+       *  makes it easier to parse variants of the ISO time:
+       * - Using a space to separate the date and time instead of "T"
+       * - Omitting the seconds
+       * - Having fractional seconds
+       */
+      date_str = g_match_info_fetch (match_info, 1);
+      time_str = g_match_info_fetch (match_info, 2);
+      secs_str = g_match_info_fetch (match_info, 3);
+      offset_str = g_match_info_fetch (match_info, 4);
+      cleaned_text_time
+        = g_strdup_printf ("%sT%s%s%s",
+                           date_str ? date_str : "",
+                           time_str ? time_str : "",
+                           secs_str && strcmp (secs_str, "")
+                            ? secs_str : ":00",
+                           offset_str ? offset_str : "");
+
+      if (strptime_with_reset ((char*) cleaned_text_time, "%FT%T%z", &tm))
+        {
+          /* ISO time with numeric offset (e.g. 2020-06-01T01:02:03+04:30) */
+          tm.tm_sec = tm.tm_sec - tm.tm_gmtoff;
+          tm.tm_gmtoff = 0;
+          epoch_time = mktime_with_tz (&tm, "UTC");
+        }
+      else if (strptime_with_reset ((char*) cleaned_text_time, "%FT%TZ", &tm))
+        {
+          /* ISO time with "Z" for UTC timezone (e.g. 2020-06-01T01:02:03Z) */
+          epoch_time = mktime_with_tz (&tm, "UTC");
+        }
+      else if (strptime_with_reset ((char*) cleaned_text_time, "%FT%T", &tm))
+        {
+          /* ISO time without timezone suffix (e.g. 2020-06-01T01:02:03) */
+          epoch_time = mktime_with_tz (&tm, fallback_tz ? fallback_tz : "UTC");
+        }
+      else
+        g_warning ("%s: Could not parse time %s", __func__, text_time);
+
+      g_free (date_str);
+      g_free (time_str);
+      g_free (secs_str);
+      g_free (offset_str);
+      g_free (cleaned_text_time);
+    }
+  else
+    g_warning ("%s: Could not parse time %s", __func__, text_time);
+
+  g_match_info_free (match_info);
+
+  if (epoch_time == -1)
+    {
+      g_warning ("%s: mktime failed for time %s", __func__, text_time);
+      return 0;
+    }
+
+  return epoch_time;
 }
 
 /**
