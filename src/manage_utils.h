@@ -75,11 +75,14 @@ hosts_str_contains (const char *, const char *, int);
 void
 blank_control_chars (char *);
 
+icaltimezone *
+icalendar_timezone_from_string (const char *);
+
 icalcomponent *
 icalendar_from_old_schedule_data (time_t, time_t, time_t, time_t, int);
 
 icalcomponent *
-icalendar_from_string (const char *, gchar **);
+icalendar_from_string (const char *, icaltimezone *, gchar **);
 
 int
 icalendar_approximate_rrule_from_vcalendar (icalcomponent *, time_t *, time_t *,
@@ -95,6 +98,6 @@ int
 icalendar_duration_from_vcalendar (icalcomponent *);
 
 time_t
-icalendar_first_time_from_vcalendar (icalcomponent *, const char *);
+icalendar_first_time_from_vcalendar (icalcomponent *, icaltimezone *);
 
 #endif /* not _GVMD_MANAGE_UTILS_H */
