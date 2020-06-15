@@ -739,6 +739,8 @@ icalendar_from_string (const char *ical_string, icaltimezone *zone,
   icalcomponent_add_property (ical_new,
                               icalproperty_new_prodid (GVM_PRODID));
 
+  icalcomponent_add_component (ical_new, icaltimezone_get_component (zone));
+
   switch (icalcomponent_isa (ical_parsed))
     {
       case ICAL_NO_COMPONENT:
