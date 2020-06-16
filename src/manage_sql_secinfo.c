@@ -4710,6 +4710,14 @@ try_load_csv ()
       && g_file_test (file_ovalfiles, G_FILE_TEST_EXISTS)
       && g_file_test (file_affected_ovaldefs, G_FILE_TEST_EXISTS))
     {
+      /* Create a new schema, "scap2". */
+
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("%s: could not initialize SCAP database 2", __func__);
+          return -1;
+        }
+
       sql ("COPY scap2.cves FROM '%s' WITH (FORMAT csv);", file_cves);
       g_free (file_cves);
 
@@ -4808,6 +4816,11 @@ update_scap (gboolean reset_scap_db)
         }
     }
 
+  /* If there's CSV in the feed, just load it. */
+
+  if (try_load_csv () == 0)
+    return 0;
+
   /* Create a new schema, "scap2". */
 
   if (manage_db_init ("scap"))
@@ -4815,11 +4828,6 @@ update_scap (gboolean reset_scap_db)
       g_warning ("%s: could not initialize SCAP database 2", __func__);
       return -1;
     }
-
-  /* If there's CSV in the feed, just load it. */
-
-  if (try_load_csv () == 0)
-    return 0;
 
   /* Add the indexes and constraints. */
 

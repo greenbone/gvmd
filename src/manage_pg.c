@@ -3132,7 +3132,7 @@ manage_db_init (const gchar *name)
            "                   false);");
 
       sql ("SELECT drop_scap2 ();");
-      sql ("DROP FUNCTION drop_scap2 ();");
+      sql ("DROP FUNCTION IF EXISTS drop_scap2 ();");
 
       sql ("CREATE SCHEMA scap2;");
 
