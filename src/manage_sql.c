@@ -15219,7 +15219,7 @@ update_nvti_cache ()
           nvtis_add (nvti_cache, nvti);
         }
 
-      if (iterator_null (&nvts, 14))
+      if (iterator_null (&nvts, 2))
         /* No refs. */;
       else
         nvti_add_vtref (nvti,
