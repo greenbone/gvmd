@@ -15219,7 +15219,7 @@ update_nvti_cache ()
           nvtis_add (nvti_cache, nvti);
         }
 
-      if (iterator_null (&nvts, 14))
+      if (iterator_null (&nvts, 2))
         /* No refs. */;
       else
         nvti_add_vtref (nvti,
@@ -41031,8 +41031,8 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
                  schedule);
   if (next (&schedules))
     {
-      *icalendar = g_strdup (iterator_string (&schedules, 5));
-      *zone = g_strdup (iterator_string (&schedules, 6));
+      *icalendar = g_strdup (iterator_string (&schedules, 0));
+      *zone = g_strdup (iterator_string (&schedules, 1));
       cleanup_iterator (&schedules);
       return 0;
     }
