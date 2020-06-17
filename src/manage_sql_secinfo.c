@@ -80,6 +80,9 @@ manage_db_init (const gchar *);
 int
 manage_db_init_indexes (const gchar *);
 
+int
+manage_db_add_constraints (const gchar *);
+
 
 /* Helpers. */
 
@@ -4727,7 +4730,7 @@ try_load_csv ()
            file_affected_ovaldefs);
       g_free (file_affected_ovaldefs);
 
-      /* Add the indexes, now that the data is ready. */
+      /* Add the indexes and constraints, now that the data is ready. */
 
       g_debug ("%s: add indexes", __func__);
       proctitle_set ("gvmd: Syncing SCAP: Adding indexes");
@@ -4735,6 +4738,15 @@ try_load_csv ()
       if (manage_db_init_indexes ("scap"))
         {
           g_warning ("%s: could not initialize SCAP indexes", __func__);
+          return -1;
+        }
+
+      g_debug ("%s: add constraints", __func__);
+      proctitle_set ("gvmd: Syncing SCAP: Adding constraints");
+
+      if (manage_db_add_constraints ("scap"))
+        {
+          g_warning ("%s: could not add SCAP constraints", __func__);
           return -1;
         }
 
@@ -4809,7 +4821,7 @@ update_scap (gboolean reset_scap_db)
   if (try_load_csv () == 0)
     return 0;
 
-  /* Add the indexes, now that the data is ready. */
+  /* Add the indexes and constraints. */
 
   g_debug ("%s: add indexes", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Adding indexes");
@@ -4817,6 +4829,12 @@ update_scap (gboolean reset_scap_db)
   if (manage_db_init_indexes ("scap"))
     {
       g_warning ("%s: could not initialize SCAP indexes", __func__);
+      return -1;
+    }
+
+  if (manage_db_add_constraints ("scap"))
+    {
+      g_warning ("%s: could not add SCAP constraints", __func__);
       return -1;
     }
 
