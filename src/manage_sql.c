@@ -22287,7 +22287,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables;
   int autofp, apply_overrides, dynamic_severity;
 
   if (report == -1)
@@ -22312,14 +22312,14 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
-  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                  " ON results.nvt = nvts.oid %s",
+                                  opts_tables);
   g_free (opts_tables);
 
-  where = results_extra_where (get->trash, report, host,
-                               autofp, apply_overrides, dynamic_severity,
-                               filter ? filter : get->filter);
-  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
-  g_free (where);
+  extra_where = results_extra_where (get->trash, report, host,
+                                     autofp, apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter);
 
   free (filter);
 
@@ -22361,7 +22361,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables;
   int apply_overrides, autofp, dynamic_severity;
 
   if (report == -1)
@@ -22383,14 +22383,14 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
-  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                  " ON results.nvt = nvts.oid %s",
+                                  opts_tables);
   g_free (opts_tables);
 
-  where = results_extra_where (get->trash, report, host,
-                               autofp, apply_overrides, dynamic_severity,
-                               filter ? filter : get->filter);
-  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
-  g_free (where);
+  extra_where = results_extra_where (get->trash, report, host,
+                                     autofp, apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter);
 
   ret = count ("result", get,
                 manage_cert_loaded () ? columns : columns_no_cert,
@@ -55616,7 +55616,9 @@ type_build_select (const char *type, const char *columns_str,
       gchar *original;
 
       original = opts_table;
-      opts_table = g_strdup_printf ("%s, nvts", original);
+      opts_table = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                    " ON results.nvt = nvts.oid %s",
+                                    original);
       g_free (original);
     }
 
@@ -55643,14 +55645,6 @@ type_build_select (const char *type, const char *columns_str,
     extra_where = type_extra_where (type, get->trash,
                                     filter ? filter : get->filter,
                                     get->extra_params);
-  if (strcasecmp (type, "RESULT") == 0)
-    {
-      gchar *original;
-
-      original = extra_where;
-      extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", original);
-      g_free (original);
-    }
 
   if (get->ignore_pagination)
     pagination_clauses = NULL;
