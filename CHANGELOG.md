@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix table check in gvm-migrate-to-postgres [#1118](https://github.com/greenbone/gvmd/pull/1118)
 - Fix XML escaping in setting up GMP scans [#1122](https://github.com/greenbone/gvmd/pull/1123)
 - Fix and simplify parse_iso_time [#1130](https://github.com/greenbone/gvmd/pull/1130)
+- Fix gvm-manage-certs. [#1139](https://github.com/greenbone/gvmd/pull/1139)
 
 [9.0.2]: https://github.com/greenbone/gvmd/compare/v9.0.1...gvmd-9.0
 
