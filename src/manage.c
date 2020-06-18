@@ -4668,7 +4668,9 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
             {
               const char *app, *cve;
               double severity;
-              gchar *desc, *location;
+              gchar *desc;
+              iterator_t locations_iter;
+              GString *locations;
               result_t result;
 
               if (prognosis_report_host == 0)
@@ -4681,7 +4683,30 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
 
               app = prognosis_iterator_cpe (&prognosis);
               cve = prognosis_iterator_cve (&prognosis);
-              location = app_location (report_host, app);
+              locations = g_string_new("");
+              init_app_locations_iterator (&locations_iter, report_host, app);
+
+              while (next (&locations_iter))
+                {
+                  const char *location;
+                  location = app_locations_iterator_location (&locations_iter);
+
+                  if (locations->len)
+                    g_string_append (locations, ", ");
+                  g_string_append (locations, location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", app, location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_at",
+                                             location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_by",
+                                             /* Detected by itself. */
+                                             cve);
+                }
 
               desc = g_strdup_printf ("The host carries the product: %s\n"
                                       "It is vulnerable according to: %s.\n"
@@ -4690,11 +4715,11 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
                                       "%s",
                                       app,
                                       cve,
-                                      location
+                                      locations->len
                                        ? "The product was found at: "
                                        : "",
-                                      location ? location : "",
-                                      location ? ".\n" : "",
+                                      locations->len ? locations->str : "",
+                                      locations->len ? ".\n" : "",
                                       prognosis_iterator_description
                                        (&prognosis));
 
@@ -4706,20 +4731,7 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
 
               report_add_result (report, result);
 
-              if (location)
-                {
-                  insert_report_host_detail (report, ip, "cve", cve,
-                                              "CVE Scanner", app, location);
-
-                  insert_report_host_detail (report, ip, "cve", cve,
-                                              "CVE Scanner", "detected_at",
-                                              location);
-                  insert_report_host_detail (report, ip, "cve", cve,
-                                              "CVE Scanner", "detected_by",
-                                              /* Detected by itself. */
-                                              cve);
-                }
-              g_free (location);
+              g_string_free (locations, TRUE);
             }
           cleanup_iterator (&prognosis);
 
