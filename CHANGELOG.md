@@ -121,6 +121,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix handling of duplicate settings [#1106](https://github.com/greenbone/gvmd/pull/1106)
 - Fix XML escaping in setting up GMP scans [#1122](https://github.com/greenbone/gvmd/pull/1122)
 - Fix and simplify parse_iso_time and add tests [#1129](https://github.com/greenbone/gvmd/pull/1129)
+- Fix CVE scanner and results handling [#1141](https://github.com/greenbone/gvmd/pull/1141)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
