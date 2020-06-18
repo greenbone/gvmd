@@ -4461,7 +4461,7 @@ sync_cert ()
 
   last_scap_update = 0;
   if (manage_scap_loaded ())
-    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap2.meta"
+    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
                                 "                  WHERE name = 'last_update'),"
                                 "                 '0');");
   g_debug ("%s: last_scap_update: %i", __func__, last_scap_update);
