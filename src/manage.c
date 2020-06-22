@@ -46,6 +46,7 @@
  */
 #define _GNU_SOURCE
 
+#include "gmp_base.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_configs.h"
@@ -8047,21 +8048,21 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
           nvt_iterator_solution_type (nvts) ||
           nvt_iterator_solution_method (nvts))
         {
-          g_string_append_printf (buffer, "<solution");
+          buffer_xml_append_printf (buffer, "<solution");
 
           if (nvt_iterator_solution_type (nvts))
-            g_string_append_printf (buffer, " type='%s'",
+            buffer_xml_append_printf (buffer, " type='%s'",
               nvt_iterator_solution_type (nvts));
 
           if (nvt_iterator_solution_method (nvts))
-            g_string_append_printf (buffer, " method='%s'",
+            buffer_xml_append_printf (buffer, " method='%s'",
               nvt_iterator_solution_method (nvts));
 
           if (nvt_iterator_solution (nvts))
-            g_string_append_printf (buffer, ">%s</solution>",
+            buffer_xml_append_printf (buffer, ">%s</solution>",
               nvt_iterator_solution (nvts));
           else
-            g_string_append_printf (buffer, "/>");
+            buffer_xml_append_printf (buffer, "/>");
         }
 
 
