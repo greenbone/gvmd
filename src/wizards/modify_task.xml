@@ -194,13 +194,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   <xsl:text>END:VCALENDAR</xsl:text>
                   <xsl:call-template name="newline"/>
                 </icalendar>
-                <first_time>
-                  <year><xsl:value-of select="/wizard/params/param[name='start_year']/value"/></year>
-                  <month><xsl:value-of select="/wizard/params/param[name='start_month']/value"/></month>
-                  <day_of_month><xsl:value-of select="/wizard/params/param[name='start_day']/value"/></day_of_month>
-                  <hour><xsl:value-of select="/wizard/params/param[name='start_hour']/value"/></hour>
-                  <minute><xsl:value-of select="/wizard/params/param[name='start_minute']/value"/></minute>
-                </first_time>
                 <xsl:if test="(/wizard/params/param[name='start_timezone']/value != '')">
                   <timezone><xsl:value-of select="/wizard/params/param[name='start_timezone']/value"/></timezone>
                 </xsl:if>
