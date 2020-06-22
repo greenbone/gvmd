@@ -21495,40 +21495,54 @@ detect_cleanup:
 /* Prognostics. */
 
 /**
- * @brief Get the location of an App for a report's host.
+ * @brief Initialize an iterator of locations of an App for a report's host.
  *
+ * @param[in]  iterator     Iterator.
  * @param[in]  report_host  Report host.
  * @param[in]  app          CPE.
- *
- * @return Location if there is one, else NULL.
  */
-gchar *
-app_location (report_host_t report_host, const gchar *app)
+void
+init_app_locations_iterator (iterator_t *iterator,
+                             report_host_t report_host,
+                             const gchar *app)
 {
-  gchar *quoted_app, *ret;
+  gchar *quoted_app;
 
   assert (app);
 
   quoted_app = sql_quote (app);
 
-  ret = sql_string ("SELECT value FROM report_host_details"
-                    " WHERE report_host = %llu"
-                    " AND name = '%s'"
-                    " AND source_type = 'nvt'"
-                    " AND source_name"
-                    "     = (SELECT source_name FROM report_host_details"
-                    "        WHERE report_host = %llu"
-                    "        AND source_type = 'nvt'"
-                    "        AND name = 'App'"
-                    "        AND value = '%s');",
-                    report_host,
-                    quoted_app,
-                    report_host,
-                    quoted_app);
+  init_iterator (iterator,
+                 "SELECT string_agg(DISTINCT value, ', ')"
+                 " FROM report_host_details"
+                 " WHERE report_host = %llu"
+                 " AND name = '%s'"
+                 " AND source_type = 'nvt'"
+                 " AND source_name"
+                 "     IN (SELECT source_name FROM report_host_details"
+                 "         WHERE report_host = %llu"
+                 "         AND source_type = 'nvt'"
+                 "         AND name = 'App'"
+                 "         AND value = '%s');",
+                 report_host,
+                 quoted_app,
+                 report_host,
+                 quoted_app);
 
   g_free (quoted_app);
+}
 
-  return ret;
+/**
+ * @brief Get a location from an app locations iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The location.
+ */
+const char *
+app_locations_iterator_location (iterator_t *iterator)
+{
+  return iterator_string (iterator, 0);
 }
 
 /**
@@ -21543,8 +21557,8 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
 {
   init_iterator (iterator,
                  "SELECT cves.name AS vulnerability,"
-                 "       CAST (cves.cvss AS NUMERIC) AS severity,"
-                 "       cves.description,"
+                 "       max(CAST (cves.cvss AS NUMERIC)) AS severity,"
+                 "       max(cves.description) AS description,"
                  "       cpes.name AS location,"
                  "       (SELECT host FROM report_hosts"
                  "        WHERE id = %llu) AS host"
@@ -21555,6 +21569,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
                  " AND report_host_details.name = 'App'"
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"
+                 " GROUP BY cves.id, vulnerability, location, host"
                  " ORDER BY cves.id ASC"
                  " LIMIT %s OFFSET 0;",
                  report_host,
