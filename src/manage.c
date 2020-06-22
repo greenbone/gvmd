@@ -4685,6 +4685,10 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
               app = prognosis_iterator_cpe (&prognosis);
               cve = prognosis_iterator_cve (&prognosis);
               locations = g_string_new("");
+
+              insert_report_host_detail (global_current_report, ip, "cve", cve,
+                                         "CVE Scanner", "App", app);
+
               init_app_locations_iterator (&locations_iter, report_host, app);
 
               while (next (&locations_iter))
