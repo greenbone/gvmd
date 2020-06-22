@@ -19491,40 +19491,54 @@ detect_cleanup:
 /* Prognostics. */
 
 /**
- * @brief Get the location of an App for a report's host.
+ * @brief Initialize an iterator of locations of an App for a report's host.
  *
+ * @param[in]  iterator     Iterator.
  * @param[in]  report_host  Report host.
  * @param[in]  app          CPE.
- *
- * @return Location if there is one, else NULL.
  */
-gchar *
-app_location (report_host_t report_host, const gchar *app)
+void
+init_app_locations_iterator (iterator_t *iterator,
+                             report_host_t report_host,
+                             const gchar *app)
 {
-  gchar *quoted_app, *ret;
+  gchar *quoted_app;
 
   assert (app);
 
   quoted_app = sql_quote (app);
 
-  ret = sql_string ("SELECT value FROM report_host_details"
-                    " WHERE report_host = %llu"
-                    " AND name = '%s'"
-                    " AND source_type = 'nvt'"
-                    " AND source_name"
-                    "     = (SELECT source_name FROM report_host_details"
-                    "        WHERE report_host = %llu"
-                    "        AND source_type = 'nvt'"
-                    "        AND name = 'App'"
-                    "        AND value = '%s');",
-                    report_host,
-                    quoted_app,
-                    report_host,
-                    quoted_app);
+  init_iterator (iterator,
+                 "SELECT string_agg(DISTINCT value, ', ')"
+                 " FROM report_host_details"
+                 " WHERE report_host = %llu"
+                 " AND name = '%s'"
+                 " AND source_type = 'nvt'"
+                 " AND source_name"
+                 "     IN (SELECT source_name FROM report_host_details"
+                 "         WHERE report_host = %llu"
+                 "         AND source_type = 'nvt'"
+                 "         AND name = 'App'"
+                 "         AND value = '%s');",
+                 report_host,
+                 quoted_app,
+                 report_host,
+                 quoted_app);
 
   g_free (quoted_app);
+}
 
-  return ret;
+/**
+ * @brief Get a location from an app locations iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The location.
+ */
+const char *
+app_locations_iterator_location (iterator_t *iterator)
+{
+  return iterator_string (iterator, 0);
 }
 
 /**
@@ -19539,8 +19553,8 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
 {
   init_iterator (iterator,
                  "SELECT cves.name AS vulnerability,"
-                 "       CAST (cves.cvss AS NUMERIC) AS severity,"
-                 "       cves.description,"
+                 "       max(CAST (cves.cvss AS NUMERIC)) AS severity,"
+                 "       max(cves.description) AS description,"
                  "       cpes.name AS location,"
                  "       (SELECT host FROM report_hosts"
                  "        WHERE id = %llu) AS host"
@@ -19551,6 +19565,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
                  " AND report_host_details.name = 'App'"
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"
+                 " GROUP BY cves.id, vulnerability, location, host"
                  " ORDER BY cves.id ASC"
                  " LIMIT %s OFFSET 0;",
                  report_host,
@@ -22287,7 +22302,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables;
   int autofp, apply_overrides, dynamic_severity;
 
   if (report == -1)
@@ -22312,14 +22327,14 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
-  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                  " ON results.nvt = nvts.oid %s",
+                                  opts_tables);
   g_free (opts_tables);
 
-  where = results_extra_where (get->trash, report, host,
-                               autofp, apply_overrides, dynamic_severity,
-                               filter ? filter : get->filter);
-  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
-  g_free (where);
+  extra_where = results_extra_where (get->trash, report, host,
+                                     autofp, apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter);
 
   free (filter);
 
@@ -22361,7 +22376,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables;
   int apply_overrides, autofp, dynamic_severity;
 
   if (report == -1)
@@ -22383,14 +22398,14 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
-  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                  " ON results.nvt = nvts.oid %s",
+                                  opts_tables);
   g_free (opts_tables);
 
-  where = results_extra_where (get->trash, report, host,
-                               autofp, apply_overrides, dynamic_severity,
-                               filter ? filter : get->filter);
-  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
-  g_free (where);
+  extra_where = results_extra_where (get->trash, report, host,
+                                     autofp, apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter);
 
   ret = count ("result", get,
                 manage_cert_loaded () ? columns : columns_no_cert,
@@ -55616,7 +55631,9 @@ type_build_select (const char *type, const char *columns_str,
       gchar *original;
 
       original = opts_table;
-      opts_table = g_strdup_printf ("%s, nvts", original);
+      opts_table = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                    " ON results.nvt = nvts.oid %s",
+                                    original);
       g_free (original);
     }
 
@@ -55643,14 +55660,6 @@ type_build_select (const char *type, const char *columns_str,
     extra_where = type_extra_where (type, get->trash,
                                     filter ? filter : get->filter,
                                     get->extra_params);
-  if (strcasecmp (type, "RESULT") == 0)
-    {
-      gchar *original;
-
-      original = extra_where;
-      extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", original);
-      g_free (original);
-    }
 
   if (get->ignore_pagination)
     pagination_clauses = NULL;
