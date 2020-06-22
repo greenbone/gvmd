@@ -202,12 +202,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
           <xsl:if test="(/wizard/params/param[name='auto_start']/value = 1) and (/wizard/params/param[name='start_year']/value != '') and (/wizard/params/param[name='start_month']/value != '') and (/wizard/params/param[name='start_day']/value != '') and (/wizard/params/param[name='start_hour']/value != '') and (/wizard/params/param[name='start_minute']/value != '')">
             <xsl:variable name="start">
-              <xsl:value-of select="substring(string('100' + /wizard/params/param[name='start_year']/value), 2)"/>
-              <xsl:value-of select="substring(string('100' + /wizard/params/param[name='start_month']/value), 2)"/>
-              <xsl:value-of select="substring(string('100' + /wizard/params/param[name='start_day']/value), 2)"/>
+              <xsl:value-of select="format-number (/wizard/params/param[name='start_year']/value, '0000')"/>
+              <xsl:value-of select="format-number (/wizard/params/param[name='start_month']/value, '00')"/>
+              <xsl:value-of select="format-number (/wizard/params/param[name='start_day']/value, '00')"/>
               <xsl:text>T</xsl:text>
-              <xsl:value-of select="substring(string('100' + /wizard/params/param[name='start_hour']/value), 2)"/>
-              <xsl:value-of select="substring(string('100' + /wizard/params/param[name='start_minute']/value), 2)"/>
+              <xsl:value-of select="format-number (/wizard/params/param[name='start_hour']/value, '00')"/>
+              <xsl:value-of select="format-number (/wizard/params/param[name='start_minute']/value, '00')"/>
               <xsl:text>00Z</xsl:text>
             </xsl:variable>
             <create_schedule>
