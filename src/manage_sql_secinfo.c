@@ -4128,8 +4128,7 @@ static void
 sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
               const gchar *process_title)
 {
-  int pid, ret;
-  lockfile_t lockfile;
+  int pid;
 
   /* Fork a child to sync the db, so that the parent can return to the main
    * loop. */
@@ -4151,15 +4150,6 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
         /* Cleanup so that exit works. */
 
         cleanup_manage_process (FALSE);
-
-        /* Open the lock file. */
-
-        ret = feed_lockfile_lock (&lockfile);
-
-        if (ret == 1)
-          exit (EXIT_SUCCESS);
-        else if (ret)
-          exit (EXIT_FAILURE);
 
         /* Init. */
 
@@ -4185,10 +4175,6 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
     {
       check_alerts ();
     }
-
-  /* Close the lock file. */
-
-  feed_lockfile_unlock (&lockfile);
 
   exit (EXIT_SUCCESS);
 }
