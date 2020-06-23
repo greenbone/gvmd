@@ -114,6 +114,9 @@ sql_int64_0 (char *sql, ...);
 void
 sql_rename_column (const char *, const char *, const char *, const char *);
 
+int
+sql_cancel_internal ();
+
 /* Transactions. */
 
 void
@@ -185,8 +188,5 @@ sql_column_int64 (sql_stmt_t *, int);
 
 gchar **
 sql_column_array (sql_stmt_t *, int);
-
-int
-sql_cancel_internal ();
 
 #endif /* not _GVMD_SQL_H */
