@@ -7265,9 +7265,17 @@ void
 manage_sync (sigset_t *sigmask_current,
              int (*fork_update_nvt_cache) ())
 {
-  manage_sync_nvts (fork_update_nvt_cache);
-  manage_sync_scap (sigmask_current);
-  manage_sync_cert (sigmask_current);
+  lockfile_t lockfile;
+
+  if (feed_lockfile_lock (&lockfile) == 0)
+    {
+      manage_sync_nvts (fork_update_nvt_cache);
+      manage_sync_scap (sigmask_current);
+      manage_sync_cert (sigmask_current);
+
+      lockfile_unlock (&lockfile);
+    }
+
   manage_sync_configs ();
   manage_sync_port_lists ();
   manage_sync_report_formats ();

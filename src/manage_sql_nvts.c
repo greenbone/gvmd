@@ -1799,7 +1799,6 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 {
   osp_connection_t *connection;
   gchar *db_feed_version, *scanner_feed_version;
-  static lockfile_t lockfile;
 
   /* Re-open DB after fork. */
 
@@ -1832,23 +1831,11 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
     {
       int ret;
 
-      switch (feed_lockfile_lock (&lockfile))
-        {
-          case 1:
-            g_warning ("%s: a feed sync is already running", __func__);
-            return -1;
-          case -1:
-            g_warning ("%s: error getting sync lock", __func__);
-            return -1;
-        }
-
       g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
 
       ret = update_nvt_cache_osp (update_socket, db_feed_version,
                                   scanner_feed_version);
-
-      feed_lockfile_unlock (&lockfile);
 
       return ret;
     }
