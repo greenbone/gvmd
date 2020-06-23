@@ -163,13 +163,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
             <xsl:if test="(/wizard/params/param[name='reschedule']/value = 1) and (/wizard/params/param[name='start_year']/value != '') and (/wizard/params/param[name='start_month']/value != '') and (/wizard/params/param[name='start_day']/value != '') and (/wizard/params/param[name='start_hour']/value != '') and (/wizard/params/param[name='start_minute']/value != '')">
               <xsl:variable name="start">
+                <xsl:text>TZID=/freeassociation.sourceforge.net/</xsl:text>
+                <xsl:value-of select="/wizard/params/param[name='start_timezone']/value"/>
+                <xsl:text>:</xsl:text>
                 <xsl:value-of select="format-number (/wizard/params/param[name='start_year']/value, '0000')"/>
                 <xsl:value-of select="format-number (/wizard/params/param[name='start_month']/value, '00')"/>
                 <xsl:value-of select="format-number (/wizard/params/param[name='start_day']/value, '00')"/>
                 <xsl:text>T</xsl:text>
                 <xsl:value-of select="format-number (/wizard/params/param[name='start_hour']/value, '00')"/>
                 <xsl:value-of select="format-number (/wizard/params/param[name='start_minute']/value, '00')"/>
-                <xsl:text>00Z</xsl:text>
+                <xsl:text>00</xsl:text>
               </xsl:variable>
               <create_schedule>
                 <name>
@@ -186,7 +189,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   <xsl:call-template name="newline"/>
                   <xsl:text>BEGIN:VEVENT</xsl:text>
                   <xsl:call-template name="newline"/>
-                  <xsl:text>DTSTART:</xsl:text>
+                  <xsl:text>DTSTART;</xsl:text>
                   <xsl:value-of select="$start"/>
                   <xsl:call-template name="newline"/>
                   <xsl:text>END:VEVENT</xsl:text>
