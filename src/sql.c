@@ -49,6 +49,24 @@ sql_prepare_internal (int, int, const char*, va_list, sql_stmt_t **);
 int
 sql_exec_internal (int, sql_stmt_t *);
 
+void
+sql_finalize (sql_stmt_t *);
+
+double
+sql_column_double (sql_stmt_t *, int);
+
+const char *
+sql_column_text (sql_stmt_t *, int);
+
+int
+sql_column_int (sql_stmt_t *, int);
+
+long long int
+sql_column_int64 (sql_stmt_t *, int);
+
+gchar **
+sql_column_array (sql_stmt_t *, int);
+
 
 /* Variables. */
 

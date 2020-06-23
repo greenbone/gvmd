@@ -169,24 +169,4 @@ iterator_column_name (iterator_t *, int);
 int
 iterator_column_count (iterator_t *);
 
-/* Prepared statements. */
-
-void
-sql_finalize (sql_stmt_t *);
-
-double
-sql_column_double (sql_stmt_t *, int);
-
-const char *
-sql_column_text (sql_stmt_t *, int);
-
-int
-sql_column_int (sql_stmt_t *, int);
-
-long long int
-sql_column_int64 (sql_stmt_t *, int);
-
-gchar **
-sql_column_array (sql_stmt_t *, int);
-
 #endif /* not _GVMD_SQL_H */
