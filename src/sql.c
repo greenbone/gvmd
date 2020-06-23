@@ -538,7 +538,6 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
   va_list args;
 
   iterator->done = FALSE;
-  iterator->prepared = 0;
   iterator->crypt_ctx = NULL;
 
   va_start (args, sql);
@@ -645,8 +644,7 @@ cleanup_iterator (iterator_t* iterator)
       return;
     }
 
-  if (iterator->prepared == 0)
-    sql_finalize (iterator->stmt);
+  sql_finalize (iterator->stmt);
   if (iterator->crypt_ctx)
     {
       lsc_crypt_release (iterator->crypt_ctx);
