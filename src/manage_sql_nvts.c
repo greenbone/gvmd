@@ -1819,7 +1819,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
   if (osp_get_vts_version (connection, &scanner_feed_version))
     {
-      g_warning ("%s: failed to get scanner_version", __func__);
+      g_debug ("%s: failed to get scanner_version", __func__);
       return -1;
     }
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
