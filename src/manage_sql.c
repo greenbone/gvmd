@@ -5520,7 +5520,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 int
 aggregate_iterator_count (iterator_t* iterator)
 {
-  return sql_column_int (iterator->stmt, 0);
+  return iterator_int (iterator, 0);
 }
 
 /**
@@ -5534,9 +5534,9 @@ aggregate_iterator_count (iterator_t* iterator)
 double
 aggregate_iterator_min (iterator_t* iterator, int data_column_index)
 {
-  return sql_column_double (iterator->stmt,
-                            AGGREGATE_ITERATOR_OFFSET
-                            + data_column_index * AGGREGATE_ITERATOR_N_STATS);
+  return iterator_double (iterator,
+                          AGGREGATE_ITERATOR_OFFSET
+                          + data_column_index * AGGREGATE_ITERATOR_N_STATS);
 }
 
 /**
@@ -5550,9 +5550,9 @@ aggregate_iterator_min (iterator_t* iterator, int data_column_index)
 double
 aggregate_iterator_max (iterator_t* iterator, int data_column_index)
 {
-  return sql_column_double (iterator->stmt,
-                            AGGREGATE_ITERATOR_OFFSET + 1
-                            + data_column_index * AGGREGATE_ITERATOR_N_STATS);
+  return iterator_double (iterator,
+                          AGGREGATE_ITERATOR_OFFSET + 1
+                          + data_column_index * AGGREGATE_ITERATOR_N_STATS);
 }
 
 /**
@@ -5566,9 +5566,9 @@ aggregate_iterator_max (iterator_t* iterator, int data_column_index)
 double
 aggregate_iterator_mean (iterator_t* iterator, int data_column_index)
 {
-  return sql_column_double (iterator->stmt,
-                            AGGREGATE_ITERATOR_OFFSET + 2
-                            + data_column_index * AGGREGATE_ITERATOR_N_STATS);
+  return iterator_double (iterator,
+                          AGGREGATE_ITERATOR_OFFSET + 2
+                          + data_column_index * AGGREGATE_ITERATOR_N_STATS);
 }
 
 /**
@@ -5582,9 +5582,9 @@ aggregate_iterator_mean (iterator_t* iterator, int data_column_index)
 double
 aggregate_iterator_sum (iterator_t* iterator, int data_column_index)
 {
-  return sql_column_double (iterator->stmt,
-                            AGGREGATE_ITERATOR_OFFSET + 3
-                            + data_column_index * AGGREGATE_ITERATOR_N_STATS);
+  return iterator_double (iterator,
+                          AGGREGATE_ITERATOR_OFFSET + 3
+                          + data_column_index * AGGREGATE_ITERATOR_N_STATS);
 }
 
 /**
@@ -5603,7 +5603,7 @@ aggregate_iterator_text (iterator_t* iterator, int text_column_index,
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sql_column_text (iterator->stmt,
+  ret = (const char*) iterator_string (iterator,
                                        AGGREGATE_ITERATOR_OFFSET
                                         + (data_columns
                                            * AGGREGATE_ITERATOR_N_STATS)
@@ -5624,7 +5624,7 @@ aggregate_iterator_value (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sql_column_text (iterator->stmt, 1);
+  ret = (const char*) iterator_string (iterator, 1);
   return ret;
 }
 
@@ -5641,7 +5641,7 @@ aggregate_iterator_subgroup_value (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sql_column_text (iterator->stmt, 2);
+  ret = (const char*) iterator_string (iterator, 2);
   return ret;
 }
 
