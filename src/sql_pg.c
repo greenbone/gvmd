@@ -131,23 +131,6 @@ sql_select_limit (int max)
 }
 
 /**
- * @brief Add param to statement.
- *
- * @param[in]  stmt          Statement.
- * @param[in]  param_value   Value.
- * @param[in]  param_size    Size.
- * @param[in]  param_format  0 text, 1 binary.
- */
-static void
-sql_stmt_param_add (sql_stmt_t *stmt, const char *param_value,
-                    int param_size, int param_format)
-{
-  array_add (stmt->param_values, g_strndup (param_value, param_size));
-  g_array_append_val (stmt->param_lengths, param_size);
-  g_array_append_val (stmt->param_formats, param_format);
-}
-
-/**
  * @brief Init statement, preserving SQL.
  *
  * @param[in]  stmt  Statement.
@@ -646,70 +629,6 @@ iterator_rewind (iterator_t* iterator)
 /* Prepared statements. */
 
 /**
- * @brief Bind a param to a statement.
- *
- * @param[in]  stmt          Statement.
- * @param[in]  position      Position in statement.
- * @param[in]  param_value   Param value.
- * @param[in]  param_size    Param size.
- * @param[in]  param_format  0 text, 1 binary.
- */
-static void
-bind_param (sql_stmt_t *stmt, int position, const void *param_value,
-            int param_size, int param_format)
-{
-  if (position > stmt->param_values->len + 1)
-    {
-      g_critical ("%s: binding out of order: parameter %i after %i",
-                  __func__,
-                  position,
-                  stmt->param_values->len);
-      abort ();
-    }
-  sql_stmt_param_add (stmt, param_value, param_size, param_format);
-}
-
-/**
- * @brief Bind a blob to a statement.
- *
- * @param[in]  stmt        Statement.
- * @param[in]  position    Position in statement.
- * @param[in]  value       Blob.
- * @param[in]  value_size  Blob size.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
-               int value_size)
-{
-  bind_param (stmt, position, value, value_size, 1);
-  return 0;
-}
-
-/**
- * @brief Bind a text value to a statement.
- *
- * @param[in]  stmt        Statement.
- * @param[in]  position    Position in statement.
- * @param[in]  value       Value.
- * @param[in]  value_size  Value size, or -1 to use strlen of value.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
-               gsize value_size)
-{
-  bind_param (stmt,
-              position,
-              value,
-              value_size == -1 ? strlen (value) : value_size,
-              0);
-  return 0;
-}
-
-/**
  * @brief Free a prepared statement.
  *
  * @param[in]  stmt  Statement.
@@ -723,29 +642,6 @@ sql_finalize (sql_stmt_t *stmt)
   g_array_free (stmt->param_lengths, TRUE);
   g_array_free (stmt->param_formats, TRUE);
   g_free (stmt);
-}
-
-/**
- * @brief Reset a prepared statement.
- *
- * @param[in]  stmt  Statement.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_reset (sql_stmt_t *stmt)
-{
-  gchar *sql;
-
-  PQclear (stmt->result);
-  array_free (stmt->param_values);
-  g_array_free (stmt->param_lengths, TRUE);
-  g_array_free (stmt->param_formats, TRUE);
-
-  sql = stmt->sql;
-  sql_stmt_init (stmt);
-  stmt->sql = sql;
-  return 0;
 }
 
 /**
