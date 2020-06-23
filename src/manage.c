@@ -46,6 +46,7 @@
  */
 #define _GNU_SOURCE
 
+#include "gmp_base.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_configs.h"
@@ -163,6 +164,11 @@
  * @brief Default for Scanner max_hosts preference.
  */
 #define MAX_HOSTS_DEFAULT "20"
+
+/**
+ * @brief Path to the feed lock file
+ */
+static gchar *feed_lock_path = NULL;
 
 /**
  * @brief Path to the relay mapper executable, NULL to disable relays.
@@ -1571,6 +1577,8 @@ run_status_name (task_status_t status)
 
       case TASK_STATUS_RUNNING:          return "Running";
 
+      case TASK_STATUS_QUEUED:           return "Queued";
+
       case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
       case TASK_STATUS_STOP_WAITING:
@@ -1605,6 +1613,8 @@ run_status_name_internal (task_status_t status)
       case TASK_STATUS_REQUESTED:        return "Requested";
 
       case TASK_STATUS_RUNNING:          return "Running";
+
+      case TASK_STATUS_QUEUED:           return "Queued";
 
       case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
@@ -2680,19 +2690,19 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         if (config == 0)
           goto fail_target;
 
-        if (gvm_server_sendf (&connection->session,
-                              "<create_config>"
-                              "<get_configs_response"
-                              " status=\"200\""
-                              " status_text=\"OK\">"
-                              "<config id=\"XXX\">"
-                              "<type>0</type>"
-                              "<name>%s</name>"
-                              "<comment>"
-                              "Slave config created by Master"
-                              "</comment>"
-                              "<preferences>",
-                              name))
+        if (gvm_server_sendf_xml (&connection->session,
+                                  "<create_config>"
+                                  "<get_configs_response"
+                                  " status=\"200\""
+                                  " status_text=\"OK\">"
+                                  "<config id=\"XXX\">"
+                                  "<type>0</type>"
+                                  "<name>%s</name>"
+                                  "<comment>"
+                                  "Slave config created by Master"
+                                  "</comment>"
+                                  "<preferences>",
+                                  name))
           goto fail_target;
 
         /* Send NVT timeout preferences where a timeout has been
@@ -2704,20 +2714,22 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
             timeout = config_timeout_iterator_value (&prefs);
 
-            if (timeout && strlen (timeout)
-                && gvm_server_sendf (&connection->session,
-                                     "<preference>"
-                                     "<nvt oid=\"%s\">"
-                                     "<name>%s</name>"
-                                     "</nvt>"
-                                     "<name>Timeout</name>"
-                                     "<id>0</id>"
-                                     "<type>entry</type>"
-                                     "<value>%s</value>"
-                                     "</preference>",
-                                     config_timeout_iterator_oid (&prefs),
-                                     config_timeout_iterator_nvt_name (&prefs),
-                                     timeout))
+            if (timeout
+                && strlen (timeout)
+                && gvm_server_sendf_xml
+                     (&connection->session,
+                      "<preference>"
+                      "<nvt oid=\"%s\">"
+                      "<name>%s</name>"
+                      "</nvt>"
+                      "<name>Timeout</name>"
+                      "<id>0</id>"
+                      "<type>entry</type>"
+                      "<value>%s</value>"
+                      "</preference>",
+                      config_timeout_iterator_oid (&prefs),
+                      config_timeout_iterator_nvt_name (&prefs),
+                      timeout))
               {
                 cleanup_iterator (&prefs);
                 goto fail_target;
@@ -2754,7 +2766,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         while (next (&selectors))
           {
             int type = nvt_selector_iterator_type (&selectors);
-            if (gvm_server_sendf
+            if (gvm_server_sendf_xml
                  (&connection->session,
                   "<nvt_selector>"
                   "<name>%s</name>"
@@ -2917,6 +2929,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
           case TASK_STATUS_NEW:
           case TASK_STATUS_REQUESTED:
           case TASK_STATUS_RUNNING:
+          case TASK_STATUS_QUEUED:
           case TASK_STATUS_STOP_WAITING:
           case TASK_STATUS_INTERRUPTED:
             break;
@@ -3204,15 +3217,15 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
  *         task name.
  */
 static int
-handle_slave_task (task_t task, target_t target,
-                   credential_t target_ssh_credential,
-                   credential_t target_smb_credential,
-                   credential_t target_esxi_credential,
-                   credential_t target_snmp_credential,
-                   report_t last_stopped_report,
-                   gvm_connection_t *connection,
-                   const gchar *slave_id,
-                   const gchar *slave_name)
+handle_gmp_slave_task (task_t task, target_t target,
+                       credential_t target_ssh_credential,
+                       credential_t target_smb_credential,
+                       credential_t target_esxi_credential,
+                       credential_t target_snmp_credential,
+                       report_t last_stopped_report,
+                       gvm_connection_t *connection,
+                       const gchar *slave_id,
+                       const gchar *slave_name)
 {
   char *name, *uuid;
   int ret;
@@ -3540,7 +3553,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   char *host, *ca_pub, *key_pub, *key_priv;
   int rc, port;
   scanner_t scanner;
-  gboolean started;
+  gboolean started, queued_status_updated;
 
   scanner = task_scanner (task);
   host = scanner_host (scanner);
@@ -3549,11 +3562,12 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
   started = FALSE;
+  queued_status_updated = FALSE;
 
   while (1)
     {
       char *report_xml = NULL;
-      int run_status;
+      int run_status, progress;
       osp_scan_status_t osp_scan_status;
 
       run_status = task_run_status (task);
@@ -3563,8 +3577,9 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           rc = -2;
           break;
         }
-      int progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 0, 0, &report_xml);
+
+      progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
+                                      key_priv, 0, 0, &report_xml);
       if (progress < 0 || progress > 100)
         {
           result_t result = make_osp_result
@@ -3602,7 +3617,18 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
 
               osp_scan_status = get_osp_scan_status (scan_id, host, port,
                                                      ca_pub, key_pub, key_priv);
-              if (progress >= 0 && progress < 100
+
+              if (osp_scan_status == OSP_SCAN_STATUS_QUEUED)
+                {
+                  if (queued_status_updated == FALSE)
+                    {
+                      set_task_run_status (task, TASK_STATUS_QUEUED);
+                      set_report_scan_run_status (global_current_report,
+                                                  TASK_STATUS_QUEUED);
+                      queued_status_updated = TRUE;
+                    }
+                }
+              else if (progress >= 0 && progress < 100
                   && osp_scan_status == OSP_SCAN_STATUS_STOPPED)
                 {
                   result_t result = make_osp_result
@@ -4000,9 +4026,10 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
         }
     }
   else if (status == OSP_SCAN_STATUS_RUNNING
+           || status == OSP_SCAN_STATUS_QUEUED
            || status == OSP_SCAN_STATUS_FINISHED)
     {
-      g_debug ("%s: Scan %s running or finished", __func__, scan_id);
+      g_debug ("%s: Scan %s queued, running or finished", __func__, scan_id);
       /* It would be possible to simply continue getting the results
        * from the scanner, but gvmd may have crashed while receiving
        * or storing the results, so some may be missing. */
@@ -4338,7 +4365,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   start_scan_opts.vt_groups = NULL;
   start_scan_opts.vts = vts;
   start_scan_opts.scanner_params = scanner_options;
-  start_scan_opts.parallel = 1;
   start_scan_opts.scan_id = scan_id;
 
   ret = osp_start_scan_ext (connection,
@@ -4589,15 +4615,19 @@ run_osp_task (task_t task, int from, char **report_id)
  * @brief Perform a CVE "scan" on a host.
  *
  * @param[in]  task      Task.
+ * @param[in]  report    The report to add the host, results and details to.
  * @param[in]  gvm_host  Host.
  *
  * @return 0 success, 1 failed to get nthlast report for a host.
  */
 static int
-cve_scan_host (task_t task, gvm_host_t *gvm_host)
+cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
 {
   report_host_t report_host;
   gchar *ip, *host;
+
+  assert (task);
+  assert (report);
 
   host = gvm_host_value_str (gvm_host);
 
@@ -4607,7 +4637,7 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
 
   g_debug ("%s: ip: %s", __func__, ip);
 
-  /* Get the last report that applies to the host. */
+  /* Get the last report host that applies to the host IP address. */
 
   if (host_nthlast_report_host (ip, &report_host, 1))
     {
@@ -4639,11 +4669,13 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
             {
               const char *app, *cve;
               double severity;
-              gchar *desc, *location;
+              gchar *desc;
+              iterator_t locations_iter;
+              GString *locations;
               result_t result;
 
-              if (global_current_report && (prognosis_report_host == 0))
-                prognosis_report_host = manage_report_host_add (global_current_report,
+              if (prognosis_report_host == 0)
+                prognosis_report_host = manage_report_host_add (report,
                                                                 ip,
                                                                 start_time,
                                                                 0);
@@ -4652,7 +4684,34 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
 
               app = prognosis_iterator_cpe (&prognosis);
               cve = prognosis_iterator_cve (&prognosis);
-              location = app_location (report_host, app);
+              locations = g_string_new("");
+
+              insert_report_host_detail (global_current_report, ip, "cve", cve,
+                                         "CVE Scanner", "App", app);
+
+              init_app_locations_iterator (&locations_iter, report_host, app);
+
+              while (next (&locations_iter))
+                {
+                  const char *location;
+                  location = app_locations_iterator_location (&locations_iter);
+
+                  if (locations->len)
+                    g_string_append (locations, ", ");
+                  g_string_append (locations, location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", app, location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_at",
+                                             location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_by",
+                                             /* Detected by itself. */
+                                             cve);
+                }
 
               desc = g_strdup_printf ("The host carries the product: %s\n"
                                       "It is vulnerable according to: %s.\n"
@@ -4661,11 +4720,11 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
                                       "%s",
                                       app,
                                       cve,
-                                      location
+                                      locations->len
                                        ? "The product was found at: "
                                        : "",
-                                      location ? location : "",
-                                      location ? ".\n" : "",
+                                      locations->len ? locations->str : "",
+                                      locations->len ? ".\n" : "",
                                       prognosis_iterator_description
                                        (&prognosis));
 
@@ -4674,28 +4733,10 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
 
               result = make_cve_result (task, ip, cve, severity, desc);
               g_free (desc);
-              if (global_current_report)
-                {
-                  report_add_result (global_current_report, result);
 
-                  insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                             "CVE Scanner", "App", app);
+              report_add_result (report, result);
 
-                  if (location)
-                    {
-                      insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                                 "CVE Scanner", app, location);
-
-                      insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                                 "CVE Scanner", "detected_at",
-                                                 location);
-                      insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                                 "CVE Scanner", "detected_by",
-                                                 /* Detected by itself. */
-                                                 cve);
-                    }
-                }
-              g_free (location);
+              g_string_free (locations, TRUE);
             }
           cleanup_iterator (&prognosis);
 
@@ -4704,7 +4745,7 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
               /* Complete the report_host. */
 
               report_host_set_end_time (prognosis_report_host, time (NULL));
-              insert_report_host_detail (global_current_report, ip, "cve", "",
+              insert_report_host_detail (report, ip, "cve", "",
                                          "CVE Scanner", "CVE Scan", "1");
             }
         }
@@ -4801,7 +4842,7 @@ fork_cve_scan_handler (task_t task, target_t target)
   gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
-    if (cve_scan_host (task, gvm_host))
+    if (cve_scan_host (task, global_current_report, gvm_host))
       {
         set_task_interrupted (task,
                               "Failed to get nthlast report."
@@ -5135,10 +5176,10 @@ run_gmp_slave_task (task_t task, int from, char **report_id,
   free (uuid);
   proctitle_set (title);
 
-  switch (handle_slave_task (task, target, ssh_credential, smb_credential,
-                             esxi_credential, snmp_credential,
-                             last_stopped_report, connection, slave_id,
-                             slave_name))
+  switch (handle_gmp_slave_task (task, target, ssh_credential, smb_credential,
+                                 esxi_credential, snmp_credential,
+                                 last_stopped_report, connection, slave_id,
+                                 slave_name))
     {
       case 0:
         break;
@@ -5730,7 +5771,8 @@ stop_task_internal (task_t task)
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
-      || run_status == TASK_STATUS_RUNNING)
+      || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_QUEUED)
     {
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
@@ -5908,6 +5950,7 @@ move_task (const char *task_id, const char *slave_id)
         return 5;
         break;
       case TASK_STATUS_RUNNING:
+      case TASK_STATUS_QUEUED:
         if (task_scanner_type == SCANNER_TYPE_CVE)
           return 6;
         // Check permissions to stop and resume task
@@ -7222,9 +7265,17 @@ void
 manage_sync (sigset_t *sigmask_current,
              int (*fork_update_nvt_cache) ())
 {
-  manage_sync_nvts (fork_update_nvt_cache);
-  manage_sync_scap (sigmask_current);
-  manage_sync_cert (sigmask_current);
+  lockfile_t lockfile;
+
+  if (feed_lockfile_lock (&lockfile) == 0)
+    {
+      manage_sync_nvts (fork_update_nvt_cache);
+      manage_sync_scap (sigmask_current);
+      manage_sync_cert (sigmask_current);
+
+      lockfile_unlock (&lockfile);
+    }
+
   manage_sync_configs ();
   manage_sync_port_lists ();
   manage_sync_report_formats ();
@@ -7786,9 +7837,9 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
  * @return A dynamically allocated string containing the XML description.
  */
 gchar *
-get_nvti_xml (iterator_t *nvts, int details, int pref_count,
-              int preferences, const char *timeout, config_t config,
-              int close_tag)
+get_nvt_xml (iterator_t *nvts, int details, int pref_count,
+             int preferences, const char *timeout, config_t config,
+             int close_tag)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -7912,7 +7963,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                            "<warning>database not available</warning>");
         }
 
-      nvti_refs_append_xml (refs_str, oid, NULL);
+      xml_append_nvt_refs (refs_str, oid, NULL);
 
       tags_str = g_string_new ("");
       tag_count = resource_tag_count ("nvt",
@@ -8009,21 +8060,21 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
           nvt_iterator_solution_type (nvts) ||
           nvt_iterator_solution_method (nvts))
         {
-          g_string_append_printf (buffer, "<solution");
+          buffer_xml_append_printf (buffer, "<solution");
 
           if (nvt_iterator_solution_type (nvts))
-            g_string_append_printf (buffer, " type='%s'",
+            buffer_xml_append_printf (buffer, " type='%s'",
               nvt_iterator_solution_type (nvts));
 
           if (nvt_iterator_solution_method (nvts))
-            g_string_append_printf (buffer, " method='%s'",
+            buffer_xml_append_printf (buffer, " method='%s'",
               nvt_iterator_solution_method (nvts));
 
           if (nvt_iterator_solution (nvts))
-            g_string_append_printf (buffer, ">%s</solution>",
+            buffer_xml_append_printf (buffer, ">%s</solution>",
               nvt_iterator_solution (nvts));
           else
-            g_string_append_printf (buffer, "/>");
+            buffer_xml_append_printf (buffer, "/>");
         }
 
 
@@ -8177,13 +8228,13 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
           init_nvt_iterator (&nvts, nvt, 0, NULL, NULL, 0, NULL);
 
           if (next (&nvts))
-            *result = get_nvti_xml (&nvts,
-                                    1,    /* Include details. */
-                                    0,    /* Preference count. */
-                                    1,    /* Include preferences. */
-                                    NULL, /* Timeout. */
-                                    0,    /* Config. */
-                                    1);   /* Close tag. */
+            *result = get_nvt_xml (&nvts,
+                                   1,    /* Include details. */
+                                   0,    /* Preference count. */
+                                   1,    /* Include preferences. */
+                                   NULL, /* Timeout. */
+                                   0,    /* Config. */
+                                   1);   /* Close tag. */
 
           cleanup_iterator (&nvts);
         }
@@ -8272,6 +8323,119 @@ sort_data_free (sort_data_t *sort_data)
 
 
 /* Feeds. */
+
+/**
+ * @brief Get the feed lock file path.
+ *
+ * @return The current path to the lock file.
+ */
+const gchar *
+get_feed_lock_path ()
+{
+  return feed_lock_path;
+}
+
+/**
+ * @brief Set the feed lock file path.
+ *
+ * @param new_path The new path to the lock file.
+ */
+void
+set_feed_lock_path (const char *new_path)
+{
+  g_free (feed_lock_path);
+  if (new_path && strcmp (new_path, ""))
+    feed_lock_path = g_strdup (new_path);
+  else
+    feed_lock_path = g_strdup (GVM_FEED_LOCK_PATH);
+}
+
+/**
+ * @brief Write start time to sync lock file.
+ *
+ * @param[in]  lockfile_fd  File descriptor of the lock file.
+ */
+void
+write_sync_start (int lockfile_fd)
+{
+  time_t now;
+  char *now_string;
+
+  now = time (NULL);
+  now_string = ctime (&now);
+  while (*now_string)
+    {
+      ssize_t count;
+      count = write (lockfile_fd,
+                     now_string,
+                     strlen (now_string));
+      if (count < 0)
+        {
+          if (errno == EAGAIN || errno == EINTR)
+            /* Interrupted, try write again. */
+            continue;
+          g_warning ("%s: failed to write to lockfile: %s",
+                     __func__,
+                     strerror (errno));
+          break;
+        }
+      now_string += count;
+    }
+}
+
+/**
+ * @brief Acquires the feed lock and writes the current time to the lockfile.
+ *
+ * @param[out] lockfile   Lockfile data struct.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+feed_lockfile_lock (lockfile_t *lockfile)
+{
+  int ret;
+
+  /* Try to lock the file */
+  ret = lockfile_lock_path_nb (lockfile, get_feed_lock_path ());
+  if (ret)
+    {
+      return ret;
+    }
+
+  /* Write the file contents (timestamp) */
+  write_sync_start (lockfile->fd);
+
+  return 0;
+}
+
+/**
+ * @brief Releases the feed lock and clears the contents.
+ *
+ * @param[in] lockfile   Lockfile data struct.
+ *
+ * @return 0 success, -1 error
+ */
+int
+feed_lockfile_unlock (lockfile_t *lockfile)
+{
+  int ret;
+
+  /* Clear timestamp from lock file. */
+  if (ftruncate (lockfile->fd, 0))
+    g_warning ("%s: failed to ftruncate lockfile: %s",
+               __func__,
+               strerror (errno));
+
+  /* Unlock the lockfile */
+  ret = lockfile_unlock (lockfile);
+  if (ret)
+    {
+      g_critical ("%s: Error releasing checking lock", __func__);
+      return -1;
+    }
+
+  return 0;
+}
 
 /**
  * @brief Request a feed synchronization script selftest.
@@ -8585,70 +8749,27 @@ gvm_get_sync_script_feed_version (const gchar * sync_script,
 int
 gvm_migrate_secinfo (int feed_type)
 {
-  int lockfile, ret;
-  gchar *lockfile_name;
-  const gchar *lockfile_basename;
+  lockfile_t lockfile;
+  int ret;
 
-  if (feed_type == SCAP_FEED)
-    lockfile_basename = "gvm-sync-scap";
-  else if (feed_type == CERT_FEED)
-    lockfile_basename = "gvm-sync-cert";
-  else
+  if (feed_type != SCAP_FEED || feed_type != CERT_FEED)
     {
       g_warning ("%s: unsupported feed_type", __func__);
       return -1;
     }
 
-  /* Open the lock file. */
-
-  lockfile_name = g_build_filename (g_get_tmp_dir (), lockfile_basename, NULL);
-
-  lockfile = open (lockfile_name, O_RDWR | O_CREAT | O_APPEND,
-                   /* "-rw-r--r--" */
-                   S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
-  if (lockfile == -1)
-    {
-      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
-                 strerror (errno));
-      g_free (lockfile_name);
-      return -1;
-    }
-
-  if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
-    {
-      if (errno == EWOULDBLOCK)
-        {
-          if (close (lockfile))
-            g_warning ("%s: failed to close lockfile: %s",
-                       __func__,
-                       strerror (errno));
-          g_free (lockfile_name);
-          return 1;
-        }
-      g_debug ("%s: flock: %s", __func__, strerror (errno));
-      if (close (lockfile))
-        g_warning ("%s: failed to close lockfile: %s",
-                   __func__,
-                   strerror (errno));
-      g_free (lockfile_name);
-      return -1;
-    }
+  ret = feed_lockfile_lock (&lockfile);
+  if (ret == 1)
+    return 1;
+  else if (ret)
+    return -1;
 
   if (feed_type == SCAP_FEED)
     ret = check_scap_db_version ();
   else
     ret = check_cert_db_version ();
 
-  /* Close the lock file. */
-
-  if (close (lockfile))
-    {
-      g_free (lockfile_name);
-      g_warning ("Failed to close lock file: %s", strerror (errno));
-      return -1;
-    }
-
-  g_free (lockfile_name);
+  feed_lockfile_unlock (&lockfile);
 
   return ret;
 }

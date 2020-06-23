@@ -793,9 +793,12 @@ init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM nvts"
-                 " WHERE cve %s '%%%s%%'"
+                 " WHERE cve %s '%%%s, %%'"
+                 "    OR cve %s '%%%s'"
                  " ORDER BY %s %s;",
                  nvt_iterator_columns (),
+                 sql_ilike_op (),
+                 cve ? cve : "",
                  sql_ilike_op (),
                  cve ? cve : "",
                  sort_field ? sort_field : "name",
@@ -981,6 +984,26 @@ nvt_default_timeout (const char* oid)
   return sql_string ("SELECT value FROM nvt_preferences"
                      " WHERE name = '%s:0:entry:Timeout'",
                      oid);
+}
+
+/**
+ * @brief Get the family of an NVT.
+ *
+ * @param[in]  oid  The OID of the NVT.
+ *
+ * @return Newly allocated string of the family, or NULL.
+ */
+char *
+nvt_family (const char *oid)
+{
+  gchar *quoted_oid;
+  char *ret;
+
+  quoted_oid = sql_quote (oid);
+  ret = sql_string ("SELECT family FROM nvts WHERE oid = '%s' LIMIT 1;",
+                    quoted_oid);
+  g_free (quoted_oid);
+  return ret;
 }
 
 /**
@@ -1265,47 +1288,43 @@ nvti_from_vt (entity_t vt)
     }
 
   refs = entity_child (vt, "refs");
-  if (refs == NULL)
+  if (refs)
     {
-      g_warning ("%s: VT missing REFS", __func__);
-      nvti_free (nvti);
-      return NULL;
-    }
-
-  children = refs->entities;
-  while ((ref = first_entity (children)))
-    {
-      const gchar *ref_type;
-
-      ref_type = entity_attribute (ref, "type");
-      if (ref_type == NULL)
+      children = refs->entities;
+      while ((ref = first_entity (children)))
         {
-          GString *debug = g_string_new ("");
-          g_warning ("%s: REF missing type attribute", __func__);
-          print_entity_to_string (ref, debug);
-          g_warning ("%s: ref: %s", __func__, debug->str);
-          g_string_free (debug, TRUE);
-        }
-      else
-        {
-          const gchar *ref_id;
+          const gchar *ref_type;
 
-          ref_id = entity_attribute (ref, "id");
-          if (ref_id == NULL)
+          ref_type = entity_attribute (ref, "type");
+          if (ref_type == NULL)
             {
               GString *debug = g_string_new ("");
-              g_warning ("%s: REF missing id attribute", __func__);
+              g_warning ("%s: REF missing type attribute", __func__);
               print_entity_to_string (ref, debug);
               g_warning ("%s: ref: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
           else
             {
-              nvti_add_vtref (nvti, vtref_new (ref_type, ref_id, NULL));
-            }
-        }
+              const gchar *ref_id;
 
-      children = next_entities (children);
+              ref_id = entity_attribute (ref, "id");
+              if (ref_id == NULL)
+                {
+                  GString *debug = g_string_new ("");
+                  g_warning ("%s: REF missing id attribute", __func__);
+                  print_entity_to_string (ref, debug);
+                  g_warning ("%s: ref: %s", __func__, debug->str);
+                  g_string_free (debug, TRUE);
+                }
+              else
+                {
+                  nvti_add_vtref (nvti, vtref_new (ref_type, ref_id, NULL));
+                }
+            }
+
+          children = next_entities (children);
+        }
     }
 
   severities = entity_child (vt, "severities");
@@ -1422,6 +1441,9 @@ update_nvts_from_vts (entity_t *get_vts_response,
   while ((vt = first_entity (children)))
     {
       nvti_t *nvti = nvti_from_vt (vt);
+
+      if (nvti == NULL)
+        continue;
 
       if (nvti_creation_time (nvti) > feed_version_epoch)
         count_new_vts += 1;
@@ -1777,7 +1799,6 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 {
   osp_connection_t *connection;
   gchar *db_feed_version, *scanner_feed_version;
-  static lockfile_t lockfile;
 
   /* Re-open DB after fork. */
 
@@ -1808,21 +1829,15 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
   if ((db_feed_version == NULL)
       || strcmp (scanner_feed_version, db_feed_version))
     {
-      switch (lockfile_lock_nb (&lockfile, "gvm-syncing-nvts"))
-        {
-          case 1:
-            g_warning ("%s: an NVT sync is already running", __func__);
-            return -1;
-          case -1:
-            g_warning ("%s: error getting sync lock", __func__);
-            return -1;
-        }
+      int ret;
 
       g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
 
-      return update_nvt_cache_osp (update_socket, db_feed_version,
-                                   scanner_feed_version);
+      ret = update_nvt_cache_osp (update_socket, db_feed_version,
+                                  scanner_feed_version);
+
+      return ret;
     }
 
   return 0;
@@ -1924,10 +1939,10 @@ manage_rebuild (GSList *log_config, const gchar *database)
 
   g_info ("   Rebuilding NVTs.");
 
-  switch (lockfile_lock_nb (&lockfile, "gvm-syncing-nvts"))
+  switch (feed_lockfile_lock (&lockfile))
     {
       case 1:
-        printf ("An NVT sync is already running.\n");
+        printf ("A feed sync is already running.\n");
         return -5;
       case -1:
         printf ("Error getting sync lock.\n");
@@ -1936,7 +1951,10 @@ manage_rebuild (GSList *log_config, const gchar *database)
 
   ret = manage_option_setup (log_config, database);
   if (ret)
-    return ret;
+    {
+      feed_lockfile_unlock (&lockfile);
+      return ret;
+    }
 
   sql_begin_immediate ();
   ret = update_or_rebuild_nvts (0);
@@ -1945,6 +1963,7 @@ manage_rebuild (GSList *log_config, const gchar *database)
   else
     sql_commit ();
 
+  feed_lockfile_unlock (&lockfile);
   manage_option_cleanup ();
 
   return ret;

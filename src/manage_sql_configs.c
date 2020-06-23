@@ -122,7 +122,7 @@ member (GPtrArray *array, const char *string)
  *
  *      The all selector and an optional exclude for each family,
  *      optional NVT includes in the excluded families, and optional NVT
- *      includes in all other families.
+ *      excludes in all other families.
  *
  *      This allows a growing collection of families, while any family
  *      can still have a static NVT selection.
@@ -1180,31 +1180,14 @@ insert_nvt_selectors (const char *quoted_name,
           && (type == NVT_SELECTOR_TYPE_NVT))
         {
           gchar *quoted_family_or_nvt, *quoted_family, *family = NULL;
-          nvti_t *nvti = lookup_nvti (selector->family_or_nvt);
 
           /* An NVT selector. */
 
-          if (nvti)
-            {
-              family = nvti_family (nvti);
-
-              if (family == NULL)
-                {
-                  g_warning ("%s: skipping NVT '%s' from import of config '%s'"
-                             " because the NVT is missing a family in the"
-                             " cache",
-                             __func__,
-                             selector->family_or_nvt,
-                             quoted_name);
-                  if (allow_errors)
-                    continue;
-                  return -1;
-                }
-            }
-          else
+          family = nvt_family (selector->family_or_nvt);
+          if (family == NULL)
             {
               g_warning ("%s: skipping NVT '%s' from import of config '%s'"
-                         " because the NVT is missing from the cache",
+                         " because the NVT does not have a family",
                          __func__,
                          selector->family_or_nvt,
                          quoted_name);

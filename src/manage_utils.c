@@ -179,6 +179,9 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
 /**
  * @brief Get the minimum severity for a severity level and class.
  *
+ * This function has a database equivalent in manage_pg_server.c.
+ * These two functions must stay in sync.
+ *
  * @param[in] level  The name of the severity level.
  * @param[in] class  The severity class, NULL to get from current user setting.
  *
@@ -218,6 +221,9 @@ level_min_severity (const char *level, const char *class)
 
 /**
  * @brief Get the minimum severity for a severity level and class.
+ *
+ * This function has a database equivalent in manage_pg_server.c.
+ * These two functions must stay in sync.
  *
  * @param[in] level  The name of the severity level.
  * @param[in] class  The severity class.
@@ -356,30 +362,22 @@ blank_control_chars (char *string)
  *
  * @param[in]  tzid  The tzid or Olson city name.
  *
- * @return The built-in timezone if found or UTC otherwise.
+ * @return The built-in timezone if found, else NULL.
  */
-static icaltimezone*
-icalendar_timezone_from_tzid (const char *tzid)
+icaltimezone*
+icalendar_timezone_from_string (const char *tzid)
 {
-  icaltimezone *tz;
-
   if (tzid)
     {
-      /* tzid is not NULL, try to get a libical built-in. */
+      icaltimezone *tz;
+
       tz = icaltimezone_get_builtin_timezone_from_tzid (tzid);
       if (tz == NULL)
-        {
-          tz = icaltimezone_get_builtin_timezone (tzid);
-          if (tz == NULL)
-            /* tzid is not a built-in timezone, fall back to UTC. */
-            tz = icaltimezone_get_utc_timezone ();
-        }
+        tz = icaltimezone_get_builtin_timezone (tzid);
+      return tz;
     }
-  else
-    /* tzid is NULL, fall back to UTC. */
-    tz = icaltimezone_get_utc_timezone ();
 
-  return tz;
+  return NULL;
 }
 
 /**
@@ -521,13 +519,14 @@ icalendar_from_old_schedule_data (time_t first_time,
  * @brief Simplify an VEVENT iCal component.
  *
  * @param[in]  vevent          The VEVENT component to simplify.
+ * @param[in]  zone            Timezone.
  * @param[out] error           Output of iCal errors or warnings.
  * @param[out] warnings_buffer GString buffer to write warnings to.
  *
  * @return  A newly allocated, simplified VEVENT component.
  */
 static icalcomponent *
-icalendar_simplify_vevent (icalcomponent *vevent,
+icalendar_simplify_vevent (icalcomponent *vevent, icaltimezone *zone,
                            gchar **error, GString *warnings_buffer)
 {
   icalproperty *error_prop;
@@ -561,8 +560,7 @@ icalendar_simplify_vevent (icalcomponent *vevent,
       return NULL;
     }
 
-  dtstart = icaltime_convert_to_zone (original_dtstart,
-                                      icaltimezone_get_utc_timezone ());
+  dtstart = icaltime_convert_to_zone (original_dtstart, zone);
 
   // Get duration or try to calculate it from end time
   duration = icalcomponent_get_duration (vevent);
@@ -577,12 +575,11 @@ icalendar_simplify_vevent (icalcomponent *vevent,
         }
       else
         {
-          icaltimetype dtend_utc;
-          dtend_utc
-            = icaltime_convert_to_zone (original_dtend,
-                                        icaltimezone_get_utc_timezone ());
+          icaltimetype dtend_zone;
 
-          duration = icaltime_subtract (dtend_utc, dtstart);
+          dtend_zone = icaltime_convert_to_zone (original_dtend, zone);
+
+          duration = icaltime_subtract (dtend_zone, dtstart);
         }
     }
 
@@ -631,14 +628,12 @@ icalendar_simplify_vevent (icalcomponent *vevent,
       if (icalperiodtype_is_null_period (old_datetimeperiod.period))
         {
           new_datetimeperiod.time
-            = icaltime_convert_to_zone (old_datetimeperiod.time,
-                                        icaltimezone_get_utc_timezone ());
+            = icaltime_convert_to_zone (old_datetimeperiod.time, zone);
         }
       else
         {
           new_datetimeperiod.time
-            = icaltime_convert_to_zone (old_datetimeperiod.period.start,
-                                        icaltimezone_get_utc_timezone ());
+            = icaltime_convert_to_zone (old_datetimeperiod.period.start, zone);
         }
       new_rdate = icalproperty_new_rdate (new_datetimeperiod);
       icalcomponent_add_property (vevent_simplified, new_rdate);
@@ -657,8 +652,7 @@ icalendar_simplify_vevent (icalcomponent *vevent,
 
       original_exdate_time = icalproperty_get_exdate (exdate_prop);
       exdate_time
-        = icaltime_convert_to_zone (original_exdate_time,
-                                    icaltimezone_get_utc_timezone ());
+        = icaltime_convert_to_zone (original_exdate_time, zone);
 
       prop_clone = icalproperty_new_exdate (exdate_time);
       icalcomponent_add_property (vevent_simplified, prop_clone);
@@ -674,7 +668,7 @@ icalendar_simplify_vevent (icalcomponent *vevent,
   uid = NULL;
 
   // Set timestamp
-  dtstamp = icaltime_current_time_with_zone (icaltimezone_get_utc_timezone ());
+  dtstamp = icaltime_current_time_with_zone (zone);
   icalcomponent_set_dtstamp (vevent_simplified, dtstamp);
 
   return vevent_simplified;
@@ -699,12 +693,14 @@ icalendar_simplify_vevent (icalcomponent *vevent,
  * @brief Creates a new, simplified VCALENDAR component from a string.
  *
  * @param[in]  ical_string  The ical_string to create the component from.
+ * @param[in]  zone         Timezone.
  * @param[out] error        Output of iCal errors or warnings.
  *
  * @return  A newly allocated, simplified VCALENDAR component.
  */
 icalcomponent *
-icalendar_from_string (const char *ical_string, gchar **error)
+icalendar_from_string (const char *ical_string, icaltimezone *zone,
+                       gchar **error)
 {
   icalcomponent *ical_new, *ical_parsed;
   icalproperty *error_prop;
@@ -743,6 +739,8 @@ icalendar_from_string (const char *ical_string, gchar **error)
   icalcomponent_add_property (ical_new,
                               icalproperty_new_prodid (GVM_PRODID));
 
+  icalcomponent_add_component (ical_new, icaltimezone_get_component (zone));
+
   switch (icalcomponent_isa (ical_parsed))
     {
       case ICAL_NO_COMPONENT:
@@ -768,6 +766,7 @@ icalendar_from_string (const char *ical_string, gchar **error)
                     {
                       new_vevent = icalendar_simplify_vevent
                                       (subcomp,
+                                       zone,
                                        error,
                                        warnings_buffer);
                       if (new_vevent == NULL)
@@ -825,6 +824,7 @@ icalendar_from_string (const char *ical_string, gchar **error)
           icalcomponent *new_vevent;
 
           new_vevent = icalendar_simplify_vevent (ical_parsed,
+                                                  zone,
                                                   error,
                                                   warnings_buffer);
           if (new_vevent == NULL)
@@ -1248,7 +1248,11 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
 
   tz = (icaltimezone*)(icaltime_get_timezone (dtstart));
   if (tz == NULL)
-    tz = icalendar_timezone_from_tzid (default_tzid);
+    {
+      tz = icalendar_timezone_from_string (default_tzid);
+      if (tz == NULL)
+        tz = icaltimezone_get_utc_timezone ();
+    }
 
   dtstart_with_tz = dtstart;
   // Set timezone in case the original DTSTART did not have any set.
@@ -1353,13 +1357,13 @@ icalendar_duration_from_vcalendar (icalcomponent *vcalendar)
  *  work reliably.
  *
  * @param[in]  vcalendar       The VCALENDAR component to get the time from.
- * @param[in]  default_tzid    Timezone id to use if none is set in the iCal.
+ * @param[in]  default_tz      Timezone to use if none is set in the iCal.
  *
  * @return The first time as a time_t.
  */
 time_t
 icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
-                                     const char *default_tzid)
+                                     icaltimezone *default_tz)
 {
   icalcomponent *vevent;
   icaltimetype dtstart;
@@ -1384,7 +1388,7 @@ icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
 
   tz = (icaltimezone*)(icaltime_get_timezone (dtstart));
   if (tz == NULL)
-    tz = icalendar_timezone_from_tzid (default_tzid);
+    tz = default_tz;
 
   // Convert to time_t
   return icaltime_as_timet_with_zone (dtstart, tz);

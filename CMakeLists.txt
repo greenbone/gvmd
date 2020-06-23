@@ -112,7 +112,7 @@ include (CPack)
 
 ## Variables
 
-set (GVMD_DATABASE_VERSION 227)
+set (GVMD_DATABASE_VERSION 231)
 
 set (GVMD_SCAP_DATABASE_VERSION 16)
 
@@ -199,6 +199,11 @@ if (NOT GVM_RUN_DIR)
   set (GVM_RUN_DIR      "${LOCALSTATEDIR}/run")
 endif (NOT GVM_RUN_DIR)
 
+if (NOT GVM_FEED_LOCK_PATH)
+  set (GVM_FEED_LOCK_PATH "${GVM_RUN_DIR}/feed-update.lock")
+endif (NOT GVM_FEED_LOCK_PATH)
+add_definitions (-DGVM_FEED_LOCK_PATH="${GVM_FEED_LOCK_PATH}")
+
 # TODO: Once we separate the RFP signatures out of "plugins" and
 # into var/lib/gvm/rfpsigs/ (via a sync script) then we do not need
 # to know about the NVT_DIR anymore.
@@ -207,7 +212,7 @@ if (NOT GVM_NVT_DIR)
 endif (NOT GVM_NVT_DIR)
 
 if (NOT GVMD_FEED_DIR)
-  set (GVMD_FEED_DIR "${LOCALSTATEDIR}/lib/openvas/gvmd/${GMP_VERSION}")
+  set (GVMD_FEED_DIR "${LOCALSTATEDIR}/lib/gvm/gvmd/${GMP_VERSION}")
 endif (NOT GVMD_FEED_DIR)
 
 if (NOT GVM_ACCESS_KEY_DIR)

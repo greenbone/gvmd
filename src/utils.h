@@ -46,6 +46,9 @@ parse_ctime (const char *);
 int
 days_from_now (time_t *);
 
+time_t
+parse_iso_time_tz (const char *, const char *);
+
 char *
 iso_time (time_t *);
 
@@ -66,6 +69,9 @@ lockfile_lock (lockfile_t *, const gchar *);
 
 int
 lockfile_lock_nb (lockfile_t *, const gchar *);
+
+int
+lockfile_lock_path_nb (lockfile_t *, const gchar *);
 
 int
 lockfile_lock_shared_nb (lockfile_t *, const gchar *);

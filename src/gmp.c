@@ -142,171 +142,6 @@ buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
 /* Helper functions. */
 
 /**
- * @brief Return time defined by broken down time strings.
- *
- * If any argument is NULL, use the value from the current time.
- *
- * @param[in]   hour          Hour (0 to 23).
- * @param[in]   minute        Minute (0 to 59).
- * @param[in]   day_of_month  Day of month (1 to 31).
- * @param[in]   month         Month (1 to 12).
- * @param[in]   year          Year.
- * @param[in]   zone          Timezone.
- *
- * @return Time described by arguments on success, -2 if failed to switch to
- *         timezone, -1 on error.
- */
-static time_t
-time_from_strings (const char *hour, const char *minute,
-                   const char *day_of_month, const char *month,
-                   const char *year, const char *zone)
-{
-  struct tm given_broken, *now_broken;
-  time_t now, ret;
-  gchar *tz;
-
-  tz = NULL;
-  if (zone)
-    {
-      /* Store current TZ. */
-      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-      if (setenv ("TZ", zone, 1) == -1)
-        {
-          g_free (tz);
-          return -2;
-        }
-      tzset ();
-    }
-
-  time (&now);
-  now_broken = localtime (&now);
-  if (now_broken == NULL)
-    ret = -1;
-  else
-    {
-      given_broken.tm_sec = 0;
-      given_broken.tm_min = (minute ? atoi (minute) : now_broken->tm_min);
-      given_broken.tm_hour = (hour ? atoi (hour) : now_broken->tm_hour);
-      given_broken.tm_mday = (day_of_month
-                               ? atoi (day_of_month)
-                               : now_broken->tm_mday);
-      given_broken.tm_mon = (month ? (atoi (month) - 1) : now_broken->tm_mon);
-      given_broken.tm_year = (year ? (atoi (year) - 1900) : now_broken->tm_year);
-      given_broken.tm_isdst = now_broken->tm_isdst;
-
-      ret = mktime (&given_broken);
-    }
-
-  if (zone)
-    {
-      /* Revert to stored TZ. */
-      if (tz)
-        setenv ("TZ", tz, 1);
-      else
-        unsetenv ("TZ");
-      g_free (tz);
-      tzset ();
-    }
-
-  return ret;
-}
-
-/**
- * @brief Return interval defined by time and unit strings.
- *
- * @param[in]   value   Value.
- * @param[in]   unit    Calendar unit: second, minute, hour, day, week,
- *                      month, year or decade.  "second" if NULL.
- * @param[out]  months  Months return.
- *
- * @return Interval described by arguments on success, -2 if value was NULL,
- *         -1 if value was NULL.
- */
-static time_t
-interval_from_strings (const char *value, const char *unit, time_t *months)
-{
-  if (value == NULL)
-    return -1;
-
-  if ((unit == NULL) || (strcasecmp (unit, "second") == 0))
-    {
-      long int val;
-      val = strtol (value, NULL, 10);
-      if ((val >= INT_MAX) || (val < 0))
-        return -3;
-      return val;
-    }
-
-  if (strcasecmp (unit, "minute") == 0)
-    {
-      long int val;
-      val = strtol (value, NULL, 10);
-      if ((val >= (INT_MAX / 60)) || (val < 0))
-        return -3;
-      return val * 60;
-    }
-
-  if (strcasecmp (unit, "hour") == 0)
-    {
-      long int val;
-      val = strtol (value, NULL, 10);
-      if ((val >= (INT_MAX / (60 * 60))) || (val < 0))
-        return -3;
-      return val * 60 * 60;
-    }
-
-  if (strcasecmp (unit, "day") == 0)
-    {
-      long int val;
-      val = strtol (value, NULL, 10);
-      if ((val >= (INT_MAX / (60 * 60 * 24))) || (val < 0))
-        return -3;
-      return val * 60 * 60 * 24;
-    }
-
-  if (strcasecmp (unit, "week") == 0)
-    {
-      long int val;
-      val = strtol (value, NULL, 10);
-      if ((val >= (INT_MAX / (60 * 60 * 24 * 7))) || (val < 0))
-        return -3;
-      return val * 60 * 60 * 24 * 7;
-    }
-
-  if (months)
-    {
-      if (strcasecmp (unit, "month") == 0)
-        {
-          *months = atoi (value);
-          if ((*months >= INT_MAX) || (*months < 0))
-            return -3;
-          return 0;
-        }
-
-      if (strcasecmp (unit, "year") == 0)
-        {
-          *months = atoi (value);
-          if ((*months >= (INT_MAX / 12)) || (*months < 0))
-            return -3;
-          *months = *months * 12;
-          return 0;
-        }
-
-      if (strcasecmp (unit, "decade") == 0)
-        {
-          *months = atoi (value);
-          if ((*months >= (INT_MAX / (12 * 10))) || (*months < 0))
-            return -3;
-          *months = *months * 12 * 10;
-          return 0;
-        }
-    }
-
-  return -2;
-}
-
-/**
  * @brief A simple key/value-pair.
  */
 typedef struct
@@ -1095,16 +930,6 @@ typedef struct
   char *name;                    ///< Name for new schedule.
   char *comment;                 ///< Comment.
   char *copy;                    ///< UUID of resource to copy.
-  char *first_time_day_of_month; ///< Day of month schedule must first run.
-  char *first_time_hour;         ///< Hour schedule must first run.
-  char *first_time_minute;       ///< Minute schedule must first run.
-  char *first_time_month;        ///< Month schedule must first run.
-  char *first_time_year;         ///< Year schedule must first run.
-  char *period;                  ///< Period of schedule (how often it runs).
-  char *period_unit;             ///< Unit of period: "hour", "day", "week", ....
-  char *byday;                   ///< Which weekdays to run on.
-  char *duration;                ///< Duration of schedule (how long it runs for).
-  char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
   char *timezone;                ///< Time zone of the schedule
   char *icalendar;               ///< iCalendar string
 } create_schedule_data_t;
@@ -1120,16 +945,6 @@ create_schedule_data_reset (create_schedule_data_t *data)
   free (data->name);
   free (data->copy);
   free (data->comment);
-  free (data->first_time_day_of_month);
-  free (data->first_time_hour);
-  free (data->first_time_minute);
-  free (data->first_time_month);
-  free (data->first_time_year);
-  free (data->period);
-  free (data->period_unit);
-  free (data->byday);
-  free (data->duration);
-  free (data->duration_unit);
   free (data->timezone);
   free (data->icalendar);
 
@@ -2969,16 +2784,6 @@ typedef struct
   char *comment;                 ///< Comment.
   char *name;                    ///< Name of schedule.
   char *schedule_id;             ///< Schedule UUID.
-  char *first_time_day_of_month; ///< Day of month schedule must first run.
-  char *first_time_hour;         ///< Hour schedule must first run.
-  char *first_time_minute;       ///< Minute schedule must first run.
-  char *first_time_month;        ///< Month schedule must first run.
-  char *first_time_year;         ///< Year schedule must first run.
-  char *period;                  ///< Period of schedule (how often it runs).
-  char *period_unit;             ///< Unit of period: "hour", "day", "week", ....
-  char *byday;                   ///< Which weekdays to run on.
-  char *duration;                ///< Duration of schedule (how long it runs for).
-  char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
   char *timezone;                ///< Timezone.
   char *icalendar;               ///< iCalendar string.
 } modify_schedule_data_t;
@@ -2994,16 +2799,6 @@ modify_schedule_data_reset (modify_schedule_data_t *data)
   free (data->comment);
   free (data->name);
   free (data->schedule_id);
-  free (data->first_time_day_of_month);
-  free (data->first_time_hour);
-  free (data->first_time_minute);
-  free (data->first_time_month);
-  free (data->first_time_year);
-  free (data->period);
-  free (data->period_unit);
-  free (data->byday);
-  free (data->duration);
-  free (data->duration_unit);
   free (data->timezone);
   free (data->icalendar);
 
@@ -4493,21 +4288,10 @@ typedef enum
   CLIENT_CREATE_SCANNER_CA_PUB,
   CLIENT_CREATE_SCANNER_CREDENTIAL,
   CLIENT_CREATE_SCHEDULE,
-  CLIENT_CREATE_SCHEDULE_BYDAY,
   CLIENT_CREATE_SCHEDULE_COMMENT,
   CLIENT_CREATE_SCHEDULE_COPY,
-  CLIENT_CREATE_SCHEDULE_DURATION,
-  CLIENT_CREATE_SCHEDULE_DURATION_UNIT,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH,
-  CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR,
   CLIENT_CREATE_SCHEDULE_ICALENDAR,
   CLIENT_CREATE_SCHEDULE_NAME,
-  CLIENT_CREATE_SCHEDULE_PERIOD,
-  CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
   CLIENT_CREATE_SCHEDULE_TIMEZONE,
   CLIENT_CREATE_TAG,
   CLIENT_CREATE_TAG_ACTIVE,
@@ -4749,20 +4533,9 @@ typedef enum
   CLIENT_MODIFY_SCANNER_CA_PUB,
   CLIENT_MODIFY_SCANNER_CREDENTIAL,
   CLIENT_MODIFY_SCHEDULE,
-  CLIENT_MODIFY_SCHEDULE_BYDAY,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
-  CLIENT_MODIFY_SCHEDULE_DURATION,
-  CLIENT_MODIFY_SCHEDULE_DURATION_UNIT,
-  CLIENT_MODIFY_SCHEDULE_FIRST_TIME,
-  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
-  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_HOUR,
-  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MINUTE,
-  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MONTH,
-  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_YEAR,
   CLIENT_MODIFY_SCHEDULE_ICALENDAR,
   CLIENT_MODIFY_SCHEDULE_NAME,
-  CLIENT_MODIFY_SCHEDULE_PERIOD,
-  CLIENT_MODIFY_SCHEDULE_PERIOD_UNIT,
   CLIENT_MODIFY_SCHEDULE_TIMEZONE,
   CLIENT_MODIFY_SETTING,
   CLIENT_MODIFY_SETTING_NAME,
@@ -6295,47 +6068,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_SCHEDULE:
-        if (strcasecmp ("BYDAY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_BYDAY);
-        else if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_COPY);
-        else if (strcasecmp ("DURATION", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_DURATION);
-        else if (strcasecmp ("FIRST_TIME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
         else if (strcasecmp ("ICALENDAR", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_ICALENDAR);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_NAME);
-        else if (strcasecmp ("PERIOD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
         else if (strcasecmp ("TIMEZONE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_TIMEZONE);
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME:
-        if (strcasecmp ("DAY_OF_MONTH", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH);
-        else if (strcasecmp ("HOUR", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR);
-        else if (strcasecmp ("MINUTE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE);
-        else if (strcasecmp ("MONTH", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH);
-        else if (strcasecmp ("YEAR", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR);
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_SCHEDULE_DURATION:
-        if (strcasecmp ("UNIT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_DURATION_UNIT);
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_SCHEDULE_PERIOD:
-        if (strcasecmp ("UNIT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT);
         ELSE_READ_OVER;
 
       case CLIENT_GET_AGGREGATES:
@@ -6804,12 +6546,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_READ_OVER;
 
       case CLIENT_MODIFY_SCHEDULE:
-        if (strcasecmp ("BYDAY", element_name) == 0)
-          {
-            gvm_append_string (&modify_schedule_data->byday, "");
-            set_client_state (CLIENT_MODIFY_SCHEDULE_BYDAY);
-          }
-        else if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
           {
             gvm_append_string (&modify_schedule_data->comment, "");
             set_client_state (CLIENT_MODIFY_SCHEDULE_COMMENT);
@@ -6819,41 +6556,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_schedule_data->name, "");
             set_client_state (CLIENT_MODIFY_SCHEDULE_NAME);
           }
-        else if (strcasecmp ("DURATION", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_DURATION);
-        else if (strcasecmp ("FIRST_TIME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME);
         else if (strcasecmp ("ICALENDAR", element_name) == 0)
           set_client_state (CLIENT_MODIFY_SCHEDULE_ICALENDAR);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_NAME);
-        else if (strcasecmp ("PERIOD", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_PERIOD);
         else if (strcasecmp ("TIMEZONE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_SCHEDULE_TIMEZONE);
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_SCHEDULE_FIRST_TIME:
-        if (strcasecmp ("DAY_OF_MONTH", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_DAY_OF_MONTH);
-        else if (strcasecmp ("HOUR", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_HOUR);
-        else if (strcasecmp ("MINUTE", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MINUTE);
-        else if (strcasecmp ("MONTH", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MONTH);
-        else if (strcasecmp ("YEAR", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_YEAR);
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_SCHEDULE_DURATION:
-        if (strcasecmp ("UNIT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_DURATION_UNIT);
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_SCHEDULE_PERIOD:
-        if (strcasecmp ("UNIT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SCHEDULE_PERIOD_UNIT);
         ELSE_READ_OVER;
 
       case CLIENT_MODIFY_SETTING:
@@ -8297,8 +8003,8 @@ send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
 {
   gchar *msg;
 
-  msg = get_nvti_xml (nvts, details, pref_count, preferences, timeout, config,
-                      0);
+  msg = get_nvt_xml (nvts, details, pref_count, preferences, timeout, config,
+                     0);
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);
@@ -9557,7 +9263,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             }
 
           first = 1;
-          result_iterator_nvt_refs_append (buffer, results, &first);
+          xml_append_nvt_refs (buffer, result_iterator_nvt_oid (results),
+                               &first);
+
           results_xml_append_cert (buffer, results, oid, cert_loaded, &first);
           if (first == 0)
             buffer_xml_append_printf (buffer, "</refs>");
@@ -12823,7 +12531,8 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
 static void
 get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
 {
-  gchar *feed_name, *feed_description, *feed_version, *lockfile_name;
+  gchar *feed_name, *feed_description, *feed_version;
+  const char *lockfile_name;
   int lockfile;
 
   if (feed_type == NVT_FEED)
@@ -12846,11 +12555,7 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
     feed_version,
     feed_description);
 
-  lockfile_name = g_build_filename (g_get_tmp_dir (),
-                                    feed_type == SCAP_FEED
-                                     ? "gvm-sync-scap"
-                                     : "gvm-sync-cert",
-                                    NULL);
+  lockfile_name = get_feed_lock_path ();
 
   lockfile = open (lockfile_name,
                    O_RDWR | O_CREAT | O_APPEND,
@@ -12912,7 +12617,6 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
     g_warning ("%s: failed to close lock file '%s': %s", __func__,
                lockfile_name, strerror (errno));
 
-  g_free (lockfile_name);
   g_free (feed_name);
   g_free (feed_version);
   g_free (feed_description);
@@ -16001,14 +15705,7 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
       SEND_GET_START ("schedule");
       while (1)
         {
-          time_t first_time, next_time;
-          gchar *iso;
-          const char *zone, *abbrev, *icalendar;
-          char *simple_period_unit, *simple_duration_unit;
-          int period, period_minutes, period_hours, period_days;
-          int period_weeks, period_months, duration, duration_minutes;
-          int duration_hours, duration_days, duration_weeks;
-          int simple_period, simple_duration;
+          const char *icalendar;
 
           ret = get_next (&schedules, &get_schedules_data->get, &first,
                           &count, init_schedule_iterator);
@@ -16022,114 +15719,16 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
 
           SEND_GET_COMMON (schedule, &get_schedules_data->get, &schedules);
 
-          zone = schedule_iterator_timezone (&schedules);
-          first_time = schedule_iterator_first_time (&schedules);
-          next_time = schedule_iterator_next_time (&schedules);
           icalendar = schedule_iterator_icalendar (&schedules);
 
-          /* Duplicate static string because there's an iso_time_tz below. */
-          abbrev = NULL;
-          iso = g_strdup (iso_time_tz (&first_time, zone, &abbrev));
-
-          period = schedule_iterator_period (&schedules);
-          if (period)
-            {
-              period_minutes = period / 60;
-              period_hours = period_minutes / 60;
-              period_days = period_hours / 24;
-              period_weeks = period_days / 7;
-            }
-          simple_period_unit = "";
-          if (period == 0)
-            simple_period = 0;
-          else if (period_weeks && (period % (60 * 60 * 24 * 7) == 0))
-            {
-              simple_period = period_weeks;
-              simple_period_unit = "week";
-            }
-          else if (period_days && (period % (60 * 60 * 24) == 0))
-            {
-              simple_period = period_days;
-              simple_period_unit = "day";
-            }
-          else if (period_hours && (period % (60 * 60) == 0))
-            {
-              simple_period = period_hours;
-              simple_period_unit = "hour";
-            }
-          /* The granularity of the "simple" GSA interface stops at hours. */
-          else
-            simple_period = 0;
-
-          period_months = schedule_iterator_period_months (&schedules);
-          if (period_months && (period_months < 25))
-            {
-              simple_period = period_months;
-              simple_period_unit = "month";
-            }
-
-          duration = schedule_iterator_duration (&schedules);
-          if (duration)
-            {
-              duration_minutes = duration / 60;
-              duration_hours = duration_minutes / 60;
-              duration_days = duration_hours / 24;
-              duration_weeks = duration_days / 7;
-            }
-          simple_duration_unit = "";
-          if (duration == 0)
-            simple_duration = 0;
-          else if (duration_weeks
-                    && (duration % (60 * 60 * 24 * 7) == 0))
-            {
-              simple_duration = duration_weeks;
-              simple_duration_unit = "week";
-            }
-          else if (duration_days
-                    && (duration % (60 * 60 * 24) == 0))
-            {
-              simple_duration = duration_days;
-              simple_duration_unit = "day";
-            }
-          else if (duration_hours
-                    && (duration % (60 * 60) == 0))
-            {
-              simple_duration = duration_hours;
-              simple_duration_unit = "hour";
-            }
-          /* The granularity of the "simple" GSA interface stops at hours. */
-          else
-            simple_duration = 0;
-
           SENDF_TO_CLIENT_OR_FAIL
-           ("<first_time>%s</first_time>"
-            "<next_time>%s</next_time>"
-            "<icalendar>%s</icalendar>"
-            "<period>%ld</period>"
-            "<period_months>%ld</period_months>"
-            "<simple_period>%i<unit>%s</unit></simple_period>"
-            "<byday>%s</byday>"
-            "<duration>%ld</duration>"
-            "<simple_duration>%i<unit>%s</unit></simple_duration>"
-            "<timezone>%s</timezone>"
-            "<timezone_abbrev>%s</timezone_abbrev>",
-            iso,
-            (next_time == 0 ? "over" : iso_time_tz (&next_time, zone, NULL)),
+           ("<icalendar>%s</icalendar>"
+            "<timezone>%s</timezone>",
             icalendar ? icalendar : "",
-            schedule_iterator_period (&schedules),
-            schedule_iterator_period_months (&schedules),
-            simple_period,
-            simple_period_unit,
-            schedule_iterator_byday_string (&schedules),
-            schedule_iterator_duration (&schedules),
-            simple_duration,
-            simple_duration_unit,
             schedule_iterator_timezone (&schedules)
               ? schedule_iterator_timezone (&schedules)
-              : "UTC",
-            abbrev ? abbrev : "UTC");
+              : "UTC");
 
-          g_free (iso);
           if (get_schedules_data->tasks)
             {
               iterator_t tasks;
@@ -16176,11 +15775,8 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
 static void
 handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
 {
-  time_t first_time, period, period_months, duration;
   schedule_t new_schedule;
   gchar *ical_error = NULL;
-
-  period_months = 0;
 
   // Copy the schedule
   if (create_schedule_data->copy)
@@ -16238,98 +15834,18 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
                            "A NAME entity is required"));
       goto create_schedule_leave;
     }
-  else if (create_schedule_data->icalendar
-           && strcmp (create_schedule_data->icalendar, ""))
+  else if (create_schedule_data->icalendar == NULL
+           || strcmp (create_schedule_data->icalendar, "") == 0)
     {
-      first_time = 0;
-      period = 0;
-      period_months = 0;
-      duration = 0;
-    }
-  else
-    {
-      // Classic schedule
-      if ((first_time = time_from_strings
-                              (create_schedule_data->first_time_hour,
-                               create_schedule_data->first_time_minute,
-                               create_schedule_data->first_time_day_of_month,
-                               create_schedule_data->first_time_month,
-                               create_schedule_data->first_time_year,
-                               create_schedule_data->timezone))
-                == -1)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Failed to create time from FIRST_TIME"
-                               " elements"));
-          goto create_schedule_leave;
-        }
-      else if ((period = interval_from_strings
-                           (create_schedule_data->period,
-                            create_schedule_data->period_unit,
-                            &period_months))
-                == -3)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "PERIOD out of range"));
-          goto create_schedule_leave;
-        }
-      else if (period < -1)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Failed to create interval from PERIOD"));
-          goto create_schedule_leave;
-        }
-      else if ((duration = interval_from_strings
-                            (create_schedule_data->duration,
-                              create_schedule_data->duration_unit,
-                              NULL))
-                == -3)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "DURATION out of range"));
-          goto create_schedule_leave;
-        }
-      else if (duration < -1)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Failed to create interval from DURATION"));
-          goto create_schedule_leave;
-        }
-#if 0
-      /* The actual time of a period in months can vary, so it's extremely
-       * hard to do this check.  The schedule will still work fine if the
-       * duration is longer than the period. */
-      else if (period_months
-                && (duration > (period_months * 60 * 60 * 24 * 28)))
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Duration too long for number of months"));
-          goto create_schedule_leave;
-        }
-#endif
-      else if (period && (duration > period))
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("create_schedule",
-                               "Duration is longer than period"));
-          goto create_schedule_leave;
-        }
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_schedule",
+                           "An ICALENDAR entity is required"));
+      goto create_schedule_leave;
     }
 
   switch (create_schedule (create_schedule_data->name,
                            create_schedule_data->comment,
                            create_schedule_data->icalendar,
-                           first_time,
-                           period == -1 ? 0 : period,
-                           period_months,
-                           create_schedule_data->byday,
-                           duration == -1 ? 0 : duration,
                            create_schedule_data->timezone,
                            &new_schedule,
                            &ical_error))
@@ -16363,12 +15879,6 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
                              "Schedule exists already"));
         log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
-      case 2:
-        SEND_TO_CLIENT_OR_FAIL
-          (XML_ERROR_SYNTAX ("create_schedule",
-                             "Syntax error in BYDAY"));
-        log_event_fail ("schedule", "Schedule", NULL, "created");
-        break;
       case 3:
         {
           SENDF_TO_CLIENT_OR_FAIL
@@ -16377,6 +15887,12 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
              "</create_schedule_response>", ical_error);
           log_event_fail ("schedule", "Schedule", NULL, "created");
         }
+        break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_schedule",
+                             "Error in TIMEZONE"));
+        log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL
@@ -16411,100 +15927,17 @@ create_schedule_leave:
 static void
 handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
 {
-  time_t first_time, period, period_months, duration;
-  period_months = 0;
   gchar *ical_error = NULL;
 
-  if (modify_schedule_data->icalendar)
+  if (modify_schedule_data->icalendar == NULL
+      || strcmp (modify_schedule_data->icalendar, "") == 0)
     {
-      first_time = 0;
-      period = 0;
-      period_months = 0;
-      duration = 0;
-    }
-  else
-    {
-      /* Only change schedule "first time" if given. */
-      first_time = modify_schedule_data->first_time_hour
-                    || modify_schedule_data->first_time_minute
-                    || modify_schedule_data->first_time_day_of_month
-                    || modify_schedule_data->first_time_month
-                    || modify_schedule_data->first_time_year;
-
-      if (first_time
-          && ((first_time
-                = time_from_strings
-                    (modify_schedule_data->first_time_hour,
-                     modify_schedule_data->first_time_minute,
-                     modify_schedule_data->first_time_day_of_month,
-                     modify_schedule_data->first_time_month,
-                     modify_schedule_data->first_time_year,
-                     modify_schedule_data->timezone))
-              == -1))
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("modify_schedule",
-                               "Failed to create time from FIRST_TIME"
-                               " elements"));
-          goto modify_schedule_leave;
-        }
-      else if ((period = interval_from_strings
-                           (modify_schedule_data->period,
-                            modify_schedule_data->period_unit,
-                            &period_months))
-                == -3)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("modify_schedule",
-                               "PERIOD out of range"));
-          goto modify_schedule_leave;
-        }
-      else if (period < -1)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("modify_schedule",
-                               "Failed to create interval from PERIOD"));
-          goto modify_schedule_leave;
-        }
-      else if ((duration = interval_from_strings
-                             (modify_schedule_data->duration,
-                              modify_schedule_data->duration_unit,
-                              NULL))
-                == -3)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("modify_schedule",
-                               "DURATION out of range"));
-          goto modify_schedule_leave;
-        }
-      else if (duration < -1)
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("modify_schedule",
-                               "Failed to create interval from DURATION"));
-          goto modify_schedule_leave;
-        }
-#if 0
-      /* The actual time of a period in months can vary, so it's extremely
-       * hard to do this check.  The schedule will still work fine if the
-       * duration is longer than the period. */
-      else if (period_months
-               && (duration > (period_months * 60 * 60 * 24 * 28)))
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("modify_schedule",
-                               "Duration too long for number of months"));
-          goto create_schedule_leave;
-        }
-#endif
-      else if (period && (duration > period))
-        {
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("modify_schedule",
-                               "Duration is longer than period"));
-          goto modify_schedule_leave;
-        }
-
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_schedule",
+                           "ICALENDAR element is required"));
+      modify_schedule_data_reset (modify_schedule_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
     }
 
   switch (modify_schedule
@@ -16512,20 +15945,15 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
                  modify_schedule_data->name,
                  modify_schedule_data->comment,
                  modify_schedule_data->icalendar,
-                 first_time,
-                 period == -1 ? 0 : period,
-                 period_months,
-                 modify_schedule_data->byday,
-                 duration == -1 ? 0 : duration,
                  modify_schedule_data->timezone,
                  &ical_error))
     {
       case 0:
         SENDF_TO_CLIENT_OR_FAIL
-          ("<create_schedule_response status=\"200\""
+          ("<modify_schedule_response status=\"200\""
            " status_text=\"OK\">"
            "<status_details>%s</status_details>"
-           "</create_schedule_response>",
+           "</modify_schedule_response>",
            ical_error ? ical_error : "");
         log_event ("schedule", "Schedule",
                    modify_schedule_data->schedule_id, "modified");
@@ -16566,13 +15994,6 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
                         modify_schedule_data->schedule_id,
                         "modified");
         break;
-      case 5:
-        SEND_TO_CLIENT_OR_FAIL
-          (XML_ERROR_SYNTAX ("modify_schedule",
-                             "Syntax error in BYDAY"));
-        log_event_fail ("schedule", "Schedule",
-                        modify_schedule_data->schedule_id, "modified");
-        break;
       case 6:
         {
           SENDF_TO_CLIENT_OR_FAIL
@@ -16582,6 +16003,13 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
           log_event_fail ("schedule", "Schedule",
                           modify_schedule_data->schedule_id, "modified");
         }
+        break;
+      case 7:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_schedule",
+                             "Error in TIMEZONE"));
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id, "modified");
         break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL
@@ -16600,7 +16028,6 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
         break;
     }
 
-modify_schedule_leave:
   modify_schedule_data_reset (modify_schedule_data);
   set_client_state (CLIENT_AUTHENTIC);
 }
@@ -17322,7 +16749,6 @@ static gchar*
 get_task_schedule_xml (task_t task)
 {
   schedule_t schedule;
-  time_t next_time;
   int schedule_in_trash, schedule_available;
   char *task_schedule_uuid, *task_schedule_name;
   GString *xml;
@@ -17363,78 +16789,40 @@ get_task_schedule_xml (task_t task)
 
   if (schedule_available && schedule)
     {
-      time_t first_time, info_next_time;
-      int period, period_months, duration;
       gchar *icalendar, *zone;
 
       icalendar = zone = NULL;
 
-      if (schedule_info (schedule, schedule_in_trash,
-                          &first_time, &info_next_time, &period,
-                          &period_months, &duration,
-                          &icalendar, &zone) == 0)
-        {
-          gchar *first_time_str, *next_time_str;
-
-          // Copy ISO time strings to avoid one overwriting the other
-          first_time_str = g_strdup (first_time
-                                      ? iso_time (&first_time)
-                                      : "");
-          next_time_str = g_strdup (info_next_time
-                                      ? iso_time (&info_next_time)
-                                      : "over");
-
-          xml_string_append (xml,
-                             "<schedule id=\"%s\">"
-                             "<name>%s</name>"
-                             "<trash>%d</trash>"
-                             "<first_time>%s</first_time>"
-                             "<next_time>%s</next_time>"
-                             "<icalendar>%s</icalendar>"
-                             "<period>%d</period>"
-                             "<period_months>"
-                             "%d"
-                             "</period_months>"
-                             "<duration>%d</duration>"
-                             "<timezone>%s</timezone>"
-                             "</schedule>"
-                             "<schedule_periods>"
-                             "%d"
-                             "</schedule_periods>",
-                             task_schedule_uuid,
-                             task_schedule_name,
-                             schedule_in_trash,
-                             first_time_str,
-                             next_time_str,
-                             icalendar ? icalendar : "",
-                             period,
-                             period_months,
-                             duration,
-                             zone ? zone : "",
-                             task_schedule_periods (task));
-
-          g_free (first_time_str);
-          g_free (next_time_str);
-        }
+      if (schedule_info (schedule, schedule_in_trash, &icalendar, &zone) == 0)
+        xml_string_append (xml,
+                           "<schedule id=\"%s\">"
+                           "<name>%s</name>"
+                           "<trash>%d</trash>"
+                           "<icalendar>%s</icalendar>"
+                           "<timezone>%s</timezone>"
+                           "</schedule>"
+                           "<schedule_periods>"
+                           "%d"
+                           "</schedule_periods>",
+                           task_schedule_uuid,
+                           task_schedule_name,
+                           schedule_in_trash,
+                           icalendar ? icalendar : "",
+                           zone ? zone : "",
+                           task_schedule_periods (task));
 
       g_free (icalendar);
       g_free (zone);
     }
   else
     {
-      next_time = task_schedule_next_time (task);
-
       xml_string_append (xml,
                          "<schedule id=\"%s\">"
                          "<name>%s</name>"
-                         "<next_time>%s</next_time>"
                          "<trash>%d</trash>"
                          "</schedule>",
                          task_schedule_uuid,
                          task_schedule_name,
-                         next_time
-                            ? iso_time (&next_time)
-                            : "over",
                          schedule_in_trash);
     }
 
@@ -17604,14 +16992,12 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           else
             {
               int progress;
-              gchar *host_xml;
 
               running_report = task_iterator_current_report (&tasks);
               progress
-                = report_progress (running_report, index, &host_xml);
+                = report_progress (running_report);
               progress_xml
-                = g_strdup_printf ("%i%s", progress, host_xml);
-              g_free (host_xml);
+                = g_strdup_printf ("%i", progress);
             }
 
           if (running_report)
@@ -22027,25 +21413,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           handle_create_schedule (gmp_parser, error);
           break;
         }
-      CLOSE (CLIENT_CREATE_SCHEDULE, BYDAY);
       CLOSE (CLIENT_CREATE_SCHEDULE, COMMENT);
       CLOSE (CLIENT_CREATE_SCHEDULE, COPY);
-      CLOSE (CLIENT_CREATE_SCHEDULE, DURATION);
-      CLOSE (CLIENT_CREATE_SCHEDULE, FIRST_TIME);
       CLOSE (CLIENT_CREATE_SCHEDULE, ICALENDAR);
       CLOSE (CLIENT_CREATE_SCHEDULE, NAME);
-      CLOSE (CLIENT_CREATE_SCHEDULE, PERIOD);
       CLOSE (CLIENT_CREATE_SCHEDULE, TIMEZONE);
-
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, DAY_OF_MONTH);
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, HOUR);
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, MINUTE);
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, MONTH);
-      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, YEAR);
-
-      CLOSE (CLIENT_CREATE_SCHEDULE_DURATION, UNIT);
-
-      CLOSE (CLIENT_CREATE_SCHEDULE_PERIOD, UNIT);
 
       case CLIENT_CREATE_TAG:
         {
@@ -24772,23 +24144,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_MODIFY_SCHEDULE, COMMENT);
-      CLOSE (CLIENT_MODIFY_SCHEDULE, DURATION);
-      CLOSE (CLIENT_MODIFY_SCHEDULE, FIRST_TIME);
       CLOSE (CLIENT_MODIFY_SCHEDULE, ICALENDAR);
       CLOSE (CLIENT_MODIFY_SCHEDULE, NAME);
-      CLOSE (CLIENT_MODIFY_SCHEDULE, PERIOD);
-      CLOSE (CLIENT_MODIFY_SCHEDULE, BYDAY);
       CLOSE (CLIENT_MODIFY_SCHEDULE, TIMEZONE);
-
-      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, DAY_OF_MONTH);
-      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, HOUR);
-      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, MINUTE);
-      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, MONTH);
-      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, YEAR);
-
-      CLOSE (CLIENT_MODIFY_SCHEDULE_DURATION, UNIT);
-
-      CLOSE (CLIENT_MODIFY_SCHEDULE_PERIOD, UNIT);
 
       case CLIENT_MODIFY_SETTING:
         {
@@ -27043,47 +26401,17 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &create_scanner_data->ca_pub);
 
 
-      APPEND (CLIENT_CREATE_SCHEDULE_BYDAY,
-              &create_schedule_data->byday);
-
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
               &create_schedule_data->comment);
 
       APPEND (CLIENT_CREATE_SCHEDULE_COPY,
               &create_schedule_data->copy);
 
-      APPEND (CLIENT_CREATE_SCHEDULE_DURATION,
-              &create_schedule_data->duration);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_DURATION_UNIT,
-              &create_schedule_data->duration_unit);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
-              &create_schedule_data->first_time_day_of_month);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR,
-              &create_schedule_data->first_time_hour);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE,
-              &create_schedule_data->first_time_minute);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH,
-              &create_schedule_data->first_time_month);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR,
-              &create_schedule_data->first_time_year);
-
       APPEND (CLIENT_CREATE_SCHEDULE_ICALENDAR,
               &create_schedule_data->icalendar);
 
       APPEND (CLIENT_CREATE_SCHEDULE_NAME,
               &create_schedule_data->name);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_PERIOD,
-              &create_schedule_data->period);
-
-      APPEND (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
-              &create_schedule_data->period_unit);
 
       APPEND (CLIENT_CREATE_SCHEDULE_TIMEZONE,
               &create_schedule_data->timezone);
@@ -27391,44 +26719,14 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &modify_scanner_data->ca_pub);
 
 
-      APPEND (CLIENT_MODIFY_SCHEDULE_BYDAY,
-              &modify_schedule_data->byday);
-
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,
               &modify_schedule_data->comment);
-
-      APPEND (CLIENT_MODIFY_SCHEDULE_DURATION,
-              &modify_schedule_data->duration);
-
-      APPEND (CLIENT_MODIFY_SCHEDULE_DURATION_UNIT,
-              &modify_schedule_data->duration_unit);
-
-      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
-              &modify_schedule_data->first_time_day_of_month);
-
-      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_HOUR,
-              &modify_schedule_data->first_time_hour);
-
-      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MINUTE,
-              &modify_schedule_data->first_time_minute);
-
-      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MONTH,
-              &modify_schedule_data->first_time_month);
-
-      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_YEAR,
-              &modify_schedule_data->first_time_year);
 
       APPEND (CLIENT_MODIFY_SCHEDULE_ICALENDAR,
               &modify_schedule_data->icalendar);
 
       APPEND (CLIENT_MODIFY_SCHEDULE_NAME,
               &modify_schedule_data->name);
-
-      APPEND (CLIENT_MODIFY_SCHEDULE_PERIOD,
-              &modify_schedule_data->period);
-
-      APPEND (CLIENT_MODIFY_SCHEDULE_PERIOD_UNIT,
-              &modify_schedule_data->period_unit);
 
       APPEND (CLIENT_MODIFY_SCHEDULE_TIMEZONE,
               &modify_schedule_data->timezone);

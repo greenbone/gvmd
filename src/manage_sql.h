@@ -405,21 +405,9 @@ void reschedule_task (const gchar *);
 
 void insert_port_range (port_list_t, port_protocol_t, int, int);
 
-int manage_update_cert_db_init ();
-
-void manage_update_cert_db_cleanup ();
-
-int manage_update_scap_db_init ();
-
-void manage_update_scap_db_cleanup ();
-
 int manage_cert_db_exists ();
 
 int manage_scap_db_exists ();
-
-void manage_db_check_mode (const gchar *);
-
-int manage_db_check (const gchar *);
 
 int
 count (const char *, const get_data_t *, column_t *, column_t *, const char **,
