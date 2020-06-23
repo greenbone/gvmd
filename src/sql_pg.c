@@ -413,7 +413,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
 }
 
 /**
- * @brief Execute a prepared statement.
+ * @brief Execute a statement.
  *
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  stmt   Statement.
@@ -580,10 +580,10 @@ iterator_rewind (iterator_t* iterator)
 }
 
 
-/* Prepared statements. */
+/* Statements. */
 
 /**
- * @brief Free a prepared statement.
+ * @brief Free a statement.
  *
  * @param[in]  stmt  Statement.
  */
@@ -599,7 +599,7 @@ sql_finalize (sql_stmt_t *stmt)
 }
 
 /**
- * @brief Return a column as a double from a prepared statement.
+ * @brief Return a column as a double from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *
@@ -618,7 +618,7 @@ sql_column_double (sql_stmt_t *stmt, int position)
 }
 
 /**
- * @brief Return a column as text from a prepared statement.
+ * @brief Return a column as text from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *
@@ -637,7 +637,7 @@ sql_column_text (sql_stmt_t *stmt, int position)
 }
 
 /**
- * @brief Return a column as an integer from a prepared statement.
+ * @brief Return a column as an integer from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *
@@ -667,7 +667,7 @@ sql_column_int (sql_stmt_t *stmt, int position)
 }
 
 /**
- * @brief Return a column as an int64 from a prepared statement.
+ * @brief Return a column as an int64 from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *
@@ -697,7 +697,7 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
 }
 
 /**
- * @brief Return a column as text from a prepared statement.
+ * @brief Return a column as text from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *
