@@ -4332,7 +4332,7 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
       g_info ("Updating Max CVSS for DFN-CERT");
       sql ("UPDATE cert.dfn_cert_advs"
            " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap2.cves"
+           "                 FROM scap.cves"
            "                 WHERE name"
            "                 IN (SELECT cve_name"
            "                     FROM cert.dfn_cert_cves"
@@ -4363,7 +4363,7 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
       g_info ("Updating Max CVSS for CERT-Bund");
       sql ("UPDATE cert.cert_bund_advs"
            " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap2.cves"
+           "                 FROM scap.cves"
            "                 WHERE name"
            "                       IN (SELECT cve_name"
            "                           FROM cert.cert_bund_cves"
