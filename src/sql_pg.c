@@ -386,52 +386,6 @@ sql_last_insert_id ()
 }
 
 /**
- * @brief Perform an SQL statement, retrying if database is busy or locked.
- *
- * @param[out] resource  Last inserted resource.
- * @param[in]  sql       Format string for SQL statement.
- * @param[in]  ...       Arguments for format string.
- */
-void
-sqli (resource_t *resource, char* sql, ...)
-{
-  gchar *new_sql;
-  sql_stmt_t* stmt;
-  int sql_x_ret;
-  va_list args;
-
-  assert (sql && strlen (sql) && (sql[strlen (sql) - 1] != ';'));
-
-  /* Append RETURNING clause to SQL. */
-
-  new_sql = g_strdup_printf ("%s RETURNING id;", sql);
-
-  /* Run statement, returning integer. */
-
-  va_start (args, sql);
-  sql_x_ret = sql_x (new_sql, args, &stmt);
-  va_end (args);
-  g_free (new_sql);
-  switch (sql_x_ret)
-    {
-      case  0:
-        break;
-      case  1:
-        sql_finalize (stmt);
-        abort ();
-      default:
-        assert (0);
-        /* Fall through. */
-      case -1:
-        sql_finalize (stmt);
-        abort ();
-    }
-  if (resource)
-    *resource = sql_column_int64 (stmt, 0);
-  sql_finalize (stmt);
-}
-
-/**
  * @brief Prepare a statement.
  *
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.

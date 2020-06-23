@@ -84,9 +84,6 @@ sql_insert (const char *);
 void
 sql (char *sql, ...);
 
-void
-sqli (resource_t *, char *, ...);
-
 int
 sql_error (char *sql, ...);
 
@@ -135,9 +132,6 @@ sql_rollback ();
 
 /* These functions are for "internal" use.  They may only be accessed by code
  * that is allowed to run SQL statements directly. */
-
-void
-init_prepared_iterator (iterator_t *, sql_stmt_t *);
 
 void
 init_iterator (iterator_t *, const char *, ...);

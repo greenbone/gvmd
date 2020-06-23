@@ -528,22 +528,6 @@ sql_int64_0 (char* sql, ...)
  * @brief Initialise an iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  stmt      Statement.
- */
-void
-init_prepared_iterator (iterator_t* iterator, sql_stmt_t* stmt)
-{
-  iterator->done = FALSE;
-  iterator->stmt = stmt;
-  iterator->prepared = 1;
-  iterator->crypt_ctx = NULL;
-  g_debug ("   sql: init prepared %p", stmt);
-}
-
-/**
- * @brief Initialise an iterator.
- *
- * @param[in]  iterator  Iterator.
  * @param[in]  sql       Format string for SQL.
  */
 void
