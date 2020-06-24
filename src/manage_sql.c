@@ -30898,7 +30898,6 @@ create_target (const char* name, const char* asset_hosts_filter,
       sql_rollback ();
       return 1;
     }
-  quoted_name = sql_quote (name ?: "");
 
   if (asset_hosts_filter)
     {
@@ -30943,7 +30942,6 @@ create_target (const char* name, const char* asset_hosts_filter,
   max = manage_count_hosts (clean, clean_exclude);
   if (max <= 0)
     {
-      g_free (quoted_name);
       g_free (clean);
       g_free (clean_exclude);
       sql_rollback ();
@@ -30951,7 +30949,6 @@ create_target (const char* name, const char* asset_hosts_filter,
     }
   if (max > max_hosts)
     {
-      g_free (quoted_name);
       g_free (clean);
       g_free (clean_exclude);
       sql_rollback ();
@@ -30968,7 +30965,6 @@ create_target (const char* name, const char* asset_hosts_filter,
                                           "get_port_lists")
           || (port_list == 0))
         {
-          g_free (quoted_name);
           g_free (quoted_exclude_hosts);
           g_free (quoted_hosts);
           return 6;
@@ -30982,7 +30978,6 @@ create_target (const char* name, const char* asset_hosts_filter,
       g_free (port_list_comment);
       if (ret)
         {
-          g_free (quoted_name);
           g_free (quoted_exclude_hosts);
           g_free (quoted_hosts);
           sql_rollback ();
@@ -31003,6 +30998,8 @@ create_target (const char* name, const char* asset_hosts_filter,
     reverse_lookup_unify = "0";
   else
     reverse_lookup_unify = "1";
+
+  quoted_name = sql_quote (name ?: "");
 
   if (comment)
     quoted_comment = sql_quote (comment);
