@@ -2465,7 +2465,8 @@ update_scap_cpes ()
     {
       g_warning ("%s: No CPE dictionary found at %s",
                  __func__,
-                 strerror (errno));
+                 full_path);
+      g_free (full_path);
       return -1;
     }
 
