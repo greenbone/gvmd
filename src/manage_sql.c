@@ -30853,7 +30853,7 @@ target_login_port (target_t target, const char* type)
  *         6 failed to find port list, 7 error in alive tests,
  *         8 invalid SSH credential type, 9 invalid SMB credential type,
  *         10 invalid ESXi credential type, 11 invalid SNMP credential type,
- *         99 permission denied, -1 error.
+ *         12 port range or port list required, 99 permission denied, -1 error.
  */
 int
 create_target (const char* name, const char* asset_hosts_filter,
@@ -30908,6 +30908,11 @@ create_target (const char* name, const char* asset_hosts_filter,
           sql_rollback ();
           return 6;
         }
+    }
+  else if (port_range == NULL)
+    {
+      sql_rollback ();
+      return 12;
     }
   else
     {
