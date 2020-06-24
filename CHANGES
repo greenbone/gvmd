@@ -29,6 +29,7 @@ Main changes since 7.0.3:
   updates from GMP scanners blocking the database for a long time.
 * A check whether hosts are alive and have results when adding them in slave
   scans has been added.
+* Empty hosts_allow and ifaces_allow is no longer ignored
 
 openvas-manager 7.0.3 (2018-03-29)
 
