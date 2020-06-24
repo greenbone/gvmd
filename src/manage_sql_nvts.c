@@ -1813,13 +1813,13 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
-      g_warning ("%s: failed to connect to %s", __func__, update_socket);
+      g_debug ("%s: failed to connect to %s", __func__, update_socket);
       return -1;
     }
 
   if (osp_get_vts_version (connection, &scanner_feed_version))
     {
-      g_warning ("%s: failed to get scanner_version", __func__);
+      g_debug ("%s: failed to get scanner_version", __func__);
       return -1;
     }
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
