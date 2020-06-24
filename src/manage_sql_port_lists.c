@@ -1080,7 +1080,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
  * @param[in]   port_range      GMP style port range list.  NULL for "default".
  * @param[out]  port_list       Created port list.
  *
- * @return 0 success, 4 error in port range.
+ * @return 0 success, 4 error in port range, 12 default port list missing.
  */
 int
 create_port_list_unique (const char *name, const char *comment,
@@ -1096,9 +1096,12 @@ create_port_list_unique (const char *name, const char *comment,
     {
       if (find_port_list_with_permission (PORT_LIST_UUID_DEFAULT,
                                           port_list,
-                                          "get_port_lists")
-          || (*port_list == 0))
+                                          "get_port_lists"))
         return -1;
+
+      if (*port_list == 0)
+        return 12;
+
       return 0;
     }
 
