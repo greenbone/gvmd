@@ -30905,6 +30905,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                                           "get_port_lists")
           || (port_list == 0))
         {
+          sql_rollback ();
           return 6;
         }
     }
