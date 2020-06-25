@@ -12332,6 +12332,8 @@ feed_type_name (int feed_type)
         return "CERT";
       case SCAP_FEED:
         return "SCAP";
+      case GVMD_DATA_FEED:
+        return "GVMD_DATA";
       default:
         return "Error";
     }
@@ -12462,15 +12464,31 @@ get_feed_info (int feed_type, gchar **feed_name, gchar **feed_version,
                gchar **feed_description)
 {
   GError *error;
+  const char *feed_data_dir;
   gchar *config_path, *xml, *name, *version, *description;
   gsize xml_len;
   entity_t entity;
 
-  assert (feed_type == SCAP_FEED || feed_type == CERT_FEED);
+  assert (feed_type == SCAP_FEED
+          || feed_type == CERT_FEED
+          || feed_type == GVMD_DATA_FEED);
 
-  config_path = g_build_filename (feed_type == SCAP_FEED
-                                   ? GVM_SCAP_DATA_DIR
-                                   : GVM_CERT_DATA_DIR,
+  switch (feed_type)
+    {
+      case SCAP_FEED:
+        feed_data_dir = GVM_SCAP_DATA_DIR;
+        break;
+      case CERT_FEED:
+        feed_data_dir = GVM_CERT_DATA_DIR;
+        break;
+      case GVMD_DATA_FEED:
+        feed_data_dir = GVMD_FEED_DIR;
+        break;
+      default :
+        return -1;
+    }
+
+  config_path = g_build_filename (feed_data_dir,
                                   "feed.xml",
                                   NULL);
   g_debug ("%s: config_path: %s", __func__, config_path);
@@ -12659,6 +12677,10 @@ handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
   if ((get_feeds_data->type == NULL)
       || (strcasecmp (get_feeds_data->type, "cert") == 0))
     get_feed (gmp_parser, error, CERT_FEED);
+
+  if ((get_feeds_data->type == NULL)
+      || (strcasecmp (get_feeds_data->type, "gvmd_data") == 0))
+    get_feed (gmp_parser, error, GVMD_DATA_FEED);
 
   SEND_TO_CLIENT_OR_FAIL ("</get_feeds_response>");
 
