@@ -600,7 +600,7 @@ truncate_text (gchar *string, size_t max_len, gboolean xml, const char *suffix)
           //  move the offset to the start of that entity.
           ssize_t entity_start_offset = offset;
 
-          while (entity_start_offset >= 0 
+          while (entity_start_offset >= 0
                  && string[entity_start_offset] != '&')
             {
               entity_start_offset --;
@@ -3545,7 +3545,8 @@ get_osp_scan_status (const char *scan_id, const char *host, int port,
  * @param[in]   report    The report.
  * @param[in]   scan_id   The UUID of the scan on the scanner.
  *
- * @return 0 if success, -1 if error, -2 if scan was stopped.
+ * @return 0 if success, -1 if error, -2 if scan was stopped,
+ *         -3 if the scan was interrupted.
  */
 static int
 handle_osp_scan (task_t task, report_t report, const char *scan_id)
@@ -3627,6 +3628,19 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                                   TASK_STATUS_QUEUED);
                       queued_status_updated = TRUE;
                     }
+                }
+              else if (osp_scan_status == OSP_SCAN_STATUS_INTERRUPTED)
+                {
+                  result_t result = make_osp_result
+                    (task, "", "", "",
+                     threat_message_type ("Error"),
+                     "Task interrupted unexpectedly", "", "",
+                     QOD_DEFAULT);
+                  report_add_result (report, result);
+                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                   key_priv);
+                  rc = -3;
+                  break;
                 }
               else if (progress >= 0 && progress < 100
                   && osp_scan_status == OSP_SCAN_STATUS_STOPPED)
@@ -4559,6 +4573,11 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
     {
       set_task_run_status (task, TASK_STATUS_STOPPED);
       set_report_scan_run_status (global_current_report, TASK_STATUS_STOPPED);
+    }
+  else if (rc == -3)
+    {
+      set_task_run_status (task, TASK_STATUS_INTERRUPTED);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
     }
 
   set_task_end_time_epoch (task, time (NULL));
