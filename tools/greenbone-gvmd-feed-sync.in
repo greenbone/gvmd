@@ -210,32 +210,32 @@ init_feed_type () {
         FEED_NAME="Greenbone Community SCAP Feed"
       fi
     fi
-  elif [ "DATA_OBJECTS" = "$FEED_TYPE" ]
+  elif [ "GVMD_DATA" = "$FEED_TYPE" ]
   then
     [ -r "@GVM_SYSCONF_DIR@/greenbone-data-objects-sync.conf" ] && . "@GVM_SYSCONF_DIR@/greenbone-data-objects-sync.conf"
 
-    FEED_TYPE_LONG="Data Objects"
+    FEED_TYPE_LONG="GVMd Data"
     FEED_DIR="@GVMD_FEED_DIR@"
     TIMESTAMP="$FEED_DIR/timestamp"
-    SCRIPT_ID="DATA_OBJ_SYNC"
+    SCRIPT_ID="GVMD_DATA_SYNC"
 
-    if [ -z "$COMMUNITY_DATA_OBJECTS_RSYNC_FEED" ]; then
-      COMMUNITY_RSYNC_FEED="rsync://feed.community.greenbone.net:/data-objects/gvmd"
+    if [ -z "$COMMUNITY_GVMD_DATA_RSYNC_FEED" ]; then
+      COMMUNITY_RSYNC_FEED="rsync://feed.community.greenbone.net:/data-objects/gvmd/"
       # An alternative syntax which might work if the above doesn't:
-      # COMMUNITY_RSYNC_FEED="rsync@feed.community.greenbone.net::data-objects/gvmd"
+      # COMMUNITY_RSYNC_FEED="rsync@feed.community.greenbone.net::data-objects/gvmd/"
     else
-      COMMUNITY_RSYNC_FEED="$COMMUNITY_DATA_OBJECTS_RSYNC_FEED"
+      COMMUNITY_RSYNC_FEED="$COMMUNITY_GVMD_DATA_RSYNC_FEED"
     fi
 
-    GSF_RSYNC_PATH="/data-objects/gvmd"
+    GSF_RSYNC_PATH="/data-objects/gvmd/"
 
     if [ -e $ACCESSKEY ] ; then
       if [ -z "$FEED_NAME" ] ; then
-        FEED_NAME="Greenbone Data Objects Feed"
+        FEED_NAME="Greenbone GVMd Data Feed"
       fi
     else
       if [ -z "$FEED_NAME" ] ; then
-        FEED_NAME="Greenbone Community Data Objects Feed"
+        FEED_NAME="Greenbone Community GVMd Data Feed"
       fi
     fi
   else
