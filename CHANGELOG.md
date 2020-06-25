@@ -123,6 +123,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix and simplify parse_iso_time and add tests [#1129](https://github.com/greenbone/gvmd/pull/1129)
 - Fix gvm-manage-certs. [#1140](https://github.com/greenbone/gvmd/pull/1140)
 - Fix CVE scanner and results handling [#1141](https://github.com/greenbone/gvmd/pull/1141)
+- Handle INTERRUPTED scans [#1146](https://github.com/greenbone/gvmd/pull/1146)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
@@ -136,6 +137,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add migrator to remove dead hosts [#1071](https://github.com/greenbone/gvmd/pull/1071)
 - Remove classic schedules elements from GMP [#1116](https://github.com/greenbone/gvmd/pull/1116) [#1121](https://github.com/greenbone/gvmd/pull/1121)
 - Remove parallel from target options. [#1119](https://github.com/greenbone/gvmd/pull/1119)
+- Remove default port list from CREATE_TARGET [#1151](https://github.com/greenbone/gvmd/pull/1151)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 

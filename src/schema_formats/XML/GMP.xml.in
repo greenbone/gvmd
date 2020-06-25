@@ -5242,8 +5242,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>alive_tests</e></o>
       <o><e>reverse_lookup_only</e></o>
       <o><e>reverse_lookup_unify</e></o>
-      <o><e>port_range</e></o>
-      <o><e>port_list</e></o>
+      <or>
+        <e>port_range</e>
+        <e>port_list</e>
+      </or>
     </pattern>
     <ele>
       <name>name</name>
@@ -25968,6 +25970,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>CREATE_TARGET, RUN_WIZARD</command>
+    <summary>Default port list removed from CREATE_TARGET</summary>
+    <description>
+      <p>
+        CREATE_TARGET will no longer automatically add a port list to the
+        target if a port list or range is not given.  In other words, it
+        is now mandatory to supply either PORT_LIST or PORT_RANGE.
+      </p>
+      <p>
+        As a side effect wizards that use CREATE_TARGET now provide their
+        own default if no "port_list_id" param is given: "All IANA assigned
+        TCP", which has UUID 33d0cd82-57c6-11e1-8ed1-406186ea4fc5.
+      </p>
+    </description>
+    <version>20.08</version>
+  </change>
   <change>
     <command>CREATE_SCHEDULE, GET_SCHEDULES, MODIFY_SCHEDULE</command>
     <summary>Classic schedule elements removed</summary>
