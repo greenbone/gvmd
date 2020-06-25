@@ -212,7 +212,7 @@ void
 manage_sync_scap (sigset_t *);
 
 int
-manage_rebuild_scap (GSList *, const gchar *, const char *);
+manage_rebuild_scap (GSList *, const gchar *);
 
 void
 manage_sync_cert (sigset_t *);

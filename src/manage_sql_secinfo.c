@@ -80,6 +80,9 @@ manage_db_init (const gchar *);
 int
 manage_db_init_indexes (const gchar *);
 
+int
+manage_db_add_constraints (const gchar *);
+
 
 /* Helpers. */
 
@@ -2462,7 +2465,8 @@ update_scap_cpes ()
     {
       g_warning ("%s: No CPE dictionary found at %s",
                  __func__,
-                 strerror (errno));
+                 full_path);
+      g_free (full_path);
       return -1;
     }
 
@@ -4125,8 +4129,7 @@ static void
 sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
               const gchar *process_title)
 {
-  int pid, ret;
-  lockfile_t lockfile;
+  int pid;
 
   /* Fork a child to sync the db, so that the parent can return to the main
    * loop. */
@@ -4148,15 +4151,6 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
         /* Cleanup so that exit works. */
 
         cleanup_manage_process (FALSE);
-
-        /* Open the lock file. */
-
-        ret = feed_lockfile_lock (&lockfile);
-
-        if (ret == 1)
-          exit (EXIT_SUCCESS);
-        else if (ret)
-          exit (EXIT_FAILURE);
 
         /* Init. */
 
@@ -4182,10 +4176,6 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
     {
       check_alerts ();
     }
-
-  /* Close the lock file. */
-
-  feed_lockfile_unlock (&lockfile);
 
   exit (EXIT_SUCCESS);
 }
@@ -4343,7 +4333,7 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
       g_info ("Updating Max CVSS for DFN-CERT");
       sql ("UPDATE cert.dfn_cert_advs"
            " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap2.cves"
+           "                 FROM scap.cves"
            "                 WHERE name"
            "                 IN (SELECT cve_name"
            "                     FROM cert.dfn_cert_cves"
@@ -4374,7 +4364,7 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
       g_info ("Updating Max CVSS for CERT-Bund");
       sql ("UPDATE cert.cert_bund_advs"
            " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap2.cves"
+           "                 FROM scap.cves"
            "                 WHERE name"
            "                       IN (SELECT cve_name"
            "                           FROM cert.cert_bund_cves"
@@ -4458,7 +4448,7 @@ sync_cert ()
 
   last_scap_update = 0;
   if (manage_scap_loaded ())
-    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap2.meta"
+    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
                                 "                  WHERE name = 'last_update'),"
                                 "                 '0');");
   g_debug ("%s: last_scap_update: %i", __func__, last_scap_update);
@@ -4665,6 +4655,9 @@ update_scap_end ()
   else
     sql ("ALTER SCHEMA scap2 RENAME TO scap;");
 
+  sql ("ANALYZE scap.cves, scap.cpes, scap.affected_products, scap.ovaldefs,"
+       "        scap.ovalfiles, scap.affected_ovaldefs;");
+
   g_info ("%s: Updating SCAP info succeeded", __func__);
   proctitle_set ("gvmd: Syncing SCAP: done");
 
@@ -4682,14 +4675,18 @@ try_load_csv ()
   gchar *file_cves, *file_cpes, *file_affected_products;
   gchar *file_ovaldefs, *file_ovalfiles, *file_affected_ovaldefs;
 
-  file_cves = g_build_filename (GVM_SCAP_DATA_DIR, "table-cves.csv", NULL);
-  file_cpes = g_build_filename (GVM_SCAP_DATA_DIR, "table-cpes.csv", NULL);
-  file_affected_products = g_build_filename (GVM_SCAP_DATA_DIR,
+  file_cves = g_build_filename (GVM_SCAP_DATA_CSV_DIR, "table-cves.csv", NULL);
+  file_cpes = g_build_filename (GVM_SCAP_DATA_CSV_DIR, "table-cpes.csv", NULL);
+  file_affected_products = g_build_filename (GVM_SCAP_DATA_CSV_DIR,
                                              "table-affected-products.csv",
                                              NULL);
-  file_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovaldefs.csv", NULL);
-  file_ovalfiles = g_build_filename (GVM_SCAP_DATA_DIR, "table-ovalfiles.csv", NULL);
-  file_affected_ovaldefs = g_build_filename (GVM_SCAP_DATA_DIR,
+  file_ovaldefs = g_build_filename (GVM_SCAP_DATA_CSV_DIR,
+                                    "table-ovaldefs.csv",
+                                    NULL);
+  file_ovalfiles = g_build_filename (GVM_SCAP_DATA_CSV_DIR,
+                                     "table-ovalfiles.csv",
+                                     NULL);
+  file_affected_ovaldefs = g_build_filename (GVM_SCAP_DATA_CSV_DIR,
                                              "table-affected-ovaldefs.csv",
                                              NULL);
 
@@ -4700,6 +4697,14 @@ try_load_csv ()
       && g_file_test (file_ovalfiles, G_FILE_TEST_EXISTS)
       && g_file_test (file_affected_ovaldefs, G_FILE_TEST_EXISTS))
     {
+      /* Create a new schema, "scap2". */
+
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("%s: could not initialize SCAP database 2", __func__);
+          return -1;
+        }
+
       sql ("COPY scap2.cves FROM '%s' WITH (FORMAT csv);", file_cves);
       g_free (file_cves);
 
@@ -4720,7 +4725,7 @@ try_load_csv ()
            file_affected_ovaldefs);
       g_free (file_affected_ovaldefs);
 
-      /* Add the indexes, now that the data is ready. */
+      /* Add the indexes and constraints, now that the data is ready. */
 
       g_debug ("%s: add indexes", __func__);
       proctitle_set ("gvmd: Syncing SCAP: Adding indexes");
@@ -4728,6 +4733,15 @@ try_load_csv ()
       if (manage_db_init_indexes ("scap"))
         {
           g_warning ("%s: could not initialize SCAP indexes", __func__);
+          return -1;
+        }
+
+      g_debug ("%s: add constraints", __func__);
+      proctitle_set ("gvmd: Syncing SCAP: Adding constraints");
+
+      if (manage_db_add_constraints ("scap"))
+        {
+          g_warning ("%s: could not add SCAP constraints", __func__);
           return -1;
         }
 
@@ -4789,6 +4803,11 @@ update_scap (gboolean reset_scap_db)
         }
     }
 
+  /* If there's CSV in the feed, just load it. */
+
+  if (try_load_csv () == 0)
+    return 0;
+
   /* Create a new schema, "scap2". */
 
   if (manage_db_init ("scap"))
@@ -4797,12 +4816,7 @@ update_scap (gboolean reset_scap_db)
       return -1;
     }
 
-  /* If there's CSV in the feed, just load it. */
-
-  if (try_load_csv () == 0)
-    return 0;
-
-  /* Add the indexes, now that the data is ready. */
+  /* Add the indexes and constraints. */
 
   g_debug ("%s: add indexes", __func__);
   proctitle_set ("gvmd: Syncing SCAP: Adding indexes");
@@ -4810,6 +4824,12 @@ update_scap (gboolean reset_scap_db)
   if (manage_db_init_indexes ("scap"))
     {
       g_warning ("%s: could not initialize SCAP indexes", __func__);
+      return -1;
+    }
+
+  if (manage_db_add_constraints ("scap"))
+    {
+      g_warning ("%s: could not add SCAP constraints", __func__);
       return -1;
     }
 
@@ -4882,14 +4902,12 @@ manage_sync_scap (sigset_t *sigmask_current)
 }
 
 /**
- * @brief Rebuild part of the SCAP DB.
+ * @brief Rebuild the entire SCAP DB.
  *
- * @param[in]  type        The type of SCAP info to rebuild.
- *
- * @return 0 success, 1 invalid type, 2 sync running, -1 error
+ * @return 0 success, 2 sync running, -1 error
  */
 static int
-rebuild_scap (const char *type)
+rebuild_scap ()
 {
   int ret = -1;
   lockfile_t lockfile;
@@ -4900,16 +4918,9 @@ rebuild_scap (const char *type)
   else if (ret)
     return -1;
 
-  if (strcasecmp (type, "all") == 0
-      || strcasecmp (type, "ovaldefs") == 0
-      || strcasecmp (type, "ovaldef") == 0)
-    {
-      ret = update_scap (TRUE);
-      if (ret == 1)
-        ret = 2;
-    }
-  else
-    ret = 1;
+  ret = update_scap (TRUE);
+  if (ret == 1)
+    ret = 2;
 
   if (feed_lockfile_unlock (&lockfile))
     {
@@ -4926,29 +4937,22 @@ rebuild_scap (const char *type)
  *
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
- * @param[in]  type        The type of SCAP info to rebuild.
-
+ *
  * @return 0 success, -1 error.
  */
 int
-manage_rebuild_scap (GSList *log_config, const gchar *database,
-                     const char *type)
+manage_rebuild_scap (GSList *log_config, const gchar *database)
 {
   int ret;
 
-  g_info ("   Rebuilding SCAP data (%s).", type);
+  g_info ("   Rebuilding SCAP data");
 
   ret = manage_option_setup (log_config, database);
   if (ret)
     return -1;
 
-  ret = rebuild_scap (type);
-  if (ret == 1)
-    {
-      printf ("Type must be 'ovaldefs' or 'all'.\n");
-      goto fail;
-    }
-  else if (ret == 2)
+  ret = rebuild_scap ();
+  if (ret == 2)
     {
       printf ("SCAP sync is currently running.\n");
       goto fail;

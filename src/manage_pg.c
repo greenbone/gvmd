@@ -2219,7 +2219,6 @@ create_tables ()
        "  byday integer,"
        "  duration integer,"
        "  timezone text,"
-       "  initial_offset integer,"
        "  creation_time integer,"
        "  modification_time integer,"
        "  icalendar text);");
@@ -2236,7 +2235,6 @@ create_tables ()
        "  byday integer,"
        "  duration integer,"
        "  timezone text,"
-       "  initial_offset integer,"
        "  creation_time integer,"
        "  modification_time integer,"
        "  icalendar text);");
@@ -3134,7 +3132,7 @@ manage_db_init (const gchar *name)
            "                   false);");
 
       sql ("SELECT drop_scap2 ();");
-      sql ("DROP FUNCTION drop_scap2 ();");
+      sql ("DROP FUNCTION IF EXISTS drop_scap2 ();");
 
       sql ("CREATE SCHEMA scap2;");
 
@@ -3147,7 +3145,7 @@ manage_db_init (const gchar *name)
 
       sql ("CREATE TABLE scap2.cves"
            " (id SERIAL PRIMARY KEY,"
-           "  uuid text UNIQUE,"
+           "  uuid text,"
            "  name text,"
            "  comment text,"
            "  description text,"
@@ -3164,7 +3162,7 @@ manage_db_init (const gchar *name)
 
       sql ("CREATE TABLE scap2.cpes"
            " (id SERIAL PRIMARY KEY,"
-           "  uuid text UNIQUE,"
+           "  uuid text,"
            "  name text,"
            "  comment text,"
            "  creation_time integer,"
@@ -3177,15 +3175,12 @@ manage_db_init (const gchar *name)
            "  nvd_id text);");
 
       sql ("CREATE TABLE scap2.affected_products"
-           " (cve INTEGER NOT NULL,"
-           "  cpe INTEGER NOT NULL,"
-           "  UNIQUE (cve, cpe),"
-           "  FOREIGN KEY(cve) REFERENCES cves(id),"
-           "  FOREIGN KEY(cpe) REFERENCES cpes(id));");
+           " (cve INTEGER,"
+           "  cpe INTEGER);");
 
       sql ("CREATE TABLE scap2.ovaldefs"
            " (id SERIAL PRIMARY KEY,"
-           "  uuid text UNIQUE,"
+           "  uuid text,"
            "  name text,"                   /* OVAL identifier. */
            "  comment text,"
            "  creation_time integer,"
@@ -3202,13 +3197,11 @@ manage_db_init (const gchar *name)
 
       sql ("CREATE TABLE scap2.ovalfiles"
            " (id SERIAL PRIMARY KEY,"
-           "  xml_file TEXT UNIQUE);");
+           "  xml_file TEXT);");
 
       sql ("CREATE TABLE scap2.affected_ovaldefs"
-           " (cve INTEGER NOT NULL,"
-           "  ovaldef INTEGER NOT NULL,"
-           "  FOREIGN KEY(cve) REFERENCES cves(id),"
-           "  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id));");
+           " (cve INTEGER,"
+           "  ovaldef INTEGER);");
 
       /* Init tables. */
 
@@ -3216,6 +3209,52 @@ manage_db_init (const gchar *name)
            " VALUES ('database_version', '16');");
       sql ("INSERT INTO scap2.meta (name, value)"
            " VALUES ('last_update', '0');");
+    }
+  else
+    {
+      assert (0);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Init external database.
+ *
+ * @param[in]  name  Name.  Currently only "scap".
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_db_add_constraints (const gchar *name)
+{
+  if (strcasecmp (name, "scap") == 0)
+    {
+      sql ("ALTER TABLE scap2.cves"
+           " ADD UNIQUE (uuid);");
+
+      sql ("ALTER TABLE scap2.cpes"
+           " ADD UNIQUE (uuid);");
+
+      sql ("ALTER TABLE scap2.affected_products"
+           " ALTER cve SET NOT NULL,"
+           " ALTER cpe SET NOT NULL,"
+           " ADD UNIQUE (cve, cpe),"
+           " ADD FOREIGN KEY(cve) REFERENCES cves(id),"
+           " ADD FOREIGN KEY(cpe) REFERENCES cpes(id);");
+
+      sql ("ALTER TABLE scap2.ovaldefs"
+           " ADD UNIQUE (uuid);");
+
+      sql ("ALTER TABLE scap2.ovalfiles"
+           " ADD UNIQUE (xml_file);");
+
+      sql ("ALTER TABLE scap2.affected_ovaldefs"
+           " ALTER cve SET NOT NULL,"
+           " ALTER ovaldef SET NOT NULL,"
+           " ADD FOREIGN KEY(cve) REFERENCES cves(id),"
+           " ADD FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id);");
     }
   else
     {

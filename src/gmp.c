@@ -15879,12 +15879,6 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
                              "Schedule exists already"));
         log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
-      case 2:
-        SEND_TO_CLIENT_OR_FAIL
-          (XML_ERROR_SYNTAX ("create_schedule",
-                             "Syntax error in BYDAY"));
-        log_event_fail ("schedule", "Schedule", NULL, "created");
-        break;
       case 3:
         {
           SENDF_TO_CLIENT_OR_FAIL
@@ -15893,6 +15887,12 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
              "</create_schedule_response>", ical_error);
           log_event_fail ("schedule", "Schedule", NULL, "created");
         }
+        break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_schedule",
+                             "Error in TIMEZONE"));
+        log_event_fail ("schedule", "Schedule", NULL, "created");
         break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL
@@ -15950,10 +15950,10 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
     {
       case 0:
         SENDF_TO_CLIENT_OR_FAIL
-          ("<create_schedule_response status=\"200\""
+          ("<modify_schedule_response status=\"200\""
            " status_text=\"OK\">"
            "<status_details>%s</status_details>"
-           "</create_schedule_response>",
+           "</modify_schedule_response>",
            ical_error ? ical_error : "");
         log_event ("schedule", "Schedule",
                    modify_schedule_data->schedule_id, "modified");
@@ -16003,6 +16003,13 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
           log_event_fail ("schedule", "Schedule",
                           modify_schedule_data->schedule_id, "modified");
         }
+        break;
+      case 7:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_schedule",
+                             "Error in TIMEZONE"));
+        log_event_fail ("schedule", "Schedule",
+                        modify_schedule_data->schedule_id, "modified");
         break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL

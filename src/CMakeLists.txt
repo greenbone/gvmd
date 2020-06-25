@@ -291,6 +291,7 @@ add_definitions (-DPREFIX="${CMAKE_INSTALL_PREFIX}")
 
 add_definitions (-DGVM_SCAP_RES_DIR="${GVM_SCAP_RES_DIR}")
 add_definitions (-DGVM_SCAP_DATA_DIR="${GVM_SCAP_DATA_DIR}")
+add_definitions (-DGVM_SCAP_DATA_CSV_DIR="${GVM_SCAP_DATA_DIR}/${GVMD_SCAP_DATABASE_VERSION}")
 
 add_definitions (-DGVM_CERT_RES_DIR="${GVM_CERT_RES_DIR}")
 add_definitions (-DGVM_CERT_DATA_DIR="${GVM_CERT_DATA_DIR}")

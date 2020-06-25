@@ -772,8 +772,8 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 /**
  * @brief Convert an ISO time into seconds since epoch.
  *
- * For backward compatibility, if the conversion fails try parse in ctime
- * format.
+ * If no offset is specified, the timezone of the current user is used.
+ * If there is no current user timezone, UTC is used.
  *
  * @param[in]  text_time  Time as text in ISO format: 2011-11-03T09:23:28+02:00.
  *
@@ -782,205 +782,7 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 int
 parse_iso_time (const char *text_time)
 {
-  int epoch_time;
-  struct tm tm;
-
-  memset (&tm, 0, sizeof (struct tm));
-  tm.tm_isdst = -1;
-  if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
-    {
-      gchar *tz;
-
-      memset (&tm, 0, sizeof (struct tm));
-      tm.tm_isdst = -1;
-      if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
-        {
-          /* Try time without timezone suffix, applying timezone of user. */
-
-          memset (&tm, 0, sizeof (struct tm));
-          tm.tm_isdst = -1;
-          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
-            {
-              memset (&tm, 0, sizeof (struct tm));
-              tm.tm_isdst = -1;
-              if (strptime ((char*) text_time, "%F %T", &tm) == NULL)
-                return parse_ctime (text_time);
-            }
-
-          /* Store current TZ. */
-          tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-          if (setenv ("TZ",
-                      current_credentials.timezone
-                       ? current_credentials.timezone
-                       : "UTC",
-                      1)
-              == -1)
-            {
-              g_warning ("%s: Failed to switch to timezone %s",
-                         __func__, current_credentials.timezone);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
-            }
-
-          memset (&tm, 0, sizeof (struct tm));
-          tm.tm_isdst = -1;
-          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
-            {
-              memset (&tm, 0, sizeof (struct tm));
-              tm.tm_isdst = -1;
-              if (strptime ((char*) text_time, "%F %T", &tm) == NULL)
-                {
-                  assert (0);
-                  g_warning ("%s: Failed to parse time", __func__);
-                  if (tz != NULL)
-                    setenv ("TZ", tz, 1);
-                  g_free (tz);
-                  return 0;
-                }
-            }
-        }
-      else
-        {
-          /* Time has "Z" suffix for UTC */
-
-          /* Store current TZ. */
-          tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-          if (setenv ("TZ", "UTC", 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to UTC", __func__);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
-            }
-
-          memset (&tm, 0, sizeof (struct tm));
-          tm.tm_isdst = -1;
-          if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
-            {
-              assert (0);
-              g_warning ("%s: Failed to parse time", __func__);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
-            }
-        }
-
-      epoch_time = mktime (&tm);
-      if (epoch_time == -1)
-        {
-          g_warning ("%s: Failed to make time", __func__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-
-      /* Revert to stored TZ. */
-      if (tz)
-        {
-          if (setenv ("TZ", tz, 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to original TZ", __func__);
-              g_free (tz);
-              return 0;
-            }
-        }
-      else
-        unsetenv ("TZ");
-
-      g_free (tz);
-    }
-  else
-    {
-      gchar *tz, *new_tz;
-      int offset_hour, offset_minute;
-      char sign;
-
-      /* Get the timezone offset from the string. */
-
-      if (sscanf ((char*) text_time,
-                  "%*u-%*u-%*uT%*u:%*u:%*u%[-+]%d:%d",
-                  &sign, &offset_hour, &offset_minute)
-          != 3)
-        {
-          /* Perhaps %z is an acronym like "CEST".  Assume it's local time. */
-          epoch_time = mktime (&tm);
-          if (epoch_time == -1)
-            {
-              g_warning ("%s: Failed to make time", __func__);
-              return 0;
-            }
-          return epoch_time;
-        }
-
-      /* Store current TZ. */
-
-      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-      /* Switch to the timezone in the time string. */
-
-      new_tz = g_strdup_printf ("UTC%c%d:%d",
-                                sign == '-' ? '+' : '-',
-                                offset_hour,
-                                offset_minute);
-      if (setenv ("TZ", new_tz, 1) == -1)
-        {
-          g_warning ("%s: Failed to switch to %s", __func__, new_tz);
-          g_free (new_tz);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-      g_free (new_tz);
-
-      /* Parse time again under the new timezone. */
-
-      memset (&tm, 0, sizeof (struct tm));
-      tm.tm_isdst = -1;
-      if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
-        {
-          assert (0);
-          g_warning ("%s: Failed to parse time", __func__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-
-      epoch_time = mktime (&tm);
-      if (epoch_time == -1)
-        {
-          g_warning ("%s: Failed to make time", __func__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-
-      /* Revert to stored TZ. */
-      if (tz)
-        {
-          if (setenv ("TZ", tz, 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to original TZ", __func__);
-              g_free (tz);
-              return 0;
-            }
-        }
-      else
-        unsetenv ("TZ");
-
-      g_free (tz);
-    }
-
-  return epoch_time;
+  return parse_iso_time_tz (text_time, current_credentials.timezone);
 }
 
 /**
@@ -15417,7 +15219,7 @@ update_nvti_cache ()
           nvtis_add (nvti_cache, nvti);
         }
 
-      if (iterator_null (&nvts, 14))
+      if (iterator_null (&nvts, 2))
         /* No refs. */;
       else
         nvti_add_vtref (nvti,
@@ -19689,40 +19491,54 @@ detect_cleanup:
 /* Prognostics. */
 
 /**
- * @brief Get the location of an App for a report's host.
+ * @brief Initialize an iterator of locations of an App for a report's host.
  *
+ * @param[in]  iterator     Iterator.
  * @param[in]  report_host  Report host.
  * @param[in]  app          CPE.
- *
- * @return Location if there is one, else NULL.
  */
-gchar *
-app_location (report_host_t report_host, const gchar *app)
+void
+init_app_locations_iterator (iterator_t *iterator,
+                             report_host_t report_host,
+                             const gchar *app)
 {
-  gchar *quoted_app, *ret;
+  gchar *quoted_app;
 
   assert (app);
 
   quoted_app = sql_quote (app);
 
-  ret = sql_string ("SELECT value FROM report_host_details"
-                    " WHERE report_host = %llu"
-                    " AND name = '%s'"
-                    " AND source_type = 'nvt'"
-                    " AND source_name"
-                    "     = (SELECT source_name FROM report_host_details"
-                    "        WHERE report_host = %llu"
-                    "        AND source_type = 'nvt'"
-                    "        AND name = 'App'"
-                    "        AND value = '%s');",
-                    report_host,
-                    quoted_app,
-                    report_host,
-                    quoted_app);
+  init_iterator (iterator,
+                 "SELECT string_agg(DISTINCT value, ', ')"
+                 " FROM report_host_details"
+                 " WHERE report_host = %llu"
+                 " AND name = '%s'"
+                 " AND source_type = 'nvt'"
+                 " AND source_name"
+                 "     IN (SELECT source_name FROM report_host_details"
+                 "         WHERE report_host = %llu"
+                 "         AND source_type = 'nvt'"
+                 "         AND name = 'App'"
+                 "         AND value = '%s');",
+                 report_host,
+                 quoted_app,
+                 report_host,
+                 quoted_app);
 
   g_free (quoted_app);
+}
 
-  return ret;
+/**
+ * @brief Get a location from an app locations iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The location.
+ */
+const char *
+app_locations_iterator_location (iterator_t *iterator)
+{
+  return iterator_string (iterator, 0);
 }
 
 /**
@@ -19737,8 +19553,8 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
 {
   init_iterator (iterator,
                  "SELECT cves.name AS vulnerability,"
-                 "       CAST (cves.cvss AS NUMERIC) AS severity,"
-                 "       cves.description,"
+                 "       max(CAST (cves.cvss AS NUMERIC)) AS severity,"
+                 "       max(cves.description) AS description,"
                  "       cpes.name AS location,"
                  "       (SELECT host FROM report_hosts"
                  "        WHERE id = %llu) AS host"
@@ -19749,6 +19565,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
                  " AND report_host_details.name = 'App'"
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"
+                 " GROUP BY cves.id, vulnerability, location, host"
                  " ORDER BY cves.id ASC"
                  " LIMIT %s OFFSET 0;",
                  report_host,
@@ -22485,7 +22302,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables;
   int autofp, apply_overrides, dynamic_severity;
 
   if (report == -1)
@@ -22510,14 +22327,14 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
-  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                  " ON results.nvt = nvts.oid %s",
+                                  opts_tables);
   g_free (opts_tables);
 
-  where = results_extra_where (get->trash, report, host,
-                               autofp, apply_overrides, dynamic_severity,
-                               filter ? filter : get->filter);
-  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
-  g_free (where);
+  extra_where = results_extra_where (get->trash, report, host,
+                                     autofp, apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter);
 
   free (filter);
 
@@ -22559,7 +22376,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables, *where;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables;
   int apply_overrides, autofp, dynamic_severity;
 
   if (report == -1)
@@ -22581,14 +22398,14 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   opts_tables
     = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
-  extra_tables = g_strdup_printf ("%s, nvts", opts_tables);
+  extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                  " ON results.nvt = nvts.oid %s",
+                                  opts_tables);
   g_free (opts_tables);
 
-  where = results_extra_where (get->trash, report, host,
-                               autofp, apply_overrides, dynamic_severity,
-                               filter ? filter : get->filter);
-  extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", where);
-  g_free (where);
+  extra_where = results_extra_where (get->trash, report, host,
+                                     autofp, apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter);
 
   ret = count ("result", get,
                 manage_cert_loaded () ? columns : columns_no_cert,
@@ -40785,8 +40602,8 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
  * @param[out]  schedule    Created schedule.
  * @param[out]  error_out   Output for iCalendar errors and warnings.
  *
- * @return 0 success, 1 schedule exists already, 2 syntax error in byday,
- *         3 error in iCal string, 99 permission denied.
+ * @return 0 success, 1 schedule exists already,
+ *         3 error in iCal string, 4 error in timezone, 99 permission denied.
  */
 int
 create_schedule (const char* name, const char *comment,
@@ -40795,9 +40612,9 @@ create_schedule (const char* name, const char *comment,
 {
   gchar *quoted_comment, *quoted_name, *quoted_timezone;
   gchar *insert_timezone;
-  long offset;
   int byday_mask;
   icalcomponent *ical_component;
+  icaltimezone *ical_timezone;
   gchar *quoted_ical;
   time_t first_time, period, period_months, duration;
 
@@ -40839,11 +40656,18 @@ create_schedule (const char* name, const char *comment,
         }
     }
 
-  offset = current_offset (insert_timezone);
+  ical_timezone = icalendar_timezone_from_string (insert_timezone);
+  if (ical_timezone == NULL)
+    {
+      g_free (insert_timezone);
+      return 4;
+    }
+
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_timezone = sql_quote (insert_timezone);
 
-  ical_component = icalendar_from_string (ical_string, error_out);
+  ical_component = icalendar_from_string (ical_string, ical_timezone,
+                                          error_out);
   if (ical_component == NULL)
     {
       g_free (quoted_name);
@@ -40854,7 +40678,7 @@ create_schedule (const char* name, const char *comment,
     }
   quoted_ical = sql_quote (icalcomponent_as_ical_string (ical_component));
   first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                    zone);
+                                                    ical_timezone);
   duration = icalendar_duration_from_vcalendar (ical_component);
 
   icalendar_approximate_rrule_from_vcalendar (ical_component,
@@ -40864,17 +40688,17 @@ create_schedule (const char* name, const char *comment,
 
   sql ("INSERT INTO schedules"
        " (uuid, name, owner, comment, first_time, period, period_months,"
-       "  byday, duration, timezone, icalendar, initial_offset,"
+       "  byday, duration, timezone, icalendar,"
        "  creation_time, modification_time)"
        " VALUES"
        " (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
        "  '%s', %i, %i, %i, %i, %i,"
        "  '%s', '%s',"
-       "  %li, m_now (), m_now ());",
+       "  m_now (), m_now ());",
        quoted_name, current_credentials.uuid, quoted_comment, first_time,
        period, period_months, byday_mask, duration, quoted_timezone,
-       quoted_ical, offset);
+       quoted_ical);
 
   if (schedule)
     *schedule = sql_last_insert_id ();
@@ -40908,7 +40732,7 @@ copy_schedule (const char* name, const char* comment, const char *schedule_id,
 {
   return copy_resource ("schedule", name, comment, schedule_id,
                         "first_time, period, period_months, byday, duration,"
-                        " timezone, initial_offset, icalendar",
+                        " timezone, icalendar",
                         1, new_schedule, NULL);
 }
 
@@ -40991,10 +40815,10 @@ delete_schedule (const char *schedule_id, int ultimate)
 
       sql ("INSERT INTO schedules_trash"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  byday, duration, timezone, initial_offset, creation_time,"
+           "  byday, duration, timezone, creation_time,"
            "  modification_time, icalendar)"
            " SELECT uuid, owner, name, comment, first_time, period, period_months,"
-           "        byday, duration, timezone, initial_offset, creation_time,"
+           "        byday, duration, timezone, creation_time,"
            "        modification_time, icalendar"
            " FROM schedules WHERE id = %llu;",
            schedule);
@@ -41222,8 +41046,8 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
                  schedule);
   if (next (&schedules))
     {
-      *icalendar = g_strdup (iterator_string (&schedules, 5));
-      *zone = g_strdup (iterator_string (&schedules, 6));
+      *icalendar = g_strdup (iterator_string (&schedules, 0));
+      *zone = g_strdup (iterator_string (&schedules, 1));
       cleanup_iterator (&schedules);
       return 0;
     }
@@ -41236,7 +41060,7 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
  */
 #define SCHEDULE_ITERATOR_FILTER_COLUMNS                                      \
  { GET_ITERATOR_FILTER_COLUMNS, "first_time", "period", "period_months",      \
-   "duration", "timezone", "initial_offset", "first_run", "next_run", NULL }
+   "duration", "timezone", "first_run", "next_run", NULL }
 
 /**
  * @brief Schedule iterator columns.
@@ -41249,7 +41073,6 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
-   { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
    { "icalendar", NULL, KEYWORD_TYPE_STRING },                             \
    { "next_time_ical (icalendar, timezone)",                               \
      "next_run",                                                           \
@@ -41269,7 +41092,6 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
    { "period_months", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
-   { "initial_offset", NULL, KEYWORD_TYPE_INTEGER },                       \
    { "icalendar", NULL, KEYWORD_TYPE_STRING },                             \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
@@ -41337,7 +41159,7 @@ DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 4);
  * @return The iCalendar string or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (schedule_iterator_icalendar, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Initialise a task schedule iterator.
@@ -41685,7 +41507,7 @@ schedule_task_iterator_readable (iterator_t* iterator)
  *
  * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
  *         3 error in type name, 4 schedule_id required,
- *         5 syntax error in byday, 6 error in iCalendar,
+ *         6 error in iCalendar, 7 error in zone,
  *         99 permission denied, -1 internal error.
  */
 int
@@ -41694,6 +41516,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 {
   gchar *quoted_name, *quoted_comment, *quoted_timezone, *quoted_icalendar;
   icalcomponent *ical_component;
+  icaltimezone *ical_timezone;
   schedule_t schedule;
   time_t new_next_time, ical_first_time, ical_duration;
   gchar *real_timezone;
@@ -41741,7 +41564,18 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update basic data */
   quoted_comment = comment ? sql_quote (comment) : NULL;
-  quoted_timezone = zone ? sql_quote (zone) : NULL;
+
+  if (zone == NULL)
+    quoted_timezone = NULL;
+  else
+    {
+      quoted_timezone = g_strstrip (sql_quote (zone));
+      if (strcmp (quoted_timezone, "") == 0)
+        {
+          g_free (quoted_timezone);
+          quoted_timezone = NULL;
+        }
+    }
 
   sql ("UPDATE schedules SET"
        " name = %s%s%s,"
@@ -41765,10 +41599,20 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   /* Update times */
 
-  ical_component = icalendar_from_string (ical_string, error_out);
+  ical_timezone = icalendar_timezone_from_string (real_timezone);
+  if (ical_timezone == NULL)
+    {
+      g_free (real_timezone);
+      sql_rollback ();
+      return 7;
+    }
+
+  ical_component = icalendar_from_string (ical_string, ical_timezone,
+                                          error_out);
   if (ical_component == NULL)
     {
       g_free (real_timezone);
+      sql_rollback ();
       return 6;
     }
 
@@ -41776,7 +41620,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
                                   (ical_component));
 
   ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
-                                                         real_timezone);
+                                                         ical_timezone);
   ical_duration = icalendar_duration_from_vcalendar (ical_component);
 
   sql ("UPDATE schedules SET"
@@ -41786,7 +41630,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        " period_months = 0,"
        " byday = 0,"
        " duration = %d,"
-       " initial_offset = 0,"
        " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_icalendar,
@@ -47131,10 +46974,10 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO schedules"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  byday, duration, timezone, initial_offset, creation_time,"
+           "  byday, duration, timezone, creation_time,"
            "  modification_time, icalendar)"
            " SELECT uuid, owner, name, comment, first_time, period,"
-           "        period_months, byday, duration, timezone, initial_offset,"
+           "        period_months, byday, duration, timezone,"
            "        creation_time, modification_time, icalendar"
            " FROM schedules_trash WHERE id = %llu;",
            resource);
@@ -55788,7 +55631,9 @@ type_build_select (const char *type, const char *columns_str,
       gchar *original;
 
       original = opts_table;
-      opts_table = g_strdup_printf ("%s, nvts", original);
+      opts_table = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                    " ON results.nvt = nvts.oid %s",
+                                    original);
       g_free (original);
     }
 
@@ -55815,14 +55660,6 @@ type_build_select (const char *type, const char *columns_str,
     extra_where = type_extra_where (type, get->trash,
                                     filter ? filter : get->filter,
                                     get->extra_params);
-  if (strcasecmp (type, "RESULT") == 0)
-    {
-      gchar *original;
-
-      original = extra_where;
-      extra_where = g_strdup_printf ("%s AND (results.nvt = nvts.oid)", original);
-      g_free (original);
-    }
 
   if (get->ignore_pagination)
     pagination_clauses = NULL;
