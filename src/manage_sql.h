@@ -58,13 +58,6 @@
 #define PERMISSION_UUID_SUPER_ADMIN_EVERYTHING "a9801074-6fe2-11e4-9d81-406186ea4fc5"
 
 /**
- * @brief UUID of 'OpenVAS Default' port list.
- *
- * Required for the default port list case of CREATE_PORT_LIST.
- */
-#define PORT_LIST_UUID_DEFAULT "c7e03b6c-3bbe-11e1-a057-406186ea4fc5"
-
-/**
  * @brief Predefined role UUID.
  */
 #define ROLE_UUID_ADMIN "7a8cb5b4-b74d-11e2-8187-406186ea4fc5"

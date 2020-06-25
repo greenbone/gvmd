@@ -49,6 +49,24 @@ sql_prepare_internal (int, int, const char*, va_list, sql_stmt_t **);
 int
 sql_exec_internal (int, sql_stmt_t *);
 
+void
+sql_finalize (sql_stmt_t *);
+
+double
+sql_column_double (sql_stmt_t *, int);
+
+const char *
+sql_column_text (sql_stmt_t *, int);
+
+int
+sql_column_int (sql_stmt_t *, int);
+
+long long int
+sql_column_int64 (sql_stmt_t *, int);
+
+gchar **
+sql_column_array (sql_stmt_t *, int);
+
 
 /* Variables. */
 
@@ -510,22 +528,6 @@ sql_int64_0 (char* sql, ...)
  * @brief Initialise an iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  stmt      Statement.
- */
-void
-init_prepared_iterator (iterator_t* iterator, sql_stmt_t* stmt)
-{
-  iterator->done = FALSE;
-  iterator->stmt = stmt;
-  iterator->prepared = 1;
-  iterator->crypt_ctx = NULL;
-  g_debug ("   sql: init prepared %p", stmt);
-}
-
-/**
- * @brief Initialise an iterator.
- *
- * @param[in]  iterator  Iterator.
  * @param[in]  sql       Format string for SQL.
  */
 void
@@ -536,7 +538,6 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
   va_list args;
 
   iterator->done = FALSE;
-  iterator->prepared = 0;
   iterator->crypt_ctx = NULL;
 
   va_start (args, sql);
@@ -643,8 +644,7 @@ cleanup_iterator (iterator_t* iterator)
       return;
     }
 
-  if (iterator->prepared == 0)
-    sql_finalize (iterator->stmt);
+  sql_finalize (iterator->stmt);
   if (iterator->crypt_ctx)
     {
       lsc_crypt_release (iterator->crypt_ctx);
