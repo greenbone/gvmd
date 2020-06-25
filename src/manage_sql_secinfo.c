@@ -2465,7 +2465,8 @@ update_scap_cpes ()
     {
       g_warning ("%s: No CPE dictionary found at %s",
                  __func__,
-                 strerror (errno));
+                 full_path);
+      g_free (full_path);
       return -1;
     }
 
@@ -4128,8 +4129,7 @@ static void
 sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
               const gchar *process_title)
 {
-  int pid, ret;
-  lockfile_t lockfile;
+  int pid;
 
   /* Fork a child to sync the db, so that the parent can return to the main
    * loop. */
@@ -4151,15 +4151,6 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
         /* Cleanup so that exit works. */
 
         cleanup_manage_process (FALSE);
-
-        /* Open the lock file. */
-
-        ret = feed_lockfile_lock (&lockfile);
-
-        if (ret == 1)
-          exit (EXIT_SUCCESS);
-        else if (ret)
-          exit (EXIT_FAILURE);
 
         /* Init. */
 
@@ -4185,10 +4176,6 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
     {
       check_alerts ();
     }
-
-  /* Close the lock file. */
-
-  feed_lockfile_unlock (&lockfile);
 
   exit (EXIT_SUCCESS);
 }
@@ -4346,7 +4333,7 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
       g_info ("Updating Max CVSS for DFN-CERT");
       sql ("UPDATE cert.dfn_cert_advs"
            " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap2.cves"
+           "                 FROM scap.cves"
            "                 WHERE name"
            "                 IN (SELECT cve_name"
            "                     FROM cert.dfn_cert_cves"
@@ -4377,7 +4364,7 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
       g_info ("Updating Max CVSS for CERT-Bund");
       sql ("UPDATE cert.cert_bund_advs"
            " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap2.cves"
+           "                 FROM scap.cves"
            "                 WHERE name"
            "                       IN (SELECT cve_name"
            "                           FROM cert.cert_bund_cves"

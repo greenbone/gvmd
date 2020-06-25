@@ -50,7 +50,6 @@ struct iterator
 {
   sql_stmt_t *stmt;          ///< SQL statement.
   gboolean done;             ///< End flag.
-  int prepared;              ///< Prepared flag.
   lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
 };
 
