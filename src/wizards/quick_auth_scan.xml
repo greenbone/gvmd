@@ -127,6 +127,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </xsl:otherwise>
             </xsl:choose>
             <comment><xsl:value-of select="/wizard/params/param[name='comment']/value"/></comment>
+            <port_list id="33d0cd82-57c6-11e1-8ed1-406186ea4fc5"/>
           </create_target>
         </xsl:template>
       </xsl:stylesheet>

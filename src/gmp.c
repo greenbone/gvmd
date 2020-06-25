@@ -21849,6 +21849,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " 'snmp'"));
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
+              case 12:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "One of PORT_LIST and PORT_RANGE are"
+                                    " required"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
