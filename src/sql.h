@@ -84,9 +84,6 @@ sql_insert (const char *);
 void
 sql (char *sql, ...);
 
-void
-sqli (resource_t *, char *, ...);
-
 int
 sql_error (char *sql, ...);
 
@@ -114,6 +111,9 @@ sql_int64_0 (char *sql, ...);
 void
 sql_rename_column (const char *, const char *, const char *, const char *);
 
+int
+sql_cancel_internal ();
+
 /* Transactions. */
 
 void
@@ -132,9 +132,6 @@ sql_rollback ();
 
 /* These functions are for "internal" use.  They may only be accessed by code
  * that is allowed to run SQL statements directly. */
-
-void
-init_prepared_iterator (iterator_t *, sql_stmt_t *);
 
 void
 init_iterator (iterator_t *, const char *, ...);
@@ -165,43 +162,5 @@ iterator_column_name (iterator_t *, int);
 
 int
 iterator_column_count (iterator_t *);
-
-/* Prepared statements. */
-
-int
-sql_bind_blob (sql_stmt_t *, int, const void *, int);
-
-int
-sql_bind_int64 (sql_stmt_t *, int, long long int *);
-
-int
-sql_bind_text (sql_stmt_t *, int, const gchar *, gsize);
-
-int
-sql_bind_double (sql_stmt_t *, int, double *);
-
-void
-sql_finalize (sql_stmt_t *);
-
-int
-sql_reset (sql_stmt_t *);
-
-double
-sql_column_double (sql_stmt_t *, int);
-
-const char *
-sql_column_text (sql_stmt_t *, int);
-
-int
-sql_column_int (sql_stmt_t *, int);
-
-long long int
-sql_column_int64 (sql_stmt_t *, int);
-
-gchar **
-sql_column_array (sql_stmt_t *, int);
-
-int
-sql_cancel_internal ();
 
 #endif /* not _GVMD_SQL_H */
