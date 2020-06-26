@@ -1676,6 +1676,7 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
       return -1;
     }
 
+  get_vts_opts = osp_get_vts_opts_default;
   if (db_feed_version)
     get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version);
   else
@@ -1799,6 +1800,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 {
   osp_connection_t *connection;
   gchar *db_feed_version, *scanner_feed_version;
+  gchar *error;
 
   /* Re-open DB after fork. */
 
@@ -1817,9 +1819,12 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
       return -1;
     }
 
-  if (osp_get_vts_version (connection, &scanner_feed_version))
+  error = NULL;
+  if (osp_get_vts_version (connection, &scanner_feed_version, &error))
     {
-      g_debug ("%s: failed to get scanner_version", __func__);
+      g_debug ("%s: failed to get scanner_feed_version. %s",
+               __func__, error ? : "");
+      g_free (error);
       return -1;
     }
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
@@ -1870,6 +1875,7 @@ update_or_rebuild_nvts (int update)
   gchar *db_feed_version, *scanner_feed_version;
   osp_connection_t *connection;
   int ret;
+  gchar *error;
 
   if (check_osp_vt_update_socket ())
     {
@@ -1896,9 +1902,11 @@ update_or_rebuild_nvts (int update)
       return -1;
     }
 
-  if (osp_get_vts_version (connection, &scanner_feed_version))
+  error = NULL;
+  if (osp_get_vts_version (connection, &scanner_feed_version, &error))
     {
-      printf ("Failed to get scanner_version.\n");
+      printf ("Failed to get scanner_version. %s\n", error ? : "");
+      g_free (error);
       return -1;
     }
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
