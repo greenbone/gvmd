@@ -3227,19 +3227,19 @@ slave_setup (gvm_connection_t *connection,
         if (config == 0)
           goto fail_target;
 
-        if (gvm_server_sendf (&connection->session,
-                              "<create_config>"
-                              "<get_configs_response"
-                              " status=\"200\""
-                              " status_text=\"OK\">"
-                              "<config id=\"XXX\">"
-                              "<type>0</type>"
-                              "<name>%s</name>"
-                              "<comment>"
-                              "Slave config created by Master"
-                              "</comment>"
-                              "<preferences>",
-                              name))
+        if (gvm_server_sendf_xml (&connection->session,
+                                  "<create_config>"
+                                  "<get_configs_response"
+                                  " status=\"200\""
+                                  " status_text=\"OK\">"
+                                  "<config id=\"XXX\">"
+                                  "<type>0</type>"
+                                  "<name>%s</name>"
+                                  "<comment>"
+                                  "Slave config created by Master"
+                                  "</comment>"
+                                  "<preferences>",
+                                  name))
           goto fail_target;
 
         /* Send NVT timeout preferences where a timeout has been
@@ -3251,19 +3251,21 @@ slave_setup (gvm_connection_t *connection,
 
             timeout = config_timeout_iterator_value (&prefs);
 
-            if (timeout && strlen (timeout)
-                && gvm_server_sendf (&connection->session,
-                                     "<preference>"
-                                     "<nvt oid=\"%s\">"
-                                     "<name>%s</name>"
-                                     "</nvt>"
-                                     "<name>Timeout</name>"
-                                     "<type>entry</type>"
-                                     "<value>%s</value>"
-                                     "</preference>",
-                                     config_timeout_iterator_oid (&prefs),
-                                     config_timeout_iterator_nvt_name (&prefs),
-                                     timeout))
+            if (timeout
+                && strlen (timeout)
+                && gvm_server_sendf_xml
+                     (&connection->session,
+                      "<preference>"
+                      "<nvt oid=\"%s\">"
+                      "<name>%s</name>"
+                      "</nvt>"
+                      "<name>Timeout</name>"
+                      "<type>entry</type>"
+                      "<value>%s</value>"
+                      "</preference>",
+                      config_timeout_iterator_oid (&prefs),
+                      config_timeout_iterator_nvt_name (&prefs),
+                      timeout))
               {
                 cleanup_iterator (&prefs);
                 goto fail_target;
@@ -3298,19 +3300,20 @@ slave_setup (gvm_connection_t *connection,
         while (next (&selectors))
           {
             int type = nvt_selector_iterator_type (&selectors);
-            if (gvm_server_sendf (&connection->session,
-                                  "<nvt_selector>"
-                                  "<name>%s</name>"
-                                  "<include>%i</include>"
-                                  "<type>%i</type>"
-                                  "<family_or_nvt>%s</family_or_nvt>"
-                                  "</nvt_selector>",
-                                  nvt_selector_iterator_name (&selectors),
-                                  nvt_selector_iterator_include (&selectors),
-                                  type,
-                                  (type == NVT_SELECTOR_TYPE_ALL
-                                     ? ""
-                                     : nvt_selector_iterator_nvt (&selectors))))
+            if (gvm_server_sendf_xml
+                 (&connection->session,
+                  "<nvt_selector>"
+                  "<name>%s</name>"
+                  "<include>%i</include>"
+                  "<type>%i</type>"
+                  "<family_or_nvt>%s</family_or_nvt>"
+                  "</nvt_selector>",
+                  nvt_selector_iterator_name (&selectors),
+                  nvt_selector_iterator_include (&selectors),
+                  type,
+                  (type == NVT_SELECTOR_TYPE_ALL
+                    ? ""
+                    : nvt_selector_iterator_nvt (&selectors))))
               goto fail_target;
           }
         cleanup_iterator (&selectors);

@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Fix NVTs list in CVE details [#1098](https://github.com/greenbone/gvmd/pull/1098)
 - Fix handling of duplicate settings [#1104](https://github.com/greenbone/gvmd/pull/1104)
+- Fix XML escaping in setting up GMP scans [#1124](https://github.com/greenbone/gvmd/pull/1124)
 
 [8.0.3]: https://github.com/greenbone/gvmd/compare/v8.0.2...gvmd-8.0
 
@@ -63,6 +64,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix SCP alert authentication and logging [#973](https://github.com/greenbone/gvmd/pull/973)
 - Use right format specifier for merge_ovaldef version [#1053](https://github.com/greenbone/gvmd/pull/1053)
 - Fix deletion of OVAL definition data [#1077](https://github.com/greenbone/gvmd/pull/1077)
+- Fix and simplify parse_iso_time [#1131](https://github.com/greenbone/gvmd/pull/1131)
+- Fix table check in gvm-migrate-to-postgres [#1117](https://github.com/greenbone/gvmd/pull/1117)
 
 ### Removed
 
