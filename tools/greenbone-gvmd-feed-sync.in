@@ -417,13 +417,13 @@ do_help () {
     echo "No GSF access key found: Using Community Feed"
   fi
 
-  echo " --describe        display current feed info"
-  echo " --feedversion     display version of this feed"
-  echo " --help            display this help"
-  echo " --identify        display information"
-  echo " --selftest        perform self-test"
-  echo " --type <TYPE>     choose type of data to sync (CERT or SCAP)"
-  echo " --version         display version"
+  echo " --describe      display current feed info"
+  echo " --feedversion   display version of this feed"
+  echo " --help          display this help"
+  echo " --identify      display information"
+  echo " --selftest      perform self-test"
+  echo " --type <TYPE>   choose type of data to sync (CERT, SCAP or GVMD_DATA)"
+  echo " --version       display version"
   echo ""
   exit 0
 }
