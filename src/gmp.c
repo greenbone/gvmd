@@ -23675,6 +23675,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_OVERRIDE:
         {
+          int max;
+
           if (acl_user_may ("modify_override") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -23693,6 +23695,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_override",
                                 "A TEXT entity is required"));
+          else if (modify_override_data->hosts
+                   && ((max = manage_count_hosts (modify_override_data->hosts,
+                                                  NULL))
+                       == -1))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_override",
+                                "Error in host specification"));
+          else if (modify_override_data->hosts && (max > manage_max_hosts ()))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_override",
+                                "Host specification exceeds maximum number"
+                                " of hosts"));
           else switch (modify_override (modify_override_data->override_id,
                                         modify_override_data->active,
                                         modify_override_data->nvt_oid,
