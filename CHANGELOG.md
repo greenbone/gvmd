@@ -124,6 +124,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix gvm-manage-certs. [#1140](https://github.com/greenbone/gvmd/pull/1140)
 - Fix CVE scanner and results handling [#1141](https://github.com/greenbone/gvmd/pull/1141)
 - Remove user from tags when deleting user [#1161](https://github.com/greenbone/gvmd/pull/1161)
+- Handle INTERRUPTED scans [#1146](https://github.com/greenbone/gvmd/pull/1146)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
@@ -137,6 +138,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add migrator to remove dead hosts [#1071](https://github.com/greenbone/gvmd/pull/1071)
 - Remove classic schedules elements from GMP [#1116](https://github.com/greenbone/gvmd/pull/1116) [#1121](https://github.com/greenbone/gvmd/pull/1121)
 - Remove parallel from target options. [#1119](https://github.com/greenbone/gvmd/pull/1119)
+- Remove default port list from CREATE_TARGET [#1151](https://github.com/greenbone/gvmd/pull/1151)
 
 [20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
 
@@ -184,6 +186,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The details attribute of GET_REPORTS now defaults to 0 [#747](https://github.com/greenbone/gvmd/pull/747)
 - Incoming VT timestamps via OSP are now assumed to be seconds since epoch [#754](https://github.com/greenbone/gvmd/pull/754)
 - Accelerate NVT feed update [#757](https://github.com/greenbone/gvmd/pull/757)
+- Combine sync scripts and add GVMd data sync [#1155](https://github.com/greenbone/gvmd/pull/1155)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)
