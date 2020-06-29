@@ -11393,11 +11393,12 @@ alert_message_print (const gchar *message, event_t event,
  *
  * @param[in]  message      Format string for message.
  * @param[in]  task         Task.
+ * @param[in]  zone         Timezone.
  *
  * @return Freshly allocated message.
  */
 static gchar *
-scp_alert_path_print (const gchar *message, task_t task)
+scp_alert_path_print (const gchar *message, task_t task, const char *zone)
 {
   int formatting;
   const gchar *point, *end;
@@ -11415,6 +11416,14 @@ scp_alert_path_print (const gchar *message, task_t task)
           {
             case '$':
               g_string_append_c (new_message, '$');
+              break;
+            case 'D':
+              {
+                time_t now;
+
+                now = time (NULL);
+                g_string_append (new_message, iso_time_tz (&now, zone, NULL));
+              }
               break;
             case 'n':
               if (task)
@@ -12866,7 +12875,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   path = alert_data (alert, "method", "scp_path");
                   known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
-                  alert_path = scp_alert_path_print (path, task);
+                  alert_path = scp_alert_path_print
+                                (path, task, current_credentials.timezone);
                   free (path);
 
                   ret = scp_to_host (username, password, private_key,
@@ -12926,7 +12936,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               path = alert_data (alert, "method", "scp_path");
               known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
-              alert_path = scp_alert_path_print (path, task);
+              alert_path = scp_alert_path_print (path, task,
+                                                 current_credentials.timezone);
               free (path);
 
               ret = scp_to_host (username, password, private_key,
