@@ -3639,6 +3639,7 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define NVT_FEED 1
 #define SCAP_FEED 2
 #define CERT_FEED 3
+#define GVMD_DATA_FEED 4
 
 const gchar *
 get_feed_lock_path ();
