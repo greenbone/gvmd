@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [8.0.3] (unreleased)
 
 ### Changed
-- Try importing private keys with libssh if GnuTLS fails [#1058](https://github.com/greenbone/gvmd/pull/1158)
+- Try importing private keys with libssh if GnuTLS fails [#1158](https://github.com/greenbone/gvmd/pull/1158)
 
 ### Fixed
 - Fix NVTs list in CVE details [#1098](https://github.com/greenbone/gvmd/pull/1098)
