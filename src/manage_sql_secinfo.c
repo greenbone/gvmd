@@ -4655,8 +4655,12 @@ update_scap_end ()
   else
     sql ("ALTER SCHEMA scap2 RENAME TO scap;");
 
-  sql ("ANALYZE scap.cves, scap.cpes, scap.affected_products, scap.ovaldefs,"
-       "        scap.ovalfiles, scap.affected_ovaldefs;");
+  sql ("ANALYZE scap.cves;");
+  sql ("ANALYZE scap.cpes;");
+  sql ("ANALYZE scap.affected_products;");
+  sql ("ANALYZE scap.ovaldefs;");
+  sql ("ANALYZE scap.ovalfiles;");
+  sql ("ANALYZE scap.affected_ovaldefs;");
 
   g_info ("%s: Updating SCAP info succeeded", __func__);
   proctitle_set ("gvmd: Syncing SCAP: done");
