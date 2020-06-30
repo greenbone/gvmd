@@ -211,8 +211,12 @@ if (NOT GVM_NVT_DIR)
 	set (GVM_NVT_DIR "${LOCALSTATEDIR}/lib/openvas/plugins/")
 endif (NOT GVM_NVT_DIR)
 
+if (NOT DATA_OBJECTS_FEED_DIR)
+  set (DATA_OBJECTS_FEED_DIR "${LOCALSTATEDIR}/lib/gvm/data-objects")
+endif (NOT DATA_OBJECTS_FEED_DIR)
+
 if (NOT GVMD_FEED_DIR)
-  set (GVMD_FEED_DIR "${LOCALSTATEDIR}/lib/gvm/gvmd/${GMP_VERSION}")
+  set (GVMD_FEED_DIR "${DATA_OBJECTS_FEED_DIR}/gvmd")
 endif (NOT GVMD_FEED_DIR)
 
 if (NOT GVM_ACCESS_KEY_DIR)
@@ -246,6 +250,7 @@ configure_file (doc/example-gvm-manage-certs.conf.in doc/example-gvm-manage-cert
 configure_file (VERSION.in VERSION)
 configure_file (src/gvmd_log_conf.cmake_in src/gvmd_log.conf)
 configure_file (src/schema_formats/XML/GMP.xml.in src/schema_formats/XML/GMP.xml @ONLY)
+configure_file (tools/greenbone-gvmd-feed-sync.in tools/greenbone-gvmd-feed-sync @ONLY)
 configure_file (tools/greenbone-scapdata-sync.in tools/greenbone-scapdata-sync @ONLY)
 configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @ONLY)
 configure_file (tools/gvm-manage-certs.in tools/gvm-manage-certs @ONLY)
@@ -391,6 +396,11 @@ install (FILES tools/cpe_getbyname.xsl tools/cve_getbyname.xsl
 install (FILES tools/cert_bund_getbyname.xsl tools/dfn_cert_getbyname.xsl
          DESTINATION ${GVM_CERT_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
+install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-gvmd-feed-sync
+         DESTINATION ${SBINDIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-scapdata-sync
          DESTINATION ${SBINDIR}

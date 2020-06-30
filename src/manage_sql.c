@@ -25947,7 +25947,7 @@ report_error_count (report_t report)
  *
  * @param[in]  report  The report to get the finished hosts from.
  *
- * @return Sting containing finished hosts as comma separated list.
+ * @return String containing finished hosts as comma separated list.
  */
 char *
 report_finished_hosts_str (report_t report)
