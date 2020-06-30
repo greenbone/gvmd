@@ -125,6 +125,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix and simplify parse_iso_time and add tests [#1129](https://github.com/greenbone/gvmd/pull/1129)
 - Fix gvm-manage-certs. [#1140](https://github.com/greenbone/gvmd/pull/1140)
 - Fix CVE scanner and results handling [#1141](https://github.com/greenbone/gvmd/pull/1141)
+- Remove user from tags when deleting user [#1161](https://github.com/greenbone/gvmd/pull/1161)
 - Handle INTERRUPTED scans [#1146](https://github.com/greenbone/gvmd/pull/1146)
 
 ### Removed

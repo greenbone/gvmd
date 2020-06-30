@@ -52078,8 +52078,14 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE settings SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
+      sql ("DELETE FROM tag_resources"
+           " WHERE resource_type = 'user' AND resource = %llu;",
+           user);
       sql ("UPDATE tags SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
+      sql ("DELETE FROM tag_resources_trash"
+           " WHERE resource_type = 'user' AND resource = %llu;",
+           user);
       sql ("UPDATE tags_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
       sql ("UPDATE targets SET owner = %llu WHERE owner = %llu;",
@@ -52137,9 +52143,15 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   /* Tags. */
   sql ("DELETE FROM tag_resources"
+       " WHERE resource_type = 'user' AND resource = %llu;",
+       user);
+  sql ("DELETE FROM tag_resources"
        " WHERE tag IN (SELECT id FROM tags WHERE owner = %llu);",
        user);
   sql ("DELETE FROM tags WHERE owner = %llu;", user);
+  sql ("DELETE FROM tag_resources_trash"
+       " WHERE resource_type = 'user' AND resource = %llu;",
+       user);
   sql ("DELETE FROM tag_resources_trash"
        " WHERE tag IN (SELECT id FROM tags_trash WHERE owner = %llu);",
        user);
