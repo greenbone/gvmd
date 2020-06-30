@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Stop current scheduling of task when permission denied [#1058](https://github.com/greenbone/gvmd/pull/1058)
 - Trim malloc heap after updating cache [#1085](https://github.com/greenbone/gvmd/pull/1085)
 - Handle QUEUED osp scan status. [#1113](https://github.com/greenbone/gvmd/pull/1113)
+- Add time placeholders for SCP path [#1164](https://github.com/greenbone/gvmd/pull/1164)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
@@ -124,8 +125,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix and simplify parse_iso_time and add tests [#1129](https://github.com/greenbone/gvmd/pull/1129)
 - Fix gvm-manage-certs. [#1140](https://github.com/greenbone/gvmd/pull/1140)
 - Fix CVE scanner and results handling [#1141](https://github.com/greenbone/gvmd/pull/1141)
+- Remove user from tags when deleting user [#1161](https://github.com/greenbone/gvmd/pull/1161)
 - Handle INTERRUPTED scans [#1146](https://github.com/greenbone/gvmd/pull/1146)
 - Check number of args to ensure period_offsets is 0 [#1165](https://github.com/greenbone/gvmd/pull/1165)
+- Check hosts in MODIFY_OVERRIDE, as in CREATE_OVERRIDE [#1162](https://github.com/greenbone/gvmd/pull/1162)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
