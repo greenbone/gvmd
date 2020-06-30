@@ -11416,6 +11416,32 @@ scp_alert_path_print (const gchar *message, task_t task)
             case '$':
               g_string_append_c (new_message, '$');
               break;
+            case 'D':
+            case 'T':
+              {
+                char time_string[9];
+                time_t current_time;
+                struct tm *tm;
+                const gchar *format_str;
+
+                if (*point == 'T')
+                  format_str = "%H%M%S";
+                else
+                  format_str = "%Y%m%d";
+
+                memset(&time_string, 0, 9);
+                current_time = time (NULL);
+                tm = localtime (&current_time);
+                if (tm == NULL)
+                  {
+                    g_warning ("%s: localtime failed, aborting",
+                                __func__);
+                    abort ();
+                  }
+                if (strftime (time_string, 9, format_str, tm))
+                  g_string_append (new_message, time_string);
+                break;
+              }
             case 'n':
               if (task)
                 {
