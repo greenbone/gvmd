@@ -22,7 +22,7 @@ message ("-- Configuring Greenbone Vulnerability Manager...")
 # VERSION: Set patch version for stable releases, e.g. "9.0.0",
 #          unset patch version for prereleases, e.g. "9.0"
 project (gvm
-         VERSION 20.8
+         VERSION 21.4
          LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -105,7 +105,7 @@ set (GVMD_SCAP_DATABASE_VERSION 16)
 
 set (GVMD_CERT_DATABASE_VERSION 6)
 
-set (GMP_VERSION "20.08")
+set (GMP_VERSION "21.04")
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
