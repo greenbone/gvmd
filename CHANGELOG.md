@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [20.4] (unreleased)
+## [20.08] (unreleased)
 
 ### Added
 - Add setting "BPM Dashboard Configuration" [#764](https://github.com/greenbone/gvmd/pull/764)
@@ -143,7 +143,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove parallel from target options. [#1119](https://github.com/greenbone/gvmd/pull/1119)
 - Remove default port list from CREATE_TARGET [#1151](https://github.com/greenbone/gvmd/pull/1151)
 
-[20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
+[20.08]: https://github.com/greenbone/gvmd/compare/v9.0.0...gvmd-20.08
 
 ## [9.0.0] (2019-10-11)
 
