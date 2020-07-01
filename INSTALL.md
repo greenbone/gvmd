@@ -10,7 +10,7 @@ Prerequisites:
 * cmake >= 3.0
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
-* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 20.4
+* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 21.04
 * PostgreSQL database >= 9.6
 * pkg-config
 * libical >= 1.0.0
