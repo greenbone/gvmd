@@ -48,6 +48,7 @@ Ensure (manage_utils, add_months_positive_months)
 
 #define EPOCH_2020JAN1_UTC 1577836800
 #define EPOCH_2030JAN1_UTC 1893456000
+#define EPOCH_2020JAN1_HAR 1577829600
 
 static time_t
 get_next_time (time_t first, time_t now, int period, int offset)
@@ -111,6 +112,42 @@ Ensure (manage_utils, icalendar_next_time_from_string_utc)
   assert_that (next, is_equal_to (EPOCH_2030JAN1_UTC));
 }
 
+Ensure (manage_utils, icalendar_next_time_from_string_tz)
+{
+  time_t next, now;
+
+  now = time (NULL);
+
+  next = icalendar_next_time_from_string
+          ("BEGIN:VCALENDAR\n"
+           "VERSION:2.0\n"
+           /* Timezone definition. */
+           "BEGIN:VTIMEZONE\n"
+           "TZID:/freeassociation.sourceforge.net/Africa/Harare\n"
+           "X-LIC-LOCATION:Africa/Harare\n"
+           "BEGIN:STANDARD\n"
+           "TZNAME:CAT\n"
+           "DTSTART:19030301T000000\n"
+           "TZOFFSETFROM:+021020\n"
+           "TZOFFSETTO:+0200\n"
+           "END:STANDARD\n"
+           "END:VTIMEZONE\n"
+           /* Event. */
+           "BEGIN:VEVENT\n"
+           "DTSTART;TZID=/freeassociation.sourceforge.net/Africa/Harare:\n"
+           " 20200101T000000\n"
+           "RRULE:FREQ=MINUTELY;INTERVAL=2\n"
+           "DURATION:PT0S\n"
+           "UID:a486116b-8058-4b1e-9fc5-0eeec5948792\n"
+           "DTSTAMP:19700101T000000Z\n"
+           "END:VEVENT\n"
+           "END:VCALENDAR\n",
+           "Africa/Harare",
+           0);
+
+  assert_that (verify_next (next, EPOCH_2020JAN1_HAR, now, 2 * 60), is_equal_to (1));
+}
+
 /* Test suite. */
 
 int
@@ -125,6 +162,7 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_utils, add_months_positive_months);
 
   add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_utc);
+  add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_tz);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());
