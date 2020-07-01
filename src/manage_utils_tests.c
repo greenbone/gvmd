@@ -44,6 +44,55 @@ Ensure (manage_utils, add_months_positive_months)
   assert_that (add_months (1551484799, 2), is_equal_to (1556755199));
 }
 
+/* icalendar_next_time_from_string */
+
+#define EPOCH_2020JAN1 1577836800
+
+static time_t
+get_next_time (time_t first, time_t now, int period, int offset)
+{
+  time_t to_next;
+
+  assert (offset > 0);
+
+  to_next = ((now - first) + offset * period - 1);
+  to_next -= to_next % period;
+
+  return first + to_next;
+}
+
+static time_t
+verify_next (time_t next, time_t first, time_t now, int period)
+{
+  /* There's a gap between getting now and getting next.  This means next
+   * could be the first or second occurrence of the period after now. */
+
+  return next == get_next_time (EPOCH_2020JAN1, now, 2 * 60, 1)
+         || next == get_next_time (EPOCH_2020JAN1, now, 2 * 60, 2);
+}
+
+Ensure (manage_utils, icalendar_next_time_from_string_utc)
+{
+  time_t next, now;
+
+  now = time (NULL);
+  next = icalendar_next_time_from_string
+          ("BEGIN:VCALENDAR\n"
+           "VERSION:2.0\n"
+           "BEGIN:VEVENT\n"
+           "DTSTART:20200101T000000Z\n"
+           "RRULE:FREQ=MINUTELY;INTERVAL=2\n"
+           "DURATION:PT0S\n"
+           "UID:a486116b-8058-4b1e-9fc5-0eeec5948792\n"
+           "DTSTAMP:19700101T000000Z\n"
+           "END:VEVENT\n"
+           "END:VCALENDAR\n",
+           "UTC",
+           0);
+  assert_that (verify_next (next, EPOCH_2020JAN1, now, 2 * 60),
+               is_equal_to (1));
+}
+
 /* Test suite. */
 
 int
@@ -56,6 +105,8 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_utils, add_months_0_months);
   add_test_with_context (suite, manage_utils, add_months_negative_months);
   add_test_with_context (suite, manage_utils, add_months_positive_months);
+
+  add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_utc);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());
