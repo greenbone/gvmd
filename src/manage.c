@@ -7111,7 +7111,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
                        * it from the task.  If it has a duration it
                        * will be removed by manage_schedule via
                        * clear_duration_schedules, after the duration. */
-                      set_task_schedule_uuid (task_uuid, 0, 0);
+                      set_task_schedule_uuid (task_uuid, 0, -1);
                     else if ((periods = task_schedule_periods_uuid
                                          (task_uuid)))
                       {
