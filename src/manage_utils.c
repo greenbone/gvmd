@@ -1140,7 +1140,7 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
        *  DTSTART is excluded by EXDATEs.  */
 
       while (icaltime_is_null_time (recur_time) == FALSE
-            && icalendar_time_matches_array (recur_time, exdates))
+             && icalendar_time_matches_array (recur_time, exdates))
         {
           recur_time = icalrecur_iterator_next (recur_iter);
         }
@@ -1158,7 +1158,7 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
       /* Iterate over rule-based recurrences up to first time after
        * reference time */
       while (icaltime_is_null_time (recur_time) == FALSE
-            && icaltime_compare (recur_time, reference_time) < 0)
+             && icaltime_compare (recur_time, reference_time) < 0)
         {
           if (icalendar_time_matches_array (recur_time, exdates) == FALSE)
             prev_time = recur_time;
@@ -1168,7 +1168,7 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
 
       // Skip further ahead if last recurrence time is in EXDATEs
       while (icaltime_is_null_time (recur_time) == FALSE
-            && icalendar_time_matches_array (recur_time, exdates))
+             && icalendar_time_matches_array (recur_time, exdates))
         {
           recur_time = icalrecur_iterator_next (recur_iter);
         }
@@ -1250,7 +1250,7 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
   if (icaltime_is_null_time (dtstart))
     return 0;
 
-  tz = (icaltimezone*)(icaltime_get_timezone (dtstart));
+  tz = (icaltimezone*) icaltime_get_timezone (dtstart);
   if (tz == NULL)
     {
       tz = icalendar_timezone_from_string (default_tzid);
@@ -1391,7 +1391,7 @@ icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
   if (icaltime_is_null_time (dtstart))
     return 0;
 
-  tz = (icaltimezone*)(icaltime_get_timezone (dtstart));
+  tz = (icaltimezone*) icaltime_get_timezone (dtstart);
   if (tz == NULL)
     tz = default_tz;
 
