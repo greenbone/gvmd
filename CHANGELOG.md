@@ -129,6 +129,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Handle INTERRUPTED scans [#1146](https://github.com/greenbone/gvmd/pull/1146)
 - Check hosts in MODIFY_OVERRIDE, as in CREATE_OVERRIDE [#1162](https://github.com/greenbone/gvmd/pull/1162)
 - Preserve task "once" value [#1176](https://github.com/greenbone/gvmd/pull/1176)
+- Check number of args to ensure period_offsets is 0 [#1175](https://github.com/greenbone/gvmd/pull/1175)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
