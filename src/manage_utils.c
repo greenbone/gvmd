@@ -1113,7 +1113,7 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
 {
   icalrecur_iterator *recur_iter;
   icaltimetype recur_time, prev_time, next_time;
-  time_t rrule_time, rdates_time;
+  time_t rdates_time;
 
   // Start iterating over rule-based times
   recur_iter = icalrecur_iterator_new (recurrence, dtstart);
@@ -1185,6 +1185,8 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
   //  and return the appropriate time.
   if (periods_offset == -1)
     {
+      time_t rrule_time;
+
       rrule_time = icaltime_as_timet_with_zone (prev_time, tz);
       if (rdates_time == 0 || rrule_time - rdates_time > 0)
         return rrule_time;
@@ -1193,6 +1195,8 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
     }
   else
     {
+      time_t rrule_time;
+
       rrule_time = icaltime_as_timet_with_zone (next_time, tz);
       if (rdates_time == 0 || rrule_time - rdates_time < 0)
         return rrule_time;
