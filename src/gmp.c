@@ -16822,16 +16822,12 @@ get_task_schedule_xml (task_t task)
                            "<trash>%d</trash>"
                            "<icalendar>%s</icalendar>"
                            "<timezone>%s</timezone>"
-                           "</schedule>"
-                           "<schedule_periods>"
-                           "%d"
-                           "</schedule_periods>",
+                           "</schedule>",
                            task_schedule_uuid,
                            task_schedule_name,
                            schedule_in_trash,
                            icalendar ? icalendar : "",
-                           zone ? zone : "",
-                           task_schedule_periods (task));
+                           zone ? zone : "");
 
       g_free (icalendar);
       g_free (zone);
@@ -16847,6 +16843,12 @@ get_task_schedule_xml (task_t task)
                          task_schedule_name,
                          schedule_in_trash);
     }
+
+  xml_string_append (xml,
+                     "<schedule_periods>"
+                     "%d"
+                     "</schedule_periods>",
+                     task_schedule_periods (task));
 
   return g_string_free (xml, FALSE);
 }
