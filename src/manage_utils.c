@@ -1261,6 +1261,7 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
   // Get current time
   ical_now = icaltime_current_time_with_zone (tz);
   // Set timezone explicitly because icaltime_current_time_with_zone doesn't.
+  icaltime_set_timezone (&ical_now, tz);
   if (ical_now.zone == NULL)
     {
       ical_now.zone = tz;
