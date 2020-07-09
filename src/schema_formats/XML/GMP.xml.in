@@ -1354,6 +1354,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>task</e></o>
       <e>host</e>
       <e>port</e>
+      <o><e>path</e></o>
       <e>nvt</e>
       <e>scan_nvt_version</e>
       <e>threat</e>
@@ -1511,6 +1512,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>port</name>
       <summary>The port on the host</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>path</name>
+      <summary>The local path on the host, e.g. a file location</summary>
       <pattern>text</pattern>
     </ele>
     <ele>

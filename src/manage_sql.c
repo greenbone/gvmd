@@ -21600,7 +21600,8 @@ where_qod (int min_qod)
     "type", "original_type", "auto_type",                                     \
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
-    "solution_type", "qod", "qod_type", "task_id", "cve", "hostname", NULL }
+    "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
+    "path", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**

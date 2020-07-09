@@ -9315,6 +9315,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 {
   const char *descr = result_iterator_descr (results);
   const char *name, *comment, *creation_time;
+  const char *port, *path;
   const char *asset_id;
   gchar *nl_descr, *nl_descr_escaped;
   const char *qod = result_iterator_qod (results);
@@ -9438,6 +9439,9 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         }
     }
 
+  port = result_iterator_port (results);
+  path = result_iterator_path (results);
+
   detect_oid = detect_ref = detect_cpe = detect_loc = detect_name = NULL;
   if (result_detection_reference (result, result_iterator_report (results),
                                   result_iterator_host (results),
@@ -9491,7 +9495,12 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   buffer_xml_append_printf (buffer,
                             "<port>%s</port>",
-                            result_iterator_port (results));
+                            port);
+
+  if (path && strcmp (path, ""))
+    buffer_xml_append_printf (buffer,
+                              "<path>%s</path>",
+                              path);
 
   if (cert_loaded == -1)
     cert_loaded = manage_cert_loaded ();
