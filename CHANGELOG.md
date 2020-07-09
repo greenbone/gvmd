@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Trim malloc heap after updating cache [#1085](https://github.com/greenbone/gvmd/pull/1085)
 - Handle QUEUED osp scan status. [#1113](https://github.com/greenbone/gvmd/pull/1113)
 - Add time placeholders for SCP path [#1164](https://github.com/greenbone/gvmd/pull/1164)
+- Expand detection information of results [#1182](https://github.com/greenbone/gvmd/pull/1182)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
