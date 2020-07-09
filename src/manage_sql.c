@@ -19457,7 +19457,7 @@ result_detection_reference (result_t result, report_t report,
     return -1;
 
   quoted_location = NULL;
-  *ref = *product = *location = *name = NULL;
+  *oid = *ref = *product = *location = *name = NULL;
 
   quoted_host = sql_quote (host);
 
@@ -19486,7 +19486,7 @@ result_detection_reference (result_t result, report_t report,
                   " AND name = 'detected_by'"
                   " AND source_name = (SELECT nvt"
                   "                    FROM results"
-                  "                    WHERE id = %llu)",
+                  "                    WHERE id = %llu)"
                   " LIMIT 1",
                   report, quoted_host, result);
 
@@ -19499,14 +19499,14 @@ result_detection_reference (result_t result, report_t report,
                          " AND source_name = '%s'"
                          " AND name != 'detected_at'"
                          " AND value = '%s';",
-                         report, quoted_host, oid, quoted_location);
+                         report, quoted_host, *oid, quoted_location);
   if (*product == NULL)
     goto detect_cleanup;
 
   if (g_str_has_prefix (*oid, "CVE-"))
     *name = g_strdup (*oid);
   else
-    *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", oid);
+    *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", *oid);
   if (*name == NULL)
     goto detect_cleanup;
 
@@ -19520,7 +19520,7 @@ result_detection_reference (result_t result, report_t report,
                      " AND nvt = '%s'"
                      " AND (description LIKE '%%%s%%'"
                      "      OR port LIKE '%%%s%%');",
-                     report, quoted_host, oid, quoted_location,
+                     report, quoted_host, *oid, quoted_location,
                      quoted_location);
   if (*ref == NULL)
     goto detect_cleanup;
