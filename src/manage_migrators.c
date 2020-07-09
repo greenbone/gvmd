@@ -2150,6 +2150,43 @@ migrate_230_to_231 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 231 to version 232.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_231_to_232 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 231. */
+
+  if (manage_db_version () != 231)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add path field to results and results_trash. */
+  sql ("ALTER TABLE results ADD COLUMN path text;");
+  sql ("ALTER TABLE results_trash ADD COLUMN path text;");
+
+  /* Set path to empty string */
+  sql ("UPDATE results SET path = '';");
+  sql ("UPDATE results_trash SET path = '';");
+
+  /* Set the database version to 231. */
+
+  set_db_version (232);
+
+  sql_commit ();
+
+  return 0;
+}
+
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -2188,6 +2225,7 @@ static migrator_t database_migrators[] = {
   {229, migrate_228_to_229},
   {230, migrate_229_to_230},
   {231, migrate_230_to_231},
+  {232, migrate_231_to_232},
   /* End marker. */
   {-1, NULL}};
 
