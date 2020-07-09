@@ -1092,8 +1092,9 @@ int
 result_uuid (result_t, char **);
 
 int
-result_detection_reference (result_t, report_t, const char *,
-                            char **, char **, char **, char **, char **);
+result_detection_reference (result_t, report_t, const char *, const char *,
+                            const char *, char **, char **, char **, char **,
+                            char **);
 
 /* Reports. */
 

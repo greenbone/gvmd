@@ -19433,6 +19433,8 @@ result_uuid (result_t result, char ** id)
  * @param[in]   result      Vulnerability detection result.
  * @param[in]   report      Report of result.
  * @param[in]   host        Host of result.
+ * @param[in]   port        Port of result.
+ * @param[in]   path        Path of result.
  * @param[out]  oid         Detection script OID.
  * @param[out]  ref         Detection result UUID.
  * @param[out]  product     Product name.
@@ -19444,6 +19446,8 @@ result_uuid (result_t result, char ** id)
 int
 result_detection_reference (result_t result, report_t report,
                             const char *host,
+                            const char *port,
+                            const char *path,
                             char **oid, char **ref, char **product,
                             char **location, char **name)
 {
@@ -19461,17 +19465,30 @@ result_detection_reference (result_t result, report_t report,
 
   quoted_host = sql_quote (host);
 
-  *location = sql_string ("SELECT value"
-                          " FROM report_host_details"
-                          " WHERE report_host = (SELECT id"
-                          "                      FROM report_hosts"
-                          "                      WHERE report = %llu"
-                          "                      AND host = '%s')"
-                          " AND name = 'detected_at'"
-                          " AND source_name = (SELECT nvt"
-                          "                    FROM results"
-                          "                    WHERE id = %llu);",
-                          report, quoted_host, result);
+  if (path && strcmp (path, ""))
+    {
+      *location = strdup (path);
+    }
+  else if (port && strcmp (port, "")
+           && !(g_str_has_prefix (port, "general/")))
+    {
+      *location = strdup (port);
+    }
+  else
+    {
+      *location = sql_string ("SELECT value"
+                              " FROM report_host_details"
+                              " WHERE report_host = (SELECT id"
+                              "                      FROM report_hosts"
+                              "                      WHERE report = %llu"
+                              "                      AND host = '%s')"
+                              " AND name = 'detected_at'"
+                              " AND source_name = (SELECT nvt"
+                              "                    FROM results"
+                              "                    WHERE id = %llu);",
+                              report, quoted_host, result);
+    }
+
   if (*location == NULL)
     goto detect_cleanup;
   quoted_location = sql_quote (*location);
@@ -19483,12 +19500,32 @@ result_detection_reference (result_t result, report_t report,
                   "                      FROM report_hosts"
                   "                      WHERE report = %llu"
                   "                      AND host = '%s')"
-                  " AND name = 'detected_by'"
+                  " AND name = 'detected_by@%s'"
                   " AND source_name = (SELECT nvt"
                   "                    FROM results"
                   "                    WHERE id = %llu)"
                   " LIMIT 1",
-                  report, quoted_host, result);
+                  report, quoted_host, quoted_location, result);
+
+  if (*oid == NULL)
+    {
+      *oid
+        = sql_string ("SELECT value"
+                      " FROM report_host_details"
+                      " WHERE report_host = (SELECT id"
+                      "                      FROM report_hosts"
+                      "                      WHERE report = %llu"
+                      "                      AND host = '%s')"
+                      " AND name = 'detected_by'"
+                      " AND source_name = (SELECT nvt"
+                      "                    FROM results"
+                      "                    WHERE id = %llu)"
+                      " LIMIT 1",
+                      report, quoted_host, result);
+    }
+
+  if (*oid == NULL)
+    goto detect_cleanup;
 
   *product = sql_string ("SELECT name"
                          " FROM report_host_details"
@@ -23408,6 +23445,7 @@ init_report_host_details_iterator (iterator_t* iterator,
                  "       source_description, NULL"
                  " FROM report_host_details WHERE report_host = %llu"
                  " AND NOT name IN ('detected_at', 'detected_by')"
+                 " AND NOT name LIKE 'detected_by@%%'"
                  " UNION SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
                  "              nvts.name, cvss_base"
                  "       FROM nvts, report_host_details"
