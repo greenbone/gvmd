@@ -9315,12 +9315,12 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 {
   const char *descr = result_iterator_descr (results);
   const char *name, *comment, *creation_time;
-  const char *detect_oid, *asset_id;
+  const char *asset_id;
   gchar *nl_descr, *nl_descr_escaped;
   const char *qod = result_iterator_qod (results);
   const char *qod_type = result_iterator_qod_type (results);
   result_t result = result_iterator_result (results);
-  char *detect_ref, *detect_cpe, *detect_loc, *detect_name;
+  char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
   task_t selected_task;
 
   if (descr)
@@ -9438,11 +9438,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         }
     }
 
-  detect_oid = result_iterator_detected_by_oid (results);
-  detect_ref = detect_cpe = detect_loc = detect_name = NULL;
+  detect_oid = detect_ref = detect_cpe = detect_loc = detect_name = NULL;
   if (result_detection_reference (result, result_iterator_report (results),
                                   result_iterator_host (results),
-                                  detect_oid, &detect_ref, &detect_cpe,
+                                  &detect_oid, &detect_ref, &detect_cpe,
                                   &detect_loc, &detect_name)
       == 0)
     {

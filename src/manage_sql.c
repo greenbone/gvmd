@@ -19433,7 +19433,7 @@ result_uuid (result_t result, char ** id)
  * @param[in]   result      Vulnerability detection result.
  * @param[in]   report      Report of result.
  * @param[in]   host        Host of result.
- * @param[in]   oid         Detection script OID.
+ * @param[out]  oid         Detection script OID.
  * @param[out]  ref         Detection result UUID.
  * @param[out]  product     Product name.
  * @param[out]  location    Product location.
@@ -19442,8 +19442,9 @@ result_uuid (result_t result, char ** id)
  * @return -1 on error, 0 on success.
  */
 int
-result_detection_reference (result_t result, report_t report, const gchar *host,
-                            const char *oid, char **ref, char **product,
+result_detection_reference (result_t result, report_t report,
+                            const char *host,
+                            char **oid, char **ref, char **product,
                             char **location, char **name)
 {
   gchar *quoted_location, *quoted_host;
@@ -19475,6 +19476,20 @@ result_detection_reference (result_t result, report_t report, const gchar *host,
     goto detect_cleanup;
   quoted_location = sql_quote (*location);
 
+  *oid
+    = sql_string ("SELECT value"
+                  " FROM report_host_details"
+                  " WHERE report_host = (SELECT id"
+                  "                      FROM report_hosts"
+                  "                      WHERE report = %llu"
+                  "                      AND host = '%s')"
+                  " AND name = 'detected_by'"
+                  " AND source_name = (SELECT nvt"
+                  "                    FROM results"
+                  "                    WHERE id = %llu)",
+                  " LIMIT 1",
+                  report, quoted_host, result);
+
   *product = sql_string ("SELECT name"
                          " FROM report_host_details"
                          " WHERE report_host = (SELECT id"
@@ -19488,8 +19503,8 @@ result_detection_reference (result_t result, report_t report, const gchar *host,
   if (*product == NULL)
     goto detect_cleanup;
 
-  if (g_str_has_prefix (oid, "CVE-"))
-    *name = g_strdup (oid);
+  if (g_str_has_prefix (*oid, "CVE-"))
+    *name = g_strdup (*oid);
   else
     *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", oid);
   if (*name == NULL)
