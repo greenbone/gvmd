@@ -1438,7 +1438,7 @@ const char*
 result_iterator_date (iterator_t*);
 
 const char*
-result_iterator_detected_by_oid (iterator_t*);
+result_iterator_path (iterator_t*);
 
 const char*
 result_iterator_asset_host_id (iterator_t*);

@@ -21668,15 +21668,7 @@ where_qod (int min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
-    { "(SELECT value"                                                         \
-      " FROM report_host_details"                                             \
-      " WHERE report_host = (SELECT id"                                       \
-      "                      FROM report_hosts"                               \
-      "                      WHERE report = results.report"                   \
-      "                      AND host = results.host)"                        \
-      " AND name = 'detected_by'"                                             \
-      " AND source_name = results.nvt"                                        \
-      " LIMIT 1)",                                                            \
+    { "path",                                                                 \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT CASE WHEN host IS NULL"                                        \
@@ -21824,15 +21816,7 @@ where_qod (int min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "nvts.cve", "cve", KEYWORD_TYPE_STRING },                               \
-    { "(SELECT value"                                                         \
-      " FROM report_host_details"                                             \
-      " WHERE report_host = (SELECT id"                                       \
-      "                      FROM report_hosts"                               \
-      "                      WHERE report = results.report"                   \
-      "                      AND host = results.host)"                        \
-      " AND name = 'detected_by'"                                             \
-      " AND source_name = results.nvt"                                        \
-      " LIMIT 1)",                                                            \
+    { "path",                                                                 \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT CASE WHEN host IS NULL"                                        \
@@ -22937,14 +22921,14 @@ DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
 DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
 
 /**
- * @brief Get the "detected_by" NVT OID from a result iterator.
+ * @brief Get the path from a result iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The OID of the "detected_by" NVT.  Caller must only use before
+ * @return The path of the result.  Caller must only use before
  *         calling cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_detected_by_oid, GET_ITERATOR_COLUMN_COUNT + 22);
+DEF_ACCESS (result_iterator_path, GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Get the asset host ID from a result iterator.
