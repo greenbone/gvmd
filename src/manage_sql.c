@@ -18236,26 +18236,34 @@ set_task_schedule (task_t task, schedule_t schedule, int periods)
  *
  * @param[in]  task_id   Task UUID.
  * @param[in]  schedule  Schedule.
- * @param[in]  periods   Number of schedule periods.
+ * @param[in]  periods   Number of schedule periods.  -1 to use existing value.
  *
  * @return 0 success, -1 error.
  */
 int
 set_task_schedule_uuid (const gchar *task_id, schedule_t schedule, int periods)
 {
-  gchar *quoted_task_id;
+  gchar *quoted_task_id, *schedule_periods;
+
+  if (periods == -1)
+    schedule_periods = g_strdup ("");
+  else
+    schedule_periods = g_strdup_printf ("schedule_periods = %i,",
+                                        periods);
 
   quoted_task_id = sql_quote (task_id);
   sql ("UPDATE tasks"
        " SET schedule = %llu,"
-       " schedule_periods = %i,"
+       "%s"
        " schedule_next_time = (SELECT next_time_ical (icalendar, timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
        " WHERE uuid = '%s';",
-       schedule, periods, schedule, quoted_task_id);
+       schedule, schedule_periods, schedule, quoted_task_id);
   g_free (quoted_task_id);
+
+  g_free (schedule_periods);
 
   return 0;
 }
@@ -18688,8 +18696,8 @@ clear_duration_schedules (task_t task)
        " modification_time = m_now ()"
        " WHERE schedule > 0"
        "%s"
-       " AND NOT (SELECT icalendar LIKE '%%\nRRULE%%'"
-       "              OR icalendar LIKE '%%\nRDATE%%'"
+       " AND NOT (SELECT icalendar LIKE '%%\nBEGIN:VEVENT%%\nRRULE%%'"
+       "              OR icalendar LIKE '%%\nBEGIN:VEVENT%%\nRDATE%%'"
        "            FROM schedules WHERE schedules.id = schedule)"
        " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
        "%s"
@@ -18738,8 +18746,8 @@ update_duration_schedule_periods (task_t task)
        " WHERE schedule > 0"
        "%s"
        " AND schedule_periods = 1"
-       " AND (SELECT icalendar LIKE '%%\nRRULE%%'"
-       "          OR icalendar LIKE '%%\nRDATE%%'"
+       " AND (SELECT icalendar LIKE '%%\nBEGIN:VEVENT%%\nRRULE%%'"
+       "          OR icalendar LIKE '%%\nBEGIN:VEVENT%%\nRDATE%%'"
        "       FROM schedules WHERE schedules.id = schedule)"
        " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
        " AND schedule_next_time = 0"  /* Set as flag when starting task. */
