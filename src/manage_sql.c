@@ -49076,7 +49076,6 @@ create_asset_host (const char *host_name, const char *comment,
        current_credentials.uuid,
        quoted_host_name,
        quoted_comment);
-  g_free (quoted_host_name);
   g_free (quoted_comment);
 
   host = sql_last_insert_id ();
@@ -49089,8 +49088,10 @@ create_asset_host (const char *host_name, const char *comment,
        "  '', '%s', 'User', '%s', '', m_now (), m_now ());",
        host,
        current_credentials.uuid,
-       host_name,
+       quoted_host_name,
        current_credentials.uuid);
+
+  g_free (quoted_host_name);
 
   if (host_return)
     *host_return = host;
