@@ -21609,8 +21609,7 @@ omp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_asset",
-                                    "Name may only contain alphanumeric"
-                                    " characters"));
+                                    "Name must be an IP address"));
                 log_event_fail ("asset", "Asset", NULL, "created");
                 break;
               case 99:
