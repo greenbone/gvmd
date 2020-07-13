@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix gvm-manage-certs. [#1139](https://github.com/greenbone/gvmd/pull/1139)
 - Fix CVE scanner and results handling [#1142](https://github.com/greenbone/gvmd/pull/1142)
 - Update to gvm-portnames-update to use new nomenclature [#1166](https://github.com/greenbone/gvmd/pull/1166)
+- Fix the description of the Raw and Anonymous XML report formats [#1166](https://github.com/greenbone/gvmd/pull/1191)
 
 [9.0.2]: https://github.com/greenbone/gvmd/compare/v9.0.1...gvmd-9.0
 
