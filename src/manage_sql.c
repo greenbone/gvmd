@@ -877,8 +877,8 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 /**
  * @brief Convert an ISO time into seconds since epoch.
  *
- * For backward compatibility, if the conversion fails try parse in ctime
- * format.
+ * If no offset is specified, the timezone of the current user is used.
+ * If there is no current user timezone, UTC is used.
  *
  * @param[in]  text_time  Time as text in ISO format: 2011-11-03T09:23:28+02:00.
  *
@@ -887,205 +887,7 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 int
 parse_iso_time (const char *text_time)
 {
-  int epoch_time;
-  struct tm tm;
-
-  memset (&tm, 0, sizeof (struct tm));
-  tm.tm_isdst = -1;
-  if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
-    {
-      gchar *tz;
-
-      memset (&tm, 0, sizeof (struct tm));
-      tm.tm_isdst = -1;
-      if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
-        {
-          /* Try time without timezone suffix, applying timezone of user. */
-
-          memset (&tm, 0, sizeof (struct tm));
-          tm.tm_isdst = -1;
-          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
-            {
-              memset (&tm, 0, sizeof (struct tm));
-              tm.tm_isdst = -1;
-              if (strptime ((char*) text_time, "%F %T", &tm) == NULL)
-                return parse_ctime (text_time);
-            }
-
-          /* Store current TZ. */
-          tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-          if (setenv ("TZ",
-                      current_credentials.timezone
-                       ? current_credentials.timezone
-                       : "UTC",
-                      1)
-              == -1)
-            {
-              g_warning ("%s: Failed to switch to timezone %s",
-                         __FUNCTION__, current_credentials.timezone);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
-            }
-
-          memset (&tm, 0, sizeof (struct tm));
-          tm.tm_isdst = -1;
-          if (strptime ((char*) text_time, "%FT%T", &tm) == NULL)
-            {
-              memset (&tm, 0, sizeof (struct tm));
-              tm.tm_isdst = -1;
-              if (strptime ((char*) text_time, "%F %T", &tm) == NULL)
-                {
-                  assert (0);
-                  g_warning ("%s: Failed to parse time", __FUNCTION__);
-                  if (tz != NULL)
-                    setenv ("TZ", tz, 1);
-                  g_free (tz);
-                  return 0;
-                }
-            }
-        }
-      else
-        {
-          /* Time has "Z" suffix for UTC */
-
-          /* Store current TZ. */
-          tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-          if (setenv ("TZ", "UTC", 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
-            }
-
-          memset (&tm, 0, sizeof (struct tm));
-          tm.tm_isdst = -1;
-          if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
-            {
-              assert (0);
-              g_warning ("%s: Failed to parse time", __FUNCTION__);
-              if (tz != NULL)
-                setenv ("TZ", tz, 1);
-              g_free (tz);
-              return 0;
-            }
-        }
-
-      epoch_time = mktime (&tm);
-      if (epoch_time == -1)
-        {
-          g_warning ("%s: Failed to make time", __FUNCTION__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-
-      /* Revert to stored TZ. */
-      if (tz)
-        {
-          if (setenv ("TZ", tz, 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
-              g_free (tz);
-              return 0;
-            }
-        }
-      else
-        unsetenv ("TZ");
-
-      g_free (tz);
-    }
-  else
-    {
-      gchar *tz, *new_tz;
-      int offset_hour, offset_minute;
-      char sign;
-
-      /* Get the timezone offset from the string. */
-
-      if (sscanf ((char*) text_time,
-                  "%*u-%*u-%*uT%*u:%*u:%*u%[-+]%d:%d",
-                  &sign, &offset_hour, &offset_minute)
-          != 3)
-        {
-          /* Perhaps %z is an acronym like "CEST".  Assume it's local time. */
-          epoch_time = mktime (&tm);
-          if (epoch_time == -1)
-            {
-              g_warning ("%s: Failed to make time", __FUNCTION__);
-              return 0;
-            }
-          return epoch_time;
-        }
-
-      /* Store current TZ. */
-
-      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-      /* Switch to the timezone in the time string. */
-
-      new_tz = g_strdup_printf ("UTC%c%d:%d",
-                                sign == '-' ? '+' : '-',
-                                offset_hour,
-                                offset_minute);
-      if (setenv ("TZ", new_tz, 1) == -1)
-        {
-          g_warning ("%s: Failed to switch to %s", __FUNCTION__, new_tz);
-          g_free (new_tz);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-      g_free (new_tz);
-
-      /* Parse time again under the new timezone. */
-
-      memset (&tm, 0, sizeof (struct tm));
-      tm.tm_isdst = -1;
-      if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
-        {
-          assert (0);
-          g_warning ("%s: Failed to parse time", __FUNCTION__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-
-      epoch_time = mktime (&tm);
-      if (epoch_time == -1)
-        {
-          g_warning ("%s: Failed to make time", __FUNCTION__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          return 0;
-        }
-
-      /* Revert to stored TZ. */
-      if (tz)
-        {
-          if (setenv ("TZ", tz, 1) == -1)
-            {
-              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
-              g_free (tz);
-              return 0;
-            }
-        }
-      else
-        unsetenv ("TZ");
-
-      g_free (tz);
-    }
-
-  return epoch_time;
+  return parse_iso_time_tz (text_time, current_credentials.timezone);
 }
 
 /**
@@ -21693,40 +21495,54 @@ detect_cleanup:
 /* Prognostics. */
 
 /**
- * @brief Get the location of an App for a report's host.
+ * @brief Initialize an iterator of locations of an App for a report's host.
  *
+ * @param[in]  iterator     Iterator.
  * @param[in]  report_host  Report host.
  * @param[in]  app          CPE.
- *
- * @return Location if there is one, else NULL.
  */
-gchar *
-app_location (report_host_t report_host, const gchar *app)
+void
+init_app_locations_iterator (iterator_t *iterator,
+                             report_host_t report_host,
+                             const gchar *app)
 {
-  gchar *quoted_app, *ret;
+  gchar *quoted_app;
 
   assert (app);
 
   quoted_app = sql_quote (app);
 
-  ret = sql_string ("SELECT value FROM report_host_details"
-                    " WHERE report_host = %llu"
-                    " AND name = '%s'"
-                    " AND source_type = 'nvt'"
-                    " AND source_name"
-                    "     = (SELECT source_name FROM report_host_details"
-                    "        WHERE report_host = %llu"
-                    "        AND source_type = 'nvt'"
-                    "        AND name = 'App'"
-                    "        AND value = '%s');",
-                    report_host,
-                    quoted_app,
-                    report_host,
-                    quoted_app);
+  init_iterator (iterator,
+                 "SELECT string_agg(DISTINCT value, ', ')"
+                 " FROM report_host_details"
+                 " WHERE report_host = %llu"
+                 " AND name = '%s'"
+                 " AND source_type = 'nvt'"
+                 " AND source_name"
+                 "     IN (SELECT source_name FROM report_host_details"
+                 "         WHERE report_host = %llu"
+                 "         AND source_type = 'nvt'"
+                 "         AND name = 'App'"
+                 "         AND value = '%s');",
+                 report_host,
+                 quoted_app,
+                 report_host,
+                 quoted_app);
 
   g_free (quoted_app);
+}
 
-  return ret;
+/**
+ * @brief Get a location from an app locations iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The location.
+ */
+const char *
+app_locations_iterator_location (iterator_t *iterator)
+{
+  return iterator_string (iterator, 0);
 }
 
 /**
@@ -21741,8 +21557,8 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
 {
   init_iterator (iterator,
                  "SELECT cves.name AS vulnerability,"
-                 "       CAST (cves.cvss AS NUMERIC) AS severity,"
-                 "       cves.description,"
+                 "       max(CAST (cves.cvss AS NUMERIC)) AS severity,"
+                 "       max(cves.description) AS description,"
                  "       cpes.name AS location,"
                  "       (SELECT host FROM report_hosts"
                  "        WHERE id = %llu) AS host"
@@ -21753,6 +21569,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
                  " AND report_host_details.name = 'App'"
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"
+                 " GROUP BY cves.id, vulnerability, location, host"
                  " ORDER BY cves.id ASC"
                  " LIMIT %s OFFSET 0;",
                  report_host,
