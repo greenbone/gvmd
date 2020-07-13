@@ -1506,6 +1506,25 @@ copy_report_format (const char* name, const char* source_uuid,
 }
 
 /**
+ * @brief Return whether a report format is predefined.
+ *
+ * @param[in]  report_format_id  UUID of report format.
+ *
+ * @return 1 if predefined, else 0.
+ */
+static int
+report_format_predefined_uuid (const gchar *report_format_id)
+{
+  report_format_t report_format;
+
+  if (find_report_format_no_acl (report_format_id, &report_format)
+      || report_format == 0)
+    return 0;
+
+  return report_format_predefined (report_format);
+}
+
+/**
  * @brief Modify a report format.
  *
  * @param[in]  report_format_id  UUID of report format.
@@ -1535,6 +1554,12 @@ modify_report_format (const char *report_format_id, const char *name,
   assert (current_credentials.uuid);
 
   if (acl_user_may ("modify_report_format") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (report_format_predefined_uuid (report_format_id))
     {
       sql_rollback ();
       return 99;
