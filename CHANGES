@@ -31,6 +31,7 @@ Main changes since 7.0.3:
   scans has been added.
 * Empty hosts_allow and ifaces_allow is no longer ignored
 * Fix name handling when creating host assets
+* Quote identifiers in SQL functions using EXECUTE
 
 openvas-manager 7.0.3 (2018-03-29)
 
