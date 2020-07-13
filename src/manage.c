@@ -2112,7 +2112,8 @@ set_task_interrupted (task_t task, const gchar *message)
   if (global_current_report)
     {
       result_t result;
-      result = make_result (task, "", "", "", "", "Error Message", message);
+      result = make_result (task, "", "", "", "", "Error Message", message,
+                            NULL);
       report_add_result (global_current_report, result);
     }
 }
@@ -3280,7 +3281,8 @@ handle_gmp_slave_task (task_t task, target_t target,
                               /* NVT: Global variable settings. */
                               OID_GLOBAL_SETTINGS,
                               "Error Message",
-                              "Authentication with the slave failed.");
+                              "Authentication with the slave failed.",
+                              NULL);
         g_free (port_string);
         if (global_current_report)
           report_add_result (global_current_report, result);
@@ -3587,7 +3589,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                              (task, "", "", "",
                               threat_message_type ("Error"),
                               "Erroneous scan progress value", "", "",
-                              QOD_DEFAULT);
+                              QOD_DEFAULT, NULL);
           report_add_result (report, result);
           delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                            key_priv);
@@ -3605,7 +3607,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                  (task, "", "", "",
                                   threat_message_type ("Error"),
                                   "Erroneous scan progress value", "", "",
-                                  QOD_DEFAULT);
+                                  QOD_DEFAULT, NULL);
               report_add_result (report, result);
               rc = -1;
               break;
@@ -3635,7 +3637,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                     (task, "", "", "",
                      threat_message_type ("Error"),
                      "Task interrupted unexpectedly", "", "",
-                     QOD_DEFAULT);
+                     QOD_DEFAULT, NULL);
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
@@ -3649,7 +3651,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                     (task, "", "", "",
                      threat_message_type ("Error"),
                      "Scan stopped unexpectedly by the server", "", "",
-                     QOD_DEFAULT);
+                     QOD_DEFAULT, NULL);
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
@@ -4544,7 +4546,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       g_warning ("OSP start_scan %s: %s", report_id, error);
       result = make_osp_result (task, "", "", "",
                                 threat_message_type ("Error"),
-                                error, "", "", QOD_DEFAULT);
+                                error, "", "", QOD_DEFAULT, NULL);
       report_add_result (global_current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);

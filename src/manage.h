@@ -1093,7 +1093,8 @@ result_uuid (result_t, char **);
 
 int
 result_detection_reference (result_t, report_t, const char *, const char *,
-                            char **, char **, char **, char **);
+                            const char *, char **, char **, char **, char **,
+                            char **);
 
 /* Reports. */
 
@@ -1148,11 +1149,11 @@ qod_from_type (const char *);
 
 result_t
 make_result (task_t, const char*, const char*, const char*, const char*,
-             const char*, const char*);
+             const char*, const char*, const char*);
 
 result_t
 make_osp_result (task_t, const char*, const char*, const char*, const char*,
-                 const char *, const char *, const char *, int);
+                 const char *, const char *, const char *, int, const char*);
 
 result_t
 make_cve_result (task_t, const char*, const char*, double, const char*);
@@ -1438,7 +1439,7 @@ const char*
 result_iterator_date (iterator_t*);
 
 const char*
-result_iterator_detected_by_oid (iterator_t*);
+result_iterator_path (iterator_t*);
 
 const char*
 result_iterator_asset_host_id (iterator_t*);

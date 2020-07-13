@@ -2402,7 +2402,8 @@ create_tables ()
        "  qod_type text,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  date integer,"
-       "  hostname text);");
+       "  hostname text,"
+       "  path text);");
 
   sql ("CREATE TABLE IF NOT EXISTS results_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -2421,7 +2422,8 @@ create_tables ()
        "  qod_type text,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  date integer,"
-       "  hostname text);");
+       "  hostname text,"
+       "  path text);");
 
   /* All the NVTs that have ever been encountered in results and overrides.
    *
