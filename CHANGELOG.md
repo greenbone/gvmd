@@ -131,6 +131,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Preserve task "once" value [#1176](https://github.com/greenbone/gvmd/pull/1176)
 - Check number of args to ensure period_offsets is 0 [#1175](https://github.com/greenbone/gvmd/pull/1175)
 - Fix name handling when creating host assets [#1183](https://github.com/greenbone/gvmd/pull/1183)
+- Outdated references to "openvassd" have been updated to "openvas" [#1189](https://github.com/greenbone/gvmd/pull/1189)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
