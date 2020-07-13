@@ -63220,12 +63220,14 @@ identifier_name (const char *name)
  * @param[in]  comment      Comment.
  * @param[out] host_return  Created asset.
  *
- * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
+ * @return 0 success, 1 failed to find report, 2 host not an IP address,
+ *         99 permission denied, -1 error.
  */
 int
 create_asset_host (const char *host_name, const char *comment,
                    resource_t* host_return)
 {
+  int host_type;
   resource_t host;
   gchar *quoted_host_name, *quoted_comment;
 
@@ -63240,6 +63242,13 @@ create_asset_host (const char *host_name, const char *comment,
       return 99;
     }
 
+  host_type = gvm_get_host_type (host_name);
+  if (host_type != HOST_TYPE_IPV4 && host_type != HOST_TYPE_IPV6)
+    {
+      sql_rollback ();
+      return 2;
+    }
+
   quoted_host_name = sql_quote (host_name);
   quoted_comment = sql_quote (comment ? comment : "");
   sql ("INSERT into hosts"
@@ -63250,7 +63259,6 @@ create_asset_host (const char *host_name, const char *comment,
        current_credentials.uuid,
        quoted_host_name,
        quoted_comment);
-  g_free (quoted_host_name);
   g_free (quoted_comment);
 
   host = sql_last_insert_id ();
@@ -63263,8 +63271,10 @@ create_asset_host (const char *host_name, const char *comment,
        "  '', '%s', 'User', '%s', '', m_now (), m_now ());",
        host,
        current_credentials.uuid,
-       host_name,
+       quoted_host_name,
        current_credentials.uuid);
+
+  g_free (quoted_host_name);
 
   if (host_return)
     *host_return = host;
