@@ -2,7 +2,7 @@
   <name>XML</name>
   <summary>Raw XML report.</summary>
   <description>
-    Anonymized scan report in GMP XML format.
+    Complete scan report in GMP XML format.
   </description>
   <extension>xml</extension>
   <content_type>text/xml</content_type>
