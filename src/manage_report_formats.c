@@ -90,19 +90,6 @@ trash_report_format_writable (report_format_t report_format)
 }
 
 /**
- * @brief Return whether a report format is predefined.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 1 if predefined, else 0.
- */
-int
-report_format_predefined (report_format_t report_format)
-{
-  return resource_predefined ("report_format", report_format);
-}
-
-/**
  * @brief Get the name of a report format param type.
  *
  * @param[in]  type  Param type.
