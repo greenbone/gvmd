@@ -1953,6 +1953,7 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
+       "  predefined integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -1962,6 +1963,7 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
+       "  predefined integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -2167,6 +2169,7 @@ create_tables ()
        "  nvts_growing integer,"
        "  type integer,"
        "  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,"
+       "  predefined integer,"
        "  creation_time integer,"
        "  modification_time integer,"
        "  usage_type text);");
@@ -2184,6 +2187,7 @@ create_tables ()
        "  nvts_growing integer,"
        "  type integer,"
        "  scanner integer," /* REFERENCES scanners (id) */
+       "  predefined integer,"
        "  creation_time integer,"
        "  modification_time integer,"
        "  scanner_location integer,"
@@ -2334,11 +2338,6 @@ create_tables ()
        "  end_time integer,"
        "  min_qod integer);");
 
-  sql ("CREATE TABLE IF NOT EXISTS resources_predefined"
-       " (id SERIAL PRIMARY KEY,"
-       "  resource_type text,"
-       "  resource integer);");
-
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2409,6 +2408,7 @@ create_tables ()
        "  trust integer,"
        "  trust_time integer,"
        "  flags integer,"
+       "  predefined integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -2425,6 +2425,7 @@ create_tables ()
        "  trust integer,"
        "  trust_time integer,"
        "  flags integer,"
+       "  predefined integer,"
        /* The UUID that the report format had before it was deleted.
         *
         * Regular report formats are given a new UUID when they are moved to
