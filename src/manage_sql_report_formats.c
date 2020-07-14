@@ -148,33 +148,6 @@ resource_predefined (const gchar *type, resource_t resource)
                   resource);
 }
 
-/**
- * @brief Mark a resource as predefined.
- *
- * Currently only report formats use this.
- *
- * @param[in]  type      Resource type.
- * @param[in]  resource  Resource.
- * @param[in]  enable    If true mark as predefined, else remove mark.
- */
-void
-resource_set_predefined (const gchar *type, resource_t resource, int enable)
-{
-  assert (valid_type (type));
-
-  sql ("DELETE FROM resources_predefined"
-       " WHERE resource_type = '%s'"
-       " AND resource = %llu;",
-       type,
-       resource);
-
-  if (enable)
-    sql ("INSERT into resources_predefined (resource_type, resource)"
-         " VALUES ('%s', %llu);",
-         type,
-         resource);
-}
-
 
 /* Signature utils. */
 
@@ -1165,11 +1138,11 @@ create_report_format_internal (int check_access, int may_exist, int active,
 
   sql ("INSERT INTO report_formats"
        " (uuid, name, owner, summary, description, extension, content_type,"
-       "  signature, trust, trust_time, flags, creation_time,"
+       "  signature, trust, trust_time, flags, predefined, creation_time,"
        "  modification_time)"
        " VALUES ('%s', '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', '%s', '%s', '%s', %i, %i, %i, m_now (), m_now ());",
+       " '%s', '%s', '%s', '%s', '%s', %i, %i, %i, %i, m_now (), m_now ());",
        new_uuid ? new_uuid : uuid,
        quoted_name,
        current_credentials.uuid,
@@ -1180,7 +1153,8 @@ create_report_format_internal (int check_access, int may_exist, int active,
        quoted_signature ? quoted_signature : "",
        format_trust,
        time (NULL),
-       active ? REPORT_FORMAT_FLAG_ACTIVE : 0);
+       active ? REPORT_FORMAT_FLAG_ACTIVE : 0,
+       predefined ? 1 : 0);
 
   g_free (new_uuid);
   g_free (quoted_summary);
@@ -1206,9 +1180,6 @@ create_report_format_internal (int check_access, int may_exist, int active,
     *report_format = report_format_rowid;
 
   g_free (dir);
-
-  if (predefined)
-    resource_set_predefined ("report_format", report_format_rowid, 1);
 
   sql_commit ();
 
