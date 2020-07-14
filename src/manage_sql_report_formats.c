@@ -877,6 +877,7 @@ add_report_format_params (report_format_t report_format, array_t *params,
  * @param[in]   params_options Array.  Each item is an array corresponding to
  *                             params.  Each item of an inner array is a string,
  *                             the text of an option in a selection.
+ * @param[in]   predefined     Whether report format is from the feed.
  * @param[in]   signature      Signature.
  * @param[out]  report_format  Created report format.
  *
@@ -893,6 +894,7 @@ create_report_format_internal (int check_access, int may_exist, int active,
                                const char *summary, const char *description,
                                array_t *files, array_t *params,
                                array_t *params_options, const char *signature,
+                               int predefined,
                                report_format_t *report_format)
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
@@ -1205,6 +1207,9 @@ create_report_format_internal (int check_access, int may_exist, int active,
 
   g_free (dir);
 
+  if (predefined)
+    resource_set_predefined ("report_format", report_format_rowid, 1);
+
   sql_commit ();
 
   return 0;
@@ -1249,6 +1254,7 @@ create_report_format (const char *uuid, const char *name,
                                         uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
+                                        0, /* Predefined. */
                                         report_format);
 }
 
@@ -1269,6 +1275,7 @@ create_report_format (const char *uuid, const char *name,
  *                             params.  Each item of an inner array is a string,
  *                             the text of an option in a selection.
  * @param[in]   signature      Signature.
+ * @param[in]   predefined     Whether report format is from the feed.
  * @param[out]  report_format  Created report format.
  *
  * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
@@ -1283,7 +1290,7 @@ create_report_format_no_acl (const char *uuid, const char *name,
                              const char *summary, const char *description,
                              array_t *files, array_t *params,
                              array_t *params_options, const char *signature,
-                             report_format_t *report_format)
+                             int predefined, report_format_t *report_format)
 {
   return create_report_format_internal (0, /* Check permission. */
                                         0, /* Allow existing report format. */
@@ -1292,7 +1299,7 @@ create_report_format_no_acl (const char *uuid, const char *name,
                                         uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
-                                        report_format);
+                                        predefined, report_format);
 }
 
 /**
