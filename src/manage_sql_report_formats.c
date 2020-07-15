@@ -1893,11 +1893,11 @@ delete_report_format (const char *report_format_id, int ultimate)
       sql ("INSERT INTO report_formats_trash"
            " (uuid, owner, name, extension, content_type, summary,"
            "  description, signature, trust, trust_time, flags, original_uuid,"
-           "  creation_time, modification_time)"
+           "  predefined, creation_time, modification_time)"
            " SELECT"
            "  %s, owner, name, extension, content_type, summary,"
            "  description, signature, trust, trust_time, flags, uuid,"
-           "  creation_time, modification_time"
+           "  predefined, creation_time, modification_time"
            " FROM report_formats"
            " WHERE id = %llu;",
            report_format_predefined (report_format) ? "uuid" : "make_uuid ()",
@@ -2019,11 +2019,11 @@ restore_report_format (const char *report_format_id)
   sql ("INSERT INTO report_formats"
        " (uuid, owner, name, extension, content_type, summary,"
        "  description, signature, trust, trust_time, flags,"
-       "  creation_time, modification_time)"
+       "  predefined, creation_time, modification_time)"
        " SELECT"
        "  original_uuid, owner, name, extension, content_type, summary,"
        "  description, signature, trust, trust_time, flags,"
-       "  creation_time, modification_time"
+       "  predefined, creation_time, modification_time"
        " FROM report_formats_trash"
        " WHERE id = %llu;",
        resource);
