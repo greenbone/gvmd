@@ -1307,6 +1307,8 @@ copy_report_format (const char* name, const char* source_uuid,
       return ret;
     }
 
+  sql ("UPDATE report_formats SET predefined = 0 WHERE id = %llu;", new);
+
   if (report_format_predefined (old))
     sql ("UPDATE report_formats SET trust = %i, trust_time = %i"
          " WHERE id = %llu;",
