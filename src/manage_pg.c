@@ -649,15 +649,53 @@ manage_create_sql_functions ()
 
   /* Functions in pl/pgsql. */
 
+  /* Helper function for quoting the individual parts of multi-part
+   *  identifiers like "scap", "cpes" and "id" in "scap.cpes.id" where
+   *  necessary.
+   */
+  sql ("CREATE OR REPLACE FUNCTION quote_ident_split (ident_name text)"
+       " RETURNS text AS $$"
+       " DECLARE quoted text := '';"
+       " BEGIN"
+       // Split original dot-separated input into rows
+       "   WITH split AS"
+       "   (SELECT (unnest(string_to_array(ident_name, '.'))) AS part)"
+       // For each row trim outer quote marks and quote the result.
+       //  then recombine the rows into a single, dot-separated string again.
+       "   SELECT string_agg(quote_ident(trim(part, '\"')), '.') FROM split"
+       "   INTO quoted;"
+       "   RETURN quoted;"
+       " END;"
+       " $$ LANGUAGE plpgsql;");
+
+  /* Helper function for quoting comma-separated lists of
+   *  identifiers like "config.name, config.type"
+   */
+  sql ("CREATE OR REPLACE FUNCTION quote_ident_list (ident_name text)"
+       " RETURNS text AS $$"
+       " DECLARE quoted text := '';"
+       " BEGIN"
+       // Split original comma-separated input into rows
+       "   WITH split AS"
+       "   (SELECT (unnest(string_to_array(ident_name, ','))) AS ident)"
+       // For each row trim outer whitespace and quote the result.
+       //  then recombine the rows into a single, comma-separated string again.
+       "   SELECT string_agg(quote_ident_split(trim(ident, ' ')), ', ')"
+       "   FROM split"
+       "   INTO quoted;"
+       "   RETURN quoted;"
+       " END;"
+       " $$ LANGUAGE plpgsql;");
+
   /* Wrapping the "LOCK TABLE ... NOWAIT" like this will prevent
    *  error messages in the PostgreSQL log if the lock is not available.
    */
   sql ("CREATE OR REPLACE FUNCTION try_exclusive_lock (regclass)"
        " RETURNS integer AS $$"
        " BEGIN"
-       "   EXECUTE 'LOCK TABLE \"'"
-       "           || $1"
-       "           || '\" IN ACCESS EXCLUSIVE MODE NOWAIT;';"
+       "   EXECUTE 'LOCK TABLE '"
+       "           || quote_ident_split($1::text)"
+       "           || ' IN ACCESS EXCLUSIVE MODE NOWAIT;';"
        "   RETURN 1;"
        " EXCEPTION WHEN lock_not_available THEN"
        "   RETURN 0;"
@@ -739,15 +777,17 @@ manage_create_sql_functions ()
            "   WHEN $1 = 'task'"
            "   THEN RETURN (SELECT name FROM tasks WHERE uuid = $2);"
            "   WHEN $3 = " G_STRINGIFY (LOCATION_TABLE)
-           "   THEN EXECUTE 'SELECT name FROM ' || $1 || 's"
-           "                 WHERE uuid = $1'"
+           "   THEN EXECUTE 'SELECT name FROM '"
+           "                || quote_ident_split($1 || 's')"
+           "                || ' WHERE uuid = $1'"
            "        INTO execute_name"
            "        USING $2;"
            "        RETURN execute_name;"
            "   WHEN $1 NOT IN ('nvt', 'cpe', 'cve', 'ovaldef', 'cert_bund_adv',"
            "                   'dfn_cert_adv', 'report', 'result', 'user')"
-           "   THEN EXECUTE 'SELECT name FROM ' || $1 || 's_trash"
-           "                 WHERE uuid = $1'"
+           "   THEN EXECUTE 'SELECT name FROM '"
+           "                || quote_ident_split ($1 || 's_trash')"
+           "                || ' WHERE uuid = $1'"
            "        INTO execute_name"
            "        USING $2;"
            "        RETURN execute_name;"
@@ -1037,8 +1077,9 @@ manage_create_sql_functions ()
        "   IF type = 'user' THEN separator := '_'; END IF;"
        "   candidate := proposed_name || suffix || separator || number::text;"
        "   LOOP"
-       "     EXECUTE 'SELECT count (*) = 0 FROM ' || type || 's"
-       "              WHERE name = $1"
+       "     EXECUTE 'SELECT count (*) = 0 FROM '"
+       "             || quote_ident_split(type || 's')"
+       "             || ' WHERE name = $1"
        "              AND (($2 IS NULL) OR (owner IS NULL) OR (owner = $2))'"
        "       INTO unique_candidate"
        "       USING candidate, owner;"
@@ -1061,8 +1102,9 @@ manage_create_sql_functions ()
        "       AND tablename = lower (table_name)"
        "       AND indexname = lower (index_name))"
        "   THEN"
-       "     EXECUTE 'CREATE INDEX ' || index_name"
-       "             || ' ON ' || table_name || ' (' || columns || ');';"
+       "     EXECUTE 'CREATE INDEX ' || quote_ident(index_name)"
+       "             || ' ON ' || quote_ident_split(table_name)"
+       "             || ' (' || quote_ident_list(columns) || ');';"
        "   END IF;"
        " END;"
        "$$ LANGUAGE plpgsql;");
@@ -1092,27 +1134,36 @@ manage_create_sql_functions ()
        "            AND ((resource = 0)"
        /*                Super on other_user. */
        "                 OR ((resource_type = ''user'')"
-       "                     AND (resource = (SELECT ' || $1 || 's.owner"
-       "                                      FROM ' || $1 || 's"
-       "                                      WHERE id = $2)))"
+       "                     AND (resource = (SELECT '"
+       "                                      || quote_ident_split($1 || 's')"
+       "                                      || '.owner'"
+       "                                      || ' FROM '"
+       "                                      || quote_ident_split($1 || 's')"
+       "                                      || ' WHERE id = $2)))"
        /*                Super on other_user's role. */
        "                 OR ((resource_type = ''role'')"
        "                     AND (resource"
        "                          IN (SELECT DISTINCT role"
        "                              FROM role_users"
        "                              WHERE \"user\""
-       "                                    = (SELECT ' || $1 || 's.owner"
-       "                                       FROM ' || $1 || 's"
-       "                                       WHERE id = $2))))"
+       "                                    = (SELECT '"
+       "                                       || quote_ident_split($1 || 's')"
+       "                                       || '.owner'"
+       "                                       || ' FROM '"
+       "                                       || quote_ident_split($1 || 's')"
+       "                                       || ' WHERE id = $2))))"
        /*                Super on other_user's group. */
        "                 OR ((resource_type = ''group'')"
        "                     AND (resource"
        "                          IN (SELECT DISTINCT \"group\""
        "                              FROM group_users"
        "                              WHERE \"user\""
-       "                                    = (SELECT ' || $1 || 's.owner"
-       "                                       FROM ' || $1 || 's"
-       "                                       WHERE id = $2)))))"
+       "                                    = (SELECT '"
+       "                                       || quote_ident_split($1 || 's')"
+       "                                       || '.owner'"
+       "                                       || ' FROM '"
+       "                                       || quote_ident_split($1 || 's')"
+       "                                       || ' WHERE id = $2)))))"
        "            AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
        "            AND ((subject_type = ''user''"
        "                  AND subject"
@@ -1196,7 +1247,8 @@ manage_create_sql_functions ()
        "        END CASE;"
        "   ELSE"
        "     EXECUTE"
-       "     'SELECT EXISTS (SELECT * FROM ' || $1 || 's"
+       "     'SELECT EXISTS (SELECT * FROM '"
+       "                     || quote_ident_split ($1 || 's') || '"
        "      WHERE id = $2"
        "      AND ((owner IS NULL)"
        "           OR (owner = (SELECT id FROM users"
@@ -1222,7 +1274,8 @@ manage_create_sql_functions ()
        "  ret boolean;"
        " BEGIN"
        "  EXECUTE"
-       "    'SELECT id FROM ' || $1 || 's WHERE uuid = $2'"
+       "    'SELECT id FROM ' || quote_ident_split($1 || 's') || '"
+       "     WHERE uuid = $2'"
        "    USING arg_type, arg_uuid"
        "    INTO resource;"
        "  ret = user_owns (arg_type, resource::integer);"
