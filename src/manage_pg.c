@@ -649,29 +649,36 @@ manage_create_sql_functions ()
   /* Functions in pl/pgsql. */
 
   /* Helper function for quoting the individual parts of multi-part
-   *  identifiers like "scap.cpes.id"
+   *  identifiers like "scap", "cpes" and "id" in "scap.cpes.id" where
+   *  necessary.
    */
   sql ("CREATE OR REPLACE FUNCTION quote_ident_split (ident_name text)"
        " RETURNS text AS $$"
        " DECLARE quoted text := '';"
        " BEGIN"
+       // Split original dot-separated input into rows
        "   WITH split AS"
        "   (SELECT (unnest(string_to_array(ident_name, '.'))) AS part)"
+       // For each row trim outer quote marks and quote the result.
+       //  then recombine the rows into a single, dot-separated string again.
        "   SELECT string_agg(quote_ident(trim(part, '\"')), '.') FROM split"
        "   INTO quoted;"
        "   RETURN quoted;"
        " END;"
        " $$ LANGUAGE plpgsql;");
 
-  /* Helper function for quoting comma-separated lists of"
+  /* Helper function for quoting comma-separated lists of
    *  identifiers like "config.name, config.type"
    */
   sql ("CREATE OR REPLACE FUNCTION quote_ident_list (ident_name text)"
        " RETURNS text AS $$"
        " DECLARE quoted text := '';"
        " BEGIN"
+       // Split original comma-separated input into rows
        "   WITH split AS"
        "   (SELECT (unnest(string_to_array(ident_name, ','))) AS ident)"
+       // For each row trim outer whitespace and quote the result.
+       //  then recombine the rows into a single, comma-separated string again.
        "   SELECT string_agg(quote_ident_split(trim(ident, ' ')), ', ')"
        "   FROM split"
        "   INTO quoted;"
