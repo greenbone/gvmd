@@ -4146,7 +4146,7 @@ update_report_format (report_format_t report_format, const gchar *report_id, con
   sql ("UPDATE report_formats"
        " SET name = '%s', content_type = '%s', extension = '%s',"
        "     summary = '%s', description = '%s', signature = '%s',"
-       "     modification_time = m_now ()"
+       "     predefined = 1, modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_content_type,
