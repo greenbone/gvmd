@@ -2256,6 +2256,21 @@ report_format_predefined (report_format_t report_format)
 }
 
 /**
+ * @brief Return whether a trash report format is predefined.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+trash_report_format_predefined (report_format_t report_format)
+{
+  return sql_int ("SELECT predefined FROM report_formats_trash"
+                  " WHERE id = %llu;",
+                  report_format);
+}
+
+/**
  * @brief Return the extension of a report format.
  *
  * @param[in]  report_format  Report format.

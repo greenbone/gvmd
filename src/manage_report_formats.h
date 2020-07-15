@@ -86,6 +86,9 @@ int
 report_format_predefined (report_format_t);
 
 int
+trash_report_format_predefined (report_format_t);
+
+int
 report_format_active (report_format_t);
 
 int
