@@ -18250,6 +18250,9 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("modify_config",
                         "A config_id attribute is required"));
+  else if (config_predefined_uuid (modify_config_data->config_id))
+    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
+                                              "Permission denied"));
   else if ((modify_config_data->nvt_selection_family
             /* This array implies FAMILY_SELECTION. */
             && modify_config_data->families_static_all)

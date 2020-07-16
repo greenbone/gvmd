@@ -2743,6 +2743,36 @@ config_scanner (config_t config)
 }
 
 /**
+ * @brief Return whether a config is predefined.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+config_predefined (config_t config)
+{
+  return sql_int ("SELECT predefined FROM report_formats"
+                  " WHERE id = %llu;",
+                  config);
+}
+
+/**
+ * @brief Return whether a trash config is predefined.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+trash_config_predefined (config_t config)
+{
+  return sql_int ("SELECT predefined FROM configs_trash"
+                  " WHERE id = %llu;",
+                  config);
+}
+
+/**
  * @brief Get the timeout value for an NVT in a config.
  *
  * @param[in]  config  Config.

@@ -79,6 +79,12 @@ find_config_no_acl (const char *, config_t *);
 gboolean
 find_trash_config_no_acl (const char *, config_t *);
 
+int
+config_predefined (config_t config);
+
+int
+trash_config_predefined (config_t);
+
 void
 migrate_predefined_configs ();
 

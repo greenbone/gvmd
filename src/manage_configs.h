@@ -72,6 +72,9 @@ config_type (config_t);
 char *
 config_nvt_timeout (config_t, const char *);
 
+int
+config_predefined_uuid (const gchar *);
+
 void
 init_user_config_iterator (iterator_t*, config_t, int, int, const char*);
 
