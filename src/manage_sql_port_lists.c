@@ -1707,8 +1707,9 @@ delete_port_list (const char *port_list_id, int ultimate)
       port_list_t trash_port_list;
 
       sql ("INSERT INTO port_lists_trash"
-           " (uuid, owner, name, comment, creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, creation_time,"
+           " (uuid, owner, name, comment, predefined, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, predefined, creation_time,"
            "        modification_time"
            " FROM port_lists WHERE id = %llu;",
            port_list);
@@ -2406,8 +2407,10 @@ restore_port_list (const char *port_list_id)
     }
 
   sql ("INSERT INTO port_lists"
-       " (uuid, owner, name, comment, creation_time, modification_time)"
-       " SELECT uuid, owner, name, comment, creation_time, modification_time"
+       " (uuid, owner, name, comment, predefined, creation_time,"
+       "  modification_time)"
+       " SELECT uuid, owner, name, comment, predefined, creation_time,"
+       "        modification_time"
        " FROM port_lists_trash WHERE id = %llu;",
        port_list);
 
