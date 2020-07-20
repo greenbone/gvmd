@@ -26037,23 +26037,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <version>20.08</version>
   </change>
   <change>
-    <command>GET_REPORT_FORMATS</command>
-    <summary>PREDEFINED has been removed</summary>
-    <description>
-      <p>
-        The element REPORT_FORMAT/PREDEFINED has been removed from the
-        response to GET_REPORT_FORMATS.
-      </p>
-      <p>
-        Predefined report formats have been replaced with report formats
-        that are delivered in the feed.  Existing predefined report
-        formats will remain in the db, and their ownership will be
-        transferred to the Feed Import Owner.
-      </p>
-    </description>
-    <version>20.08</version>
-  </change>
-  <change>
     <command>COMMANDS</command>
     <summary>COMMANDS has been removed</summary>
     <description>
