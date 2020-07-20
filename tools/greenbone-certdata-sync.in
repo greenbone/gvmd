@@ -21,4 +21,4 @@
 # case a GSF access key is present) or else from the Greenbone
 # Community Feed.
 
-greenbone-gvmd-feed-sync --type "cert" "$@"
+greenbone-feed-sync --type "cert" "$@"

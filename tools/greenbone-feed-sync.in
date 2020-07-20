@@ -59,7 +59,7 @@ PORT=24
 
 # SCRIPT_NAME is the name the scripts will use to identify itself and to mark
 # log messages.
-SCRIPT_NAME="greenbone-gvmd-feed-sync"
+SCRIPT_NAME="greenbone-feed-sync"
 
 # LOG_CMD defines the command to use for logging. To have logger log to stderr
 # as well as syslog, add "-s" here.
