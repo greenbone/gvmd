@@ -4724,7 +4724,7 @@ update_config (config_t config, const gchar *type, const gchar *name,
   quoted_type = sql_quote (type);
   sql ("UPDATE configs"
        " SET name = '%s', comment = '%s', type = '%s', usage_type = '%s',"
-       " modification_time = m_now ()"
+       " predefined = 1, modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
