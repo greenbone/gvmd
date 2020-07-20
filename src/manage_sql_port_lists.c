@@ -1860,6 +1860,7 @@ delete_port_range (const char *port_range_id, int dummy)
      "udp",                                                        \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
+   { "predefined", NULL, KEYWORD_TYPE_INTEGER },                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                            \
  }
 
@@ -1908,6 +1909,7 @@ delete_port_range (const char *port_range_id, int dummy)
      "udp",                                                        \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
+   { "predefined", NULL, KEYWORD_TYPE_INTEGER },                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                            \
  }
 
@@ -2021,6 +2023,20 @@ port_list_iterator_count_udp (iterator_t* iterator)
 {
   if (iterator->done) return -1;
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
+}
+
+/**
+ * @brief Get predefined status from a port_list iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+port_list_iterator_predefined (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
 }
 
 /**

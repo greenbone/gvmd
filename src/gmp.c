@@ -14042,10 +14042,12 @@ handle_get_port_lists (gmp_parser_t *gmp_parser, GError **error)
                                "<all>%i</all>"
                                "<tcp>%i</tcp>"
                                "<udp>%i</udp>"
-                               "</port_count>",
+                               "</port_count>"
+                               "<predefined>%i</predefined>",
                                port_list_iterator_count_all (&port_lists),
                                port_list_iterator_count_tcp (&port_lists),
-                               port_list_iterator_count_udp (&port_lists));
+                               port_list_iterator_count_udp (&port_lists),
+                               port_list_iterator_predefined (&port_lists));
 
       if (get_port_lists_data->get.details)
         {
