@@ -1396,6 +1396,8 @@ copy_port_list (const char* name, const char* comment,
       return ret;
     }
 
+  sql ("UPDATE port_lists SET predefined = 0 WHERE id = %llu;", new);
+
   /* Copy port ranges. */
 
   sql ("INSERT INTO port_ranges "
