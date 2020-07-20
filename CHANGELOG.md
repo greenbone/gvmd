@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Handle QUEUED osp scan status. [#1113](https://github.com/greenbone/gvmd/pull/1113)
 - Add time placeholders for SCP path [#1164](https://github.com/greenbone/gvmd/pull/1164)
 - Expand detection information of results [#1182](https://github.com/greenbone/gvmd/pull/1182)
+- Add filter columns for special NVT tags [#1199](https://github.com/greenbone/gvmd/pull/1199)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
