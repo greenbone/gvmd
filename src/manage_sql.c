@@ -46409,10 +46409,10 @@ manage_restore (const char *id)
       sql ("INSERT INTO configs"
            " (uuid, owner, name, nvt_selector, comment, family_count,"
            "  nvt_count, families_growing, nvts_growing, type, scanner,"
-           "  creation_time, modification_time, usage_type)"
+           "  predefined, creation_time, modification_time, usage_type)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
            "        nvt_count, families_growing, nvts_growing, type, scanner,"
-           "        creation_time, modification_time, usage_type"
+           "        predefined, creation_time, modification_time, usage_type"
            " FROM configs_trash WHERE id = %llu;",
            resource);
 
