@@ -2564,7 +2564,7 @@ update_port_list (port_list_t port_list, const gchar *name,
   quoted_comment = sql_quote (comment ? comment : "");
   sql ("UPDATE port_lists"
        " SET name = '%s', comment = '%s',"
-       " modification_time = m_now ()"
+       " predefined = 1, modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
