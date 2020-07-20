@@ -31,7 +31,8 @@
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "cve",                           \
    "family", "cvss_base", "severity", "cvss", "script_tags", "qod",         \
-   "qod_type", "solution_type", NULL }
+   "qod_type", "solution_type", "solution", "summary", "insight",           \
+   "affected", "impact", "detection", "solution_method", NULL }
 
 /**
  * @brief NVT iterator columns.
