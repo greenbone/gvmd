@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Handle QUEUED osp scan status. [#1113](https://github.com/greenbone/gvmd/pull/1113)
 - Add time placeholders for SCP path [#1164](https://github.com/greenbone/gvmd/pull/1164)
 - Expand detection information of results [#1182](https://github.com/greenbone/gvmd/pull/1182)
+- Add filter columns for special NVT tags [#1199](https://github.com/greenbone/gvmd/pull/1199)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
@@ -133,6 +134,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check number of args to ensure period_offsets is 0 [#1175](https://github.com/greenbone/gvmd/pull/1175)
 - Fix name handling when creating host assets [#1183](https://github.com/greenbone/gvmd/pull/1183)
 - Outdated references to "openvassd" have been updated to "openvas" [#1189](https://github.com/greenbone/gvmd/pull/1189)
+- Quote identifiers in SQL functions using EXECUTE [#1192](https://github.com/greenbone/gvmd/pull/1192)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
@@ -194,7 +196,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The details attribute of GET_REPORTS now defaults to 0 [#747](https://github.com/greenbone/gvmd/pull/747)
 - Incoming VT timestamps via OSP are now assumed to be seconds since epoch [#754](https://github.com/greenbone/gvmd/pull/754)
 - Accelerate NVT feed update [#757](https://github.com/greenbone/gvmd/pull/757)
-- Combine sync scripts and add GVMd data sync [#1155](https://github.com/greenbone/gvmd/pull/1155)
+- Combine sync scripts and add GVMd data sync [#1155](https://github.com/greenbone/gvmd/pull/1155) [#1201](https://github.com/greenbone/gvmd/pull/1201)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)

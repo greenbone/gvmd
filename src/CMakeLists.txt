@@ -180,7 +180,24 @@ add_test (gmp-tickets-test gmp-tickets-test)
 
 add_executable (utils-test
                 EXCLUDE_FROM_ALL
-                utils_tests.c)
+                utils_tests.c
+
+                gvmd.c gmpd.c
+                manage_utils.c manage.c sql.c
+                manage_acl.c manage_configs.c manage_get.c
+                manage_port_lists.c manage_preferences.c
+                manage_report_formats.c
+                manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_formats.c
+                manage_sql_tickets.c manage_sql_tls_certificates.c
+                manage_tls_certificates.c
+                manage_migrators.c
+                sql_pg.c manage_pg.c
+                lsc_user.c lsc_crypt.c
+                gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_tls_certificates.c)
 
 add_test (utils-test utils-test)
 
