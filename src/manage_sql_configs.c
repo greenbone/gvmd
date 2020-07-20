@@ -3532,6 +3532,22 @@ config_iterator_scanner_trash (iterator_t* iterator)
 DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 8);
 
 /**
+ * @brief Get predefined status from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+config_iterator_predefined (iterator_t* iterator)
+{
+  int ret = 0;
+  if (iterator->done) return 0;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+  return ret;
+}
+
+/**
  * @brief Return whether a config is referenced by a task.
  *
  * @param[in]  config  Config.

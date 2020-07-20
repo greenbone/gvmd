@@ -11779,13 +11779,15 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                                "%i<growing>%i</growing>"
                                "</nvt_count>"
                                "<type>%i</type>"
-                               "<usage_type>%s</usage_type>",
+                               "<usage_type>%s</usage_type>"
+                               "<predefined>%i</predefined>",
                                config_iterator_family_count (&configs),
                                config_families_growing,
                                config_iterator_nvt_count (&configs),
                                config_nvts_growing,
                                config_type,
-                               usage_type);
+                               usage_type,
+                               config_iterator_predefined (&configs));
 
       if (config_type == 0 && (get_configs_data->families
                                || get_configs_data->get.details))

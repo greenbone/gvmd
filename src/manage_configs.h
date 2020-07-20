@@ -105,6 +105,9 @@ config_iterator_scanner_trash (iterator_t*);
 const char*
 config_iterator_usage_type (iterator_t*);
 
+int
+config_iterator_predefined (iterator_t*);
+
 char*
 config_nvt_selector (config_t);
 
