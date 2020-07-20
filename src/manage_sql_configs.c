@@ -2287,7 +2287,8 @@ config_insert_preferences (config_t config,
  * @param[in]   preferences    Preferences.
  * @param[in]   config_type    Config type.
  * @param[in]   usage_type     The usage type ("scan" or "policy")
- * @param[in]   allow_errors  Whether certain errors are allowed.
+ * @param[in]   allow_errors   Whether certain errors are allowed.
+ * @param[in]   predefined     Whether config is predefined.
  * @param[out]  config         On success the config.
  * @param[out]  name           On success the name of the config.
  *
@@ -2303,7 +2304,8 @@ create_config_internal (int check_access, const char *config_id,
                         const array_t *selectors /* nvt_selector_t. */,
                         const array_t *preferences /* preference_t. */,
                         const char *config_type, const char *usage_type,
-                        int allow_errors, config_t *config, char **name)
+                        int allow_errors, int predefined, config_t *config,
+                        char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
@@ -2362,10 +2364,10 @@ create_config_internal (int check_access, const char *config_id,
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-           " type, creation_time, modification_time, usage_type)"
+           " type, creation_time, modification_time, usage_type, predefined)"
            " VALUES (%s%s%s, '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', m_now (), m_now (), '%s');",
+           " '%s', '%s', '%s', m_now (), m_now (), '%s', %i);",
            config_id ? "'" : "",
            config_id ? config_id : "make_uuid ()",
            config_id ? "'" : "",
@@ -2374,15 +2376,16 @@ create_config_internal (int check_access, const char *config_id,
            selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
            quoted_comment,
            quoted_type,
-           actual_usage_type);
+           actual_usage_type,
+           predefined);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-         " type, creation_time, modification_time, usage_type)"
+         " type, creation_time, modification_time, usage_type, predefined)"
          " VALUES (%s%s%s, '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', '%s', m_now (), m_now (), '%s');",
+         " '%s', '', '%s', m_now (), m_now (), '%s', %i);",
          config_id ? "'" : "",
          config_id ? config_id : "make_uuid ()",
          config_id ? "'" : "",
@@ -2390,7 +2393,8 @@ create_config_internal (int check_access, const char *config_id,
          current_credentials.uuid,
          selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
          quoted_type,
-         actual_usage_type);
+         actual_usage_type,
+         predefined);
   g_free (quoted_candidate_name);
   g_free (quoted_type);
 
@@ -2458,7 +2462,9 @@ create_config (const char *config_id, const char *proposed_name,
 {
   return create_config_internal (1, config_id, proposed_name, make_name_unique,
                                  comment, all_selector, selectors, preferences,
-                                 config_type, usage_type, 1, config, name);
+                                 config_type, usage_type, 1,
+                                 0, /* Predefined. */
+                                 config, name);
 }
 
 /**
@@ -2494,7 +2500,9 @@ create_config_no_acl (const char *config_id, const char *proposed_name,
 {
   return create_config_internal (0, config_id, proposed_name, make_name_unique,
                                  comment, all_selector, selectors, preferences,
-                                 config_type, usage_type, 0, config, name);
+                                 config_type, usage_type, 0,
+                                 1, /* Predefined. */
+                                 config, name);
 }
 
 /**
