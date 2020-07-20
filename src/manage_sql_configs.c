@@ -2752,7 +2752,7 @@ config_scanner (config_t config)
 int
 config_predefined (config_t config)
 {
-  return sql_int ("SELECT predefined FROM report_formats"
+  return sql_int ("SELECT predefined FROM configs"
                   " WHERE id = %llu;",
                   config);
 }
