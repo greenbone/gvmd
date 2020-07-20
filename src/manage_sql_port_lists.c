@@ -845,6 +845,36 @@ find_trash_port_list_no_acl (const char *uuid, port_list_t *port_list)
 }
 
 /**
+ * @brief Return whether a port list is predefined.
+ *
+ * @param[in]  port_list  Port list.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+port_list_predefined (port_list_t port_list)
+{
+  return sql_int ("SELECT predefined FROM port_lists"
+                  " WHERE id = %llu;",
+                  port_list);
+}
+
+/**
+ * @brief Return whether a trash port list is predefined.
+ *
+ * @param[in]  port_list  Port list.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+trash_port_list_predefined (port_list_t port_list)
+{
+  return sql_int ("SELECT predefined FROM port_lists_trash"
+                  " WHERE id = %llu;",
+                  port_list);
+}
+
+/**
  * @brief Return the UUID of the port list of a port_range.
  *
  * @param[in]  port_range  Port Range UUID.
@@ -1368,6 +1398,25 @@ copy_port_list (const char* name, const char* comment,
 }
 
 /**
+ * @brief Return whether a port list is predefined.
+ *
+ * @param[in]  port_list_id  UUID of port list.
+ *
+ * @return 1 if predefined, else 0.
+ */
+static int
+port_list_predefined_uuid (const gchar *port_list_id)
+{
+  port_list_t port_list;
+
+  if (find_port_list_no_acl (port_list_id, &port_list)
+      || port_list == 0)
+    return 0;
+
+  return port_list_predefined (port_list);
+}
+
+/**
  * @brief Modify a Port List.
  *
  * @param[in]   port_list_id    UUID of Port List.
@@ -1393,6 +1442,12 @@ modify_port_list (const char *port_list_id, const char *name,
   assert (current_credentials.uuid);
 
   if (acl_user_may ("modify_port_list") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (port_list_predefined_uuid (port_list_id))
     {
       sql_rollback ();
       return 99;
