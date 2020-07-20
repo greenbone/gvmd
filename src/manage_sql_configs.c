@@ -2949,6 +2949,8 @@ copy_config (const char* name, const char* comment, const char *config_id,
       return ret;
     }
 
+  sql ("UPDATE configs SET predefined = 0 WHERE id = %llu;", new);
+
   sql ("INSERT INTO config_preferences (config, type, name, value,"
        "                                default_value, hr_name)"
        " SELECT %llu, type, name, value, default_value, hr_name"
