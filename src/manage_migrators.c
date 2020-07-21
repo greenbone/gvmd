@@ -2188,6 +2188,64 @@ migrate_231_to_232 ()
 }
 
 /**
+ * @brief Set predefined.
+ *
+ * @param[in]  table  Table to update.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_232_to_233_set_predefined (const gchar *table)
+{
+  GError *error;
+  GDir *dir;
+  const gchar *xml_path;
+  gchar *dir_path;
+
+  dir_path = g_build_filename (GVMD_FEED_DIR,
+                               GMP_VERSION,
+                               table,
+                               NULL);
+
+  /* Open feed import directory. */
+
+  error = NULL;
+  dir = g_dir_open (dir_path, 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __func__, dir_path, error->message);
+      g_error_free (error);
+      g_free (dir_path);
+      return -1;
+    }
+  g_free (dir_path);
+
+  /* Update for each file. */
+
+  while ((xml_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (xml_path, ".") == 0
+        && strlen (xml_path) >= (36 /* UUID */ + strlen (".xml"))
+        && g_str_has_suffix (xml_path, ".xml"))
+      {
+        gchar *quoted_uuid, *uuid;
+
+        uuid = g_strndup (xml_path + strlen (xml_path) - 4 - 36, 36);
+        quoted_uuid = sql_quote (uuid);
+        g_free (uuid);
+        sql ("UPDATE %s SET predefined = 1 WHERE uuid = '%s';",
+             table, quoted_uuid);
+        g_free (quoted_uuid);
+      }
+
+  /* Cleanup. */
+
+  g_dir_close (dir);
+
+  return 0;
+}
+
+/**
  * @brief Migrate the database from version 232 to version 233.
  *
  * @return 0 success, -1 error.
@@ -2227,6 +2285,10 @@ migrate_232_to_233 ()
        " SET predefined = 1"
        " WHERE id IN (SELECT resource FROM resources_predefined"
        "              WHERE resource_type = 'report_format');");
+
+  migrate_232_to_233_set_predefined ("report_formats");
+  migrate_232_to_233_set_predefined ("configs");
+  migrate_232_to_233_set_predefined ("port_lists");
 
   sql ("DROP TABLE resources_predefined;");
 
