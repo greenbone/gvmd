@@ -257,6 +257,23 @@ The UUIDs of all created users can be found using
     gvmd --get-users --verbose
 
 
+## Configure the default OSPD scanner socket path
+
+By default, Manager tries to connect to the default OSPD scanner via the following path:
+
+    /tmp/ospd.sock
+
+If this path doesn't match your setup you need to change the socket path accordingly.
+
+Get the UUID of the `OpenVAS Default` scanner:
+
+    gvmd --get-scanners
+
+Update the path (example, path needs to be adapted accordingly):
+
+    gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd.sock
+
+
 ## Logging Configuration
 
 By default, Manager writes logs to the file
