@@ -2190,12 +2190,13 @@ migrate_231_to_232 ()
 /**
  * @brief Set predefined.
  *
+ * @param[in]  type   Type to update.
  * @param[in]  table  Table to update.
  *
  * @return 0 success, -1 error.
  */
 int
-migrate_232_to_233_set_predefined (const gchar *table)
+migrate_232_to_233_set_predefined (const gchar *type, const gchar *table)
 {
   GError *error;
   GDir *dir;
@@ -2204,7 +2205,7 @@ migrate_232_to_233_set_predefined (const gchar *table)
 
   dir_path = g_build_filename (GVMD_FEED_DIR,
                                GMP_VERSION,
-                               table,
+                               type,
                                NULL);
 
   /* Open feed import directory. */
@@ -2286,9 +2287,13 @@ migrate_232_to_233 ()
        " WHERE id IN (SELECT resource FROM resources_predefined"
        "              WHERE resource_type = 'report_format');");
 
-  migrate_232_to_233_set_predefined ("report_formats");
-  migrate_232_to_233_set_predefined ("configs");
-  migrate_232_to_233_set_predefined ("port_lists");
+  migrate_232_to_233_set_predefined ("report_formats", "report_formats");
+  migrate_232_to_233_set_predefined ("configs", "configs");
+  migrate_232_to_233_set_predefined ("port_lists", "port_lists");
+
+  migrate_232_to_233_set_predefined ("report_formats", "report_formats_trash");
+  migrate_232_to_233_set_predefined ("configs", "configs_trash");
+  migrate_232_to_233_set_predefined ("port_lists", "port_lists_trash");
 
   sql ("DROP TABLE resources_predefined;");
 
