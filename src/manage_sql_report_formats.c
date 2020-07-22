@@ -4067,7 +4067,8 @@ delete_report_formats_user (user_t user)
                           NULL);
   g_free (user_id);
 
-  if (gvm_file_remove_recurse (dir))
+  if (g_file_test (dir, G_FILE_TEST_EXISTS)
+      && gvm_file_remove_recurse (dir))
     g_warning ("%s: failed to remove dir %s, continuing anyway",
                __func__, dir);
   g_free (dir);
