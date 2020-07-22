@@ -1886,6 +1886,7 @@ migrate_227_to_228_delete (const char *table)
                   "                   WHERE report_host_details.report_host"
                   "                         = report_hosts.id"
                   "                   AND report_hosts.report = %s.report"
+                  "                   AND report_hosts.host = %s.host"
                   "                   AND name = 'Host dead'"
                   "                   AND value = '1')"
                   "     RETURNING id),"
@@ -1903,6 +1904,7 @@ migrate_227_to_228_delete (const char *table)
                   "     AND resource IN (SELECT id FROM deleted))"
                   /* Return count of deleted results. */
                   " SELECT count(*) from deleted;",
+                  table,
                   table,
                   table,
                   location,
