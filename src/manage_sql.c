@@ -18137,6 +18137,7 @@ stop_active_tasks ()
 
   assert (current_credentials.uuid == NULL);
   memset (&get, '\0', sizeof (get));
+  get.ignore_pagination = 1;
   init_task_iterator (&tasks, &get);
   while (next (&tasks))
     {
