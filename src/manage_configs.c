@@ -42,6 +42,28 @@
 #define G_LOG_DOMAIN "md manage"
 
 
+/* Configs. */
+
+/**
+ * @brief Return whether a config is predefined.
+ *
+ * @param[in]  config_id  UUID of config.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+config_predefined_uuid (const gchar *config_id)
+{
+  config_t config;
+
+  if (find_config_no_acl (config_id, &config)
+      || config == 0)
+    return 0;
+
+  return config_predefined (config);
+}
+
+
 /* Feed configs. */
 
 /**

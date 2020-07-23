@@ -7386,6 +7386,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <o><e>families</e></o>
           <o><e>preferences</e></o>
           <o><e>nvt_selectors</e></o>
+          <e>predefined</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -7769,6 +7770,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern>text</pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>predefined</name>
+          <summary>Whether the config was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -14333,6 +14339,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>port_count</e>
           <o><e>port_ranges</e></o>
           <o><e>targets</e></o>
+          <e>predefined</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -14531,6 +14538,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern></pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>predefined</name>
+          <summary>Whether the port list was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -15815,6 +15827,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </o>
           <e>trust</e>
           <e>active</e>
+          <e>predefined</e>
           <any><e>param</e></any>
         </pattern>
         <ele>
@@ -16090,6 +16103,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>active</name>
           <summary>Whether the report format is active</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>predefined</name>
+          <summary>Whether the report format was predefined by the feed</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
@@ -26032,23 +26050,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         to a valid UUID.  The UUID was extended by one character from
         'ce7b121-c609-47b0-ab57-fd020a0336f4'
         to 'ce7b121-c609-47b0-ab57-fd020a0336f4a'.
-      </p>
-    </description>
-    <version>20.08</version>
-  </change>
-  <change>
-    <command>GET_REPORT_FORMATS</command>
-    <summary>PREDEFINED has been removed</summary>
-    <description>
-      <p>
-        The element REPORT_FORMAT/PREDEFINED has been removed from the
-        response to GET_REPORT_FORMATS.
-      </p>
-      <p>
-        Predefined report formats have been replaced with report formats
-        that are delivered in the feed.  Existing predefined report
-        formats will remain in the db, and their ownership will be
-        transferred to the Feed Import Owner.
       </p>
     </description>
     <version>20.08</version>

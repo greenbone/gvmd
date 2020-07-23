@@ -90,19 +90,6 @@ trash_report_format_writable (report_format_t report_format)
 }
 
 /**
- * @brief Return whether a report format is predefined.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 1 if predefined, else 0.
- */
-int
-report_format_predefined (report_format_t report_format)
-{
-  return resource_predefined ("report_format", report_format);
-}
-
-/**
  * @brief Get the name of a report format param type.
  *
  * @param[in]  type  Param type.
@@ -524,13 +511,12 @@ create_report_format_from_file (const gchar *path)
                                        params,
                                        params_options,
                                        signature,
+                                       1,
                                        &new_report_format))
     {
       case 0:
         {
           gchar *uuid;
-
-          resource_set_predefined ("report_format", new_report_format, 1);
 
           uuid = report_format_uuid (new_report_format);
           log_event ("report_format", "Report format", uuid, "created");

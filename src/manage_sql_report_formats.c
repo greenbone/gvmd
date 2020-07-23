@@ -148,33 +148,6 @@ resource_predefined (const gchar *type, resource_t resource)
                   resource);
 }
 
-/**
- * @brief Mark a resource as predefined.
- *
- * Currently only report formats use this.
- *
- * @param[in]  type      Resource type.
- * @param[in]  resource  Resource.
- * @param[in]  enable    If true mark as predefined, else remove mark.
- */
-void
-resource_set_predefined (const gchar *type, resource_t resource, int enable)
-{
-  assert (valid_type (type));
-
-  sql ("DELETE FROM resources_predefined"
-       " WHERE resource_type = '%s'"
-       " AND resource = %llu;",
-       type,
-       resource);
-
-  if (enable)
-    sql ("INSERT into resources_predefined (resource_type, resource)"
-         " VALUES ('%s', %llu);",
-         type,
-         resource);
-}
-
 
 /* Signature utils. */
 
@@ -877,6 +850,7 @@ add_report_format_params (report_format_t report_format, array_t *params,
  * @param[in]   params_options Array.  Each item is an array corresponding to
  *                             params.  Each item of an inner array is a string,
  *                             the text of an option in a selection.
+ * @param[in]   predefined     Whether report format is from the feed.
  * @param[in]   signature      Signature.
  * @param[out]  report_format  Created report format.
  *
@@ -893,6 +867,7 @@ create_report_format_internal (int check_access, int may_exist, int active,
                                const char *summary, const char *description,
                                array_t *files, array_t *params,
                                array_t *params_options, const char *signature,
+                               int predefined,
                                report_format_t *report_format)
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
@@ -1163,11 +1138,11 @@ create_report_format_internal (int check_access, int may_exist, int active,
 
   sql ("INSERT INTO report_formats"
        " (uuid, name, owner, summary, description, extension, content_type,"
-       "  signature, trust, trust_time, flags, creation_time,"
+       "  signature, trust, trust_time, flags, predefined, creation_time,"
        "  modification_time)"
        " VALUES ('%s', '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', '%s', '%s', '%s', %i, %i, %i, m_now (), m_now ());",
+       " '%s', '%s', '%s', '%s', '%s', %i, %i, %i, %i, m_now (), m_now ());",
        new_uuid ? new_uuid : uuid,
        quoted_name,
        current_credentials.uuid,
@@ -1178,7 +1153,8 @@ create_report_format_internal (int check_access, int may_exist, int active,
        quoted_signature ? quoted_signature : "",
        format_trust,
        time (NULL),
-       active ? REPORT_FORMAT_FLAG_ACTIVE : 0);
+       active ? REPORT_FORMAT_FLAG_ACTIVE : 0,
+       predefined ? 1 : 0);
 
   g_free (new_uuid);
   g_free (quoted_summary);
@@ -1249,6 +1225,7 @@ create_report_format (const char *uuid, const char *name,
                                         uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
+                                        0, /* Predefined. */
                                         report_format);
 }
 
@@ -1269,6 +1246,7 @@ create_report_format (const char *uuid, const char *name,
  *                             params.  Each item of an inner array is a string,
  *                             the text of an option in a selection.
  * @param[in]   signature      Signature.
+ * @param[in]   predefined     Whether report format is from the feed.
  * @param[out]  report_format  Created report format.
  *
  * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
@@ -1283,7 +1261,7 @@ create_report_format_no_acl (const char *uuid, const char *name,
                              const char *summary, const char *description,
                              array_t *files, array_t *params,
                              array_t *params_options, const char *signature,
-                             report_format_t *report_format)
+                             int predefined, report_format_t *report_format)
 {
   return create_report_format_internal (0, /* Check permission. */
                                         0, /* Allow existing report format. */
@@ -1292,7 +1270,7 @@ create_report_format_no_acl (const char *uuid, const char *name,
                                         uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
-                                        report_format);
+                                        predefined, report_format);
 }
 
 /**
@@ -1328,6 +1306,8 @@ copy_report_format (const char* name, const char* source_uuid,
       sql_rollback ();
       return ret;
     }
+
+  sql ("UPDATE report_formats SET predefined = 0 WHERE id = %llu;", new);
 
   if (report_format_predefined (old))
     sql ("UPDATE report_formats SET trust = %i, trust_time = %i"
@@ -1506,6 +1486,25 @@ copy_report_format (const char* name, const char* source_uuid,
 }
 
 /**
+ * @brief Return whether a report format is predefined.
+ *
+ * @param[in]  report_format_id  UUID of report format.
+ *
+ * @return 1 if predefined, else 0.
+ */
+static int
+report_format_predefined_uuid (const gchar *report_format_id)
+{
+  report_format_t report_format;
+
+  if (find_report_format_no_acl (report_format_id, &report_format)
+      || report_format == 0)
+    return 0;
+
+  return report_format_predefined (report_format);
+}
+
+/**
  * @brief Modify a report format.
  *
  * @param[in]  report_format_id  UUID of report format.
@@ -1535,6 +1534,12 @@ modify_report_format (const char *report_format_id, const char *name,
   assert (current_credentials.uuid);
 
   if (acl_user_may ("modify_report_format") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (report_format_predefined_uuid (report_format_id))
     {
       sql_rollback ();
       return 99;
@@ -1888,11 +1893,11 @@ delete_report_format (const char *report_format_id, int ultimate)
       sql ("INSERT INTO report_formats_trash"
            " (uuid, owner, name, extension, content_type, summary,"
            "  description, signature, trust, trust_time, flags, original_uuid,"
-           "  creation_time, modification_time)"
+           "  predefined, creation_time, modification_time)"
            " SELECT"
            "  %s, owner, name, extension, content_type, summary,"
            "  description, signature, trust, trust_time, flags, uuid,"
-           "  creation_time, modification_time"
+           "  predefined, creation_time, modification_time"
            " FROM report_formats"
            " WHERE id = %llu;",
            report_format_predefined (report_format) ? "uuid" : "make_uuid ()",
@@ -2014,11 +2019,11 @@ restore_report_format (const char *report_format_id)
   sql ("INSERT INTO report_formats"
        " (uuid, owner, name, extension, content_type, summary,"
        "  description, signature, trust, trust_time, flags,"
-       "  creation_time, modification_time)"
+       "  predefined, creation_time, modification_time)"
        " SELECT"
        "  original_uuid, owner, name, extension, content_type, summary,"
        "  description, signature, trust, trust_time, flags,"
-       "  creation_time, modification_time"
+       "  predefined, creation_time, modification_time"
        " FROM report_formats_trash"
        " WHERE id = %llu;",
        resource);
@@ -2235,6 +2240,36 @@ trash_report_format_in_use (report_format_t report_format)
                     "      OR name = 'smb_report_format'"
                     "      OR name = 'verinice_server_report_format');",
                     report_format);
+}
+
+/**
+ * @brief Return whether a report format is predefined.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+report_format_predefined (report_format_t report_format)
+{
+  return sql_int ("SELECT predefined FROM report_formats"
+                  " WHERE id = %llu;",
+                  report_format);
+}
+
+/**
+ * @brief Return whether a trash report format is predefined.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+trash_report_format_predefined (report_format_t report_format)
+{
+  return sql_int ("SELECT predefined FROM report_formats_trash"
+                  " WHERE id = %llu;",
+                  report_format);
 }
 
 /**
@@ -4114,7 +4149,7 @@ update_report_format (report_format_t report_format, const gchar *report_id, con
   sql ("UPDATE report_formats"
        " SET name = '%s', content_type = '%s', extension = '%s',"
        "     summary = '%s', description = '%s', signature = '%s',"
-       "     modification_time = m_now ()"
+       "     predefined = 1, modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_content_type,

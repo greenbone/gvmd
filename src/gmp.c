@@ -11779,13 +11779,15 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                                "%i<growing>%i</growing>"
                                "</nvt_count>"
                                "<type>%i</type>"
-                               "<usage_type>%s</usage_type>",
+                               "<usage_type>%s</usage_type>"
+                               "<predefined>%i</predefined>",
                                config_iterator_family_count (&configs),
                                config_families_growing,
                                config_iterator_nvt_count (&configs),
                                config_nvts_growing,
                                config_type,
-                               usage_type);
+                               usage_type,
+                               config_iterator_predefined (&configs));
 
       if (config_type == 0 && (get_configs_data->families
                                || get_configs_data->get.details))
@@ -14040,10 +14042,12 @@ handle_get_port_lists (gmp_parser_t *gmp_parser, GError **error)
                                "<all>%i</all>"
                                "<tcp>%i</tcp>"
                                "<udp>%i</udp>"
-                               "</port_count>",
+                               "</port_count>"
+                               "<predefined>%i</predefined>",
                                port_list_iterator_count_all (&port_lists),
                                port_list_iterator_count_tcp (&port_lists),
-                               port_list_iterator_count_udp (&port_lists));
+                               port_list_iterator_count_udp (&port_lists),
+                               port_list_iterator_predefined (&port_lists));
 
       if (get_port_lists_data->get.details)
         {
@@ -14856,11 +14860,17 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
            ("<extension>%s</extension>"
             "<content_type>%s</content_type>"
             "<summary>%s</summary>"
-            "<description>%s</description>",
+            "<description>%s</description>"
+            "<predefined>%i</predefined>",
             report_format_iterator_extension (&report_formats),
             report_format_iterator_content_type (&report_formats),
             report_format_iterator_summary (&report_formats),
-            report_format_iterator_description (&report_formats));
+            report_format_iterator_description (&report_formats),
+            get_report_formats_data->get.trash
+              ? trash_report_format_predefined
+                 (get_iterator_resource (&report_formats))
+              : report_format_predefined
+                 (get_iterator_resource (&report_formats)));
 
           if (get_report_formats_data->alerts)
             {
@@ -18244,6 +18254,9 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("modify_config",
                         "A config_id attribute is required"));
+  else if (config_predefined_uuid (modify_config_data->config_id))
+    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
+                                              "Permission denied"));
   else if ((modify_config_data->nvt_selection_family
             /* This array implies FAMILY_SELECTION. */
             && modify_config_data->families_static_all)
