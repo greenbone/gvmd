@@ -19349,7 +19349,7 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   else
     {
-      qod = G_STRINGIFY (QOD_DEFAULT);
+      qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
       qod_type = g_strdup ("''");
       nvt_revision = g_strdup ("");
     }
