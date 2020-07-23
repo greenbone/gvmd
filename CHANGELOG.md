@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix the description of the Raw and Anonymous XML report formats [#1166](https://github.com/greenbone/gvmd/pull/1191)
 - Quote identifiers in SQL functions using EXECUTE [#1193](https://github.com/greenbone/gvmd/pull/1193)
 - Improve handling of removed NVT prefs [#1204](https://github.com/greenbone/gvmd/pull/1204)
+- Set ignore_pagination in stop_active_tasks [#1208](https://github.com/greenbone/gvmd/pull/1208)
 
 [9.0.2]: https://github.com/greenbone/gvmd/compare/v9.0.1...gvmd-9.0
 
