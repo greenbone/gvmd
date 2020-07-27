@@ -16162,6 +16162,7 @@ stop_active_tasks ()
 
   assert (current_credentials.uuid == NULL);
   memset (&get, '\0', sizeof (get));
+  get.ignore_pagination = 1;
   init_task_iterator (&tasks, &get);
   while (next (&tasks))
     {
@@ -19348,7 +19349,7 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   else
     {
-      qod = G_STRINGIFY (QOD_DEFAULT);
+      qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
       qod_type = g_strdup ("''");
       nvt_revision = g_strdup ("");
     }
