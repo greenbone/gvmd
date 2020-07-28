@@ -2573,6 +2573,7 @@ manage_migrate (GSList *log_config, const gchar *database)
    * Reopen the database before the ANALYZE, in case the schema has changed. */
   cleanup_manage_process (TRUE);
   init_manage_process (database);
+  g_info ("   Analyzing the database. This may take up to several hours.");
   sql ("ANALYZE;");
 
   cleanup_manage_process (TRUE);
