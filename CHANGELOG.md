@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Expand detection information of results [#1182](https://github.com/greenbone/gvmd/pull/1182)
 - Add filter columns for special NVT tags [#1199](https://github.com/greenbone/gvmd/pull/1199)
 - Add currently_syncing for NVTs in GMP get_feeds [#1210](https://github.com/greenbone/gvmd/pull/1210)
+- Add logging for ANALYZE at end of migration [#1211](https://github.com/greenbone/gvmd/pull/1211)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
