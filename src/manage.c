@@ -4264,6 +4264,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
                                 g_strdup (osp_value));
         }
     }
+  cleanup_iterator (&scanner_prefs_iter);
 
   /* Setup user-specific scanner preference */
   add_user_scan_preferences (scanner_options);
@@ -4290,7 +4291,9 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   /* Setup vulnerability tests (without preferences) */
   vts = NULL;
   vts_hash_table
-    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+                             /* Value is freed in vts list. */
+                             NULL);
 
   init_family_iterator (&families, 0, NULL, 1);
   while (next (&families))
@@ -4363,6 +4366,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       g_strfreev (split_name);
     }
   cleanup_iterator (&prefs);
+  g_hash_table_destroy (vts_hash_table);
 
   /* Start the scan */
   connection = osp_scanner_connect (task_scanner (task));
