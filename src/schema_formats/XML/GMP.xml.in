@@ -1,21 +1,20 @@
 <!--
 Copyright (C) 2010-2019 Greenbone Networks GmbH
 
-SPDX-License-Identifier: GPL-2.0-or-later
+SPDX-License-Identifier: AGPL-3.0-or-later
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 <!-- GMP schema with embedded documentation, in GMP. -->
@@ -1355,6 +1354,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>task</e></o>
       <e>host</e>
       <e>port</e>
+      <o><e>path</e></o>
       <e>nvt</e>
       <e>scan_nvt_version</e>
       <e>threat</e>
@@ -1512,6 +1512,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>port</name>
       <summary>The port on the host</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>path</name>
+      <summary>The local path on the host, e.g. a file location</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -5029,9 +5034,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <o><e>copy</e></o>
       <o><e>icalendar</e></o>
-      <o><e>first_time</e></o>
-      <o><e>duration</e></o>
-      <o><e>period</e></o>
       <o><e>timezone</e></o>
     </pattern>
     <ele>
@@ -5061,63 +5063,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>first_time</name>
-      <summary>The first time the schedule will run</summary>
-      <pattern>
-        <e>minute</e>
-        <e>hour</e>
-        <e>day_of_month</e>
-        <e>month</e>
-        <e>year</e>
-      </pattern>
-      <ele>
-        <name>minute</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-      <ele>
-        <name>hour</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-      <ele>
-        <name>day_of_month</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-      <ele>
-        <name>month</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-      <ele>
-        <name>year</name>
-        <pattern><t>integer</t></pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>duration</name>
-      <summary>How long the Manager will run the scheduled task for</summary>
-      <description>A duration of 0 means to run to completion.</description>
-      <pattern>
-        <e>unit</e>
-      </pattern>
-      <ele>
-        <name>unit</name>
-        <summary>Duration time unit</summary>
-        <pattern><t>time_unit</t></pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>period</name>
-      <summary>How often the Manager will repeat the scheduled task</summary>
-      <description>A period of 0 means to run once.</description>
-      <pattern>
-        <e>unit</e>
-      </pattern>
-      <ele>
-        <name>unit</name>
-        <summary>Period time unit</summary>
-        <pattern><t>time_unit</t></pattern>
-      </ele>
-    </ele>
-    <ele>
       <name>timezone</name>
       <summary>The timezone the schedule will follow</summary>
       <pattern>timezone</pattern>
@@ -5145,28 +5090,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>Create a schedule</summary>
       <request>
         <create_schedule>
-          <name>Every night</name>
-          <first_time>
-            <day_of_month>1</day_of_month>
-            <hour>0</hour>
-            <minute>0</minute>
-            <month>1</month>
-            <year>2011</year>
-          </first_time>
-          <duration>
-            3
-            <unit>hour</unit>
-          </duration>
-          <period>
-            1
-            <unit>day</unit>
-          </period>
+          <name>Every day</name>
+          <timezone>UTC</timezone>
+          <icalendar>
+            <truncated>...</truncated>
+            DTSTART;TZID=/UTC:20200603T162600
+          </icalendar>
         </create_schedule>
       </request>
       <response>
         <create_schedule_response status="201"
-                                   status_text="OK, resource created"
-                                   id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+                                  status_text="OK, resource created"
+                                  id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_schedule_response>
       </response>
     </example>
@@ -5313,8 +5248,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>alive_tests</e></o>
       <o><e>reverse_lookup_only</e></o>
       <o><e>reverse_lookup_unify</e></o>
-      <o><e>port_range</e></o>
-      <o><e>port_list</e></o>
+      <or>
+        <e>port_range</e>
+        <e>port_list</e>
+      </or>
     </pattern>
     <ele>
       <name>name</name>
@@ -7449,6 +7386,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>families</e></o>
           <o><e>preferences</e></o>
           <o><e>nvt_selectors</e></o>
+          <e>predefined</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -7832,6 +7770,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern>text</pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>predefined</name>
+          <summary>Whether the config was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -14396,6 +14339,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>port_count</e>
           <o><e>port_ranges</e></o>
           <o><e>targets</e></o>
+          <e>predefined</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -14594,6 +14538,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern></pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>predefined</name>
+          <summary>Whether the port list was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -15878,6 +15827,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </o>
           <e>trust</e>
           <e>active</e>
+          <e>predefined</e>
           <any><e>param</e></any>
         </pattern>
         <ele>
@@ -16153,6 +16103,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>active</name>
           <summary>Whether the report format is active</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>predefined</name>
+          <summary>Whether the report format was predefined by the feed</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
@@ -17816,11 +17771,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Timezone the schedule uses</summary>
           </column>
           <column>
-            <name>initial_offset</name>
-            <type>integer</type>
-            <summary>Initial offset in seconds</summary>
-          </column>
-          <column>
             <name>first_run</name>
             <type>iso_time</type>
             <summary>Alias for first_time</summary>
@@ -17883,16 +17833,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>permissions</e>
           <o><e>user_tags</e></o>
-          <e>first_time</e>
-          <e>next_time</e>
           <e>icalendar</e>
           <e>timezone</e>
-          <e>timezone_abbrev</e>
-          <e>period</e>
-          <e>period_months</e>
-          <e>simple_period</e>
-          <e>duration</e>
-          <e>simple_duration</e>
           <o>
             <e>tasks</e>
           </o>
@@ -18006,16 +17948,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
-          <name>first_time</name>
-          <summary>First time the task ran or will run</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>next_time</name>
-          <summary>The next time the task will run</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
           <name>icalendar</name>
           <summary>iCalendar text containing the time data.</summary>
           <pattern>
@@ -18026,50 +17958,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>timezone</name>
           <summary>The timezone that the schedule follows</summary>
           <pattern>timezone</pattern>
-        </ele>
-        <ele>
-          <name>timezone_abbrev</name>
-          <summary>The abbreviated name of the timezone</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>period</name>
-          <summary>How often the task will run, in seconds</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>period_months</name>
-          <summary>How often the task will run, months portion</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>simple_period</name>
-          <summary>Simple representation of period, if available</summary>
-          <pattern>
-            text
-            <o><e>unit</e></o>
-          </pattern>
-          <ele>
-            <name>unit</name>
-            <pattern><t>time_unit</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>duration</name>
-          <summary>How long the task will run for (0 for entire task)</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>simple_duration</name>
-          <summary>Simple representation of duration, if available</summary>
-          <pattern>
-            text
-            <o><e>unit</e></o>
-          </pattern>
-          <ele>
-            <name>unit</name>
-            <pattern><t>time_unit</t></pattern>
-          </ele>
         </ele>
         <ele>
           <name>tasks</name>
@@ -18227,28 +18115,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <get_schedules_response status="200" status_text="OK">
-          <schedule id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
-            <name>Overnight</name>
-            <comment>3 hours, starting at 12h00.</comment>
-            <creation_time>2013-01-01T13:57:25+01:00</creation_time>
-            <modification_time>2013-01-18T12:07:36+01:00</modification_time>
-            <writable>0</writable>
-            <in_use>1</in_use>
-            <first_time>2010-07-29T00:00:00+02:00</first_time>
-            <next_time>2010-07-29T00:00:00+02:00</next_time>
-            <icalendar>[...]</icalendar>
-            <period>86400</period>
-            <period_months>0</period_months>
-            <simple_period>1<unit>day</unit></simple_period>
-            <duration>10800</duration>
-            <simple_duration>3<unit>hour</unit></simple_duration>
-            <timezone>Europe/Berlin</timezone>
-            <timezone_abbrev>CEST</timezone_abbrev>
-            <tasks>
-              <task id="d4daf4c4-25c7-40ac-87d3-38e489f34330">
-                <name>Task 1</name>
-              </task>
-            </tasks>
+          <schedule id="ddda859a-45be-4c58-85b3-517c66230232">
+            <owner>
+              <name>username</name>
+            </owner>
+            <name>Every day</name>
+            <comment></comment>
+            <creation_time>2020-06-03T16:27:05Z</creation_time>
+            <modification_time>2020-06-03T16:27:05Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <icalendar>
+              <truncated>...</truncated>
+              DTSTART:20200603T162600Z DURATION:PT0S RRULE:FREQ=DAILY
+            </icalendar>
+            <timezone>UTC</timezone>
           </schedule>
           <truncate>...</truncate>
         </get_schedules_response>
@@ -19875,8 +19761,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Optional usage type to limit the tasks to. Affects total count unlike filter</summary>
         <type>
           <alts>
+            <alt>scan</alt>
             <alt>audit</alt>
-            <alt>policy</alt>
             <alt></alt>
           </alts>
         </type>
@@ -20071,20 +19957,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <summary>The percentage of the task that is complete</summary>
           <pattern>
             <t>integer</t>
-            <any><e>host_progress</e></any>
           </pattern>
-          <ele>
-            <name>host_progress</name>
-            <summary>Percentage complete for a particular host</summary>
-            <pattern>
-              <t>integer</t>
-              <e>host</e>
-            </pattern>
-            <ele>
-              <name>host</name>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
         </ele>
         <ele>
           <name>alterable</name>
@@ -20279,12 +20152,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </attrib>
             <e>name</e>
             <e>trash</e>
-            <o><e>first_time</e></o>
-            <o><e>next_time</e></o>
             <o><e>icalendar</e></o>
-            <o><e>period</e></o>
-            <o><e>period_months</e></o>
-            <o><e>duration</e></o>
             <o><e>timezone</e></o>
           </pattern>
           <ele>
@@ -20298,34 +20166,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern><t>boolean</t></pattern>
           </ele>
           <ele>
-            <name>first_time</name>
-            <summary>The first time was or will be run</summary>
-            <pattern><t>iso_time</t></pattern>
-          </ele>
-          <ele>
-            <name>next_time</name>
-            <summary>The next date and time the schedule will be run in ISO format or "over".</summary>
-            <pattern><t>iso_time</t></pattern>
-          </ele>
-          <ele>
             <name>icalendar</name>
             <summary>iCalendar text containing the time data.</summary>
             <pattern><t>iso_time</t></pattern>
-          </ele>
-          <ele>
-            <name>period</name>
-            <summary>The time period between repeated runs of the schedule. Run only once if this and period_months is 0</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>period_months</name>
-            <summary>The number of months between repeated runs of the schedule. Run only once if this and period is 0</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>duration</name>
-            <summary>The maximum duration of the task in seconds or 0 for unlimited</summary>
-            <pattern><t>integer</t></pattern>
           </ele>
           <ele>
             <name>timezone</name>
@@ -20643,7 +20486,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <trend></trend>
             <schedule id="">
               <name></name>
-              <next_time>over</next_time>
+              <trash>0</trash>
             </schedule>
             <last_report>
               <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
@@ -20719,7 +20562,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <trend></trend>
             <schedule id="">
               <name></name>
-              <next_time>over</next_time>
+              <trash>0</trash>
             </schedule>
             <last_report>
               <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
@@ -20838,11 +20681,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 			<report_count>1
 			<finished>1</finished></report_count>
 			<trend></trend>
-			<schedule id="">
-			  <name></name>
-			  <next_time>over</next_time>
-			  <trash>0</trash>
-			</schedule>
+            <schedule id="">
+              <name></name>
+              <trash>0</trash>
+            </schedule>
 			<last_report>
 			  <report id="5496f417-9b3b-4582-b450-c05ca99009d8">
 				<timestamp>2019-08-13T12:29:25+02:00</timestamp>
@@ -24780,9 +24622,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <o><e>name</e></o>
       <o><e>icalendar</e></o>
-      <o><e>first_time</e></o>
-      <o><e>duration</e></o>
-      <o><e>period</e></o>
       <o><e>timezone</e></o>
     </pattern>
     <ele>
@@ -24803,64 +24642,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>first_time</name>
-      <summary>First time the task will run. Missing subelements default to current system time</summary>
-      <pattern>
-        <o><e>day_of_month</e></o>
-        <o><e>hour</e></o>
-        <o><e>minute</e></o>
-        <o><e>month</e></o>
-        <o><e>year</e></o>
-      </pattern>
-      <ele>
-        <name>day_of_month</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>hour</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>minute</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>month</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>year</name>
-        <pattern>text</pattern>
-      </ele>
-    </ele>
-    <ele>
       <name>timezone</name>
       <summary>The timezone the schedule will follow. User's timezone is used if omitted</summary>
       <pattern>timezone</pattern>
-    </ele>
-    <ele>
-      <name>duration</name>
-      <summary>How long the task will run for</summary>
-      <pattern>
-        text
-        <o><e>unit</e></o>
-      </pattern>
-      <ele>
-        <name>unit</name>
-        <pattern><t>time_unit</t></pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>period</name>
-      <summary>How often the task will run</summary>
-      <pattern>
-        text
-        <o><e>unit</e></o>
-      </pattern>
-      <ele>
-        <name>unit</name>
-        <pattern><t>time_unit</t></pattern>
-      </ele>
     </ele>
     <response>
       <pattern>
@@ -26211,21 +25995,64 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <!-- Compatibility changes between versions. -->
 
   <change>
-    <command>GET_REPORT_FORMATS</command>
-    <summary>PREDEFINED has been removed</summary>
+    <command>CREATE_TARGET, RUN_WIZARD</command>
+    <summary>Default port list removed from CREATE_TARGET</summary>
     <description>
       <p>
-        The element REPORT_FORMAT/PREDEFINED has been removed from the
-        response to GET_REPORT_FORMATS.
+        CREATE_TARGET will no longer automatically add a port list to the
+        target if a port list or range is not given.  In other words, it
+        is now mandatory to supply either PORT_LIST or PORT_RANGE.
       </p>
       <p>
-        Predefined report formats have been replaced with report formats
-        that are delivered in the feed.  Existing predefined report
-        formats will remain in the db, and their ownership will be
-        transferred to the Feed Import Owner.
+        As a side effect wizards that use CREATE_TARGET now provide their
+        own default if no "port_list_id" param is given: "All IANA assigned
+        TCP", which has UUID 33d0cd82-57c6-11e1-8ed1-406186ea4fc5.
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
+  </change>
+  <change>
+    <command>CREATE_SCHEDULE, GET_SCHEDULES, MODIFY_SCHEDULE</command>
+    <summary>Classic schedule elements removed</summary>
+    <description>
+      <p>
+        The classic schedule elements like PERIOD, DURATION and BYDAY have been
+        removed.  Schedules are now always created, defined and modified using
+        the newer iCalendar elements.
+      </p>
+      <p>
+        This includes the filter keyword 'initial_offset'.
+      </p>
+    </description>
+    <version>20.08</version>
+  </change>
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>HOST_PROGRESS has been removed</summary>
+    <description>
+      <p>
+        The element HOST_PROGRESS in PROGRESS has been removed.
+      </p>
+      <p>
+        To be precise, it is no longer possible for the element to be included
+        in reports, as it was only sent for OTP scanners, and OTP scanners were
+        removed in an earlier version.
+      </p>
+    </description>
+    <version>20.08</version>
+  </change>
+  <change>
+    <command>GET_SETTINGS, MODIFY_SETTING</command>
+    <summary>Setting UUID extended</summary>
+    <description>
+      <p>
+        The UUID of setting 'Notes Top Dashboard Configuration' was changed
+        to a valid UUID.  The UUID was extended by one character from
+        'ce7b121-c609-47b0-ab57-fd020a0336f4'
+        to 'ce7b121-c609-47b0-ab57-fd020a0336f4a'.
+      </p>
+    </description>
+    <version>20.08</version>
   </change>
   <change>
     <command>COMMANDS</command>
@@ -26238,7 +26065,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         GMP connection.
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
   <change>
     <command>CREATE_AGENT, DELETE_AGENT, GET_AGENTS, MODIFY_AGENT, VERIFY_AGENT</command>
@@ -26250,7 +26077,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         4a1334c1-cb93-4a79-8634-103b0a50bdcd).
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
   <change>
     <command>GET_... Commands using filters</command>
@@ -26278,7 +26105,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The type "ALLINFO" is not supported anymore.
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
   <change>
     <command>MODIFY_REPORT</command>
@@ -26288,7 +26115,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         The command "MODIFY_REPORT" is not supported anymore.
       </p>
     </description>
-    <version>20.04</version>
+    <version>20.08</version>
   </change>
 
   <change>

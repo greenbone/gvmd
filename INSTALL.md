@@ -142,12 +142,13 @@ Certificates`.
     grant dba to mattm;    # mattm is the user created in step 3
     ```
 
-5.  Create DB extension (also necessary when the database got dropped).
+5.  Create DB extensions (also necessary when the database got dropped).
 
     ```sh
     sudo -u postgres bash  # if you logged out after step 4
     psql gvmd
     create extension "uuid-ossp";
+    create extension "pgcrypto";
     ```
 
 6.  Make Postgres aware of the gvm libraries if not installed
@@ -240,6 +241,37 @@ An administrator user can later create further users or administrators via
 clients like the Greenbone Security Assistant (GSA).
 
 Also, the new user can change their password via GSA.
+
+
+## Set the Feed Import Owner
+
+Certain resources that were previously part of the gvmd source code are now
+shipped via the feed.  An example is the config "Full and Fast".
+
+gvmd will only create these resources if a "Feed Import Owner" is configured:
+
+    gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value <uuid_of_user>
+
+The UUIDs of all created users can be found using
+
+    gvmd --get-users --verbose
+
+
+## Configure the default OSPD scanner socket path
+
+By default, Manager tries to connect to the default OSPD scanner via the following path:
+
+    /tmp/ospd.sock
+
+If this path doesn't match your setup you need to change the socket path accordingly.
+
+Get the UUID of the `OpenVAS Default` scanner:
+
+    gvmd --get-scanners
+
+Update the path (example, path needs to be adapted accordingly):
+
+    gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd.sock
 
 
 ## Logging Configuration
@@ -356,30 +388,6 @@ supported values for `<name>` are:
 
   This creates the cache containing the unfiltered result counts of all reports
   that are not cached yet.
-
-
-## Import/Update IANA Services Names
-
-If you want the Manager to resolve port names when outputting reports for
-instance, you need to import the information from a Services Names list.
-
-In order to update the database, download the port names list:
-
-    wget https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
-
-Then provide it as an argument to gvm-portnames-update script:
-
-    gvm-portnames-update service-names-port-numbers.xml
-
-You can safely delete the list after that as it is not needed and all relevant
-information has been imported into the database.
-
-    rm service-names-port-numbers.xml
-
-Note that IANA updates this list frequently. The same steps could be followed to
-update the information in the database from a newer list.
-
-Currently, the helper tool supports only the official IANA Services Names list.
 
 
 ## Encrypted Credentials

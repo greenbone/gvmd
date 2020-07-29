@@ -1,20 +1,19 @@
 /* Copyright (C) 2014-2018 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -132,23 +131,6 @@ sql_select_limit (int max)
 }
 
 /**
- * @brief Add param to statement.
- *
- * @param[in]  stmt          Statement.
- * @param[in]  param_value   Value.
- * @param[in]  param_size    Size.
- * @param[in]  param_format  0 text, 1 binary.
- */
-static void
-sql_stmt_param_add (sql_stmt_t *stmt, const char *param_value,
-                    int param_size, int param_format)
-{
-  array_add (stmt->param_values, g_strndup (param_value, param_size));
-  g_array_append_val (stmt->param_lengths, param_size);
-  g_array_append_val (stmt->param_formats, param_format);
-}
-
-/**
  * @brief Init statement, preserving SQL.
  *
  * @param[in]  stmt  Statement.
@@ -230,17 +212,6 @@ const char *
 sql_default_database ()
 {
   return "gvmd";
-}
-
-/**
- * @brief Turn off recursive triggers.
- *
- * Ignored when DB is Postgres.
- */
-void
-sql_recursive_triggers_off ()
-{
-  return;
 }
 
 /**
@@ -415,52 +386,6 @@ sql_last_insert_id ()
 }
 
 /**
- * @brief Perform an SQL statement, retrying if database is busy or locked.
- *
- * @param[out] resource  Last inserted resource.
- * @param[in]  sql       Format string for SQL statement.
- * @param[in]  ...       Arguments for format string.
- */
-void
-sqli (resource_t *resource, char* sql, ...)
-{
-  gchar *new_sql;
-  sql_stmt_t* stmt;
-  int sql_x_ret;
-  va_list args;
-
-  assert (sql && strlen (sql) && (sql[strlen (sql) - 1] != ';'));
-
-  /* Append RETURNING clause to SQL. */
-
-  new_sql = g_strdup_printf ("%s RETURNING id;", sql);
-
-  /* Run statement, returning integer. */
-
-  va_start (args, sql);
-  sql_x_ret = sql_x (new_sql, args, &stmt);
-  va_end (args);
-  g_free (new_sql);
-  switch (sql_x_ret)
-    {
-      case  0:
-        break;
-      case  1:
-        sql_finalize (stmt);
-        abort ();
-      default:
-        assert (0);
-        /* Fall through. */
-      case -1:
-        sql_finalize (stmt);
-        abort ();
-    }
-  if (resource)
-    *resource = sql_column_int64 (stmt, 0);
-  sql_finalize (stmt);
-}
-
-/**
  * @brief Prepare a statement.
  *
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
@@ -488,7 +413,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
 }
 
 /**
- * @brief Execute a prepared statement.
+ * @brief Execute a statement.
  *
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  stmt   Statement.
@@ -637,7 +562,7 @@ iterator_null (iterator_t* iterator, int col)
 {
   if (iterator->done) abort ();
   assert (iterator->stmt->result);
-  return PQgetisnull (iterator->stmt->result, 0, col);
+  return PQgetisnull (iterator->stmt->result, iterator->stmt->current_row, col);
 }
 
 /**
@@ -655,74 +580,10 @@ iterator_rewind (iterator_t* iterator)
 }
 
 
-/* Prepared statements. */
+/* Statements. */
 
 /**
- * @brief Bind a param to a statement.
- *
- * @param[in]  stmt          Statement.
- * @param[in]  position      Position in statement.
- * @param[in]  param_value   Param value.
- * @param[in]  param_size    Param size.
- * @param[in]  param_format  0 text, 1 binary.
- */
-static void
-bind_param (sql_stmt_t *stmt, int position, const void *param_value,
-            int param_size, int param_format)
-{
-  if (position > stmt->param_values->len + 1)
-    {
-      g_critical ("%s: binding out of order: parameter %i after %i",
-                  __func__,
-                  position,
-                  stmt->param_values->len);
-      abort ();
-    }
-  sql_stmt_param_add (stmt, param_value, param_size, param_format);
-}
-
-/**
- * @brief Bind a blob to a statement.
- *
- * @param[in]  stmt        Statement.
- * @param[in]  position    Position in statement.
- * @param[in]  value       Blob.
- * @param[in]  value_size  Blob size.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
-               int value_size)
-{
-  bind_param (stmt, position, value, value_size, 1);
-  return 0;
-}
-
-/**
- * @brief Bind a text value to a statement.
- *
- * @param[in]  stmt        Statement.
- * @param[in]  position    Position in statement.
- * @param[in]  value       Value.
- * @param[in]  value_size  Value size, or -1 to use strlen of value.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
-               gsize value_size)
-{
-  bind_param (stmt,
-              position,
-              value,
-              value_size == -1 ? strlen (value) : value_size,
-              0);
-  return 0;
-}
-
-/**
- * @brief Free a prepared statement.
+ * @brief Free a statement.
  *
  * @param[in]  stmt  Statement.
  */
@@ -738,30 +599,7 @@ sql_finalize (sql_stmt_t *stmt)
 }
 
 /**
- * @brief Reset a prepared statement.
- *
- * @param[in]  stmt  Statement.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_reset (sql_stmt_t *stmt)
-{
-  gchar *sql;
-
-  PQclear (stmt->result);
-  array_free (stmt->param_values);
-  g_array_free (stmt->param_lengths, TRUE);
-  g_array_free (stmt->param_formats, TRUE);
-
-  sql = stmt->sql;
-  sql_stmt_init (stmt);
-  stmt->sql = sql;
-  return 0;
-}
-
-/**
- * @brief Return a column as a double from a prepared statement.
+ * @brief Return a column as a double from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *
@@ -780,7 +618,7 @@ sql_column_double (sql_stmt_t *stmt, int position)
 }
 
 /**
- * @brief Return a column as text from a prepared statement.
+ * @brief Return a column as text from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *
@@ -799,7 +637,7 @@ sql_column_text (sql_stmt_t *stmt, int position)
 }
 
 /**
- * @brief Return a column as an integer from a prepared statement.
+ * @brief Return a column as an integer from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *
@@ -829,7 +667,7 @@ sql_column_int (sql_stmt_t *stmt, int position)
 }
 
 /**
- * @brief Return a column as an int64 from a prepared statement.
+ * @brief Return a column as an int64 from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *
@@ -859,7 +697,7 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
 }
 
 /**
- * @brief Return a column as text from a prepared statement.
+ * @brief Return a column as text from a statement.
  *
  * It's up to the caller to ensure that there is a row available.
  *

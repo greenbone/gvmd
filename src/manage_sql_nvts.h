@@ -1,20 +1,19 @@
 /* Copyright (C) 2010-2019 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -31,7 +30,8 @@
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "cve",                           \
    "family", "cvss_base", "severity", "cvss", "script_tags", "qod",         \
-   "qod_type", "solution_type", NULL }
+   "qod_type", "solution_type", "solution", "summary", "insight",           \
+   "affected", "impact", "detection", "solution_method", NULL }
 
 /**
  * @brief NVT iterator columns.
@@ -116,7 +116,13 @@ void
 manage_sync_nvts (int (*) ());
 
 int
+update_or_rebuild_nvts (int);
+
+int
 manage_update_nvt_cache_osp (const gchar *);
+
+char *
+nvt_family (const char *);
 
 int
 family_count ();

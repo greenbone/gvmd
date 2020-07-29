@@ -1,0 +1,80 @@
+#!/bin/sh
+# Copyright (C) 2020 Greenbone Networks GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Export a config in the XML format required by the feed.
+
+VERSION=20200311
+
+UUID=$1
+
+PSQL="psql -v ON_ERROR_STOP=1 -A -q --pset pager=off -d gvmd -t"
+
+LOG_CMD="logger -s -t $SCRIPT_NAME"
+LOG_CMD="echo"
+
+log_debug () {
+  $LOG_CMD $1 2>&1 > /dev/null
+}
+
+sql () {
+  log_debug "    SQL: $1"
+  $PSQL -c "$1"
+  exit_code=$?
+  if [ 0 -ne "$exit_code" ]
+  then
+    log_err "$1: psql exited with code $exit_code for sql: $1."
+    exit 1
+  fi
+}
+
+echo "<config id=\"${UUID}\">"
+
+echo -n "  <name>"
+echo -n `sql "SELECT name FROM configs WHERE uuid = '$UUID'"`
+echo "</name>"
+
+echo -n "  <comment>"
+echo -n `sql "SELECT comment FROM configs WHERE uuid = '$UUID'"`
+echo "</comment>"
+
+echo -n "  <type>"
+echo -n `sql "SELECT type FROM configs WHERE uuid = '$UUID'"`
+echo "</type>"
+
+echo "  <usage_type>scan</usage_type>"
+
+echo "  <preferences>"
+
+# 1.3.6.1.4.1.25623.1.0.100315:5:checkbox:Mark unrechable Hosts as dead (not scanning)
+# 1.3.6.1.4.1.25623.1.0.100315:11:checkbox:nmap: try also with only -sP
+sql "SELECT E'    <preference>\n      <nvt oid=\"' || split_part (name, ':', 1) || E'\">\n        <name>' || (SELECT name FROM nvts WHERE oid = split_part (config_preferences.name, ':', 1)) || E'</name>\n      </nvt>\n      <name>' || regexp_replace(name, E'([^:]*:){3}(.*)', '\2') || E'</name>\n      <type>' || split_part (name, ':', 3) || E'</type>\n      <value>' || value || E'</value>\n      <default>' || (SELECT value FROM nvt_preferences WHERE nvt_preferences.name = config_preferences.name) || E'</default>\n      <id>' || split_part (name, ':', 2) || E'</id>\n    </preference>' FROM config_preferences WHERE type = 'PLUGINS_PREFS' AND config = (SELECT id FROM configs WHERE uuid='${UUID}');"
+
+echo "  </preferences>"
+
+echo "  <nvt_selectors>"
+
+SELECTOR=`sql "SELECT nvt_selector FROM configs WHERE uuid='${UUID}';"`
+if [ "$SELECTOR" = "54b45713-d4f4-4435-b20d-304c175ed8c5" ]; then
+  echo "    <all_selector/>"
+else
+  sql "SELECT E'    <nvt_selector>\n      <include>' || CASE WHEN exclude = 0 THEN '1' ELSE '0' END || E'</include>\n      <type>' || type || E'</type>\n      <family_or_nvt>' || CASE WHEN family_or_nvt IS NULL THEN '' ELSE family_or_nvt END || E'</family_or_nvt>\n    </nvt_selector>' FROM nvt_selectors WHERE name = (SELECT nvt_selector FROM configs WHERE uuid='${UUID}');"
+fi
+
+echo "  </nvt_selectors>"
+
+echo "</config>"

@@ -1,20 +1,19 @@
 /* Copyright (C) 2010-2018 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -49,28 +48,6 @@
 #define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
 
 /**
- * @brief UUID of 'Base' NVT selector.
- */
-#define MANAGE_NVT_SELECTOR_UUID_BASE "dd4a4170-0b5e-43fb-9bae-6ce93c19e893"
-
-/**
- * @brief UUID of 'Discovery' NVT selector.
- */
-#define MANAGE_NVT_SELECTOR_UUID_DISCOVERY "0d9a2738-8fe2-4e22-8f26-bb886179e759"
-
-/**
- * @brief UUID of 'Host Discovery' NVT selector.
- */
-#define MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY \
- "f5f80744-55c7-11e3-8dc6-406186ea4fc5"
-
-/**
- * @brief UUID of 'System Discovery' NVT selector.
- */
-#define MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY \
- "07045d1c-a951-11e3-8da7-406186ea4fc5"
-
-/**
  * @brief Predefined role UUID.
  */
 #define PERMISSION_UUID_ADMIN_EVERYTHING "b3b56a8c-c2fd-11e2-a135-406186ea4fc5"
@@ -79,13 +56,6 @@
  * @brief Predefined role UUID.
  */
 #define PERMISSION_UUID_SUPER_ADMIN_EVERYTHING "a9801074-6fe2-11e4-9d81-406186ea4fc5"
-
-/**
- * @brief UUID of 'OpenVAS Default' port list.
- *
- * Required for the default port list case of CREATE_PORT_LIST.
- */
-#define PORT_LIST_UUID_DEFAULT "c7e03b6c-3bbe-11e1-a057-406186ea4fc5"
 
 /**
  * @brief Predefined role UUID.
@@ -428,21 +398,9 @@ void reschedule_task (const gchar *);
 
 void insert_port_range (port_list_t, port_protocol_t, int, int);
 
-int manage_update_cert_db_init ();
-
-void manage_update_cert_db_cleanup ();
-
-int manage_update_scap_db_init ();
-
-void manage_update_scap_db_cleanup ();
-
 int manage_cert_db_exists ();
 
 int manage_scap_db_exists ();
-
-void manage_db_check_mode (const gchar *);
-
-int manage_db_check (const gchar *);
 
 int
 count (const char *, const get_data_t *, column_t *, column_t *, const char **,

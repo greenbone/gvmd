@@ -1,20 +1,19 @@
 /* Copyright (C) 2014-2018 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -137,7 +136,7 @@ PG_FUNCTION_INFO_V1 (sql_next_time_ical);
 /**
  * @brief Get the next time given schedule times.
  *
- * This is a callback for a SQL function of four to six arguments.
+ * This is a callback for a SQL function of one to three arguments.
  *
  * @return Postgres Datum.
  */
@@ -169,7 +168,10 @@ sql_next_time_ical (PG_FUNCTION_ARGS)
       zone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
-  periods_offset = PG_GETARG_INT32 (2);
+  if (PG_NARGS() < 3)
+    periods_offset = 0;
+  else
+    periods_offset = PG_GETARG_INT32 (2);
 
   ret = icalendar_next_time_from_string (ical_string, zone,
                                          periods_offset);
@@ -228,80 +230,6 @@ sql_max_hosts (PG_FUNCTION_ARGS)
 /**
  * @brief Define function for Postgres.
  */
-PG_FUNCTION_INFO_V1 (sql_level_min_severity);
-
-/**
- * @brief Return min severity of level.
- *
- * This is a callback for a SQL function of two arguments.
- *
- * @return Postgres Datum.
- */
-Datum
-sql_level_min_severity (PG_FUNCTION_ARGS)
-{
-  if (PG_ARGISNULL (0))
-    PG_RETURN_FLOAT8 (0.0);
-  else
-    {
-      text *level_arg, *class_arg;
-      char *level, *class;
-      float8 severity;
-
-      class_arg = PG_GETARG_TEXT_P (1);
-      class = textndup (class_arg, VARSIZE (class_arg) - VARHDRSZ);
-
-      level_arg = PG_GETARG_TEXT_P (0);
-      level = textndup (level_arg, VARSIZE (level_arg) - VARHDRSZ);
-
-      severity = level_min_severity (level, class);
-
-      pfree (level);
-      pfree (class);
-      PG_RETURN_FLOAT8 (severity);
-    }
-}
-
-/**
- * @brief Define function for Postgres.
- */
-PG_FUNCTION_INFO_V1 (sql_level_max_severity);
-
-/**
- * @brief Return max severity of level.
- *
- * This is a callback for a SQL function of two arguments.
- *
- * @return Postgres Datum.
- */
-Datum
-sql_level_max_severity (PG_FUNCTION_ARGS)
-{
-  if (PG_ARGISNULL (0))
-    PG_RETURN_FLOAT8 (0.0);
-  else
-    {
-      text *level_arg, *class_arg;
-      char *level, *class;
-      float8 severity;
-
-      class_arg = PG_GETARG_TEXT_P (1);
-      class = textndup (class_arg, VARSIZE (class_arg) - VARHDRSZ);
-
-      level_arg = PG_GETARG_TEXT_P (0);
-      level = textndup (level_arg, VARSIZE (level_arg) - VARHDRSZ);
-
-      severity = level_max_severity (level, class);
-
-      pfree (level);
-      pfree (class);
-      PG_RETURN_FLOAT8 (severity);
-    }
-}
-
-/**
- * @brief Define function for Postgres.
- */
 PG_FUNCTION_INFO_V1 (sql_severity_matches_ov);
 
 /**
@@ -328,39 +256,6 @@ sql_severity_matches_ov (PG_FUNCTION_ARGS)
         PG_RETURN_BOOL (arg_one == arg_two);
       else
         PG_RETURN_BOOL (arg_one >= arg_two);
-    }
-}
-
-/**
- * @brief Define function for Postgres.
- */
-PG_FUNCTION_INFO_V1 (sql_valid_db_resource_type);
-
-/**
- * @brief Return max severity of level.
- *
- * This is a callback for a SQL function of one argument.
- *
- * @return Postgres Datum.
- */
-Datum
-sql_valid_db_resource_type (PG_FUNCTION_ARGS)
-{
-  if (PG_ARGISNULL (0))
-    PG_RETURN_BOOL (0);
-  else
-    {
-      text *type_arg;
-      char *type;
-      int ret;
-
-      type_arg = PG_GETARG_TEXT_P (0);
-      type = textndup (type_arg, VARSIZE (type_arg) - VARHDRSZ);
-
-      ret = valid_db_resource_type (type);
-
-      pfree (type);
-      PG_RETURN_BOOL (ret);
     }
 }
 

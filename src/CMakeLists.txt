@@ -1,20 +1,19 @@
 # Copyright (C) 2009-2019 Greenbone Networks GmbH
 #
-# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ## Libraries
 
@@ -27,10 +26,10 @@ find_package (Threads)
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=20.4)
-pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=20.4)
-pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=20.4)
-pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=20.4)
+pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=20.8)
+pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=20.8)
+pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=20.8)
+pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=20.8)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBICAL REQUIRED libical>=1.00)
@@ -134,6 +133,29 @@ add_executable (manage-test
 
 add_test (manage-test manage-test)
 
+add_executable (manage-sql-test
+                EXCLUDE_FROM_ALL
+                manage_sql_tests.c
+
+                gvmd.c gmpd.c
+                manage_utils.c manage.c sql.c
+                manage_acl.c manage_configs.c manage_get.c
+                manage_port_lists.c manage_preferences.c
+                manage_report_formats.c
+                manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_formats.c
+                manage_sql_tickets.c manage_sql_tls_certificates.c
+                manage_tls_certificates.c
+                manage_migrators.c
+                sql_pg.c manage_pg.c
+                lsc_user.c lsc_crypt.c utils.c
+                gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_tls_certificates.c)
+
+add_test (manage-sql-test manage-sql-test)
+
 add_executable (gmp-tickets-test
                 EXCLUDE_FROM_ALL
                 gmp_tickets_tests.c
@@ -158,13 +180,30 @@ add_test (gmp-tickets-test gmp-tickets-test)
 
 add_executable (utils-test
                 EXCLUDE_FROM_ALL
-                utils_tests.c)
+                utils_tests.c
+
+                gvmd.c gmpd.c
+                manage_utils.c manage.c sql.c
+                manage_acl.c manage_configs.c manage_get.c
+                manage_port_lists.c manage_preferences.c
+                manage_report_formats.c
+                manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
+                manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_formats.c
+                manage_sql_tickets.c manage_sql_tls_certificates.c
+                manage_tls_certificates.c
+                manage_migrators.c
+                sql_pg.c manage_pg.c
+                lsc_user.c lsc_crypt.c
+                gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_tls_certificates.c)
 
 add_test (utils-test utils-test)
 
 add_custom_target (tests
                    DEPENDS
-                   gmp-tickets-test manage-test manage-utils-test utils-test)
+                   gmp-tickets-test manage-test manage-sql-test manage-utils-test utils-test)
 
 add_executable (gvmd
                 main.c gvmd.c gmpd.c
@@ -194,6 +233,11 @@ target_link_libraries (manage-test cgreen m
                        ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+target_link_libraries (manage-sql-test cgreen m
+                       ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
+                       ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 target_link_libraries (manage-utils-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
@@ -213,6 +257,7 @@ target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM
 
 set_target_properties (gvmd PROPERTIES LINKER_LANGUAGE C)
 set_target_properties (manage-test PROPERTIES LINKER_LANGUAGE C)
+set_target_properties (manage-sql-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties (manage-utils-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties (gmp-tickets-test PROPERTIES LINKER_LANGUAGE C)
 
@@ -227,6 +272,7 @@ endif (GVMD_VERSION)
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options (gvmd PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options (manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
+  target_compile_options (manage-sql-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options (manage-utils-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options (gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
 
@@ -262,6 +308,7 @@ add_definitions (-DPREFIX="${CMAKE_INSTALL_PREFIX}")
 
 add_definitions (-DGVM_SCAP_RES_DIR="${GVM_SCAP_RES_DIR}")
 add_definitions (-DGVM_SCAP_DATA_DIR="${GVM_SCAP_DATA_DIR}")
+add_definitions (-DGVM_SCAP_DATA_CSV_DIR="${GVM_SCAP_DATA_DIR}/${GVMD_SCAP_DATABASE_VERSION}")
 
 add_definitions (-DGVM_CERT_RES_DIR="${GVM_CERT_RES_DIR}")
 add_definitions (-DGVM_CERT_DATA_DIR="${GVM_CERT_DATA_DIR}")

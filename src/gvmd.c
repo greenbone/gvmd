@@ -1,20 +1,19 @@
 /* Copyright (C) 2009-2018 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -556,8 +555,14 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
     }
   sockaddr_as_str (&addr, client_address);
 
-  /* Fork a child to serve the client. */
-  pid = fork ();
+  /* Fork a child to serve the client.
+   *
+   * Use the default handlers for termination signals in the child.  This
+   * is required because the child calls 'system' and 'g_spawn_sync' in many
+   * places.  As the child waits for the spawned command, the child will
+   * not return to any code that checks termination_signal, so the child
+   * can't use the signal handlers inherited from the main process. */
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
@@ -644,8 +649,10 @@ fork_connection_internal (gvm_connection_t *client_connection,
   struct sigaction action;
   gchar *auth_uuid;
 
-  /* Fork a child to use as scheduler client and server. */
+  /* Fork a child to use as scheduler/event client and server. */
 
+  /* This must 'fork' and not 'fork_with_handlers' so that the next fork can
+   * decide about handlers. */
   pid = fork ();
   switch (pid)
     {
@@ -688,7 +695,10 @@ fork_connection_internal (gvm_connection_t *client_connection,
 
   is_parent = 0;
 
-  pid = fork ();
+  /* As with accept_and_maybe_fork, use the default handlers for termination
+   * signals in the child.  This is required for signals to work when the
+   * child is waiting for spawns and forks. */
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
@@ -792,6 +802,17 @@ fork_connection_internal (gvm_connection_t *client_connection,
         /* This process is returned as the child of
          * fork_connection_for_scheduler so that the returned parent can wait
          * on this process. */
+
+        if (scheduler)
+          {
+            /* When used for scheduling this parent process waits for the
+             * child.  That means it does not use the loops which handle
+             * termination_signal.  So we need to use the regular handlers
+             * for termination signals. */
+            setup_signal_handler (SIGTERM, SIG_DFL, 0);
+            setup_signal_handler (SIGINT, SIG_DFL, 0);
+            setup_signal_handler (SIGQUIT, SIG_DFL, 0);
+          }
 
         /** @todo Give the parent time to prepare. */
         gvm_sleep (5);
@@ -897,65 +918,6 @@ cleanup ()
 
   /* Delete pidfile if this process is the parent. */
   if (is_parent == 1) pidfile_remove ("gvmd");
-}
-
-/**
- * @brief Setup signal handler.
- *
- * Exit on failure.
- *
- * @param[in]  signal   Signal.
- * @param[in]  handler  Handler.
- * @param[in]  block    Whether to block all other signals during handler.
- */
-static void
-setup_signal_handler (int signal, void (*handler) (int), int block)
-{
-  struct sigaction action;
-
-  memset (&action, '\0', sizeof (action));
-  if (block)
-    sigfillset (&action.sa_mask);
-  else
-    sigemptyset (&action.sa_mask);
-  action.sa_handler = handler;
-  if (sigaction (signal, &action, NULL) == -1)
-    {
-      g_critical ("%s: failed to register %s handler",
-                  __func__, sys_siglist[signal]);
-      exit (EXIT_FAILURE);
-    }
-}
-
-/**
- * @brief Setup signal handler.
- *
- * Exit on failure.
- *
- * @param[in]  signal   Signal.
- * @param[in]  handler  Handler.
- * @param[in]  block    Whether to block all other signals during handler.
- */
-static void
-setup_signal_handler_info (int signal,
-                           void (*handler) (int, siginfo_t *, void *),
-                           int block)
-{
-  struct sigaction action;
-
-  memset (&action, '\0', sizeof (action));
-  if (block)
-    sigfillset (&action.sa_mask);
-  else
-    sigemptyset (&action.sa_mask);
-  action.sa_flags |= SA_SIGINFO;
-  action.sa_sigaction = handler;
-  if (sigaction (signal, &action, NULL) == -1)
-    {
-      g_critical ("%s: failed to register %s handler",
-                  __func__, sys_siglist[signal]);
-      exit (EXIT_FAILURE);
-    }
 }
 
 #ifndef NDEBUG
@@ -1075,7 +1037,7 @@ handle_sigabrt_simple (int signal)
  *
  * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
  *
- * @return 0 success.
+ * @return 0 success, -1 error, 1 VT integrity check failed.
  */
 static int
 update_nvt_cache_osp (const gchar *update_socket)
@@ -1102,7 +1064,11 @@ update_nvt_cache_retry ()
   setup_signal_handler (SIGCHLD, SIG_DFL, 0);
   while (1)
     {
-      pid_t child_pid = fork ();
+      pid_t child_pid;
+
+      /* No need to worry about fork_with_handlers, because
+       * fork_update_nvt_cache already did that. */
+      child_pid = fork ();
       if (child_pid > 0)
         {
           int status, i;
@@ -1118,7 +1084,22 @@ update_nvt_cache_retry ()
           const char *osp_update_socket;
           osp_update_socket = get_osp_vt_update_socket ();
           if (osp_update_socket)
-            exit (update_nvt_cache_osp (osp_update_socket));
+            {
+              int ret;
+
+              ret = update_nvt_cache_osp (osp_update_socket);
+              if (ret == 1)
+                {
+                  g_message ("Rebuilding NVTs because integrity check failed");
+                  ret = update_or_rebuild_nvts (0);
+                  if (ret)
+                    g_warning ("%s: rebuild failed", __func__);
+                  else
+                    g_message ("%s: rebuild successful", __func__);
+                }
+
+              exit (ret);
+            }
           else
             {
               g_warning ("%s: No OSP VT update socket set", __func__);
@@ -1127,7 +1108,6 @@ update_nvt_cache_retry ()
         }
     }
 }
-
 
 /**
  * @brief Update the NVT cache in a child process.
@@ -1162,7 +1142,7 @@ fork_update_nvt_cache ()
       return -1;
     }
 
-  pid = fork ();
+  pid = fork_with_handlers ();
   switch (pid)
     {
       case 0:
@@ -1172,7 +1152,10 @@ fork_update_nvt_cache ()
 
         /* Clean up the process. */
 
-        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+        if (sigmask_normal)
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+        else
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
         /** @todo This should happen via gmp, maybe with "cleanup_gmp ();". */
         cleanup_manage_process (FALSE);
         if (manager_socket > -1) close (manager_socket);
@@ -1387,6 +1370,7 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
   if (address_str_unix)
     {
       struct stat state;
+      gchar *address_parent;
 
       /* UNIX file socket. */
 
@@ -1415,6 +1399,18 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
 
       address = (struct sockaddr *) &address_unix;
       address_size = sizeof (address_unix);
+
+      /* Ensure the path of the socket exists. */
+
+      address_parent = g_path_get_dirname (address_str_unix);
+      if (g_mkdir_with_parents (address_parent, 0755 /* "rwxr-xr-x" */))
+        {
+          g_warning ("%s: failed to create socket dir %s", __func__,
+                     address_parent);
+          g_free (address_parent);
+          return -1;
+        }
+      g_free (address_parent);
     }
   else if (address_str_tls)
     {
@@ -1636,9 +1632,11 @@ gvmd (int argc, char** argv)
   static gchar *rc_name = NULL;
   static gchar *relay_mapper = NULL;
   static gboolean rebuild = FALSE;
+  static gboolean rebuild_scap = FALSE;
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
+  static gchar *feed_lock_path = NULL;
   GError *error = NULL;
   lockfile_t lockfile_checking, lockfile_serving;
   GOptionContext *option_context;
@@ -1703,6 +1701,10 @@ gvmd (int argc, char** argv)
           &encrypt_all_credentials,
           "(Re-)Encrypt all credentials.",
           NULL },
+        { "feed-lock-path", '\0', 0, G_OPTION_ARG_FILENAME,
+          &feed_lock_path,
+          "Sets the path to the feed lock file.",
+          "<path>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE,
           &foreground,
           "Run in foreground.",
@@ -1783,10 +1785,10 @@ gvmd (int argc, char** argv)
         { "optimize", '\0', 0, G_OPTION_ARG_STRING,
           &optimize,
           "Run an optimization: vacuum, analyze, cleanup-config-prefs,"
-          " cleanup-port-names, cleanup-report-formats, cleanup-result-nvts"
-          " cleanup-result-severities, cleanup-schedule-times,"
-          " migrate-relay-sensors, rebuild-report-cache or"
-          " update-report-cache.",
+          " cleanup-port-names, cleanup-report-formats, cleanup-result-encoding,"
+          " cleanup-result-nvts, cleanup-result-severities,"
+          " cleanup-schedule-times, migrate-relay-sensors,"
+          " rebuild-report-cache or update-report-cache.",
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
           &osp_vt_update,
@@ -1805,9 +1807,13 @@ gvmd (int argc, char** argv)
           &manager_port_string_2,
           "Use port number <number> for address 2.",
           "<number>" },
-        { "rebuild", 'm', 0, G_OPTION_ARG_NONE,
+        { "rebuild", '\0', 0, G_OPTION_ARG_NONE,
           &rebuild,
           "Remove NVT db, and rebuild it from the scanner.",
+          NULL },
+        { "rebuild-scap", '\0', 0, G_OPTION_ARG_NONE,
+          &rebuild_scap,
+          "Rebuild all SCAP data.",
           NULL },
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,
@@ -1926,8 +1932,8 @@ gvmd (int argc, char** argv)
       printf ("GIT revision %s\n", GVMD_GIT_REVISION);
 #endif
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
-      printf ("Copyright (C) 2010-2017 Greenbone Networks GmbH\n");
-      printf ("License GPLv2+: GNU GPL version 2 or later\n");
+      printf ("Copyright (C) 2010-2020 Greenbone Networks GmbH\n");
+      printf ("License: AGPL-3.0-or-later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
          "There is NO WARRANTY, to the extent permitted by law.\n\n");
@@ -1940,6 +1946,9 @@ gvmd (int argc, char** argv)
     {
       client_watch_interval = 0;
     }
+
+  /* Set feed lock path */
+  set_feed_lock_path (feed_lock_path);
 
   /* Set schedule_timeout */
 
@@ -2251,7 +2260,29 @@ gvmd (int argc, char** argv)
       ret = manage_rebuild (log_config, database);
       log_config_free ();
       if (ret)
+        {
+          printf ("Failed to rebuild NVT cache.\n");
+          return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
+    }
+
+  if (rebuild_scap)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: --rebuild-scap");
+
+      if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
+
+      ret = manage_rebuild_scap (log_config, database);
+      log_config_free ();
+      if (ret)
+        {
+          printf ("Failed to rebuild SCAP data.\n");
+          return EXIT_FAILURE;
+        }
       return EXIT_SUCCESS;
     }
 

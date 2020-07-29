@@ -1,20 +1,19 @@
 /* Copyright (C) 2009-2018 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -49,6 +48,24 @@ sql_prepare_internal (int, int, const char*, va_list, sql_stmt_t **);
 
 int
 sql_exec_internal (int, sql_stmt_t *);
+
+void
+sql_finalize (sql_stmt_t *);
+
+double
+sql_column_double (sql_stmt_t *, int);
+
+const char *
+sql_column_text (sql_stmt_t *, int);
+
+int
+sql_column_int (sql_stmt_t *, int);
+
+long long int
+sql_column_int64 (sql_stmt_t *, int);
+
+gchar **
+sql_column_array (sql_stmt_t *, int);
 
 
 /* Variables. */
@@ -511,22 +528,6 @@ sql_int64_0 (char* sql, ...)
  * @brief Initialise an iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  stmt      Statement.
- */
-void
-init_prepared_iterator (iterator_t* iterator, sql_stmt_t* stmt)
-{
-  iterator->done = FALSE;
-  iterator->stmt = stmt;
-  iterator->prepared = 1;
-  iterator->crypt_ctx = NULL;
-  g_debug ("   sql: init prepared %p", stmt);
-}
-
-/**
- * @brief Initialise an iterator.
- *
- * @param[in]  iterator  Iterator.
  * @param[in]  sql       Format string for SQL.
  */
 void
@@ -537,7 +538,6 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
   va_list args;
 
   iterator->done = FALSE;
-  iterator->prepared = 0;
   iterator->crypt_ctx = NULL;
 
   va_start (args, sql);
@@ -644,8 +644,7 @@ cleanup_iterator (iterator_t* iterator)
       return;
     }
 
-  if (iterator->prepared == 0)
-    sql_finalize (iterator->stmt);
+  sql_finalize (iterator->stmt);
   if (iterator->crypt_ctx)
     {
       lsc_crypt_release (iterator->crypt_ctx);

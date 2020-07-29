@@ -52,6 +52,9 @@ Disable task scheduling.
 \fB--encrypt-all-credentials\f1
 (Re-)Encrypt all credentials.
 .TP
+\fB--feed-lock-path=\fIPATH\fB\f1
+Sets the path to the feed lock file.
+.TP
 \fB-f, --foreground\f1
 Run in foreground.
 .TP
@@ -124,6 +127,9 @@ Use port number NUMBER.
 \fB--port2=\fINUMBER\fB\f1
 Use port number NUMBER for address 2.
 .TP
+\fB--rebuild-scap=\fITYPE\fB\f1
+Rebuild SCAP data of type \fITYPE\f1 (currently only supports 'ovaldefs'). 
+.TP
 \fB--relay-mapper=\fIFILE\fB\f1
 Executable for mapping scanner hosts to relays. Use an empty string to explicitly disable. If the option is not given, $PATH is checked for gvm-relay-mapper. 
 .TP
@@ -185,13 +191,13 @@ Verify scanner SCANNER-UUID and exit.
 \fB--version\f1
 Print version and exit.
 .SH SIGNALS
-SIGHUP causes gvmd to rebuild the database with information from the Scanner (openvassd).
+SIGHUP causes gvmd to rebuild the database with information from the Scanner (openvas).
 .SH EXAMPLES
 gvmd --port 1241
 
 Serve GMP clients on port 1241 and connect to an OpenVAS scanner via the default OTP file socket.
 .SH SEE ALSO
-\fBopenvassd(8)\f1, \fBgsad(8)\f1, \fBgvm-cli(8)\f1, 
+\fBopenvas(8)\f1, \fBgsad(8)\f1, \fBgvm-cli(8)\f1, 
 .SH MORE INFORMATION ABOUT GREENBONE VULNERABILITY MANAGEMENT
 The canonical places where you will find more information about the Greenbone Vulnerability Manager are: 
 

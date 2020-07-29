@@ -116,6 +116,12 @@
       
     
     
+      <p><b>--feed-lock-path=<em>PATH</em></b></p>
+      
+        <p>Sets the path to the feed lock file.</p>
+      
+    
+    
       <p><b>-f, --foreground</b></p>
       
         <p>Run in foreground.</p>
@@ -265,6 +271,15 @@
       
     
     
+      <p><b>--rebuild-scap=<em>TYPE</em></b></p>
+      
+        <p>
+          Rebuild SCAP data of type <em>TYPE</em>
+          (currently only supports 'ovaldefs').
+        </p>
+      
+    
+    
       <p><b>--relay-mapper=<em>FILE</em></b></p>
       
         <p>Executable for mapping scanner hosts to relays.
@@ -395,7 +410,7 @@
   <h2>SIGNALS</h2>
 
     <p>SIGHUP causes gvmd to rebuild the database with information from
-       the Scanner (openvassd).</p>
+       the Scanner (openvas).</p>
   
 
 
@@ -410,7 +425,7 @@
   <h2>SEE ALSO</h2>
 
     <p>
-      <b>openvassd (8)</b>,
+      <b>openvas (8)</b>,
       <b>gsad (8)</b>,
       <b>gvm-cli (8)</b>,
     </p>

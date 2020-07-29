@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [20.4] (unreleased)
+## [20.08] (unreleased)
 
 ### Added
 - Add setting "BPM Dashboard Configuration" [#764](https://github.com/greenbone/gvmd/pull/764)
@@ -25,13 +25,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add --get-roles [#992](https://github.com/greenbone/gvmd/pull/992)
 - Add --rebuild [#998](https://github.com/greenbone/gvmd/pull/998)
 - Lock a file around the NVT sync [#1002](https://github.com/greenbone/gvmd/pull/1002)
+- Add a delay for re-requesting scan information via osp [#1012](https://github.com/greenbone/gvmd/pull/1012)
+- Add --optimize option cleanup-result-encoding [#1013](https://github.com/greenbone/gvmd/pull/1013)
+- Perform integrity check of VTs after updates [#1024](https://github.com/greenbone/gvmd/pull/1024) [#1035](https://github.com/greenbone/gvmd/pull/1035)
+- Ensure path of listening UNIX socket exists [#1040](https://github.com/greenbone/gvmd/pull/1040)
+- Add --rebuild-scap option [#1051](https://github.com/greenbone/gvmd/pull/1051)
+- Stop current scheduling of task when permission denied [#1058](https://github.com/greenbone/gvmd/pull/1058)
+- Trim malloc heap after updating cache [#1085](https://github.com/greenbone/gvmd/pull/1085)
+- Handle QUEUED osp scan status. [#1113](https://github.com/greenbone/gvmd/pull/1113)
+- Add time placeholders for SCP path [#1164](https://github.com/greenbone/gvmd/pull/1164)
+- Expand detection information of results [#1182](https://github.com/greenbone/gvmd/pull/1182)
+- Add filter columns for special NVT tags [#1199](https://github.com/greenbone/gvmd/pull/1199)
+- Add currently_syncing for NVTs in GMP get_feeds [#1210](https://github.com/greenbone/gvmd/pull/1210)
+- Add logging for ANALYZE at end of migration [#1211](https://github.com/greenbone/gvmd/pull/1211)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)
 - Try authentication when verifying GMP scanners [#837](https://github.com/greenbone/gvmd/pull/837)
 - Try importing private keys with libssh if GnuTLS fails [#841](https://github.com/greenbone/gvmd/pull/841)
-- Extend GMP API for nvt object to carry a explicit solution element [#849](https://github.com/greenbone/gvmd/pull/849)
+- Extend GMP API for nvt object to carry a explicit solution element [#849](https://github.com/greenbone/gvmd/pull/849) [#1143](https://github.com/greenbone/gvmd/pull/1143)
 - Allow resuming OSPd-based OpenVAS tasks [#869](https://github.com/greenbone/gvmd/pull/869)
 - Require PostgreSQL 9.6 as a minimum [#872](https://github.com/greenbone/gvmd/pull/872)
 - Speed up the SCAP sync [#875](https://github.com/greenbone/gvmd/pull/875) [#877](https://github.com/greenbone/gvmd/pull/877) [#879](https://github.com/greenbone/gvmd/pull/879) [#881](https://github.com/greenbone/gvmd/pull/881) [#883](https://github.com/greenbone/gvmd/pull/883) [#887](https://github.com/greenbone/gvmd/pull/887) [#889](https://github.com/greenbone/gvmd/pull/889) [#890](https://github.com/greenbone/gvmd/pull/890) [#891](https://github.com/greenbone/gvmd/pull/891) [#901](https://github.com/greenbone/gvmd/pull/901)
@@ -40,6 +53,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Use temp tables to speed up migrate_213_to_214 [#911](https://github.com/greenbone/gvmd/pull/911)
 - Allow "Start Task" alert method for SecInfo events [#960](https://github.com/greenbone/gvmd/pull/960)
 - New Community Feed download URL in sync tools [#982](https://github.com/greenbone/gvmd/pull/982)
+- Change setting UUID to correct length [#1018](https://github.com/greenbone/gvmd/pull/1018)
+- Change licence to AGPL-3.0-or-later [#1026](https://github.com/greenbone/gvmd/pull/1026)
+- Count only best OS matches for OS asset hosts [#1029](https://github.com/greenbone/gvmd/pull/1029)
+- Clean up NVTs set to name in cleanup-result-nvts [#1039](https://github.com/greenbone/gvmd/pull/1039)
+- Improve validation of note and override ports [#1045](https://github.com/greenbone/gvmd/pull/1045)
+- The internal list of current Local Security Checks for the Auto-FP feature was updated [#1054](https://github.com/greenbone/gvmd/pull/1054)
+- Simplify sync lockfile handling [#1059](https://github.com/greenbone/gvmd/pull/1059)
+- Do not ignore empty hosts_allow and ifaces_allow [#1064](https://github.com/greenbone/gvmd/pull/1064)
+- Reduce the memory cache of NVTs [#1076](https://github.com/greenbone/gvmd/pull/1076)
+- Sync SCAP using a second schema [#1111](https://github.com/greenbone/gvmd/pull/1111)
+- Use error variable in osp_get_vts_version(). [#1159](https://github.com/greenbone/gvmd/pull/1159)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
@@ -83,6 +107,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Delete report format dirs when deleting user [#993](https://github.com/greenbone/gvmd/pull/993)
 - Put 'lean' back to 0 for GET_RESULTS [#1001](https://github.com/greenbone/gvmd/pull/1001)
 - Improve handling of removed NVT prefs [#1003](https://github.com/greenbone/gvmd/pull/1003)
+- Ensure parent exists when moving report format dir [#1019](https://github.com/greenbone/gvmd/pull/1019)
+- Use nvti_qod instead of the old nvti_get_tag() [#1022](https://github.com/greenbone/gvmd/pull/1022)
+- Remove active clause when filtering resources by tag [#1025](https://github.com/greenbone/gvmd/pull/1025)
+- Add user limits on hosts and ifaces to OSP prefs [#1033](https://github.com/greenbone/gvmd/pull/1033)
+- Fix order of tar options in gvm-lsc-deb-creator.sh [#1034](https://github.com/greenbone/gvmd/pull/1034)
+- Fix handling of termination signals [#1034](https://github.com/greenbone/gvmd/pull/1034)
+- Remove db init warning that no longer makes sense [#1044](https://github.com/greenbone/gvmd/pull/1044)
+- Use correct elements to get task ID in wizards [#1004](https://github.com/greenbone/gvmd/pull/1004) [#1046](https://github.com/greenbone/gvmd/pull/1046)
+- Use current row for iterator_null, instead of first row [#1047](https://github.com/greenbone/gvmd/pull/1047)
+- Setup general task preferences to launch an osp openvas task. [#1055](https://github.com/greenbone/gvmd/pull/1055)
+- Fix doc of get_tasks in GMP doc [#1066](https://github.com/greenbone/gvmd/pull/1066)
+- Improve refs and error handling in NVTs update [#1067](https://github.com/greenbone/gvmd/pull/1067)
+- Fix failure detection for xml_split command [#1074](https://github.com/greenbone/gvmd/pull/1074)
+- Fix deletion of OVAL definition data [#1079](https://github.com/greenbone/gvmd/pull/1079)
+- Fix feed lock in sync script [#1088](https://github.com/greenbone/gvmd/pull/1088)
+- Handle removed CPEs and CVEs in SCAP sync [#1097](https://github.com/greenbone/gvmd/pull/1097)
+- Fix NVTs list in CVE details [#1100](https://github.com/greenbone/gvmd/pull/1100)
+- Fix handling of duplicate settings [#1106](https://github.com/greenbone/gvmd/pull/1106)
+- Fix XML escaping in setting up GMP scans [#1122](https://github.com/greenbone/gvmd/pull/1122)
+- Fix and simplify parse_iso_time and add tests [#1129](https://github.com/greenbone/gvmd/pull/1129)
+- Fix gvm-manage-certs. [#1140](https://github.com/greenbone/gvmd/pull/1140)
+- Fix CVE scanner and results handling [#1141](https://github.com/greenbone/gvmd/pull/1141)
+- Remove user from tags when deleting user [#1161](https://github.com/greenbone/gvmd/pull/1161)
+- Handle INTERRUPTED scans [#1146](https://github.com/greenbone/gvmd/pull/1146)
+- Check hosts in MODIFY_OVERRIDE, as in CREATE_OVERRIDE [#1162](https://github.com/greenbone/gvmd/pull/1162)
+- Preserve task "once" value [#1176](https://github.com/greenbone/gvmd/pull/1176)
+- Check number of args to ensure period_offsets is 0 [#1175](https://github.com/greenbone/gvmd/pull/1175)
+- Fix name handling when creating host assets [#1183](https://github.com/greenbone/gvmd/pull/1183)
+- Outdated references to "openvassd" have been updated to "openvas" [#1189](https://github.com/greenbone/gvmd/pull/1189)
+- Quote identifiers in SQL functions using EXECUTE [#1192](https://github.com/greenbone/gvmd/pull/1192)
+- Fix handling of interrupted tasks [#1207](https://github.com/greenbone/gvmd/pull/1207)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
@@ -92,8 +147,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed migration tool "gvm-migrate-to-postgres" including the man page [#905](https://github.com/greenbone/gvmd/pull/905)
 - Remove agents [#922](https://github.com/greenbone/gvmd/pull/922)
 - Remove GMP COMMANDS [#923](https://github.com/greenbone/gvmd/pull/923)
+- Remove unused port names facility [#1041](https://github.com/greenbone/gvmd/pull/1041)
+- Add migrator to remove dead hosts [#1071](https://github.com/greenbone/gvmd/pull/1071)
+- Remove classic schedules elements from GMP [#1116](https://github.com/greenbone/gvmd/pull/1116) [#1121](https://github.com/greenbone/gvmd/pull/1121)
+- Remove parallel from target options. [#1119](https://github.com/greenbone/gvmd/pull/1119)
+- Remove default port list from CREATE_TARGET [#1151](https://github.com/greenbone/gvmd/pull/1151)
 
-[20.4]: https://github.com/greenbone/gvmd/compare/v9.0.0...master
+[20.08]: https://github.com/greenbone/gvmd/compare/v9.0.0...gvmd-20.08
 
 ## [9.0.0] (2019-10-11)
 
@@ -139,6 +199,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The details attribute of GET_REPORTS now defaults to 0 [#747](https://github.com/greenbone/gvmd/pull/747)
 - Incoming VT timestamps via OSP are now assumed to be seconds since epoch [#754](https://github.com/greenbone/gvmd/pull/754)
 - Accelerate NVT feed update [#757](https://github.com/greenbone/gvmd/pull/757)
+- Combine sync scripts and add GVMd data sync [#1155](https://github.com/greenbone/gvmd/pull/1155) [#1201](https://github.com/greenbone/gvmd/pull/1201)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)

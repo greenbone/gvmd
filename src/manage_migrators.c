@@ -1,20 +1,19 @@
 /* Copyright (C) 2013-2019 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -1573,7 +1572,9 @@ convert_schedules_221 (gboolean trash)
       ical_string = iterator_string (&schedules, 1);
       schedule_id = iterator_string (&schedules, 2);
 
-      ical_component = icalendar_from_string (ical_string, &error_out);
+      ical_component = icalendar_from_string (ical_string,
+                                              icaltimezone_get_utc_timezone (),
+                                              &error_out);
       if (ical_component == NULL)
         g_warning ("Error converting schedule %s: %s", schedule_id, error_out);
       else
@@ -1792,6 +1793,521 @@ migrate_224_to_225 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 225 to version 226.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_225_to_226 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 225. */
+
+  if (manage_db_version () != 225)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* A setting's UUID was changed to the correct length. */
+
+  sql ("UPDATE settings"
+       " SET uuid = 'ce7b121-c609-47b0-ab57-fd020a0336f4a'"
+       " WHERE uuid = 'ce7b121-c609-47b0-ab57-fd020a0336f4';");
+
+  /* Set the database version to 226. */
+
+  set_db_version (226);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 226 to version 227.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_226_to_227 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 226. */
+
+  if (manage_db_version () != 226)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The unused table port_names was removed. */
+
+  sql ("DROP TABLE port_names;");
+
+  /* Set the database version to 227. */
+
+  set_db_version (227);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Delete results for migrate_227_to_228.
+ *
+ * @param[in]  table  Name of table.
+ *
+ * @return Count of deleted rows.
+ */
+static int
+migrate_227_to_228_delete (const char *table)
+{
+  int location;
+
+  if (strcmp (table, "results") == 0)
+    location = LOCATION_TABLE;
+  else
+    location = LOCATION_TRASH;
+
+  return sql_int (/* Remove results, storing ids. */
+                  "WITH deleted"
+                  " AS (DELETE FROM %s"
+                  "     WHERE EXISTS (SELECT *"
+                  "                   FROM report_host_details, report_hosts"
+                  "                   WHERE report_host_details.report_host"
+                  "                         = report_hosts.id"
+                  "                   AND report_hosts.report = %s.report"
+                  "                   AND report_hosts.host = %s.host"
+                  "                   AND name = 'Host dead'"
+                  "                   AND value = '1')"
+                  "     RETURNING id),"
+                  /* Remove references to results in any tags. */
+                  " dummy1"
+                  " AS (DELETE FROM tag_resources"
+                  "     WHERE resource_type = 'result'"
+                  "     AND resource_location = %i"
+                  "     AND resource IN (SELECT id FROM deleted)),"
+                  /* Remove references to results in any trash tags. */
+                  " dummy2"
+                  " AS (DELETE FROM tag_resources_trash"
+                  "     WHERE resource_type = 'result'"
+                  "     AND resource_location = %i"
+                  "     AND resource IN (SELECT id FROM deleted))"
+                  /* Return count of deleted results. */
+                  " SELECT count(*) from deleted;",
+                  table,
+                  table,
+                  table,
+                  location,
+                  location);
+}
+
+/**
+ * @brief Migrate the database from version 227 to version 228.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_227_to_228 ()
+{
+  int count;
+
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 227. */
+
+  if (manage_db_version () != 227)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Dead hosts are no longer stored. */
+
+  count = migrate_227_to_228_delete ("results");
+  if (count)
+    g_info ("%s: deleted %i result%s of dead report hosts",
+            __func__,
+            count,
+            count > 1 ? "s" : "");
+
+  count = migrate_227_to_228_delete ("results_trash");
+  if (count)
+    g_info ("%s: deleted %i trashcan result%s of dead report hosts",
+            __func__,
+            count,
+            count > 1 ? "s" : "");
+
+  count = sql_int (/* Delete "Host dead" details, getting dead report_hosts. */
+                   "WITH dead_report_hosts"
+                   " AS (DELETE FROM report_host_details"
+                   "     WHERE name = 'Host dead'"
+                   "     AND value = '1'"
+                   "     RETURNING report_host),"
+                   /* Delete any other details on the dead report_hosts. */
+                   " dummy1"
+                   " AS (DELETE FROM report_host_details"
+                   "     WHERE report_host"
+                   "           IN (SELECT distinct report_host"
+                   "               FROM dead_report_hosts)),"
+                   /* Delete dead report_hosts. */
+                   " deleted"
+                   " AS (DELETE FROM report_hosts"
+                   "     WHERE id IN (SELECT distinct report_host"
+                   "                  FROM dead_report_hosts)"
+                   "     RETURNING report),"
+                   /* Clear report counts for affected reports. */
+                   " dummy2"
+                   " AS (DELETE FROM report_counts"
+                   "     WHERE report IN (SELECT distinct report"
+                   "                      FROM deleted))"
+                   /* Return count of dead report_hosts. */
+                   " SELECT count(*) from deleted;");
+  if (count)
+    g_info ("%s: deleted %i dead report host%s",
+            __func__,
+            count,
+            count > 1 ? "s" : "");
+
+  /* Set the database version to 228. */
+
+  set_db_version (228);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 228 to version 229.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_228_to_229 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 228. */
+
+  if (manage_db_version () != 228)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Setting UUIDs now have to be unique per owner. */
+  sql ("DELETE FROM settings"
+       " WHERE id NOT IN (SELECT max(id) FROM settings"
+       "                  GROUP BY uuid, owner);");
+
+  sql ("ALTER TABLE settings ADD UNIQUE(uuid, owner);");
+
+  /* Set the database version to 229. */
+
+  set_db_version (229);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 229 to version 230.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_229_to_230 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 229. */
+
+  if (manage_db_version () != 229)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE schedules DROP COLUMN initial_offset;");
+
+  /* Set the database version to 230. */
+
+  set_db_version (230);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Add timezones to schedule iCalendar strings.
+ *
+ * @param[in]  trash  Whether to convert the trash table.
+ */
+static void
+convert_schedules_231 (gboolean trash)
+{
+  iterator_t schedules;
+
+  init_iterator (&schedules,
+                 "SELECT id, icalendar, uuid, timezone FROM %s;",
+                 trash ? "schedules_trash" : "schedules");
+
+  while (next (&schedules))
+    {
+      schedule_t schedule;
+      const char *ical_string, *schedule_id, *zone;
+      icalcomponent *ical_component;
+      icaltimezone *ical_zone;
+      gchar *error_out;
+
+      error_out = NULL;
+      schedule = iterator_int64 (&schedules, 0);
+      ical_string = iterator_string (&schedules, 1);
+      schedule_id = iterator_string (&schedules, 2);
+      zone = iterator_string (&schedules, 3);
+
+      ical_zone = icalendar_timezone_from_string (zone);
+      if (ical_zone == NULL)
+        {
+          g_warning ("%s: error converting schedule %s: timezone '%s'",
+                     __func__, schedule_id, zone);
+          continue;
+        }
+
+      ical_component = icalendar_from_string (ical_string,
+                                              ical_zone,
+                                              &error_out);
+      if (ical_component == NULL)
+        g_warning ("%s: error converting schedule %s: %s", __func__,
+                   schedule_id, error_out);
+      else
+        {
+          gchar *quoted_ical;
+
+          quoted_ical
+            = sql_quote (icalcomponent_as_ical_string (ical_component));
+
+          sql ("UPDATE %s SET icalendar = '%s' WHERE id = %llu",
+               trash ? "schedules_trash" : "schedules",
+               quoted_ical,
+               schedule);
+
+          g_free (quoted_ical);
+        }
+
+      g_free (error_out);
+    }
+
+  cleanup_iterator (&schedules);
+}
+
+/**
+ * @brief Migrate the database from version 230 to version 231.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_230_to_231 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 230. */
+
+  if (manage_db_version () != 230)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add timezones to schedule iCalendar strings. */
+  convert_schedules_231 (FALSE);
+  convert_schedules_231 (TRUE);
+
+  /* Set the database version to 231. */
+
+  set_db_version (231);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 231 to version 232.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_231_to_232 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 231. */
+
+  if (manage_db_version () != 231)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add path field to results and results_trash. */
+  sql ("ALTER TABLE results ADD COLUMN path text;");
+  sql ("ALTER TABLE results_trash ADD COLUMN path text;");
+
+  /* Set path to empty string */
+  sql ("UPDATE results SET path = '';");
+  sql ("UPDATE results_trash SET path = '';");
+
+  /* Set the database version to 231. */
+
+  set_db_version (232);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Set predefined.
+ *
+ * @param[in]  type   Type to update.
+ * @param[in]  table  Table to update.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_232_to_233_set_predefined (const gchar *type, const gchar *table)
+{
+  GError *error;
+  GDir *dir;
+  const gchar *xml_path;
+  gchar *dir_path;
+
+  dir_path = g_build_filename (GVMD_FEED_DIR,
+                               GMP_VERSION,
+                               type,
+                               NULL);
+
+  /* Open feed import directory. */
+
+  error = NULL;
+  dir = g_dir_open (dir_path, 0, &error);
+  if (dir == NULL)
+    {
+      g_warning ("%s: Failed to open directory '%s': %s",
+                 __func__, dir_path, error->message);
+      g_error_free (error);
+      g_free (dir_path);
+      return -1;
+    }
+  g_free (dir_path);
+
+  /* Update for each file. */
+
+  while ((xml_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (xml_path, ".") == 0
+        && strlen (xml_path) >= (36 /* UUID */ + strlen (".xml"))
+        && g_str_has_suffix (xml_path, ".xml"))
+      {
+        gchar *quoted_uuid, *uuid;
+
+        uuid = g_strndup (xml_path + strlen (xml_path) - 4 - 36, 36);
+        quoted_uuid = sql_quote (uuid);
+        g_free (uuid);
+        sql ("UPDATE %s SET predefined = 1 WHERE uuid = '%s';",
+             table, quoted_uuid);
+        g_free (quoted_uuid);
+      }
+
+  /* Cleanup. */
+
+  g_dir_close (dir);
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 232 to version 233.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_232_to_233 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 232. */
+
+  if (manage_db_version () != 232)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Predefined flag moved to tables. */
+
+  sql ("ALTER TABLE report_formats ADD COLUMN predefined integer;");
+  sql ("ALTER TABLE report_formats_trash ADD COLUMN predefined integer;");
+  sql ("ALTER TABLE port_lists ADD COLUMN predefined integer;");
+  sql ("ALTER TABLE port_lists_trash ADD COLUMN predefined integer;");
+  sql ("ALTER TABLE configs ADD COLUMN predefined integer;");
+  sql ("ALTER TABLE configs_trash ADD COLUMN predefined integer;");
+
+  sql ("UPDATE report_formats SET predefined = 0;");
+  sql ("UPDATE report_formats_trash SET predefined = 0;");
+  sql ("UPDATE port_lists SET predefined = 0;");
+  sql ("UPDATE port_lists_trash SET predefined = 0;");
+  sql ("UPDATE configs SET predefined = 0;");
+  sql ("UPDATE configs_trash SET predefined = 0;");
+
+  sql ("UPDATE report_formats"
+       " SET predefined = 1"
+       " WHERE id IN (SELECT resource FROM resources_predefined"
+       "              WHERE resource_type = 'report_format');");
+
+  migrate_232_to_233_set_predefined ("report_formats", "report_formats");
+  migrate_232_to_233_set_predefined ("configs", "configs");
+  migrate_232_to_233_set_predefined ("port_lists", "port_lists");
+
+  migrate_232_to_233_set_predefined ("report_formats", "report_formats_trash");
+  migrate_232_to_233_set_predefined ("configs", "configs_trash");
+  migrate_232_to_233_set_predefined ("port_lists", "port_lists_trash");
+
+  sql ("DROP TABLE resources_predefined;");
+
+  /* Set the database version to 232. */
+
+  set_db_version (233);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -1823,6 +2339,14 @@ static migrator_t database_migrators[] = {
   {223, migrate_222_to_223},
   {224, migrate_223_to_224},
   {225, migrate_224_to_225},
+  {226, migrate_225_to_226},
+  {227, migrate_226_to_227},
+  {228, migrate_227_to_228},
+  {229, migrate_228_to_229},
+  {230, migrate_229_to_230},
+  {231, migrate_230_to_231},
+  {232, migrate_231_to_232},
+  {233, migrate_232_to_233},
   /* End marker. */
   {-1, NULL}};
 
@@ -2049,6 +2573,7 @@ manage_migrate (GSList *log_config, const gchar *database)
    * Reopen the database before the ANALYZE, in case the schema has changed. */
   cleanup_manage_process (TRUE);
   init_manage_process (database);
+  g_info ("   Analyzing the database. This may take up to several hours.");
   sql ("ANALYZE;");
 
   cleanup_manage_process (TRUE);

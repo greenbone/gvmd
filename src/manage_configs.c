@@ -1,20 +1,19 @@
 /* Copyright (C) 2019 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -43,6 +42,28 @@
 #define G_LOG_DOMAIN "md manage"
 
 
+/* Configs. */
+
+/**
+ * @brief Return whether a config is predefined.
+ *
+ * @param[in]  config_id  UUID of config.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+config_predefined_uuid (const gchar *config_id)
+{
+  config_t config;
+
+  if (find_config_no_acl (config_id, &config)
+      || config == 0)
+    return 0;
+
+  return config_predefined (config);
+}
+
+
 /* Feed configs. */
 
 /**
@@ -55,7 +76,10 @@ feed_dir_configs ()
 {
   static gchar *path = NULL;
   if (path == NULL)
-    path = g_build_filename (GVMD_FEED_DIR, "configs", NULL);
+    path = g_build_filename (GVMD_FEED_DIR,
+                             GMP_VERSION,
+                             "configs",
+                             NULL);
   return path;
 }
 
@@ -120,6 +144,7 @@ update_config_from_file (config_t config, const gchar *path)
   array_t *nvt_selectors, *preferences;
   char *comment, *name, *type, *usage_type;
   const char *config_id;
+  int all_selector;
 
   g_debug ("%s: updating %s", __func__, path);
 
@@ -131,7 +156,8 @@ update_config_from_file (config_t config, const gchar *path)
   /* Parse the data out of the entity. */
 
   switch (parse_config_entity (entity, 0, &config_id, &name, &comment, &type,
-                               &usage_type, &nvt_selectors, &preferences))
+                               &usage_type, &all_selector, &nvt_selectors,
+                               &preferences))
     {
       case 0:
         break;
@@ -148,8 +174,8 @@ update_config_from_file (config_t config, const gchar *path)
 
   /* Update the config. */
 
-  update_config (config, type, name, comment, usage_type, nvt_selectors,
-                 preferences);
+  update_config (config, type, name, comment, usage_type, all_selector,
+                 nvt_selectors, preferences);
 
   /* Cleanup. */
 
@@ -175,6 +201,7 @@ create_config_from_file (const gchar *path)
   char *created_name, *comment, *name, *type, *usage_type;
   const char *config_id;
   config_t new_config;
+  int all_selector;
 
   g_debug ("%s: creating %s", __func__, path);
 
@@ -186,7 +213,8 @@ create_config_from_file (const gchar *path)
   /* Parse the data out of the entity. */
 
   switch (parse_config_entity (config, 0, &config_id, &name, &comment, &type,
-                               &usage_type, &nvt_selectors, &preferences))
+                               &usage_type, &all_selector, &nvt_selectors,
+                               &preferences))
     {
       case 0:
         break;
@@ -207,6 +235,7 @@ create_config_from_file (const gchar *path)
                                 name,
                                 0,              /* Use name exactly as given. */
                                 comment,
+                                all_selector,
                                 nvt_selectors,
                                 preferences,
                                 type,
@@ -320,8 +349,15 @@ sync_config_with_feed (const gchar *path)
   if (find_trash_config_no_acl (uuid, &config) == 0
       && config)
     {
-      g_warning ("%s: ignoring config '%s', as it is in the trashcan",
-                 __func__, uuid);
+      static int warned = 0;
+
+      if (warned == 0)
+        {
+          warned = 1;
+          g_warning ("%s: ignoring a config ('%s'), as it is in the trashcan"
+                     " (will not warn again)",
+                     __func__, uuid);
+        }
       g_free (uuid);
       return;
     }

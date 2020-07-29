@@ -1,20 +1,19 @@
 /* Copyright (C) 2020 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -88,19 +87,6 @@ int
 trash_report_format_writable (report_format_t report_format)
 {
   return trash_report_format_in_use (report_format) == 0;
-}
-
-/**
- * @brief Return whether a report format is predefined.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 1 if predefined, else 0.
- */
-int
-report_format_predefined (report_format_t report_format)
-{
-  return resource_predefined ("report_format", report_format);
 }
 
 /**
@@ -383,7 +369,10 @@ feed_dir_report_formats ()
 {
   static gchar *path = NULL;
   if (path == NULL)
-    path = g_build_filename (GVMD_FEED_DIR, "report_formats", NULL);
+    path = g_build_filename (GVMD_FEED_DIR,
+                             GMP_VERSION,
+                             "report_formats",
+                             NULL);
   return path;
 }
 
@@ -522,13 +511,12 @@ create_report_format_from_file (const gchar *path)
                                        params,
                                        params_options,
                                        signature,
+                                       1,
                                        &new_report_format))
     {
       case 0:
         {
           gchar *uuid;
-
-          resource_set_predefined ("report_format", new_report_format, 1);
 
           uuid = report_format_uuid (new_report_format);
           log_event ("report_format", "Report format", uuid, "created");
@@ -655,8 +643,15 @@ sync_report_format_with_feed (const gchar *path)
   if (find_trash_report_format_no_acl (uuid, &report_format) == 0
       && report_format)
     {
-      g_warning ("%s: ignoring report format '%s', as it is in the trashcan",
-                 __func__, uuid);
+      static int warned = 0;
+
+      if (warned == 0)
+        {
+          warned = 1;
+          g_warning ("%s: ignoring a report format ('%s'), as it is in the trashcan"
+                     " (will not warn again)",
+                     __func__, uuid);
+        }
       g_free (uuid);
       return;
     }

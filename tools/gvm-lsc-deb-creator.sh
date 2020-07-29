@@ -1,21 +1,20 @@
 #!/bin/bash
-# Copyright (C) 2018 Greenbone Networks GmbH
+# Copyright (C) 2018-2020 Greenbone Networks GmbH
 #
-# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # This script generates a Debian package that creates a user for GVM
 # local security checks.
@@ -156,13 +155,13 @@ COPYRIGHT_FILE="${DOC_DATA_DIR}/copyright"
   echo "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/"
   echo ""
   echo "Files: *"
-  echo "Copyright: 2018 Greenbone Networks GmbH"
+  echo "Copyright: 2018-2020 Greenbone Networks GmbH"
   echo "License: GPL-2+ (/usr/share/common-licenses/GPL-2)"
 } > "${COPYRIGHT_FILE}"
 
 # Create data archive
 cd "${DATA_DIR}"
-tar -acf "../data.tar.xz" "${HOME_SUBDIR}" "${DOC_SUBDIR}" -C "${DATA_DIR}"
+tar -C "${DATA_DIR}" -acf "../data.tar.xz" "${HOME_SUBDIR}" "${DOC_SUBDIR}"
 
 
 #

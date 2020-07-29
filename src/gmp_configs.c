@@ -1,26 +1,19 @@
-/* GVM
- * $Id$
- * Description: GVM GMP layer: Configs.
+/* Copyright (C) 2018 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * Copyright:
- * Copyright (C) 2018 Greenbone Networks GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -188,6 +181,7 @@ attr_or_null (entity_t entity, const gchar *name)
  * @param[out] comment               Address for comment.
  * @param[out] type                  Address for type.
  * @param[out] usage_type            Address for usage type.
+ * @param[out] all_selector          True if ALL_SELECTOR was present.
  * @param[out] import_nvt_selectors  Address for selectors.
  * @param[out] import_preferences    Address for preferences.
  *
@@ -197,12 +191,14 @@ int
 parse_config_entity (entity_t config, int require_preferences,
                      const char **config_id, char **name,
                      char **comment, char **type, char **usage_type,
+                     int *all_selector,
                      array_t **import_nvt_selectors,
                      array_t **import_preferences)
 {
   entity_t entity, preferences, nvt_selectors;
 
   *name = *comment = *type = NULL;
+  *all_selector = 0;
 
   if (config_id)
     *config_id = entity_attribute (config, "id");
@@ -244,6 +240,14 @@ parse_config_entity (entity_t config, int require_preferences,
           entity_t include, selector_name, selector_type, selector_fam;
           int import_include;
 
+          if (strcmp (entity_name (nvt_selector), "all_selector") == 0)
+            {
+              array_free (*import_nvt_selectors);
+              *import_nvt_selectors = NULL;
+              *all_selector = 1;
+              break;
+            }
+
           include = entity_child (nvt_selector, "include");
           if (include && strcmp (entity_text (include), "0") == 0)
             import_include = 0;
@@ -263,7 +267,8 @@ parse_config_entity (entity_t config, int require_preferences,
           children = next_entities (children);
         }
 
-      array_terminate (*import_nvt_selectors);
+      if (*import_nvt_selectors)
+        array_terminate (*import_nvt_selectors);
     }
 
   /* Collect NVT preferences. */
@@ -420,6 +425,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
       char *created_name, *comment, *type, *import_name;
       entity_t usage_type;
       array_t *import_nvt_selectors, *import_preferences;
+      int all_selector;
 
       /* Allow user to overwrite usage type. */
       usage_type = entity_child (entity, "usage_type");
@@ -437,7 +443,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
       /* Get the config data from the XML. */
 
       if (parse_config_entity (config, 0, NULL, &import_name, &comment, &type,
-                               NULL, &import_nvt_selectors,
+                               NULL, &all_selector, &import_nvt_selectors,
                                &import_preferences))
         {
           SEND_TO_CLIENT_OR_FAIL
@@ -457,6 +463,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                              import_name,
                              1,                     /* Make name unique. */
                              comment,
+                             all_selector,
                              import_nvt_selectors,
                              import_preferences,
                              type,

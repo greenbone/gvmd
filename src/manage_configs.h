@@ -1,26 +1,19 @@
-/* GVM
- * $Id$
- * Description: GVM management layer: Config headers exported from layer
+/* Copyright (C) 2019 Greenbone Networks GmbH
  *
- * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * Copyright:
- * Copyright (C) 2019 Greenbone Networks GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef _GVMD_MANAGE_CONFIGS_H
@@ -51,7 +44,7 @@ typedef struct
 } nvt_selector_t;
 
 int
-create_config (const char*, const char*, int, const char*, const array_t*,
+create_config (const char*, const char*, int, const char*, int, const array_t*,
                const array_t*, const char*, const char*, config_t*, char**);
 
 int
@@ -78,6 +71,9 @@ config_type (config_t);
 
 char *
 config_nvt_timeout (config_t, const char *);
+
+int
+config_predefined_uuid (const gchar *);
 
 void
 init_user_config_iterator (iterator_t*, config_t, int, int, const char*);
@@ -108,6 +104,9 @@ config_iterator_scanner_trash (iterator_t*);
 
 const char*
 config_iterator_usage_type (iterator_t*);
+
+int
+config_iterator_predefined (iterator_t*);
 
 char*
 config_nvt_selector (config_t);

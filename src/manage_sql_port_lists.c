@@ -1,20 +1,19 @@
 /* Copyright (C) 2020 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -846,6 +845,36 @@ find_trash_port_list_no_acl (const char *uuid, port_list_t *port_list)
 }
 
 /**
+ * @brief Return whether a port list is predefined.
+ *
+ * @param[in]  port_list  Port list.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+port_list_predefined (port_list_t port_list)
+{
+  return sql_int ("SELECT predefined FROM port_lists"
+                  " WHERE id = %llu;",
+                  port_list);
+}
+
+/**
+ * @brief Return whether a trash port list is predefined.
+ *
+ * @param[in]  port_list  Port list.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+trash_port_list_predefined (port_list_t port_list)
+{
+  return sql_int ("SELECT predefined FROM port_lists_trash"
+                  " WHERE id = %llu;",
+                  port_list);
+}
+
+/**
  * @brief Return the UUID of the port list of a port_range.
  *
  * @param[in]  port_range  Port Range UUID.
@@ -1016,13 +1045,14 @@ ranges_sort_merge (array_t *ranges)
  * @param[in]   quoted_name     SQL quoted name of port list.
  * @param[in]   comment         Comment on port list.
  * @param[in]   ranges          Port ranges of port list.
+ * @param[in]   predefined      Whether port list is predefined.
  * @param[out]  port_list       Created port list.
  *
  * @return 0 success.
  */
 static int
 create_port_list_lock (const char *quoted_id, const char *quoted_name,
-                       const char *comment, array_t *ranges,
+                       const char *comment, array_t *ranges, int predefined,
                        port_list_t* port_list)
 {
   gchar *quoted_comment;
@@ -1034,23 +1064,27 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
   quoted_comment = sql_quote (comment);
   if (quoted_id)
     sql ("INSERT INTO port_lists"
-         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " (uuid, owner, name, comment, predefined, creation_time,"
+         "  modification_time)"
          " VALUES"
          " ('%s', (SELECT id FROM users WHERE uuid = '%s'), '%s',"
-         "  '%s', m_now (), m_now ());",
+         "  '%s', %i, m_now (), m_now ());",
          quoted_id,
          current_credentials.uuid,
          quoted_name,
-         quoted_comment);
+         quoted_comment,
+         predefined);
   else
     sql ("INSERT INTO port_lists"
-         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " (uuid, owner, name, comment, predefined, creation_time,"
+         "  modification_time)"
          " VALUES"
          " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s',"
-         "  '%s', m_now (), m_now ());",
+         "  '%s', %i, m_now (), m_now ());",
          current_credentials.uuid,
          quoted_name,
-         quoted_comment);
+         quoted_comment,
+         predefined);
   g_free (quoted_comment);
 
   *port_list = sql_last_insert_id ();
@@ -1078,7 +1112,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
  *
  * @param[in]   name            Name of port list.
  * @param[in]   comment         Comment on port list.
- * @param[in]   port_range      GMP style port range list.  NULL for "default".
+ * @param[in]   port_range      GMP style port range list.
  * @param[out]  port_list       Created port list.
  *
  * @return 0 success, 4 error in port range.
@@ -1092,16 +1126,6 @@ create_port_list_unique (const char *name, const char *comment,
   int suffix, ret;
 
   assert (current_credentials.uuid);
-
-  if (port_range == NULL || (strcmp (port_range, "default") == 0))
-    {
-      if (find_port_list_with_permission (PORT_LIST_UUID_DEFAULT,
-                                          port_list,
-                                          "get_port_lists")
-          || (*port_list == 0))
-        return -1;
-      return 0;
-    }
 
   if (validate_port_range (port_range))
     return 4;
@@ -1121,7 +1145,8 @@ create_port_list_unique (const char *name, const char *comment,
       suffix++;
     }
 
-  ret = create_port_list_lock (NULL, quoted_name, comment, ranges, port_list);
+  ret = create_port_list_lock (NULL, quoted_name, comment, ranges, 0,
+                               port_list);
 
   array_free (ranges);
 
@@ -1138,6 +1163,7 @@ create_port_list_unique (const char *name, const char *comment,
  * @param[in]   port_ranges       GMP port range string.
  * @param[in]   ranges            Array of port ranges of type range_t.
  *                                Overrides port_ranges.
+ * @param[in]   predefined        Whether port list is predefined.
  * @param[out]  port_list_return  Created port list.
  *
  * @return 0 success, 1 port list exists already, 4 error in port_ranges,
@@ -1146,7 +1172,8 @@ create_port_list_unique (const char *name, const char *comment,
 static int
 create_port_list_internal (int check_access, const char *id, const char *name,
                            const char *comment, const char *port_ranges,
-                           array_t *ranges, port_list_t *port_list_return)
+                           array_t *ranges, int predefined,
+                           port_list_t *port_list_return)
 {
   port_list_t port_list;
   int ret;
@@ -1203,7 +1230,8 @@ create_port_list_internal (int check_access, const char *id, const char *name,
         }
 
       ret = create_port_list_lock (quoted_id, quoted_name,
-                                   comment ? comment : "", ranges, &port_list);
+                                   comment ? comment : "", ranges, predefined,
+                                   &port_list);
       g_free (quoted_name);
       if (ret)
         {
@@ -1247,13 +1275,15 @@ create_port_list_internal (int check_access, const char *id, const char *name,
       quoted_name = sql_quote (name);
       quoted_comment = sql_quote (comment ? comment : "");
       sql ("INSERT INTO port_lists"
-           " (uuid, owner, name, comment, creation_time, modification_time)"
+           " (uuid, owner, name, comment, predefined, creation_time,"
+           "  modification_time)"
            " VALUES"
            " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s',"
-           "  '%s', m_now (), m_now ());",
+           "  '%s', %i, m_now (), m_now ());",
            current_credentials.uuid,
            quoted_name,
-           quoted_comment);
+           quoted_comment,
+           predefined);
       g_free (quoted_comment);
       g_free (quoted_name);
 
@@ -1268,7 +1298,7 @@ create_port_list_internal (int check_access, const char *id, const char *name,
 
       ranges = port_range_ranges (port_ranges);
       ret = create_port_list_lock (NULL, quoted_name, comment ? comment : "",
-                                   ranges, &port_list);
+                                   ranges, predefined, &port_list);
 
       g_free (quoted_name);
       array_free (ranges);
@@ -1308,6 +1338,7 @@ create_port_list (const char *id, const char *name, const char *comment,
                   port_list_t *port_list_return)
 {
   return create_port_list_internal (1, id, name, comment, port_ranges, ranges,
+                                    0, /* Predefined. */
                                     port_list_return);
 }
 
@@ -1331,6 +1362,7 @@ create_port_list_no_acl (const char *id, const char *name, const char *comment,
                          port_list_t *port_list_return)
 {
   return create_port_list_internal (0, id, name, comment, port_ranges, ranges,
+                                    1, /* Predefined. */
                                     port_list_return);
 }
 
@@ -1364,6 +1396,8 @@ copy_port_list (const char* name, const char* comment,
       return ret;
     }
 
+  sql ("UPDATE port_lists SET predefined = 0 WHERE id = %llu;", new);
+
   /* Copy port ranges. */
 
   sql ("INSERT INTO port_ranges "
@@ -1376,6 +1410,25 @@ copy_port_list (const char* name, const char* comment,
   sql_commit ();
   if (new_port_list) *new_port_list = new;
   return 0;
+}
+
+/**
+ * @brief Return whether a port list is predefined.
+ *
+ * @param[in]  port_list_id  UUID of port list.
+ *
+ * @return 1 if predefined, else 0.
+ */
+static int
+port_list_predefined_uuid (const gchar *port_list_id)
+{
+  port_list_t port_list;
+
+  if (find_port_list_no_acl (port_list_id, &port_list)
+      || port_list == 0)
+    return 0;
+
+  return port_list_predefined (port_list);
 }
 
 /**
@@ -1404,6 +1457,12 @@ modify_port_list (const char *port_list_id, const char *name,
   assert (current_credentials.uuid);
 
   if (acl_user_may ("modify_port_list") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (port_list_predefined_uuid (port_list_id))
     {
       sql_rollback ();
       return 99;
@@ -1648,8 +1707,9 @@ delete_port_list (const char *port_list_id, int ultimate)
       port_list_t trash_port_list;
 
       sql ("INSERT INTO port_lists_trash"
-           " (uuid, owner, name, comment, creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, creation_time,"
+           " (uuid, owner, name, comment, predefined, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, predefined, creation_time,"
            "        modification_time"
            " FROM port_lists WHERE id = %llu;",
            port_list);
@@ -1803,6 +1863,7 @@ delete_port_range (const char *port_range_id, int dummy)
      "udp",                                                        \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
+   { "predefined", NULL, KEYWORD_TYPE_INTEGER },                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                            \
  }
 
@@ -1851,6 +1912,7 @@ delete_port_range (const char *port_range_id, int dummy)
      "udp",                                                        \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
+   { "predefined", NULL, KEYWORD_TYPE_INTEGER },                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                            \
  }
 
@@ -1964,6 +2026,20 @@ port_list_iterator_count_udp (iterator_t* iterator)
 {
   if (iterator->done) return -1;
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
+}
+
+/**
+ * @brief Get predefined status from a port_list iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+port_list_iterator_predefined (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
 }
 
 /**
@@ -2331,8 +2407,10 @@ restore_port_list (const char *port_list_id)
     }
 
   sql ("INSERT INTO port_lists"
-       " (uuid, owner, name, comment, creation_time, modification_time)"
-       " SELECT uuid, owner, name, comment, creation_time, modification_time"
+       " (uuid, owner, name, comment, predefined, creation_time,"
+       "  modification_time)"
+       " SELECT uuid, owner, name, comment, predefined, creation_time,"
+       "        modification_time"
        " FROM port_lists_trash WHERE id = %llu;",
        port_list);
 
@@ -2491,7 +2569,7 @@ update_port_list (port_list_t port_list, const gchar *name,
   quoted_comment = sql_quote (comment ? comment : "");
   sql ("UPDATE port_lists"
        " SET name = '%s', comment = '%s',"
-       " modification_time = m_now ()"
+       " predefined = 1, modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,

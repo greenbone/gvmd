@@ -1,20 +1,19 @@
 /* Copyright (C) 2009-2019 Greenbone Networks GmbH
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -28,6 +27,7 @@
 #include "iterator.h"
 #include "manage_configs.h"
 #include "manage_get.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <glib.h>
@@ -210,14 +210,8 @@ manage_cert_db_supported_version ();
 int
 manage_cert_db_version ();
 
-char *
-port_name_formatted (const char *);
-
 void
 set_db_version (int version);
-
-char *
-manage_port_name (int, const char *);
 
 int
 manage_migrate (GSList*, const gchar*);
@@ -260,7 +254,8 @@ typedef enum
   TASK_STATUS_DELETE_ULTIMATE_REQUESTED = 14,
   TASK_STATUS_STOP_REQUESTED_GIVEUP = 15,
   TASK_STATUS_DELETE_WAITING = 16,
-  TASK_STATUS_DELETE_ULTIMATE_WAITING = 17
+  TASK_STATUS_DELETE_ULTIMATE_WAITING = 17,
+  TASK_STATUS_QUEUED = 18
 } task_status_t;
 
 /**
@@ -1063,22 +1058,32 @@ user_has_super (const char *, user_t);
 /**
  * @brief SQL list of LSC families.
  */
-#define LSC_FAMILY_LIST                  \
-  "'AIX Local Security Checks',"         \
-  " 'CentOS Local Security Checks',"     \
-  " 'Debian Local Security Checks',"     \
-  " 'Fedora Local Security Checks',"     \
-  " 'FreeBSD Local Security Checks',"    \
-  " 'Gentoo Local Security Checks',"     \
-  " 'HP-UX Local Security Checks',"      \
-  " 'Mac OS X Local Security Checks',"   \
-  " 'Mandrake Local Security Checks',"   \
-  " 'Red Hat Local Security Checks',"    \
-  " 'Solaris Local Security Checks',"    \
-  " 'SuSE Local Security Checks',"       \
-  " 'Ubuntu Local Security Checks',"     \
-  " 'Windows : Microsoft Bulletins',"    \
-  " 'Privilege escalation'"
+#define LSC_FAMILY_LIST                            \
+  "'AIX Local Security Checks',"                   \
+  " 'Amazon Linux Local Security Checks',"         \
+  " 'CentOS Local Security Checks',"               \
+  " 'Citrix Xenserver Local Security Checks',"     \
+  " 'Debian Local Security Checks',"               \
+  " 'F5 Local Security Checks',"                   \
+  " 'Fedora Local Security Checks',"               \
+  " 'FortiOS Local Security Checks',"              \
+  " 'FreeBSD Local Security Checks',"              \
+  " 'Gentoo Local Security Checks',"               \
+  " 'HP-UX Local Security Checks',"                \
+  " 'Huawei EulerOS Local Security Checks',"       \
+  " 'JunOS Local Security Checks',"                \
+  " 'Mac OS X Local Security Checks',"             \
+  " 'Mageia Linux Local Security Checks',"         \
+  " 'Mandrake Local Security Checks',"             \
+  " 'Oracle Linux Local Security Checks',"         \
+  " 'Palo Alto PAN-OS Local Security Checks',"     \
+  " 'Red Hat Local Security Checks',"              \
+  " 'Slackware Local Security Checks',"            \
+  " 'Solaris Local Security Checks',"              \
+  " 'SuSE Local Security Checks',"                 \
+  " 'VMware Local Security Checks',"               \
+  " 'Ubuntu Local Security Checks',"               \
+  " 'Windows : Microsoft Bulletins'"
 
 gboolean
 find_result_with_permission (const char*, result_t*, const char *);
@@ -1088,7 +1093,8 @@ result_uuid (result_t, char **);
 
 int
 result_detection_reference (result_t, report_t, const char *, const char *,
-                            char **, char **, char **, char **);
+                            const char *, char **, char **, char **, char **,
+                            char **);
 
 /* Reports. */
 
@@ -1143,11 +1149,11 @@ qod_from_type (const char *);
 
 result_t
 make_result (task_t, const char*, const char*, const char*, const char*,
-             const char*, const char*);
+             const char*, const char*, const char*);
 
 result_t
 make_osp_result (task_t, const char*, const char*, const char*, const char*,
-                 const char *, const char *, const char *, int);
+                 const char *, const char *, const char *, int, const char*);
 
 result_t
 make_cve_result (task_t, const char*, const char*, double, const char*);
@@ -1387,9 +1393,6 @@ result_iterator_nvt_family (iterator_t *);
 const char*
 result_iterator_nvt_cvss_base (iterator_t *);
 
-void
-result_iterator_nvt_refs_append (GString *, iterator_t *, int *);
-
 const char*
 result_iterator_nvt_tag (iterator_t *);
 
@@ -1436,7 +1439,7 @@ const char*
 result_iterator_date (iterator_t*);
 
 const char*
-result_iterator_detected_by_oid (iterator_t*);
+result_iterator_path (iterator_t*);
 
 const char*
 result_iterator_asset_host_id (iterator_t*);
@@ -1484,7 +1487,7 @@ void
 trim_partial_report (report_t);
 
 int
-report_progress (report_t, task_t, gchar **);
+report_progress (report_t);
 
 gchar *
 manage_report (report_t, report_t, const get_data_t *, report_format_t,
@@ -1504,8 +1507,11 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
 
 /* Reports. */
 
-gchar *
-app_location (report_host_t, const gchar *);
+void
+init_app_locations_iterator (iterator_t*, report_host_t, const gchar *);
+
+const char *
+app_locations_iterator_location (iterator_t *);
 
 void
 init_host_prognosis_iterator (iterator_t*, report_host_t);
@@ -1915,10 +1921,10 @@ int
 nvt_preference_count (const char *);
 
 void
-nvti_refs_append_xml (GString *, const char *, int *);
+xml_append_nvt_refs (GString *, const char *, int *);
 
 gchar*
-get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);
+get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int);
 
 char*
 task_preference_value (task_t, const char *);
@@ -2637,8 +2643,7 @@ find_schedule_with_permission (const char*, schedule_t*, const char*);
 
 int
 create_schedule (const char *, const char*, const char *,
-                 time_t, time_t, time_t, const char *, time_t, const char*,
-                 schedule_t *, gchar**);
+                 const char*, schedule_t *, gchar**);
 
 int
 copy_schedule (const char*, const char*, const char *, schedule_t *);
@@ -2682,38 +2687,13 @@ int
 schedule_period (schedule_t);
 
 int
-schedule_info (schedule_t, int, time_t *, time_t *, int *, int *, int *,
-               gchar **, gchar **);
+schedule_info (schedule_t, int, gchar **, gchar **);
 
 int
 init_schedule_iterator (iterator_t*, const get_data_t *);
 
-time_t
-schedule_iterator_first_time (iterator_t *);
-
-time_t
-schedule_iterator_next_time (iterator_t *);
-
-time_t
-schedule_iterator_period (iterator_t *);
-
-time_t
-schedule_iterator_period_months (iterator_t *);
-
-time_t
-schedule_iterator_duration (iterator_t *);
-
-int
-schedule_iterator_byday (iterator_t *);
-
-gchar *
-schedule_iterator_byday_string (iterator_t *);
-
 const char*
 schedule_iterator_timezone (iterator_t *);
-
-time_t
-schedule_iterator_initial_offset (iterator_t *);
 
 const char*
 schedule_iterator_icalendar (iterator_t *);
@@ -2749,9 +2729,8 @@ int
 schedule_task_iterator_readable (iterator_t*);
 
 int
-modify_schedule (const char *, const char*, const char *, const char*,
-                 time_t, time_t, time_t,
-                 const char *, time_t, const char *, gchar **);
+modify_schedule (const char *, const char *, const char *, const char*,
+                 const char *, gchar **);
 
 int
 get_schedule_timeout ();
@@ -3661,6 +3640,22 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define NVT_FEED 1
 #define SCAP_FEED 2
 #define CERT_FEED 3
+#define GVMD_DATA_FEED 4
+
+const gchar *
+get_feed_lock_path ();
+
+void
+set_feed_lock_path (const char *);
+
+void
+write_sync_start (int);
+
+int
+feed_lockfile_lock (lockfile_t *);
+
+int
+feed_lockfile_unlock (lockfile_t *);
 
 int
 gvm_migrate_secinfo (int);
@@ -3717,9 +3712,6 @@ manage_optimize (GSList *, const gchar *, const gchar *);
 
 
 /* Signal management */
-
-int
-get_termination_signal ();
 
 int
 sql_cancel ();
