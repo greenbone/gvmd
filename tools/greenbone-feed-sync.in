@@ -596,6 +596,7 @@ then
   exit 0
 fi
 (
+  chmod +660 $LOCK_FILE
   flock -n 9
   if [ $? -eq 1 ] ; then
     log_notice "Sync in progress, exiting."
