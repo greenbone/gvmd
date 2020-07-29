@@ -38,7 +38,7 @@ void
 create_config_element_text (const gchar *, gsize);
 
 int
-parse_config_entity (entity_t, int, const char **, char **, char **, char **,
+parse_config_entity (entity_t, const char **, char **, char **, char **,
                      char **, int *, array_t **, array_t **);
 
 #endif /* not _GVMD_GMP_CONFIGS_H */
