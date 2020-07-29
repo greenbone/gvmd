@@ -343,11 +343,6 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
                                                 preference_name,
                                                 preference_type,
                                                 preference_value ?: "");
-                  if (new_preference == NULL)
-                    g_warning ("%s: Preference %s:%s not found",
-                               __func__,
-                               preference_nvt_oid,
-                               preference_id);
                 }
               else
                 {
