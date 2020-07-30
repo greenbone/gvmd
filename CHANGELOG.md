@@ -138,6 +138,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Outdated references to "openvassd" have been updated to "openvas" [#1189](https://github.com/greenbone/gvmd/pull/1189)
 - Quote identifiers in SQL functions using EXECUTE [#1192](https://github.com/greenbone/gvmd/pull/1192)
 - Fix handling of interrupted tasks [#1207](https://github.com/greenbone/gvmd/pull/1207)
+- Allow group access to lockfile and do not append to timestamp file [#1213](https://github.com/greenbone/gvmd/pull/1213)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
