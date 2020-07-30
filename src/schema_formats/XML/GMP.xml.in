@@ -3434,7 +3434,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </pattern>
       <ele>
         <name>name</name>
-        <summary>A name for the asset</summary>
+        <summary>A name for the asset. Must be an IPv4 or IPv6 address for hosts</summary>
         <pattern>
           <t>name</t>
         </pattern>
