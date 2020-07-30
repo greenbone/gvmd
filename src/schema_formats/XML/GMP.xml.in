@@ -3670,7 +3670,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>name</name>
-        <summary>A name for the asset</summary>
+        <summary>A name for the asset. Must be an IPv4 or IPv6 address for hosts</summary>
         <pattern>
           <t>name</t>
         </pattern>
