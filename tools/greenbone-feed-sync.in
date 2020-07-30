@@ -605,6 +605,6 @@ fi
   date > $LOCK_FILE
   sync_feed_data
   echo -n > $LOCK_FILE
-) 9>$LOCK_FILE
+) 9<$LOCK_FILE
 
 exit 0
