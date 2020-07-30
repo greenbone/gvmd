@@ -2050,7 +2050,6 @@ get_nvt_preference_by_id (const char *nvt_oid,
   char *full_name, *id, *name, *type, *nvt_name, *default_value, *hr_name;
   array_t *alts;
   gchar *quoted_oid, *quoted_id;
-  char **full_name_split;
 
   full_name = name = type = nvt_name = default_value = hr_name = NULL;
 
@@ -2084,33 +2083,53 @@ get_nvt_preference_by_id (const char *nvt_oid,
   g_free (quoted_id);
 
   if (full_name == NULL)
-    return NULL;
-
-  /* Try to get components of the full name */
-  full_name_split = g_strsplit (full_name, ":", 4);
-
-  if (g_strv_length (full_name_split) != 4)
     {
-      g_warning ("%s: Preference name %s does not have 4 parts",
-                 __func__, full_name);
-      g_strfreev (full_name_split);
-      free (full_name);
-      return NULL;
+      if (check_name == NULL || strcmp (check_name, "") == 0)
+        {
+          g_warning ("%s: Preference not found and given name is missing/empty",
+                     __func__);
+          return NULL;
+        }
+      if (check_type == NULL || strcmp (check_type, "") == 0)
+        {
+          g_warning ("%s: Preference not found and given name is missing/empty",
+                     __func__);
+          return NULL;
+        }
+      id = strdup (find_id);
+      type = strdup (check_type);
+      name = strdup (check_name);
     }
-  free (full_name);
+  else
+    {
+      char **full_name_split;
 
-  id = strdup (full_name_split[1]);
-  type = strdup (full_name_split[2]);
-  name = strdup (full_name_split[3]);
-  g_strfreev (full_name_split);
+      /* Try to get components of the full name */
+      full_name_split = g_strsplit (full_name, ":", 4);
 
-  if (check_type && strcmp (check_type, "") && strcmp (check_type, type))
-    g_warning ("%s: type of preference %s:%s (%s) has changed from %s to %s.",
-               __func__, nvt_oid, find_id, name, check_type, type);
+      if (g_strv_length (full_name_split) != 4)
+        {
+          g_warning ("%s: Preference name %s does not have 4 parts",
+                     __func__, full_name);
+          g_strfreev (full_name_split);
+          free (full_name);
+          return NULL;
+        }
+      free (full_name);
 
-  if (check_name && strcmp (check_name, "") && strcmp (check_name, name))
-    g_message ("%s: name of preference %s:%s has changed from '%s' to '%s'.",
-               __func__, nvt_oid, find_id, check_name, name);
+      id = strdup (full_name_split[1]);
+      type = strdup (full_name_split[2]);
+      name = strdup (full_name_split[3]);
+      g_strfreev (full_name_split);
+
+      if (check_type && strcmp (check_type, "") && strcmp (check_type, type))
+        g_warning ("%s: type of preference %s:%s (%s) has changed from %s to %s.",
+                   __func__, nvt_oid, find_id, name, check_type, type);
+
+      if (check_name && strcmp (check_name, "") && strcmp (check_name, name))
+        g_message ("%s: name of preference %s:%s has changed from '%s' to '%s'.",
+                   __func__, nvt_oid, find_id, check_name, name);
+    }
 
   alts = make_array ();
   array_terminate (alts);

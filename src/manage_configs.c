@@ -155,7 +155,7 @@ update_config_from_file (config_t config, const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  switch (parse_config_entity (entity, 1, &config_id, &name, &comment, &type,
+  switch (parse_config_entity (entity, &config_id, &name, &comment, &type,
                                &usage_type, &all_selector, &nvt_selectors,
                                &preferences))
     {
@@ -212,7 +212,7 @@ create_config_from_file (const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  switch (parse_config_entity (config, 1, &config_id, &name, &comment, &type,
+  switch (parse_config_entity (config, &config_id, &name, &comment, &type,
                                &usage_type, &all_selector, &nvt_selectors,
                                &preferences))
     {
