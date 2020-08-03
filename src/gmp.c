@@ -12368,9 +12368,9 @@ get_feed_lock_status (const char *lockfile_name, gchar **timestamp)
   ret = 0;
 
   lockfile = open (lockfile_name,
-                   O_RDWR | O_CREAT | O_APPEND,
-                   /* "-rw-r--r--" */
-                   S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
+                   O_RDWR | O_CREAT,
+                   /* "-rw-rw-r--" */
+                   S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
   if (lockfile == -1)
     g_warning ("%s: failed to open lock file '%s': %s", __func__,
                lockfile_name, strerror (errno));

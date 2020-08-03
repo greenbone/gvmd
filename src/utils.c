@@ -551,9 +551,9 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_name,
   else
     full_name = g_build_filename (GVM_RUN_DIR, lockfile_name, NULL);
 
-  fd = open (full_name, O_RDWR | O_CREAT | O_APPEND,
-             /* "-rw-r--r--" */
-             S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
+  fd = open (full_name, O_RDWR | O_CREAT,
+             /* "-rw-rw-r--" */
+             S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
   if (fd == -1)
     {
       g_warning ("Failed to open lock file '%s': %s", full_name,
