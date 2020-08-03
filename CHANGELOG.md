@@ -13,9 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix NVTs list in CVE details [#1098](https://github.com/greenbone/gvmd/pull/1098)
 - Fix handling of duplicate settings [#1104](https://github.com/greenbone/gvmd/pull/1104)
 - Fix XML escaping in setting up GMP scans [#1124](https://github.com/greenbone/gvmd/pull/1124)
-- Fix name handling when creating host assets [#1185](https://github.com/greenbone/gvmd/pull/1185)
+- Fix name handling when creating host assets [#1185](https://github.com/greenbone/gvmd/pull/1185) [#1216](https://github.com/greenbone/gvmd/pull/1216)
 - Quote identifiers in SQL functions using EXECUTE [#1194](https://github.com/greenbone/gvmd/pull/1194)
 - Set ignore_pagination in stop_active_tasks [#1209](https://github.com/greenbone/gvmd/pull/1209)
+
 
 [8.0.3]: https://github.com/greenbone/gvmd/compare/v8.0.2...gvmd-8.0
 
