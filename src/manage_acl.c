@@ -73,6 +73,29 @@ user_may_internal (const char *operation)
 }
 
 /**
+ * @brief Check if a string array contains a string, ignoring case.
+ *
+ * @param[in]  strv    String array.
+ * @param[in]  string  String.
+ *
+ * @return 1 if strv contains string, else 0.
+ */
+static int
+strv_strcasecmp (gchar **strv, const gchar *string)
+{
+  if (string == NULL)
+    return 0;
+
+  while (*strv)
+    if (strcasecmp (*strv, string) == 0)
+      return 1;
+    else
+      strv++;
+
+  return 0;
+}
+
+/**
  * @brief Get commands that the current user may run.
  *
  * @param[in]  disabled_commands  All disabled commands.
@@ -110,8 +133,7 @@ acl_commands (gchar **disabled_commands)
   while ((*all).name)
     {
       if ((disabled_commands == NULL
-           || g_strv_contains ((const char * const *) disabled_commands,
-                               (*all).name)
+           || strv_strcasecmp (disabled_commands, (*all).name)
               == 0)
           && (special_user
               || user_may_internal ((*all).name)))
