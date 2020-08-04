@@ -867,7 +867,7 @@ manage_create_sql_functions ()
        "           OR (owner = (SELECT id FROM users"
        "                        WHERE users.uuid"
        "                              = (SELECT current_setting"
-       "                                         (''gvmd.user.uuid'')))))'"
+       "                                         (''gvmd.user.uuid''))))))'"
        "     USING arg_type, arg_id"
        "     INTO owns;"
        "     RETURN owns;"
