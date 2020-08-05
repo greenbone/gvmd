@@ -81,7 +81,7 @@ user_may_internal (const char *operation)
  * @return 1 if strv contains string, else 0.
  */
 static int
-strv_strcasecmp (gchar **strv, const gchar *string)
+strv_case_eq (gchar **strv, const gchar *string)
 {
   if (string == NULL)
     return 0;
@@ -133,7 +133,7 @@ acl_commands (gchar **disabled_commands)
   while ((*all).name)
     {
       if ((disabled_commands == NULL
-           || strv_strcasecmp (disabled_commands, (*all).name)
+           || strv_case_eq (disabled_commands, (*all).name)
               == 0)
           && (special_user
               || user_may_internal ((*all).name)))
