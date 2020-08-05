@@ -22548,6 +22548,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Modification time</summary>
           </column>
           <column>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum QoD of the vulnerability</summary>
+          </column>
+          <column>
             <name>results</name>
             <type>integer</type>
             <summary>Number of results</summary>
