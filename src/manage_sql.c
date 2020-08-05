@@ -25250,6 +25250,49 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
 }
 
 /**
+ * @brief Test if two strings are equal, ignoring whitespace.
+ *
+ * @param[in]  one  First string.
+ * @param[in]  two  Second string.
+ *
+ * @return 1 if equal, else 0.
+ */
+static int
+streq_ignore_ws (const gchar *one, const gchar *two)
+{
+  if (one == NULL)
+    return two == NULL;
+  if (two == NULL)
+    return 0;
+
+  while (1)
+    {
+      /* Skip space in both. */
+      while (isspace (*one))
+        one++;
+      while (isspace (*two))
+        two++;
+
+      /* Check for end. */
+      if (*one == '\0')
+        break;
+      if (*two == '\0')
+        return 0;
+
+      /* Compare. */
+      if (*one != *two)
+        return 0;
+
+      /* Next. */
+      one++;
+      two++;
+    }
+  if (*two)
+    return 0;
+  return 1;
+}
+
+/**
  * @brief Compare two results.
  *
  * @param[in]  results        Iterator containing first result.
@@ -25285,16 +25328,29 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
           delta_descr ? delta_descr : "NULL",
           (descr && delta_descr) ? strcmp (descr, delta_descr) : 0);
 
-  if (descr && delta_descr && strcmp (descr, delta_descr))
+  /* This comparison ignores whitespace to match the diff output created by
+   * strdiff in gmp.c.  The down side of this is that the comparison may be
+   * affected by the locale.
+   *
+   * An alternate would be to use the strdiff result as the comparison, but
+   * strdiff is only called for the results on the page (and not for the
+   * rest of the results, which must also be compared for the counts).
+   * Using strdiff for all results could also be slow, because it's running
+   * the diff command. */
+  if (descr && delta_descr && (streq_ignore_ws (descr, delta_descr) == 0))
     return COMPARE_RESULTS_CHANGED;
 
   return COMPARE_RESULTS_SAME;
 }
 
 /**
- * @brief Compare two results, writing associated XML to a buffer.
+ * @brief Compare two results, optionally writing associated XML to a buffer.
  *
- * @param[in]  buffer         Buffer.
+ * This is called with buffer NULL to compare results after the page limit
+ * (filter keyword "max") is reached.  These results need to be compared to be
+ * included in the counts.
+ *
+ * @param[in]  buffer         Buffer.  NULL to skip writing to buffer.
  * @param[in]  results        Iterator containing first result.
  * @param[in]  delta_results  Iterator containing second result.
  * @param[in]  task           Task associated with report.
@@ -25355,7 +25411,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "changed",
                                   delta_results,
-                                  1,
+                                  /* This is the only case that uses 1. */
+                                  1,  /* Whether result is "changed". */
                                   -1,
                                   0);
           }

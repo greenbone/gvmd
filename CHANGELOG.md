@@ -140,6 +140,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Quote identifiers in SQL functions using EXECUTE [#1192](https://github.com/greenbone/gvmd/pull/1192)
 - Fix handling of interrupted tasks [#1207](https://github.com/greenbone/gvmd/pull/1207)
 - Allow group access to lockfile and fix growing or empty timestamp [#1213](https://github.com/greenbone/gvmd/pull/1213)
+- Ignore whitespace when checking for changed delta results [#1219](https://github.com/greenbone/gvmd/pull/1219)
 - Check permissions when applying tag in filter [#1222](https://github.com/greenbone/gvmd/pull/1222)
 
 ### Removed
