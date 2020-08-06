@@ -34,6 +34,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Trim malloc heap after updating cache [#1085](https://github.com/greenbone/gvmd/pull/1085)
 - Handle QUEUED osp scan status. [#1113](https://github.com/greenbone/gvmd/pull/1113)
 - Add time placeholders for SCP path [#1164](https://github.com/greenbone/gvmd/pull/1164)
+- Expand detection information of results [#1182](https://github.com/greenbone/gvmd/pull/1182)
+- Add filter columns for special NVT tags [#1199](https://github.com/greenbone/gvmd/pull/1199)
+- Add currently_syncing for NVTs in GMP get_feeds [#1210](https://github.com/greenbone/gvmd/pull/1210)
+- Add logging for ANALYZE at end of migration [#1211](https://github.com/greenbone/gvmd/pull/1211)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
@@ -60,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reduce the memory cache of NVTs [#1076](https://github.com/greenbone/gvmd/pull/1076)
 - Sync SCAP using a second schema [#1111](https://github.com/greenbone/gvmd/pull/1111)
 - Use error variable in osp_get_vts_version(). [#1159](https://github.com/greenbone/gvmd/pull/1159)
+- Include unknown preferences when uploading or syncing configs [#1005](https://github.com/greenbone/gvmd/pull/1005)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
@@ -128,6 +133,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove user from tags when deleting user [#1161](https://github.com/greenbone/gvmd/pull/1161)
 - Handle INTERRUPTED scans [#1146](https://github.com/greenbone/gvmd/pull/1146)
 - Check hosts in MODIFY_OVERRIDE, as in CREATE_OVERRIDE [#1162](https://github.com/greenbone/gvmd/pull/1162)
+- Preserve task "once" value [#1176](https://github.com/greenbone/gvmd/pull/1176)
+- Check number of args to ensure period_offsets is 0 [#1175](https://github.com/greenbone/gvmd/pull/1175)
+- Fix name handling when creating host assets [#1183](https://github.com/greenbone/gvmd/pull/1183) [#1214](https://github.com/greenbone/gvmd/pull/1214)
+- Outdated references to "openvassd" have been updated to "openvas" [#1189](https://github.com/greenbone/gvmd/pull/1189)
+- Quote identifiers in SQL functions using EXECUTE [#1192](https://github.com/greenbone/gvmd/pull/1192)
+- Fix handling of interrupted tasks [#1207](https://github.com/greenbone/gvmd/pull/1207)
+- Allow group access to lockfile and fix growing or empty timestamp [#1213](https://github.com/greenbone/gvmd/pull/1213)
+- Ignore whitespace when checking for changed delta results [#1219](https://github.com/greenbone/gvmd/pull/1219)
+- Check permissions when applying tag in filter [#1222](https://github.com/greenbone/gvmd/pull/1222)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
@@ -189,7 +203,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The details attribute of GET_REPORTS now defaults to 0 [#747](https://github.com/greenbone/gvmd/pull/747)
 - Incoming VT timestamps via OSP are now assumed to be seconds since epoch [#754](https://github.com/greenbone/gvmd/pull/754)
 - Accelerate NVT feed update [#757](https://github.com/greenbone/gvmd/pull/757)
-- Combine sync scripts and add GVMd data sync [#1155](https://github.com/greenbone/gvmd/pull/1155)
+- Combine sync scripts and add GVMd data sync [#1155](https://github.com/greenbone/gvmd/pull/1155) [#1201](https://github.com/greenbone/gvmd/pull/1201)
 
 ### Fixed
 - A PostgreSQL statement order issue [#611](https://github.com/greenbone/gvmd/issues/611) has been addressed [#642](https://github.com/greenbone/gvmd/pull/642)

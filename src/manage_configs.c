@@ -42,6 +42,28 @@
 #define G_LOG_DOMAIN "md manage"
 
 
+/* Configs. */
+
+/**
+ * @brief Return whether a config is predefined.
+ *
+ * @param[in]  config_id  UUID of config.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+config_predefined_uuid (const gchar *config_id)
+{
+  config_t config;
+
+  if (find_config_no_acl (config_id, &config)
+      || config == 0)
+    return 0;
+
+  return config_predefined (config);
+}
+
+
 /* Feed configs. */
 
 /**
@@ -133,7 +155,7 @@ update_config_from_file (config_t config, const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  switch (parse_config_entity (entity, 1, &config_id, &name, &comment, &type,
+  switch (parse_config_entity (entity, &config_id, &name, &comment, &type,
                                &usage_type, &all_selector, &nvt_selectors,
                                &preferences))
     {
@@ -190,7 +212,7 @@ create_config_from_file (const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  switch (parse_config_entity (config, 1, &config_id, &name, &comment, &type,
+  switch (parse_config_entity (config, &config_id, &name, &comment, &type,
                                &usage_type, &all_selector, &nvt_selectors,
                                &preferences))
     {

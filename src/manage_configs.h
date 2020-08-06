@@ -72,6 +72,9 @@ config_type (config_t);
 char *
 config_nvt_timeout (config_t, const char *);
 
+int
+config_predefined_uuid (const gchar *);
+
 void
 init_user_config_iterator (iterator_t*, config_t, int, int, const char*);
 
@@ -101,6 +104,9 @@ config_iterator_scanner_trash (iterator_t*);
 
 const char*
 config_iterator_usage_type (iterator_t*);
+
+int
+config_iterator_predefined (iterator_t*);
 
 char*
 config_nvt_selector (config_t);

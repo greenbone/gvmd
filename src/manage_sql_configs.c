@@ -2050,7 +2050,6 @@ get_nvt_preference_by_id (const char *nvt_oid,
   char *full_name, *id, *name, *type, *nvt_name, *default_value, *hr_name;
   array_t *alts;
   gchar *quoted_oid, *quoted_id;
-  char **full_name_split;
 
   full_name = name = type = nvt_name = default_value = hr_name = NULL;
 
@@ -2084,33 +2083,53 @@ get_nvt_preference_by_id (const char *nvt_oid,
   g_free (quoted_id);
 
   if (full_name == NULL)
-    return NULL;
-
-  /* Try to get components of the full name */
-  full_name_split = g_strsplit (full_name, ":", 4);
-
-  if (g_strv_length (full_name_split) != 4)
     {
-      g_warning ("%s: Preference name %s does not have 4 parts",
-                 __func__, full_name);
-      g_strfreev (full_name_split);
-      free (full_name);
-      return NULL;
+      if (check_name == NULL || strcmp (check_name, "") == 0)
+        {
+          g_warning ("%s: Preference not found and given name is missing/empty",
+                     __func__);
+          return NULL;
+        }
+      if (check_type == NULL || strcmp (check_type, "") == 0)
+        {
+          g_warning ("%s: Preference not found and given name is missing/empty",
+                     __func__);
+          return NULL;
+        }
+      id = strdup (find_id);
+      type = strdup (check_type);
+      name = strdup (check_name);
     }
-  free (full_name);
+  else
+    {
+      char **full_name_split;
 
-  id = strdup (full_name_split[1]);
-  type = strdup (full_name_split[2]);
-  name = strdup (full_name_split[3]);
-  g_strfreev (full_name_split);
+      /* Try to get components of the full name */
+      full_name_split = g_strsplit (full_name, ":", 4);
 
-  if (check_type && strcmp (check_type, "") && strcmp (check_type, type))
-    g_warning ("%s: type of preference %s:%s (%s) has changed from %s to %s.",
-               __func__, nvt_oid, find_id, name, check_type, type);
+      if (g_strv_length (full_name_split) != 4)
+        {
+          g_warning ("%s: Preference name %s does not have 4 parts",
+                     __func__, full_name);
+          g_strfreev (full_name_split);
+          free (full_name);
+          return NULL;
+        }
+      free (full_name);
 
-  if (check_name && strcmp (check_name, "") && strcmp (check_name, name))
-    g_message ("%s: name of preference %s:%s has changed from '%s' to '%s'.",
-               __func__, nvt_oid, find_id, check_name, name);
+      id = strdup (full_name_split[1]);
+      type = strdup (full_name_split[2]);
+      name = strdup (full_name_split[3]);
+      g_strfreev (full_name_split);
+
+      if (check_type && strcmp (check_type, "") && strcmp (check_type, type))
+        g_warning ("%s: type of preference %s:%s (%s) has changed from %s to %s.",
+                   __func__, nvt_oid, find_id, name, check_type, type);
+
+      if (check_name && strcmp (check_name, "") && strcmp (check_name, name))
+        g_message ("%s: name of preference %s:%s has changed from '%s' to '%s'.",
+                   __func__, nvt_oid, find_id, check_name, name);
+    }
 
   alts = make_array ();
   array_terminate (alts);
@@ -2287,7 +2306,8 @@ config_insert_preferences (config_t config,
  * @param[in]   preferences    Preferences.
  * @param[in]   config_type    Config type.
  * @param[in]   usage_type     The usage type ("scan" or "policy")
- * @param[in]   allow_errors  Whether certain errors are allowed.
+ * @param[in]   allow_errors   Whether certain errors are allowed.
+ * @param[in]   predefined     Whether config is predefined.
  * @param[out]  config         On success the config.
  * @param[out]  name           On success the name of the config.
  *
@@ -2303,7 +2323,8 @@ create_config_internal (int check_access, const char *config_id,
                         const array_t *selectors /* nvt_selector_t. */,
                         const array_t *preferences /* preference_t. */,
                         const char *config_type, const char *usage_type,
-                        int allow_errors, config_t *config, char **name)
+                        int allow_errors, int predefined, config_t *config,
+                        char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
@@ -2362,10 +2383,10 @@ create_config_internal (int check_access, const char *config_id,
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-           " type, creation_time, modification_time, usage_type)"
+           " type, creation_time, modification_time, usage_type, predefined)"
            " VALUES (%s%s%s, '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', m_now (), m_now (), '%s');",
+           " '%s', '%s', '%s', m_now (), m_now (), '%s', %i);",
            config_id ? "'" : "",
            config_id ? config_id : "make_uuid ()",
            config_id ? "'" : "",
@@ -2374,15 +2395,16 @@ create_config_internal (int check_access, const char *config_id,
            selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
            quoted_comment,
            quoted_type,
-           actual_usage_type);
+           actual_usage_type,
+           predefined);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-         " type, creation_time, modification_time, usage_type)"
+         " type, creation_time, modification_time, usage_type, predefined)"
          " VALUES (%s%s%s, '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', '%s', m_now (), m_now (), '%s');",
+         " '%s', '', '%s', m_now (), m_now (), '%s', %i);",
          config_id ? "'" : "",
          config_id ? config_id : "make_uuid ()",
          config_id ? "'" : "",
@@ -2390,7 +2412,8 @@ create_config_internal (int check_access, const char *config_id,
          current_credentials.uuid,
          selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
          quoted_type,
-         actual_usage_type);
+         actual_usage_type,
+         predefined);
   g_free (quoted_candidate_name);
   g_free (quoted_type);
 
@@ -2458,7 +2481,9 @@ create_config (const char *config_id, const char *proposed_name,
 {
   return create_config_internal (1, config_id, proposed_name, make_name_unique,
                                  comment, all_selector, selectors, preferences,
-                                 config_type, usage_type, 1, config, name);
+                                 config_type, usage_type, 1,
+                                 0, /* Predefined. */
+                                 config, name);
 }
 
 /**
@@ -2494,7 +2519,9 @@ create_config_no_acl (const char *config_id, const char *proposed_name,
 {
   return create_config_internal (0, config_id, proposed_name, make_name_unique,
                                  comment, all_selector, selectors, preferences,
-                                 config_type, usage_type, 0, config, name);
+                                 config_type, usage_type, 0,
+                                 1, /* Predefined. */
+                                 config, name);
 }
 
 /**
@@ -2743,6 +2770,36 @@ config_scanner (config_t config)
 }
 
 /**
+ * @brief Return whether a config is predefined.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+config_predefined (config_t config)
+{
+  return sql_int ("SELECT predefined FROM configs"
+                  " WHERE id = %llu;",
+                  config);
+}
+
+/**
+ * @brief Return whether a trash config is predefined.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+trash_config_predefined (config_t config)
+{
+  return sql_int ("SELECT predefined FROM configs_trash"
+                  " WHERE id = %llu;",
+                  config);
+}
+
+/**
  * @brief Get the timeout value for an NVT in a config.
  *
  * @param[in]  config  Config.
@@ -2911,6 +2968,8 @@ copy_config (const char* name, const char* comment, const char *config_id,
       return ret;
     }
 
+  sql ("UPDATE configs SET predefined = 0 WHERE id = %llu;", new);
+
   sql ("INSERT INTO config_preferences (config, type, name, value,"
        "                                default_value, hr_name)"
        " SELECT %llu, type, name, value, default_value, hr_name"
@@ -3074,11 +3133,11 @@ delete_config (const char *config_id, int ultimate)
       sql ("INSERT INTO configs_trash"
            " (uuid, owner, name, nvt_selector, comment, family_count,"
            "  nvt_count, families_growing, nvts_growing, type, scanner,"
-           "  creation_time, modification_time,"
+           "  predefined, creation_time, modification_time,"
            "  scanner_location, usage_type)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
            "        nvt_count, families_growing, nvts_growing, type, scanner,"
-           "        creation_time, modification_time,"
+           "        predefined, creation_time, modification_time,"
            "        " G_STRINGIFY (LOCATION_TABLE) ", usage_type"
            " FROM configs WHERE id = %llu;",
            config);
@@ -3492,6 +3551,22 @@ config_iterator_scanner_trash (iterator_t* iterator)
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 8);
+
+/**
+ * @brief Get predefined status from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+config_iterator_predefined (iterator_t* iterator)
+{
+  int ret = 0;
+  if (iterator->done) return 0;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+  return ret;
+}
 
 /**
  * @brief Return whether a config is referenced by a task.
@@ -4670,7 +4745,7 @@ update_config (config_t config, const gchar *type, const gchar *name,
   quoted_type = sql_quote (type);
   sql ("UPDATE configs"
        " SET name = '%s', comment = '%s', type = '%s', usage_type = '%s',"
-       " modification_time = m_now ()"
+       " predefined = 1, modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
