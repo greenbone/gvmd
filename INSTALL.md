@@ -327,6 +327,18 @@ clients like the Greenbone Security Assistant (GSA).
 Also, the new user can change their password via GSA.
 
 
+## Keeping the feeds up-to-date
+
+The `SCAP` and `CERT` Feeds should be kept up-to-date by calling the
+following scripts regularely (e.g. via a cron entry):
+
+    greenbone-scapdata-sync
+    greenbone-certdata-sync
+
+Please note: The `CERT` feed sync depends on data provided by the `SCAP` feed
+and should be called after syncing the latter.
+
+
 ## Configure the default OSPD scanner socket path
 
 By default, Manager tries to connect to the default OSPD scanner via the following path:
