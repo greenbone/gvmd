@@ -257,6 +257,19 @@ The UUIDs of all created users can be found using
     gvmd --get-users --verbose
 
 
+## Keeping the feeds up-to-date
+
+The `gvmd Data`, `SCAP` and `CERT` Feeds should be kept up-to-date by calling the
+`greenbone-feed-sync` script regularely (e.g. via a cron entry):
+
+    greenbone-feed-sync --type GVMD_DATA
+    greenbone-feed-sync --type SCAP
+    greenbone-feed-sync --type CERT
+
+Please note: The `CERT` feed sync depends on data provided by the `SCAP` feed
+and should be called after syncing the latter.
+
+
 ## Configure the default OSPD scanner socket path
 
 By default, Manager tries to connect to the default OSPD scanner via the following path:
