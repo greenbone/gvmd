@@ -433,26 +433,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <p>
       <manref name="openvassd" section="8"/>,
       <manref name="gsad" section="8"/>,
-      <manref name="gvm-cli" section="8"/>,
+      <manref name="ospd-openvas" section="8"/>,
+      <manref name="greenbone-certdata-sync" section="8"/>,
+      <manref name="greenbone-scapdata-sync" section="8"/>,
     </p>
   </section>
 
-  <section name="MORE INFORMATION ABOUT Greenbone Vulnerability Management">
+  <section name="MORE INFORMATION">
     <p>
       The canonical places where you will find more information
       about the Greenbone Vulnerability Manager are:
     </p>
     <p>
       <url href="https://community.greenbone.net"/>
-        (Community portal)
+        (Community Portal)
     </p>
     <p>
       <url href="https://github.com/greenbone"/>
         (Development Platform)
     </p>
     <p>
-      <url href="https://greenbone.net"/>
-        (Greenbone website)
+      <url href="https://www.greenbone.net"/>
+        (Greenbone Website)
     </p>
   </section>
 
