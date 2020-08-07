@@ -274,7 +274,7 @@ and should be called after syncing the latter.
 
 By default, Manager tries to connect to the default OSPD scanner via the following path:
 
-    /tmp/ospd.sock
+    /var/run/ospd/ospd.sock
 
 If this path doesn't match your setup you need to change the socket path accordingly.
 
@@ -284,7 +284,7 @@ Get the UUID of the `OpenVAS Default` scanner:
 
 Update the path (example, path needs to be adapted accordingly):
 
-    gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd.sock
+    gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd/ospd-openvas.sock
 
 
 ## Logging Configuration
