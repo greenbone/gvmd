@@ -257,11 +257,24 @@ The UUIDs of all created users can be found using
     gvmd --get-users --verbose
 
 
+## Keeping the feeds up-to-date
+
+The `gvmd Data`, `SCAP` and `CERT` Feeds should be kept up-to-date by calling the
+`greenbone-feed-sync` script regularely (e.g. via a cron entry):
+
+    greenbone-feed-sync --type GVMD_DATA
+    greenbone-feed-sync --type SCAP
+    greenbone-feed-sync --type CERT
+
+Please note: The `CERT` feed sync depends on data provided by the `SCAP` feed
+and should be called after syncing the latter.
+
+
 ## Configure the default OSPD scanner socket path
 
 By default, Manager tries to connect to the default OSPD scanner via the following path:
 
-    /tmp/ospd.sock
+    /var/run/ospd/ospd.sock
 
 If this path doesn't match your setup you need to change the socket path accordingly.
 
@@ -271,7 +284,7 @@ Get the UUID of the `OpenVAS Default` scanner:
 
 Update the path (example, path needs to be adapted accordingly):
 
-    gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd.sock
+    gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd/ospd-openvas.sock
 
 
 ## Logging Configuration
@@ -626,6 +639,8 @@ Prerequisites for Tipping Point alert:
 Prerequisites for key generation on systems with low entropy:
 * haveged (or a similar tool)
 
+Prerequisites for S/MIME suport (e.g. email encryption):
+* GNU privacy guard - S/MIME version
 
 ## Static code analysis with the Clang Static Analyzer
 

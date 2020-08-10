@@ -65,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Sync SCAP using a second schema [#1111](https://github.com/greenbone/gvmd/pull/1111)
 - Use error variable in osp_get_vts_version(). [#1159](https://github.com/greenbone/gvmd/pull/1159)
 - Include unknown preferences when uploading or syncing configs [#1005](https://github.com/greenbone/gvmd/pull/1005)
+- Set the default OSPD unix socket path to /var/run/ospd/ospd.sock [#1238](https://github.com/greenbone/gvmd/pull/1238)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
@@ -143,6 +144,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ignore whitespace when checking for changed delta results [#1219](https://github.com/greenbone/gvmd/pull/1219)
 - Check permissions when applying tag in filter [#1222](https://github.com/greenbone/gvmd/pull/1222)
 - Add missing min_qod to FILTERS in GET_VULNS response [#1224](https://github.com/greenbone/gvmd/pull/1224)
+- Improve EXE installer NSIS script generation [#1226](https://github.com/greenbone/gvmd/pull/1226)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)

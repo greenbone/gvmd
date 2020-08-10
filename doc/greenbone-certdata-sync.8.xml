@@ -98,16 +98,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </p>
   </section>
 
-  <section name="MORE INFORMATION ABOUT THE OpenVAS PROJECT">
+  <section name="MORE INFORMATION">
     <p>
       The canonical places where you will find more information
-      about the OpenVAS project are:
+      about the Greenbone Vulnerability Management are:
 
-      <url href="http://www.openvas.org/"/>
-        (Official site)
+      <url href="https://community.greenbone.net"/>
+        (Community Portal)
 
-      <url href="http://wald.intevation.org/projects/openvas/"/>
+      <url href="https://github.com/greenbone"/>
         (Development Platform)
+
+      <url href="https://www.greenbone.net"/>
+        (Greenbone Website)
     </p>
   </section>
 

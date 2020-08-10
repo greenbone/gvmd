@@ -214,7 +214,7 @@ init_feed_type () {
   then
     [ -r "@GVM_SYSCONF_DIR@/greenbone-data-objects-sync.conf" ] && . "@GVM_SYSCONF_DIR@/greenbone-data-objects-sync.conf"
 
-    FEED_TYPE_LONG="GVMd Data"
+    FEED_TYPE_LONG="gvmd Data"
     FEED_DIR="@GVMD_FEED_DIR@"
     TIMESTAMP="$FEED_DIR/timestamp"
     SCRIPT_ID="GVMD_DATA_SYNC"
@@ -231,11 +231,11 @@ init_feed_type () {
 
     if [ -e $ACCESSKEY ] ; then
       if [ -z "$FEED_NAME" ] ; then
-        FEED_NAME="Greenbone GVMd Data Feed"
+        FEED_NAME="Greenbone gvmd Data Feed"
       fi
     else
       if [ -z "$FEED_NAME" ] ; then
-        FEED_NAME="Greenbone Community GVMd Data Feed"
+        FEED_NAME="Greenbone Community gvmd Data Feed"
       fi
     fi
   else
