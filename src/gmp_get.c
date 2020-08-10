@@ -615,16 +615,21 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
             }
           g_free (value);
 
-          value = filter_term_value (new_filter, "apply_overrides");
-          if (value == NULL)
+          if ((strcmp (type, "task") == 0)
+              || (strcmp (type, "report") == 0)
+              || (strcmp (type, "result") == 0))
             {
-              filter = new_filter;
-              new_filter = g_strdup_printf ("apply_overrides=%i %s",
-                                            APPLY_OVERRIDES_DEFAULT,
-                                            filter);
-              g_free (filter);
+              value = filter_term_value (new_filter, "apply_overrides");
+              if (value == NULL)
+                {
+                  filter = new_filter;
+                  new_filter = g_strdup_printf ("apply_overrides=%i %s",
+                                                APPLY_OVERRIDES_DEFAULT,
+                                                filter);
+                  g_free (filter);
+                }
+              g_free (value);
             }
-          g_free (value);
         }
       filter = new_filter;
     }
@@ -632,11 +637,13 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
     {
       if ((strcmp (type, "task") == 0)
           || (strcmp (type, "report") == 0)
-          || (strcmp (type, "result") == 0)
-          || (strcmp (type, "vuln") == 0))
+          || (strcmp (type, "result") == 0))
         filter = manage_clean_filter("apply_overrides="
                                      G_STRINGIFY (APPLY_OVERRIDES_DEFAULT)
                                      " min_qod="
+                                     G_STRINGIFY (MIN_QOD_DEFAULT));
+      else if (strcmp (type, "vuln") == 0)
+        filter = manage_clean_filter(" min_qod="
                                      G_STRINGIFY (MIN_QOD_DEFAULT));
       else
         filter = manage_clean_filter ("");
