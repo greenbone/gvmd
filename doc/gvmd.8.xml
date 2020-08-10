@@ -425,7 +425,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <section name="SIGNALS">
     <p>SIGHUP causes gvmd to rebuild the database with information from
-       the Scanner (openvassd).</p>
+       the Scanner (openvas).</p>
   </section>
 
   <section name="EXAMPLES">
@@ -436,7 +436,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <section name="SEE ALSO">
     <p>
-      <manref name="openvassd" section="8"/>,
+      <manref name="openvas" section="8"/>,
       <manref name="gsad" section="8"/>,
       <manref name="gvm-cli" section="8"/>,
     </p>

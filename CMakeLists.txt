@@ -65,7 +65,7 @@ endif (${PROJECT_VERSION_MINOR_LENGTH} GREATER 1)
 if (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
   set (PROJECT_VERSION_SUFFIX ".${PROJECT_VERSION_PATCH}")
 else (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
-  set (PROJECT_VERSION_SUFFIX "+alpha")
+  set (PROJECT_VERSION_SUFFIX "+beta1")
 endif (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
 
 set (PROJECT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR_STRING}${PROJECT_VERSION_SUFFIX}${GIT_REVISION}")
@@ -99,7 +99,7 @@ include (CPack)
 
 ## Variables
 
-set (GVMD_DATABASE_VERSION 231)
+set (GVMD_DATABASE_VERSION 233)
 
 set (GVMD_SCAP_DATABASE_VERSION 16)
 
@@ -237,7 +237,7 @@ configure_file (doc/example-gvm-manage-certs.conf.in doc/example-gvm-manage-cert
 configure_file (VERSION.in VERSION)
 configure_file (src/gvmd_log_conf.cmake_in src/gvmd_log.conf)
 configure_file (src/schema_formats/XML/GMP.xml.in src/schema_formats/XML/GMP.xml @ONLY)
-configure_file (tools/greenbone-gvmd-feed-sync.in tools/greenbone-gvmd-feed-sync @ONLY)
+configure_file (tools/greenbone-feed-sync.in tools/greenbone-feed-sync @ONLY)
 configure_file (tools/greenbone-scapdata-sync.in tools/greenbone-scapdata-sync @ONLY)
 configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @ONLY)
 configure_file (tools/gvm-manage-certs.in tools/gvm-manage-certs @ONLY)
@@ -384,7 +384,7 @@ install (FILES tools/cert_bund_getbyname.xsl tools/dfn_cert_getbyname.xsl
          DESTINATION ${GVM_CERT_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
-install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-gvmd-feed-sync
+install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-feed-sync
          DESTINATION ${SBINDIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

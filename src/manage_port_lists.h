@@ -33,6 +33,12 @@ gboolean
 find_port_range (const char*, port_list_t*);
 
 int
+trash_port_list_predefined (port_list_t);
+
+int
+port_list_predefined (port_list_t);
+
+int
 create_port_list (const char *, const char *, const char *, const char *,
                   array_t *, port_list_t *);
 
@@ -66,6 +72,9 @@ port_list_iterator_count_tcp (iterator_t *);
 
 int
 port_list_iterator_count_udp (iterator_t *);
+
+int
+port_list_iterator_predefined (iterator_t *);
 
 char*
 port_list_uuid (port_list_t);

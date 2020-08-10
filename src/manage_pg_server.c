@@ -136,7 +136,7 @@ PG_FUNCTION_INFO_V1 (sql_next_time_ical);
 /**
  * @brief Get the next time given schedule times.
  *
- * This is a callback for a SQL function of four to six arguments.
+ * This is a callback for a SQL function of one to three arguments.
  *
  * @return Postgres Datum.
  */
@@ -168,7 +168,10 @@ sql_next_time_ical (PG_FUNCTION_ARGS)
       zone = textndup (timezone_arg, VARSIZE (timezone_arg) - VARHDRSZ);
     }
 
-  periods_offset = PG_GETARG_INT32 (2);
+  if (PG_NARGS() < 3)
+    periods_offset = 0;
+  else
+    periods_offset = PG_GETARG_INT32 (2);
 
   ret = icalendar_next_time_from_string (ical_string, zone,
                                          periods_offset);

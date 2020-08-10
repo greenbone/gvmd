@@ -44,6 +44,7 @@
    { "scanner", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                                       \
    { "usage_type", NULL, KEYWORD_TYPE_STRING },                               \
+   { "predefined", NULL, KEYWORD_TYPE_INTEGER },                              \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -62,6 +63,7 @@
    { "scanner", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "scanner_location", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "usage_type", NULL, KEYWORD_TYPE_STRING },                               \
+   { "predefined", NULL, KEYWORD_TYPE_INTEGER },                              \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
@@ -78,6 +80,12 @@ find_config_no_acl (const char *, config_t *);
 
 gboolean
 find_trash_config_no_acl (const char *, config_t *);
+
+int
+config_predefined (config_t config);
+
+int
+trash_config_predefined (config_t);
 
 void
 migrate_predefined_configs ();

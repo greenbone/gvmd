@@ -2651,6 +2651,10 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
           "  (SELECT * FROM tags"
           "   WHERE tags.name = '%s'"
           "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
           "   AND EXISTS (SELECT * FROM tag_resources"
           "                WHERE tag_resources.resource_uuid"
           "                        = %ss.uuid"
@@ -2680,6 +2684,10 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
           "  (SELECT * FROM tags"
           "   WHERE tags.name %s '%%%%%s%%%%'"
           "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
           "   AND EXISTS (SELECT * FROM tag_resources"
           "                WHERE tag_resources.resource_uuid"
           "                        = %ss.uuid"
@@ -2705,6 +2713,10 @@ filter_clause_append_tag (GString *clause, keyword_t *keyword,
           "  (SELECT * FROM tags"
           "   WHERE tags.name %s '%s'"
           "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
           "   AND EXISTS (SELECT * FROM tag_resources"
           "                WHERE tag_resources.resource_uuid"
           "                        = %ss.uuid"
@@ -2758,6 +2770,10 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
           "(EXISTS"
           "  (SELECT * FROM tags"
           "   WHERE tags.uuid = '%s'"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
           "   AND EXISTS (SELECT * FROM tag_resources"
           "                WHERE tag_resources.resource_uuid"
           "                        = %ss.uuid"
@@ -2779,6 +2795,10 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
           "  (SELECT * FROM tags"
           "   WHERE tags.uuid %s '%%%%%s%%%%'"
           "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
           "   AND EXISTS (SELECT * FROM tag_resources"
           "                WHERE tag_resources.resource_uuid"
           "                        = %ss.uuid"
@@ -2801,6 +2821,10 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
           "  (SELECT * FROM tags"
           "   WHERE tags.uuid %s '%s'"
           "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
           "   AND EXISTS (SELECT * FROM tag_resources"
           "                WHERE tag_resources.resource_uuid"
           "                        = %ss.uuid"
@@ -13869,7 +13893,8 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   report = make_report (task, report_id, TASK_STATUS_DONE);
   result = make_result (task, "127.0.0.1", "localhost", "telnet (23/tcp)",
                         "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
-                        "A telnet server seems to be running on this port.");
+                        "A telnet server seems to be running on this port.",
+                        NULL);
   now = time (NULL);
   now_string = ctime (&now);
   if (strlen (now_string) == 0)
@@ -16161,6 +16186,7 @@ stop_active_tasks ()
 
   assert (current_credentials.uuid == NULL);
   memset (&get, '\0', sizeof (get));
+  get.ignore_pagination = 1;
   init_task_iterator (&tasks, &get);
   while (next (&tasks))
     {
@@ -16523,7 +16549,8 @@ cleanup_manage_process (gboolean cleanup)
                   result = make_result (current_scanner_task,
                                         "", "", "", "", "Error Message",
                                         "Interrupting scan because GVM is"
-                                        " exiting.");
+                                        " exiting.",
+                                        NULL);
                   report_add_result (global_current_report, result);
                 }
               set_task_run_status (current_scanner_task, TASK_STATUS_INTERRUPTED);
@@ -18234,26 +18261,34 @@ set_task_schedule (task_t task, schedule_t schedule, int periods)
  *
  * @param[in]  task_id   Task UUID.
  * @param[in]  schedule  Schedule.
- * @param[in]  periods   Number of schedule periods.
+ * @param[in]  periods   Number of schedule periods.  -1 to use existing value.
  *
  * @return 0 success, -1 error.
  */
 int
 set_task_schedule_uuid (const gchar *task_id, schedule_t schedule, int periods)
 {
-  gchar *quoted_task_id;
+  gchar *quoted_task_id, *schedule_periods;
+
+  if (periods == -1)
+    schedule_periods = g_strdup ("");
+  else
+    schedule_periods = g_strdup_printf ("schedule_periods = %i,",
+                                        periods);
 
   quoted_task_id = sql_quote (task_id);
   sql ("UPDATE tasks"
        " SET schedule = %llu,"
-       " schedule_periods = %i,"
+       "%s"
        " schedule_next_time = (SELECT next_time_ical (icalendar, timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
        " WHERE uuid = '%s';",
-       schedule, periods, schedule, quoted_task_id);
+       schedule, schedule_periods, schedule, quoted_task_id);
   g_free (quoted_task_id);
+
+  g_free (schedule_periods);
 
   return 0;
 }
@@ -18686,8 +18721,8 @@ clear_duration_schedules (task_t task)
        " modification_time = m_now ()"
        " WHERE schedule > 0"
        "%s"
-       " AND NOT (SELECT icalendar LIKE '%%\nRRULE%%'"
-       "              OR icalendar LIKE '%%\nRDATE%%'"
+       " AND NOT (SELECT icalendar LIKE '%%\nBEGIN:VEVENT%%\nRRULE%%'"
+       "              OR icalendar LIKE '%%\nBEGIN:VEVENT%%\nRDATE%%'"
        "            FROM schedules WHERE schedules.id = schedule)"
        " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
        "%s"
@@ -18736,8 +18771,8 @@ update_duration_schedule_periods (task_t task)
        " WHERE schedule > 0"
        "%s"
        " AND schedule_periods = 1"
-       " AND (SELECT icalendar LIKE '%%\nRRULE%%'"
-       "          OR icalendar LIKE '%%\nRDATE%%'"
+       " AND (SELECT icalendar LIKE '%%\nBEGIN:VEVENT%%\nRRULE%%'"
+       "          OR icalendar LIKE '%%\nBEGIN:VEVENT%%\nRDATE%%'"
        "       FROM schedules WHERE schedules.id = schedule)"
        " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
        " AND schedule_next_time = 0"  /* Set as flag when starting task. */
@@ -18958,16 +18993,18 @@ result_nvt_notice (const gchar *nvt)
  * @param[in]  port         Result port.
  * @param[in]  severity     Result severity.
  * @param[in]  qod          Quality of detection.
+ * @param[in]  path         Result path, e.g. file location of a product.
  *
  * @return A result descriptor for the new result, 0 if error.
  */
 result_t
 make_osp_result (task_t task, const char *host, const char *hostname,
                  const char *nvt, const char *type, const char *description,
-                 const char *port, const char *severity, int qod)
+                 const char *port, const char *severity, int qod,
+                 const char *path)
 {
   char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
-  char *quoted_port, *quoted_hostname;
+  char *quoted_port, *quoted_hostname, *quoted_path;
 
   assert (task);
   assert (type);
@@ -18978,6 +19015,7 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
   quoted_hostname = sql_quote (hostname ? hostname : "");
+  quoted_path = sql_quote (path ? path : "");
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -19015,20 +19053,21 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   result_nvt_notice (quoted_nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, hostname, port, nvt,"
-       "  nvt_version, severity, type, qod, qod_type, description, uuid,"
-       "  result_nvt)"
+       "  nvt_version, severity, type, qod, qod_type, description,"
+       "  path, uuid, result_nvt)"
        " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s',"
-       "         '%s', '%s', '%s', %d, '', '%s', make_uuid (),"
+       "         '%s', '%s', '%s', %d, '', '%s', '%s', make_uuid (),"
        "         (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
        nvt_revision ?: "", result_severity ?: "0", type, qod, quoted_desc,
-       quoted_nvt);
+       quoted_path, quoted_nvt);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
   g_free (quoted_nvt);
   g_free (quoted_port);
   g_free (quoted_hostname);
+  g_free (quoted_path);
 
   return sql_last_insert_id ();
 }
@@ -19292,17 +19331,19 @@ nvt_severity (const char *nvt_id, const char *type)
  * @param[in]  nvt          The OID of the NVT that produced the result.
  * @param[in]  type         Type of result.  "Security Hole", etc.
  * @param[in]  description  Description of the result.
+ * @param[in]  path         Result path, e.g. file location of a product.
  *
  * @return A result descriptor for the new result, 0 if error.
  */
 result_t
 make_result (task_t task, const char* host, const char *hostname,
              const char* port, const char* nvt,
-             const char* type, const char* description)
+             const char* type, const char* description,
+             const char* path)
 {
   result_t result;
   gchar *nvt_revision, *severity, *qod, *qod_type;
-  gchar *quoted_hostname, *quoted_descr;
+  gchar *quoted_hostname, *quoted_descr, *quoted_path;
   nvt_t nvt_id = 0;
 
   if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
@@ -19332,7 +19373,7 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   else
     {
-      qod = G_STRINGIFY (QOD_DEFAULT);
+      qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
       qod_type = g_strdup ("''");
       nvt_revision = g_strdup ("");
     }
@@ -19344,19 +19385,20 @@ make_result (task_t task, const char* host, const char *hostname,
     }
   quoted_hostname = sql_quote (hostname ? hostname : "");
   quoted_descr = sql_quote (description ?: "");
+  quoted_path = sql_quote (path ? path : "");
   result_nvt_notice (nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, hostname, port,"
        "  nvt, nvt_version, severity, type,"
-       "  description, uuid, qod, qod_type, result_nvt)"
+       "  description, uuid, qod, qod_type, path, result_nvt)"
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '%s', '%s',"
        "  '%s', '%s', '%s', '%s',"
-       "  '%s', make_uuid (), %s, %s,"
+       "  '%s', make_uuid (), %s, %s, '%s',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, port ?: "",
        nvt ?: "", nvt_revision, severity, type,
-       quoted_descr, qod, qod_type, nvt ? nvt : "");
+       quoted_descr, qod, qod_type, quoted_path, nvt ? nvt : "");
 
   g_free (quoted_hostname);
   g_free (quoted_descr);
@@ -19364,6 +19406,7 @@ make_result (task_t task, const char* host, const char *hostname,
   g_free (qod_type);
   g_free (nvt_revision);
   g_free (severity);
+  g_free (quoted_path);
   result = sql_last_insert_id ();
   return result;
 }
@@ -19388,10 +19431,10 @@ make_cve_result (task_t task, const char* host, const char *nvt, double cvss,
   result_nvt_notice (nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
-       "  description, uuid, qod, qod_type, result_nvt)"
+       "  description, uuid, qod, qod_type, path, result_nvt)"
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '', '%s', '', '%1.1f', '%s',"
-       "  '%s', make_uuid (), %i, '',"
+       "  '%s', make_uuid (), %i, '', '',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", nvt, cvss, severity_to_type (cvss),
        quoted_descr, QOD_DEFAULT, nvt);
@@ -19423,7 +19466,9 @@ result_uuid (result_t result, char ** id)
  * @param[in]   result      Vulnerability detection result.
  * @param[in]   report      Report of result.
  * @param[in]   host        Host of result.
- * @param[in]   oid         Detection script OID.
+ * @param[in]   port        Port of result.
+ * @param[in]   path        Path of result.
+ * @param[out]  oid         Detection script OID.
  * @param[out]  ref         Detection result UUID.
  * @param[out]  product     Product name.
  * @param[out]  location    Product location.
@@ -19432,8 +19477,11 @@ result_uuid (result_t result, char ** id)
  * @return -1 on error, 0 on success.
  */
 int
-result_detection_reference (result_t result, report_t report, const gchar *host,
-                            const char *oid, char **ref, char **product,
+result_detection_reference (result_t result, report_t report,
+                            const char *host,
+                            const char *port,
+                            const char *path,
+                            char **oid, char **ref, char **product,
                             char **location, char **name)
 {
   gchar *quoted_location, *quoted_host;
@@ -19446,24 +19494,71 @@ result_detection_reference (result_t result, report_t report, const gchar *host,
     return -1;
 
   quoted_location = NULL;
-  *ref = *product = *location = *name = NULL;
+  *oid = *ref = *product = *location = *name = NULL;
 
   quoted_host = sql_quote (host);
 
-  *location = sql_string ("SELECT value"
-                          " FROM report_host_details"
-                          " WHERE report_host = (SELECT id"
-                          "                      FROM report_hosts"
-                          "                      WHERE report = %llu"
-                          "                      AND host = '%s')"
-                          " AND name = 'detected_at'"
-                          " AND source_name = (SELECT nvt"
-                          "                    FROM results"
-                          "                    WHERE id = %llu);",
-                          report, quoted_host, result);
+  if (path && strcmp (path, ""))
+    {
+      *location = strdup (path);
+    }
+  else if (port && strcmp (port, "")
+           && !(g_str_has_prefix (port, "general/")))
+    {
+      *location = strdup (port);
+    }
+  else
+    {
+      *location = sql_string ("SELECT value"
+                              " FROM report_host_details"
+                              " WHERE report_host = (SELECT id"
+                              "                      FROM report_hosts"
+                              "                      WHERE report = %llu"
+                              "                      AND host = '%s')"
+                              " AND name = 'detected_at'"
+                              " AND source_name = (SELECT nvt"
+                              "                    FROM results"
+                              "                    WHERE id = %llu);",
+                              report, quoted_host, result);
+    }
+
   if (*location == NULL)
     goto detect_cleanup;
   quoted_location = sql_quote (*location);
+
+  *oid
+    = sql_string ("SELECT value"
+                  " FROM report_host_details"
+                  " WHERE report_host = (SELECT id"
+                  "                      FROM report_hosts"
+                  "                      WHERE report = %llu"
+                  "                      AND host = '%s')"
+                  " AND name = 'detected_by@%s'"
+                  " AND source_name = (SELECT nvt"
+                  "                    FROM results"
+                  "                    WHERE id = %llu)"
+                  " LIMIT 1",
+                  report, quoted_host, quoted_location, result);
+
+  if (*oid == NULL)
+    {
+      *oid
+        = sql_string ("SELECT value"
+                      " FROM report_host_details"
+                      " WHERE report_host = (SELECT id"
+                      "                      FROM report_hosts"
+                      "                      WHERE report = %llu"
+                      "                      AND host = '%s')"
+                      " AND name = 'detected_by'"
+                      " AND source_name = (SELECT nvt"
+                      "                    FROM results"
+                      "                    WHERE id = %llu)"
+                      " LIMIT 1",
+                      report, quoted_host, result);
+    }
+
+  if (*oid == NULL)
+    goto detect_cleanup;
 
   *product = sql_string ("SELECT name"
                          " FROM report_host_details"
@@ -19474,14 +19569,14 @@ result_detection_reference (result_t result, report_t report, const gchar *host,
                          " AND source_name = '%s'"
                          " AND name != 'detected_at'"
                          " AND value = '%s';",
-                         report, quoted_host, oid, quoted_location);
+                         report, quoted_host, *oid, quoted_location);
   if (*product == NULL)
     goto detect_cleanup;
 
-  if (g_str_has_prefix (oid, "CVE-"))
-    *name = g_strdup (oid);
+  if (g_str_has_prefix (*oid, "CVE-"))
+    *name = g_strdup (*oid);
   else
-    *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", oid);
+    *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", *oid);
   if (*name == NULL)
     goto detect_cleanup;
 
@@ -19495,7 +19590,7 @@ result_detection_reference (result_t result, report_t report, const gchar *host,
                      " AND nvt = '%s'"
                      " AND (description LIKE '%%%s%%'"
                      "      OR port LIKE '%%%s%%');",
-                     report, quoted_host, oid, quoted_location,
+                     report, quoted_host, *oid, quoted_location,
                      quoted_location);
   if (*ref == NULL)
     goto detect_cleanup;
@@ -21575,7 +21670,8 @@ where_qod (int min_qod)
     "type", "original_type", "auto_type",                                     \
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
-    "solution_type", "qod", "qod_type", "task_id", "cve", "hostname", NULL }
+    "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
+    "path", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -21643,15 +21739,7 @@ where_qod (int min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
-    { "(SELECT value"                                                         \
-      " FROM report_host_details"                                             \
-      " WHERE report_host = (SELECT id"                                       \
-      "                      FROM report_hosts"                               \
-      "                      WHERE report = results.report"                   \
-      "                      AND host = results.host)"                        \
-      " AND name = 'detected_by'"                                             \
-      " AND source_name = results.nvt"                                        \
-      " LIMIT 1)",                                                            \
+    { "path",                                                                 \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT CASE WHEN host IS NULL"                                        \
@@ -21799,15 +21887,7 @@ where_qod (int min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "nvts.cve", "cve", KEYWORD_TYPE_STRING },                               \
-    { "(SELECT value"                                                         \
-      " FROM report_host_details"                                             \
-      " WHERE report_host = (SELECT id"                                       \
-      "                      FROM report_hosts"                               \
-      "                      WHERE report = results.report"                   \
-      "                      AND host = results.host)"                        \
-      " AND name = 'detected_by'"                                             \
-      " AND source_name = results.nvt"                                        \
-      " LIMIT 1)",                                                            \
+    { "path",                                                                 \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT CASE WHEN host IS NULL"                                        \
@@ -22912,14 +22992,14 @@ DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
 DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
 
 /**
- * @brief Get the "detected_by" NVT OID from a result iterator.
+ * @brief Get the path from a result iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The OID of the "detected_by" NVT.  Caller must only use before
+ * @return The path of the result.  Caller must only use before
  *         calling cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_detected_by_oid, GET_ITERATOR_COLUMN_COUNT + 22);
+DEF_ACCESS (result_iterator_path, GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Get the asset host ID from a result iterator.
@@ -23398,6 +23478,7 @@ init_report_host_details_iterator (iterator_t* iterator,
                  "       source_description, NULL"
                  " FROM report_host_details WHERE report_host = %llu"
                  " AND NOT name IN ('detected_at', 'detected_by')"
+                 " AND NOT name LIKE 'detected_by@%%'"
                  " UNION SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
                  "              nvts.name, cvss_base"
                  "       FROM nvts, report_host_details"
@@ -25169,6 +25250,49 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
 }
 
 /**
+ * @brief Test if two strings are equal, ignoring whitespace.
+ *
+ * @param[in]  one  First string.
+ * @param[in]  two  Second string.
+ *
+ * @return 1 if equal, else 0.
+ */
+static int
+streq_ignore_ws (const gchar *one, const gchar *two)
+{
+  if (one == NULL)
+    return two == NULL;
+  if (two == NULL)
+    return 0;
+
+  while (1)
+    {
+      /* Skip space in both. */
+      while (isspace (*one))
+        one++;
+      while (isspace (*two))
+        two++;
+
+      /* Check for end. */
+      if (*one == '\0')
+        break;
+      if (*two == '\0')
+        return 0;
+
+      /* Compare. */
+      if (*one != *two)
+        return 0;
+
+      /* Next. */
+      one++;
+      two++;
+    }
+  if (*two)
+    return 0;
+  return 1;
+}
+
+/**
  * @brief Compare two results.
  *
  * @param[in]  results        Iterator containing first result.
@@ -25204,16 +25328,29 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
           delta_descr ? delta_descr : "NULL",
           (descr && delta_descr) ? strcmp (descr, delta_descr) : 0);
 
-  if (descr && delta_descr && strcmp (descr, delta_descr))
+  /* This comparison ignores whitespace to match the diff output created by
+   * strdiff in gmp.c.  The down side of this is that the comparison may be
+   * affected by the locale.
+   *
+   * An alternate would be to use the strdiff result as the comparison, but
+   * strdiff is only called for the results on the page (and not for the
+   * rest of the results, which must also be compared for the counts).
+   * Using strdiff for all results could also be slow, because it's running
+   * the diff command. */
+  if (descr && delta_descr && (streq_ignore_ws (descr, delta_descr) == 0))
     return COMPARE_RESULTS_CHANGED;
 
   return COMPARE_RESULTS_SAME;
 }
 
 /**
- * @brief Compare two results, writing associated XML to a buffer.
+ * @brief Compare two results, optionally writing associated XML to a buffer.
  *
- * @param[in]  buffer         Buffer.
+ * This is called with buffer NULL to compare results after the page limit
+ * (filter keyword "max") is reached.  These results need to be compared to be
+ * included in the counts.
+ *
+ * @param[in]  buffer         Buffer.  NULL to skip writing to buffer.
  * @param[in]  results        Iterator containing first result.
  * @param[in]  delta_results  Iterator containing second result.
  * @param[in]  task           Task associated with report.
@@ -25274,7 +25411,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   0,
                                   "changed",
                                   delta_results,
-                                  1,
+                                  /* This is the only case that uses 1. */
+                                  1,  /* Whether result is "changed". */
                                   -1,
                                   0);
           }
@@ -29054,7 +29192,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
     {
       result_t result;
       const char *type, *name, *severity, *host, *hostname, *test_id, *port;
-      const char *qod;
+      const char *qod, *path;
       char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
       entity_t r_entity = results->data;
       int qod_int;
@@ -29074,6 +29212,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       hostname = entity_attribute (r_entity, "hostname");
       port = entity_attribute (r_entity, "port") ?: "";
       qod = entity_attribute (r_entity, "qod") ?: "";
+      path = entity_attribute (r_entity, "uri") ?: "";
+
       if (!name || !type || !severity || !test_id || !host)
         {
           GString *string = g_string_new ("");
@@ -29144,7 +29284,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
                                     desc,
                                     port ?: "",
                                     severity_str ?: severity,
-                                    qod_int);
+                                    qod_int,
+                                    path);
           report_add_result (report, result);
         }
       g_free (nvt_id);
@@ -29790,10 +29931,10 @@ delete_task (task_t task, int ultimate)
       sql ("INSERT INTO results_trash"
            " (uuid, task, host, port, nvt, result_nvt, type, description,"
            "  report, nvt_version, severity, qod, qod_type, owner, date,"
-           "  hostname)"
+           "  hostname, path)"
            " SELECT uuid, task, host, port, nvt, result_nvt, type,"
            "        description, report, nvt_version, severity, qod,"
-           "         qod_type, owner, date, hostname"
+           "         qod_type, owner, date, hostname, path"
            " FROM results"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            task);
@@ -46350,10 +46491,10 @@ manage_restore (const char *id)
       sql ("INSERT INTO configs"
            " (uuid, owner, name, nvt_selector, comment, family_count,"
            "  nvt_count, families_growing, nvts_growing, type, scanner,"
-           "  creation_time, modification_time, usage_type)"
+           "  predefined, creation_time, modification_time, usage_type)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
            "        nvt_count, families_growing, nvts_growing, type, scanner,"
-           "        creation_time, modification_time, usage_type"
+           "        predefined, creation_time, modification_time, usage_type"
            " FROM configs_trash WHERE id = %llu;",
            resource);
 
@@ -47205,10 +47346,10 @@ manage_restore (const char *id)
       sql ("INSERT INTO results"
            " (uuid, task, host, port, nvt, result_nvt, type, description,"
            "  report, nvt_version, severity, qod, qod_type, owner, date,"
-           "  hostname)"
+           "  hostname, path)"
            " SELECT uuid, task, host, port, nvt, result_nvt, type,"
            "        description, report, nvt_version, severity, qod,"
-           "         qod_type, owner, date, hostname"
+           "         qod_type, owner, date, hostname, path"
            " FROM results_trash"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
            resource);
@@ -49038,12 +49179,14 @@ identifier_name (const char *name)
  * @param[in]  comment      Comment.
  * @param[out] host_return  Created asset.
  *
- * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
+ * @return 0 success, 1 failed to find report, 2 host not an IP address,
+ *         99 permission denied, -1 error.
  */
 int
 create_asset_host (const char *host_name, const char *comment,
                    resource_t* host_return)
 {
+  int host_type;
   resource_t host;
   gchar *quoted_host_name, *quoted_comment;
 
@@ -49058,6 +49201,13 @@ create_asset_host (const char *host_name, const char *comment,
       return 99;
     }
 
+  host_type = gvm_get_host_type (host_name);
+  if (host_type != HOST_TYPE_IPV4 && host_type != HOST_TYPE_IPV6)
+    {
+      sql_rollback ();
+      return 2;
+    }
+
   quoted_host_name = sql_quote (host_name);
   quoted_comment = sql_quote (comment ? comment : "");
   sql ("INSERT into hosts"
@@ -49068,7 +49218,6 @@ create_asset_host (const char *host_name, const char *comment,
        current_credentials.uuid,
        quoted_host_name,
        quoted_comment);
-  g_free (quoted_host_name);
   g_free (quoted_comment);
 
   host = sql_last_insert_id ();
@@ -49081,8 +49230,10 @@ create_asset_host (const char *host_name, const char *comment,
        "  '', '%s', 'User', '%s', '', m_now (), m_now ());",
        host,
        current_credentials.uuid,
-       host_name,
+       quoted_host_name,
        current_credentials.uuid);
+
+  g_free (quoted_host_name);
 
   if (host_return)
     *host_return = host;

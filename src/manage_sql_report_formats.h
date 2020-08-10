@@ -37,7 +37,7 @@ int
 create_report_format_no_acl (const char *, const char *, const char *,
                              const char *, const char *, const char *,
                              array_t *, array_t *, array_t *, const char *,
-                             report_format_t *);
+                             int, report_format_t *);
 
 const char**
 report_format_filter_columns ();

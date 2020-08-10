@@ -4655,6 +4655,31 @@ update_scap_end ()
   else
     sql ("ALTER SCHEMA scap2 RENAME TO scap;");
 
+  /* Update CERT data that depends on SCAP. */
+
+  if (manage_cert_loaded ())
+    {
+      int last_cert_update, last_scap_update;
+
+      last_cert_update = sql_int ("SELECT"
+                                  " coalesce ((SELECT value FROM cert.meta"
+                                  "            WHERE name = 'last_update'),"
+                                  "           '0');");
+
+      last_scap_update = sql_int ("SELECT"
+                                  " coalesce ((SELECT value FROM scap.meta"
+                                  "            WHERE name = 'last_update'),"
+                                  "           '0');");
+
+      g_debug ("%s: last_scap_update: %i", __func__, last_scap_update);
+      g_debug ("%s: last_cert_update: %i", __func__, last_cert_update);
+
+      update_cvss_dfn_cert (1, last_cert_update, last_scap_update);
+      update_cvss_cert_bund (1, last_cert_update, last_scap_update);
+    }
+
+  /* Analyze. */
+
   sql ("ANALYZE scap.cves;");
   sql ("ANALYZE scap.cpes;");
   sql ("ANALYZE scap.affected_products;");

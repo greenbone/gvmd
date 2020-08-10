@@ -9315,12 +9315,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 {
   const char *descr = result_iterator_descr (results);
   const char *name, *comment, *creation_time;
-  const char *detect_oid, *asset_id;
+  const char *port, *path;
+  const char *asset_id;
   gchar *nl_descr, *nl_descr_escaped;
   const char *qod = result_iterator_qod (results);
   const char *qod_type = result_iterator_qod_type (results);
   result_t result = result_iterator_result (results);
-  char *detect_ref, *detect_cpe, *detect_loc, *detect_name;
+  char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
   task_t selected_task;
 
   if (descr)
@@ -9438,11 +9439,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         }
     }
 
-  detect_oid = result_iterator_detected_by_oid (results);
-  detect_ref = detect_cpe = detect_loc = detect_name = NULL;
+  port = result_iterator_port (results);
+  path = result_iterator_path (results);
+
+  detect_oid = detect_ref = detect_cpe = detect_loc = detect_name = NULL;
   if (result_detection_reference (result, result_iterator_report (results),
-                                  result_iterator_host (results),
-                                  detect_oid, &detect_ref, &detect_cpe,
+                                  result_iterator_host (results), port, path,
+                                  &detect_oid, &detect_ref, &detect_cpe,
                                   &detect_loc, &detect_name)
       == 0)
     {
@@ -9492,7 +9495,12 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   buffer_xml_append_printf (buffer,
                             "<port>%s</port>",
-                            result_iterator_port (results));
+                            port);
+
+  if (path && strcmp (path, ""))
+    buffer_xml_append_printf (buffer,
+                              "<path>%s</path>",
+                              path);
 
   if (cert_loaded == -1)
     cert_loaded = manage_cert_loaded ();
@@ -11771,13 +11779,15 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                                "%i<growing>%i</growing>"
                                "</nvt_count>"
                                "<type>%i</type>"
-                               "<usage_type>%s</usage_type>",
+                               "<usage_type>%s</usage_type>"
+                               "<predefined>%i</predefined>",
                                config_iterator_family_count (&configs),
                                config_families_growing,
                                config_iterator_nvt_count (&configs),
                                config_nvts_growing,
                                config_type,
-                               usage_type);
+                               usage_type,
+                               config_iterator_predefined (&configs));
 
       if (config_type == 0 && (get_configs_data->families
                                || get_configs_data->get.details))
@@ -12340,6 +12350,88 @@ feed_type_name (int feed_type)
 }
 
 /**
+ * @brief Gets the status and timestamp of a feed lockfile.
+ *
+ * @param[in]  lockfile_name  Path to the lockfile.
+ * @param[out] timestamp      Optional output o timestamp string.
+ *
+ * @return 0 lockfile was not locked, 1 lockfile was locked.
+ */
+static int
+get_feed_lock_status (const char *lockfile_name, gchar **timestamp)
+{
+  int lockfile;
+  int ret;
+
+  if (timestamp)
+    *timestamp = NULL;
+  ret = 0;
+
+  lockfile = open (lockfile_name,
+                   O_RDWR | O_CREAT,
+                   /* "-rw-rw-r--" */
+                   S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+  if (lockfile == -1)
+    g_warning ("%s: failed to open lock file '%s': %s", __func__,
+               lockfile_name, strerror (errno));
+  else
+    {
+      if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
+        {
+          if (errno == EWOULDBLOCK)
+            {
+              gchar *content;
+              GError *file_error;
+
+              /* File is locked, must be a sync in process. */
+
+              ret = 1;
+
+              if (!g_file_get_contents (lockfile_name, &content, NULL,
+                                        &file_error))
+                {
+                  if (g_error_matches (file_error, G_FILE_ERROR,
+                                       G_FILE_ERROR_NOENT)
+                      || g_error_matches (file_error, G_FILE_ERROR,
+                                          G_FILE_ERROR_ACCES))
+                    {
+                      g_error_free (file_error);
+                    }
+                  else
+                    {
+                      g_warning ("%s: %s", __func__, file_error->message);
+                      g_error_free (file_error);
+                    }
+                }
+              else
+                {
+                  gchar **lines;
+
+                  lines = g_strsplit (content, "\n", 2);
+                  g_free (content);
+                  if (timestamp)
+                    *timestamp = g_strdup(lines[0]);
+                  g_strfreev (lines);
+                }
+            }
+          else
+            {
+              g_warning ("%s: flock: %s", __func__, strerror (errno));
+            }
+        }
+      else
+        /* Got the lock, so no sync is in progress. */
+        flock (lockfile, LOCK_UN);
+    }
+
+  if (close (lockfile))
+    g_warning ("%s: failed to close lock file '%s': %s", __func__,
+               lockfile_name, strerror (errno));
+
+  return ret;
+}
+
+/**
  * @brief Get NVT feed.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -12363,6 +12455,8 @@ get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
     {
       gchar **ident = g_strsplit (feed_identification, "|", 6);
       gchar *selftest_result = NULL;
+      const char *lockfile_name;
+      gchar *timestamp;
 
       if (ident[0] == NULL || ident[1] == NULL
           || ident[2] == NULL || ident[3] == NULL)
@@ -12391,6 +12485,19 @@ get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
                                        "</sync_not_available>",
                                        selftest_result ? selftest_result : "");
               g_free (selftest_result);
+            }
+
+          /* Note: Checking the feed lockfile assumes that the default scanner
+           *  is running locally.
+           */
+          lockfile_name = get_feed_lock_path ();
+          if (get_feed_lock_status (lockfile_name, &timestamp))
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
+                                       "<timestamp>%s</timestamp>"
+                                       "</currently_syncing>",
+                                       timestamp);
+              g_free (timestamp);
             }
 
           SEND_TO_CLIENT_OR_FAIL ("</feed>");
@@ -12551,7 +12658,7 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
 {
   gchar *feed_name, *feed_description, *feed_version;
   const char *lockfile_name;
-  int lockfile;
+  gchar *timestamp;
 
   if (feed_type == NVT_FEED)
     {
@@ -12575,65 +12682,14 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
 
   lockfile_name = get_feed_lock_path ();
 
-  lockfile = open (lockfile_name,
-                   O_RDWR | O_CREAT | O_APPEND,
-                   /* "-rw-r--r--" */
-                   S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP);
-  if (lockfile == -1)
-    g_warning ("%s: failed to open lock file '%s': %s", __func__,
-               lockfile_name, strerror (errno));
-  else
+  if (get_feed_lock_status (lockfile_name, &timestamp))
     {
-      if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
-        {
-          if (errno == EWOULDBLOCK)
-            {
-              gchar *content;
-              GError *file_error;
-
-              /* File is locked, must be a sync in process. */
-
-              error = NULL;
-              if (!g_file_get_contents (lockfile_name, &content, NULL,
-                                        &file_error))
-                {
-                  if (g_error_matches (file_error, G_FILE_ERROR, G_FILE_ERROR_NOENT)
-                      || g_error_matches (file_error, G_FILE_ERROR,
-                                          G_FILE_ERROR_ACCES))
-                    {
-                      g_error_free (file_error);
-                    }
-                  else
-                    {
-                      g_warning ("%s: %s", __func__, file_error->message);
-                      g_error_free (file_error);
-                    }
-                }
-              else
-                {
-                  gchar **lines;
-
-                  lines = g_strsplit (content, "\n", 2);
-                  g_free (content);
-                  if (lines[0])
-                    SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
-                                             "<timestamp>%s</timestamp>"
-                                             "</currently_syncing>",
-                                             lines[0]);
-                  g_strfreev (lines);
-                }
-            }
-          else
-            g_warning ("%s: flock: %s", __func__, strerror (errno));
-        }
-      else
-        /* Got the lock, so no sync is in progress. */
-        flock (lockfile, LOCK_UN);
+      SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
+                               "<timestamp>%s</timestamp>"
+                               "</currently_syncing>",
+                               timestamp);
+      g_free (timestamp);
     }
-
-  if (close (lockfile))
-    g_warning ("%s: failed to close lock file '%s': %s", __func__,
-               lockfile_name, strerror (errno));
 
   g_free (feed_name);
   g_free (feed_version);
@@ -14032,10 +14088,12 @@ handle_get_port_lists (gmp_parser_t *gmp_parser, GError **error)
                                "<all>%i</all>"
                                "<tcp>%i</tcp>"
                                "<udp>%i</udp>"
-                               "</port_count>",
+                               "</port_count>"
+                               "<predefined>%i</predefined>",
                                port_list_iterator_count_all (&port_lists),
                                port_list_iterator_count_tcp (&port_lists),
-                               port_list_iterator_count_udp (&port_lists));
+                               port_list_iterator_count_udp (&port_lists),
+                               port_list_iterator_predefined (&port_lists));
 
       if (get_port_lists_data->get.details)
         {
@@ -14848,11 +14906,17 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
            ("<extension>%s</extension>"
             "<content_type>%s</content_type>"
             "<summary>%s</summary>"
-            "<description>%s</description>",
+            "<description>%s</description>"
+            "<predefined>%i</predefined>",
             report_format_iterator_extension (&report_formats),
             report_format_iterator_content_type (&report_formats),
             report_format_iterator_summary (&report_formats),
-            report_format_iterator_description (&report_formats));
+            report_format_iterator_description (&report_formats),
+            get_report_formats_data->get.trash
+              ? trash_report_format_predefined
+                 (get_iterator_resource (&report_formats))
+              : report_format_predefined
+                 (get_iterator_resource (&report_formats)));
 
           if (get_report_formats_data->alerts)
             {
@@ -16822,16 +16886,12 @@ get_task_schedule_xml (task_t task)
                            "<trash>%d</trash>"
                            "<icalendar>%s</icalendar>"
                            "<timezone>%s</timezone>"
-                           "</schedule>"
-                           "<schedule_periods>"
-                           "%d"
-                           "</schedule_periods>",
+                           "</schedule>",
                            task_schedule_uuid,
                            task_schedule_name,
                            schedule_in_trash,
                            icalendar ? icalendar : "",
-                           zone ? zone : "",
-                           task_schedule_periods (task));
+                           zone ? zone : "");
 
       g_free (icalendar);
       g_free (zone);
@@ -16847,6 +16907,12 @@ get_task_schedule_xml (task_t task)
                          task_schedule_name,
                          schedule_in_trash);
     }
+
+  xml_string_append (xml,
+                     "<schedule_periods>"
+                     "%d"
+                     "</schedule_periods>",
+                     task_schedule_periods (task));
 
   return g_string_free (xml, FALSE);
 }
@@ -18234,6 +18300,9 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("modify_config",
                         "A config_id attribute is required"));
+  else if (config_predefined_uuid (modify_config_data->config_id))
+    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
+                                              "Permission denied"));
   else if ((modify_config_data->nvt_selection_family
             /* This array implies FAMILY_SELECTION. */
             && modify_config_data->families_static_all)
@@ -19341,8 +19410,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 2:
                     SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("create_asset",
-                                          "Name may only contain alphanumeric"
-                                          " characters"));
+                                          "Name must be an IP address"));
                     log_event_fail ("asset", "Asset", NULL, "created");
                     break;
                   case 99:

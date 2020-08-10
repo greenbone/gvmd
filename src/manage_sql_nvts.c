@@ -1836,7 +1836,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
     {
       int ret;
 
-      g_info ("OSP service has newer VT status (version %s) than in database (version %s, %i VTs). Starting update ...",
+      g_info ("OSP service has different VT status (version %s) from database (version %s, %i VTs). Starting update ...",
               scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
 
       ret = update_nvt_cache_osp (update_socket, db_feed_version,

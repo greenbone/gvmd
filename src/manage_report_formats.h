@@ -23,9 +23,6 @@
 
 #include <glib.h>
 
-void
-resource_set_predefined (const gchar *, resource_t, int);
-
 gboolean
 find_report_format_with_permission (const char*, report_format_t*,
                                     const char *);
@@ -84,6 +81,9 @@ trash_report_format_global (report_format_t);
 
 int
 report_format_predefined (report_format_t);
+
+int
+trash_report_format_predefined (report_format_t);
 
 int
 report_format_active (report_format_t);
