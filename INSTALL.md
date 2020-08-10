@@ -7,17 +7,19 @@ necessary to install dependent development packages.
 ## Prerequisites for Greenbone Vulnerability Manager
 
 Prerequisites:
-* cmake >= 3.0
-* glib-2.0 >= 2.42
-* gnutls >= 3.2.15
-* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 20.4
-* PostgreSQL database >= 9.6
-* pkg-config
-* libical >= 1.0.0
-* xml_split (recommended, lowers sync RAM usage, Debian package: xml-twig-tools)
 
-Prerequisites for certificate generation:
-* GnuTLS certtool
+* GCC (Debian package: gcc)
+* cmake >= 3.0 (Debian package: cmake)
+* glib-2.0 >= 2.42 (Debian package: libglib2.0-dev)
+* gnutls >= 3.2.15 (Debian package: libgnutls28-dev)
+* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 20.08 ([gvm-libs](https://github.com/greenbone/gvm-libs/tree/gvm-libs-20.08) component)
+* PostgreSQL database >= 9.6 (Debian packages: libpq-dev postgresql-server-dev-11)
+* pkg-config (Debian package: pkg-config)
+* libical >= 1.0.0 (Debian package: libical-dev)
+
+Install these prerequisites on Debian GNU/Linux 'Buster' 10:
+
+    apt-get install gcc cmake libglib2.0-dev libgnutls28-dev libpq-dev postgresql-server-dev-11 pkg-config libical-dev
 
 Prerequisites for building documentation:
 * Doxygen
@@ -640,7 +642,13 @@ Prerequisites for key generation on systems with low entropy:
 * haveged (or a similar tool)
 
 Prerequisites for S/MIME suport (e.g. email encryption):
-* GNU privacy guard - S/MIME version
+* GNU privacy guard - S/MIME version (Debian package: gpgsm)
+
+Prerequisites for certificate generation:
+* GnuTLS certtool (Debian package: gnutls-bin)
+
+Prerequisites (recommended) to lower sync RAM usage
+* xml_split (Debian package: xml-twig-tools)
 
 ## Static code analysis with the Clang Static Analyzer
 
