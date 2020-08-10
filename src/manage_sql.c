@@ -21869,7 +21869,7 @@ where_qod (int min_qod)
     { "nvts.solution_type",                                                   \
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
-    { "results.qod", NULL, KEYWORD_TYPE_INTEGER },                            \
+    { "results.qod", "qod", KEYWORD_TYPE_INTEGER },                           \
     { "results.qod_type", NULL, KEYWORD_TYPE_STRING },                        \
     { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
       " THEN (SELECT value FROM report_host_details"                          \
