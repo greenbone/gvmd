@@ -19,9 +19,6 @@ Prerequisites:
 Prerequisites for certificate generation:
 * GnuTLS certtool
 
-Prerequisites for S/MIME suport (e.g. email encryption):
-* GNU privacy guard - S/MIME version
-
 Prerequisites for building documentation:
 * Doxygen
 * xsltproc (for building the GMP HTML documentation)
@@ -642,6 +639,8 @@ Prerequisites for Tipping Point alert:
 Prerequisites for key generation on systems with low entropy:
 * haveged (or a similar tool)
 
+Prerequisites for S/MIME suport (e.g. email encryption):
+* GNU privacy guard - S/MIME version
 
 ## Static code analysis with the Clang Static Analyzer
 
