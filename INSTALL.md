@@ -19,6 +19,9 @@ Prerequisites:
 Prerequisites for certificate generation:
 * GnuTLS certtool
 
+Prerequisites for S/MIME suport (e.g. email encryption):
+* GNU privacy guard - S/MIME version
+
 Prerequisites for building documentation:
 * Doxygen
 * xsltproc (for building the GMP HTML documentation)
