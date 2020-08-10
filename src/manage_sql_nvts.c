@@ -1522,9 +1522,12 @@ update_nvts_from_vts (entity_t *get_vts_response,
                       "  GROUP BY nvts.oid"
                       "  ORDER BY nvts.oid ASC"
                       " )"
-                      " SELECT encode(digest(string_agg(nvt_str.vt_string,''),"
-                      "                      'sha256'),"
-                      "               'hex')"
+                      " SELECT encode"
+                      "         (digest"
+                      "           (coalesce (string_agg (nvt_str.vt_string, ''),"
+                      "                      ''),"
+                      "            'sha256'),"
+                      "          'hex')"
                       " FROM nvt_str;");
 
       if (strcmp (osp_vt_hash, db_vts_hash ? db_vts_hash : ""))
