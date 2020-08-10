@@ -143,6 +143,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Allow group access to lockfile and fix growing or empty timestamp [#1213](https://github.com/greenbone/gvmd/pull/1213)
 - Ignore whitespace when checking for changed delta results [#1219](https://github.com/greenbone/gvmd/pull/1219)
 - Check permissions when applying tag in filter [#1222](https://github.com/greenbone/gvmd/pull/1222)
+- Improve EXE installer NSIS script generation [#1226](https://github.com/greenbone/gvmd/pull/1226)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
