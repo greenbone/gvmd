@@ -171,9 +171,9 @@ set (GVM_CERT_RES_DIR "${GVM_DATA_DIR}/cert")
 set (GVM_CA_DIR       "${GVMD_STATE_DIR}/trusted_certs")
 
 if (NOT GVM_LIB_INSTALL_DIR)
-	set (GVM_LIB_INSTALL_DIR     "${LIBDIR}")
+  set (GVM_LIB_INSTALL_DIR     "${LIBDIR}")
 else (NOT GVM_LIB_INSTALL_DIR)
-	set (GVM_LIB_INSTALL_DIR "${GVM_LIB_INSTALL_DIR}")
+  set (GVM_LIB_INSTALL_DIR "${GVM_LIB_INSTALL_DIR}")
 endif (NOT GVM_LIB_INSTALL_DIR)
 
 set (GVM_SCANNER_CERTIFICATE "${GVM_STATE_DIR}/CA/servercert.pem")
@@ -195,7 +195,7 @@ add_definitions (-DGVM_FEED_LOCK_PATH="${GVM_FEED_LOCK_PATH}")
 # into var/lib/gvm/rfpsigs/ (via a sync script) then we do not need
 # to know about the NVT_DIR anymore.
 if (NOT GVM_NVT_DIR)
-	set (GVM_NVT_DIR "${LOCALSTATEDIR}/lib/openvas/plugins/")
+  set (GVM_NVT_DIR "${LOCALSTATEDIR}/lib/openvas/plugins/")
 endif (NOT GVM_NVT_DIR)
 
 if (NOT DATA_OBJECTS_FEED_DIR)
