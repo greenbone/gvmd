@@ -7,17 +7,19 @@ necessary to install dependent development packages.
 ## Prerequisites for Greenbone Vulnerability Manager
 
 Prerequisites:
-* cmake >= 3.0
-* glib-2.0 >= 2.42
-* gnutls >= 3.2.15
-* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 20.4
-* PostgreSQL database >= 9.6
-* pkg-config
-* libical >= 1.0.0
-* xml_split (recommended, lowers sync RAM usage, Debian package: xml-twig-tools)
 
-Prerequisites for certificate generation:
-* GnuTLS certtool
+* GCC (Debian package: gcc)
+* cmake >= 3.0 (Debian package: cmake)
+* glib-2.0 >= 2.42 (Debian package: libglib2.0-dev)
+* gnutls >= 3.2.15 (Debian package: libgnutls28-dev)
+* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 20.08 ([gvm-libs](https://github.com/greenbone/gvm-libs/tree/gvm-libs-20.08) component)
+* PostgreSQL database >= 9.6 (Debian packages: libpq-dev postgresql-server-dev-11)
+* pkg-config (Debian package: pkg-config)
+* libical >= 1.0.0 (Debian package: libical-dev)
+
+Install these prerequisites on Debian GNU/Linux 'Buster' 10:
+
+    apt-get install gcc cmake libglib2.0-dev libgnutls28-dev libpq-dev postgresql-server-dev-11 pkg-config libical-dev
 
 Prerequisites for building documentation:
 * Doxygen
@@ -257,11 +259,24 @@ The UUIDs of all created users can be found using
     gvmd --get-users --verbose
 
 
+## Keeping the feeds up-to-date
+
+The `gvmd Data`, `SCAP` and `CERT` Feeds should be kept up-to-date by calling the
+`greenbone-feed-sync` script regularely (e.g. via a cron entry):
+
+    greenbone-feed-sync --type GVMD_DATA
+    greenbone-feed-sync --type SCAP
+    greenbone-feed-sync --type CERT
+
+Please note: The `CERT` feed sync depends on data provided by the `SCAP` feed
+and should be called after syncing the latter.
+
+
 ## Configure the default OSPD scanner socket path
 
 By default, Manager tries to connect to the default OSPD scanner via the following path:
 
-    /tmp/ospd.sock
+    /var/run/ospd/ospd.sock
 
 If this path doesn't match your setup you need to change the socket path accordingly.
 
@@ -271,7 +286,7 @@ Get the UUID of the `OpenVAS Default` scanner:
 
 Update the path (example, path needs to be adapted accordingly):
 
-    gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd.sock
+    gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd/ospd-openvas.sock
 
 
 ## Logging Configuration
@@ -626,6 +641,14 @@ Prerequisites for Tipping Point alert:
 Prerequisites for key generation on systems with low entropy:
 * haveged (or a similar tool)
 
+Prerequisites for S/MIME suport (e.g. email encryption):
+* GNU privacy guard - S/MIME version (Debian package: gpgsm)
+
+Prerequisites for certificate generation:
+* GnuTLS certtool (Debian package: gnutls-bin)
+
+Prerequisites (recommended) to lower sync RAM usage
+* xml_split (Debian package: xml-twig-tools)
 
 ## Static code analysis with the Clang Static Analyzer
 
