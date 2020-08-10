@@ -1,5 +1,5 @@
 [Unit]
-Description=Greenbone Vulnerability Manager (gvmd)
+Description=Greenbone Vulnerability Manager daemon (gvmd)
 After=network.target networking.service postgresql.service ospd-openvas.service
 Wants=postgresql.service ospd-openvas.service
 Documentation=man:gvmd(8)
