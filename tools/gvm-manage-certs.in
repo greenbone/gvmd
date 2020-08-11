@@ -79,7 +79,7 @@ set_defaults () {
   # (Organization unit)
   GVM_CERTIFICATE_ORG_UNIT=${GVM_CERTIFICATE_ORG_UNIT:-""}
   # Subject Alternative Name(s)
-  GVM_CERTIFICATE_SAN=${GVM_CERTIFICATE_SAN:-"localhost"}
+  GVM_CERTIFICATE_SAN=${GVM_CERTIFICATE_SAN:-""}
 
   # Hostname
   if [ -z "$GVM_CERTIFICATE_HOSTNAME" ]
