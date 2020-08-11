@@ -163,7 +163,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove parallel from target options. [#1119](https://github.com/greenbone/gvmd/pull/1119)
 - Remove default port list from CREATE_TARGET [#1151](https://github.com/greenbone/gvmd/pull/1151)
 
-[20.8.0]: https://github.com/greenbone/gvmd/compare/v9.0.0...gvmd-v20.8.0
+[20.8.0]: https://github.com/greenbone/gvmd/compare/v9.0.0...v20.8.0
 
 ## [9.0.0] (2019-10-11)
 
