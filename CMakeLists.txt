@@ -280,6 +280,10 @@ if (NOT SKIP_SRC)
   add_subdirectory (src)
 endif (NOT SKIP_SRC)
 
+## Configs (e.g. systemd service file)
+
+add_subdirectory (config)
+
 ## Documentation
 
 add_subdirectory (doc)
