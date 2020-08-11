@@ -84,11 +84,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-/**
- * @brief Socket of default scanner.
- */
-#define OPENVAS_DEFAULT_SOCKET "/var/run/ospd/ospd.sock"
-
 #ifdef DEBUG_FUNCTION_NAMES
 #include <dlfcn.h>
 
@@ -15324,8 +15319,9 @@ check_db_scanners ()
            " (uuid, owner, name, host, port, type, ca_pub, credential,"
            "  creation_time, modification_time)"
            " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '" OPENVAS_DEFAULT_SOCKET "', 0, %d, NULL, NULL, m_now (),"
+           " '%s', 0, %d, NULL, NULL, m_now (),"
            " m_now ());",
+           OPENVAS_DEFAULT_SOCKET,
            SCANNER_TYPE_OPENVAS);
     }
 
@@ -21869,7 +21865,7 @@ where_qod (int min_qod)
     { "nvts.solution_type",                                                   \
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
-    { "results.qod", NULL, KEYWORD_TYPE_INTEGER },                            \
+    { "results.qod", "qod", KEYWORD_TYPE_INTEGER },                           \
     { "results.qod_type", NULL, KEYWORD_TYPE_STRING },                        \
     { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
       " THEN (SELECT value FROM report_host_details"                          \
