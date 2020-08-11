@@ -191,6 +191,11 @@ if (NOT GVM_FEED_LOCK_PATH)
 endif (NOT GVM_FEED_LOCK_PATH)
 add_definitions (-DGVM_FEED_LOCK_PATH="${GVM_FEED_LOCK_PATH}")
 
+if (NOT OPENVAS_DEFAULT_SOCKET)
+  set (OPENVAS_DEFAULT_SOCKET "/var/run/ospd/ospd.sock")
+endif (NOT OPENVAS_DEFAULT_SOCKET)
+add_definitions (-DOPENVAS_DEFAULT_SOCKET="${OPENVAS_DEFAULT_SOCKET}")
+
 # TODO: Once we separate the RFP signatures out of "plugins" and
 # into var/lib/gvm/rfpsigs/ (via a sync script) then we do not need
 # to know about the NVT_DIR anymore.
