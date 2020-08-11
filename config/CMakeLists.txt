@@ -30,6 +30,7 @@ endif (NOT LOGROTATE_DIR)
 
 configure_file (gvmd.service.in gvmd.service)
 configure_file (gvmd.logrotate.in gvmd.logrotate)
+configure_file (gvmd.default.in gvmd.default)
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd.service
          DESTINATION ${SYSTEMD_SERVICE_DIR}/)
