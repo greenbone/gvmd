@@ -145,6 +145,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check permissions when applying tag in filter [#1222](https://github.com/greenbone/gvmd/pull/1222)
 - Add missing min_qod to FILTERS in GET_VULNS response [#1224](https://github.com/greenbone/gvmd/pull/1224)
 - Improve EXE installer NSIS script generation [#1226](https://github.com/greenbone/gvmd/pull/1226)
+- Add qod as name in results columns, for sorting [#1243](https://github.com/greenbone/gvmd/pull/1243)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
