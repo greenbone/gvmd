@@ -35,7 +35,7 @@ configure_file (gvmd.default.in gvmd.default)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd.service
          DESTINATION ${SYSTEMD_SERVICE_DIR}/)
 
-install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/gvmd.default
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd.default
          DESTINATION ${DEFAULT_CONFIG_DIR}/ RENAME gvmd)
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd.logrotate
