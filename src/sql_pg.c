@@ -192,10 +192,8 @@ sql_is_open ()
 /**
  * @brief Log a NOTICE message.
  *
- * @param[in]  arg      Dummy arg.
- * @param[in]  message  Arg.
- *
- * @return 0 success, -1 error.
+ * @param[in]  arg     Dummy arg.
+ * @param[in]  result  Arg.
  */
 static void
 log_notice (void *arg, const PGresult *result)
