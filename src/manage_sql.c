@@ -27782,6 +27782,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       && strcmp (sort_field, "type")
       && strcmp (sort_field, "original_type"))
     {
+      gchar *new_term;
+
       if ((strcmp (sort_field, "task") == 0)
           || (strcmp (sort_field, "task_id") == 0)
           || (strcmp (sort_field, "report_id") == 0))
@@ -27803,6 +27805,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (sort_field);
           sort_field = g_strdup ("vulnerability");
         }
+
+      /* Adjust "term" to match sort_field, because "term" will be used in the
+       * REPORT XML FILTERS (sent by buffer_get_filter_xml below). */
+      new_term = g_strdup_printf ("sort=%s %s",
+                                  sort_field,
+                                  term);
+      g_free (term);
+      term = new_term;
+      /* Similary, the order will now be ascending. */
+      sort_order = 1;
     }
 
   if (filter_term_return)
