@@ -27606,12 +27606,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
            * which may be used as a sort field.  These could be added to
            * result_cmp.  For now sort by vulnerability. */
 #if 0
-          "uuid", "comment", "created", "modified", "_owner"
-          "nvt",
-          "auto_type",
-          "report", "cvss_base", "nvt_version",
-          "original_severity", "date",
-          "solution_type", "qod", "qod_type", "cve", "hostname"
+          "uuid", "comment", "created", "modified", "_owner", "auto_type",
+          "cvss_base", "nvt_version", "original_severity", "date",
+          "solution_type", "qod", "qod_type", "cve", "hostname", "path"
 #endif
           g_free (sort_field);
           sort_field = g_strdup ("vulnerability");
