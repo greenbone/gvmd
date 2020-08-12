@@ -25081,11 +25081,12 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   descr = result_iterator_descr (results);
   delta_descr = result_iterator_descr (delta_results);
 
-  /*
-   * For delta reports to work correctly, the order must be the same as in
-   *  init_delta_iterators, except that description should not be checked
-   *  unless it is the sort_field.
-   */
+  /* For delta reports to work correctly, the order must be the same as in
+   * init_delta_iterators, except that description should not be checked
+   * unless it is the sort_field.
+   *
+   * If description is not the sort_field it is checked after the result_cmp
+   * in compare_results. */
 
   /* Check sort_field first, also using sort_order (0 is descending). */
   if (strcmp (sort_field, "host") == 0)
@@ -25126,6 +25127,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (ret)
         return ret;
     }
+  /* NVT OID, not name/vulnerability. */
   else if (strcmp (sort_field, "nvt") == 0)
     {
       ret = strcmp (nvt, delta_nvt);
