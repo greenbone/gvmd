@@ -25088,16 +25088,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
    */
 
   /* Check sort_field first, also using sort_order (0 is descending). */
-  if (strcmp (sort_field, "ROWID") == 0)
-    {
-      if (sort_order)
-        return result_iterator_result (results)
-                > result_iterator_result (delta_results);
-      else
-        return result_iterator_result (results)
-                < result_iterator_result (delta_results);
-    }
-  else if (strcmp (sort_field, "host") == 0)
+  if (strcmp (sort_field, "host") == 0)
     {
       ret = collate_ip (NULL,
                         strlen (host), host, strlen (delta_host), delta_host);
