@@ -26658,7 +26658,8 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
 
   delta_get = *get;
   delta_get.filt_id = NULL;
-  delta_get.filter = g_strdup_printf ("rows=-1 first=1 %s", term);
+  delta_get.filter = g_strdup_printf ("rows=-1 first=1 sort=%s %s",
+                                      sort_field, term);
   ignore_max_rows_per_page = 1;
 
 #if 0
