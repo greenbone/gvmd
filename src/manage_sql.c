@@ -27581,47 +27581,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   max_results = manage_max_rows (max_results);
 
-  if (delta
-      && sort_field
-      && strcmp (sort_field, "name")
-      && strcmp (sort_field, "vulnerability")
-      && strcmp (sort_field, "host")
-      && strcmp (sort_field, "port")
-      && strcmp (sort_field, "location")
-      && strcmp (sort_field, "severity")
-      && strcmp (sort_field, "type")
-      && strcmp (sort_field, "original_type"))
-    {
-      if ((strcmp (sort_field, "task") == 0)
-          || (strcmp (sort_field, "task_id") == 0)
-          || (strcmp (sort_field, "report_id") == 0))
-        {
-          /* These don't affect delta report, so sort by vulnerability. */
-          g_free (sort_field);
-          sort_field = g_strdup ("vulnerability");
-        }
-      else
-        {
-          /* The remaining filterable fields for the result iterator, all of
-           * which may be used as a sort field.  These could be added to
-           * result_cmp.  For now sort by vulnerability. */
-#if 0
-          "uuid", "comment", "created", "modified", "_owner", "auto_type",
-          "cvss_base", "nvt_version", "original_severity", "date",
-          "solution_type", "qod", "qod_type", "cve", "hostname", "path"
-#endif
-          g_free (sort_field);
-          sort_field = g_strdup ("vulnerability");
-        }
-    }
-
   levels = levels ? levels : g_strdup ("hmlgd");
 
   if (task && task_uuid (task, &tsk_uuid))
     {
       fclose (out);
       g_free (term);
-      g_free (sort_field);
       g_free (levels);
       g_free (search_phrase);
       g_free (min_qod);
@@ -27694,7 +27659,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       if (report_timestamp (uuid, &timestamp))
         {
           free (uuid);
-          g_free (sort_field);
           g_free (levels);
           g_free (search_phrase);
           g_free (min_qod);
@@ -27803,6 +27767,40 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   g_free (term);
   term = clean;
+
+  if (delta
+      && sort_field
+      && strcmp (sort_field, "name")
+      && strcmp (sort_field, "vulnerability")
+      && strcmp (sort_field, "host")
+      && strcmp (sort_field, "port")
+      && strcmp (sort_field, "location")
+      && strcmp (sort_field, "severity")
+      && strcmp (sort_field, "type")
+      && strcmp (sort_field, "original_type"))
+    {
+      if ((strcmp (sort_field, "task") == 0)
+          || (strcmp (sort_field, "task_id") == 0)
+          || (strcmp (sort_field, "report_id") == 0))
+        {
+          /* These don't affect delta report, so sort by vulnerability. */
+          g_free (sort_field);
+          sort_field = g_strdup ("vulnerability");
+        }
+      else
+        {
+          /* The remaining filterable fields for the result iterator, all of
+           * which may be used as a sort field.  These could be added to
+           * result_cmp.  For now sort by vulnerability. */
+#if 0
+          "uuid", "comment", "created", "modified", "_owner", "auto_type",
+          "cvss_base", "nvt_version", "original_severity", "date",
+          "solution_type", "qod", "qod_type", "cve", "hostname", "path"
+#endif
+          g_free (sort_field);
+          sort_field = g_strdup ("vulnerability");
+        }
+    }
 
   if (filter_term_return)
     *filter_term_return = g_strdup (term);
