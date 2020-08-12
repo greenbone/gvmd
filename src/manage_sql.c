@@ -27770,12 +27770,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta
       && sort_field
+      /* These are all checked in result_cmp. */
       && strcmp (sort_field, "name")
       && strcmp (sort_field, "vulnerability")
       && strcmp (sort_field, "host")
       && strcmp (sort_field, "port")
       && strcmp (sort_field, "location")
       && strcmp (sort_field, "severity")
+      && strcmp (sort_field, "nvt")
+      && strcmp (sort_field, "description")
       && strcmp (sort_field, "type")
       && strcmp (sort_field, "original_type"))
     {
