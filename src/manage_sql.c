@@ -27861,7 +27861,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
 
   filters_buffer = g_string_new ("");
-  buffer_get_filter_xml (filters_buffer, "result", get, clean,
+  buffer_get_filter_xml (filters_buffer, "result", get, term,
                          filters_extra_buffer->str);
   g_string_free (filters_extra_buffer, TRUE);
 
