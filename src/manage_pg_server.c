@@ -131,6 +131,66 @@ sql_hosts_contains (PG_FUNCTION_ARGS)
 /**
  * @brief Define function for Postgres.
  */
+PG_FUNCTION_INFO_V1 (sql_level_max_severity);
+
+/**
+ * @brief Dummy function to allow restoring gvmd-9.0 dumps.
+ *
+ * @deprecated This function will be removed once direct migration
+ *             compatibility with gvmd 9.0 is no longer required
+ *
+ * @return Postgres NULL Datum.
+ */
+ __attribute__((deprecated))
+Datum
+sql_level_max_severity (PG_FUNCTION_ARGS)
+{
+  PG_RETURN_NULL ();
+}
+
+/**
+ * @brief Define function for Postgres.
+ */
+PG_FUNCTION_INFO_V1 (sql_level_min_severity);
+
+/**
+ * @brief Dummy function to allow restoring gvmd-9.0 dumps.
+ *
+ * @deprecated This function will be removed once direct migration
+ *             compatibility with gvmd 9.0 is no longer required
+ *
+ * @return Postgres NULL Datum.
+ */
+ __attribute__((deprecated))
+Datum
+sql_level_min_severity (PG_FUNCTION_ARGS)
+{
+  PG_RETURN_NULL ();
+}
+
+/**
+ * @brief Define function for Postgres.
+ */
+PG_FUNCTION_INFO_V1 (sql_next_time);
+
+/**
+ * @brief Dummy function to allow restoring gvmd-9.0 dumps.
+ *
+ * @deprecated This function will be removed once direct migration
+ *             compatibility with gvmd 9.0 is no longer required
+ *
+ * @return Postgres NULL Datum.
+ */
+ __attribute__((deprecated))
+Datum
+sql_next_time (PG_FUNCTION_ARGS)
+{
+  PG_RETURN_NULL ();
+}
+
+/**
+ * @brief Define function for Postgres.
+ */
 PG_FUNCTION_INFO_V1 (sql_next_time_ical);
 
 /**
@@ -297,4 +357,24 @@ sql_regexp (PG_FUNCTION_ARGS)
       pfree (regexp);
       PG_RETURN_BOOL (ret);
     }
+}
+
+/**
+ * @brief Define function for Postgres.
+ */
+PG_FUNCTION_INFO_V1 (sql_valid_db_resource_type);
+
+/**
+ * @brief Dummy function to allow restoring gvmd-9.0 dumps.
+ *
+ * @deprecated This function will be removed once direct migration
+ *             compatibility with gvmd 9.0 is no longer required
+ *
+ * @return Postgres NULL Datum.
+ */
+ __attribute__((deprecated))
+Datum
+sql_valid_db_resource_type (PG_FUNCTION_ARGS)
+{
+  PG_RETURN_NULL ();
 }
