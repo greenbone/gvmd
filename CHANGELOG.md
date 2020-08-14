@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix XML escaping in setting up GMP scans [#1124](https://github.com/greenbone/gvmd/pull/1124)
 - Fix name handling when creating host assets [#1185](https://github.com/greenbone/gvmd/pull/1185)
 - Quote identifiers in SQL functions using EXECUTE [#1194](https://github.com/greenbone/gvmd/pull/1194)
+- Improve EXE installer NSIS script generation [#1254](https://github.com/greenbone/gvmd/pull/1254)
 
 [8.0.3]: https://github.com/greenbone/gvmd/compare/v8.0.2...gvmd-8.0
 
