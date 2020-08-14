@@ -19,8 +19,6 @@ cmake_minimum_required (VERSION 3.0)
 
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
-# VERSION: Set patch version for stable releases, e.g. "9.0.0",
-#          unset patch version for prereleases, e.g. "9.0"
 project (gvm
          VERSION 21.4
          LANGUAGES C)
@@ -61,12 +59,21 @@ else (${PROJECT_VERSION_MINOR_LENGTH} GREATER 1)
   set (PROJECT_VERSION_MINOR_STRING "0${PROJECT_VERSION_MINOR}")
 endif (${PROJECT_VERSION_MINOR_LENGTH} GREATER 1)
 
-# If a patch version is not defined, assume a pre-release
-if (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
+# Set beta version if this is a beta release series,
+# unset (put value 0) if this is a stable release series.
+if (NOT PROJECT_BETA_RELEASE)
+  set (PROJECT_BETA_RELEASE 1)
+endif (NOT PROJECT_BETA_RELEASE)
+
+# If PROJECT_BETA_RELEASE is set, the version string will be set to:
+#   "major.minor+beta${PROJECT_BETA_RELEASE}${GIT_REVISION}"
+# If PROJECT_BETA_RELEASE is NOT set, the version string will be set to:
+#   "major.minor.patch${GIT_REVISION}"
+if (PROJECT_BETA_RELEASE)
+  set (PROJECT_VERSION_SUFFIX "+beta${PROJECT_BETA_RELEASE}")
+else (PROJECT_BETA_RELEASE)
   set (PROJECT_VERSION_SUFFIX ".${PROJECT_VERSION_PATCH}")
-else (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
-  set (PROJECT_VERSION_SUFFIX "+beta1")
-endif (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
+endif (PROJECT_BETA_RELEASE)
 
 set (PROJECT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR_STRING}${PROJECT_VERSION_SUFFIX}${GIT_REVISION}")
 
