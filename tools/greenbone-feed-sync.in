@@ -105,22 +105,22 @@ if [ -e $ACCESSKEY ]
 then
   RESTRICTED=1
 
-  if [ -z "$FEED_VENDOR" ] ; then
+  if [ -z "$FEED_VENDOR" ]; then
     FEED_VENDOR="Greenbone Networks GmbH"
   fi
 
-  if [ -z "$FEED_HOME" ] ; then
+  if [ -z "$FEED_HOME" ]; then
     FEED_HOME="https://www.greenbone.net/en/security-feed/"
   fi
 
 else
   RESTRICTED=0
 
-  if [ -z "$FEED_VENDOR" ] ; then
+  if [ -z "$FEED_VENDOR" ]; then
     FEED_VENDOR="Greenbone Networks GmbH"
   fi
 
-  if [ -z "$FEED_HOME" ] ; then
+  if [ -z "$FEED_HOME" ]; then
     FEED_HOME="https://community.greenbone.net/t/about-greenbone-community-feed-gcf/1224"
   fi
 
@@ -128,6 +128,8 @@ fi
 
 RSYNC=`command -v rsync`
 
+# Current supported feed types (for --type parameter)
+FEED_TYPES_SUPPORTED="CERT, SCAP or GVMD_DATA"
 
 ########## FUNCTIONS
 ########## =========
@@ -151,8 +153,8 @@ log_err () {
 init_feed_type () {
   if [ -z "$FEED_TYPE" ]
   then
-    echo "No feed type given"
-    log_err "No feed type given"
+    echo "No feed type given to --type parameter"
+    log_err "No feed type given to --type parameter"
     exit 1
   elif [ "CERT" = "$FEED_TYPE" ]
   then
@@ -173,12 +175,12 @@ init_feed_type () {
 
     GSF_RSYNC_PATH="/cert-data"
 
-    if [ -e $ACCESSKEY ] ; then
-      if [ -z "$FEED_NAME" ] ; then
+    if [ -e $ACCESSKEY ]; then
+      if [ -z "$FEED_NAME" ]; then
         FEED_NAME="Greenbone CERT Feed"
       fi
     else
-      if [ -z "$FEED_NAME" ] ; then
+      if [ -z "$FEED_NAME" ]; then
         FEED_NAME="Greenbone Community CERT Feed"
       fi
     fi
@@ -201,12 +203,12 @@ init_feed_type () {
 
     GSF_RSYNC_PATH="/scap-data"
 
-    if [ -e $ACCESSKEY ] ; then
-      if [ -z "$FEED_NAME" ] ; then
+    if [ -e $ACCESSKEY ]; then
+      if [ -z "$FEED_NAME" ]; then
         FEED_NAME="Greenbone SCAP Feed"
       fi
     else
-      if [ -z "$FEED_NAME" ] ; then
+      if [ -z "$FEED_NAME" ]; then
         FEED_NAME="Greenbone Community SCAP Feed"
       fi
     fi
@@ -229,18 +231,18 @@ init_feed_type () {
 
     GSF_RSYNC_PATH="/data-objects/gvmd/"
 
-    if [ -e $ACCESSKEY ] ; then
-      if [ -z "$FEED_NAME" ] ; then
+    if [ -e $ACCESSKEY ]; then
+      if [ -z "$FEED_NAME" ]; then
         FEED_NAME="Greenbone gvmd Data Feed"
       fi
     else
-      if [ -z "$FEED_NAME" ] ; then
+      if [ -z "$FEED_NAME" ]; then
         FEED_NAME="Greenbone Community gvmd Data Feed"
       fi
     fi
   else
-    echo "Invalid feed type $FEED_TYPE"
-    log_err "Invalid feed type $FEED_TYPE"
+    echo "Invalid feed type $FEED_TYPE given to --type parameter. Currently supported: $FEED_TYPES_SUPPORTED"
+    log_err "Invalid feed type $FEED_TYPE given to --type parameter. Currently supported: $FEED_TYPES_SUPPORTED"
     exit 1
   fi
 }
@@ -294,7 +296,7 @@ do_describe () {
 }
 
 do_feedversion () {
-  if [ -r $TIMESTAMP ] ; then
+  if [ -r $TIMESTAMP ]; then
       cat $TIMESTAMP
   fi
 }
@@ -395,7 +397,7 @@ is_feed_current () {
   fi
 
   # Check against FEED_VERSION
-  if [ $FEED_VERSION -lt $FEED_VERSION_SERVER ] ; then
+  if [ $FEED_VERSION -lt $FEED_VERSION_SERVER ]; then
     FEED_CURRENT=0
   else
     FEED_CURRENT=1
@@ -422,7 +424,7 @@ do_help () {
   echo " --help          display this help"
   echo " --identify      display information"
   echo " --selftest      perform self-test"
-  echo " --type <TYPE>   choose type of data to sync (CERT, SCAP or GVMD_DATA)"
+  echo " --type <TYPE>   choose type of data to sync ($FEED_TYPES_SUPPORTED)"
   echo " --version       display version"
   echo ""
   exit 0
@@ -436,7 +438,7 @@ do_rsync_community_feed () {
     log_notice "Configured $FEED_TYPE_LONG rsync feed: $COMMUNITY_RSYNC_FEED"
     mkdir -p "$FEED_DIR"
     eval "$RSYNC -ltvrP $RSYNC_DELETE \"$COMMUNITY_RSYNC_FEED\" \"$FEED_DIR\""
-    if [ $? -ne 0 ] ; then
+    if [ $? -ne 0 ]; then
       log_err "rsync failed. Your $FEED_TYPE_LONG might be broken now."
       exit 1
     fi
@@ -444,7 +446,7 @@ do_rsync_community_feed () {
 }
 
 do_sync_community_feed () {
-  if [ -z "$RSYNC" ] ; then
+  if [ -z "$RSYNC" ]; then
     log_err "rsync not found!"
     log_err "No utility available in PATH environment variable to download Feed data"
     exit 1
@@ -492,7 +494,7 @@ sync_feed_data(){
       fi
       create_tmp_key
       rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/ $FEED_DIR
-      if [ 0 -ne "$?" ] ; then
+      if [ 0 -ne "$?" ]; then
         log_err "rsync failed, aborting synchronization."
         remove_tmp_key
         exit 1
@@ -533,7 +535,7 @@ do_self_test () {
 while test $# -gt 0; do
   case "$1" in
     "--version"|"--identify"|"--describe"|"--feedversion"|"--selftest"|"--feedcurrent")
-      if [ -z "$ACTION" ] ; then
+      if [ -z "$ACTION" ]; then
         ACTION="$1"
       fi
       ;;
@@ -598,7 +600,7 @@ fi
 (
   chmod +660 $LOCK_FILE
   flock -n 9
-  if [ $? -eq 1 ] ; then
+  if [ $? -eq 1 ]; then
     log_notice "Sync in progress, exiting."
     exit 1
   fi

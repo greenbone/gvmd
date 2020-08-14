@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [20.8.1] (unreleased)
+
+### Added
+
+### Changed
+
+- Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
+
+### Fixed
+
+### Removed
+
+[20.8.1]: https://github.com/greenbone/gvmd/compare/v20.8.0...gvmd-20.08
+
 ## [20.8.0] (2020-08-11)
 
 ### Added
