@@ -641,7 +641,7 @@ Prerequisites for Tipping Point alert:
 Prerequisites for key generation on systems with low entropy:
 * haveged (or a similar tool)
 
-Prerequisites for S/MIME suport (e.g. email encryption):
+Prerequisites for S/MIME support (e.g. email encryption):
 * GNU privacy guard - S/MIME version (Debian package: gpgsm)
 
 Prerequisites for certificate generation:
