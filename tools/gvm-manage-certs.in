@@ -78,6 +78,8 @@ set_defaults () {
   GVM_CERTIFICATE_ORG=${GVM_CERTIFICATE_ORG:-"GVM Users"}
   # (Organization unit)
   GVM_CERTIFICATE_ORG_UNIT=${GVM_CERTIFICATE_ORG_UNIT:-""}
+  # Subject Alternative Name(s)
+  GVM_CERTIFICATE_SAN=${GVM_CERTIFICATE_SAN:-""}
 
   # Hostname
   if [ -z "$GVM_CERTIFICATE_HOSTNAME" ]
@@ -102,7 +104,8 @@ set_defaults () {
   GVM_CA_CERTIFICATE_ORG=${GVM_CA_CERTIFICATE_ORG:-"$GVM_CERTIFICATE_ORG"}
   # (Organization unit)
   GVM_CA_CERTIFICATE_ORG_UNIT=${GVM_CA_CERTIFICATE_ORG_UNIT:-"Certificate Authority for $GVM_CERTIFICATE_HOSTNAME"}
-
+  # The array with all the SANs
+  GVM_CA_CERTIFICATE_SAN=${GVM_CA_CERTIFICATE_SAN:-"$GVM_CERTIFICATE_SAN"}
   # Key size
   if [ -z "$GVM_CERTIFICATE_KEYSIZE" ]
   then
@@ -290,6 +293,31 @@ create_private_key ()
   log_write "Generated private key in $1."
 }
 
+# Add SAN settings
+add_san_settings ()
+{
+  for i in $1
+  do
+    case "$i" in
+    *.*.*.*)
+      echo "ip_address = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
+    ;;
+    http*)
+      echo "uri = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
+    ;;
+    *.*)
+      echo "dns_name = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
+    ;;
+    localhost )
+      echo "dns_name = \"localhost\"" >> $GVM_CERT_TEMPLATE_FILENAME
+    ;;
+    *)
+      log_verbose "Invalid formatting for SAN: $i"
+    ;;
+    esac
+  done
+}
+
 # Create a certificate
 create_certificate ()
 {
@@ -330,6 +358,10 @@ create_certificate ()
     then
       echo "cn = \"$GVM_CA_CERTIFICATE_HOSTNAME\"" >> $GVM_CERT_TEMPLATE_FILENAME
     fi
+    if [ -n "$GVM_CA_CERTIFICATE_SAN" ]
+    then
+      add_san_settings GVM_CA_CERTIFICATE_SAN
+    fi
   else
     if [ -n "$GVM_CERTIFICATE_LIFETIME" ]
     then
@@ -358,6 +390,10 @@ create_certificate ()
     if [ -n "$GVM_CERTIFICATE_HOSTNAME" ]
     then
       echo "cn = \"$GVM_CERTIFICATE_HOSTNAME\"" >> $GVM_CERT_TEMPLATE_FILENAME
+    fi
+    if [ -n "$GVM_CERTIFICATE_SAN" ]
+    then
+      add_san_settings GVM_CERTIFICATE_SAN
     fi
   fi
 
