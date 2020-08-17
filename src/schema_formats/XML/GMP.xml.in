@@ -4741,7 +4741,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   content_type="text/xml">
             <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
               <gmp>
-                <version>8.0</version>
+                <version>@GMP_VERSION@</version>
               </gmp>
               <truncated>...</truncated>
               <results start="1" max="-1">
