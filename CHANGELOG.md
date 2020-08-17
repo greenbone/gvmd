@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [21.4] (unreleased)
+
+### Changed
+- Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260)
+
+[21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
+
 ## [20.08] (unreleased)
 
 ### Added
