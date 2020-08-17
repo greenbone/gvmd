@@ -178,18 +178,67 @@ sql_is_open ()
   return conn ? 1 : 0;
 }
 
+#ifndef NDEBUG
+#include <execinfo.h>
+
+/**
+ * @brief Maximum number of frames in backtrace.
+ *
+ * For debugging backtrace in \ref log_notice.
+ */
+#define BA_SIZE 100
+#endif
+
 /**
  * @brief Log a NOTICE message.
  *
- * @param[in]  arg      Dummy arg.
- * @param[in]  message  Arg.
- *
- * @return 0 success, -1 error.
+ * @param[in]  arg     Dummy arg.
+ * @param[in]  result  Arg.
  */
 static void
-log_notice (void *arg, const char *message)
+log_notice (void *arg, const PGresult *result)
 {
-  g_debug ("%s", message);
+  g_debug ("PQ notice: %s", PQresultErrorMessage (result));
+
+#ifndef NDEBUG
+  char *verbose;
+
+  verbose = PQresultVerboseErrorMessage (result, PQERRORS_VERBOSE, PQSHOW_CONTEXT_ALWAYS);
+  g_debug ("PQ notice: verbose: %s", verbose);
+  PQfreemem (verbose);
+#endif
+
+  g_debug ("PQ notice: detail: %s",
+           PQresultErrorField (result, PG_DIAG_MESSAGE_DETAIL));
+  g_debug ("PQ notice: hint: %s",
+           PQresultErrorField (result, PG_DIAG_MESSAGE_HINT));
+  g_debug ("PQ notice:     table %s.%s",
+           PQresultErrorField (result, PG_DIAG_SCHEMA_NAME),
+           PQresultErrorField (result, PG_DIAG_TABLE_NAME));
+  g_debug ("PQ notice:     from %s in %s:%s",
+           PQresultErrorField (result, PG_DIAG_SOURCE_FUNCTION),
+           PQresultErrorField (result, PG_DIAG_SOURCE_FILE),
+           PQresultErrorField (result, PG_DIAG_SOURCE_LINE));
+  g_debug ("PQ notice: context:\n%s",
+           PQresultErrorField (result, PG_DIAG_CONTEXT));
+
+#ifndef NDEBUG
+  void *frames[BA_SIZE];
+  int frame_count, index;
+  char **frames_text;
+
+  /* Print a backtrace. */
+  frame_count = backtrace (frames, BA_SIZE);
+  frames_text = backtrace_symbols (frames, frame_count);
+  if (frames_text == NULL)
+    {
+      perror ("backtrace symbols");
+      frame_count = 0;
+    }
+  for (index = 0; index < frame_count; index++)
+    g_debug ("%s", frames_text[index]);
+  free (frames_text);
+#endif
 }
 
 /**
@@ -316,7 +365,7 @@ sql_open (const char *database)
       poll_status = PQconnectPoll (conn);
     }
 
-  PQsetNoticeProcessor (conn, log_notice, NULL);
+  PQsetNoticeReceiver (conn, log_notice, NULL);
 
   g_debug ("%s:   db: %s", __func__, PQdb (conn));
   g_debug ("%s: user: %s", __func__, PQuser (conn));
