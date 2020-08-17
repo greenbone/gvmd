@@ -19,10 +19,8 @@ cmake_minimum_required (VERSION 3.0)
 
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
-# VERSION: Set patch version for stable releases, e.g. "9.0.0",
-#          unset patch version for prereleases, e.g. "9.0"
 project (gvm
-         VERSION 21.4
+         VERSION 21.4.0
          LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -61,14 +59,20 @@ else (${PROJECT_VERSION_MINOR_LENGTH} GREATER 1)
   set (PROJECT_VERSION_MINOR_STRING "0${PROJECT_VERSION_MINOR}")
 endif (${PROJECT_VERSION_MINOR_LENGTH} GREATER 1)
 
-# If a patch version is not defined, assume a pre-release
-if (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
-  set (PROJECT_VERSION_SUFFIX ".${PROJECT_VERSION_PATCH}")
-else (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
-  set (PROJECT_VERSION_SUFFIX "+beta1")
-endif (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
+# Set dev version if this is a development version and not a full release,
+# unset (put value 0 or delete line) before a full release and reset after.
+set (PROJECT_DEV_VERSION 1)
 
-set (PROJECT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR_STRING}${PROJECT_VERSION_SUFFIX}${GIT_REVISION}")
+# If PROJECT_DEV_VERSION is set, the version string will be set to:
+#   "major.minor.patch~dev${PROJECT_DEV_VERSION}${GIT_REVISION}"
+# If PROJECT_DEV_VERSION is NOT set, the version string will be set to:
+#   "major.minor.patch${GIT_REVISION}"
+# For CMAKE_BUILD_TYPE "Release" the git revision will be empty.
+if (PROJECT_DEV_VERSION)
+  set (PROJECT_VERSION_SUFFIX "~dev${PROJECT_DEV_VERSION}")
+endif (PROJECT_DEV_VERSION)
+
+set (PROJECT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR_STRING}.${PROJECT_VERSION_PATCH}${PROJECT_VERSION_SUFFIX}${GIT_REVISION}")
 
 ## CPack configuration
 
