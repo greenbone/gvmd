@@ -6,8 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [20.8.1] (unreleased)
 
+### Added
+
+### Changed
+- Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
+
 ### Fixed
 - Add dummy functions to allow restoring old dumps [#1251](https://github.com/greenbone/gvmd/pull/1251)
+
+### Removed
 
 [20.8.1]: https://github.com/greenbone/gvmd/compare/v20.8.0...gvmd-20.08
 
