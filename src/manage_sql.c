@@ -25081,23 +25081,15 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   descr = result_iterator_descr (results);
   delta_descr = result_iterator_descr (delta_results);
 
-  /*
-   * For delta reports to work correctly, the order must be the same as in
-   *  init_delta_iterators, except that description should not be checked
-   *  unless it is the sort_field.
-   */
+  /* For delta reports to work correctly, the order must be the same as in
+   * init_delta_iterators, except that description should not be checked
+   * unless it is the sort_field.
+   *
+   * If description is not the sort_field it is checked after the result_cmp
+   * in compare_results. */
 
   /* Check sort_field first, also using sort_order (0 is descending). */
-  if (strcmp (sort_field, "ROWID") == 0)
-    {
-      if (sort_order)
-        return result_iterator_result (results)
-                > result_iterator_result (delta_results);
-      else
-        return result_iterator_result (results)
-                < result_iterator_result (delta_results);
-    }
-  else if (strcmp (sort_field, "host") == 0)
+  if (strcmp (sort_field, "host") == 0)
     {
       ret = collate_ip (NULL,
                         strlen (host), host, strlen (delta_host), delta_host);
@@ -25135,6 +25127,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (ret)
         return ret;
     }
+  /* NVT OID, not name/vulnerability. */
   else if (strcmp (sort_field, "nvt") == 0)
     {
       ret = strcmp (nvt, delta_nvt);
@@ -26665,7 +26658,8 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
 
   delta_get = *get;
   delta_get.filt_id = NULL;
-  delta_get.filter = g_strdup_printf ("rows=-1 first=1 %s", term);
+  delta_get.filter = g_strdup_printf ("rows=-1 first=1 sort=%s %s",
+                                      sort_field, term);
   ignore_max_rows_per_page = 1;
 
 #if 0
@@ -27587,50 +27581,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   max_results = manage_max_rows (max_results);
 
-  if (delta
-      && sort_field
-      && strcmp (sort_field, "name")
-      && strcmp (sort_field, "vulnerability")
-      && strcmp (sort_field, "host")
-      && strcmp (sort_field, "port")
-      && strcmp (sort_field, "location")
-      && strcmp (sort_field, "severity")
-      && strcmp (sort_field, "type")
-      && strcmp (sort_field, "original_type"))
-    {
-      if ((strcmp (sort_field, "task") == 0)
-          || (strcmp (sort_field, "task_id") == 0)
-          || (strcmp (sort_field, "report_id") == 0))
-        {
-          /* These don't affect delta report, so sort by vulnerability. */
-          g_free (sort_field);
-          sort_field = g_strdup ("vulnerability");
-        }
-      else
-        {
-          /* The remaining filterable fields for the result iterator, all of
-           * which may be used as a sort field.  These could be added to
-           * result_cmp.  For now sort by vulnerability. */
-#if 0
-          "uuid", "comment", "created", "modified", "_owner"
-          "nvt",
-          "auto_type",
-          "report", "cvss_base", "nvt_version",
-          "original_severity", "date",
-          "solution_type", "qod", "qod_type", "cve", "hostname"
-#endif
-          g_free (sort_field);
-          sort_field = g_strdup ("vulnerability");
-        }
-    }
-
   levels = levels ? levels : g_strdup ("hmlgd");
 
   if (task && task_uuid (task, &tsk_uuid))
     {
       fclose (out);
       g_free (term);
-      g_free (sort_field);
       g_free (levels);
       g_free (search_phrase);
       g_free (min_qod);
@@ -27703,7 +27659,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       if (report_timestamp (uuid, &timestamp))
         {
           free (uuid);
-          g_free (sort_field);
           g_free (levels);
           g_free (search_phrase);
           g_free (min_qod);
@@ -27813,6 +27768,55 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   g_free (term);
   term = clean;
 
+  if (delta
+      && sort_field
+      /* These are all checked in result_cmp. */
+      && strcmp (sort_field, "name")
+      && strcmp (sort_field, "vulnerability")
+      && strcmp (sort_field, "host")
+      && strcmp (sort_field, "port")
+      && strcmp (sort_field, "location")
+      && strcmp (sort_field, "severity")
+      && strcmp (sort_field, "nvt")
+      && strcmp (sort_field, "description")
+      && strcmp (sort_field, "type")
+      && strcmp (sort_field, "original_type"))
+    {
+      gchar *new_term;
+
+      if ((strcmp (sort_field, "task") == 0)
+          || (strcmp (sort_field, "task_id") == 0)
+          || (strcmp (sort_field, "report_id") == 0))
+        {
+          /* These don't affect delta report, so sort by vulnerability. */
+          g_free (sort_field);
+          sort_field = g_strdup ("vulnerability");
+        }
+      else
+        {
+          /* The remaining filterable fields for the result iterator, all of
+           * which may be used as a sort field.  These could be added to
+           * result_cmp.  For now sort by vulnerability. */
+#if 0
+          "uuid", "comment", "created", "modified", "_owner", "auto_type",
+          "cvss_base", "nvt_version", "original_severity", "date",
+          "solution_type", "qod", "qod_type", "cve", "hostname", "path"
+#endif
+          g_free (sort_field);
+          sort_field = g_strdup ("vulnerability");
+        }
+
+      /* Adjust "term" to match sort_field, because "term" will be used in the
+       * REPORT XML FILTERS (sent by buffer_get_filter_xml below). */
+      new_term = g_strdup_printf ("sort=%s %s",
+                                  sort_field,
+                                  term);
+      g_free (term);
+      term = new_term;
+      /* Similary, the order will now be ascending. */
+      sort_order = 1;
+    }
+
   if (filter_term_return)
     *filter_term_return = g_strdup (term);
 
@@ -27857,7 +27861,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
 
   filters_buffer = g_string_new ("");
-  buffer_get_filter_xml (filters_buffer, "result", get, clean,
+  buffer_get_filter_xml (filters_buffer, "result", get, term,
                          filters_extra_buffer->str);
   g_string_free (filters_extra_buffer, TRUE);
 
