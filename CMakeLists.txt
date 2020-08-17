@@ -396,8 +396,8 @@ install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-certdata-sync
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-install (FILES ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-deb-creator.sh
-               ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-rpm-creator.sh
+install (FILES ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-deb-creator
+               ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-rpm-creator
          DESTINATION ${GVM_DATA_DIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE

@@ -226,7 +226,7 @@ lsc_user_rpm_create (const gchar *username,
   g_debug ("%s: Attempting RPM build", __func__);
   cmd = (gchar **) g_malloc (6 * sizeof (gchar *));
   cmd[0] = g_build_filename (GVM_DATA_DIR,
-                             "gvm-lsc-rpm-creator.sh",
+                             "gvm-lsc-rpm-creator",
                              NULL);
   cmd[1] = g_strdup (username);
   cmd[2] = g_strdup (new_pubkey_filename);
@@ -413,7 +413,7 @@ lsc_user_deb_create (const gchar *username,
   g_debug ("%s: Attempting DEB build", __func__);
   cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
   cmd[0] = g_build_filename (GVM_DATA_DIR,
-                             "gvm-lsc-deb-creator.sh",
+                             "gvm-lsc-deb-creator",
                              NULL);
   cmd[1] = g_strdup (username);
   cmd[2] = g_strdup (new_pubkey_filename);
