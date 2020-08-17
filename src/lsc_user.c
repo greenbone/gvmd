@@ -594,6 +594,12 @@ create_nsis_script (const gchar *script_name, const gchar *package_name,
   fprintf (fd, "#\n# Default (installer) section.\n#\n");
   fprintf (fd, "section\n\n");
 
+  fprintf (fd, "# Declare variables\n");
+  fprintf (fd, "Var /GLOBAL TEMPVBSFILE\n");
+  fprintf (fd, "Var /GLOBAL TEMPADMINGROUPFILE\n");
+  fprintf (fd, "Var /GLOBAL FH\n");
+  fprintf (fd, "Var /GLOBAL ADMINGROUPNAME\n");
+
   fprintf (fd, "# Define output path\n");
   fprintf (fd, "setOutPath $INSTDIR\n\n");
 
@@ -603,31 +609,41 @@ create_nsis_script (const gchar *script_name, const gchar *package_name,
 
   // Need to find localized Administrators group name, create a
   // GetAdminGroupName - vb script (Thanks to Thomas Rotter)
-  fprintf (fd, "# Create Thomas Rotters GetAdminGroupName.vb script\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Set objWMIService = GetObject($\\\"winmgmts:\\\\.\\root\\cimv2$\\\") > $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" \"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Set colAccounts = objWMIService.ExecQuery ($\\\"Select * From Win32_Group Where SID = 'S-1-5-32-544'$\\\")  >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo For Each objAccount in colAccounts >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Wscript.Echo objAccount.Name >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Next >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C cscript //nologo $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" > $\\\"%%temp%%\\AdminGroupName.txt$\\\"\"\n\n");
+  fprintf (fd, "# Create and run Thomas Rotter's GetAdminGroupName VB script\n");
+  fprintf (fd, "GetTempFileName $TEMPVBSFILE\n");
+  fprintf (fd, "GetTempFileName $TEMPADMINGROUPFILE\n");
+  fprintf (fd, "DetailPrint `Creating GetAdminGroupName script $TEMPVBSFILE`\n");
+  fprintf (fd, "FileOpen $FH $TEMPVBSFILE w\n");
+  fprintf (fd, "FileWrite $FH `Set objWMIService = GetObject(\"winmgmts:\\\\.\\root\\cimv2\")$\\n`\n");
+  fprintf (fd, "FileWrite $FH `Set colAccounts = objWMIService.ExecQuery (\"Select * From Win32_Group Where SID = 'S-1-5-32-544'\")$\\n`\n");
+  fprintf (fd, "FileWrite $FH `For Each objAccount in colAccounts$\\n`\n");
+  fprintf (fd, "FileWrite $FH ` Wscript.Echo objAccount.Name$\\n`\n");
+  fprintf (fd, "FileWrite $FH `Next$\\n`\n");
+  fprintf (fd, "FileClose $FH\n");
+  fprintf (fd, "ExecWait `cmd /C cscript /e:vbscript /nologo $TEMPVBSFILE > $TEMPADMINGROUPFILE`\n");
+  fprintf (fd, "# Read admin group name, remove trailing line break\n");
+  fprintf (fd, "FileOpen $FH $TEMPADMINGROUPFILE r\n");
+  fprintf (fd, "FileRead $FH $ADMINGROUPNAME\n");
+  fprintf (fd, "FileClose $FH\n");
+  fprintf (fd, "StrCpy $ADMINGROUPNAME `$ADMINGROUPNAME` -2\n");
+  fprintf (fd, "\n");
 
   /** @todo provide /comment:"GVM User" /fullname:"GVM Testuser" */
-  fprintf (fd, "# Create batch script that installs the user\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Set /P AdminGroupName= ^<$\\\"%%temp%%\\AdminGroupName.txt$\\\" > $\\\"%%temp%%\\AddUser.bat$\\\"\" \n");
-  fprintf (fd, "ExecWait \"cmd /C Echo net user %s %s /add /active:yes >> $\\\"%%temp%%\\AddUser.bat$\\\"\"\n",
+  fprintf (fd, "# Create the user and add it to the admin group\n");
+  fprintf (fd, "DetailPrint `Creating user %s`\n",
+           user_name);
+  fprintf (fd, "SetDetailsPrint none\n");
+  fprintf (fd, "ExecWait `cmd /C net user %s \"%s\" /add /active:yes`\n",
            user_name,
            password);
-  fprintf (fd, "ExecWait \"cmd /C Echo net localgroup %%AdminGroupName%% %%COMPUTERNAME%%\\%s /add >> $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n",
+  fprintf (fd, "SetDetailsPrint both\n");
+  fprintf (fd, "ExecWait `cmd /C net localgroup $ADMINGROUPNAME %%COMPUTERNAME%%\\%s /add`",
            user_name);
-
-  fprintf (fd, "# Execute AddUser script\n");
-  fprintf (fd, "ExecWait \"cmd /C $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n");
 
   // Remove up temporary files for localized Administrators group names
   fprintf (fd, "# Remove temporary files for localized admin group names\n");
-  fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\AdminGroupName.txt$\\\"\"\n");
-  fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n\n");
-  fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n");
+  fprintf (fd, "Delete $TEMPVBSFILE\n");
+  fprintf (fd, "Delete $TEMPADMINGROUPFILE\n");
 
   /** @todo Display note about NTLM and SMB signing and encryption, 'Easy Filesharing' in WIN XP */
   fprintf (fd, "# Display message that everything seems to be fine\n");
