@@ -293,6 +293,31 @@ create_private_key ()
   log_write "Generated private key in $1."
 }
 
+# Add SAN settings
+add_san_settings ()
+{
+  for i in $1
+  do
+    case "$i" in
+    *.*.*.*)
+      echo "ip_address = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
+    ;;
+    http*)
+      echo "uri = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
+    ;;
+    *.*)
+      echo "dns_name = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
+    ;;
+    localhost )
+      echo "dns_name = \"localhost\"" >> $GVM_CERT_TEMPLATE_FILENAME
+    ;;
+    *)
+      log_verbose "Invalid formatting for SAN: $i"
+    ;;
+    esac
+  done
+}
+
 # Create a certificate
 create_certificate ()
 {
@@ -335,26 +360,7 @@ create_certificate ()
     fi
     if [ -n "$GVM_CA_CERTIFICATE_SAN" ]
     then
-      for i in $GVM_CA_CERTIFICATE_SAN
-      do
-        case "$i" in
-        *.*.*.*)
-          echo "ip_address = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
-        ;;
-        http*)
-          echo "uri = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
-        ;;
-        *.*)
-          echo "dns_name = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
-        ;;
-        localhost )
-          echo "dns_name = \"localhost\"" >> $GVM_CERT_TEMPLATE_FILENAME
-        ;;
-        *)
-          log_verbose "Invalid formatting for SAN: $i"
-        ;;
-        esac
-      done
+      add_san_settings GVM_CA_CERTIFICATE_SAN
     fi
   else
     if [ -n "$GVM_CERTIFICATE_LIFETIME" ]
@@ -387,26 +393,7 @@ create_certificate ()
     fi
     if [ -n "$GVM_CERTIFICATE_SAN" ]
     then
-      for i in $GVM_CERTIFICATE_SAN
-      do
-        case "$i" in
-        *.*.*.*)
-          echo "ip_address = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
-        ;;
-        http*)
-          echo "uri = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
-        ;;
-        *.*)
-          echo "dns_name = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
-        ;;
-        localhost )
-          echo "dns_name = \"localhost\"" >> $GVM_CERT_TEMPLATE_FILENAME
-        ;;
-        *)
-          log_verbose "Invalid formatting for SAN: $i"
-        ;;
-        esac
-      done
+      add_san_settings GVM_CERTIFICATE_SAN
     fi
   fi
 
